@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab3JOFRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:17:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60667 "EHLO
+	id S932587Ab3JOFR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:17:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60676 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523Ab3JOFRO (ORCPT
+	with ESMTP id S932523Ab3JOFRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:17:14 -0400
-Date: Mon, 14 Oct 2013 22:16:59 -0700
+	Tue, 15 Oct 2013 01:17:24 -0400
+Date: Mon, 14 Oct 2013 22:17:09 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-fb1c9185e36cf9c616ac15f54e54a01f052672bd@git.kernel.org>
+Message-ID: <tip-baa9c30e1e250abf3e53b98e5bcf415dccdc7ba2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -18,8 +18,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf: Turn strlcpy() into a __weak function
-Git-Commit-ID: fb1c9185e36cf9c616ac15f54e54a01f052672bd
+Subject: [tip:perf/core] tools/perf/build:
+  Speed up auto-detection of features by adding a 'test-all' target
+Git-Commit-ID: baa9c30e1e250abf3e53b98e5bcf415dccdc7ba2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,158 +29,322 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:17:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:17:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb1c9185e36cf9c616ac15f54e54a01f052672bd
-Gitweb:     http://git.kernel.org/tip/fb1c9185e36cf9c616ac15f54e54a01f052672bd
+Commit-ID:  baa9c30e1e250abf3e53b98e5bcf415dccdc7ba2
+Gitweb:     http://git.kernel.org/tip/baa9c30e1e250abf3e53b98e5bcf415dccdc7ba2
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Tue, 1 Oct 2013 13:26:13 +0200
+AuthorDate: Tue, 1 Oct 2013 14:14:31 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Wed, 9 Oct 2013 08:48:49 +0200
 
-tools/perf: Turn strlcpy() into a __weak function
+tools/perf/build: Speed up auto-detection of features by adding a 'test-all' target
 
-The strlcpy() feature check slows every build unnecessarily - so make it
-a __weak function so it does not have to be auto-detected.
+Concatenate all feature checks into test-all.c.
 
-If the libc (or any other library) has an strlcpy() implementation it will
-be used - otherwise our fallback is active.
+This can be built and checked faster than all the individual tests.
+
+If test-all fails then we still check all the individual features, so
+this is a pure speedup, it should have no effects on functionality.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-zjbrcupapu08ePsyYhhhxiwk@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-5hlcb2qorzwfwrWTjiygjjih@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                      |  7 -------
- tools/perf/config/feature-checks/Makefile       |  4 ----
- tools/perf/config/feature-checks/test-strlcpy.c |  8 --------
- tools/perf/util/cache.h                         |  3 +--
- tools/perf/util/include/linux/compiler.h        |  4 ++++
- tools/perf/util/path.c                          | 10 +++++++---
- 6 files changed, 12 insertions(+), 24 deletions(-)
+ tools/perf/config/Makefile                  |  45 ++++++-
+ tools/perf/config/feature-checks/Makefile   |   3 +
+ tools/perf/config/feature-checks/test-all.c | 196 ++++++++++++++++++++++++++++
+ 3 files changed, 238 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index c0c8344..3207c25 100644
+index 3207c25..cbd7cdc 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -121,7 +121,6 @@ FEATURE_TESTS =				\
- 	libperl				\
- 	libpython			\
- 	libpython-version		\
--	strlcpy				\
- 	libbfd				\
- 	on-exit				\
- 	backtrace			\
-@@ -436,12 +435,6 @@ else
-   endif
- endif
+@@ -89,17 +89,21 @@ CFLAGS += -std=gnu99
  
--ifndef NO_STRLCPY
--  ifeq ($(feature-strlcpy), 1)
--    CFLAGS += -DHAVE_STRLCPY_SUPPORT
--  endif
--endif
--
- ifndef NO_ON_EXIT
-   ifeq ($(feature-on-exit), 1)
-     CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+ EXTLIBS = -lelf -lpthread -lrt -lm -ldl
+ 
+-feature_check = $(eval $(feature_check_code)); $(info CHK: config/feature-checks/test-$(1))
++feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(2) := $(shell make -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++endef
++
++feature_set = $(eval $(feature_set_code))
++define feature_set_code
++  feature-$(1) := 1
+ endef
+ 
+ #
+ # Build the feature check binaries in parallel, ignore errors, ignore return value and suppress output:
+ #
+-$(info Testing features:)
+-$(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
+-$(info done)
++$(info )
++$(info Auto-detecting system features:)
+ 
+ FEATURE_TESTS =				\
+ 	hello				\
+@@ -126,7 +130,36 @@ FEATURE_TESTS =				\
+ 	backtrace			\
+ 	libnuma
+ 
+-$(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
++#
++# Special fast-path for the 'all features are available' case:
++#
++$(call feature_check,all)
++
++ifeq ($(feature-all), 1)
++  $(foreach feat,$(FEATURE_TESTS),$(call feature_set,$(feat)))
++else
++  $(shell $(MAKE) -i -j -C config/feature-checks >/dev/null 2>&1)
++  $(foreach feat,$(FEATURE_TESTS),$(call feature_check,$(feat)))
++endif
++
++feature_print = $(eval $(feature_print_code))
++
++#
++# Print the result of the feature test:
++#
++define feature_print_code
++  ifeq ($(feature-$(1)), 1)
++    MSG := $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
++  else
++    MSG := $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
++  endif
++  $(info $(MSG))
++endef
++
++$(foreach feat,$(FEATURE_TESTS) DUMMY,$(call feature_print,$(feat)))
++
++# newline at the end of the feature printouts:
++$(info )
+ 
+ ifeq ($(feature-stackprotector-all), 1)
+   CFLAGS += -fstack-protector-all
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 0e4dbc2..c65bdac 100644
+index c65bdac..4b855e0 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -19,7 +19,6 @@ FILES=					\
- 	test-libperl			\
- 	test-libpython			\
- 	test-libpython-version		\
--	test-strlcpy			\
- 	test-libbfd			\
- 	test-on-exit			\
- 	test-backtrace			\
-@@ -116,9 +115,6 @@ test-libpython:
- test-libpython-version:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+@@ -32,6 +32,9 @@ BUILD = $(CC) -o $(OUTPUT)$@ $@.c
  
--test-strlcpy:
--	$(BUILD)
--
- test-libbfd:
- 	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+ ###############################
  
-diff --git a/tools/perf/config/feature-checks/test-strlcpy.c b/tools/perf/config/feature-checks/test-strlcpy.c
-deleted file mode 100644
-index 4a6b6ff..0000000
---- a/tools/perf/config/feature-checks/test-strlcpy.c
-+++ /dev/null
-@@ -1,8 +0,0 @@
--#include <stdlib.h>
--extern size_t strlcpy(char *dest, const char *src, size_t size);
--
--int main(void)
--{
--	strlcpy(NULL, NULL, 0);
--	return 0;
--}
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 442953c..7b176dd 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -70,8 +70,7 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
++test-all:
++	$(BUILD) -Werror -fstack-protector -fstack-protector-all -Wvolatile-register-var -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
++
+ test-hello:
+ 	$(BUILD)
  
--#ifndef HAVE_STRLCPY_SUPPORT
-+/* Matches the libc/libbsd function attribute so we declare this unconditionally: */
- extern size_t strlcpy(char *dest, const char *src, size_t size);
--#endif
- 
- #endif /* __PERF_CACHE_H */
-diff --git a/tools/perf/util/include/linux/compiler.h b/tools/perf/util/include/linux/compiler.h
-index bef4d3d..b003ad7 100644
---- a/tools/perf/util/include/linux/compiler.h
-+++ b/tools/perf/util/include/linux/compiler.h
-@@ -23,4 +23,8 @@
- # define __force
- #endif
- 
-+#ifndef __weak
-+# define __weak			__attribute__((weak))
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+new file mode 100644
+index 0000000..9f7c4b1
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -0,0 +1,196 @@
++
++#pragma GCC diagnostic ignored "-Wstrict-prototypes"
++
++#include <Python.h>
++
++#include <EXTERN.h>
++#include <perl.h>
++
++#include <stdio.h>
++#include <libelf.h>
++#include <gnu/libc-version.h>
++#include <dwarf.h>
++#include <elfutils/libdw.h>
++#include <elfutils/version.h>
++#include <libelf.h>
++#include <libunwind.h>
++#include <stdlib.h>
++#include <libaudit.h>
++#include <slang.h>
++#include <gtk/gtk.h>
++#include <bfd.h>
++#include <stdio.h>
++#include <execinfo.h>
++#include <stdio.h>
++#include <numa.h>
++#include <numaif.h>
++
++#pragma GCC diagnostic error "-Wstrict-prototypes"
++
++int main1(void)
++{
++	return puts("hi");
++}
++
++int main2(void)
++{
++	return puts("hi");
++}
++
++int main3(void)
++{
++	return puts("hi");
++}
++
++int main4(void)
++{
++	Elf *elf = elf_begin(0, ELF_C_READ, 0);
++	return (long)elf;
++}
++#
++int main5(void)
++{
++	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
++	return (long)elf;
++}
++
++int main6(void)
++{
++	const char *version = gnu_get_libc_version();
++	return (long)version;
++}
++
++int main7(void)
++{
++	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
++	return (long)dbg;
++}
++
++int main8(void)
++{
++	size_t dst;
++	return elf_getphdrnum(0, &dst);
++}
++
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
++int main9(void)
++{
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
++}
++
++int main10(void)
++{
++	printf("error message: %s\n", audit_errno_to_name(0));
++	return audit_open();
++}
++
++int main11(void)
++{
++	return SLsmg_init_smg();
++}
++
++int main12(int argc, char *argv[])
++{
++        gtk_init(&argc, &argv);
++
++        return 0;
++}
++
++int main13(void)
++{
++	gtk_info_bar_new();
++
++	return 0;
++}
++
++int main14(void)
++{
++	perl_alloc();
++
++	return 0;
++}
++
++int main15(void)
++{
++	Py_Initialize();
++	return 0;
++}
++
++#if PY_VERSION_HEX >= 0x03000000
++	#error
 +#endif
 +
- #endif
-diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
-index f395874..5d13cb4 100644
---- a/tools/perf/util/path.c
-+++ b/tools/perf/util/path.c
-@@ -22,19 +22,23 @@ static const char *get_perf_dir(void)
- 	return ".";
- }
- 
--#ifndef HAVE_STRLCPY_SUPPORT
--size_t strlcpy(char *dest, const char *src, size_t size)
-+/*
-+ * If libc has strlcpy() then that version will override this
-+ * implementation:
-+ */
-+size_t __weak strlcpy(char *dest, const char *src, size_t size)
- {
- 	size_t ret = strlen(src);
- 
- 	if (size) {
- 		size_t len = (ret >= size) ? size - 1 : ret;
++int main16(void)
++{
++	return 0;
++}
 +
- 		memcpy(dest, src, len);
- 		dest[len] = '\0';
- 	}
++int main17(void)
++{
++	bfd_demangle(0, 0, 0);
++	return 0;
++}
 +
- 	return ret;
- }
--#endif
- 
- static char *get_pathname(void)
- {
++void exit_function(int x, void *y)
++{
++}
++
++int main18(void)
++{
++	return on_exit(exit_function, NULL);
++}
++
++int main19(void)
++{
++	void *backtrace_fns[1];
++	size_t entries;
++
++	entries = backtrace(backtrace_fns, 1);
++	backtrace_symbols(backtrace_fns, entries);
++
++	return 0;
++}
++
++int main20(void)
++{
++	numa_available();
++	return 0;
++}
++
++int main(int argc, char *argv[])
++{
++	main1();
++	main2();
++	main3();
++	main4();
++	main5();
++	main6();
++	main7();
++	main8();
++	main9();
++	main10();
++	main11();
++	main12(argc, argv);
++	main13();
++	main14();
++	main15();
++	main16();
++	main17();
++	main18();
++	main19();
++	main20();
++
++	return 0;
++}
