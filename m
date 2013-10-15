@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759270Ab3JONMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:12:37 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:40807 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758567Ab3JONMg (ORCPT
+	id S1759135Ab3JONOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:14:25 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40058 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757696Ab3JONOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:12:36 -0400
-Date: Tue, 15 Oct 2013 15:12:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] perf: disable mmap2 support
-Message-ID: <20131015131231.GD2402@gmail.com>
-References: <20131009161743.GA3022@quad>
- <52558278.6080206@gmail.com>
- <CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
- <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
- <5255900A.5050103@gmail.com>
- <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
- <52584626.4050000@gmail.com>
- <CABPqkBRX1Qg5s7CKh++gxu4dq+GV0YZp30ixeF9-AmHoec8Gaw@mail.gmail.com>
+	Tue, 15 Oct 2013 09:14:24 -0400
+Date: Tue, 15 Oct 2013 09:14:11 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131015131411.GA19861@hmsreliant.think-freely.org>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+ <20131012172124.GA18241@gmail.com>
+ <20131014202854.GH26880@hmsreliant.think-freely.org>
+ <20131015073248.GA25493@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRX1Qg5s7CKh++gxu4dq+GV0YZp30ixeF9-AmHoec8Gaw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131015073248.GA25493@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephane Eranian <eranian@google.com> wrote:
-
-> Arnaldo,
+On Tue, Oct 15, 2013 at 09:32:48AM +0200, Ingo Molnar wrote:
 > 
-> Could you revert all the mmap2 patches in your perf/urgent tree for now?
-> Thanks.
+> * Neil Horman <nhorman@tuxdriver.com> wrote:
+> 
+> > On Sat, Oct 12, 2013 at 07:21:24PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > > 
+> > > > Sébastien Dugué reported to me that devices implementing ipoib (which 
+> > > > don't have checksum offload hardware were spending a significant amount 
+> > > > of time computing checksums.  We found that by splitting the checksum 
+> > > > computation into two separate streams, each skipping successive elements 
+> > > > of the buffer being summed, we could parallelize the checksum operation 
+> > > > accros multiple alus.  Since neither chain is dependent on the result of 
+> > > > the other, we get a speedup in execution (on hardware that has multiple 
+> > > > alu's available, which is almost ubiquitous on x86), and only a 
+> > > > negligible decrease on hardware that has only a single alu (an extra 
+> > > > addition is introduced).  Since addition in commutative, the result is 
+> > > > the same, only faster
+> > > 
+> > > This patch should really come with measurement numbers: what performance 
+> > > increase (and drop) did you get on what CPUs.
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > > 
+> > 
+> > 
+> > So, early testing results today.  I wrote a test module that, allocated 
+> > a 4k buffer, initalized it with random data, and called csum_partial on 
+> > it 100000 times, recording the time at the start and end of that loop.  
+> 
+> It would be nice to stick that testcase into tools/perf/bench/, see how we 
+> are able to benchmark the kernel's mempcy and memset implementation there:
+> 
+Sure, my module is a mess currently.  But as soon as I investigate the use of
+ADCX/ADOX that Anvin suggested I'll see about integrating that
+Neil
 
-I think it would be helpful if you re-sent the final patch, with a full 
-changelog, etc., in a separate thread, not inside an existing discussion 
-and such.
-
-Thanks,
-
-	Ingo
+>  $ perf bench mem memcpy -r help
+>  # Running 'mem/memcpy' benchmark:
+>  Unknown routine:help
+>  Available routines...
+>         default ... Default memcpy() provided by glibc
+>         x86-64-unrolled ... unrolled memcpy() in arch/x86/lib/memcpy_64.S
+>         x86-64-movsq ... movsq-based memcpy() in arch/x86/lib/memcpy_64.S
+>         x86-64-movsb ... movsb-based memcpy() in arch/x86/lib/memcpy_64.S
+> 
+> In a similar fashion we could build the csum_partial() code as well and do 
+> measurements. (We could change arch/x86/ code as well to make such 
+> embedding/including easier, as long as it does not change performance.)
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
