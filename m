@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab3JORRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:17:20 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:36205 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab3JORRH (ORCPT
+	id S1759555Ab3JORSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:18:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46631 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758936Ab3JORSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:17:07 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 2/2] mm: Clear N_CPU from node_states at CPU offline
-Date: Tue, 15 Oct 2013 11:12:56 -0600
-Message-Id: <1381857176-22999-3-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381857176-22999-1-git-send-email-toshi.kani@hp.com>
-References: <1381857176-22999-1-git-send-email-toshi.kani@hp.com>
+	Tue, 15 Oct 2013 13:18:52 -0400
+Date: Tue, 15 Oct 2013 10:18:50 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, linux-aio@kvack.org
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+Message-ID: <20131015171850.GA26277@infradead.org>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+ <20130821130231.GG13330@kvack.org>
+ <20131014150701.GA21529@infradead.org>
+ <20131014212910.GA31920@kvack.org>
+ <20131015165520.GA13021@infradead.org>
+ <20131015171447.GE31920@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015171447.GE31920@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmstat_cpuup_callback() is a CPU notifier callback, which
-marks N_CPU to a node at CPU online event.  However, it
-does not update this N_CPU info at CPU offline event.
+On Tue, Oct 15, 2013 at 01:14:47PM -0400, Benjamin LaHaise wrote:
+> > While I agree that getting that would be useful it is something that has
+> > nothing to do with issueing aio from kernel space and holding this
+> > patchset hostage for something you'd like to see but that was
+> > complicated enough that no one even tried it for many years seems
+> > entirely unreasonable.
+> > 
+> > If there are any other issues left that I have missed it would be nice
+> > to get a pointer to it, or a quick brief.
+> 
+> The item I was refering to is to removing the opcodes used for in-kernel 
+> purposes from out of the range that the userland accessible opcodes can 
+> reach.  That is, put them above the 16 bit limit for userspace opcodes.  
+> There is absolutely no reason to expose kernel internal opcodes via the 
+> userspace exported includes.  It's a simple and reasonable change, and I 
+> see no reason for Dave not to make that modification.  Until that is 
+> done, I will nak the changes.
 
-Changed vmstat_cpuup_callback() to clear N_CPU when the last
-CPU in the node is put into offline, i.e. the node no longer
-has any online CPU.
+Oh, missed that.  I totally agree that it needs to be done.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- mm/vmstat.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 0a1f7de..b6d17ed 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -1229,6 +1229,20 @@ static void start_cpu_timer(int cpu)
- 	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
- }
- 
-+static void vmstat_cpu_dead(int node)
-+{
-+	int cpu;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu)
-+		if (cpu_to_node(cpu) == node)
-+			goto end;
-+
-+	node_clear_state(node, N_CPU);
-+end:
-+	put_online_cpus();
-+}
-+
- /*
-  * Use the cpu notifier to insure that the thresholds are recalculated
-  * when necessary.
-@@ -1258,6 +1272,7 @@ static int vmstat_cpuup_callback(struct notifier_block *nfb,
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		refresh_zone_stat_thresholds();
-+		vmstat_cpu_dead(cpu_to_node(cpu));
- 		break;
- 	default:
- 		break;
+Dave, will you have time to do it soon or should I look into it myself?
