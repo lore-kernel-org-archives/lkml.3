@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab3JOSA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:00:57 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:53833 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932647Ab3JOSAx (ORCPT
+	id S933758Ab3JOSBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:01:36 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:45209
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933537Ab3JOSA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:00:53 -0400
-Message-Id: <20131015180050.084352174@linux.com>
+	Tue, 15 Oct 2013 14:00:56 -0400
+Message-Id: <20131015180053.213687766@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:58:53 -0500
+Date: Tue, 15 Oct 2013 12:58:59 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, "David S. Miller" <davem@davemloft.net>
+Cc: akpm@linuxfoundation.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 01/10] net: Replace __get_cpu_var uses
+Subject: [PATCH 07/10] rcu: Replace __get_cpu_var uses
 References: <20131015175852.122827685@linux.com>
-Content-Disposition: inline; filename=this_net
+Content-Disposition: inline; filename=this_rcu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -131,171 +132,160 @@ variable.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/net/core/dev.c
+Index: linux/kernel/rcutree.c
 ===================================================================
---- linux.orig/net/core/dev.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/core/dev.c	2013-09-19 15:08:05.937723500 -0500
-@@ -2129,7 +2129,7 @@ static inline void __netif_reschedule(st
- 	unsigned long flags;
+--- linux.orig/kernel/rcutree.c	2013-10-14 10:55:57.747107834 -0500
++++ linux/kernel/rcutree.c	2013-10-14 10:58:26.247229815 -0500
+@@ -407,7 +407,7 @@ static void rcu_eqs_enter(bool user)
+ 	long long oldval;
+ 	struct rcu_dynticks *rdtp;
+ 
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
+ 	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
+@@ -435,7 +435,7 @@ void rcu_idle_enter(void)
  
  	local_irq_save(flags);
--	sd = &__get_cpu_var(softnet_data);
-+	sd = this_cpu_ptr(&softnet_data);
- 	q->next_sched = NULL;
- 	*sd->output_queue_tailp = q;
- 	sd->output_queue_tailp = &q->next_sched;
-@@ -2151,7 +2151,7 @@ void dev_kfree_skb_irq(struct sk_buff *s
- 		unsigned long flags;
- 
- 		local_irq_save(flags);
--		sd = &__get_cpu_var(softnet_data);
-+		sd = this_cpu_ptr(&softnet_data);
- 		skb->next = sd->completion_queue;
- 		sd->completion_queue = skb;
- 		raise_softirq_irqoff(NET_TX_SOFTIRQ);
-@@ -3111,7 +3111,7 @@ static void rps_trigger_softirq(void *da
- static int rps_ipi_queued(struct softnet_data *sd)
- {
- #ifdef CONFIG_RPS
--	struct softnet_data *mysd = &__get_cpu_var(softnet_data);
-+	struct softnet_data *mysd = this_cpu_ptr(&softnet_data);
- 
- 	if (sd != mysd) {
- 		sd->rps_ipi_next = mysd->rps_ipi_list;
-@@ -3138,7 +3138,7 @@ static bool skb_flow_limit(struct sk_buf
- 	if (qlen < (netdev_max_backlog >> 1))
- 		return false;
- 
--	sd = &__get_cpu_var(softnet_data);
-+	sd = this_cpu_ptr(&softnet_data);
- 
- 	rcu_read_lock();
- 	fl = rcu_dereference(sd->flow_limit);
-@@ -3280,7 +3280,7 @@ EXPORT_SYMBOL(netif_rx_ni);
- 
- static void net_tx_action(struct softirq_action *h)
- {
--	struct softnet_data *sd = &__get_cpu_var(softnet_data);
-+	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
- 
- 	if (sd->completion_queue) {
- 		struct sk_buff *clist;
-@@ -3700,7 +3700,7 @@ EXPORT_SYMBOL(netif_receive_skb);
- static void flush_backlog(void *arg)
- {
- 	struct net_device *dev = arg;
--	struct softnet_data *sd = &__get_cpu_var(softnet_data);
-+	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
- 	struct sk_buff *skb, *tmp;
- 
- 	rps_lock(sd);
-@@ -4146,7 +4146,7 @@ void __napi_schedule(struct napi_struct
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--	____napi_schedule(&__get_cpu_var(softnet_data), n);
-+	____napi_schedule(this_cpu_ptr(&softnet_data), n);
+ 	rcu_eqs_enter(false);
+-	rcu_sysidle_enter(&__get_cpu_var(rcu_dynticks), 0);
++	rcu_sysidle_enter(this_cpu_ptr(&rcu_dynticks), 0);
  	local_irq_restore(flags);
  }
- EXPORT_SYMBOL(__napi_schedule);
-@@ -4274,7 +4274,7 @@ EXPORT_SYMBOL(netif_napi_del);
- 
- static void net_rx_action(struct softirq_action *h)
- {
--	struct softnet_data *sd = &__get_cpu_var(softnet_data);
-+	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
- 	unsigned long time_limit = jiffies + 2;
- 	int budget = netdev_budget;
- 	void *have;
-Index: linux/net/core/drop_monitor.c
-===================================================================
---- linux.orig/net/core/drop_monitor.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/core/drop_monitor.c	2013-09-19 15:08:05.937723500 -0500
-@@ -142,7 +142,7 @@ static void trace_drop_common(struct sk_
- 	unsigned long flags;
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+@@ -478,7 +478,7 @@ void rcu_irq_exit(void)
+ 	struct rcu_dynticks *rdtp;
  
  	local_irq_save(flags);
--	data = &__get_cpu_var(dm_cpu_data);
-+	data = this_cpu_ptr(&dm_cpu_data);
- 	spin_lock(&data->lock);
- 	dskb = data->skb;
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	rdtp->dynticks_nesting--;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
+@@ -528,7 +528,7 @@ static void rcu_eqs_exit(bool user)
+ 	struct rcu_dynticks *rdtp;
+ 	long long oldval;
  
-Index: linux/net/core/skbuff.c
-===================================================================
---- linux.orig/net/core/skbuff.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/core/skbuff.c	2013-09-19 15:08:05.941723445 -0500
-@@ -371,7 +371,7 @@ static void *__netdev_alloc_frag(unsigne
- 	unsigned long flags;
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	WARN_ON_ONCE(oldval < 0);
+ 	if (oldval & DYNTICK_TASK_NEST_MASK)
+@@ -555,7 +555,7 @@ void rcu_idle_exit(void)
  
  	local_irq_save(flags);
--	nc = &__get_cpu_var(netdev_alloc_cache);
-+	nc = this_cpu_ptr(&netdev_alloc_cache);
- 	if (unlikely(!nc->frag.page)) {
- refill:
- 		for (order = NETDEV_FRAG_PAGE_MAX_ORDER; ;) {
-Index: linux/net/ipv4/syncookies.c
-===================================================================
---- linux.orig/net/ipv4/syncookies.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/ipv4/syncookies.c	2013-09-19 15:08:05.941723445 -0500
-@@ -44,7 +44,7 @@ static DEFINE_PER_CPU(__u32 [16 + 5 + SH
- static u32 cookie_hash(__be32 saddr, __be32 daddr, __be16 sport, __be16 dport,
- 		       u32 count, int c)
+ 	rcu_eqs_exit(false);
+-	rcu_sysidle_exit(&__get_cpu_var(rcu_dynticks), 0);
++	rcu_sysidle_exit(this_cpu_ptr(&rcu_dynticks), 0);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+@@ -599,7 +599,7 @@ void rcu_irq_enter(void)
+ 	long long oldval;
+ 
+ 	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	rdtp->dynticks_nesting++;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
+@@ -620,7 +620,7 @@ void rcu_irq_enter(void)
+  */
+ void rcu_nmi_enter(void)
  {
--	__u32 *tmp = __get_cpu_var(ipv4_cookie_scratch);
-+	__u32 *tmp = this_cpu_ptr(ipv4_cookie_scratch);
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
++	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
  
- 	memcpy(tmp + 4, syncookie_secret[c], sizeof(syncookie_secret[c]));
- 	tmp[0] = (__force u32)saddr;
-Index: linux/net/ipv4/tcp_output.c
-===================================================================
---- linux.orig/net/ipv4/tcp_output.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/ipv4/tcp_output.c	2013-09-19 15:08:05.941723445 -0500
-@@ -813,7 +813,7 @@ void tcp_wfree(struct sk_buff *skb)
- 
- 		/* queue this socket to tasklet queue */
- 		local_irq_save(flags);
--		tsq = &__get_cpu_var(tsq_tasklet);
-+		tsq = this_cpu_ptr(&tsq_tasklet);
- 		list_add(&tp->tsq_node, &tsq->head);
- 		tasklet_schedule(&tsq->tasklet);
- 		local_irq_restore(flags);
-Index: linux/net/ipv6/syncookies.c
-===================================================================
---- linux.orig/net/ipv6/syncookies.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/ipv6/syncookies.c	2013-09-19 15:08:05.941723445 -0500
-@@ -66,7 +66,7 @@ static DEFINE_PER_CPU(__u32 [16 + 5 + SH
- static u32 cookie_hash(const struct in6_addr *saddr, const struct in6_addr *daddr,
- 		       __be16 sport, __be16 dport, u32 count, int c)
+ 	if (rdtp->dynticks_nmi_nesting == 0 &&
+ 	    (atomic_read(&rdtp->dynticks) & 0x1))
+@@ -642,7 +642,7 @@ void rcu_nmi_enter(void)
+  */
+ void rcu_nmi_exit(void)
  {
--	__u32 *tmp = __get_cpu_var(ipv6_cookie_scratch);
-+	__u32 *tmp = this_cpu_ptr(ipv6_cookie_scratch);
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
++	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
  
- 	/*
- 	 * we have 320 bits of information to hash, copy in the remaining
-Index: linux/net/rds/ib_rdma.c
-===================================================================
---- linux.orig/net/rds/ib_rdma.c	2013-09-19 15:08:05.941723445 -0500
-+++ linux/net/rds/ib_rdma.c	2013-09-19 15:08:05.941723445 -0500
-@@ -267,7 +267,7 @@ static inline struct rds_ib_mr *rds_ib_r
- 	unsigned long *flag;
+ 	if (rdtp->dynticks_nmi_nesting == 0 ||
+ 	    --rdtp->dynticks_nmi_nesting != 0)
+@@ -665,7 +665,7 @@ int rcu_is_cpu_idle(void)
+ 	int ret;
  
  	preempt_disable();
--	flag = &__get_cpu_var(clean_list_grace);
-+	flag = this_cpu_ptr(&clean_list_grace);
- 	set_bit(CLEAN_LIST_BUSY_BIT, flag);
- 	ret = llist_del_first(&pool->clean_list);
- 	if (ret)
-Index: linux/include/net/netfilter/nf_conntrack.h
-===================================================================
---- linux.orig/include/net/netfilter/nf_conntrack.h	2013-09-19 15:08:05.941723445 -0500
-+++ linux/include/net/netfilter/nf_conntrack.h	2013-09-19 15:08:05.941723445 -0500
-@@ -242,7 +242,7 @@ extern s32 (*nf_ct_nat_offset)(const str
- DECLARE_PER_CPU(struct nf_conn, nf_conntrack_untracked);
- static inline struct nf_conn *nf_ct_untracked_get(void)
- {
--	return &__raw_get_cpu_var(nf_conntrack_untracked);
-+	return raw_cpu_ptr(&nf_conntrack_untracked);
+-	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
++	ret = (atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1) == 0;
+ 	preempt_enable();
+ 	return ret;
  }
- extern void nf_ct_untracked_status_or(unsigned long bits);
+@@ -703,7 +703,7 @@ bool rcu_lockdep_current_cpu_online(void
+ 	if (in_nmi())
+ 		return 1;
+ 	preempt_disable();
+-	rdp = &__get_cpu_var(rcu_sched_data);
++	rdp = this_cpu_ptr(&rcu_sched_data);
+ 	rnp = rdp->mynode;
+ 	ret = (rdp->grpmask & rnp->qsmaskinit) ||
+ 	      !rcu_scheduler_fully_active;
+@@ -723,7 +723,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cp
+  */
+ static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+-	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
++	return __this_cpu_read(rcu_dynticks.dynticks_nesting) <= 1;
+ }
  
+ /*
+Index: linux/kernel/rcutree_plugin.h
+===================================================================
+--- linux.orig/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
++++ linux/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
+@@ -660,7 +660,7 @@ static void rcu_preempt_check_callbacks(
+ 
+ static void rcu_preempt_do_callbacks(void)
+ {
+-	rcu_do_batch(&rcu_preempt_state, &__get_cpu_var(rcu_preempt_data));
++	rcu_do_batch(&rcu_preempt_state, this_cpu_ptr(&rcu_preempt_data));
+ }
+ 
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+@@ -1332,7 +1332,7 @@ static void invoke_rcu_callbacks_kthread
+  */
+ static bool rcu_is_callbacks_kthread(void)
+ {
+-	return __get_cpu_var(rcu_cpu_kthread_task) == current;
++	return __this_cpu_read(rcu_cpu_kthread_task) == current;
+ }
+ 
+ #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
+@@ -1382,8 +1382,8 @@ static int rcu_spawn_one_boost_kthread(s
+ 
+ static void rcu_kthread_do_work(void)
+ {
+-	rcu_do_batch(&rcu_sched_state, &__get_cpu_var(rcu_sched_data));
+-	rcu_do_batch(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
++	rcu_do_batch(&rcu_sched_state, this_cpu_ptr(&rcu_sched_data));
++	rcu_do_batch(&rcu_bh_state, this_cpu_ptr(&rcu_bh_data));
+ 	rcu_preempt_do_callbacks();
+ }
+ 
+@@ -1402,7 +1402,7 @@ static void rcu_cpu_kthread_park(unsigne
+ 
+ static int rcu_cpu_kthread_should_run(unsigned int cpu)
+ {
+-	return __get_cpu_var(rcu_cpu_has_work);
++	return __this_cpu_read(rcu_cpu_has_work);
+ }
+ 
+ /*
+@@ -1412,8 +1412,8 @@ static int rcu_cpu_kthread_should_run(un
+  */
+ static void rcu_cpu_kthread(unsigned int cpu)
+ {
+-	unsigned int *statusp = &__get_cpu_var(rcu_cpu_kthread_status);
+-	char work, *workp = &__get_cpu_var(rcu_cpu_has_work);
++	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
++	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
+ 	int spincnt;
+ 
+ 	for (spincnt = 0; spincnt < 10; spincnt++) {
 
