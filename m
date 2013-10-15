@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab3JOFTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:19:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60782 "EHLO
+	id S932662Ab3JOFT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:19:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60805 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757532Ab3JOFTM (ORCPT
+	with ESMTP id S932639Ab3JOFTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:19:12 -0400
-Date: Mon, 14 Oct 2013 22:18:57 -0700
+	Tue, 15 Oct 2013 01:19:21 -0400
+Date: Mon, 14 Oct 2013 22:19:05 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-1e3f30fae797660a014ac159d93fff9952ec1bf0@git.kernel.org>
+Message-ID: <tip-3ca576a481f8c12fe606fb75232d52637c666ed0@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -18,8 +18,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf/build: Clean up various testcases
-Git-Commit-ID: 1e3f30fae797660a014ac159d93fff9952ec1bf0
+Subject: [tip:perf/core] tools/perf/build:
+  Collapse the test-all.c testcase
+Git-Commit-ID: 3ca576a481f8c12fe606fb75232d52637c666ed0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,188 +29,331 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:19:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:19:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1e3f30fae797660a014ac159d93fff9952ec1bf0
-Gitweb:     http://git.kernel.org/tip/1e3f30fae797660a014ac159d93fff9952ec1bf0
+Commit-ID:  3ca576a481f8c12fe606fb75232d52637c666ed0
+Gitweb:     http://git.kernel.org/tip/3ca576a481f8c12fe606fb75232d52637c666ed0
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Wed, 2 Oct 2013 15:48:49 +0200
+AuthorDate: Wed, 2 Oct 2013 16:21:37 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:58 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:59 +0200
 
-tools/perf/build: Clean up various testcases
+tools/perf/build: Collapse the test-all.c testcase
 
-Prepare to include them into test-all.c directly, by making sure
-that they build cleanly and without warnings.
-
-Also make sure they make a certain amount of sense and don't crash
-when executed.
+Simplify test-all.c by including it all the testcases via #include.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-Mn9gsdutzopoowk3xurqpsxE@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-pcZlwqq5ou7Ebvkekvhtzfbm@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/feature-checks/test-backtrace.c      |  8 ++++++--
- tools/perf/config/feature-checks/test-cplus-demangle.c |  9 +++++++--
- tools/perf/config/feature-checks/test-gtk2-infobar.c   |  3 ++-
- tools/perf/config/feature-checks/test-gtk2.c           |  2 +-
- tools/perf/config/feature-checks/test-libaudit.c       |  2 ++
- tools/perf/config/feature-checks/test-libbfd.c         | 11 ++++++++++-
- tools/perf/config/feature-checks/test-libunwind.c      |  9 ++++++++-
- tools/perf/config/feature-checks/test-on-exit.c        | 11 ++++++++++-
- 8 files changed, 46 insertions(+), 9 deletions(-)
+ tools/perf/config/feature-checks/test-all.c | 290 ++++++++++------------------
+ 1 file changed, 100 insertions(+), 190 deletions(-)
 
-diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
-index 5b79468..5b33bcf 100644
---- a/tools/perf/config/feature-checks/test-backtrace.c
-+++ b/tools/perf/config/feature-checks/test-backtrace.c
-@@ -3,8 +3,12 @@
- 
- int main(void)
- {
--	backtrace(NULL, 0);
--	backtrace_symbols(NULL, 0);
-+	void *backtrace_fns[10];
-+	size_t entries;
-+
-+	entries = backtrace(backtrace_fns, 10);
-+	backtrace_symbols_fd(backtrace_fns, entries, 1);
- 
- 	return 0;
- }
-+
-diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
-index 5202f50..ab29f80 100644
---- a/tools/perf/config/feature-checks/test-cplus-demangle.c
-+++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
-@@ -1,9 +1,14 @@
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 9f7c4b1..50d4318 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -1,196 +1,106 @@
 -
-+extern int printf(const char *format, ...);
- extern char *cplus_demangle(const char *, int);
- 
- int main(void)
- {
--	cplus_demangle(0, 0);
-+	char symbol[4096] = "FieldName__9ClassNameFd";
-+	char *tmp;
+-#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+-
+-#include <Python.h>
+-
+-#include <EXTERN.h>
+-#include <perl.h>
+-
+-#include <stdio.h>
+-#include <libelf.h>
+-#include <gnu/libc-version.h>
+-#include <dwarf.h>
+-#include <elfutils/libdw.h>
+-#include <elfutils/version.h>
+-#include <libelf.h>
+-#include <libunwind.h>
+-#include <stdlib.h>
+-#include <libaudit.h>
+-#include <slang.h>
+-#include <gtk/gtk.h>
+-#include <bfd.h>
+-#include <stdio.h>
+-#include <execinfo.h>
+-#include <stdio.h>
+-#include <numa.h>
+-#include <numaif.h>
+-
+-#pragma GCC diagnostic error "-Wstrict-prototypes"
+-
+-int main1(void)
+-{
+-	return puts("hi");
+-}
+-
+-int main2(void)
+-{
+-	return puts("hi");
+-}
+-
+-int main3(void)
+-{
+-	return puts("hi");
+-}
+-
+-int main4(void)
+-{
+-	Elf *elf = elf_begin(0, ELF_C_READ, 0);
+-	return (long)elf;
+-}
+-#
+-int main5(void)
+-{
+-	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
+-	return (long)elf;
+-}
+-
+-int main6(void)
+-{
+-	const char *version = gnu_get_libc_version();
+-	return (long)version;
+-}
+-
+-int main7(void)
+-{
+-	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
+-	return (long)dbg;
+-}
+-
+-int main8(void)
+-{
+-	size_t dst;
+-	return elf_getphdrnum(0, &dst);
+-}
+-
+-extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+-                                      unw_word_t ip,
+-                                      unw_dyn_info_t *di,
+-                                      unw_proc_info_t *pi,
+-                                      int need_unwind_info, void *arg);
+-
+-
+-#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
+-
+-int main9(void)
+-{
+-	unw_addr_space_t addr_space;
+-	addr_space = unw_create_addr_space(NULL, 0);
+-	unw_init_remote(NULL, addr_space, NULL);
+-	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+-	return 0;
+-}
+-
+-int main10(void)
+-{
+-	printf("error message: %s\n", audit_errno_to_name(0));
+-	return audit_open();
+-}
+-
+-int main11(void)
+-{
+-	return SLsmg_init_smg();
+-}
+-
+-int main12(int argc, char *argv[])
+-{
+-        gtk_init(&argc, &argv);
+-
+-        return 0;
+-}
+-
+-int main13(void)
+-{
+-	gtk_info_bar_new();
+-
+-	return 0;
+-}
+-
+-int main14(void)
+-{
+-	perl_alloc();
+-
+-	return 0;
+-}
+-
+-int main15(void)
+-{
+-	Py_Initialize();
+-	return 0;
+-}
+-
+-#if PY_VERSION_HEX >= 0x03000000
+-	#error
+-#endif
+-
+-int main16(void)
+-{
+-	return 0;
+-}
+-
+-int main17(void)
+-{
+-	bfd_demangle(0, 0, 0);
+-	return 0;
+-}
+-
+-void exit_function(int x, void *y)
+-{
+-}
+-
+-int main18(void)
+-{
+-	return on_exit(exit_function, NULL);
+-}
+-
+-int main19(void)
+-{
+-	void *backtrace_fns[1];
+-	size_t entries;
+-
+-	entries = backtrace(backtrace_fns, 1);
+-	backtrace_symbols(backtrace_fns, entries);
+-
+-	return 0;
+-}
+-
+-int main20(void)
+-{
+-	numa_available();
+-	return 0;
+-}
++/*
++ * test-all.c: Try to build all the main testcases at once.
++ *
++ * A well-configured system will have all the prereqs installed, so we can speed
++ * up auto-detection on such systems.
++ */
 +
-+	tmp = cplus_demangle(symbol, 0);
++/*
++ * Quirk: Python and Perl headers cannot be in arbitrary places, so keep
++ * these 3 testcases at the top:
++ */
++#define main main_test_libpython
++# include "test-libpython.c"
++#undef main
 +
-+	printf("demangled symbol: {%s}\n", tmp);
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-gtk2-infobar.c b/tools/perf/config/feature-checks/test-gtk2-infobar.c
-index eebcfbc..397b464 100644
---- a/tools/perf/config/feature-checks/test-gtk2-infobar.c
-+++ b/tools/perf/config/feature-checks/test-gtk2-infobar.c
-@@ -2,8 +2,9 @@
- #include <gtk/gtk.h>
- #pragma GCC diagnostic error "-Wstrict-prototypes"
- 
--int main(void)
-+int main(int argc, char *argv[])
- {
-+	gtk_init(&argc, &argv);
- 	gtk_info_bar_new();
- 
- 	return 0;
-diff --git a/tools/perf/config/feature-checks/test-gtk2.c b/tools/perf/config/feature-checks/test-gtk2.c
-index 1ac6d8a..6bd80e5 100644
---- a/tools/perf/config/feature-checks/test-gtk2.c
-+++ b/tools/perf/config/feature-checks/test-gtk2.c
-@@ -4,7 +4,7 @@
++#define main main_test_libpython_version
++# include "test-libpython-version.c"
++#undef main
++
++#define main main_test_libperl
++# include "test-libperl.c"
++#undef main
++
++#define main main_test_hello
++# include "test-hello.c"
++#undef main
++
++#define main main_test_libelf
++# include "test-libelf.c"
++#undef main
++
++#define main main_test_libelf_mmap
++# include "test-libelf-mmap.c"
++#undef main
++
++#define main main_test_glibc
++# include "test-glibc.c"
++#undef main
++
++#define main main_test_dwarf
++# include "test-dwarf.c"
++#undef main
++
++#define main main_test_libelf_getphdrnum
++# include "test-libelf-getphdrnum.c"
++#undef main
++
++#define main main_test_libunwind
++# include "test-libunwind.c"
++#undef main
++
++#define main main_test_libaudit
++# include "test-libaudit.c"
++#undef main
++
++#define main main_test_libslang
++# include "test-libslang.c"
++#undef main
++
++#define main main_test_gtk2
++# include "test-gtk2.c"
++#undef main
++
++#define main main_test_gtk2_infobar
++# include "test-gtk2-infobar.c"
++#undef main
++
++#define main main_test_libbfd
++# include "test-libbfd.c"
++#undef main
++
++#define main main_test_on_exit
++# include "test-on-exit.c"
++#undef main
++
++#define main main_test_backtrace
++# include "test-backtrace.c"
++#undef main
++
++#define main main_test_libnuma
++# include "test-libnuma.c"
++#undef main
  
  int main(int argc, char *argv[])
  {
--        gtk_init(&argc, &argv);
-+	gtk_init(&argc, &argv);
+-	main1();
+-	main2();
+-	main3();
+-	main4();
+-	main5();
+-	main6();
+-	main7();
+-	main8();
+-	main9();
+-	main10();
+-	main11();
+-	main12(argc, argv);
+-	main13();
+-	main14();
+-	main15();
+-	main16();
+-	main17();
+-	main18();
+-	main19();
+-	main20();
++	main_test_libpython();
++	main_test_libpython_version();
++	main_test_libperl();
++	main_test_hello();
++	main_test_libelf();
++	main_test_libelf_mmap();
++	main_test_glibc();
++	main_test_dwarf();
++	main_test_libelf_getphdrnum();
++	main_test_libunwind();
++	main_test_libaudit();
++	main_test_libslang();
++	main_test_gtk2(argc, argv);
++	main_test_gtk2_infobar(argc, argv);
++	main_test_libbfd();
++	main_test_on_exit();
++	main_test_backtrace();
++	main_test_libnuma();
  
-         return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
-index 854a65d..f7e791e 100644
---- a/tools/perf/config/feature-checks/test-libaudit.c
-+++ b/tools/perf/config/feature-checks/test-libaudit.c
-@@ -1,5 +1,7 @@
- #include <libaudit.h>
- 
-+extern int printf(const char *format, ...);
-+
- int main(void)
- {
- 	printf("error message: %s\n", audit_errno_to_name(0));
-diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
-index d03339c..1886c78 100644
---- a/tools/perf/config/feature-checks/test-libbfd.c
-+++ b/tools/perf/config/feature-checks/test-libbfd.c
-@@ -1,7 +1,16 @@
- #include <bfd.h>
- 
-+extern int printf(const char *format, ...);
-+
- int main(void)
- {
--	bfd_demangle(0, 0, 0);
-+	char symbol[4096] = "FieldName__9ClassNameFd";
-+	char *tmp;
-+
-+	tmp = bfd_demangle(0, symbol, 0);
-+
-+	printf("demangled symbol: {%s}\n", tmp);
-+
  	return 0;
- }
-+
-diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
-index 5622746..43b9369 100644
---- a/tools/perf/config/feature-checks/test-libunwind.c
-+++ b/tools/perf/config/feature-checks/test-libunwind.c
-@@ -10,11 +10,18 @@ extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
- 
- #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
- 
-+static unw_accessors_t accessors;
-+
- int main(void)
- {
- 	unw_addr_space_t addr_space;
--	addr_space = unw_create_addr_space(NULL, 0);
-+
-+	addr_space = unw_create_addr_space(&accessors, 0);
-+	if (addr_space)
-+		return 0;
-+
- 	unw_init_remote(NULL, addr_space, NULL);
- 	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
-index 473f1de..8f64ed3 100644
---- a/tools/perf/config/feature-checks/test-on-exit.c
-+++ b/tools/perf/config/feature-checks/test-on-exit.c
-@@ -1,6 +1,15 @@
- #include <stdio.h>
- 
-+static void exit_fn(int status, void *__data)
-+{
-+	printf("exit status: %d, data: %d\n", status, *(int *)__data);
-+}
-+
-+static int data = 123;
-+
- int main(void)
- {
--	return on_exit(NULL, NULL);
-+	on_exit(exit_fn, &data);
-+
-+	return 321;
  }
