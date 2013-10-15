@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab3JOFPE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:15:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60514 "EHLO
+	id S932253Ab3JOFPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:15:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60553 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab3JOFO7 (ORCPT
+	with ESMTP id S1752398Ab3JOFPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:14:59 -0400
-Date: Mon, 14 Oct 2013 22:14:44 -0700
+	Tue, 15 Oct 2013 01:15:17 -0400
+Date: Mon, 14 Oct 2013 22:15:02 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-b7bcef6f8e61580e883672b6c97148d4f89e9874@git.kernel.org>
+Message-ID: <tip-058f952de9b3075cd888dc3cea60691db0ec4d3f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
- libelf-getphdrnum'
-Git-Commit-ID: b7bcef6f8e61580e883672b6c97148d4f89e9874
+ libunwind'
+Git-Commit-ID: 058f952de9b3075cd888dc3cea60691db0ec4d3f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,95 +29,121 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:14:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:15:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b7bcef6f8e61580e883672b6c97148d4f89e9874
-Gitweb:     http://git.kernel.org/tip/b7bcef6f8e61580e883672b6c97148d4f89e9874
+Commit-ID:  058f952de9b3075cd888dc3cea60691db0ec4d3f
+Gitweb:     http://git.kernel.org/tip/058f952de9b3075cd888dc3cea60691db0ec4d3f
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 30 Sep 2013 14:35:27 +0200
+AuthorDate: Mon, 30 Sep 2013 14:45:44 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:37 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:39 +0200
 
-tools/perf/build: Split out feature check: 'libelf-getphdrnum'
+tools/perf/build: Split out feature check: 'libunwind'
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-wa9qstb8erbjreLxiHepzjfw@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-vTiatsVyva3tfgh3vhxaidxl@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                                | 5 +++--
- tools/perf/config/feature-checks/Makefile                 | 4 ++++
- tools/perf/config/feature-checks/test-libelf-getphdrnum.c | 7 +++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile                        | 13 ++++++++-----
+ tools/perf/config/feature-checks/Makefile         |  4 ++++
+ tools/perf/config/feature-checks/test-libunwind.c | 20 ++++++++++++++++++++
+ 3 files changed, 32 insertions(+), 5 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index bf1f021..718b476 100644
+index 0d75587..d684a29 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -112,6 +112,7 @@ FEATURE_TESTS =				\
- 	glibc				\
+@@ -113,6 +113,7 @@ FEATURE_TESTS =				\
  	dwarf				\
  	libelf-mmap			\
-+	libelf-getphdrnum		\
+ 	libelf-getphdrnum		\
++	libunwind			\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -207,7 +208,7 @@ ifndef NO_LIBELF
-     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+@@ -240,15 +241,17 @@ ifneq ($(ARCH),x86)
+ endif
+ 
+ ifndef NO_LIBUNWIND
+-  # for linking with debug library, run like:
+-  # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++  #
++  # For linking with debug library, run like:
++  #
++  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++  #
+   ifdef LIBUNWIND_DIR
+     LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
+     LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
    endif
  
--  ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
-+  ifeq ($(feature-libelf-getphdrnum), 1)
-     CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
+-  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+-  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
++  ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+     NO_LIBUNWIND := 1
    endif
+@@ -259,7 +262,7 @@ ifndef NO_LIBUNWIND
+   EXTLIBS += $(LIBUNWIND_LIBS)
+   CFLAGS += $(LIBUNWIND_CFLAGS)
+   LDFLAGS += $(LIBUNWIND_LDFLAGS)
+-endif # NO_LIBUNWIND
++endif
  
-@@ -230,7 +231,7 @@ ifndef NO_LIBELF
-   CFLAGS += -DHAVE_LIBELF_SUPPORT
-   ifeq ($(feature-libelf-mmap), 1)
-     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
--  endif # try-cc
-+  endif
- endif # NO_LIBELF
- 
- # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifndef NO_LIBAUDIT
+   FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index bf96e34..83b3a02 100644
+index 83b3a02..d6d9570 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -10,6 +10,7 @@ FILES=					\
- 	test-glibc			\
+@@ -11,6 +11,7 @@ FILES=					\
  	test-dwarf			\
  	test-libelf-mmap		\
-+	test-libelf-getphdrnum		\
+ 	test-libelf-getphdrnum		\
++	test-libunwind			\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -50,6 +51,9 @@ test-dwarf:
- test-libelf-mmap:
- 	$(BUILD) -lelf
- 
-+test-libelf-getphdrnum:
-+	$(BUILD) -lelf
-+
+@@ -57,6 +58,9 @@ test-libelf-getphdrnum:
  test-libnuma:
  	$(BUILD) -lnuma
  
-diff --git a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
++test-libunwind:
++	$(BUILD) -lunwind -lunwind-x86_64 -lelf
++
+ -include *.d */*.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
 new file mode 100644
-index 0000000..58eca53
+index 0000000..5622746
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
-@@ -0,0 +1,7 @@
-+#include <libelf.h>
-+#
++++ b/tools/perf/config/feature-checks/test-libunwind.c
+@@ -0,0 +1,20 @@
++#include <libunwind.h>
++#include <stdlib.h>
++
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
 +int main(void)
 +{
-+	size_t dst;
-+	return elf_getphdrnum(0, &dst);
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
 +}
