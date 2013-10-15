@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870Ab3JOOPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:15:33 -0400
-Received: from odin2.bull.net ([129.184.85.11]:46586 "EHLO odin2.bull.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932837Ab3JOOPb convert rfc822-to-8bit (ORCPT
+	id S932906Ab3JOOQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:16:29 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:49634 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932841Ab3JOOQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:15:31 -0400
-Date: Tue, 15 Oct 2013 16:15:28 +0200
-From: =?UTF-8?B?U8OpYmFzdGllbiBEdWd1w6k=?= <sebastien.dugue@bull.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Neil Horman <nhorman@tuxdriver.com>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple
- alu's
-Message-ID: <20131015161528.08c19e92@b012350-ux>
-In-Reply-To: <1381845985.2045.40.camel@edumazet-glaptop.roam.corp.google.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	<87siw4xy9i.fsf@tassilo.jf.intel.com>
-	<20131014202528.GG26880@hmsreliant.think-freely.org>
-	<20131015091251.2345b918@b012350-ux>
-	<20131015133336.GF2592@two.firstfloor.org>
-	<20131015155615.738f03d5@b012350-ux>
-	<1381845985.2045.40.camel@edumazet-glaptop.roam.corp.google.com>
-Organization: BULL
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 15 Oct 2013 10:16:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.192.1.123]
+In-Reply-To: <CAOMqctQV0Ce5Z4WF1osuvorZd_JQnoQSOkw1DOPSdPBh+qc=Kw@mail.gmail.com>
+References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
+ <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
+ <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
+ <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
+ <20130917211317.GB6537@quack.suse.cz> <CAOMqctT5Wi_Y9ODAnoG-RQiO1oJ+yKR=LnF21swuupyLShL=+w@mail.gmail.com>
+ <20130919101357.GA20140@quack.suse.cz> <CAOMqctQV0Ce5Z4WF1osuvorZd_JQnoQSOkw1DOPSdPBh+qc=Kw@mail.gmail.com>
+From: Michal Suchanek <hramrach@gmail.com>
+Date: Tue, 15 Oct 2013 16:15:46 +0200
+Message-ID: <CAOMqctQK78hiydNQHnv+yhdT6Sx3xvb5LHr8R+8ob0y_af+DyA@mail.gmail.com>
+Subject: Re: doing lots of disk writes causes oom killer to kill processes
+To: Jan Kara <jack@suse.cz>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 9 October 2013 16:19, Michal Suchanek <hramrach@gmail.com> wrote:
+> Hello,
+>
+> On 19 September 2013 12:13, Jan Kara <jack@suse.cz> wrote:
+>> On Wed 18-09-13 16:56:08, Michal Suchanek wrote:
+>>> On 17 September 2013 23:13, Jan Kara <jack@suse.cz> wrote:
+>>> >   Hello,
+>>>
+>>> The default for dirty_ratio/dirty_background_ratio is 60/40. Setting
+>>   Ah, that's not upstream default. Upstream has 20/10. In SLES we use 40/10
+>> to better accomodate some workloads but 60/40 on 8 GB machines with
+>> SATA drive really seems too much. That is going to give memory management a
+>> headache.
+>>
+>> The problem is that a good SATA drive can do ~100 MB/s if we are
+>> lucky and IO is sequential. Thus if you have 5 GB of dirty data to write,
+>> it takes 50s at best to write it, with more random IO to image file it can
+>> well take several minutes to write. That may cause some increased latency
+>> when memory reclaim waits for writeback to clean some pages.
+>>
+>>> these to 5/2 gives about the same result as running the script that
+>>> syncs every 5s. Setting to 30/10 gives larger data chunks and
+>>> intermittent lockup before every chunk is written.
+>>>
+>>> It is quite possible to set kernel parameters that kill the kernel but
+>>>
+>>> 1) this is the default
+>>   Not upstream one so you should raise this with Debian I guess. 60/40
+>> looks way out of reasonable range for todays machines.
+>>
+>>> 2) the parameter is set in units that do not prevent the issue in
+>>> general (% RAM vs #blocks)
+>>   You can set the number of bytes instead of percentage -
+>> /proc/sys/vm/dirty_bytes / dirty_background_bytes. It's just that proper
+>> sizing depends on amount of memory, storage HW, workload. So it's more an
+>> administrative task to set this tunable properly.
+>>
+>>> 3) WTH is the system doing? It's 4core 3GHz cpu so it can handle
+>>> traversing a structure holding 800M data in the background. Something
+>>> is seriously rotten somewhere.
+>>   Likely processes are waiting in direct reclaim for IO to finish. But that
+>> is just guessing. Try running attached script (forgot to attach it to
+>> previous email). You will need systemtap and kernel debuginfo installed.
+>> The script doesn't work with all versions of systemtap (as it is sadly a
+>> moving target) so if it fails, tell me your version of systemtap and I'll
+>> update the script accordingly.
+>
+> This was fixed for me by the patch posted earlier by Hillf Danton so I
+> guess this answers what the system was (not) doing:
+>
+> --- a/mm/vmscan.c Wed Sep 18 08:44:08 2013
+> +++ b/mm/vmscan.c Wed Sep 18 09:31:34 2013
+> @@ -1543,8 +1543,11 @@ shrink_inactive_list(unsigned long nr_to
+>   * implies that pages are cycling through the LRU faster than
+>   * they are written so also forcibly stall.
+>   */
+> - if (nr_unqueued_dirty == nr_taken || nr_immediate)
+> + if (nr_unqueued_dirty == nr_taken || nr_immediate) {
+> + if (current_is_kswapd())
+> + wakeup_flusher_threads(0, WB_REASON_TRY_TO_FREE_PAGES);
+>   congestion_wait(BLK_RW_ASYNC, HZ/10);
+> + }
+>   }
+>
+>   /*
+>
+> Also 75485363 is hopefully addressing this issue in mainline.
+>
 
-On Tue, 15 Oct 2013 07:06:25 -0700
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Actually, this was in 3.11 already and it did make the behaviour a bit
+better but was not enough.
 
-> On Tue, 2013-10-15 at 15:56 +0200, Sébastien Dugué wrote:
-> > On Tue, 15 Oct 2013 15:33:36 +0200
-> > Andi Kleen <andi@firstfloor.org> wrote:
-> > 
-> > > >   indeed, our typical workload is connected mode IPoIB on mlx4 QDR hardware
-> > > > where one cannot benefit from hardware offloads.
-> > > 
-> > > Is this with sendfile?
-> > 
-> >   Tests were done with iperf at the time without any extra funky options, and
-> > looking at the code it looks like it does plain write() / recv() on the socket.
-> > 
-> 
-> But the csum cost is both for sender and receiver ?
+So is something like the vmscan.c patch going to make it into the
+mainline kernel?
 
-  No, it was only on the receiver side that I noticed it.
+Thanks
 
-> 
-> Please post the following :
-> 
-> perf record -g "your iperf session"
-> 
-> perf report | head -n 200
-
-  Sorry, but this is 3 years old stuff and I do not have the
-setup anymore to reproduce.
-
-  Sébastien.
-
-
+Michal
