@@ -1,81 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab3JOHcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:32:54 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:41847 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab3JOHcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:32:52 -0400
-Date: Tue, 15 Oct 2013 09:32:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131015073248.GA25493@gmail.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <20131012172124.GA18241@gmail.com>
- <20131014202854.GH26880@hmsreliant.think-freely.org>
+	id S1754208Ab3JOHgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:36:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48055 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752508Ab3JOHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 03:36:34 -0400
+Message-ID: <525CF052.4060508@ti.com>
+Date: Tue, 15 Oct 2013 13:05:46 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131014202854.GH26880@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Rob Herring <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>
+Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com> <524AD290.207@gmail.com> <524AD4B7.7040700@ti.com> <524AE1FA.2050104@gmail.com> <524AE536.5080307@ti.com>
+In-Reply-To: <524AE536.5080307@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
 
-* Neil Horman <nhorman@tuxdriver.com> wrote:
+On Tuesday 01 October 2013 08:37 PM, Santosh Shilimkar wrote:
+> On Tuesday 01 October 2013 10:53 AM, Rob Herring wrote:
+>> On 10/01/2013 08:57 AM, Santosh Shilimkar wrote:
+>>> On Tuesday 01 October 2013 09:48 AM, Rob Herring wrote:
+>>>> On 10/01/2013 06:13 AM, Sricharan R wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
+>>>>>> On 09/30/2013 08:59 AM, Sricharan R wrote:
+>>>>>>> Some socs have a large number of interrupts requests to service
+>>>>>>> the needs of its many peripherals and subsystems. All of the interrupt
+>>>>>>> requests lines from the subsystems are not needed at the same
+>>>>>>> time, so they have to be muxed to the controllers appropriately.
+>>>>>>> In such places a interrupt controllers are preceded by an
+>>>>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+>>>>>>> requests to the controller inputs.
+>>>>>>>
+>>>>>>> This series models the peripheral interrupts that can be routed through
+>>>>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+>>>>>>> in a separate linear domain inside the GIC. The registered routable domain's
+>>>>>>> callback are invoked as a part of the GIC's callback, which in turn should
+>>>>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
+>>>>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
+>>>>>>> gic line for that gets allocated and configured when the peripheral's interrupt
+>>>>>>> is mapped.
+>>>>>>>
+>>>>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
+>>>>>>> crossbar is added here, along with the DT bindings.
+>>>>>> Seems like interrupt-map property is what you need here.
+>>>>>>
+>>>>>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
+>>>>>>
+>>>>>> Versatile Express also has an example.
+>>>>>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
+>>>>>    DTS level, but to assign it dynamically during runtime. This was one of the
+>>>>>   comments that came up with first crossbar support patches, which was assigning a
+>>>>>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
+>>>> Is there an actual usecase on a single h/w design that you run out of
+>>>> interrupts and it is a user decision which interrupts to use?
+>>>>
+>>> Yes. There are 240 peripheral interrupts connected out of which 160 can
+>>> be used in this specific case. 
+>> Yes, I understand the SOC connections. That does not answer my question.
+>> The 240 interrupts are likely to be limited to fewer by board design,
+>> pinmuxing, etc.
+>>
+> yes limited by different board designs ...
+>
+>> How do you handle the 161st interrupt request? Will never happen? Just
+>> rely on the random driver probe ordering?
+>>
+> Well the board dts are expected to provide the peripheral support info to optimise it.
+> If a board actually has more than 160 peripherals available then in that
+> case the 161 interrupt will not be mapped. 
+>  
+>>>> You could fill in the interrupt-map at run-time. It would have to be
+>>>> early (bootloader or early kernel init) and can't be at request_irq time.
+>>>>
+>>> Well all options are tried before coming up to the $subject solution.
+>>> It was suggested by Thomas in the last review.
+>>>  
+>>>>>     https://lkml.org/lkml/2013/7/18/416
+>>>>>
+>>>>>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
+>>>>>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
+>>>>>    a separate domain.
+>>>>>    
+>>>>>   http://www.spinics.net/lists/linux-omap/msg97085.html
+>>>> This has nothing to do with the GIC, so it does not belong there.
+>>>>
+>>> Well the router makes connections from peripheral to GIC. Thomas can
+>>> better explain it but I think since its doing irq routing for GIC on
+>>> a given hardware, I don't see any issue having some generic map/unmap
+>>> function in GIC. The actual implementation is still outside of GIC.
+>> I read Thomas' reply as don't put this crap in his code.
+>>
+> That was for the IRQCHIP based approach and as part of that review
+> Thomas suggested why not irqdomain and suggested a prototype code
+> as well.
+>  
+>> You can call it generic, but it is not. It is specific to the GIC and
+>> looks like an abuse of irqdomains to me. Look where the function
+>> declaration for register_routable_domain_ops is.
+>>
+> I am not sure why you call it abuse of irqdomain since the map/unmap
+> are exactly the interfaces where the logical to physical irq
+> connections are made. Look at existing GIC code as well. I still
+> let Thomas give his expert comment whether it is abusive because it
+> it was, am sure he wouldn't have suggested that.
+  Is this inline with what you were suggesting and
+  is this approach fine ?
 
-> On Sat, Oct 12, 2013 at 07:21:24PM +0200, Ingo Molnar wrote:
-> > 
-> > * Neil Horman <nhorman@tuxdriver.com> wrote:
-> > 
-> > > Sébastien Dugué reported to me that devices implementing ipoib (which 
-> > > don't have checksum offload hardware were spending a significant amount 
-> > > of time computing checksums.  We found that by splitting the checksum 
-> > > computation into two separate streams, each skipping successive elements 
-> > > of the buffer being summed, we could parallelize the checksum operation 
-> > > accros multiple alus.  Since neither chain is dependent on the result of 
-> > > the other, we get a speedup in execution (on hardware that has multiple 
-> > > alu's available, which is almost ubiquitous on x86), and only a 
-> > > negligible decrease on hardware that has only a single alu (an extra 
-> > > addition is introduced).  Since addition in commutative, the result is 
-> > > the same, only faster
-> > 
-> > This patch should really come with measurement numbers: what performance 
-> > increase (and drop) did you get on what CPUs.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> 
-> 
-> So, early testing results today.  I wrote a test module that, allocated 
-> a 4k buffer, initalized it with random data, and called csum_partial on 
-> it 100000 times, recording the time at the start and end of that loop.  
+Regards,
+ Sricharan
 
-It would be nice to stick that testcase into tools/perf/bench/, see how we 
-are able to benchmark the kernel's mempcy and memset implementation there:
-
- $ perf bench mem memcpy -r help
- # Running 'mem/memcpy' benchmark:
- Unknown routine:help
- Available routines...
-        default ... Default memcpy() provided by glibc
-        x86-64-unrolled ... unrolled memcpy() in arch/x86/lib/memcpy_64.S
-        x86-64-movsq ... movsq-based memcpy() in arch/x86/lib/memcpy_64.S
-        x86-64-movsb ... movsb-based memcpy() in arch/x86/lib/memcpy_64.S
-
-In a similar fashion we could build the csum_partial() code as well and do 
-measurements. (We could change arch/x86/ code as well to make such 
-embedding/including easier, as long as it does not change performance.)
-
-Thanks,
-
-	Ingo
