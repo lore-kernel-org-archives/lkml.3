@@ -1,160 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab3JOUgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:36:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64395 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933733Ab3JOUgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:36:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,502,1378882800"; 
-   d="scan'208";a="419637296"
-Subject: [RFC][PATCH 7/8] mm: pcp: move page coloring optimization away from pcp sizing
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, cl@gentwo.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 15 Oct 2013 13:35:49 -0700
-References: <20131015203536.1475C2BE@viggo.jf.intel.com>
-In-Reply-To: <20131015203536.1475C2BE@viggo.jf.intel.com>
-Message-Id: <20131015203549.4CBB955A@viggo.jf.intel.com>
+	id S933797Ab3JOUgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:36:05 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:3499 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933733Ab3JOUgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 16:36:01 -0400
+Date: Tue, 15 Oct 2013 16:35:59 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static
+ variable
+Message-ID: <20131015163559.2a25b8d9@gandalf.local.home>
+In-Reply-To: <20131015131259.3051743890ce9b1b9dae9763@linux-foundation.org>
+References: <20131015155806.04e2613f@gandalf.local.home>
+	<20131015131259.3051743890ce9b1b9dae9763@linux-foundation.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Oct 2013 13:12:59 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+ 
+> Also, we're now incurring an atomic op for every "call".  Presumably
+> these calls are rare, but not necessarily - one can envisage uses of a
+> generic ONCE() which are called at high frequency.  Should we avoid
+> that with
+> 
+> #define ONCE() ({
+> 	static int state;
+> 	int ret;
+> 
+> 	if (likely(state))
+> 		ret = 0;
+> 	else
+> 		ret = !xchg(&state, 1);
+> 	ret;
+> })
 
-The percpu pages calculations are a bit convoluted.  Right now,
-zone_batchsize() claims to be calculating the ->batch size, but
-what actually happens is:
+I was talking with Boris on IRC about having a shortcut if "state" is
+already true. I argued against it, but that was just for the WARN()
+operations because I rather add a LOCK xchg, then more branches to hot
+paths.
 
-1. Calculate how large we want the entire pcp set to be (->high)
-2. Scale that down by the ratio that we want high:batch to be
-3. Adjust ->batch for good cache-coloring behavior
-4. Re-derive ->high by scaling back up by the (2) ratio
+But for a generic ONCE() function, I guess we would want the shortcut
+as it may be used by something that gets hit all the time with a normal
+kernel.
 
-We actually feed the cache-coloring scaling back in to the ->high
-value, when it really only *should* apply to the batch value.
-That was probably unintentional, and it was one of the things
-that led us to mismatching the high:batch ratio that we saw in
-the previous patch.
-
-This patch reorganizes the code.  It separates out the ->batch
-and ->high calculations so that it's clear when we are
-calculating each of them.  It also ensures that we always
-calculate ->high _first_, then derive ->batch from it, finally
-we adjust ->batch for good cache coloring behavior.
-
-Since we are no longer calculating the batch size by itself, it
-is not simple to print it out in zone_pcp_init() during boot.
-We, instead, print out the 'high' value.  If anyone really misses
-this, they can surely just read /proc/zoneinfo after boot.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/mm/page_alloc.c |   54 ++++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
-
-diff -puN mm/page_alloc.c~rename-zone_batchsize mm/page_alloc.c
---- linux.git/mm/page_alloc.c~rename-zone_batchsize	2013-10-15 09:57:07.597688692 -0700
-+++ linux.git-davehans/mm/page_alloc.c	2013-10-15 09:57:07.602688914 -0700
-@@ -4061,10 +4061,10 @@ static void __meminit zone_init_free_lis
- 
- static int pcp_high_to_batch_ratio = 4;
- 
--static int zone_batchsize(struct zone *zone)
-+static int calculate_zone_pcp_high(struct zone *zone)
- {
- #ifdef CONFIG_MMU
--	int batch;
-+	int high;
- 
- 	/*
- 	 * The per-cpu-pages pools are set to around 1000th of the
-@@ -4072,26 +4072,13 @@ static int zone_batchsize(struct zone *z
- 	 *
- 	 * OK, so we don't know how big the cache is.  So guess.
- 	 */
--	batch = zone->managed_pages / 1024;
--	if (batch * PAGE_SIZE > 512 * 1024)
--		batch = (512 * 1024) / PAGE_SIZE;
--	batch /= pcp_high_to_batch_ratio;
--	if (batch < 1)
--		batch = 1;
--
--	/*
--	 * Clamp the batch to a 2^n - 1 value. Having a power
--	 * of 2 value was found to be more likely to have
--	 * suboptimal cache aliasing properties in some cases.
--	 *
--	 * For example if 2 tasks are alternately allocating
--	 * batches of pages, one task can end up with a lot
--	 * of pages of one half of the possible page colors
--	 * and the other with pages of the other colors.
--	 */
--	batch = rounddown_pow_of_two(batch + batch/2) - 1;
-+	high = zone->managed_pages / 1024;
-+	if (high * PAGE_SIZE > 512 * 1024)
-+		high = (512 * 1024) / PAGE_SIZE;
-+	if (high < 1)
-+		high = 1;
- 
--	return batch;
-+	return high;
- 
- #else
- 	/* The deferral and batching of frees should be suppressed under NOMMU
-@@ -4181,6 +4168,19 @@ static void pageset_setup_from_high_mark
- 	unsigned long batch = max(1UL, high / pcp_high_to_batch_ratio);
- 	if ((high / pcp_high_to_batch_ratio) > (PAGE_SHIFT * 8))
- 		batch = PAGE_SHIFT * 8;
-+	/*
-+	 * Clamp the batch to a 2^n - 1 value. Having a power
-+	 * of 2 value was found to be more likely to have
-+	 * suboptimal cache aliasing properties in some cases.
-+	 *
-+	 * For example if 2 tasks are alternately allocating
-+	 * batches of pages, one task can end up with a lot
-+	 * of pages of one half of the possible page colors
-+	 * and the other with pages of the other colors.
-+	 */
-+	batch = rounddown_pow_of_two(batch + batch/2) - 1;
-+	if (!batch)
-+		batch = 1;
- 
- 	pageset_update(&p->pcp, high, batch);
- }
-@@ -4188,12 +4188,12 @@ static void pageset_setup_from_high_mark
- static void pageset_set_high_and_batch(struct zone *zone,
- 		struct per_cpu_pageset *pcp)
- {
-+	int high;
- 	if (percpu_pagelist_fraction)
--		pageset_setup_from_high_mark(pcp,
--			(zone->managed_pages /
--				percpu_pagelist_fraction));
-+		high = (zone->managed_pages / percpu_pagelist_fraction);
- 	else
--		pageset_setup_from_batch_size(pcp, zone_batchsize(zone));
-+		high = calculate_zone_pcp_high(zone);
-+	pageset_setup_from_high_mark(pcp, high);
- }
- 
- static void __meminit zone_pageset_init(struct zone *zone, int cpu)
-@@ -4277,9 +4277,9 @@ static __meminit void zone_pcp_init(stru
- 	zone->pageset = &boot_pageset;
- 
- 	if (zone->present_pages)
--		printk(KERN_DEBUG "  %s zone: %lu pages, LIFO batch:%u\n",
-+		printk(KERN_DEBUG "  %s zone: %lu pages, pcp high:%d\n",
- 			zone->name, zone->present_pages,
--					 zone_batchsize(zone));
-+					 calculate_zone_pcp_high(zone));
- }
- 
- int __meminit init_currently_empty_zone(struct zone *zone,
-_
+-- Steve
