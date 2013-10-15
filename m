@@ -1,133 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab3JOTYq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:24:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41397 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933495Ab3JOTX5 (ORCPT
+	id S933647Ab3JOTYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:24:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52523 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933495Ab3JOTYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:23:57 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, lee.jones@linaro.org, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/3 v2] mfd: Allow mapping regulator supplies to MFD device from children
-Date: Tue, 15 Oct 2013 20:14:21 +0100
-Message-Id: <1381864462-26167-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Tue, 15 Oct 2013 15:24:50 -0400
+Date: Tue, 15 Oct 2013 12:24:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>, Daniel Drake <dsd@laptop.org>,
+        Jens Frederich <jfrederich@gmail.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: Re: [PATCH v2] staging/olpc_dcon: fix kconfig to fix build errors
+Message-ID: <20131015192429.GA6063@kroah.com>
+References: <524a3b76.oejnG6gfqBFdWbl/%fengguang.wu@intel.com>
+ <525AF4B8.8030005@infradead.org>
+ <20131014163332.GA10225@kroah.com>
+ <525C6F9F.3030801@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525C6F9F.3030801@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Occasionally, it is useful to map supplies from a child device onto the
-MFD device. A typical usecase for this would be if the MFD device is
-represented as a single node in device tree. All supplies will be
-defined in device tree as existing on the MFD device. When a child
-depends on frameworks which might have no knowledge of MFD to lookup
-supplies on its behalf the supply will not be found.
+On Mon, Oct 14, 2013 at 03:26:39PM -0700, Randy Dunlap wrote:
+> On 10/14/13 09:33, Greg Kroah-Hartman wrote:
+> > On Sun, Oct 13, 2013 at 12:30:00PM -0700, Randy Dunlap wrote:
+> >> From: Randy Dunlap <rdunlap@infradead.org>
+> >>
+> >> Fix build errors when GPIO_CS5535=m and FB_OLPC_DCON=y
+> >> by preventing that kconfig combination.
+> >>
+> >> These build errors are caused by having a kconfig bool symbol
+> >> (FB_OLPC_DCON_1) that depend on a tristate symbol (GPIO_CS5535),
+> >> but when the tristate symbol is =m, the bool symbol is =y.
+> >>
+> >>   drivers/built-in.o: In function `dcon_read_status_xo_1':
+> >>   olpc_dcon_xo_1.c:(.text+0x359531): undefined reference to `cs5535_gpio_set'
+> >>   drivers/built-in.o: In function `dcon_wiggle_xo_1':
+> >>   olpc_dcon_xo_1.c:(.text+0x35959f): undefined reference to `cs5535_gpio_set'
+> >>   olpc_dcon_xo_1.c:(.text+0x359610): undefined reference to `cs5535_gpio_clear'
+> >>   drivers/built-in.o:olpc_dcon_xo_1.c:(.text+0x3596a1): more undefined references to `cs5535_gpio_clear' follow
+> >>   drivers/built-in.o: In function `dcon_wiggle_xo_1':
+> >>   olpc_dcon_xo_1.c:(.text+0x359708): undefined reference to `cs5535_gpio_set'
+> >>   drivers/built-in.o: In function `dcon_init_xo_1':
+> >>   olpc_dcon_xo_1.c:(.text+0x35989b): undefined reference to `cs5535_gpio_clear'
+> >>   olpc_dcon_xo_1.c:(.text+0x3598b5): undefined reference to `cs5535_gpio_isset'
+> >>   olpc_dcon_xo_1.c:(.text+0x359963): undefined reference to `cs5535_gpio_setup_event'
+> >>   olpc_dcon_xo_1.c:(.text+0x359980): undefined reference to `cs5535_gpio_set_irq'
+> >>   olpc_dcon_xo_1.c:(.text+0x359a36): undefined reference to `cs5535_gpio_set'
+> >>
+> >> However, adding GPIO_CS5535 to the Kconfig dependencies also creates
+> >> a kconfig recursive dependency error on powerpc:
+> >>   drivers/i2c/Kconfig:5:error: recursive dependency detected!
+> >>   drivers/i2c/Kconfig:5:	symbol I2C is selected by FB_OLPC_DCON
+> >>   drivers/staging/olpc_dcon/Kconfig:1:	symbol FB_OLPC_DCON depends on GPIO_CS5535
+> >>   drivers/gpio/Kconfig:577:	symbol GPIO_CS5535 depends on GPIOLIB
+> >>   drivers/gpio/Kconfig:38:	symbol GPIOLIB is selected by ARCH_REQUIRE_GPIOLIB
+> >>   drivers/gpio/Kconfig:23:	symbol ARCH_REQUIRE_GPIOLIB is selected by MCU_MPC8349EMITX
+> >>   arch/powerpc/platforms/Kconfig:351:	symbol MCU_MPC8349EMITX depends on I2C
+> >>
+> >> This is due to FB_OLPC_DCON selecting I2C instead of depending on it,
+> >> so change the select to a dependency.
+> >>
+> >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> >> Cc:	Daniel Drake <dsd@laptop.org>
+> >> Cc:	Jens Frederich <jfrederich@gmail.com>
+> >> Cc:	Jon Nettleton <jon.nettleton@gmail.com>
+> >> ---
+> >>  drivers/staging/olpc_dcon/Kconfig |    3 ++-
+> >>  1 file changed, 2 insertions(+), 1 deletion(-)
+> >>
+> >> --- lnx-312-rc4.orig/drivers/staging/olpc_dcon/Kconfig
+> >> +++ lnx-312-rc4/drivers/staging/olpc_dcon/Kconfig
+> >> @@ -1,7 +1,8 @@
+> >>  config FB_OLPC_DCON
+> >>  	tristate "One Laptop Per Child Display CONtroller support"
+> >>  	depends on OLPC && FB
+> >> -	select I2C
+> >> +	depends on I2C
+> >> +	depends on (GPIO_CS5535 || GPIO_CS5535=n)
+> > 
+> > 
+> > This fails to apply to my staging-next branch of staging.git due to a
+> > previous patch from you to try to fix this same issue (or maybe a
+> > different one, I don't know...)
+> 
+> 
+> You had asked if the previous patch should be reverted and I replied (very
+> belatedly) Yes.  However, I'll be glad to make a new patch against
+> linux-next instead of mainline.
 
-This patch adds a list of supplies that should be looked up on the
-parent rather than the child as part of the mfd_cell structure.
+Ah, missed that, I've now reverted it and will apply this one instead.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/mfd-core.c   |   22 +++++++++++++++++-----
- include/linux/mfd/core.h |    6 ++++++
- 2 files changed, 23 insertions(+), 5 deletions(-)
+thanks,
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index f421586..adc8ea3 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -20,6 +20,7 @@
- #include <linux/module.h>
- #include <linux/irqdomain.h>
- #include <linux/of.h>
-+#include <linux/regulator/consumer.h>
- 
- static struct device_type mfd_dev_type = {
- 	.name	= "mfd_device",
-@@ -99,6 +100,13 @@ static int mfd_add_device(struct device *parent, int id,
- 	pdev->dev.dma_mask = parent->dma_mask;
- 	pdev->dev.dma_parms = parent->dma_parms;
- 
-+	ret = devm_regulator_bulk_register_supply_alias(
-+			&pdev->dev, cell->parent_supplies,
-+			parent, cell->parent_supplies,
-+			cell->num_parent_supplies);
-+	if (ret < 0)
-+		goto fail_res;
-+
- 	if (parent->of_node && cell->of_compatible) {
- 		for_each_child_of_node(parent->of_node, np) {
- 			if (of_device_is_compatible(np, cell->of_compatible)) {
-@@ -112,12 +120,12 @@ static int mfd_add_device(struct device *parent, int id,
- 		ret = platform_device_add_data(pdev,
- 					cell->platform_data, cell->pdata_size);
- 		if (ret)
--			goto fail_res;
-+			goto fail_alias;
- 	}
- 
- 	ret = mfd_platform_add_cell(pdev, cell);
- 	if (ret)
--		goto fail_res;
-+		goto fail_alias;
- 
- 	for (r = 0; r < cell->num_resources; r++) {
- 		res[r].name = cell->resources[r].name;
-@@ -152,17 +160,17 @@ static int mfd_add_device(struct device *parent, int id,
- 		if (!cell->ignore_resource_conflicts) {
- 			ret = acpi_check_resource_conflict(&res[r]);
- 			if (ret)
--				goto fail_res;
-+				goto fail_alias;
- 		}
- 	}
- 
- 	ret = platform_device_add_resources(pdev, res, cell->num_resources);
- 	if (ret)
--		goto fail_res;
-+		goto fail_alias;
- 
- 	ret = platform_device_add(pdev);
- 	if (ret)
--		goto fail_res;
-+		goto fail_alias;
- 
- 	if (cell->pm_runtime_no_callbacks)
- 		pm_runtime_no_callbacks(&pdev->dev);
-@@ -171,6 +179,10 @@ static int mfd_add_device(struct device *parent, int id,
- 
- 	return 0;
- 
-+fail_alias:
-+	devm_regulator_bulk_unregister_supply_alias(&pdev->dev,
-+						    cell->parent_supplies,
-+						    cell->num_parent_supplies);
- fail_res:
- 	kfree(res);
- fail_device:
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index cebe97e..7314fc4 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -59,6 +59,12 @@ struct mfd_cell {
- 	 * pm_runtime_no_callbacks().
- 	 */
- 	bool			pm_runtime_no_callbacks;
-+
-+	/* A list of regulator supplies that should be mapped to the MFD
-+	 * device rather than the child device when requested
-+	 */
-+	const char		**parent_supplies;
-+	int			num_parent_supplies;
- };
- 
- /*
--- 
-1.7.2.5
-
+greg k-h
