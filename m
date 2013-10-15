@@ -1,116 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264Ab3JOPGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:06:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12620 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab3JOPGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:06:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,499,1378882800"; 
-   d="scan'208";a="375026418"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: lenb@kernel.org, rjw@rjwysocki.net
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/3] ACPI/POWER: Rework acpi_power_get_state()
-Date: Tue, 15 Oct 2013 23:04:52 +0800
-Message-Id: <1381849493-7977-3-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
-References: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
+	id S933266Ab3JOPHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:07:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58989 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab3JOPHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 11:07:50 -0400
+Date: Tue, 15 Oct 2013 17:07:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
+        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: x86, perf: throttling issues with long nmi latencies
+Message-ID: <20131015150736.GZ26785@twins.programming.kicks-ass.net>
+References: <20131014203549.GY227855@redhat.com>
+ <20131015101404.GD10651@twins.programming.kicks-ass.net>
+ <20131015130226.GX26785@twins.programming.kicks-ass.net>
+ <20131015143227.GY26785@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015143227.GY26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make acpi_power_get_state() to accept struct acpi_power_resource as param
-instead of acpi_handle and hold state_lock inside of acpi_power_get_state().
+On Tue, Oct 15, 2013 at 04:32:27PM +0200, Peter Zijlstra wrote:
+> 
+> This one seems to actually work and is somewhat simpler.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+And here's some hackery to avoid that atomic page inc frobbery.
+
 ---
- drivers/acpi/power.c | 25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
+ lib/usercopy.c |   12 ++++++++--
+ mm/gup.c       |   63 ++++++++++++++++++++++++++++++++++++---------------------
+ 2 files changed, 49 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-index fa89d16..3fc2873 100644
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -176,8 +176,10 @@ int acpi_extract_power_resources(union acpi_object *package, unsigned int start,
- 	return err;
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -10,6 +10,8 @@
+ #include <asm/word-at-a-time.h>
+ #include <linux/sched.h>
+ 
++extern int ___get_user_pages_fast(unsigned long start, int nr_pages, int flags,
++			  struct page **pages);
+ /*
+  * best effort, GUP based copy_from_user() that is NMI-safe
+  */
+@@ -18,6 +20,7 @@ copy_from_user_nmi(void *to, const void
+ {
+ 	unsigned long offset, addr = (unsigned long)from;
+ 	unsigned long size, len = 0;
++	unsigned long flags;
+ 	struct page *page;
+ 	void *map;
+ 	int ret;
+@@ -26,9 +29,12 @@ copy_from_user_nmi(void *to, const void
+ 		return len;
+ 
+ 	do {
+-		ret = __get_user_pages_fast(addr, 1, 0, &page);
+-		if (!ret)
++		local_irq_save(flags);
++		ret = ___get_user_pages_fast(addr, 1, 0, &page);
++		if (!ret) {
++			local_irq_restore(flags);
+ 			break;
++		}
+ 
+ 		offset = addr & (PAGE_SIZE - 1);
+ 		size = min(PAGE_SIZE - offset, n - len);
+@@ -36,7 +42,7 @@ copy_from_user_nmi(void *to, const void
+ 		map = kmap_atomic(page);
+ 		memcpy(to, map+offset, size);
+ 		kunmap_atomic(map);
+-		put_page(page);
++		local_irq_restore(flags);
+ 
+ 		len  += size;
+ 		to   += size;
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -63,19 +63,22 @@ static inline pte_t gup_get_pte(pte_t *p
+ #endif
  }
  
--static int acpi_power_get_state(acpi_handle handle, int *state)
-+static int acpi_power_get_state(struct acpi_power_resource *resource,
-+				int *state)
- {
-+	acpi_handle handle = resource->device.handle;
- 	acpi_status status = AE_OK;
- 	unsigned long long sta = 0;
- 	char node_name[5];
-@@ -187,7 +189,10 @@ static int acpi_power_get_state(acpi_handle handle, int *state)
- 	if (!handle || !state)
- 		return -EINVAL;
- 
-+	mutex_lock(&resource->state_lock);
- 	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
-+	mutex_unlock(&resource->state_lock);
++#define GUPF_GET	0x01
++#define GUPF_WRITE	0x02
 +
- 	if (ACPI_FAILURE(status))
- 		return -ENODEV;
+ /*
+  * The performance critical leaf functions are made noinline otherwise gcc
+  * inlines everything into a single function which results in too much
+  * register pressure.
+  */
+ static noinline int gup_pte_range(pmd_t pmd, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
++		unsigned long end, int flags, struct page **pages, int *nr)
+ {
+ 	unsigned long mask;
+ 	pte_t *ptep;
  
-@@ -213,13 +218,9 @@ static int acpi_power_get_list_state(struct list_head *list, int *state)
+ 	mask = _PAGE_PRESENT|_PAGE_USER;
+-	if (write)
++	if (flags & GUPF_WRITE)
+ 		mask |= _PAGE_RW;
  
- 	/* The state of the list is 'on' IFF all resources are 'on'. */
- 	list_for_each_entry(entry, list, node) {
--		struct acpi_power_resource *resource = entry->resource;
--		acpi_handle handle = resource->device.handle;
- 		int result;
+ 	ptep = pte_offset_map(&pmd, addr);
+@@ -89,7 +92,8 @@ static noinline int gup_pte_range(pmd_t
+ 		}
+ 		VM_BUG_ON(!pfn_valid(pte_pfn(pte)));
+ 		page = pte_page(pte);
+-		get_page(page);
++		if (flags & GUPF_GET)
++			get_page(page);
+ 		SetPageReferenced(page);
+ 		pages[*nr] = page;
+ 		(*nr)++;
+@@ -109,7 +113,7 @@ static inline void get_head_page_multipl
+ }
  
--		mutex_lock(&resource->state_lock);
--		result = acpi_power_get_state(handle, &cur_state);
--		mutex_unlock(&resource->state_lock);
-+		result = acpi_power_get_state(entry->resource, &cur_state);
- 		if (result)
- 			return result;
+ static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
++		unsigned long end, int flags, struct page **pages, int *nr)
+ {
+ 	unsigned long mask;
+ 	pte_t pte = *(pte_t *)&pmd;
+@@ -117,7 +121,7 @@ static noinline int gup_huge_pmd(pmd_t p
+ 	int refs;
  
-@@ -565,15 +566,12 @@ int acpi_power_wakeup_list_init(struct list_head *list, int *system_level_p)
+ 	mask = _PAGE_PRESENT|_PAGE_USER;
+-	if (write)
++	if (flags & GUPF_WRITE)
+ 		mask |= _PAGE_RW;
+ 	if ((pte_flags(pte) & mask) != mask)
+ 		return 0;
+@@ -131,19 +135,20 @@ static noinline int gup_huge_pmd(pmd_t p
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
+-		if (PageTail(page))
++		if ((flags & GUPF_GET) && PageTail(page))
+ 			get_huge_page_tail(page);
+ 		(*nr)++;
+ 		page++;
+ 		refs++;
+ 	} while (addr += PAGE_SIZE, addr != end);
+-	get_head_page_multiple(head, refs);
++	if (flags & GUPF_GET)
++		get_head_page_multiple(head, refs);
  
- 	list_for_each_entry(entry, list, node) {
- 		struct acpi_power_resource *resource = entry->resource;
--		acpi_handle handle = resource->device.handle;
- 		int result;
- 		int state;
+ 	return 1;
+ }
  
- 		mutex_lock(&resource->resource_lock);
+ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+-		int write, struct page **pages, int *nr)
++		int flags, struct page **pages, int *nr)
+ {
+ 	unsigned long next;
+ 	pmd_t *pmdp;
+@@ -167,10 +172,10 @@ static int gup_pmd_range(pud_t pud, unsi
+ 		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+ 			return 0;
+ 		if (unlikely(pmd_large(pmd))) {
+-			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
++			if (!gup_huge_pmd(pmd, addr, next, flags, pages, nr))
+ 				return 0;
+ 		} else {
+-			if (!gup_pte_range(pmd, addr, next, write, pages, nr))
++			if (!gup_pte_range(pmd, addr, next, flags, pages, nr))
+ 				return 0;
+ 		}
+ 	} while (pmdp++, addr = next, addr != end);
+@@ -179,7 +184,7 @@ static int gup_pmd_range(pud_t pud, unsi
+ }
  
--		mutex_lock(&resource->state_lock);
--		result = acpi_power_get_state(handle, &state);
--		mutex_unlock(&resource->state_lock);
-+		result = acpi_power_get_state(entry->resource, &state);
- 		if (result) {
- 			mutex_unlock(&resource->resource_lock);
- 			return result;
-@@ -907,7 +905,7 @@ int acpi_add_power_resource(acpi_handle handle)
- 	resource->system_level = acpi_object.power_resource.system_level;
- 	resource->order = acpi_object.power_resource.resource_order;
+ static noinline int gup_huge_pud(pud_t pud, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
++		unsigned long end, int flags, struct page **pages, int *nr)
+ {
+ 	unsigned long mask;
+ 	pte_t pte = *(pte_t *)&pud;
+@@ -187,7 +192,7 @@ static noinline int gup_huge_pud(pud_t p
+ 	int refs;
  
--	result = acpi_power_get_state(handle, &state);
-+	result = acpi_power_get_state(resource, &state);
- 	if (result)
- 		goto err;
+ 	mask = _PAGE_PRESENT|_PAGE_USER;
+-	if (write)
++	if (flags & GUPF_WRITE)
+ 		mask |= _PAGE_RW;
+ 	if ((pte_flags(pte) & mask) != mask)
+ 		return 0;
+@@ -201,19 +206,20 @@ static noinline int gup_huge_pud(pud_t p
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
+-		if (PageTail(page))
++		if ((flags & GUPF_GET) && PageTail(page))
+ 			get_huge_page_tail(page);
+ 		(*nr)++;
+ 		page++;
+ 		refs++;
+ 	} while (addr += PAGE_SIZE, addr != end);
+-	get_head_page_multiple(head, refs);
++	if (flags & GUPF_GET)
++		get_head_page_multiple(head, refs);
  
-@@ -945,10 +943,7 @@ void acpi_resume_power_resources(void)
+ 	return 1;
+ }
  
- 		mutex_lock(&resource->resource_lock);
+ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+-			int write, struct page **pages, int *nr)
++			int flags, struct page **pages, int *nr)
+ {
+ 	unsigned long next;
+ 	pud_t *pudp;
+@@ -226,10 +232,10 @@ static int gup_pud_range(pgd_t pgd, unsi
+ 		if (pud_none(pud))
+ 			return 0;
+ 		if (unlikely(pud_large(pud))) {
+-			if (!gup_huge_pud(pud, addr, next, write, pages, nr))
++			if (!gup_huge_pud(pud, addr, next, flags, pages, nr))
+ 				return 0;
+ 		} else {
+-			if (!gup_pmd_range(pud, addr, next, write, pages, nr))
++			if (!gup_pmd_range(pud, addr, next, flags, pages, nr))
+ 				return 0;
+ 		}
+ 	} while (pudp++, addr = next, addr != end);
+@@ -241,13 +247,12 @@ static int gup_pud_range(pgd_t pgd, unsi
+  * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
+  * back to the regular GUP.
+  */
+-int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
++int ___get_user_pages_fast(unsigned long start, int nr_pages, int flags,
+ 			  struct page **pages)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr, len, end;
+ 	unsigned long next;
+-	unsigned long flags;
+ 	pgd_t *pgdp;
+ 	int nr = 0;
  
--		mutex_lock(&resource->state_lock);
--		result = acpi_power_get_state(resource->device.handle, &state);
--		mutex_unlock(&resource->state_lock);
--
-+		result = acpi_power_get_state(resource, &state);
- 		if (result) {
- 			mutex_unlock(&resource->resource_lock);
- 			continue;
--- 
-1.8.2.1
-
+@@ -255,7 +260,7 @@ int __get_user_pages_fast(unsigned long
+ 	addr = start;
+ 	len = (unsigned long) nr_pages << PAGE_SHIFT;
+ 	end = start + len;
+-	if (unlikely(!access_ok(write ? VERIFY_WRITE : VERIFY_READ,
++	if (unlikely(!access_ok((flags & GUPF_WRITE) ? VERIFY_WRITE : VERIFY_READ,
+ 					(void __user *)start, len)))
+ 		return 0;
+ 
+@@ -277,7 +282,6 @@ int __get_user_pages_fast(unsigned long
+ 	 * (which we do on x86, with the above PAE exception), we can follow the
+ 	 * address down to the the page and take a ref on it.
+ 	 */
+-	local_irq_save(flags);
+ 	pgdp = pgd_offset(mm, addr);
+ 	do {
+ 		pgd_t pgd = *pgdp;
+@@ -285,14 +289,27 @@ int __get_user_pages_fast(unsigned long
+ 		next = pgd_addr_end(addr, end);
+ 		if (pgd_none(pgd))
+ 			break;
+-		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
++		if (!gup_pud_range(pgd, addr, next, flags, pages, &nr))
+ 			break;
+ 	} while (pgdp++, addr = next, addr != end);
+-	local_irq_restore(flags);
+ 
+ 	return nr;
+ }
+ 
++int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
++			  struct page **pages)
++{
++	unsigned long flags;
++	int ret;
++
++	local_irq_save(flags);
++	ret = ___get_user_pages_fast(start, nr_pages,
++			GUPF_GET | (write ? GUPF_WRITE : 0), pages);
++	local_irq_restore(flags);
++
++	return ret;
++}
++
+ /**
+  * get_user_pages_fast() - pin user pages in memory
+  * @start:	starting user address
