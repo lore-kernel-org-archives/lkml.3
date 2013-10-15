@@ -1,139 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab3JOOeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:34:12 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:35859 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499Ab3JOOeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:34:10 -0400
-Message-ID: <525D525E.8010508@gmail.com>
-Date: Tue, 15 Oct 2013 10:34:06 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S933024Ab3JOOeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:34:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932266Ab3JOOeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 10:34:18 -0400
+Date: Tue, 15 Oct 2013 16:34:07 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Message-ID: <20131015143407.GE3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
 MIME-Version: 1.0
-To: Chang <changxiangzhong@gmail.com>, nhorman@tuxdriver.com
-CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: sctp: fix a cacc_saw_newack missetting issue
-References: <1381757623-12803-1-git-send-email-changxiangzhong@gmail.com> <525D4D2D.8000506@gmail.com> <525D50BD.5030301@gmail.com>
-In-Reply-To: <525D50BD.5030301@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 10:27 AM, Chang wrote:
->
-> On 10/15/2013 04:11 PM, Vlad Yasevich wrote:
->> On 10/14/2013 09:33 AM, Chang Xiangzhong wrote:
->>> For for each TSN t being newly acked (Not only cumulatively,
->>> but also SELECTIVELY) cacc_saw_newack should be set to 1.
->>>
->>> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
->>> ---
->>>   net/sctp/outqueue.c |   42 +++++++++++++++++++++---------------------
->>>   1 file changed, 21 insertions(+), 21 deletions(-)
->>>
->>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->>> index 94df758..d86032b 100644
->>> --- a/net/sctp/outqueue.c
->>> +++ b/net/sctp/outqueue.c
->>> @@ -1398,6 +1398,27 @@ static void sctp_check_transmitted(struct
->>> sctp_outq *q,
->>>                   forward_progress = true;
->>>               }
->>>
->>> +            if (!tchunk->tsn_gap_acked) {
->>
->> You can remove this test since the block just above already performs
->> it.  Just fold this code into the block above.
->>
->> -vlad
->>
-> Sorry, I'm not sure if I fully understand you. There are code blocks
-> which checking the tchunk->tsn_gap_acked. In addition, they check other
-> states as well.
+Hi Hugh,
 
-The flow is:
+On Tue, Oct 15, 2013 at 04:08:28AM -0700, Hugh Dickins wrote:
+> Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+> __split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
+> 
+> It's invalid: we don't always have down_write of mmap_sem there:
+> a racing do_huge_pmd_wp_page() might have copied-on-write to another
+> huge page before our split_huge_page() got the anon_vma lock.
+> 
 
-	 if (sctp_acked(sack, tsn)) {
-		...
-		if (transport) {
-			....
-		}
+I don't get exactly the scenario with do_huge_pmd_wp_page(), could you
+elaborate?
 
-		if (!tchunk->tsn_gap_acked) {
-			....
-		}
+My scenario is that in the below line another madvise(MADV_DONTNEED)
+runs:
 
-		if (TSN_lte(tsn, sack_ctsn)) {
-			....
-			/* SFR-CACC ...
-		}
+	spin_unlock(&mm->page_table_lock);
+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
 
-Since you are moving this up, you can simply re-use
-the if (!tchunk->tsn_gap_acked) immediately above.
+	------ madvise(MADV_DONTNEED) from another thread zapping the
+               entire 2m and clearing the pmd
 
->>> +                /*
->>> +                 * SFR-CACC algorithm:
->>> +                 * 2) If the SACK contains gap acks
->>> +                 * and the flag CHANGEOVER_ACTIVE is
->>> +                 * set the receiver of the SACK MUST
->>> +                 * take the following action:
->>> +                 *
->>> +                 * B) For each TSN t being acked that
->>> +                 * has not been acked in any SACK so
->>> +                 * far, set cacc_saw_newack to 1 for
->>> +                 * the destination that the TSN was
->>> +                 * sent to.
->>> +                 */
->>> +                if (transport &&
->>> +                    sack->num_gap_ack_blocks &&
->>> +                    q->asoc->peer.primary_path->cacc.
->>> +                    changeover_active)
->>> +                    transport->cacc.cacc_saw_newack    = 1;
-							^^^^
+	split_huge_page(page);
 
-Don't need that many spaces...
+then split_huge_page does nothing because the page has been freed. And
+then just before the BUG_ON (after split_huge_page returns) a new page
+fault fills in an anonymous page just before the BUG_ON.
 
--vlad
->>> +            }
->>> +
->>>               if (TSN_lte(tsn, sack_ctsn)) {
->>>                   /* RFC 2960  6.3.2 Retransmission Timer Rules
->>>                    *
->>> @@ -1411,27 +1432,6 @@ static void sctp_check_transmitted(struct
->>> sctp_outq *q,
->>>                   restart_timer = 1;
->>>                   forward_progress = true;
->>>
->>> -                if (!tchunk->tsn_gap_acked) {
->>> -                    /*
->>> -                     * SFR-CACC algorithm:
->>> -                     * 2) If the SACK contains gap acks
->>> -                     * and the flag CHANGEOVER_ACTIVE is
->>> -                     * set the receiver of the SACK MUST
->>> -                     * take the following action:
->>> -                     *
->>> -                     * B) For each TSN t being acked that
->>> -                     * has not been acked in any SACK so
->>> -                     * far, set cacc_saw_newack to 1 for
->>> -                     * the destination that the TSN was
->>> -                     * sent to.
->>> -                     */
->>> -                    if (transport &&
->>> -                        sack->num_gap_ack_blocks &&
->>> - q->asoc->peer.primary_path->cacc.
->>> -                        changeover_active)
->>> -                        transport->cacc.cacc_saw_newack
->>> -                            = 1;
->>> -                }
->>>
->>> list_add_tail(&tchunk->transmitted_list,
->>>                             &q->sacked);
->>>
->>
->
+And the crashing thread would always be a partial MADV_DONTNEED with a
+misaligned end address (so requiring a split_huge_page to zap 4k
+subpages).
 
+So the testcase required would be: 2 concurrent MADV_DONTNEED, where
+the first has a misaligned "end" address (the one that triggers the
+BUG_ON), the second MADV_DONTNEED has a end address that covers the
+whole hugepmd, and a trans huge page fault happening just before the
+false positive triggers.
+
+Maybe your scenario with do_huge_pmd_wp_page() is simpler?
+
+> Forget the BUG_ON, just go back and try again if this happens.
+>     
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+>  mm/huge_memory.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> --- 3.12-rc5/mm/huge_memory.c	2013-09-16 17:37:56.811072270 -0700
+> +++ linux/mm/huge_memory.c	2013-10-15 03:40:02.044138488 -0700
+> @@ -2697,6 +2697,7 @@ void __split_huge_page_pmd(struct vm_are
+>  
+>  	mmun_start = haddr;
+>  	mmun_end   = haddr + HPAGE_PMD_SIZE;
+> +again:
+>  	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+>  	spin_lock(&mm->page_table_lock);
+>  	if (unlikely(!pmd_trans_huge(*pmd))) {
+> @@ -2719,7 +2720,14 @@ void __split_huge_page_pmd(struct vm_are
+>  	split_huge_page(page);
+>  
+>  	put_page(page);
+> -	BUG_ON(pmd_trans_huge(*pmd));
+> +
+> +	/*
+> +	 * We don't always have down_write of mmap_sem here: a racing
+> +	 * do_huge_pmd_wp_page() might have copied-on-write to another
+> +	 * huge page before our split_huge_page() got the anon_vma lock.
+> +	 */
+> +	if (unlikely(pmd_trans_huge(*pmd)))
+> +		goto again;
+>  }
+>  
+>  void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
+
+While it is correct, the looping is misleading. We should document
+simply that any caller of split_huge_page_pmd with the mmap_sem for
+reading, should use pmd_none_or_trans_huge_or_clear_bad or
+pmd_trans_unstable before making any assumption on the pmd being
+"stable" after split_huge_page returns.
+
+This is what zap_pmd_range of course does already so it's perfectly
+safe if split_huge_page_pmd returns with pmd_trans_huge(*pmd) == true.
+
+Even with the loop, if the concurrent page faults that maps a
+trans_huge_pmd (replacing the pmd_none) triggers just after the 'goto
+again', but before the 'ret' instruction, the function still returns
+with a trans huge page mapped in the *pmd.
+
+In short I think either we try the more strict but more tricky
+approach from Hillf https://patchwork.kernel.org/patch/2178311/ and we
+also take into account the mapcount > 0 in the __split_huge_page loop
+to make Hillf patch safe (I think currently it isn't), or we just nuke
+the BUG_ON completely. And we should document in the source what
+happens with mmap_sem hold for reading in MADV_DONTNEED.
+
+Yet another approach would be to add something like down_write_trylock
+in front of the check after converting it to a VM_BUG_ON.
+
+The patch in patchwork, despite trying to be more strict, it doesn't
+look safe to me because I tend to think we should also change
+__split_huge_page to return the "mapcount", so that split_huge_page
+will fail also if the mapcount was 0 in __split_huge_page.
+
+I believe split_huge_page_to_list may obtain the anon_vma lock (so the
+page was mapped) but then zap_huge_pmd obtains the page_table_lock
+before __split_huge_page runs __split_huge_page_splitting and freezes
+any attempt zap_huge_pmd or any other attempt of MADV_DONTNEED with
+truncation of the pmd (waiting in another split_huge_page). So I
+believe it is possible (and safe) for it to run with mapcount 0 (doing
+nothing). But it doesn't return failure in that case, but if mapcount
+is 0, the pmd may not have been converted to stable state. This is why
+that change would be needed to use the patchwork patch.
+
+The only place where we depend on split_huge_page retval so far is
+add_to_swap. But regular anon pages can also be zapped there. So it
+should be able to cope and the swapcache will free itself when all
+refcounts are dropped. So we don't need to worry about the above I
+think in add_to_swap.
+
+Could you also post the stack trace so we compare to the one in
+patchwork? Ideally this happened for you also in the context of a
+MADV_DONTNEED, the other places walking pagetables with only the
+mmap_sem for reading usually don't mangle pagetables.
+
+Also note the workload I described with two MADV_DONTNEED running
+concurrently and a page fault too, on the very same transhugepage
+looks a non deterministic workload, but still we need to avoid false
+positives in those non deterministic cases.
+
+The two stack traces I have for this problem (patchwork above and
+below bugzilla) all confirms it's happening only inside MADV_DONTNEED
+confirming my theory above.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=949735
