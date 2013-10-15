@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033Ab3JOFZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:25:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33098 "EHLO
+	id S1757911Ab3JOFZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:25:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33108 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab3JOFZj (ORCPT
+	with ESMTP id S1752589Ab3JOFZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:25:39 -0400
-Date: Mon, 14 Oct 2013 22:25:13 -0700
+	Tue, 15 Oct 2013 01:25:48 -0400
+Date: Mon, 14 Oct 2013 22:25:21 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-b22d54b09a5448d3706929c6f0eae36429f4ec5d@git.kernel.org>
+Message-ID: <tip-dd96c46b5c765a779d8c35cc7d1df7515b4c7baf@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, ak@linux.intel.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1378031796-17892-4-git-send-email-jolsa@redhat.com>
-References: <1378031796-17892-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1378031796-17892-5-git-send-email-jolsa@redhat.com>
+References: <1378031796-17892-5-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist:
-  Introduce perf_evlist__new_default function
-Git-Commit-ID: b22d54b09a5448d3706929c6f0eae36429f4ec5d
+Subject: [tip:perf/core] perf tools:
+  Adding throttle event data struct support
+Git-Commit-ID: dd96c46b5c765a779d8c35cc7d1df7515b4c7baf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,22 +34,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:25:18 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:25:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b22d54b09a5448d3706929c6f0eae36429f4ec5d
-Gitweb:     http://git.kernel.org/tip/b22d54b09a5448d3706929c6f0eae36429f4ec5d
+Commit-ID:  dd96c46b5c765a779d8c35cc7d1df7515b4c7baf
+Gitweb:     http://git.kernel.org/tip/dd96c46b5c765a779d8c35cc7d1df7515b4c7baf
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sun, 1 Sep 2013 12:36:14 +0200
+AuthorDate: Sun, 1 Sep 2013 12:36:15 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 11:24:34 -0300
+CommitDate: Wed, 9 Oct 2013 11:39:18 -0300
 
-perf evlist: Introduce perf_evlist__new_default function
+perf tools: Adding throttle event data struct support
 
-Adding new common function to create evlist with default event. It
-spares some code lines in automated tests.
+Moving 'struct throttle_event' out of python code and making it global
+as any other event.
+
+There's no usage of throttling events in any perf commands so far
+(besides python support), but we'll need this event data backup for
+upcoming test.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
@@ -60,112 +64,85 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1378031796-17892-4-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1378031796-17892-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/perf-record.c | 12 +-----------
- tools/perf/tests/task-exit.c   | 14 ++------------
- tools/perf/util/evlist.c       | 12 ++++++++++++
- tools/perf/util/evlist.h       |  1 +
- 4 files changed, 16 insertions(+), 23 deletions(-)
+ tools/perf/util/event.h   |  7 +++++++
+ tools/perf/util/python.c  |  7 -------
+ tools/perf/util/session.c | 13 +++++++++++++
+ 3 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index b8a7056..82ac715 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -45,7 +45,7 @@ int test__PERF_RECORD(void)
- 	};
- 	cpu_set_t cpu_mask;
- 	size_t cpu_mask_size = sizeof(cpu_mask);
--	struct perf_evlist *evlist = perf_evlist__new();
-+	struct perf_evlist *evlist = perf_evlist__new_default();
- 	struct perf_evsel *evsel;
- 	struct perf_sample sample;
- 	const char *cmd = "sleep";
-@@ -66,16 +66,6 @@ int test__PERF_RECORD(void)
- 	}
- 
- 	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_delete_evlist;
--	}
--
--	/*
- 	 * Create maps of threads and cpus to monitor. In this case
- 	 * we start with all threads and cpus (-1, -1) but then in
- 	 * perf_evlist__prepare_workload we'll fill in the only thread
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index 28fe589..b07f8a1 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -37,20 +37,11 @@ int test__task_exit(void)
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGUSR1, sig_handler);
- 
--	evlist = perf_evlist__new();
-+	evlist = perf_evlist__new_default();
- 	if (evlist == NULL) {
--		pr_debug("perf_evlist__new\n");
-+		pr_debug("perf_evlist__new_default\n");
- 		return -1;
- 	}
--	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_free_evlist;
--	}
- 
- 	/*
- 	 * Create maps of threads and cpus to monitor. In this case
-@@ -117,7 +108,6 @@ out_close_evlist:
- 	perf_evlist__close(evlist);
- out_delete_maps:
- 	perf_evlist__delete_maps(evlist);
--out_free_evlist:
- 	perf_evlist__delete(evlist);
- 	return err;
- }
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d21ab08..f0d71a9 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -50,6 +50,18 @@ struct perf_evlist *perf_evlist__new(void)
- 	return evlist;
- }
- 
-+struct perf_evlist *perf_evlist__new_default(void)
-+{
-+	struct perf_evlist *evlist = perf_evlist__new();
-+
-+	if (evlist && perf_evlist__add_default(evlist)) {
-+		perf_evlist__delete(evlist);
-+		evlist = NULL;
-+	}
-+
-+	return evlist;
-+}
-+
- /**
-  * perf_evlist__set_id_pos - set the positions of event ids.
-  * @evlist: selected event list
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 4edb500..871b55a 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -53,6 +53,7 @@ struct perf_evsel_str_handler {
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 17d9e16..9b7d4d3 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -61,6 +61,12 @@ struct read_event {
+ 	u64 id;
  };
  
- struct perf_evlist *perf_evlist__new(void);
-+struct perf_evlist *perf_evlist__new_default(void);
- void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
- 		       struct thread_map *threads);
- void perf_evlist__exit(struct perf_evlist *evlist);
++struct throttle_event {
++	struct perf_event_header header;
++	u64 time;
++	u64 id;
++	u64 stream_id;
++};
+ 
+ #define PERF_SAMPLE_MASK				\
+ 	(PERF_SAMPLE_IP | PERF_SAMPLE_TID |		\
+@@ -178,6 +184,7 @@ union perf_event {
+ 	struct fork_event		fork;
+ 	struct lost_event		lost;
+ 	struct read_event		read;
++	struct throttle_event		throttle;
+ 	struct sample_event		sample;
+ 	struct attr_event		attr;
+ 	struct event_type_event		event_type;
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index a24ce0a..06efd02 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -33,13 +33,6 @@ int eprintf(int level, const char *fmt, ...)
+ # define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+ #endif
+ 
+-struct throttle_event {
+-	struct perf_event_header header;
+-	u64			 time;
+-	u64			 id;
+-	u64			 stream_id;
+-};
+-
+ PyMODINIT_FUNC initperf(void);
+ 
+ #define member_def(type, member, ptype, help) \
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b97f468..d1e4495 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -397,6 +397,17 @@ static void perf_event__read_swap(union perf_event *event, bool sample_id_all)
+ 		swap_sample_id_all(event, &event->read + 1);
+ }
+ 
++static void perf_event__throttle_swap(union perf_event *event,
++				      bool sample_id_all)
++{
++	event->throttle.time	  = bswap_64(event->throttle.time);
++	event->throttle.id	  = bswap_64(event->throttle.id);
++	event->throttle.stream_id = bswap_64(event->throttle.stream_id);
++
++	if (sample_id_all)
++		swap_sample_id_all(event, &event->throttle + 1);
++}
++
+ static u8 revbyte(u8 b)
+ {
+ 	int rev = (b >> 4) | ((b & 0xf) << 4);
+@@ -482,6 +493,8 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_EXIT]		  = perf_event__task_swap,
+ 	[PERF_RECORD_LOST]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_READ]		  = perf_event__read_swap,
++	[PERF_RECORD_THROTTLE]		  = perf_event__throttle_swap,
++	[PERF_RECORD_UNTHROTTLE]	  = perf_event__throttle_swap,
+ 	[PERF_RECORD_SAMPLE]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_HEADER_ATTR]	  = perf_event__hdr_attr_swap,
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
