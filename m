@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab3JOMuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:50:37 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:45960 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758116Ab3JOMuf (ORCPT
+	id S1758949Ab3JOMwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:52:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:40247 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757696Ab3JOMwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:50:35 -0400
-Date: Tue, 15 Oct 2013 08:50:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: xiangliang yu <yxlraid@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] AHCI: disabled FBS prior to issuing software reset
-Message-ID: <20131015125031.GC3141@htj.dyndns.org>
-References: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
- <20130928114950.GA2620@htj.dyndns.org>
- <CAP0P+NUvaLfXkOUGm8NX19AHvTHmU=Ya0NdFvyJc2gFjN-Cy0A@mail.gmail.com>
- <20130928131059.GA3945@htj.dyndns.org>
- <CAP0P+NXD7pdXQwBUZJdUwyCc=o_5iTzmKJ6FdN6LrqcgX3yK2A@mail.gmail.com>
- <20131013195735.GD18075@htj.dyndns.org>
- <CAP0P+NWw2goofPtk5v8qKqAkhGwVJ7Bwn+Pj6meNhyK3KE2CAQ@mail.gmail.com>
+	Tue, 15 Oct 2013 08:52:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAP0P+NWw2goofPtk5v8qKqAkhGwVJ7Bwn+Pj6meNhyK3KE2CAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
+References: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
+Date: Tue, 15 Oct 2013 13:52:30 +0100
+Message-ID: <CANmRt2gDyEvaYZEfBfCD2eFXFb=GDeJcL-OFSA1xpJDk7r6c9Q@mail.gmail.com>
+Subject: Re: [PATCH Resend 1/6] mfd: max8925: Remove redundant of_match_ptr
+From: Lee Jones <ljkenny.mailinglists@gmail.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Still something odd going on with my mails, but I have applied all
+patches in this series, manually!
 
-On Tue, Oct 15, 2013 at 11:40:27AM +0800, xiangliang yu wrote:
-> @@ -1278,6 +1280,11 @@ int ahci_do_softreset(struct ata_link *link,
-> unsigned int *class,
->   if (rc && rc != -EOPNOTSUPP)
->   ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
-> 
-
-Please add a comment here.
-
-> + if (!ata_is_host_link(link) && pp->fbs_enabled) {
-> + ahci_disable_fbs(ap);
-> + fbs_flag = true;
-> + }
-
-White space damaged?
-
-> +
->   ata_tf_init(link->device, &tf);
-> 
->   /* issue the first D2H Register FIS */
-> @@ -1318,6 +1325,9 @@ int ahci_do_softreset(struct ata_link *link,
-> unsigned int *class,
->   } else
->   *class = ahci_dev_classify(ap);
-> 
-> + if (fbs_flag)
-> + ahci_enable_fbs(ap);
-> +
-
-Thanks.
-
--- 
-tejun
+On Tue, Oct 15, 2013 at 4:48 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> The data structure of_match_ptr() protects is always compiled in.
+> Hence of_match_ptr() is not needed.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/mfd/max8925-i2c.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
+> index de7fb80..176aa26 100644
+> --- a/drivers/mfd/max8925-i2c.c
+> +++ b/drivers/mfd/max8925-i2c.c
+> @@ -238,7 +238,7 @@ static struct i2c_driver max8925_driver = {
+>                 .name   = "max8925",
+>                 .owner  = THIS_MODULE,
+>                 .pm     = &max8925_pm_ops,
+> -               .of_match_table = of_match_ptr(max8925_dt_ids),
+> +               .of_match_table = max8925_dt_ids,
+>         },
+>         .probe          = max8925_probe,
+>         .remove         = max8925_remove,
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
