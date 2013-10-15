@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506Ab3JOT55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:57:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45583 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759558Ab3JOTza (ORCPT
+	id S933563Ab3JOT6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:58:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:57700 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933455Ab3JOT6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:55:30 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <grant.likely@linaro.org>,
-        <s.nawrocki@samsung.com>, <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v2 3/7] Documentation: dt bindings: move ..usb/usb-phy.txt to ..phy/ti-phy.txt
-Date: Wed, 16 Oct 2013 01:24:13 +0530
-Message-ID: <1381866857-3861-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1381866857-3861-1-git-send-email-kishon@ti.com>
-References: <1381866857-3861-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 15 Oct 2013 15:58:11 -0400
+Date: Tue, 15 Oct 2013 15:58:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static variable
+Message-ID: <20131015155806.04e2613f@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since now we have a separate folder for phy, move the PHY dt binding
-documentation of TI to that folder.
+The WARN_ON_ONCE() code is to trigger a waring only once when some
+condition happens. But due to the way it is written it is racy.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- .../devicetree/bindings/{usb/usb-phy.txt => phy/ti-phy.txt}   |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
- rename Documentation/devicetree/bindings/{usb/usb-phy.txt => phy/ti-phy.txt} (86%)
+	if (unlikely(condition)) {
+		if (WARN(!__warned))
+			__warned = true;
+	}
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
-similarity index 86%
-rename from Documentation/devicetree/bindings/usb/usb-phy.txt
-rename to Documentation/devicetree/bindings/phy/ti-phy.txt
-index c0245c8..355acf0 100644
---- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
-@@ -1,4 +1,4 @@
--USB PHY
-+TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
- 
- OMAP USB2 PHY
- 
-@@ -21,10 +21,11 @@ usb2phy@4a0ad080 {
- 	#phy-cells = <0>;
- };
- 
--OMAP USB3 PHY
-+TI PIPE3 PHY
- 
- Required properties:
-- - compatible: Should be "ti,omap-usb3"
-+ - compatible: Should be "ti,phy-usb3", "ti,phy-pcie" or "ti,phy-sata".
-+   "ti,omap-usb3" is deprecated.
-  - reg : Address and length of the register set for the device.
-  - reg-names: The names of the register addresses corresponding to the registers
-    filled in "reg".
-@@ -38,7 +39,7 @@ Optional properties:
- This is usually a subnode of ocp2scp to which it is connected.
- 
- usb3phy@4a084400 {
--	compatible = "ti,omap-usb3";
-+	compatible = "ti,phy-usb3";
- 	reg = <0x4a084400 0x80>,
- 	      <0x4a084800 0x64>,
- 	      <0x4a084c00 0x40>;
--- 
-1.7.10.4
+The problem is that multiple CPUs could hit the same warning and
+produce multiple output dumps of the same warning, or an interrupt could
+happen and hit the same warning and do the warning in the middle of a
+previous one, especially since the WARN() does a dump of the current
+stack.
 
+Even more of a problem, a recent WARN_ON_ONCE() that was in the page
+fault handler triggered and the stack dump of the WARN() caused the
+same WARN_ON_ONCE() get hit again. Since the __warned = true is not
+updated until after the WARN() is completed, each WARN() triggered
+another page fault causing the stack to be filled and crashed the box.
+
+The point of WARN_ON() is to warn the user and not to crash the box.
+
+The easy fix is to update the __warned variable with a xchg(). This way
+only one WARN_ON_ONCE() will actually happen, and prevents any issues
+of the WARN() causing the same WARN() to be hit and crash the system.
+
+[ Fixed the WARN() whitespace offset of a '\' while I was at it ]
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 7d10f96..ab7ebdb 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -11,6 +11,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ #include <linux/kernel.h>
++#include <asm/cmpxchg.h>
+ 
+ #ifdef CONFIG_BUG
+ 
+@@ -91,7 +92,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #endif
+ 
+ #ifndef WARN
+-#define WARN(condition, format...) ({						\
++#define WARN(condition, format...) ({					\
+ 	int __ret_warn_on = !!(condition);				\
+ 	if (unlikely(__ret_warn_on))					\
+ 		__WARN_printf(format);					\
+@@ -134,32 +135,29 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #endif
+ 
+ #define WARN_ON_ONCE(condition)	({				\
+-	static bool __section(.data.unlikely) __warned;		\
++	static int __section(.data.unlikely) __warned;		\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
+-		if (WARN_ON(!__warned)) 			\
+-			__warned = true;			\
++		WARN_ON(!xchg(&__warned, 1));			\
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
+ #define WARN_ONCE(condition, format...)	({			\
+-	static bool __section(.data.unlikely) __warned;		\
++	static int __section(.data.unlikely) __warned;		\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
+-		if (WARN(!__warned, format)) 			\
+-			__warned = true;			\
++		WARN(!xchg(&__warned, 1), format);		\
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
+ #define WARN_TAINT_ONCE(condition, taint, format...)	({	\
+-	static bool __section(.data.unlikely) __warned;		\
++	static int __section(.data.unlikely) __warned;		\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+ 	if (unlikely(__ret_warn_once))				\
+-		if (WARN_TAINT(!__warned, taint, format))	\
+-			__warned = true;			\
++		WARN_TAINT(!xchg(&__warned, 1), taint, format);	\
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
