@@ -1,130 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174Ab3JOPAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:00:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9065 "EHLO mx1.redhat.com"
+	id S932737Ab3JOPFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:05:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18528 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933176Ab3JOO4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:56:03 -0400
-Date: Tue, 15 Oct 2013 20:25:57 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: linux-kernel@vger.kernel.org
-cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [Patch] Read CONFIG_RD_ variables for initramfs compression
-Message-ID: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz>
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-1865401866-1381847858=:7552"
-Content-ID: <alpine.LFD.2.03.1310152007540.7552@erqung.pbz>
+	id S932347Ab3JOPFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 11:05:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,499,1378882800"; 
+   d="scan'208";a="419472742"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/3] ACPI/Power: Add state_lock to mutex power resource's _ON, _OFF and _STA
+Date: Tue, 15 Oct 2013 23:04:51 +0800
+Message-Id: <1381849493-7977-2-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
+References: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+According commit d0515d9f, power resource's _ON, _OFF and _STA should
+be mutexed. This patch is to add state_lock to do this instead of
+using resource_lock.
 
---0-1865401866-1381847858=:7552
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; format=flowed
-Content-ID: <alpine.LFD.2.03.1310152007541.7552@erqung.pbz>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/acpi/power.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-    Hello Andrew,
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index 0c1c3ec..fa89d16 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -75,6 +75,7 @@ struct acpi_power_resource {
+ 	unsigned int ref_count;
+ 	bool wakeup_enabled;
+ 	struct mutex resource_lock;
++	struct mutex state_lock;
+ };
+ 
+ struct acpi_power_resource_entry {
+@@ -216,9 +217,9 @@ static int acpi_power_get_list_state(struct list_head *list, int *state)
+ 		acpi_handle handle = resource->device.handle;
+ 		int result;
+ 
+-		mutex_lock(&resource->resource_lock);
++		mutex_lock(&resource->state_lock);
+ 		result = acpi_power_get_state(handle, &cur_state);
+-		mutex_unlock(&resource->resource_lock);
++		mutex_unlock(&resource->state_lock);
+ 		if (result)
+ 			return result;
+ 
+@@ -263,7 +264,10 @@ static int __acpi_power_on(struct acpi_power_resource *resource)
+ {
+ 	acpi_status status = AE_OK;
+ 
++	mutex_lock(&resource->state_lock);
+ 	status = acpi_evaluate_object(resource->device.handle, "_ON", NULL, NULL);
++	mutex_unlock(&resource->state_lock);
++
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+ 
+@@ -309,8 +313,11 @@ static int __acpi_power_off(struct acpi_power_resource *resource)
+ {
+ 	acpi_status status;
+ 
++	mutex_lock(&resource->state_lock);
+ 	status = acpi_evaluate_object(resource->device.handle, "_OFF",
+ 				      NULL, NULL);
++	mutex_unlock(&resource->state_lock);
++
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+ 
+@@ -564,7 +571,9 @@ int acpi_power_wakeup_list_init(struct list_head *list, int *system_level_p)
+ 
+ 		mutex_lock(&resource->resource_lock);
+ 
++		mutex_lock(&resource->state_lock);
+ 		result = acpi_power_get_state(handle, &state);
++		mutex_unlock(&resource->state_lock);
+ 		if (result) {
+ 			mutex_unlock(&resource->resource_lock);
+ 			return result;
+@@ -881,6 +890,7 @@ int acpi_add_power_resource(acpi_handle handle)
+ 	device = &resource->device;
+ 	acpi_init_device_object(device, handle, ACPI_BUS_TYPE_POWER,
+ 				ACPI_STA_DEFAULT);
++	mutex_init(&resource->state_lock);
+ 	mutex_init(&resource->resource_lock);
+ 	INIT_LIST_HEAD(&resource->dependent);
+ 	INIT_LIST_HEAD(&resource->list_node);
+@@ -935,7 +945,10 @@ void acpi_resume_power_resources(void)
+ 
+ 		mutex_lock(&resource->resource_lock);
+ 
++		mutex_lock(&resource->state_lock);
+ 		result = acpi_power_get_state(resource->device.handle, &state);
++		mutex_unlock(&resource->state_lock);
++
+ 		if (result) {
+ 			mutex_unlock(&resource->resource_lock);
+ 			continue;
+-- 
+1.8.2.1
 
-When expert configuration option(CONFIG_EXPERT) is enabled, menuconfig offers 
-choice of compression algorithm, to compress initial ramfs image. This choice 
-is stored into CONFIG_RD_<GZIP/BZIP2/...> variables.
-
-But, usr/Makefile reads from earlier INITRAMFS_COMPRESSION_* variables to set 
-the ramfs file extension(.gzip/.bz2/...), which is later(in 
-scripts/gen_initramfs_list.sh) used to apply actual compression.
-
-Since none of the INITRAMFS_COMPRESSION_* variables are defined, the resulting 
-'usr/initramfs_data.cpio' file remains un-compressed.
-
-The patch attached herein, updates the usr/Makefile to read CONFIG_RD_* 
-variables, and also adds support for the Lz4 compression algorithm.
-
-Could you please review it?
-==
-PS:
-IIUC, I think INITRAMFS_COMPRESSION_* variables are not used anywhere at all. 
-Though I'm not sure about the EMBEDDED configurations. But if they are not 
-used, it could be better to remove their description/references from 
-usr/Kconfig and other places.
-
-
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
---0-1865401866-1381847858=:7552
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; NAME=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LFD.2.03.1310152007380.7552@erqung.pbz>
-Content-Description: 
-Content-Disposition: ATTACHMENT; FILENAME=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
-
-RnJvbSAwMzA0ZmI0MDBjMjcyMjcxMDZjMWY5YTU3ZmUzZGUxM2NhMDNjY2Ey
-IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
-ZEByZWRoYXQuY29tPg0KRGF0ZTogVHVlLCAxNSBPY3QgMjAxMyAxOToyODo0
-MCArMDUzMA0KU3ViamVjdDogUmVhZCBDT05GSUdfUkRfIHZhcmlhYmxlcyBm
-b3IgaW5pdHJhbWZzIGNvbXByZXNzaW9uDQoNCldoZW4gZXhwZXJ0IGNvbmZp
-Z3VyYXRpb24gb3B0aW9uKENPTkZJR19FWFBFUlQpIGlzIGVuYWJsZWQsDQpt
-ZW51Y29uZmlnIG9mZmVycyBhIGNob2ljZSBvZiBjb21wcmVzc2lvbiBhbGdv
-cml0aG0gdG8gY29tcHJlc3MNCmluaXRpYWwgcmFtZnMgaW1hZ2U7IFRoaXMg
-Y2hvaWNlIGlzIHN0b3JlZCBpbnRvIENPTkZJR19SRF8qDQp2YXJpYWJsZXMu
-IEJ1dCB1c3IvTWFrZWZpbGUgdXNlcyBlYXJsaWVyIElOSVRSQU1GU19DT01Q
-UkVTU0lPTl8qDQptYWNyb3MgdG8gYnVpbGQgaW5pdGlhbCByYW1mcyBmaWxl
-LiBTaW5jZSBub25lIG9mIHRoZW0gaXMgZGVmaW5lZCwNCnJlc3VsdGluZyAn
-aW5pdHJhbWZzX2RhdGEuY3BpbycgZmlsZSByZW1haW5zIHVuLWNvbXByZXNz
-ZWQuDQoNClRoaXMgcGF0Y2ggdXBkYXRlcyB0aGUgTWFrZWZpbGUgdG8gdXNl
-IENPTkZJR19SRF8qIHZhcmlhYmxlcyBhbmQNCmFkZHMgc3VwcG9ydCBmb3Ig
-TFo0IGNvbXByZXNzaW9uIGFsZ29yaXRobS4NCg0KU2lnbmVkLW9mZi1ieTog
-UCBKIFAgPHByYXNhZEByZWRoYXQuY29tPg0KDQpkaWZmIC0tZ2l0IGEvc2Ny
-aXB0cy9nZW5faW5pdHJhbWZzX2xpc3Quc2ggYi9zY3JpcHRzL2dlbl9pbml0
-cmFtZnNfbGlzdC5zaA0KaW5kZXggYjQ4MmYxNi4uNTc2MTk3MyAxMDA2NDQN
-Ci0tLSBhL3NjcmlwdHMvZ2VuX2luaXRyYW1mc19saXN0LnNoDQorKysgYi9z
-Y3JpcHRzL2dlbl9pbml0cmFtZnNfbGlzdC5zaA0KQEAgLTI0Niw2ICsyNDYs
-NyBAQCBjYXNlICIkYXJnIiBpbg0KIAkJZWNobyAiJG91dHB1dF9maWxlIiB8
-IGdyZXAgLXEgIlwueHokIiAmJiBcDQogCQkJCWNvbXByPSJ4eiAtLWNoZWNr
-PWNyYzMyIC0tbHptYTI9ZGljdD0xTWlCIg0KIAkJZWNobyAiJG91dHB1dF9m
-aWxlIiB8IGdyZXAgLXEgIlwubHpvJCIgJiYgY29tcHI9Imx6b3AgLTkgLWYi
-DQorCQllY2hvICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAtcSAiXC5sejQkIiAm
-JiBjb21wcj0ibHo0IC05IC1mIg0KIAkJZWNobyAiJG91dHB1dF9maWxlIiB8
-IGdyZXAgLXEgIlwuY3BpbyQiICYmIGNvbXByPSJjYXQiDQogCQlzaGlmdA0K
-IAkJOzsNCmRpZmYgLS1naXQgYS91c3IvTWFrZWZpbGUgYi91c3IvTWFrZWZp
-bGUNCmluZGV4IDAyOWZmZTYuLjA2YWQ5NDggMTAwNjQ0DQotLS0gYS91c3Iv
-TWFrZWZpbGUNCisrKyBiL3Vzci9NYWtlZmlsZQ0KQEAgLTcsMTkgKzcsMjIg
-QEAgUEhPTlkgKz0ga2xpYmNkaXJzDQogDQogDQogIyBHemlwDQotc3VmZml4
-XyQoQ09ORklHX0lOSVRSQU1GU19DT01QUkVTU0lPTl9HWklQKSAgID0gLmd6
-DQorc3VmZml4XyQoQ09ORklHX1JEX0daSVApICAgPSAuZ3oNCiANCiAjIEJ6
-aXAyDQotc3VmZml4XyQoQ09ORklHX0lOSVRSQU1GU19DT01QUkVTU0lPTl9C
-WklQMikgID0gLmJ6Mg0KK3N1ZmZpeF8kKENPTkZJR19SRF9CWklQMikgID0g
-LmJ6Mg0KIA0KICMgTHptYQ0KLXN1ZmZpeF8kKENPTkZJR19JTklUUkFNRlNf
-Q09NUFJFU1NJT05fTFpNQSkgICA9IC5sem1hDQorc3VmZml4XyQoQ09ORklH
-X1JEX0xaTUEpICAgPSAubHptYQ0KIA0KICMgWFoNCi1zdWZmaXhfJChDT05G
-SUdfSU5JVFJBTUZTX0NPTVBSRVNTSU9OX1haKSAgICAgPSAueHoNCitzdWZm
-aXhfJChDT05GSUdfUkRfWFopICAgICA9IC54eg0KIA0KICMgTHpvDQotc3Vm
-Zml4XyQoQ09ORklHX0lOSVRSQU1GU19DT01QUkVTU0lPTl9MWk8pICAgPSAu
-bHpvDQorc3VmZml4XyQoQ09ORklHX1JEX0xaTykgICAgPSAubHpvDQorDQor
-IyBMejQNCitzdWZmaXhfJChDT05GSUdfUkRfTFo0KSAgICA9IC5sejQNCiAN
-CiBBRkxBR1NfaW5pdHJhbWZzX2RhdGEubyArPSAtRElOSVRSQU1GU19JTUFH
-RT0idXNyL2luaXRyYW1mc19kYXRhLmNwaW8kKHN1ZmZpeF95KSINCiANCkBA
-IC01Myw3ICs1NiwxMCBAQCBlbmRpZg0KIHF1aWV0X2NtZF9pbml0ZnMgPSBH
-RU4gICAgICRADQogICAgICAgY21kX2luaXRmcyA9ICQoaW5pdHJhbWZzKSAt
-byAkQCAkKHJhbWZzLWFyZ3MpICQocmFtZnMtaW5wdXQpDQogDQotdGFyZ2V0
-cyA6PSBpbml0cmFtZnNfZGF0YS5jcGlvLmd6IGluaXRyYW1mc19kYXRhLmNw
-aW8uYnoyIGluaXRyYW1mc19kYXRhLmNwaW8ubHptYSBpbml0cmFtZnNfZGF0
-YS5jcGlvLnh6IGluaXRyYW1mc19kYXRhLmNwaW8ubHpvIGluaXRyYW1mc19k
-YXRhLmNwaW8NCit0YXJnZXRzIDo9IGluaXRyYW1mc19kYXRhLmNwaW8uZ3og
-aW5pdHJhbWZzX2RhdGEuY3Bpby5iejIgXA0KKwlpbml0cmFtZnNfZGF0YS5j
-cGlvLmx6bWEgaW5pdHJhbWZzX2RhdGEuY3Bpby54eiBcDQorCWluaXRyYW1m
-c19kYXRhLmNwaW8ubHpvIGluaXRyYW1mc19kYXRhLmNwaW8ubHo0IFwNCisJ
-aW5pdHJhbWZzX2RhdGEuY3Bpbw0KICMgZG8gbm90IHRyeSB0byB1cGRhdGUg
-ZmlsZXMgaW5jbHVkZWQgaW4gaW5pdHJhbWZzDQogJChkZXBzX2luaXRyYW1m
-cyk6IDsNCiANCkBAIC02Niw0ICs3MiwzIEBAICQoZGVwc19pbml0cmFtZnMp
-OiBrbGliY2RpcnMNCiAkKG9iaikvaW5pdHJhbWZzX2RhdGEuY3BpbyQoc3Vm
-Zml4X3kpOiAkKG9iaikvZ2VuX2luaXRfY3BpbyAkKGRlcHNfaW5pdHJhbWZz
-KSBrbGliY2RpcnMNCiAJJChRKSQoaW5pdHJhbWZzKSAtbCAkKHJhbWZzLWlu
-cHV0KSA+ICQob2JqKS8uaW5pdHJhbWZzX2RhdGEuY3Bpby5kDQogCSQoY2Fs
-bCBpZl9jaGFuZ2VkLGluaXRmcykNCi0NCi0tIA0KMS44LjMuMQ0KDQo=
-
---0-1865401866-1381847858=:7552--
