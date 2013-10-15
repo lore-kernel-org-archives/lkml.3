@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab3JOJgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:36:24 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:48331 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757594Ab3JOJgX (ORCPT
+	id S1758313Ab3JOJhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:37:01 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56222 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757868Ab3JOJg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:36:23 -0400
-Message-ID: <525D0C91.1090700@gmail.com>
-Date: Tue, 15 Oct 2013 11:36:17 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 05:36:58 -0400
+Date: Tue, 15 Oct 2013 10:36:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        linux-bcache@vger.kernel.org
+Message-ID: <20131015093609.GT2443@sirena.org.uk>
+References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+ <525C3EC2.20404@infradead.org>
+ <20131014202723.GQ2443@sirena.org.uk>
+ <20131015084631.GK7856@ulmo.nvidia.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 04/14] sched: SCHED_DEADLINE SMP-related data structures
- & logic.
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-5-git-send-email-juri.lelli@gmail.com> <20131014120306.GH3081@twins.programming.kicks-ass.net>
-In-Reply-To: <20131014120306.GH3081@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bIK/Xm5bvUaTMa1a"
+Content-Disposition: inline
+In-Reply-To: <20131015084631.GK7856@ulmo.nvidia.com>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 14 (bcache)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 02:03 PM, Peter Zijlstra wrote:
-> On Mon, Oct 14, 2013 at 12:43:36PM +0200, Juri Lelli wrote:
->> +static inline void dl_set_overload(struct rq *rq)
->> +{
->> +	if (!rq->online)
->> +		return;
->> +
->> +	cpumask_set_cpu(rq->cpu, rq->rd->dlo_mask);
->> +	/*
->> +	 * Must be visible before the overload count is
->> +	 * set (as in sched_rt.c).
->> +	 */
->> +	wmb();
->> +	atomic_inc(&rq->rd->dlo_count);
->> +}
-> 
-> Please, make that smp_wmb() and modify the comment to point to the
-> matching barrier ; I couldn't find one! Which suggests something is
-> amiss.
-> 
-> Ideally we'd have something like smp_wmb__after_set_bit() but alas.
-> 
 
-The only user of this function is pull_dl_task (that tries to pull only if at
-least one runqueue of the root_domain is overloaded). Surely makes sense to
-ensure that changes in the dlo_mask have to be visible before we check if we
-should look at that mask. Am I right if I say that the matching barrier is
-constituted by the spin_lock on this_rq acquired by schedule() before calling
-pre_schedule()?
+--bIK/Xm5bvUaTMa1a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Same thing in rt_set_overload(), do we need to modify the comment also there?
+On Tue, Oct 15, 2013 at 10:46:32AM +0200, Thierry Reding wrote:
 
-Thanks,
+> Oh wait, they were applied right after the merges that broke. I hadn't
+> checked for that.
 
-- Juri
+Yeah, it's because I've been doing incremental build checks - the builds
+fail at the point the tree gets merged in.
+
+--bIK/Xm5bvUaTMa1a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSXQyFAAoJELSic+t+oim9EYwP/A2MPJ+vNq610cxv+vxPa/DQ
+4M8teRS8iNcdCgqxdd/vkspZz6F0retJqXKOUBa+gN/IF2DTWzLbAJBsas0lZCUk
+JXoMJU7H/VgqeJmoZmQRsf1rM0ZmM08dUWnV6QKmAGldwSOtRW4+LA9vm3zZDZWe
+IF7tJaAtHOfQEUar0EYIZlmzl3AKtQW6HEky2uYFx97nAFjeEQm6r9ajn+D4lpll
+Pio9uBq9+Bkl/CEvwjp2F/Kpc/wPbOqdYI7YpZuOEDK6+4EOyXc/n9Zq8BsTcQo0
+YhfgwpmcNtc0cwAy3pRU7oE9VnC50Lcs7Pfa1wdDJXi5SWr6KAKShbLWRukRqjKo
+1lRIM6XvNt8KYxZja7lckfglE7SAYfwbuNEiUrOcTV2zzS6mtsvXVtWynrKXV8Bp
+YJN0qXJfDmlJ0jyNC4slzoeOp84RaOWij1+JyuO2H2KHz8Rdfol4vRVOquPOEk6z
+bbtYurL1tKJJBHftSC14WDUxGGsHxIRYMHeIohfWZ+xyTd9LFWsnDsCLgysGgRCi
+9StG2Y1OZCWfbcQ1ihnXyxDThaLKMqxvXbpo9EoA4NBGqsDBteLp86svYBExmWuj
+Fb1cJbu960k7lYHb+55gV0IRj0qNhEXkiPTdkBSGaP9QvcvOpHNZ+ofaHw8DIxGE
+uqcXLhCAIctLIVu80cUU
+=NiVj
+-----END PGP SIGNATURE-----
+
+--bIK/Xm5bvUaTMa1a--
