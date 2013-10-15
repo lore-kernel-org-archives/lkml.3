@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab3JOBGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 21:06:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60899 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750738Ab3JOBGU (ORCPT
+	id S1756783Ab3JOBHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 21:07:37 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44130 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755780Ab3JOBHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 21:06:20 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.12-rc5
-Date: Tue, 15 Oct 2013 03:18:07 +0200
-Message-ID: <3128669.9y05Q44bGm@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+55aFzS4kdcV=V9VDY8BQZY6rma67uE_jazkqQm=HX8MNgdNA@mail.gmail.com>
-References: <CA+55aFxgsfhJd83tjz8yyC2UoAWzeM00R+1Zj8e3703jpJcX_w@mail.gmail.com> <8242024.cY0aX8uvy9@vostro.rjw.lan> <CA+55aFzS4kdcV=V9VDY8BQZY6rma67uE_jazkqQm=HX8MNgdNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 14 Oct 2013 21:07:36 -0400
+Message-Id: <20131015010500.435964635@kernel.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 15 Oct 2013 09:05:00 +0800
+From: Shaohua Li <shli@kernel.org>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: kmo@daterainc.com
+Subject: [patch 0/4 v2] blk-mq: use percpu_ida to manage tags
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 14, 2013 10:32:02 AM Linus Torvalds wrote:
-> On Sun, Oct 13, 2013 at 4:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >
-> > It looks like my pull request from yestarday has fallen through the cracks:
-> >
-> > http://marc.info/?l=linux-acpi&m=138161145214296&w=2
-> >
-> > Or is there anything wrong with it?
-> 
-> Just too much email.. I've pulled it. Thanks for pining me,
+Hi,
+blk-mq and percpu_ida use similar algorithm to manage tags. The difference
+is when a cpu can't allocate tags, blk-mq will use ipi to purge remote cpu
+cache, while percpu-ida directly purges remote cpu cache. In practice, the
+percpu-ida approach is much faster when we can't allocate enough for percpu
+cache.
 
-Well, thanks for pulling. :-)
+This patch makes blk-mq use percpu_ida to manage tags, this avoids some
+duplicate code and has better performance as I mentioned. To test the patches,
+rebase blk-mq tree to latest kernel first.
 
-Rafael
+The v2 patch updated some log descriptions, fixed one issue Kent pointed out
+and added performance data.
 
+Thanks,
+Shaohua
