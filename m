@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934010Ab3JOVLW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:11:22 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:58760 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933818Ab3JOVLU (ORCPT
+	id S934019Ab3JOVLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:11:46 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:4725 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933769Ab3JOVLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:11:20 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/5] mfd: tc3589x: add device tree bindings
-Date: Tue, 15 Oct 2013 23:11:15 +0200
-Message-Id: <1381871475-21543-1-git-send-email-linus.walleij@linaro.org>
+	Tue, 15 Oct 2013 17:11:45 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-pci@vger.kernel.org, yinghai@kernel.org, tj@kernel.org,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] x86/numa: Allow node distance table to have I/O nodes
+Date: Tue, 15 Oct 2013 15:07:44 -0600
+Message-Id: <1381871264-14070-1-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defines the device tree bindings for the Toshiba TC3589x
-series of multi-purpose expanders. Only the stuff I can test
-is defined: GPIO and keypad. Others may implement more
-subdevices further down the road.
+When a system has I/O devices (ex. PCI bridges) with their own
+locality, the following error message shows up.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+ NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
+
+acpi_numa_slit_init() calls numa_set_distance(), which assumes
+that all nodes on the system have been parsed with SRAT already.
+However, SRAT does not list I/O devices.  SLIT has the distance
+table for all localities including I/Os.  Hence, the above message
+shows up when a system has a unique I/O device locality.
+
+This patch changes acpi_numa_slit_init() to make sure all the
+nodes are parsed, so that it can initialize the distance table
+with all the localities.
+
+The following map tables may contain I/O nodes as a result.
+ - numa_distance[], i.e. node distance table
+ - node_states[N_POSSIBLE], aka. node_possible_map
+ - mp_bus_to_node[], i.e. pci bus# to node# map
+
+There is no functional change since there is no code that makes
+use of the I/O nodes.
+ - I/O nodes are set to off-line.
+ - pci_acpi_scan_root() continues to set -1 to pci_sysdata.node
+   of a PCI bridge with a unique locality (per commit b755de8d).
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- Documentation/devicetree/bindings/mfd/tc3589x.txt | 61 +++++++++++++++++++++++
- 1 file changed, 61 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/tc3589x.txt
+ arch/x86/mm/srat.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/tc3589x.txt b/Documentation/devicetree/bindings/mfd/tc3589x.txt
-new file mode 100644
-index 0000000..121301d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/tc3589x.txt
-@@ -0,0 +1,61 @@
-+* Toshiba TC3589x multi-purpose expander
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 26f4e12..fb5bd73 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -45,7 +45,20 @@ static __init inline int srat_disabled(void)
+ /* Callback for SLIT parsing */
+ void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
+ {
+-	int i, j;
++	int node, i, j;
 +
-+The Toshiba TC3589x series are I2C-based MFD devices which may expose the
-+following built-in devices: gpio, keypad, rotator (vibrator), PWM (for
-+e.g. LEDs or vibrators) The included models are:
++	/* SLIT may have I/O nodes, which are not listed in SRAT */
++	for (i = 0; i < slit->locality_count; i++) {
++		if (pxm_to_node(i) != NUMA_NO_NODE)
++			continue;
 +
-+- TC35890
-+- TC35892
-+- TC35893
-+- TC35894
-+- TC35895
-+- TC35896
++		node = setup_node(i);
++		if (WARN_ONCE(node < 0, "SLIT: Too many proximity domains.\n"))
++			continue;
 +
-+Required properties:
-+ - compatible : must be "toshiba,tc35890", "toshiba,tc35892", "toshiba,tc35893",
-+   "toshiba,tc35894", "toshiba,tc35895" or "toshiba,tc35896"
-+ - reg : I2C address of the device
-+ - interrupt-parent : specifies which IRQ controller we're connected to
-+ - interrupts : the interrupt on the parent the controller is connected to
-+ - interrupt-controller : marks the device node as an interrupt controller
-+ - #interrupt-cells : should be <1>, the first cell is the IRQ offset on this
-+   TC3589x interrupt controller.
-+
-+Optional nodes:
-+
-+- GPIO
-+  This GPIO module inside the TC3589x has 24 (TC35890, TC35892) or 20
-+  (other models) GPIO lines.
-+ - compatible : must be "toshiba,tc3589x-gpio"
-+ - interrupts : interrupt on the parent, which must be the tc3589x MFD device
-+ - interrupt-controller : marks the device node as an interrupt controller
-+ - #interrupt-cells : should be <2>, the first cell is the IRQ offset on this
-+   TC3589x GPIO interrupt controller, the second cell is the interrupt flags
-+   in accordance with <dt-bindings/interrupt-controller/irq.h>. The following
-+   flags are valid:
-+   - IRQ_TYPE_LEVEL_LOW
-+   - IRQ_TYPE_LEVEL_HIGH
-+   - IRQ_TYPE_EDGE_RISING
-+   - IRQ_TYPE_EDGE_FALLING
-+   - IRQ_TYPE_EDGE_BOTH
-+ - gpio-controller : marks the device node as a GPIO controller
-+ - #gpio-cells : should be <2>, the first cell is the GPIO offset on this
-+   GPIO controller, the second cell is the flags.
-+
-+- Keypad
-+  This keypad is the same on all variants, supporting up to 96 different
-+  keys. The linux-specific properties are modeled on those already existing
-+  in other input drivers.
-+ - compatible : must be "toshiba,tc3589x-keypad"
-+ - debounce-delay-ms : debounce interval in milliseconds
-+ - keypad,num-rows : number of rows in the matrix, see
-+   bindings/input/matrix-keymap.txt
-+ - keypad,num-columns : number of columns in the matrix, see
-+   bindings/input/matrix-keymap.txt
-+ - linux,keymap: the definition can be found in
-+   bindings/input/matrix-keymap.txt
-+ - linux,no-autorepeat: do no enable autorepeat feature.
-+ - linux,wakeup: use any event on keypad as wakeup event.
-+
-+Example:
-+
--- 
-1.8.3.1
-
++		node_set(node, numa_nodes_parsed);
++		pr_info("SLIT: Node %u PXM %u I/O only\n", node, i);
++	}
+ 
+ 	for (i = 0; i < slit->locality_count; i++)
+ 		for (j = 0; j < slit->locality_count; j++)
