@@ -1,83 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061Ab3JOHxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:53:48 -0400
-Received: from mailout09.t-online.de ([194.25.134.84]:52182 "EHLO
-	mailout09.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab3JOHxr (ORCPT
+	id S1757648Ab3JOHyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:54:25 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:55659 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab3JOHyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:53:47 -0400
-Message-ID: <525CF483.1020908@t-online.de>
-Date: Tue, 15 Oct 2013 09:53:39 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 03:54:24 -0400
+Message-ID: <525CF4AD.1070304@atmel.com>
+Date: Tue, 15 Oct 2013 09:54:21 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Greg KH <greg@kroah.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
- shutdown
-References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <20131014212830.GD5790@linux.vnet.ibm.com> <20131014215117.GE13538@localhost.localdomain> <20131015064025.GA22672@gmail.com>
-In-Reply-To: <20131015064025.GA22672@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>, <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH RFC 5/5] net: macb: Adjust tx_clk when link speed changes
+References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com> <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-ID: bLwLB6ZXZhkl7xJunZwK+N7JqrKHguneb-jmvx4fT8WDBHLVlmJWPzj3UfJQexnQn9
-X-TOI-MSGID: 5ff5e3f6-24c0-467d-9e59-c5d6771c8af2
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.2013 08:40, Ingo Molnar wrote:
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On 15/10/2013 01:59, Soren Brinkmann :
+> Adjust the ethernet clock according to the negotiated link speed.
 >
->> I've been thinking that CONFIG_DEBUG_LIST could help. Unfortunately it's
->> good to spot list APIs misuse but, if Linus is right, the problem may be
->> that the list belongs to an object that has been freed, and I believe
->> that won't detect such a thing.
-> Use-after free should be reliably detectable via CONFIG_DEBUG_PAGEALLOC=y.
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Enabled.
+I will need more time to study this one.
 
-Hmm ... I think i spotted a KConfig bug.  In mm/Kconfig.debug I read:
+Moreover, I will have to add the "tx_clk" to every user of this driver 
+before switchin to the addition of this clock.
 
-config DEBUG_PAGEALLOC
-         bool "Debug page memory allocations"
-         depends on DEBUG_KERNEL
-         depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
-         depends on !KMEMCHECK
-         select PAGE_POISONING if !ARCH_SUPPORTS_DEBUG_PAGEALLOC
-         select PAGE_GUARD if ARCH_SUPPORTS_DEBUG_PAGEALLOC
-         ---help---
-           Unmap pages from the kernel linear mapping after free_pages().
-           This results in a large slowdown, but helps to find certain types
-           of memory corruption.
+Best regards,
 
-           For architectures which don't enable ARCH_SUPPORTS_DEBUG_PAGEALLOC,
-           fill the pages with poison patterns after free_pages() and verify
-           the patterns before alloc_pages().  Additionally,
-           this option cannot be enabled in combination with hibernation as
-           that would result in incorrect warnings of memory corruption after
-           a resume because free pages are not saved to the suspend image.
-
-
-Either the description or the "depends" line that includes !HIBERNATION is wrong. Maybe
-
-         depends on DEBUG_KERNEL
--        depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
-+        depends on !HIBERNATION && ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
-         depends on !KMEMCHECK
-
-is correct, at least does not allow HIBERNATION and DEBUG_PAGEALLOC to be enabled simultaneously.
-
+> ---
+>   drivers/net/ethernet/cadence/macb.c | 66 +++++++++++++++++++++++++++++++++++++
+>   drivers/net/ethernet/cadence/macb.h |  1 +
+>   2 files changed, 67 insertions(+)
 >
-> A couple of years ago I wrote a list debugging beast that would catch
-> use-after-free mishaps (sent it to lkml too IIRC), but it was a bit
-> complex and I never found the time to nurse it upstream.
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 603844b1d483..beb9fa863811 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -204,6 +204,49 @@ static int macb_mdio_reset(struct mii_bus *bus)
+>   	return 0;
+>   }
 >
-> Thanks,
+> +/**
+> + * macb_set_tx_clk() - Set a clock to a new frequency
+> + * @clk		Pointer to the clock to change
+> + * @rate	New frequency in Hz
+> + * @dev		Pointer to the struct net_device
+> + */
+> +static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
+> +{
+> +	long ferr;
+> +	long rate;
+> +	long rate_rounded;
+> +
+> +	switch (speed) {
+> +	case SPEED_10:
+> +		rate = 2500000;
+> +		break;
+> +	case SPEED_100:
+> +		rate = 25000000;
+> +		break;
+> +	case SPEED_1000:
+> +		rate = 125000000;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	rate_rounded = clk_round_rate(clk, rate);
+> +	if (rate_rounded < 0)
+> +		return;
+> +
+> +	/* RGMII allows 50 ppm frequency error. Test and warn if this limit
+> +	 * are not satisfied.
+> +	 */
+> +	ferr = abs(rate_rounded - rate);
+> +	ferr = DIV_ROUND_UP(ferr, rate / 100000);
+> +	if (ferr > 5)
+> +		netdev_warn(dev, "unable to generate target frequency: %ld Hz\n",
+> +				rate);
+> +
+> +	if (clk_set_rate(clk, rate_rounded))
+> +		netdev_err(dev, "adjusting tx_clk failed.\n");
+> +}
+> +
+>   static void macb_handle_link_change(struct net_device *dev)
+>   {
+>   	struct macb *bp = netdev_priv(dev);
+> @@ -251,6 +294,9 @@ static void macb_handle_link_change(struct net_device *dev)
 >
-> 	Ingo
+>   	spin_unlock_irqrestore(&bp->lock, flags);
+>
+> +	if (!IS_ERR(bp->tx_clk))
+> +		macb_set_tx_clk(bp->tx_clk, phydev->speed, dev);
+> +
+>   	if (status_change) {
+>   		if (phydev->link) {
+>   			netif_carrier_on(dev);
+> @@ -1805,6 +1851,8 @@ static int __init macb_probe(struct platform_device *pdev)
+>   		goto err_out_free_dev;
+>   	}
+>
+> +	bp->tx_clk = devm_clk_get(&pdev->dev, "tx_clk");
+> +
+>   	err = clk_prepare_enable(bp->pclk);
+>   	if (err) {
+>   		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
+> @@ -1817,6 +1865,15 @@ static int __init macb_probe(struct platform_device *pdev)
+>   		goto err_out_disable_pclk;
+>   	}
+>
+> +	if (!IS_ERR(bp->tx_clk)) {
+> +		err = clk_prepare_enable(bp->tx_clk);
+> +		if (err) {
+> +			dev_err(&pdev->dev, "failed to enable tx_clk (%u)\n",
+> +					err);
+> +			goto err_out_disable_hclk;
+> +		}
+> +	}
+> +
+>   	bp->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+>   	if (!bp->regs) {
+>   		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+> @@ -1917,6 +1974,9 @@ static int __init macb_probe(struct platform_device *pdev)
+>   err_out_unregister_netdev:
+>   	unregister_netdev(dev);
+>   err_out_disable_clocks:
+> +	if (!IS_ERR(bp->tx_clk))
+> +		clk_disable_unprepare(bp->tx_clk);
+> +err_out_disable_hclk:
+>   	clk_disable_unprepare(bp->hclk);
+>   err_out_disable_pclk:
+>   	clk_disable_unprepare(bp->pclk);
+> @@ -1941,6 +2001,8 @@ static int __exit macb_remove(struct platform_device *pdev)
+>   		kfree(bp->mii_bus->irq);
+>   		mdiobus_free(bp->mii_bus);
+>   		unregister_netdev(dev);
+> +		if (!IS_ERR(bp->tx_clk))
+> +			clk_disable_unprepare(bp->tx_clk);
+>   		clk_disable_unprepare(bp->hclk);
+>   		clk_disable_unprepare(bp->pclk);
+>   		free_netdev(dev);
+> @@ -1959,6 +2021,8 @@ static int macb_suspend(struct device *dev)
+>   	netif_carrier_off(netdev);
+>   	netif_device_detach(netdev);
+>
+> +	if (!IS_ERR(bp->tx_clk))
+> +		clk_disable_unprepare(bp->tx_clk);
+>   	clk_disable_unprepare(bp->hclk);
+>   	clk_disable_unprepare(bp->pclk);
+>
+> @@ -1973,6 +2037,8 @@ static int macb_resume(struct device *dev)
+>
+>   	clk_prepare_enable(bp->pclk);
+>   	clk_prepare_enable(bp->hclk);
+> +	if (!IS_ERR(bp->tx_clk))
+> +		clk_prepare_enable(bp->tx_clk);
+>
+>   	netif_device_attach(netdev);
+>
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index f4076155bed7..51c02442160a 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -572,6 +572,7 @@ struct macb {
+>   	struct platform_device	*pdev;
+>   	struct clk		*pclk;
+>   	struct clk		*hclk;
+> +	struct clk		*tx_clk;
+>   	struct net_device	*dev;
+>   	struct napi_struct	napi;
+>   	struct work_struct	tx_error_task;
 >
 
+
+-- 
+Nicolas Ferre
