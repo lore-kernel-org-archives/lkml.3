@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab3JOFQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:16:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60634 "EHLO
+	id S932448Ab3JOFQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:16:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60625 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3JOFQi (ORCPT
+	with ESMTP id S932394Ab3JOFQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:16:38 -0400
-Date: Mon, 14 Oct 2013 22:16:24 -0700
+	Tue, 15 Oct 2013 01:16:29 -0400
+Date: Mon, 14 Oct 2013 22:16:14 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-d0707c9172e5d286fc119dcef5ea1621ef3bfade@git.kernel.org>
+Message-ID: <tip-3b7646e45d110f53d4c0fa0a63158c3d2a763e60@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
- strlcpy'
-Git-Commit-ID: d0707c9172e5d286fc119dcef5ea1621ef3bfade
+ libbfd'
+Git-Commit-ID: 3b7646e45d110f53d4c0fa0a63158c3d2a763e60
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,87 +29,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:16:29 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:16:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d0707c9172e5d286fc119dcef5ea1621ef3bfade
-Gitweb:     http://git.kernel.org/tip/d0707c9172e5d286fc119dcef5ea1621ef3bfade
+Commit-ID:  3b7646e45d110f53d4c0fa0a63158c3d2a763e60
+Gitweb:     http://git.kernel.org/tip/3b7646e45d110f53d4c0fa0a63158c3d2a763e60
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Tue, 8 Oct 2013 10:10:45 +0200
+AuthorDate: Mon, 30 Sep 2013 15:53:31 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:46 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:45 +0200
 
-tools/perf/build: Split out feature check: 'strlcpy'
+tools/perf/build: Split out feature check: 'libbfd'
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-ektO8cgvupthhyqqczSok2sr@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cdxdfv7Corpfvjg9Skezhvjn@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                      | 3 ++-
- tools/perf/config/feature-checks/Makefile       | 4 ++++
- tools/perf/config/feature-checks/test-strlcpy.c | 8 ++++++++
- 3 files changed, 14 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile                     | 4 ++--
+ tools/perf/config/feature-checks/Makefile      | 4 ++++
+ tools/perf/config/feature-checks/test-libbfd.c | 7 +++++++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 7e13969..c8ac4df 100644
+index 63ba069..7e13969 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
 @@ -121,6 +121,7 @@ FEATURE_TESTS =				\
  	libperl				\
  	libpython			\
  	libpython-version		\
-+	strlcpy				\
- 	libbfd				\
++	libbfd				\
  	libnuma
  
-@@ -434,7 +435,7 @@ else
- endif
- 
- ifndef NO_STRLCPY
--  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY_SUPPORT),y)
-+  ifeq ($(feature-strlcpy), 1)
-     CFLAGS += -DHAVE_STRLCPY_SUPPORT
-   endif
- endif
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -404,8 +405,7 @@ else
+     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+     FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+-    ifeq ($(has_bfd),y)
++    ifeq ($(feature-libbfd), 1)
+       EXTLIBS += -lbfd
+     else
+       FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index af65aaa..d348aa0 100644
+index d15074d..af65aaa 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
 @@ -19,6 +19,7 @@ FILES=					\
  	test-libperl			\
  	test-libpython			\
  	test-libpython-version		\
-+	test-strlcpy			\
- 	test-libbfd			\
++	test-libbfd			\
  	test-libnuma
  
-@@ -113,6 +114,9 @@ test-libpython:
+ CC := $(CC) -MD
+@@ -112,6 +113,9 @@ test-libpython:
  test-libpython-version:
  	$(BUILD) $(FLAGS_PYTHON_EMBED)
  
-+test-strlcpy:
-+	$(BUILD)
++test-libbfd:
++	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
 +
- test-libbfd:
- 	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+ -include *.d */*.d
  
-diff --git a/tools/perf/config/feature-checks/test-strlcpy.c b/tools/perf/config/feature-checks/test-strlcpy.c
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
 new file mode 100644
-index 0000000..4a6b6ff
+index 0000000..d03339c
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-strlcpy.c
-@@ -0,0 +1,8 @@
-+#include <stdlib.h>
-+extern size_t strlcpy(char *dest, const char *src, size_t size);
++++ b/tools/perf/config/feature-checks/test-libbfd.c
+@@ -0,0 +1,7 @@
++#include <bfd.h>
 +
 +int main(void)
 +{
-+	strlcpy(NULL, NULL, 0);
++	bfd_demangle(0, 0, 0);
 +	return 0;
 +}
