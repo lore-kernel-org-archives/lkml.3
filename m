@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab3JOQYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:24:36 -0400
-Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:35909 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932283Ab3JOQYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:24:33 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::konrad.w
-X-HE-Tag: rice84_26ab8e8bac32a
-X-Filterd-Recvd-Size: 3076
-Message-ID: <1381854263.22110.19.camel@joe-AO722>
-Subject: Re: [PATCH 02/18] net: use wrapper functions of net_ratelimit() to
- simplify code
-From: Joe Perches <joe@perches.com>
-To: Kefeng Wang <wangkefeng.wang@huawei.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Chas Williams <chas@cmf.nrl.navy.mil>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Samuel Ortiz <samuel@sortiz.org>, Paul Mackerras <paulus@samba.org>,
-        Oliver Neukum <oneukum@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, netfilter@vger.kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        guohanjun@huawei.com
-Date: Tue, 15 Oct 2013 09:24:23 -0700
-In-Reply-To: <1381837514-50660-3-git-send-email-wangkefeng.wang@huawei.com>
-References: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
-	 <1381837514-50660-3-git-send-email-wangkefeng.wang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933238Ab3JOQ1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:27:05 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:53393 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932311Ab3JOQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 12:27:03 -0400
+Message-ID: <525D6CD4.5090403@c-s.fr>
+Date: Tue, 15 Oct 2013 18:27:00 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH] powerpc 8xx: Fixing memory init issue with CONFIG_PIN_TLB
+References: <201310111256.r9BCuepM006243@localhost.localdomain> <OFF3401910.4A8AA6D0-ONC1257C01.0052FC82-C1257C01.00539C55@transmode.se>
+In-Reply-To: <OFF3401910.4A8AA6D0-ONC1257C01.0052FC82-C1257C01.00539C55@transmode.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 19:44 +0800, Kefeng Wang wrote:
-> Wrapper functions net_ratelimited_function() and net_XXX_ratelimited()
-> are called to simplify code.
-[]
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-[]
-> @@ -465,10 +465,8 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->  	if (likely(fdb)) {
->  		/* attempt to update an entry for a local interface */
->  		if (unlikely(fdb->is_local)) {
-> -			if (net_ratelimit())
-> -				br_warn(br, "received packet on %s with "
-> -					"own address as source address\n",
-> -					source->dev->name);
-> +			net_ratelimited_function(br_warn, br, "received packet on %s "
-> +				"with own address as source address\n", source->dev->name);
 
-Hello Kefeng.
+Le 11/10/2013 17:13, Joakim Tjernlund a écrit :
+> "Linuxppc-dev"
+> <linuxppc-dev-bounces+joakim.tjernlund=transmode.se@lists.ozlabs.org>
+> wrote on 2013/10/11 14:56:40:
+>> Activating CONFIG_PIN_TLB allows access to the 24 first Mbytes of memory
+> at
+>> bootup instead of 8. It is needed for "big" kernels for instance when
+> activating
+>> CONFIG_LOCKDEP_SUPPORT. This needs to be taken into account in init_32
+> too,
+>> otherwise memory allocation soon fails after startup.
+>>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>
+>> diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S
+> linux-3.11/arch/powerpc/kernel/head_8xx.S
+>> --- linux-3.11.org/arch/powerpc/mm/init_32.c   2013-09-02
+> 22:46:10.000000000 +0200
+>> +++ linux-3.11/arch/powerpc/mm/init_32.c   2013-09-09 11:28:54.000000000
+> +0200
+>> @@ -213,7 +213,12 @@
+>>       */
+>>      BUG_ON(first_memblock_base != 0);
+>>
+>> +#ifdef CONFIG_PIN_TLB
+>> +   /* 8xx can only access 24MB at the moment */
+>> +   memblock_set_current_limit(min_t(u64, first_memblock_size,
+> 0x01800000));
+>> +#else
+>>      /* 8xx can only access 8MB at the moment */
+>>      memblock_set_current_limit(min_t(u64, first_memblock_size,
+> 0x00800000));
+>> +#endif
+>>   }
+>>   #endif /* CONFIG_8xx */
+> hmm, I think you should always map 24 MB (or less if RAM < 24 MB) and do
+> the same
+> in head_8xx.S.
+>
+> Or to keep it simple, just always map at least 16 MB here and in
+> head_8xx.S, assuming
+> that 16 MB is min RAM for any 8xx system running 3.x kernels.
+Yes we could do a more elaborated modification in the future. However it 
+also has an impact on the boot loader, so I'm not sure we should make it 
+the default without thinking twice.
 
-When these types of lines are changed, please coalesce the
-fragmented format pieces into a single string.
+In the meantime, my patch does take into account the existing situation 
+where you have 8Mb by default and 24Mb when you activate CONFIG_PIN_TLB.
+I see it as a bug fix and I believe we should include it at least in 
+order to allow including in the stable releases.
 
-It makes grep a bit easier and 80 columns limits don't
-apply to formats.
+Do you see any issue with this approach ?
 
-I think using net_ratelimited_function is not particularly
-clarifying here.
-
-Maybe net_ratelimited_function should be removed instead
-of its use sites expanded.
-
-Perhaps adding macros like #define br_warn_ratelimited()
-would be better.
-
-This comment applies to the whole series.
-
+>
+> Much of the need for pinning would go away if you adopted my 8MB pages
+> from 2.4 to 3.x
+>
+>     Jocke
+>
+Christophe
