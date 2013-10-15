@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759779Ab3JOUPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:15:53 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:59146 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759122Ab3JOUPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:15:51 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthias Schniedermeyer <ms@citd.de>,
-        Linux Containers <containers@lists.linux-foundation.org>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com> <87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-	<87li23trll.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-	<87vc15mjuw.fsf@xmission.com>
-	<CAJfpegvF89LzAvNB0h0otv7sKoS3rewZzQKAauQx3P+rCkCcSg@mail.gmail.com>
-	<87iox38fkv.fsf@xmission.com> <87d2nb8dxy.fsf@xmission.com>
-Date: Tue, 15 Oct 2013 13:15:41 -0700
-In-Reply-To: <87d2nb8dxy.fsf@xmission.com> (Eric W. Biederman's message of
-	"Fri, 11 Oct 2013 18:39:53 -0700")
-Message-ID: <87iowyxpci.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+bLZHJ2N2sIbvGXUjZWJuHbJsm463DKNk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0573]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 0/4] vfs: Detach mounts on unlink
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1759812Ab3JOUQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:16:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759712Ab3JOUQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 16:16:33 -0400
+Date: Tue, 15 Oct 2013 16:16:23 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Message-ID: <1381868183-6d50s9n5-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131015194428.GI3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+ <20131015143407.GE3479@redhat.com>
+ <20131015144827.C45DDE0090@blue.fi.intel.com>
+ <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
+ <20131015185510.GH3479@redhat.com>
+ <1381865330-8nb86ucy-mutt-n-horiguchi@ah.jp.nec.com>
+ <20131015194428.GI3479@redhat.com>
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20131015194428.GI3479@redhat.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 15, 2013 at 09:44:28PM +0200, Andrea Arcangeli wrote:
+> On Tue, Oct 15, 2013 at 03:28:50PM -0400, Naoya Horiguchi wrote:
+> > On Tue, Oct 15, 2013 at 08:55:10PM +0200, Andrea Arcangeli wrote:
+> > > On Tue, Oct 15, 2013 at 10:53:10AM -0700, Hugh Dickins wrote:
+> > > > I'm afraid Andrea's mail about concurrent madvises gives me far more
+> > > > to think about than I have time for: seems to get into problems he
+> > > > knows a lot about but I'm unfamiliar with.  If this patch looks good
+> > > > for now on its own, let's put it in; but no problem if you guys prefer
+> > > > to wait for a fuller solution of more problems, we can ride with this
+> > > > one internally for the moment.
+> > > 
+> > > I'm very happy with the patch and I think it's a correct fix for the
+> > > COW scenario which is deterministic so the looping makes a meaningful
+> > > difference for it. If we wouldn't loop, part of the copied page
+> > > wouldn't be zapped after the COW.
+> > 
+> > I like this patch, too.
+> > 
+> > If we have the loop in __split_huge_page_pmd as suggested in this patch,
+> > can we assume that the pmd is stable after __split_huge_page_pmd returns?
+> > If it's true, we can remove pmd_none_or_trans_huge_or_clear_bad check
+> > in the callers side (zap_pmd_range and some other page table walking code.)
+> 
+> We can assume it stable for the deterministic cases where the
+> looping is useful for and split_huge_page creates non-huge pmd that points to
+> a regular pte.
+> 
+> But we cannot remove pmd_none_or_trans_huge_or_clear_bad after if for
+> the other non deterministic cases that I described in previous
+> email. Looping still provides no guarantee that when the function
+> returns, the pmd in not huge. So for safety we still need to handle
+> the non deterministic case and just discard it through
+> pmd_none_or_trans_huge_or_clear_bad.
 
-This patchset is an addresses two problems:
-1) Not all modifications to the filesystems happen through the vfs and
-   since the vfs can not cope with a mount point being unlinked or
-   renamed filesystems whose modifications that do not come through the
-   vfs are required to lie.
+OK, this check is necessary. But pmd_none_or_trans_huge_or_clear_bad
+doesn't clear the pmd when pmd_trans_huge is true. So zap_pmd_range
+seems to do nothing on such irregular pmd_trans_huge. So it looks to
+me better that zap_pmd_range retries the loop on the same address
+instead of 'goto next'.
+The reason why I had this kind of question is that I recently study on
+page table walker and some related code do retry in the similar situation.
 
-2) Through an oversight it is now possible for one unprivileged user to
-   mount something on another unprivileged users dentry and make it
-   impossible for the other user to unlink or rename that dentry.
-
-It is now technically possible to easily lift the restriction on
-unlinking and renaming files with mount points on them, with a
-corresponding reduction in complexity of the vfs semantics.
-
-After review it seems that there are no objections to this approach as
-long as we retain the -EBUSY semantics for rmdir, unlink, and rename of
-mount points in the current mount namespace.  The first patch in this
-series now adds those local mount namespace restrictions.
-
-All of the review comments should now be addressed and folded in, and
-I have take a careful look and it appears what I have is now correct
-and complete.  So I am posting this for one last round of review.
-
-Al if you want to take this through the vfs tree, point me at a branch
-and I will give you versions of these patches that apply cleanly there.
-Otherwise I will push these patches to my userns tree as soon as all of
-these patches pass review.
-
-Eric W. Biederman (4):
-      vfs: Don't allow overwriting mounts in the current mount namespace
-      vfs: Keep a list of mounts on a mount point
-      vfs: Add a function to lazily unmount all mounts from any dentry. v3
-      vfs: Lazily remove mounts on unlinked files and directories. v2
-
- fs/afs/dir.c           |    3 +-
- fs/dcache.c            |   80 ++++++++++++++++++++----------------------------
- fs/fuse/dir.c          |    3 +-
- fs/gfs2/dentry.c       |    4 +--
- fs/mount.h             |    3 ++
- fs/namei.c             |   55 +++++++++++++++++++++------------
- fs/namespace.c         |   30 ++++++++++++++++++
- fs/nfs/dir.c           |    5 +--
- fs/sysfs/dir.c         |    9 +-----
- include/linux/dcache.h |    3 +-
- 10 files changed, 108 insertions(+), 87 deletions(-)
+Thanks,
+Naoya Horiguchi
