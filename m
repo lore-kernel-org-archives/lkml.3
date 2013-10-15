@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157Ab3JOMfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:35:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52641 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759132Ab3JOMft (ORCPT
+	id S1759201Ab3JOMgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:36:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55047 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759177Ab3JOMgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:35:49 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: mturquette@linaro.org
-Cc: tomasz.figa@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH] clk: s3c64xx: Correct spi bus clock hookups
-Date: Tue, 15 Oct 2013 13:26:22 +0100
-Message-Id: <1381839982-3026-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 15 Oct 2013 08:36:07 -0400
+Date: Tue, 15 Oct 2013 14:35:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
+Message-ID: <20131015123527.GI10651@twins.programming.kicks-ass.net>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <1381747426-31334-13-git-send-email-juri.lelli@gmail.com>
+ <20131014140618.GA26604@gmail.com>
+ <525D1234.5060001@gmail.com>
+ <20131015102621.GE10651@twins.programming.kicks-ass.net>
+ <20131015122522.GB2402@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015122522.GB2402@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct the SPI bus clock hookups to match their state before the switch
-to this driver. With out this patch my system (based on an s3c6410)
-can't locate any spibus clock.
+On Tue, Oct 15, 2013 at 02:25:22PM +0200, Ingo Molnar wrote:
+> Really, please make it _symmetric_ ...
+> 
+> Single core systems are becoming a historic curiosity, should we should 
+> justify every piece of extra complexity we add for them.
+> 
+> So I'd rather see obvious SMP code where the UP case works fine too, and 
+> _then_ maybe check a separate patch that adds the UP optimization, with 
+> (object size) numbers proving that it's worth it, etc.
 
-Note, I only have a passing familiarity with this driver and subsystem
-so this patch could probably use a careful eye.
+That's a slightly larger task than it appears; the core scheduler code
+they rely on with smp doesn't exist on up.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/clk/samsung/clk-s3c64xx.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/clk/samsung/clk-s3c64xx.c b/drivers/clk/samsung/clk-s3c64xx.c
-index 7d2c842..f6ac974 100644
---- a/drivers/clk/samsung/clk-s3c64xx.c
-+++ b/drivers/clk/samsung/clk-s3c64xx.c
-@@ -356,8 +356,12 @@ static struct samsung_clock_alias s3c64xx_clock_aliases[] = {
- 	ALIAS(SCLK_MMC2, "s3c-sdhci.2", "mmc_busclk.2"),
- 	ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
- 	ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
--	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi-bus"),
--	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi-bus"),
-+	ALIAS(PCLK_SPI1, "s3c6410-spi.1", "spi_busclk0"),
-+	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi_busclk1"),
-+	ALIAS(SCLK_SPI1_48, "s3c6410-spi.1", "spi_busclk2"),
-+	ALIAS(PCLK_SPI0, "s3c6410-spi.0", "spi_busclk0"),
-+	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi_busclk1"),
-+	ALIAS(SCLK_SPI0_48, "s3c6410-spi.0", "spi_busclk2"),
- 	ALIAS(SCLK_AUDIO1, "samsung-pcm.1", "audio-bus"),
- 	ALIAS(SCLK_AUDIO1, "samsung-i2s.1", "audio-bus"),
- 	ALIAS(SCLK_AUDIO0, "samsung-pcm.0", "audio-bus"),
--- 
-1.7.2.5
-
+We can do this but we need to do it scheduler wide.
