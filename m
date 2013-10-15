@@ -1,84 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab3JOGXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 02:23:54 -0400
-Received: from mail.eperm.de ([89.247.134.16]:44151 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab3JOGXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 02:23:53 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: Sandy Harris <sandyinchina@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Tue, 15 Oct 2013 08:23:41 +0200
-Message-ID: <2784827.Oba8fbRgfE@tauon>
-User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CACXcFm=M2Jrra3tttWyhwfs-a6iVm0joiKi=wHKuANe_s_F-Sw@mail.gmail.com>
-References: <2579337.FPgJGgHYdz@tauon> <3593500.a7fOuGKlEX@tauon> <CACXcFm=M2Jrra3tttWyhwfs-a6iVm0joiKi=wHKuANe_s_F-Sw@mail.gmail.com>
+	id S1757935Ab3JOG0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 02:26:21 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:62204 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3JOG0T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 02:26:19 -0400
+Message-ID: <525CE007.6070101@linaro.org>
+Date: Tue, 15 Oct 2013 08:26:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, shaojie.sun@linaro.org
+Subject: Re: [PATCH] ARM: trace: Add tracepoint for the Inter Processor Interrupt
+References: <1381758807-31139-1-git-send-email-daniel.lezcano@linaro.org> <20131014232004.5cbedbb8@gandalf.local.home>
+In-Reply-To: <20131014232004.5cbedbb8@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 14. Oktober 2013, 11:18:16 schrieb Sandy Harris:
-
-Hi Sandy,
-
-Could you please review the following code to see that the mix is 
-function right in your eyes?
+On 10/15/2013 05:20 AM, Steven Rostedt wrote:
+> On Mon, 14 Oct 2013 15:53:27 +0200
+> Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 >
->However, having done that, I see no reason not to add mixing.
->Using bit() for getting one bit of input and rotl(x) for rotating
->left one bit, your code is basically, with 64-bit x:
+>> The Inter Processor Interrupt is used on ARM to tell another processor to do
+>> a specific action. This is mainly used to emulate a timer interrupt on an idle
+>> cpu, force a cpu to reschedule or run a function on another processor context.
+>>
+>> Add a tracepoint when raising an IPI and in the entry/exit handler function.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>   arch/arm/include/asm/smp.h   |    9 ++++
+>>   arch/arm/kernel/smp.c        |   34 ++++++++------
+>>   arch/arm64/include/asm/smp.h |    7 +++
+>>   arch/arm64/kernel/smp.c      |   21 +++++++--
+>>   include/trace/events/ipi.h   |  106 ++++++++++++++++++++++++++++++++++++++++++
+>>   5 files changed, 158 insertions(+), 19 deletions(-)
+>>   create mode 100644 include/trace/events/ipi.h
+>>
+>> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+>> index a8cae71c..788706c 100644
+>> --- a/arch/arm/include/asm/smp.h
+>> +++ b/arch/arm/include/asm/smp.h
+>> @@ -18,6 +18,15 @@
+>>   # error "<asm/smp.h> included in non-SMP build"
+>>   #endif
+>>
+>> +enum ipi_msg_type {
+>> +	IPI_WAKEUP,
+>> +	IPI_TIMER,
+>> +	IPI_RESCHEDULE,
+>> +	IPI_CALL_FUNC,
+>> +	IPI_CALL_FUNC_SINGLE,
+>> +	IPI_CPU_STOP,
+>> +};
+>> +
+>>   #define raw_smp_processor_id() (current_thread_info()->cpu)
+>>
+>>   struct seq_file;
+>> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+>> index 72024ea..9ca8ce8 100644
+>> --- a/arch/arm/kernel/smp.c
+>> +++ b/arch/arm/kernel/smp.c
+>> @@ -46,6 +46,9 @@
+>>   #include <asm/mach/arch.h>
+>>   #include <asm/mpu.h>
+>>
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/ipi.h>
+>> +
+>>   /*
+>>    * as from 2.5, kernels no longer have an init_tasks structure
+>>    * so we need some other way of telling a new secondary core
+>> @@ -59,15 +62,6 @@ struct secondary_data secondary_data;
+>>    */
+>>   volatile int pen_release = -1;
+>>
+>> -enum ipi_msg_type {
+>> -	IPI_WAKEUP,
+>> -	IPI_TIMER,
+>> -	IPI_RESCHEDULE,
+>> -	IPI_CALL_FUNC,
+>> -	IPI_CALL_FUNC_SINGLE,
+>> -	IPI_CPU_STOP,
+>> -};
+>> -
+>>   static DECLARE_COMPLETION(cpu_running);
+>>
+>>   static struct smp_operations smp_ops;
+>> @@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>>   		smp_cross_call = fn;
+>>   }
+>>
+>> +static void ipi_raise(const struct cpumask *mask, int ipinr)
+>> +{
+>> +	trace_ipi_raise(mask, ipinr);
+>> +	smp_cross_call(mask, ipinr);
+>> +}
+>> +
+>>   void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>>   {
+>> -	smp_cross_call(mask, IPI_CALL_FUNC);
+>> +	ipi_raise(mask, IPI_CALL_FUNC);
+>>   }
+>>
+>>   void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+>>   {
+>> -	smp_cross_call(mask, IPI_WAKEUP);
+>> +	ipi_raise(mask, IPI_WAKEUP);
+>>   }
+>>
+>>   void arch_send_call_function_single_ipi(int cpu)
+>>   {
+>> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>>   }
+>>
+>>   static const char *ipi_types[NR_IPI] = {
+>> @@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+>>   #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+>>   void tick_broadcast(const struct cpumask *mask)
+>>   {
+>> -	smp_cross_call(mask, IPI_TIMER);
+>> +	ipi_raise(mask, IPI_TIMER);
+>>   }
+>>   #endif
+>>
+>> @@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>>   	unsigned int cpu = smp_processor_id();
+>>   	struct pt_regs *old_regs = set_irq_regs(regs);
+>>
+>> +	trace_ipi_handler_entry(ipinr);
+>> +
+>>   	if (ipinr < NR_IPI)
+>>   		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+>>
+>> @@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>>   		break;
+>>   	}
+>>   	set_irq_regs(old_regs);
+>> +
+>> +	trace_ipi_handler_exit(ipinr);
+>>   }
+>>
+>>   void smp_send_reschedule(int cpu)
+>>   {
+>> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+>> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
+>>   }
+>>
+>>   void smp_send_stop(void)
+>> @@ -586,7 +590,7 @@ void smp_send_stop(void)
+>>   	cpumask_copy(&mask, cpu_online_mask);
+>>   	cpumask_clear_cpu(smp_processor_id(), &mask);
+>>   	if (!cpumask_empty(&mask))
+>> -		smp_cross_call(&mask, IPI_CPU_STOP);
+>> +		ipi_raise(&mask, IPI_CPU_STOP);
+>>
+>>   	/* Wait up to one second for other CPUs to stop */
+>>   	timeout = USEC_PER_SEC;
+>> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+>> index 4b8023c..7ebaa3a 100644
+>> --- a/arch/arm64/include/asm/smp.h
+>> +++ b/arch/arm64/include/asm/smp.h
+>> @@ -24,6 +24,13 @@
+>>   # error "<asm/smp.h> included in non-SMP build"
+>>   #endif
+>>
+>> +enum ipi_msg_type {
+>> +	IPI_RESCHEDULE,
+>> +	IPI_CALL_FUNC,
+>> +	IPI_CALL_FUNC_SINGLE,
+>> +	IPI_CPU_STOP,
+>> +};
+>> +
+>>   #define raw_smp_processor_id() (current_thread_info()->cpu)
+>>
+>>   struct seq_file;
+
+[ ... ]
+
+>> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+>> +/**
+>> + * ipi_handle_entry - called right before the IPI handler
+>> + * @ipinr: the IPI number
+>> + *
+>> + * The @ipinr value must be valid and the action name associated with
+>> + * the IPI value is given in the trace.
+>> + */
+>> +TRACE_EVENT_CONDITION(ipi_handler_entry,
+>> +
+>> +    TP_PROTO(int ipinr),
+>> +
+>> +    TP_ARGS(ipinr),
+>> +
+>> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+>> +
+>> +    TP_STRUCT__entry(
+>> +        __field(unsigned int, ipinr)
+>> +    ),
+>> +
+>> +    TP_fast_assign(
+>> +        __entry->ipinr = ipinr;
+>> +    ),
+>> +
+>> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
+>> +	      show_ipi_name(__entry->ipinr))
+>> +);
+>> +
+>> +/**
+>> + * ipi_handle_exit - called right after the IPI handler
+>> + * @ipinr: the IPI number
+>> + *
+>> + * The @ipinr value must be valid and the action name associated with
+>> + * the IPI value is given in the trace.
+>> + */
+>> +TRACE_EVENT_CONDITION(ipi_handler_exit,
+>> +
+>> +    TP_PROTO(int ipinr),
+>> +
+>> +    TP_ARGS(ipinr),
+>> +
+>> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+>> +
+>> +    TP_STRUCT__entry(
+>> +        __field(int, ipinr)
 >
->   for( i=0, x = 0 ; i < 64; i++, x =rotl(x) )
->        x |= bit()
+> Here you have "int" and above for the "*_entry" you have unsigned int.
+> Is there a difference?
+
+No, actually it is a typo.
+
+> If not, you should combine these two into a DECLARE_EVENT_CLASS() and
+> then use DEFINE_EVENT_CONDITION() for the two tracepoints.
+
+Ok.
+
+>> +    ),
+>> +
+>> +    TP_fast_assign(
+>> +        __entry->ipinr = ipinr;
+>> +    ),
+>> +
+>> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
+>> +	      show_ipi_name(__entry->ipinr))
+>> +);
+>> +
+>> +/**
+>> + * ipi_raise - called when a smp cross call is made
+>> + * @ipinr: the IPI number
+>> + * @cpumask: the recipients for the IPI
+>> + *
+>> + * The @ipinr value must be valid and the action name associated with
+>> + * the IPI value is given in the trace.
+>> + */
+>> +TRACE_EVENT_CONDITION(ipi_raise,
+>> +
+>> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
+>> +
+>> +    TP_ARGS(cpumask, ipinr),
 >
->Why not declare some 64-bit constant C with a significant
->number of bits set and do this:
->
->   for( i=0, x = 0 ; i < 64; i++, x =rotl(x) ) // same loop control
->      if( bit() ) x ^= C ;
+> Why pass in the cpumask if it isn't used? Do you expect to hook
+> something else to the tracepoint?
 
-I only want to use the XOR function as this is bijective and fits to my 
-mathematical model.
+Mmh, I have a doubt here about the trace. I can remove the cpumask 
+because it is not used but in the other hand, it would be interesting to 
+have in the trace the cpumask of the recipient cpus for the IPI. 
+Unfortunately, I don't know how to convert this cpumask to a string 
+without using the cpumask_scnprintf which imply a more complex print trace.
 
-The entropy_collector->data contains the random number. The code first 
-produces the mixer value that is XORed as often as set bits are 
-available in the input random number. Finally, it is XORed with the 
-random number.
+Do you have some advices for that ?
 
-The function is currently called unconditionally after the 64 bit random 
-number is generated from the noise source.
+Thanks for the review.
 
-static inline void jent_stir_pool(struct rand_data *entropy_collector)
-{
-        /* This constant is derived from the first two 32 bit 
-initialization
-         * vectors of SHA-1 -- 32 bits are set and 32 are unset */
-        __u64 constant = 0x67452301efcdab89;
-        __u64 mixer = 0;
-        int i = 0;
+   -- Daniel
 
-        for(i = 0; i < DATA_SIZE_BITS; i++)
-        {
-                /* get the i-th bit of the input random number and
-                 * XOR the constant into the mixer value only when that 
-bit
-                 * is set */
-                if((entropy_collector->data >> i) & 0x0000000000000001)
-                        mixer ^= constant;
-                mixer = rol64(mixer, 1);
-        }
-        entropy_collector->data ^= mixer;
-}
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-The statistical behavior of the output looks good so far (just tested it 
-with the ent tool -- the Chi Square value is good). It also does not 
-compress with bzip2.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Thanks a lot
-Stephan
