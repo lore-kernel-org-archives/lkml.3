@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3JOFUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:20:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60868 "EHLO
+	id S932747Ab3JOFU2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:20:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60883 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab3JOFUH (ORCPT
+	with ESMTP id S932711Ab3JOFUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:20:07 -0400
-Date: Mon, 14 Oct 2013 22:19:49 -0700
+	Tue, 15 Oct 2013 01:20:21 -0400
+Date: Mon, 14 Oct 2013 22:20:07 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-1f7c645ab4b8326fef5afcd842795e071ecce9df@git.kernel.org>
+Message-ID: <tip-aa4acf6cf102f639a2023b389ca8be8b8d9cad52@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -17,10 +17,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         tglx@linutronix.de
+In-Reply-To: <20131007155129.GA1066@gmail.com>
+References: <20131007155129.GA1066@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf/build: Fix O=/some/
- dir perf.o type of targets
-Git-Commit-ID: 1f7c645ab4b8326fef5afcd842795e071ecce9df
+Subject: [tip:perf/core] tools/perf/build:
+  Pass through LDFLAGS to feature tests
+Git-Commit-ID: aa4acf6cf102f639a2023b389ca8be8b8d9cad52
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,81 +31,72 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:19:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:20:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1f7c645ab4b8326fef5afcd842795e071ecce9df
-Gitweb:     http://git.kernel.org/tip/1f7c645ab4b8326fef5afcd842795e071ecce9df
+Commit-ID:  aa4acf6cf102f639a2023b389ca8be8b8d9cad52
+Gitweb:     http://git.kernel.org/tip/aa4acf6cf102f639a2023b389ca8be8b8d9cad52
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Fri, 4 Oct 2013 12:14:59 +0200
+AuthorDate: Mon, 7 Oct 2013 17:51:29 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:49:02 +0200
+CommitDate: Wed, 9 Oct 2013 08:49:03 +0200
 
-tools/perf/build: Fix O=/some/dir perf.o type of targets
+tools/perf/build: Pass through LDFLAGS to feature tests
 
-If someone specifies a single target, mixed with O=, the following way:
+David Ahern reported that when passing in LDFLAGS=-static then
+the feature checks still succeed - causing build failures down
+the line because the static libraries are missing.
 
-    hubble:~/tip/tools/perf> make O=/tmp/perf util/stat.o
-    BUILD: Doing 'make -j8' parallel build
-    gcc  -Wbad-function-cast -Wdeclaration-after-statement -Wformat-security -Wformat-y2k [...]
+Solve this by passing through LDFLAGS to the feature-check
+Makefile.
 
-The build might even fail, if a target depends on other targets:
-
-    hubble:~/tip/tools/perf> make O=/tmp/perf perf.o
-    ...
-    perf.c: In function ‘handle_options’:
-    perf.c:155:21: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
-
-The correct way to invoke such targets is:
-
-    hubble:~/tip/tools/perf> make O=/tmp/perf /tmp/perf/perf.o
-    BUILD: Doing 'make -j8' parallel build
-    GEN /tmp/perf/common-cmds.h
-    CC /tmp/perf/perf.o
-
-But that's unnecessary typing and it's also easy to mistakenly build into the
-source directory.
-
-To fix this remove the generic suffix rules and add redirection to $(OUTPUT)
-for the most popular .o targets.
-
+Reported-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-mk0oiukmhgSbrll6chrPkkqr@git.kernel.org
+Link: http://lkml.kernel.org/r/20131007155129.GA1066@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/Makefile.perf | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile                | 4 ++--
+ tools/perf/config/feature-checks/Makefile | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 178a1c8..a24f6c2 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -576,7 +576,21 @@ $(OUTPUT)perf.o perf.spec \
- 	: $(OUTPUT)PERF-VERSION-FILE
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 3d656e3..78f3b3e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -95,7 +95,7 @@ endif
  
- .SUFFIXES:
--.SUFFIXES: .o .c .S .s
-+
-+#
-+# If a target does not match any of the later rules then prefix it by $(OUTPUT)
-+# This makes targets like 'make O=/tmp/perf perf.o' work in a natural way.
-+#
-+ifneq ($(OUTPUT),)
-+%.o: $(OUTPUT)%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)$@"
-+util/%.o: $(OUTPUT)util/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)util/$@"
-+bench/%.o: $(OUTPUT)bench/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)bench/$@"
-+tests/%.o: $(OUTPUT)tests/%.o
-+	@echo "    # Redirected target $@ => $(OUTPUT)tests/$@"
-+endif
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
  
- # These two need to be here so that when O= is not used they take precedence
- # over the general rule for .o
+ feature_set = $(eval $(feature_set_code))
+@@ -173,7 +173,7 @@ ifeq ($(feature-all), 1)
+   #
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index e21bceb..8ecac19 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -32,7 +32,7 @@ CC := $(CC) -MD
+ 
+ all: $(FILES)
+ 
+-BUILD = $(CC) -o $(OUTPUT)$@ $@.c
++BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ 
+ ###############################
+ 
