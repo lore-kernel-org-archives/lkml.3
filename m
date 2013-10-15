@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3JOGCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 02:02:06 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:63885 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab3JOGCF (ORCPT
+	id S1758092Ab3JOGEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 02:04:30 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:52796 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3JOGE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 02:02:05 -0400
-Date: Tue, 15 Oct 2013 08:02:00 +0200
+	Tue, 15 Oct 2013 02:04:28 -0400
+Date: Tue, 15 Oct 2013 08:04:25 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf record: mmap output file - v2
-Message-ID: <20131015060200.GA3866@gmail.com>
-References: <1381805731-10398-1-git-send-email-dsahern@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
+Message-ID: <20131015060425.GB3866@gmail.com>
+References: <20131011013954.GA28902@www.outflux.net>
+ <tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
+ <20131014083035.GA20976@gmail.com>
+ <007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
+ <525C1BC1.6090501@zytor.com>
+ <CAGXu5j+tQfUpmem85WK5-ootoJM1mCH6BPDr3pfR2sHwoFy_8A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381805731-10398-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <CAGXu5j+tQfUpmem85WK5-ootoJM1mCH6BPDr3pfR2sHwoFy_8A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Ahern <dsahern@gmail.com> wrote:
+* Kees Cook <keescook@chromium.org> wrote:
 
-> +	/* for MMAP based file writes */
-> +	void			*mmap_addr;
-> +	u64			bytes_at_mmap_start; /* bytes in file when mmap use starts */
-> +	u64			mmap_offset;    /* current location within mmap */
-> +	size_t			mmap_size;      /* size of mmap segments */
-> +	bool			use_mmap;
+> On Mon, Oct 14, 2013 at 9:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 10/14/2013 07:19 AM, H. Peter Anvin wrote:
+> >> My guess is that the 95 addresses are randomized and the 82 address is an address which failed to relocate.
+> >
+> >> ffffffff82a04a58 is:
+> >> ffffffff82a03000 t init_per_cpu__gdt_page
+> >
+> >
+> > Specifically, it looks like the percpu stuff isn't getting set up correctly.
+> 
+> It wouldn't surprise me if there are even more percpu things to fix.
+> It's the main area we've continued to trip over while working on this
+> with various linkers. Which linker and version are you seeing this
+> with?
 
-> +	if (!rec->opts.pipe_output && stat(output_name, &st) == 0) {
-> +		rec->use_mmap = true;
-> +		rec->bytes_at_mmap_start = st.st_size - rec->bytes_written;
-> +	}
+The failure I saw triggered with fairly modern userspace:
 
-1)
+ GNU ld version 2.23.52.0.1-9.fc19 20130226
 
-I think __cmd_record() has become way too large, nearly 300 lines of code. 
-It would be nice to split it into 2-3 helpers that operate on 'struct 
-perf_record' or so.
-
-2)
-
-The stat() seems superfluous, here in __cmd_record() we've just checked 
-the output_name and made sure it exists. Can that stat() call ever fail?
-
-3)
-
-The rec->bytes_at_mmap_start field feels a bit weird. If I read the code 
-correctly, in every 'perf record' invocation, rec->bytes_written starts at 
-0 - i.e. we don't have repeat invocations of cmd_record().
-
-That means that this:
-
-		rec->bytes_at_mmap_start = st.st_size - rec->bytes_written;
-
-is really:
-
-		rec->bytes_at_mmap_start = st.st_size;
-
-furthermore, since we don't allow appends anymore, st.st_size ought to be 
-zero as well.
-
-Which means that ->bytes_at_mmap_start is always zero - and could be 
-eliminated altogether.
+ gcc version 4.8.1 20130603 (Red Hat 4.8.1-1) (GCC) 
 
 Thanks,
 
