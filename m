@@ -1,285 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab3JOK15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:27:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61130 "EHLO mga02.intel.com"
+	id S1758588Ab3JOK3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:29:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1266 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758273Ab3JOK1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:27:55 -0400
+	id S1754364Ab3JOK3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 06:29:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
-   d="scan'208";a="393122169"
-Message-ID: <1381832870.2080.42.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv4 4/9] Thermal: Add APIs to bind cdev to new zone
- structure
-From: Zhang Rui <rui.zhang@intel.com>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com,
-        wni@nvidia.com
-Date: Tue, 15 Oct 2013 18:27:50 +0800
-In-Reply-To: <1380652688-5787-5-git-send-email-durgadoss.r@intel.com>
-References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
-	 <1380652688-5787-5-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+   d="scan'208";a="374912102"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ning Qu <quning@google.com>
+In-Reply-To: <20131015001214.GD3432@hippobay.mtv.corp.google.com>
+References: <20131015001214.GD3432@hippobay.mtv.corp.google.com>
+Subject: RE: [PATCH 03/12] mm, thp, tmpfs: handle huge page cases in
+ shmem_getpage_gfp
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <20131015102912.2BC99E0090@blue.fi.intel.com>
+Date: Tue, 15 Oct 2013 13:29:12 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 00:08 +0530, Durgadoss R wrote:
-> This patch creates new APIs to add/remove a
-> cdev to/from a zone. This patch does not change
-> the old cooling device implementation.
+Ning Qu wrote:
+> We don't support huge page when page is moved from page cache to swap.
+> So in this function, we enable huge page handling in two case:
 > 
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-I'm okay with this patch except the API naming.
-
-thanks,
-rui
+> 1) when a huge page is found in the page cache,
+> 2) or we need to alloc a huge page for page cache
+> 
+> We have to refactor all the calls to shmem_getpages to simplify the job
+> of caller. Right now shmem_getpage does:
+> 
+> 1) simply request a page, default as a small page
+> 2) or caller specify a flag to request either a huge page or a small page,
+> then leave the caller to decide how to use it
+> 
+> Signed-off-by: Ning Qu <quning@gmail.com>
 > ---
->  drivers/thermal/thermal_core.c |  136 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/thermal.h        |    9 +++
->  2 files changed, 145 insertions(+)
+>  mm/shmem.c | 139 +++++++++++++++++++++++++++++++++++++++++++++++--------------
+>  1 file changed, 108 insertions(+), 31 deletions(-)
 > 
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index a053b60..3c4ef62 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -58,6 +58,7 @@ static LIST_HEAD(thermal_governor_list);
->  static DEFINE_MUTEX(thermal_list_lock);
->  static DEFINE_MUTEX(sensor_list_lock);
->  static DEFINE_MUTEX(zone_list_lock);
-> +static DEFINE_MUTEX(cdev_list_lock);
->  static DEFINE_MUTEX(thermal_governor_lock);
->  
->  #define for_each_thermal_sensor(pos) \
-> @@ -86,6 +87,9 @@ static DEFINE_MUTEX(thermal_governor_lock);
->  	ret;						\
->  })
->  
-> +#define for_each_cdev(pos) \
-> +	list_for_each_entry(pos, &thermal_cdev_list, node)
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 447bd14..8fe17dd 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -115,15 +115,43 @@ static unsigned long shmem_default_max_inodes(void)
+>  static bool shmem_should_replace_page(struct page *page, gfp_t gfp);
+>  static int shmem_replace_page(struct page **pagep, gfp_t gfp,
+>  				struct shmem_inode_info *info, pgoff_t index);
 > +
->  static struct thermal_governor *__find_governor(const char *name)
->  {
->  	struct thermal_governor *pos;
-> @@ -511,6 +515,27 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
->  	mutex_unlock(&tz->lock);
->  }
->  
-> +static void remove_cdev_from_zone(struct thermal_zone *tz,
-> +				struct thermal_cooling_device *cdev)
+>  static int shmem_getpage_gfp(struct inode *inode, pgoff_t index,
+> -	struct page **pagep, enum sgp_type sgp, gfp_t gfp, int *fault_type);
+> +	struct page **pagep, enum sgp_type sgp, gfp_t gfp, int flags,
+> +	int *fault_type);
+> +
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
+> +static inline int shmem_getpage(struct inode *inode, pgoff_t index,
+> +	struct page **pagep, enum sgp_type sgp, gfp_t gfp, int flags,
+> +	int *fault_type)
 > +{
-> +	int j, indx;
-> +
-> +	indx = GET_INDEX(tz, cdev, cdev);
-> +	if (indx < 0)
-> +		return;
-> +
-> +	sysfs_remove_link(&tz->device.kobj, kobject_name(&cdev->device.kobj));
-> +
-> +	mutex_lock(&tz->lock);
-> +
-> +	/* Shift the entries in the tz->cdevs array */
-> +	for (j = indx; j < MAX_CDEVS_PER_ZONE - 1; j++)
-> +		tz->cdevs[j] = tz->cdevs[j + 1];
-> +
-> +	tz->cdev_indx--;
-> +	mutex_unlock(&tz->lock);
-> +}
-> +
->  /* sys I/F for thermal zone */
+> +	int ret = 0;
+> +	struct page *page = NULL;
 >  
->  #define to_thermal_zone(_dev) \
-> @@ -1555,6 +1580,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
->  	int i;
->  	const struct thermal_zone_params *tzp;
->  	struct thermal_zone_device *tz;
-> +	struct thermal_zone *tmp_tz;
->  	struct thermal_cooling_device *pos = NULL;
+> +	if ((flags & AOP_FLAG_TRANSHUGE) &&
+> +	    mapping_can_have_hugepages(inode->i_mapping)) {
+
+I don't think we need ifdef here. mapping_can_have_hugepages() will be 0
+compile-time, if CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is not defined and
+compiler should optimize out thp case.
+
+> @@ -1298,27 +1348,37 @@ repeat:
+>  				error = -ENOSPC;
+>  				goto unacct;
+>  			}
+> -			percpu_counter_inc(&sbinfo->used_blocks);
+>  		}
 >  
->  	if (!cdev)
-> @@ -1592,6 +1618,13 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
->  
->  	mutex_unlock(&thermal_list_lock);
->  
-> +	mutex_lock(&zone_list_lock);
-> +
-> +	for_each_thermal_zone(tmp_tz)
-> +		remove_cdev_from_zone(tmp_tz, cdev);
-> +
-> +	mutex_unlock(&zone_list_lock);
-> +
->  	if (cdev->type[0])
->  		device_remove_file(&cdev->device, &dev_attr_cdev_type);
->  	device_remove_file(&cdev->device, &dev_attr_max_state);
-> @@ -1873,6 +1906,7 @@ void remove_thermal_zone(struct thermal_zone *tz)
->  {
->  	struct thermal_zone *pos, *next;
->  	struct thermal_sensor *ts;
-> +	struct thermal_cooling_device *cdev;
->  	bool found = false;
->  
->  	if (!tz)
-> @@ -1894,6 +1928,9 @@ void remove_thermal_zone(struct thermal_zone *tz)
->  	for_each_thermal_sensor(ts)
->  		remove_sensor_from_zone(tz, ts);
->  
-> +	for_each_cdev(cdev)
-> +		remove_cdev_from_zone(tz, cdev);
-> +
->  	device_remove_file(&tz->device, &dev_attr_zone_name);
->  
->  	mutex_destroy(&tz->lock);
-> @@ -1909,6 +1946,47 @@ exit:
->  EXPORT_SYMBOL(remove_thermal_zone);
->  
->  /**
-> + * get_cdev_by_name() - search for a cdev and returns its reference
-> + * @name: cooling device name to fetch the reference
-> + *
-> + * On success returns a reference to an unique cdev with
-> + * the name matching that of @name, an ERR_PTR otherwise:
-> + * -EINVAL for invalid paramenters
-> + * -ENODEV for cdev not found
-> + * -EEXIST for multiple matches
-> + */
-> +struct thermal_cooling_device *get_cdev_by_name(const char *name)
-> +{
-> +	int found = 0;
-> +	struct thermal_cooling_device *pos;
-> +	struct thermal_cooling_device *cdev = ERR_PTR(-EINVAL);
-> +
-> +	if (!name)
-> +		return cdev;
-> +
-> +	mutex_lock(&cdev_list_lock);
-> +	for_each_cdev(pos) {
-> +		if (!strnicmp(pos->type, name, THERMAL_NAME_LENGTH)) {
-> +			found++;
-> +			cdev = pos;
-> +		}
-> +	}
-> +	mutex_unlock(&cdev_list_lock);
-> +
-> +	/*
-> +	 * Nothing has been found; return an error code for it.
-> +	 * Return success only when an unique cdev is found.
-> +	 */
-> +	if (found == 0)
-> +		cdev = ERR_PTR(-ENODEV);
-> +	else if (found > 1)
-> +		cdev = ERR_PTR(-EEXIST);
-> +
-> +	return cdev;
-> +}
-> +EXPORT_SYMBOL(get_cdev_by_name);
-> +
-> +/**
->   * get_sensor_by_name() - search for a sensor and returns its reference
->   * @name: thermal sensor name to fetch the reference
->   *
-> @@ -2003,6 +2081,64 @@ exit_zone:
->  EXPORT_SYMBOL(add_sensor_to_zone);
->  
->  /**
-> + * add_cdev_to_zone - Add @cdev to thermal zone @tz
-> + * @tz:		Thermal zone reference
-> + * @cdev:	Cooling device reference
-> + *
-> + * Returns 0 on success, otherwise
-> + * -EINVAL for invalid paramenters
-> + * -EINVAL when trying to add more cdevs than MAX_CDEVS_PER_ZONE
-> + * -EEXIST when trying add existing cdev again
-> + */
-> +int add_cdev_to_zone(struct thermal_zone *tz,
-> +			struct thermal_cooling_device *cdev)
-> +{
-> +	int ret;
-> +
-> +	if (!tz || !cdev)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&zone_list_lock);
-> +
-> +	/* Ensure we are not adding the same cdev again!! */
-> +	ret = GET_INDEX(tz, cdev, cdev);
-> +	if (ret >= 0) {
-> +		ret = -EEXIST;
-> +		goto exit_zone;
-> +	}
-> +
-> +	/* Protect against 'cdev' being unregistered */
-> +	mutex_lock(&cdev_list_lock);
-> +
-> +	ret = sysfs_create_link(&tz->device.kobj, &cdev->device.kobj,
-> +				kobject_name(&cdev->device.kobj));
-> +	if (ret)
-> +		goto exit_cdev;
-> +
-> +	mutex_lock(&tz->lock);
-> +
-> +	if (tz->cdev_indx >= MAX_CDEVS_PER_ZONE - 1) {
-> +		dev_err(&tz->device, "Only %d cdevs allowed per zone\n",
-> +					MAX_CDEVS_PER_ZONE);
-> +		sysfs_remove_link(&tz->device.kobj,
-> +				kobject_name(&cdev->device.kobj));
-> +		ret = -EINVAL;
-> +		goto exit_indx_check;
-> +	}
-> +
-> +	tz->cdevs[tz->cdev_indx++] = cdev;
-> +
-> +exit_indx_check:
-> +	mutex_unlock(&tz->lock);
-> +exit_cdev:
-> +	mutex_unlock(&cdev_list_lock);
-> +exit_zone:
-> +	mutex_unlock(&zone_list_lock);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(add_cdev_to_zone);
-> +
-> +/**
->   * thermal_sensor_register - register a new thermal sensor
->   * @name:	name of the thermal sensor
->   * @count:	Number of thresholds supported by hardware
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 2e12321..da7520c 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -60,6 +60,8 @@
->  
->  #define MAX_SENSORS_PER_ZONE		5
->  
-> +#define MAX_CDEVS_PER_ZONE		5
-> +
->  struct thermal_sensor;
->  struct thermal_zone_device;
->  struct thermal_cooling_device;
-> @@ -223,6 +225,10 @@ struct thermal_zone {
->  	/* Sensor level information */
->  	int sensor_indx; /* index into 'sensors' array */
->  	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
-> +
-> +	/* cdev level information */
-> +	int cdev_indx; /* index into 'cdevs' array */
-> +	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
->  };
->  
->  /* Structure that holds thermal governor information */
-> @@ -300,6 +306,9 @@ void remove_thermal_zone(struct thermal_zone *);
->  int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
->  struct thermal_sensor *get_sensor_by_name(const char *);
->  
-> +int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device *);
-> +struct thermal_cooling_device *get_cdev_by_name(const char *);
-> +
->  #ifdef CONFIG_NET
->  extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
->  						enum events event);
+> -		page = shmem_alloc_page(gfp, info, index);
+> +		if (must_use_thp) {
+> +			page = shmem_alloc_hugepage(gfp, info, index);
+> +			if (page) {
+> +				count_vm_event(THP_WRITE_ALLOC);
+> +				nr = hpagecache_nr_pages(page);
+
+nr = hpagecache_nr_pages(page) can be moved below if (must_use_thp).
+hpagecache_nr_pages(page) evaluates to 0 for small pages.
 
 
+-- 
+ Kirill A. Shutemov
