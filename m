@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab3JOH6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:58:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37404 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3JOH60 (ORCPT
+	id S1754651Ab3JOIHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 04:07:05 -0400
+Received: from mailout03.t-online.de ([194.25.134.81]:40737 "EHLO
+	mailout03.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab3JOIG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:58:26 -0400
-Date: Tue, 15 Oct 2013 16:58:57 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>, <viro@zeniv.linux.org.uk>,
-        <eparis@redhat.com>
-CC: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [BUG][PATCH V3] audit: audit_log_start running on auditd should not
- stop
-Message-ID: <20131015165857.aa1c68502180cb4b89d6226a@jp.fujitsu.com>
-In-Reply-To: <525CE9BD.4020002@jp.fujitsu.com>
-References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
-	<5257C5D7.80308@cn.fujitsu.com>
-	<5257EF15.6080209@jp.fujitsu.com>
-	<20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com>
-	<525CE10A.90907@cn.fujitsu.com>
-	<525CE9BD.4020002@jp.fujitsu.com>
-Organization: Fujitsu
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.11; i686-redhat-linux-gnu)
+	Tue, 15 Oct 2013 04:06:59 -0400
+Message-ID: <525CF790.2090805@t-online.de>
+Date: Tue, 15 Oct 2013 10:06:40 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+To: paulmck@linux.vnet.ibm.com
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVj?= =?UTF-8?B?a2Vy?= 
+	<fweisbec@gmail.com>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
+ shutdown
+References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <20131014212830.GD5790@linux.vnet.ibm.com> <525C67B0.8020303@t-online.de> <20131014231603.GF5790@linux.vnet.ibm.com> <20131015005938.GA13655@linux.vnet.ibm.com>
+In-Reply-To: <20131015005938.GA13655@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: ECp0TTZZghHk6IBxYZEYWNdbSmOtpoj2JrZF6qjImhLT2bQxRuMvKTncuCX18tHQzn
+X-TOI-MSGID: 477c0bb0-3f64-4a78-b41e-0d474d718a03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlog cannot be consumed when audit_log_start is running on auditd
-even if audit_log_start calls wait_for_auditd to consume it.
-The situation is the deadlock because only auditd can consume the backlog.
-If the other process needs to send the backlog, it can be also stopped 
-by the deadlock.
+On 15.10.2013 02:59, Paul E. McKenney wrote:
+> On Mon, Oct 14, 2013 at 04:16:03PM -0700, Paul E. McKenney wrote:
+>> On Mon, Oct 14, 2013 at 11:52:48PM +0200, Knut Petersen wrote:
+>>> On 14.10.2013 23:28, Paul E. McKenney wrote:
+>>>> On Mon, Oct 14, 2013 at 10:53:03AM -0700, Linus Torvalds wrote:
 
-So, audit_log_start running on auditd should not stop.
+>>>> I´ll run some tests with those debug parameters tomorrow. 
+>>>> Any chance of a look at the .config file?
+>>> Attached.
+>> Thank you!  Looks like a pretty standard RCU setup.  Just to make sure
+>> I saw it correctly -- you are running NR_CPUS=1?  Getting races to happen
+>> in that mode is truly impressive!
 
-You can see the deadlock with the following reproducer:
- # auditctl -a exit,always -S all
- # reboot
+Yes. The AOpen i915GMm-hfs  is a desktop board with mobile chipset for one Pentium-M.
+As a musician I need an absolutely silent system, and the low power consumption of that
+technology is a nice add-on.
+> Ah, thing...  When running with only one CPU, both of synchronize_rcu_bh()
+> and synchronize_sched() become essentially no-ops.  Anything that expected
+> them to actually sleep would then break.
+>
+> However, because you are running with CONFIG_PREEMPT=y, synchronize_rcu()
+> will still block.
+>
+> 							Thanx, Paul
+>
 
-Signed-off-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Cc: gaofeng@cn.fujitsu.com
----
- kernel/audit.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7b0e23a..29cfc94 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1095,7 +1095,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 	struct audit_buffer	*ab	= NULL;
- 	struct timespec		t;
- 	unsigned int		uninitialized_var(serial);
--	int reserve;
-+	int reserve = 5; /* Allow atomic callers to go up to five
-+			    entries over the normal backlog limit */
- 	unsigned long timeout_start = jiffies;
- 
- 	if (audit_initialized != AUDIT_INITIALIZED)
-@@ -1104,11 +1105,12 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 	if (unlikely(audit_filter_type(type)))
- 		return NULL;
- 
--	if (gfp_mask & __GFP_WAIT)
--		reserve = 0;
--	else
--		reserve = 5; /* Allow atomic callers to go up to five
--				entries over the normal backlog limit */
-+	if (gfp_mask & __GFP_WAIT) {
-+		if (audit_pid && audit_pid == current->pid)
-+			gfp_mask &= ~__GFP_WAIT;
-+		else
-+			reserve = 0;
-+	}
- 
- 	while (audit_backlog_limit
- 	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
--- 
-1.5.5.6
