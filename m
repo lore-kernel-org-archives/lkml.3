@@ -1,132 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759832Ab3JOUa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:30:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38987 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759558Ab3JOUaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:30:55 -0400
-Date: Tue, 15 Oct 2013 22:30:47 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: mm: fix BUG in __split_huge_page_pmd
-Message-ID: <20131015203047.GK3479@redhat.com>
-References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
- <20131015143407.GE3479@redhat.com>
- <20131015144827.C45DDE0090@blue.fi.intel.com>
- <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
- <20131015185510.GH3479@redhat.com>
- <1381865330-8nb86ucy-mutt-n-horiguchi@ah.jp.nec.com>
- <20131015194428.GI3479@redhat.com>
- <1381868183-6d50s9n5-mutt-n-horiguchi@ah.jp.nec.com>
+	id S933520Ab3JOUbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:31:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57926 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759839Ab3JOUbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 16:31:05 -0400
+Message-ID: <525DA606.1040902@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 14:31:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381868183-6d50s9n5-mutt-n-horiguchi@ah.jp.nec.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] Tegra124 clock support
+References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 04:16:23PM -0400, Naoya Horiguchi wrote:
-> On Tue, Oct 15, 2013 at 09:44:28PM +0200, Andrea Arcangeli wrote:
-> > On Tue, Oct 15, 2013 at 03:28:50PM -0400, Naoya Horiguchi wrote:
-> > > On Tue, Oct 15, 2013 at 08:55:10PM +0200, Andrea Arcangeli wrote:
-> > > > On Tue, Oct 15, 2013 at 10:53:10AM -0700, Hugh Dickins wrote:
-> > > > > I'm afraid Andrea's mail about concurrent madvises gives me far more
-> > > > > to think about than I have time for: seems to get into problems he
-> > > > > knows a lot about but I'm unfamiliar with.  If this patch looks good
-> > > > > for now on its own, let's put it in; but no problem if you guys prefer
-> > > > > to wait for a fuller solution of more problems, we can ride with this
-> > > > > one internally for the moment.
-> > > > 
-> > > > I'm very happy with the patch and I think it's a correct fix for the
-> > > > COW scenario which is deterministic so the looping makes a meaningful
-> > > > difference for it. If we wouldn't loop, part of the copied page
-> > > > wouldn't be zapped after the COW.
-> > > 
-> > > I like this patch, too.
-> > > 
-> > > If we have the loop in __split_huge_page_pmd as suggested in this patch,
-> > > can we assume that the pmd is stable after __split_huge_page_pmd returns?
-> > > If it's true, we can remove pmd_none_or_trans_huge_or_clear_bad check
-> > > in the callers side (zap_pmd_range and some other page table walking code.)
-> > 
-> > We can assume it stable for the deterministic cases where the
-> > looping is useful for and split_huge_page creates non-huge pmd that points to
-> > a regular pte.
-> > 
-> > But we cannot remove pmd_none_or_trans_huge_or_clear_bad after if for
-> > the other non deterministic cases that I described in previous
-> > email. Looping still provides no guarantee that when the function
-> > returns, the pmd in not huge. So for safety we still need to handle
-> > the non deterministic case and just discard it through
-> > pmd_none_or_trans_huge_or_clear_bad.
-> 
-> OK, this check is necessary. But pmd_none_or_trans_huge_or_clear_bad
-> doesn't clear the pmd when pmd_trans_huge is true. So zap_pmd_range
-> seems to do nothing on such irregular pmd_trans_huge. So it looks to
-> me better that zap_pmd_range retries the loop on the same address
-> instead of 'goto next'.
+On 10/15/2013 09:14 AM, Peter De Schrijver wrote:
+> This series introduces support for the Tegra124 CAR clocks.                                                                                                    
+> Based on '[PATCH v3 00/12] Introduce common infra for tegra clocks'                                                                                            
 
-It may look like a bug to return with a huge pmd established, when we could
-notice it after pmd_trans_huge_pmd returns.
-
-However try to imagine to add a check there, and to keep adding checks
-and loops. If you're just a bit more unlucky next time, the page fault
-that converts the "unstable" pmd from "none" to "huge", may fire in
-another thread running in another CPU during the iret, so while
-MADV_DONTNEED completes and returns to userland.
-
-There are not enough checks you can add even after zap_pmd_range
-returns, to prevent the pmd to become established by the time
-MADV_DONTNEED returns to userland.
-
-The point is that if MADV_DONTNEED was zapping the entire pmd (not
-part) userland is accessing the same memory at the same time from
-another thread, the result is undefined.
-
-> The reason why I had this kind of question is that I recently study on
-> page table walker and some related code do retry in the similar situation.
-
-There surely are other cases that give an undefined result in the
-kernel. Another one in the pagetable walking code that would give
-undefined result is still MADV_DONTNEED vs a 4k page fault. You don't
-know who runs first, the 4k page may end up zapped or not. But in that
-case there's no split_huge_page_pmd as variable of the equation.
-
-The header definition documents it too:
-
-/*
- * This function is meant to be used by sites walking pagetables with
- * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
- * transhuge page faults. MADV_DONTNEED can convert a transhuge pmd
- * into a null pmd and the transhuge page fault can convert a null pmd
- * into an hugepmd or into a regular pmd (if the hugepage allocation
- * fails). While holding the mmap_sem in read mode the pmd becomes
- * stable and stops changing under us only if it's not null and not a
- * transhuge pmd. When those races occurs and this function makes a
- * difference vs the standard pmd_none_or_clear_bad, the result is
- * undefined so behaving like if the pmd was none is safe (because it
- * can return none anyway). The compiler level barrier() is critically
- * important to compute the two checks atomically on the same pmdval.
- *
- * For 32bit kernels with a 64bit large pmd_t this automatically takes
- * care of reading the pmd atomically to avoid SMP race conditions
- * against pmd_populate() when the mmap_sem is hold for reading by the
- * caller (a special atomic read not done by "gcc" as in the generic
- * version above, is also needed when THP is disabled because the page
- * fault can populate the pmd from under us).
- */
-static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
-
-The COW case cannot be threated as undefined though, that has as well
-defined result that for userland must be identical to the one that
-would happen on 4k pages.
-
-This is why looping there is required. But we still need to deal with
-the other scenario with undefined result too.
+Again, this series looks reasonable, but I'll hold my ack until the
+testing issues I reported are resolved.
