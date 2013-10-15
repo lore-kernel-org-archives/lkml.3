@@ -1,142 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab3JOLWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:22:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47974 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757851Ab3JOLWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:22:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
-   d="scan'208";a="307952094"
-Message-ID: <1381836130.2080.56.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv4 0/9] Thermal Framework Enhancements
-From: Zhang Rui <rui.zhang@intel.com>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com,
-        wni@nvidia.com
-Date: Tue, 15 Oct 2013 19:22:10 +0800
-In-Reply-To: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
-References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758751Ab3JOLWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:22:55 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:8829 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab3JOLWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 07:22:54 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-4f-525d258b0e2f
+Message-id: <1381836170.18389.13.camel@AMDC1943>
+Subject: Re: [PATCH] swap: fix setting PAGE_SIZE blocksize during
+ swapoff/swapon race
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Weijie Yang <weijie.yang.kh@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Shaohua Li <shli@fusionio.com>,
+        Minchan Kim <minchan@kernel.org>
+Date: Tue, 15 Oct 2013 13:22:50 +0200
+In-reply-to: <alpine.LNX.2.00.1310150257030.6194@eggly.anvils>
+References: <1381759136-8616-1-git-send-email-k.kozlowski@samsung.com>
+ <alpine.LNX.2.00.1310150257030.6194@eggly.anvils>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xq7rdqrFBBmd6rC3mrF/DZvH0Ux+L
+	xeVdc9gs7q35z2rxqvk7q8Wyr+/ZLU4t57B4cuI/iwOHx5Omn8weO2fdZfdYsKnUY9OqTjaP
+	TZ8msXucmPGbxePMgiPsHp83yQVwRHHZpKTmZJalFunbJXBlHJsaX/BCtGLSjEcsDYxTBLsY
+	OTkkBEwkmnpfs0LYYhIX7q1n62Lk4hASWMoocbTjGQuE85lR4kb/LBaQKl4BA4lnR5YxgdjC
+	AuES+18uZgex2QSMJTYvX8IGYosIKEusa37KBNLMLPCOUWLN/WfMIAkWAVWJ+ZcngA3iFLCT
+	6Js3G2yQkECVxOt3DWBnMAuoS0yat4gZ4iQlid3tnewQcXmJzWveMkMcISjxY/I9lgmMArOQ
+	tMxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGx8HUH49JjVocYBTgYlXh4
+	AwRigoRYE8uKK3MPMUpwMCuJ8NqyxwYJ8aYkVlalFuXHF5XmpBYfYmTi4JRqYNy1Zde+67lx
+	Xz37i+os3UyzSuXKJkRPO9XHMeHqB6+TdWcDDH3KTM6u2Vp9dXfArzy2FydKHBuCZyt59v6J
+	XGnAKF3LosP7d+vfKJkLn9gWRffy6h6oaj6vpPrktOOdV1906oRXLY1Omcq9p1jI38uz//nb
+	WvmqBgfPx+63Fpf/+xCxp+STgBJLcUaioRZzUXEiAGY1ANZjAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Durga,
+On Tue, 2013-10-15 at 02:59 -0700, Hugh Dickins wrote:
+> On Mon, 14 Oct 2013, Krzysztof Kozlowski wrote:
+> 
+> > Fix race between swapoff and swapon resulting in setting blocksize of
+> > PAGE_SIZE for block devices during swapoff.
+> > 
+> > The swapon modifies swap_info->old_block_size before acquiring
+> > swapon_mutex. It reads block_size of bdev, stores it under
+> > swap_info->old_block_size and sets new block_size to PAGE_SIZE.
+> > 
+> > On the other hand the swapoff sets the device's block_size to
+> > old_block_size after releasing swapon_mutex.
+> > 
+> > This patch locks the swapon_mutex much earlier during swapon. It also
+> > releases the swapon_mutex later during swapoff.
+> > 
+> > The effect of race can be triggered by following scenario:
+> >  - One block swap device with block size of 512
+> >  - thread 1: Swapon is called, swap is activated,
+> >    p->old_block_size = block_size(p->bdev); /512/
+> >    block_size(p->bdev) = PAGE_SIZE;
+> >    Thread ends.
+> > 
+> >  - thread 2: Swapoff is called and it goes just after releasing the
+> >    swapon_mutex. The swap is now fully disabled except of setting the
+> >    block size to old value. The p->bdev->block_size is still equal to
+> >    PAGE_SIZE.
+> > 
+> >  - thread 3: New swapon is called. This swap is disabled so without
+> >    acquiring the swapon_mutex:
+> >    - p->old_block_size = block_size(p->bdev); /PAGE_SIZE (!!!)/
+> >    - block_size(p->bdev) = PAGE_SIZE;
+> >    Swap is activated and thread ends.
+> > 
+> >  - thread 2: resumes work and sets blocksize to old value:
+> >    - set_blocksize(bdev, p->old_block_size)
+> >    But now the p->old_block_size is equal to PAGE_SIZE.
+> > 
+> > The patch swap-fix-set_blocksize-race-during-swapon-swapoff does not fix
+> > this particular issue. It reduces the possibility of races as the swapon
+> > must overwrite p->old_block_size before acquiring swapon_mutex in
+> > swapoff.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> Sorry you're being blown back and forth on this, but I say Nack to
+> this version.  I've not spent the time to check whether it ends up
+> correct or not; but your original patch was appropriate to the bug,
+> and this one is just unnecessary churn in my view.
 
-On Wed, 2013-10-02 at 00:07 +0530, Durgadoss R wrote:
-> This patch set is a v4 of the previous versions submitted here:
-> [v3]: https://lkml.org/lkml/2013/2/5/228 
-> [v2]: http://lwn.net/Articles/531720/
-> [v1]: https://lkml.org/lkml/2012/12/18/108 
-> [RFC]:https://patchwork.kernel.org/patch/1758921/
-> 
-> This patch set is based on Rui's -next tree, on top
-> of commit 'f61d5b4d52e077756ce9dbc47ce737da898ad01d'
-> This is tested on a Core-i5 and an Atom netbook,
-> running ubuntu 12.04.
-> 
-> Changes since v3:
->  * Added a patch to conditionally do kfree(cdev) in
->    thermal_release function.
->  * Reworked all sysfs attributes to have one value per file
->    This includes sensor_trip_* and map_weight* attributes.
->  * Added 'lock' variable in thermal_zone structure to
->    protect its members.
->  * Added Documentation to all functions in thermal_core.c
->  * Changes all strcpy() to strlcpy()
->  * Used devm_kzalloc() in places where applicable
->  * Address some buffer overflow conditions and contentions
->    in tz->sensors[] and tz->cdevs[].
-> Changes since v2:
->  * Reworked the map sysfs attributes in patch [5/8]
->  * Dropped configuration for maximum sensors and
->    cooling devices, through Kconfig.
->  * Added __remove_trip_attr method
->  * Renamed __clean_map_entry to __remove_map_entry
->    for consistency in naming.
-> Changes Since v1:
->  * Removed kobject creation for thermal_trip and thermal_map
->    nodes as per Greg-KH's comments.
->  * Added ABI Documentation under 'testing'.
->  * Modified the GET_INDEX macro to be more linux-like, thanks
->    to Joe Perches.
->  * Added get_[sensor/cdev]_by_name APIs to thermal.h
-> 
-> This series contains 9 patches:
-> Patch 1/9: Fixes a kfree issue. This is required so that the new sensor
-> 	   and zone devices are not freed accidently.
-> 	   We can do two things here:
-> 	   1) Conditionally free every device
-> 	   2) Remove this _release function, and free the memory
->               in corresponding _unregister functions.
-> 	   I prefer 2) and we can have this as a separate patch
-> 	   outside this series; but would like to see the opinion
-> 	   of maintainers'.
-this is a general fix that I will push it in next merge window.
+Hi,
 
-> Patch 2/9: Creates new sensor level APIs
-> Patch 3/9: Creates new zone level APIs. The existing tzd structure is
->            kept as such for clarity and compatibility purposes.
-> Patch 4/9: Creates functions to add/remove a cdev to/from a zone. The
->            existing tcd structure need not be modified.
-> Patch 5/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
-> 	   under /sys/class/thermal/zoneY/. This exposes various trip
->            points for sensorX present in zoneY.
-> Patch 6/9: Adds mapY_* sysfs node. These attributes represent
+I still think my previous patch does not solve the issue entirely.
+The call set_blocksize() in swapoff quite often sets PAGE_SIZE instead
+of valid block size (e.g. 512). I trigger this with:
+------
+for i in `seq 1000`
+do
+	swapoff /dev/sdc1 &
+	swapon /dev/sdc1 &
+	swapon /dev/sdc1 &
+done
+------
+10 seconds run of this script resulted in 50% of set_blocksize(PAGE_SIZE).
+Although effect can only be observed after adding printks (block device is
+released).
 
-After reading these patch, here are some questions,
-1. this patch set introduces a new thermal sysfs I/F layout, but in
-fact, the thermal core can do nothing except exposing those interfaces.
-Say, no thermal policy is supported in the new hierarchy, i.e. we can
-not take any cooling action from kernel side, right?
-2. as we are introducing three new devices, and these devices will not
-invoke the existing thermal core functions. Then there are few things
-left that can be shared between the current thermal model and your new
-one. Thus, can we have a separate .c file for the new code only?
+Best regards,
+Krzysztof
 
-I'm not sure if you have time to do this, if yes, can you please rebase
-the patch set and send it out ASAP, if no, I can work on this stuff and
-re-base your patches. what do you think?
-
-thanks,
-rui
-> Patch 7/9: Creates Documentation for the new APIs. A new file is
->            created for clarity. Final goal is to merge with the existing
->            file or refactor the files, as whatever seems appropriate.
-> Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this patch.
-> Patch 9/9: A dummy driver that can be used for testing. This is not for merge.
-> 
-> Sorry for the long delay in resubmitting this patch set.
-> Thanks to Eduardo, Wei Ni, for their comments on v3.
-> 
-> Durgadoss R (9):
->   Thermal: Check for validity before doing kfree
->   Thermal: Create sensor level APIs
->   Thermal: Create zone level APIs
->   Thermal: Add APIs to bind cdev to new zone structure
->   Thermal: Add trip point sysfs nodes for sensor
->   Thermal: Create Thermal map sysfs attributes for a zone
->   Thermal: Add Documentation to new APIs
->   Thermal: Add ABI Documentation for sysfs interfaces
->   Thermal: Dummy driver used for testing
-> 
->  Documentation/ABI/testing/sysfs-class-thermal |  137 +++
->  Documentation/thermal/sysfs-api2.txt          |  248 +++++
->  drivers/thermal/Kconfig                       |    5 +
->  drivers/thermal/Makefile                      |    3 +
->  drivers/thermal/thermal_core.c                | 1406 +++++++++++++++++++++++--
->  drivers/thermal/thermal_test.c                |  322 ++++++
->  include/linux/thermal.h                       |  127 ++-
->  7 files changed, 2180 insertions(+), 68 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
->  create mode 100644 Documentation/thermal/sysfs-api2.txt
->  create mode 100644 drivers/thermal/thermal_test.c
-> 
 
 
