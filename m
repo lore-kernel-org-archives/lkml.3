@@ -1,74 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934955Ab3JPSA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:00:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55876 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934512Ab3JPSAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:00:53 -0400
-Date: Wed, 16 Oct 2013 20:00:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
-        arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-Message-ID: <20131016180038.GO13608@pd.tnic>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
- <20131016160550.GG13608@pd.tnic>
- <20131016125646.7141b580@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131016125646.7141b580@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934495Ab3JPRqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35578 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761305Ab3JPRph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:45:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Colin Cross <ccross@google.com>
+Subject: [ 25/69] cope with potentially long ->d_dname() output for shmem/hugetlb
+Date: Wed, 16 Oct 2013 10:44:34 -0700
+Message-Id: <20131016174315.970697646@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 12:56:46PM -0400, Steven Rostedt wrote:
-> On Wed, 16 Oct 2013 18:05:50 +0200
-> Borislav Petkov <bp@alien8.de> wrote:
-> 
->  
-> > > For trace output format we still need further discussion. In the last
-> > > patch(support trace interface) I have to reserve previous Kconfig
-> > > format because I find once I put trace_event interface in the module,
-> > > it will not work. I will paste another trace patch(it only works when
-> 
-> What did not work?
-> 
-> > > acpi_extlog is builtin) for your answer.
-> > 
-> > I think to be able to define TRACE_EVENTs in modules, you need
-> > https://lwn.net/Articles/383362/
-> > 
-> > Steve, that still true?
-> > 
-> 
-> Take a look at samples/trace_events/
-> 
-> That's a module that uses TRACE_EVENTs.
-> 
-> What exactly is the problem here?
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Right, the only difference I can see is that include/ras/ras_event.h
-doesn't have those below:
+------------------
 
-#undef TRACE_INCLUDE_PATH
-#undef TRACE_INCLUDE_FILE
-#define TRACE_INCLUDE_PATH .
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-Perhaps that is the problem?
+commit 118b23022512eb2f41ce42db70dc0568d00be4ba upstream.
 
-Gong, what is exactly the issue you're observing?
+dynamic_dname() is both too much and too little for those - the
+output may be well in excess of 64 bytes dynamic_dname() assumes
+to be enough (thanks to ashmem feeding really long names to
+shmem_file_setup()) and vsnprintf() is an overkill for those
+guys.
 
-Thanks.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Colin Cross <ccross@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-Regards/Gruss,
-    Boris.
+---
+ fs/dcache.c            |   11 +++++++++++
+ fs/hugetlbfs/inode.c   |    8 +-------
+ include/linux/dcache.h |    1 +
+ mm/shmem.c             |    8 +-------
+ 4 files changed, 14 insertions(+), 14 deletions(-)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2724,6 +2724,17 @@ char *dynamic_dname(struct dentry *dentr
+ 	return memcpy(buffer, temp, sz);
+ }
+ 
++char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
++{
++	char *end = buffer + buflen;
++	/* these dentries are never renamed, so d_lock is not needed */
++	if (prepend(&end, &buflen, " (deleted)", 11) ||
++	    prepend_name(&end, &buflen, &dentry->d_name) ||
++	    prepend(&end, &buflen, "/", 1))
++		end = ERR_PTR(-ENAMETOOLONG);
++	return end;
++}
++
+ /*
+  * Write full pathname from the root of the filesystem into the buffer.
+  */
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -916,14 +916,8 @@ static int get_hstate_idx(int page_size_
+ 	return h - hstates;
+ }
+ 
+-static char *hugetlb_dname(struct dentry *dentry, char *buffer, int buflen)
+-{
+-	return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+-				dentry->d_name.name);
+-}
+-
+ static struct dentry_operations anon_ops = {
+-	.d_dname = hugetlb_dname
++	.d_dname = simple_dname
+ };
+ 
+ /*
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -332,6 +332,7 @@ extern int d_validate(struct dentry *, s
+  * helper function for dentry_operations.d_dname() members
+  */
+ extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
++extern char *simple_dname(struct dentry *, char *, int);
+ 
+ extern char *__d_path(const struct path *, const struct path *, char *, int);
+ extern char *d_absolute_path(const struct path *, char *, int);
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2879,14 +2879,8 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
+ 
+ /* common code */
+ 
+-static char *shmem_dname(struct dentry *dentry, char *buffer, int buflen)
+-{
+-	return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+-				dentry->d_name.name);
+-}
+-
+ static struct dentry_operations anon_ops = {
+-	.d_dname = shmem_dname
++	.d_dname = simple_dname
+ };
+ 
+ /**
+
+
