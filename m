@@ -1,69 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760639Ab3JPK04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 06:26:56 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:6739 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760625Ab3JPK0z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 06:26:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlkHANhoXlJ5LFuj/2dsb2JhbABagwe9VIVEgSAXdIIlAQEFJxMcIxAIAw4KCSUPBSUDIROIBb5hFo87B4MfgQYDmAOKQIdDgzgo
-Date: Wed, 16 Oct 2013 21:26:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: fs/attr.c:notify_change locking warning.
-Message-ID: <20131016102651.GF4446@dastard>
-References: <20131005005210.GA25773@redhat.com>
- <20131005031918.GL4446@dastard>
- <20131015201905.GA7509@infradead.org>
- <20131015213618.GU4446@dastard>
- <20131016070528.GB18721@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016070528.GB18721@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933227Ab3JPK3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:29:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40482 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760342Ab3JPK3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 06:29:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,506,1378882800"; 
+   d="scan'208";a="393703613"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Linux-Arch <linux-arch@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+In-Reply-To: <20131016095612.34707E0090@blue.fi.intel.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1381428359-14843-20-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
+ <20131016095612.34707E0090@blue.fi.intel.com>
+Subject: Re: [PATCH 19/34] m68k: handle pgtable_page_ctor() fail
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131016102939.DC0D0E0090@blue.fi.intel.com>
+Date: Wed, 16 Oct 2013 13:29:39 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 12:05:28AM -0700, Christoph Hellwig wrote:
-> On Wed, Oct 16, 2013 at 08:36:18AM +1100, Dave Chinner wrote:
-> > Sure, but file_remove_suid() doesn't actually modify any VFS inode
-> > structures until we process the flags and the modifications within
-> > ->setattr, which in XFS are all done under the XFS_ILOCK_EXCL via
-> > xfs_setattr_mode(). i.e. both the VFS and XFS inodes S*ID bits are
-> > removed only under XFS_ILOCK_EXCL....
-> 
-> It can set S_NOSEC after calling into ->setattr at least.
-> 
-> > Hence I see no point in adding extra serialisation via the i_mutex
-> > to this path when we can just do something like:
+Kirill A. Shutemov wrote:
+> Geert Uytterhoeven wrote:
+> > On Thu, Oct 10, 2013 at 8:05 PM, Kirill A. Shutemov
+> > <kirill.shutemov@linux.intel.com> wrote:
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > > ---
+> > >  arch/m68k/include/asm/motorola_pgalloc.h | 5 ++++-
+> > >  arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
+> > >  2 files changed, 8 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
+> > > index 2f02f264e6..dd254eeb03 100644
+> > > --- a/arch/m68k/include/asm/motorola_pgalloc.h
+> > > +++ b/arch/m68k/include/asm/motorola_pgalloc.h
+> > > @@ -40,7 +40,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long addres
+> > >         flush_tlb_kernel_page(pte);
+> > >         nocache_page(pte);
+> >         ^^^^^^^^^^^^^^^^^^
+> > >         kunmap(page);
+> > > -       pgtable_page_ctor(page);
+> > > +       if (!pgtable_page_ctor(page)) {
+> > > +               __free_page(page);
 > > 
-> > 	killsuid = should_remove_suid(file->f_path.dentry);
-> > 	if (killsuid) {
-> > 		struct iattr	newattr;
-> > 
-> > 		newattr.ia_valid = ATTR_FORCE | killsuid;
-> > 		error = xfs_setattr_nonsize(ip, &newattr, 0);
-> > 		if (error)
-> > 			return error;
-> > 	}
+> > Shouldn't you mark the page cacheable again, like is done in pte_free()?
 > 
-> We'd still need all the other magic in file_remove_suid, which I don't
-> actually quite undersdtand fully yet.
+> Hm. You're right. Updated patch below.
 
-The killpriv calls? I couldn't find anything that implemented those
-security hooks nor any documentation about it, so I'm pretty much
-clueless about it. FWIW, ocfs2 doesn't implement them, either....
+I also noticed that one of pte_alloc_one didn't have the constructor at
+all. New patch revision bellow.
 
-Cheers,
+>From 22109077ef31ea28bbfe6b72902854214285bc0c Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 9 Oct 2013 03:58:39 +0300
+Subject: [PATCHv3] m68k: handle pgtable_page_ctor() fail
 
-Dave.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/mcf_pgalloc.h      | 4 ++++
+ arch/m68k/include/asm/motorola_pgalloc.h | 8 ++++++--
+ arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/arch/m68k/include/asm/mcf_pgalloc.h b/arch/m68k/include/asm/mcf_pgalloc.h
+index 313f3dd23c..f9924fbcfe 100644
+--- a/arch/m68k/include/asm/mcf_pgalloc.h
++++ b/arch/m68k/include/asm/mcf_pgalloc.h
+@@ -56,6 +56,10 @@ static inline struct page *pte_alloc_one(struct mm_struct *mm,
+ 
+ 	if (!page)
+ 		return NULL;
++	if (!pgtable_page_ctor(page)) {
++		__free_page(page);
++		return NULL;
++	}
+ 
+ 	pte = kmap(page);
+ 	if (pte) {
+diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
+index 2f02f264e6..24bcba496c 100644
+--- a/arch/m68k/include/asm/motorola_pgalloc.h
++++ b/arch/m68k/include/asm/motorola_pgalloc.h
+@@ -29,18 +29,22 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ 
+ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address)
+ {
+-	struct page *page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
++	struct page *page;
+ 	pte_t *pte;
+ 
++	page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
+ 	if(!page)
+ 		return NULL;
++	if (!pgtable_page_ctor(page)) {
++		__free_page(page);
++		return NULL;
++	}
+ 
+ 	pte = kmap(page);
+ 	__flush_page_to_ram(pte);
+ 	flush_tlb_kernel_page(pte);
+ 	nocache_page(pte);
+ 	kunmap(page);
+-	pgtable_page_ctor(page);
+ 	return page;
+ }
+ 
+diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
+index 48d80d5a66..f868506e33 100644
+--- a/arch/m68k/include/asm/sun3_pgalloc.h
++++ b/arch/m68k/include/asm/sun3_pgalloc.h
+@@ -59,7 +59,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+ 		return NULL;
+ 
+ 	clear_highpage(page);
+-	pgtable_page_ctor(page);
++	if (!pgtable_page_ctor(page)) {
++		__free_page(page);
++		return NULL;
++	}
+ 	return page;
+ 
+ }
 -- 
-Dave Chinner
-david@fromorbit.com
+ Kirill A. Shutemov
