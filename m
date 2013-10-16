@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760020Ab3JPApJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 20:45:09 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:64526 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759851Ab3JPApH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 20:45:07 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH v2] usb: hub: Clear Port Reset Change during init/resume
-Date: Tue, 15 Oct 2013 17:45:00 -0700
-Message-Id: <1381884300-403-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <CAODwPW-wKtN9JhoJCs+LoBx4Pj65+pozKv=ycLQJfsL1k28zEQ@mail.gmail.com>
-References: <1381872227-24757-1-git-send-email-jwerner@chromium.org> <525DB456.1040006@cogentembedded.com> <CAODwPW-wKtN9JhoJCs+LoBx4Pj65+pozKv=ycLQJfsL1k28zEQ@mail.gmail.com>
+	id S1760025Ab3JPAqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 20:46:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51984 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759792Ab3JPAqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 20:46:22 -0400
+Message-ID: <525DE197.5040607@zytor.com>
+Date: Tue, 15 Oct 2013 17:45:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH v4 12/12] intel_mid: Moved board related code to a new
+ file
+References: <1381880568-20730-1-git-send-email-david.a.cohen@linux.intel.com> <1381880568-20730-13-git-send-email-david.a.cohen@linux.intel.com> <525DD362.4070807@zytor.com> <525DD571.20107@linux.intel.com>
+In-Reply-To: <525DD571.20107@linux.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Port Reset Change flag to the set of bits that are
-preemptively cleared on init/resume of a hub. In theory this bit should
-never be set unexpectedly... in practice it can still happen if BIOS,
-SMM or ACPI code plays around with USB devices without cleaning up
-correctly. This is especially dangerous for XHCI root hubs, which don't
-generate any more Port Status Change Events until all change bits are
-cleared, so this is a good precaution to have (similar to how it's
-already done for the Warm Port Reset Change flag).
+On 10/15/2013 04:53 PM, David Cohen wrote:
+> On 10/15/2013 04:44 PM, H. Peter Anvin wrote:
+>> On 10/15/2013 04:42 PM, David Cohen wrote:
+>>>
+>>> +#define intel_mid_sfi_dev(i)   \
+>>> +        static const struct devs_id *__intel_mid_sfi_##i##_dev __used \
+>>> +        __attribute__((__section__(".x86_intel_mid_dev.init"))) = &i
+>>> +
+>>
+>> Any reason to not just call this "sfi_device()" or something similar?
+>> "Intel MID SFI" seems a bit redundant...
+> 
+> I had the same though. But struct devs_id is defined by asm/intel-mid.h.
+> This function is not meant to be used by any other user beside
+> intel-mid.
+> But I can change if you prefer.
+> 
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/core/hub.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Hm, I guess it doesn't really matter.  After all, no other devices will
+probably ever see SFI (we hope).
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index e6b682c..c3dd64c 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1130,6 +1130,11 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
- 			usb_clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_ENABLE);
- 		}
-+		if (portchange & USB_PORT_STAT_C_RESET) {
-+			need_debounce_delay = true;
-+			usb_clear_port_feature(hub->hdev, port1,
-+					USB_PORT_FEAT_C_RESET);
-+		}
- 		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
- 				hub_is_superspeed(hub->hdev)) {
- 			need_debounce_delay = true;
--- 
-1.7.12.4
+	-hpa
+
 
