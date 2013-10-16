@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760422Ab3JPJTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:19:10 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:57637 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760099Ab3JPJTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:19:07 -0400
-Date: Wed, 16 Oct 2013 11:19:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
-Message-ID: <20131016091901.GA23440@gmail.com>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-13-git-send-email-juri.lelli@gmail.com>
- <20131014140618.GA26604@gmail.com>
- <525D1234.5060001@gmail.com>
- <20131015102621.GE10651@twins.programming.kicks-ass.net>
- <20131015122522.GB2402@gmail.com>
- <20131015123527.GI10651@twins.programming.kicks-ass.net>
- <20131015131133.GC2402@gmail.com>
- <20131016085936.GU10651@twins.programming.kicks-ass.net>
+	id S1760594Ab3JPJUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:20:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53673 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760182Ab3JPJUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 05:20:08 -0400
+Date: Wed, 16 Oct 2013 11:20:04 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Maxime Jayat <maxime@artisandeveloppeur.fr>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the trivial tree
+In-Reply-To: <alpine.DEB.2.10.1310161057190.13374@blackhole.kfki.hu>
+Message-ID: <alpine.LNX.2.00.1310161118070.12405@pobox.suse.cz>
+References: <1381845763-10487-1-git-send-email-treding@nvidia.com> <1381845763-10487-2-git-send-email-treding@nvidia.com> <alpine.DEB.2.10.1310161057190.13374@blackhole.kfki.hu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016085936.GU10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Oct 2013, Jozsef Kadlecsik wrote:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Oct 15, 2013 at 03:11:33PM +0200, Ingo Molnar wrote:
-> > The scheduler has over 800 #ifdefs or similar preprocessor directives:
+> > Today's linux-next merge of the trivial tree got conflicts in
 > > 
-> >   comet:~/tip> git grep '^#' kernel/sched/ | grep -v include | wc -l
-> >   855
+> > 	net/netfilter/xt_set.c
 > > 
-> > I'd like to see this simplified a bit, _especially_ before we add new 
-> > complexity ...
+> > caused by commits 3f79410 (treewide: Fix common typo in "identify") and
+> > bd3129f (netfilter: ipset: order matches and targets separatedly in
+> > xt_set.c).
+> > 
+> > I fixed them up (see below). Please verify that the resolution looks
+> > good.
 > 
-> I agree; however I also think its unfair to pile this on Juri.
-
-Well, it's that particular ugly #ifdef that caught my eye.
-
-> [...] Esp the avenue pushed here, which will increase UP text and 
-> (runtime) data sizes, to which I think some people will still object.
+> I don't really get it: patch bd3129f was part of a patchset, which was 
+> applied to net-next and there it was complete.
 > 
-> There's this entire 'maker' community (aka. internet of things) now 
-> using very small Linux devices. Think Raspberry-Pi, Intel Quark (however 
-> much I hate Intel for shipping a new 32bit device) etc.
+> There's none of the patchset in question in linux-next, so what's the 
+> trivial tree? Where's lost what?
 > 
-> These people are wanting to run Linux on these tiny devices, with tiny 
-> memories etc; we shouldn't make their life harder than it already is.
-> 
-> Also; you didn't object about the 29 new #ifdefs currently in tip.
+> [The patch below doesn't look good, because it should contain the removed 
+> part for the revision 1 match due to the reordering in the file.]
 
-It was the straw that broke the camel's back.
+This is just a super-simple conflict between
 
-> How about we use some of the 'quality' conference time in EDI to do some 
-> big code shuffles to get rid of some of them. I'm sure we can reduce the 
-> number of ifdeffery by simply merging various similar blocks and maybe 
-> write a few extra helper functions.
-> 
-> This is how kernel/sched/ got created in the first place; as a means to 
-> keep the fingers busy at a conference ;-)
+	https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bd3129f
 
-LOL, agreed, we can try that ;-)
+and
 
-Also, we can certainly merge SCHED_DEADLINE first, as long as there's a 
-hard feature stop afterwards and as long as cleanups will eventually 
-arrive.
+	https://git.kernel.org/cgit/linux/kernel/git/jikos/trivial.git/diff/net/netfilter/xt_set.c?h=for-next&id=3f79410c7c
+
+I don't think it needs any special handling, do you? I can of course drop 
+the respective hunk from my tree and let you handle it in net-next if you 
+wish.
 
 Thanks,
 
-	Ingo
+-- 
+Jiri Kosina
+SUSE Labs
