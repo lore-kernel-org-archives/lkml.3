@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760131Ab3JPIH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:07:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47446 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759974Ab3JPIHV (ORCPT
+	id S1760155Ab3JPIH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:07:56 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:58260 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3JPIHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:07:21 -0400
-Date: Wed, 16 Oct 2013 09:07:11 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, linux-efi@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: Re: [PATCH] x86 efi: efi reverve boot service fix
-Message-ID: <20131016080711.GC10834@console-pimps.org>
-References: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
- <20131016071122.GB18241@dhcp-16-126.nay.redhat.com>
+	Wed, 16 Oct 2013 04:07:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016071122.GB18241@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381428359-14843-20-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1381428359-14843-20-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Wed, 16 Oct 2013 10:07:52 +0200
+X-Google-Sender-Auth: EsLcjf7NWSHAVrlNM5knFzZgQYc
+Message-ID: <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
+Subject: Re: [PATCH 19/34] m68k: handle pgtable_page_ctor() fail
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also better include Maarten on Cc as the author of the code.
+On Thu, Oct 10, 2013 at 8:05 PM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/m68k/include/asm/motorola_pgalloc.h | 5 ++++-
+>  arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
+> index 2f02f264e6..dd254eeb03 100644
+> --- a/arch/m68k/include/asm/motorola_pgalloc.h
+> +++ b/arch/m68k/include/asm/motorola_pgalloc.h
+> @@ -40,7 +40,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long addres
+>         flush_tlb_kernel_page(pte);
+>         nocache_page(pte);
+        ^^^^^^^^^^^^^^^^^^
+>         kunmap(page);
+> -       pgtable_page_ctor(page);
+> +       if (!pgtable_page_ctor(page)) {
+> +               __free_page(page);
 
-On Wed, 16 Oct, at 03:11:22PM, Dave Young wrote:
-> typo, fix hpa's mail address..
-> 
-> On 10/16/13 at 03:03pm, Dave Young wrote:
-> > 
-> > Current code check boot service region with kernel text region by: 
-> > start+size >= __pa_symbol(_text)
-> > The end of the above region should be start + size - 1 instead.
-> > 
-> > I see this problem in ovmf + Fedora 19 grub boot:
-> > text start: 1000000 md start: 800000 md size: 800000
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- linux-2.6.orig/arch/x86/platform/efi/efi.c
-> > +++ linux-2.6/arch/x86/platform/efi/efi.c
-> > @@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(vo
-> >  		 * - Not within any part of the kernel
-> >  		 * - Not the bios reserved area
-> >  		*/
-> > -		if ((start+size >= __pa_symbol(_text)
-> > +		if ((start + size - 1 >= __pa_symbol(_text)
-> >  				&& start <= __pa_symbol(_end)) ||
-> >  			!e820_all_mapped(start, start+size, E820_RAM) ||
-> >  			memblock_is_region_reserved(start, size)) {
+Shouldn't you mark the page cacheable again, like is done in pte_free()?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> +               return NULL;
+> +       }
+>         return page;
+>  }
+>
+> diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
+> index 48d80d5a66..f868506e33 100644
+> --- a/arch/m68k/include/asm/sun3_pgalloc.h
+> +++ b/arch/m68k/include/asm/sun3_pgalloc.h
+> @@ -59,7 +59,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+>                 return NULL;
+>
+>         clear_highpage(page);
+> -       pgtable_page_ctor(page);
+> +       if (!pgtable_page_ctor(page)) {
+> +               __free_page(page);
+> +               return NULL;
+> +       }
+>         return page;
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
