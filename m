@@ -1,271 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761461Ab3JPUAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:00:49 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:23865 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760843Ab3JPUAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:00:47 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH 2/2] perf-report: add --max-stack option to limit callchain stack scan
-Date: Wed, 16 Oct 2013 15:59:55 -0400
-Message-Id: <1381953595-36427-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	id S1761527Ab3JPUDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761044Ab3JPUDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 16:03:38 -0400
+Date: Wed, 16 Oct 2013 16:03:34 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Tim Gardner <timg@tpi.com>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>
+Subject: Re: [PATCH linux-next V2] cifs: Make big endian multiplex ID
+ sequences monotonic on the wire
+Message-ID: <20131016160334.61dc2a5c@tlielax.poochiereds.net>
+In-Reply-To: <1381941162-72831-1-git-send-email-timg@tpi.com>
+References: <1381941162-72831-1-git-send-email-timg@tpi.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When callgraph data was included in the perf data file, it may take a
-long time to scan all those data and merge them together especially
-if the stored callchains are long and the perf data file itself is
-large, like a Gbyte or so.
+On Wed, 16 Oct 2013 10:32:42 -0600
+Tim Gardner <timg@tpi.com> wrote:
 
-The callchain stack is currently limited to PERF_MAX_STACK_DEPTH (127).
-This is a large value. Usually the callgraph data that developers are
-most interested in are the first few levels, the rests are usually
-not looked at.
+> The multiplex identifier (MID) in the SMB header is only
+> ever used by the client, in conjunction with PID, to match responses
+> from the server. As such, the endianess of the MID is not important.
+> However, When tracing packet sequences on the wire, protocol analyzers
+> such as wireshark display MID as little endian. It is much more informative
+> for the on-the-wire MID sequences to match debug information emitted by the
+> CIFS driver.  Therefore, one should write and read MID in the SMB header
+> assuming it is always little endian.
+> 
+> Observed from wireshark during the protocol negotiation
+> and session setup:
+> 
+>         Multiplex ID: 256
+>         Multiplex ID: 256
+>         Multiplex ID: 512
+>         Multiplex ID: 512
+>         Multiplex ID: 768
+>         Multiplex ID: 768
+> 
+> After this patch on-the-wire MID values begin at 1 and increase monotonically.
+> 
+> Introduce get_next_mid64() for the internal consumers that use the full 64 bit
+> multiplex identifier.
+> 
+> Introduce the helpers get_mid() and compare_mid() to make the endian
+> translation clear.
+> 
+> Cc: Jeff Layton <jlayton@redhat.com>
+> Cc: Steve French <sfrench@samba.org>
+> Signed-off-by: Tim Gardner <timg@tpi.com>
+> ---
+> 
+> V2 - get an endian appropriate copy of 'mid' for debug output in checkSMB().
+>      Actually use the new helper get_mid() wherever smb->Mid is referenced.
+> 
+>  fs/cifs/cifsglob.h      |   25 ++++++++++++++++++++++++-
+>  fs/cifs/misc.c          |   10 ++++++----
+>  fs/cifs/smb1ops.c       |    4 ++--
+>  fs/cifs/smb2transport.c |    2 +-
+>  fs/cifs/transport.c     |    2 +-
+>  5 files changed, 34 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+> index 52b6f6c..535e324 100644
+> --- a/fs/cifs/cifsglob.h
+> +++ b/fs/cifs/cifsglob.h
+> @@ -620,11 +620,34 @@ set_credits(struct TCP_Server_Info *server, const int val)
+>  }
+>  
+>  static inline __u64
+> -get_next_mid(struct TCP_Server_Info *server)
+> +get_next_mid64(struct TCP_Server_Info *server)
+>  {
+>  	return server->ops->get_next_mid(server);
+>  }
+>  
+> +static inline __u16
+> +get_next_mid(struct TCP_Server_Info *server)
+> +{
+> +	__u16 mid = get_next_mid64(server);
+> +	/*
+> +	 * The value in the SMB header should be little endian for easy
+> +	 * on-the-wire decoding.
+> +	 */
+> +	return cpu_to_le16(mid);
+> +}
+> +
+> +static inline __u16
+> +get_mid(const struct smb_hdr *smb)
+> +{
+> +	return le16_to_cpu(smb->Mid);
+> +}
+> +
+> +static inline bool
+> +compare_mid(__u16 mid, const struct smb_hdr *smb)
+> +{
+> +	return mid == le16_to_cpu(smb->Mid);
+> +}
+> +
+>  /*
+>   * When the server supports very large reads and writes via POSIX extensions,
+>   * we can allow up to 2^24-1, minus the size of a READ/WRITE_AND_X header, not
+> diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
+> index 298e31e..2f9f379 100644
+> --- a/fs/cifs/misc.c
+> +++ b/fs/cifs/misc.c
+> @@ -295,7 +295,8 @@ check_smb_hdr(struct smb_hdr *smb)
+>  	if (smb->Command == SMB_COM_LOCKING_ANDX)
+>  		return 0;
+>  
+> -	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n", smb->Mid);
+> +	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n",
+> +		 get_mid(smb));
+>  	return 1;
+>  }
+>  
+> @@ -351,6 +352,7 @@ checkSMB(char *buf, unsigned int total_read)
+>  	}
+>  
+>  	if (4 + rfclen != clc_len) {
+> +		__u16 mid = get_mid(smb);
+>  		/* check if bcc wrapped around for large read responses */
+>  		if ((rfclen > 64 * 1024) && (rfclen > clc_len)) {
+>  			/* check if lengths match mod 64K */
+> @@ -358,11 +360,11 @@ checkSMB(char *buf, unsigned int total_read)
+>  				return 0; /* bcc wrapped */
+>  		}
+>  		cifs_dbg(FYI, "Calculated size %u vs length %u mismatch for mid=%u\n",
+> -			 clc_len, 4 + rfclen, smb->Mid);
+> +			 clc_len, 4 + rfclen, mid);
+>  
+>  		if (4 + rfclen < clc_len) {
+>  			cifs_dbg(VFS, "RFC1001 size %u smaller than SMB for mid=%u\n",
+> -				 rfclen, smb->Mid);
+> +				 rfclen, mid);
+>  			return -EIO;
+>  		} else if (rfclen > clc_len + 512) {
+>  			/*
+> @@ -375,7 +377,7 @@ checkSMB(char *buf, unsigned int total_read)
+>  			 * data to 512 bytes.
+>  			 */
+>  			cifs_dbg(VFS, "RFC1001 size %u more than 512 bytes larger than SMB for mid=%u\n",
+> -				 rfclen, smb->Mid);
+> +				 rfclen, mid);
+>  			return -EIO;
+>  		}
+>  	}
+> diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
+> index 8233b17..09ef8f3 100644
+> --- a/fs/cifs/smb1ops.c
+> +++ b/fs/cifs/smb1ops.c
+> @@ -67,7 +67,7 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
+>  	mutex_unlock(&server->srv_mutex);
+>  
+>  	cifs_dbg(FYI, "issued NT_CANCEL for mid %u, rc = %d\n",
+> -		 in_buf->Mid, rc);
+> +		 get_mid(in_buf), rc);
+>  
+>  	return rc;
+>  }
+> @@ -101,7 +101,7 @@ cifs_find_mid(struct TCP_Server_Info *server, char *buffer)
+>  
+>  	spin_lock(&GlobalMid_Lock);
+>  	list_for_each_entry(mid, &server->pending_mid_q, qhead) {
+> -		if (mid->mid == buf->Mid &&
+> +		if (compare_mid(mid->mid, buf) &&
+>  		    mid->mid_state == MID_REQUEST_SUBMITTED &&
+>  		    le16_to_cpu(mid->command) == buf->Command) {
+>  			spin_unlock(&GlobalMid_Lock);
+> diff --git a/fs/cifs/smb2transport.c b/fs/cifs/smb2transport.c
+> index 340abca..c523617 100644
+> --- a/fs/cifs/smb2transport.c
+> +++ b/fs/cifs/smb2transport.c
+> @@ -466,7 +466,7 @@ smb2_verify_signature(struct smb_rqst *rqst, struct TCP_Server_Info *server)
+>  static inline void
+>  smb2_seq_num_into_buf(struct TCP_Server_Info *server, struct smb2_hdr *hdr)
+>  {
+> -	hdr->MessageId = get_next_mid(server);
+> +	hdr->MessageId = get_next_mid64(server);
+>  }
+>  
+>  static struct mid_q_entry *
+> diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
+> index 6fdcb1b..057b2c0 100644
+> --- a/fs/cifs/transport.c
+> +++ b/fs/cifs/transport.c
+> @@ -58,7 +58,7 @@ AllocMidQEntry(const struct smb_hdr *smb_buffer, struct TCP_Server_Info *server)
+>  		return temp;
+>  	else {
+>  		memset(temp, 0, sizeof(struct mid_q_entry));
+> -		temp->mid = smb_buffer->Mid;	/* always LE */
+> +		temp->mid = get_mid(smb_buffer);
+>  		temp->pid = current->pid;
+>  		temp->command = cpu_to_le16(smb_buffer->Command);
+>  		cifs_dbg(FYI, "For smb_command %d\n", smb_buffer->Command);
 
-This patch adds a new --max-stack option to perf-report to limit the
-depth of callchain stack data to look at to reduce the time it takes
-for perf-report to finish its processing. It trades the presence of
-trailing stack information with faster speed.
+Looks good...
 
-The following table shows the elapsed time of doing perf-report on a
-perf.data file of size 985,531,828 bytes.
-
---max_stack	Elapsed Time	Output data size
------------	------------	----------------
-not set		   88.0s	124,422,651
-64		   87.5s	116,303,213
-32		   87.2s	112,023,804
-16		   86.6s	 94,326,380
-8		   59.9s	 33,697,248
-4		   40.7s	 10,116,637
--g none		   27.1s	  2,555,810
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- tools/perf/Documentation/perf-report.txt |    8 ++++++++
- tools/perf/builtin-report.c              |   28 +++++++++++++++++++++++-----
- tools/perf/builtin-top.c                 |    3 ++-
- tools/perf/util/machine.c                |   14 +++++++++-----
- tools/perf/util/machine.h                |    3 ++-
- tools/perf/util/session.c                |    3 ++-
- 6 files changed, 46 insertions(+), 13 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2b8097e..dc8e956 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -135,6 +135,14 @@ OPTIONS
- 
- 	Default: fractal,0.5,callee,function.
- 
-+--max-stack::
-+	Set the stack depth limit when parsing the callchain, anything
-+	beyond the specified depth will be ignored. This is a trade-off
-+	between information loss and faster processing especially for user
-+	workloads that can have a very long callchain stack.
-+
-+	Default: 127
-+
- -G::
- --inverted::
-         alias for inverted caller based call graph.
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 72eae74..d90d04a 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -37,6 +37,12 @@
- 
- #include <linux/bitmap.h>
- 
-+/*
-+ * 2-level stringification macro to enable stringification of macro value
-+ * */
-+#define	__to_string(x)	#x
-+#define	STRINGIFY(x)	__to_string(x)
-+
- struct perf_report {
- 	struct perf_tool	tool;
- 	struct perf_session	*session;
-@@ -47,6 +53,7 @@ struct perf_report {
- 	bool			show_threads;
- 	bool			inverted_callchain;
- 	bool			mem_mode;
-+	int			max_stack;
- 	struct perf_read_values	show_threads_values;
- 	const char		*pretty_printing_style;
- 	const char		*cpu_list;
-@@ -88,7 +95,8 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain) &&
- 	    sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -179,7 +187,8 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -242,18 +251,21 @@ out:
- 	return err;
- }
- 
--static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
-+static int perf_evsel__add_hist_entry(struct perf_tool *tool,
-+				      struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
- 				      struct machine *machine)
- {
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
- 	int err = 0;
- 	struct hist_entry *he;
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -330,7 +342,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		if (al.map != NULL)
- 			al.map->dso->hit = 1;
- 
--		ret = perf_evsel__add_hist_entry(evsel, &al, sample, machine);
-+		ret = perf_evsel__add_hist_entry(tool, evsel, &al, sample,
-+						 machine);
- 		if (ret < 0)
- 			pr_debug("problem incrementing symbol period, skipping event\n");
- 	}
-@@ -757,6 +770,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.ordered_samples = true,
- 			.ordering_requires_timestamps = true,
- 		},
-+		.max_stack		 = PERF_MAX_STACK_DEPTH,
- 		.pretty_printing_style	 = "normal",
- 	};
- 	const struct option options[] = {
-@@ -797,6 +811,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
-+	OPT_INTEGER(0, "max-stack", &report.max_stack,
-+		    "Set the maximum stack depth when parsing the callchain, "
-+		    "anything beyond the specified depth will be ignored. "
-+		    "Default: " STRINGIFY(PERF_MAX_STACK_DEPTH)),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
- 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..2725aca 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -771,7 +771,8 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		    sample->callchain) {
- 			err = machine__resolve_callchain(machine, evsel,
- 							 al.thread, sample,
--							 &parent, &al);
-+							 &parent, &al,
-+							 PERF_MAX_STACK_DEPTH);
- 			if (err)
- 				return;
- 		}
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6188d28..9617c4a 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1267,10 +1267,12 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
- 					     struct symbol **parent,
--					     struct addr_location *root_al)
-+					     struct addr_location *root_al,
-+					     int max_stack)
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
--	unsigned int i;
-+	int chain_nr = min(max_stack, (int)chain->nr);
-+	int i;
- 	int err;
- 
- 	callchain_cursor_reset(&callchain_cursor);
-@@ -1280,7 +1282,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 		return 0;
- 	}
- 
--	for (i = 0; i < chain->nr; i++) {
-+	for (i = 0; i < chain_nr; i++) {
- 		u64 ip;
- 		struct addr_location al;
- 
-@@ -1352,12 +1354,14 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al)
-+			       struct addr_location *root_al,
-+			       int max_stack)
- {
- 	int ret;
- 
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent, root_al);
-+						sample->callchain, parent,
-+						root_al, max_stack);
- 	if (ret)
- 		return ret;
- 
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 58a6be1..d09cce0 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -91,7 +91,8 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al);
-+			       struct addr_location *root_al,
-+			       int max_stack);
- 
- /*
-  * Default guest kernel is defined by parameter --guestkallsyms
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 568b750..96e5449 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1525,7 +1525,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 
- 		if (machine__resolve_callchain(machine, evsel, al.thread,
--					       sample, NULL, NULL) != 0) {
-+					       sample, NULL, NULL,
-+					       PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
--- 
-1.7.1
-
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
