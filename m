@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760637Ab3JPWL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:11:56 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50644 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab3JPWLy (ORCPT
+	id S1760837Ab3JPWOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:14:49 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:56896 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3JPWOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 18:11:54 -0400
-Date: Wed, 16 Oct 2013 15:11:46 -0700
+	Wed, 16 Oct 2013 18:14:47 -0400
+Date: Wed, 16 Oct 2013 15:14:40 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/69] 3.10.17-stable review
-Message-ID: <20131016221146.GA18209@roeck-us.net>
-References: <20131016174312.844154919@linuxfoundation.org>
+Subject: Re: [ 00/50] 3.11.6-stable review
+Message-ID: <20131016221440.GA18297@roeck-us.net>
+References: <20131016174358.335646140@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:44:09AM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.17 release.
-> There are 69 patches in this series, all will be posted as a response
+On Wed, Oct 16, 2013 at 10:44:46AM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.11.6 release.
+> There are 50 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 > 
-> You might notice a bunch of ipc patches in this series.  That is to
-> resolve some reported ipc bugs / scalabity issues.  Additional testing
-> of these code paths would be greatly appreciated.
-> 
-> Responses should be made by Fri Oct 18 17:41:53 UTC 2013.
+> Responses should be made by Fri Oct 18 17:43:24 UTC 2013.
 > Anything received after that time might be too late.
 > 
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.17-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.6-rc1.gz
 > and the diffstat can be found below.
 > 
 
 Build results:
-	total: 110 pass: 110 skipped: 0 fail: 0
+	total: 110 pass: 108 skipped: 2 fail: 0
 
-qemu tests all pass, with the usual warning for the 'sh' target.
-
-Details are at http://server.roeck-us.net:8010/builders.
+qemu tests all passed, with the usual warning for the 'sh' target.
 
 Thanks,
 Guenter
