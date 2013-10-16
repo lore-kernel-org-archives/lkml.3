@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3JPDBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 23:01:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39119 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3JPDBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 23:01:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,504,1378882800"; 
-   d="asc'?scan'208";a="417480053"
-Date: Tue, 15 Oct 2013 22:46:33 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Joe Perches <joe@perches.com>
+	id S1757734Ab3JPDKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 23:10:12 -0400
+Received: from smtprelay0239.hostedemail.com ([216.40.44.239]:57645 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752336Ab3JPDKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 23:10:10 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3167:3353:3622:3865:3867:3868:3870:3871:3872:3874:4043:4321:5007:6119:7576:7652:7875:7903:9545:10004:10400:10848:10967:11026:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:13436,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bomb74_12494418f74e
+X-Filterd-Recvd-Size: 2520
+Message-ID: <1381893006.22110.45.camel@joe-AO722>
+Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+From: Joe Perches <joe@perches.com>
+To: Chen Gong <gong.chen@linux.intel.com>
 Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
-Message-ID: <20131016024633.GC6898@gchen.bj.intel.com>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
-	linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Date: Tue, 15 Oct 2013 20:10:06 -0700
+In-Reply-To: <20131016024633.GC6898@gchen.bj.intel.com>
 References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
- <20131011090630.GB5925@pd.tnic>
- <20131011154759.GJ5925@pd.tnic>
- <1381888638.22110.43.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZmUaFz6apKcXQszQ"
-Content-Disposition: inline
-In-Reply-To: <1381888638.22110.43.camel@joe-AO722>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
+	 <20131011090630.GB5925@pd.tnic> <20131011154759.GJ5925@pd.tnic>
+	 <1381888638.22110.43.camel@joe-AO722>
+	 <20131016024633.GC6898@gchen.bj.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-10-15 at 22:46 -0400, Chen Gong wrote:
+> On Tue, Oct 15, 2013 at 06:57:18PM -0700, Joe Perches wrote:
+> > Date: Tue, 15 Oct 2013 18:57:18 -0700
+> > From: Joe Perches <joe@perches.com>
+> > To: Borislav Petkov <bp@alien8.de>
+> > Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
+> >  linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+> > Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+> > X-Mailer: Evolution 3.6.4-0ubuntu1 
+> > 
+> > On Fri, 2013-10-11 at 17:47 +0200, Borislav Petkov wrote:
+> > > On Fri, Oct 11, 2013 at 11:06:30AM +0200, Borislav Petkov wrote:
+> > > > > -	printk("%s""APEI generic hardware error status\n", pfx);
+> > > > > +	printk("%s""Generic Hardware Error Status\n", pfx);
+> > > > 
+> > > > Btw, what's the story with printk not using KERN_x levels in this file?
+> > > > Why are we falling back to default printk levels for all printks here
+> > > > and shouldn't we rather prioritize them by urgency into, say, KERN_ERR,
+> > > > KERN_INFO, etc?
+> > > 
+> > > Ignore that - checkpatch complained about it but I kinda missed that
+> > > we're handing down the prefix.
+> > 
+> > I think it'd be better to rename pfx to level
+> > as that's what printk.h calls them.
+> > 
+> No. pfx includes log level and prefix string both.
 
---ZmUaFz6apKcXQszQ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Perhaps it'd be better to separate them.
 
-On Tue, Oct 15, 2013 at 06:57:18PM -0700, Joe Perches wrote:
-> Date: Tue, 15 Oct 2013 18:57:18 -0700
-> From: Joe Perches <joe@perches.com>
-> To: Borislav Petkov <bp@alien8.de>
-> Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
->  linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-> Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
-> X-Mailer: Evolution 3.6.4-0ubuntu1=20
->=20
-> On Fri, 2013-10-11 at 17:47 +0200, Borislav Petkov wrote:
-> > On Fri, Oct 11, 2013 at 11:06:30AM +0200, Borislav Petkov wrote:
-> > > > -	printk("%s""APEI generic hardware error status\n", pfx);
-> > > > +	printk("%s""Generic Hardware Error Status\n", pfx);
-> > >=20
-> > > Btw, what's the story with printk not using KERN_x levels in this fil=
-e?
-> > > Why are we falling back to default printk levels for all printks here
-> > > and shouldn't we rather prioritize them by urgency into, say, KERN_ER=
-R,
-> > > KERN_INFO, etc?
-> >=20
-> > Ignore that - checkpatch complained about it but I kinda missed that
-> > we're handing down the prefix.
->=20
-> I think it'd be better to rename pfx to level
-> as that's what printk.h calls them.
->=20
-No. pfx includes log level and prefix string both.
->=20
->=20
+I haven't looked too hard, but is apei_status_print
+the only place it's used with more than KERN_<LEVEL>?
 
---ZmUaFz6apKcXQszQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXf4JAAoJEI01n1+kOSLHWOkQAJhLsRRp1+UevOaBPzfkyohV
-WndTzNt978VMD9qXucu+C1VGcXT7nr/B64mWOAeZ23fFwqWFE+VXyAITg4VN2x03
-n+q2OesCdFTwkQGYs/ywdkdfW+hqtrn8VLagSMv6c5vQMjoLp63wTMsQ24g6uXmr
-XfI4S+xKhhVWnuX8+MzZIv0Goky2LjJxWN3wnH3e2dbKxLqWEKRCBL9fI1r1vSsx
-Mqd/SqShzydfE7PxG/aNsKYTyQ0T88/uWgdLmgeATJp4n1UWYRVO1Ln+LdxSkqgS
-nw/FGKCGatBWfuEm1x7DELTxzqeD6uWnv2xZrCiNFCVZ07PjK3iCo/ZMoxR9VbUj
-OY25J12IurcSqrwrQhi//QnRNt2A4F/+qelEJgVTMPqNKp/3bmgd8cWpgXjVh4Y3
-/STgcJ5rnXzGAfkikNYz+e4wFlETnTcOH3fbxqC403VUNeh0Im8PmGmql2wZf+Kx
-J9/44hC4efj0tOtmxpFynrqsBlhVdqvlcg4rvZVAW++Y2Dd8d5BwEUwqcMR43q7V
-+6wUrGDW9HMKGcbOgYnkV0bcBCL32XXdFBYk1/2AewX/FTghCIeciSbb/Oct3l/k
-RBl5jFYDcI7feGWfnpQUGsq/KZ1DYblbxKrYWugUCyciytdITAPyvuKL1qNqsBpS
-EM+HPyhScc8Y+yiNpxro
-=yIX2
------END PGP SIGNATURE-----
-
---ZmUaFz6apKcXQszQ--
