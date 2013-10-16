@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761453Ab3JPRpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:45:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35520 "EHLO
+	id S1761552Ab3JPRqC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761286Ab3JPRp2 (ORCPT
+	with ESMTP id S1761289Ab3JPRpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:28 -0400
+	Wed, 16 Oct 2013 13:45:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [ 12/69] parisc: fix interruption handler to respect pagefault_disable()
-Date: Wed, 16 Oct 2013 10:44:21 -0700
-Message-Id: <20131016174314.399238520@linuxfoundation.org>
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 15/69] ARC: SMP failed to boot due to missing IVT setup
+Date: Wed, 16 Oct 2013 10:44:24 -0700
+Message-Id: <20131016174314.748333574@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -26,55 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Noam Camus <noamc@ezchip.com>
 
-commit 59b33f148cc08fb33cbe823fca1e34f7f023765e upstream.
+commit c3567f8a359b7917dcffa442301f88ed0a75211f upstream.
 
-Running an "echo t > /proc/sysrq-trigger" crashes the parisc kernel.  The
-problem is, that in print_worker_info() we try to read the workqueue info via
-the probe_kernel_read() functions which use pagefault_disable() to avoid
-crashes like this:
-    probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
-    probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
-    probe_kernel_read(name, wq->name, sizeof(name) - 1);
+Commit 05b016ecf5e7a "ARC: Setup Vector Table Base in early boot" moved
+the Interrupt vector Table setup out of arc_init_IRQ() which is called
+for all CPUs, to entry point of boot cpu only, breaking booting of others.
 
-The problem here is, that the first probe_kernel_read(&pwq) might return zero
-in pwq and as such the following probe_kernel_reads() try to access contents of
-the page zero which is read protected and generate a kernel segfault.
+Fix by adding the same to entry point of non-boot CPUs too.
 
-With this patch we fix the interruption handler to call parisc_terminate()
-directly only if pagefault_disable() was not called (in which case
-preempt_count()==0).  Otherwise we hand over to the pagefault handler which
-will try to look up the faulting address in the fixup tables.
+read_arc_build_cfg_regs() printing IVT Base Register didn't help the
+casue since it prints a synthetic value if zero which is totally bogus,
+so fix that to print the exact Register.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin  <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+[vgupta: Remove the now stale comment from header of arc_init_IRQ and
+also added the commentary for halt-on-reset]
+
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Noam Camus <noamc@ezchip.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/traps.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arc/include/asm/sections.h |    1 -
+ arch/arc/kernel/head.S          |    5 +++++
+ arch/arc/kernel/irq.c           |    1 -
+ arch/arc/kernel/setup.c         |    3 ---
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -805,14 +805,14 @@ void notrace handle_interruption(int cod
- 	else {
+--- a/arch/arc/include/asm/sections.h
++++ b/arch/arc/include/asm/sections.h
+@@ -11,7 +11,6 @@
  
- 	    /*
--	     * The kernel should never fault on its own address space.
-+	     * The kernel should never fault on its own address space,
-+	     * unless pagefault_disable() was called before.
- 	     */
+ #include <asm-generic/sections.h>
  
--	    if (fault_space == 0) 
-+	    if (fault_space == 0 && !in_atomic())
- 	    {
- 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
- 		parisc_terminate("Kernel Fault", regs, code, fault_address);
--	
- 	    }
- 	}
+-extern char _int_vec_base_lds[];
+ extern char __arc_dccm_base[];
+ extern char __dtb_start[];
  
+--- a/arch/arc/kernel/head.S
++++ b/arch/arc/kernel/head.S
+@@ -34,6 +34,9 @@ stext:
+ 	;	IDENTITY Reg [ 3  2  1  0 ]
+ 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
+ 	;					=> #Core-ID if SMP (Master 0)
++	; Note that non-boot CPUs might not land here if halt-on-reset and
++	; instead breath life from @first_lines_of_secondary, but we still
++	; need to make sure only boot cpu takes this path.
+ 	GET_CPU_ID  r5
+ 	cmp	r5, 0
+ 	jnz	arc_platform_smp_wait_to_boot
+@@ -98,6 +101,8 @@ stext:
+ 
+ first_lines_of_secondary:
+ 
++	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
++
+ 	; setup per-cpu idle task as "current" on this CPU
+ 	ld	r0, [@secondary_idle_tsk]
+ 	SET_CURR_TASK_ON_CPU  r0, r1
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -24,7 +24,6 @@
+  * -Needed for each CPU (hence not foldable into init_IRQ)
+  *
+  * what it does ?
+- * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
+  * -Disable all IRQs (on CPU side)
+  * -Optionally, setup the High priority Interrupts as Level 2 IRQs
+  */
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -47,10 +47,7 @@ void __cpuinit read_arc_build_cfg_regs(v
+ 	READ_BCR(AUX_IDENTITY, cpu->core);
+ 
+ 	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
+-
+ 	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
+-	if (cpu->vec_base == 0)
+-		cpu->vec_base = (unsigned int)_int_vec_base_lds;
+ 
+ 	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
+ 	cpu->uncached_base = uncached_space.start << 24;
 
 
