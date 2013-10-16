@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761986Ab3JPUuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:50:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760586Ab3JPUux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:50:53 -0400
-Date: Wed, 16 Oct 2013 22:43:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
+	id S1762127Ab3JPUvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:51:20 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:62248 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761317Ab3JPUvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 16:51:18 -0400
+Date: Wed, 16 Oct 2013 22:51:15 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] (Was: perf_event_mmap(vma) && !vma->vm_mm)
-Message-ID: <20131016204348.GA25121@redhat.com>
-References: <20131012192203.GA21738@redhat.com> <20131014102426.GX3081@twins.programming.kicks-ass.net> <20131016200924.GA23214@redhat.com> <20131016202822.GI2675@laptop.programming.kicks-ass.net>
+Cc: NeilBrown <neilb@suse.de>, Shaohua Li <shli@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131016205114.GD6579@mithrandir>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+ <1381949500-501-2-git-send-email-treding@nvidia.com>
+ <20131016200645.GD10651@twins.programming.kicks-ass.net>
+ <20131016201410.GA26785@twins.programming.kicks-ass.net>
+ <20131017073100.2cab1ffa@notabene.brown>
+ <20131016203506.GJ2675@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q9KOos5vDmpwPx9o"
 Content-Disposition: inline
-In-Reply-To: <20131016202822.GI2675@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131016203506.GJ2675@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16, Peter Zijlstra wrote:
->
-> On Wed, Oct 16, 2013 at 10:09:24PM +0200, Oleg Nesterov wrote:
-> > OK, so I think this code should die, it only adds the confusion.
-> >
-> > Note also that at least on x86_64 "[vdso]" is not correct (if !vma_mm
-> > was possible), this adds more confusion.
->
-> Right, but x86_64 will return [vsyscall] and we'll never get there.
 
-Yes, this is what I meant. But again, this doesn't really matter because
-perf_event_mmap() is always called with the "real" vma.
+--q9KOos5vDmpwPx9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > Also, the x86_32 arch_vma_name() didn't deal with the gate_vma (it still
-> > > doesn't appear to do so) as opposed to x86_64 which does.
-> >
-> > Hmm... I am looking into arch/x86/vdso/vdso32-setup.c, it seems it does.
-> > But probably I missed something, this doesn't matter.
->
-> Right, vdso32-setup.c:arch_vma_name() never checks for vma ==
-> get_gate_vma().
+On Wed, Oct 16, 2013 at 10:35:06PM +0200, Peter Zijlstra wrote:
+> On Thu, Oct 17, 2013 at 07:31:00AM +1100, NeilBrown wrote:
+> > It seems to have moved to=20
+> >   git://gitorious.org/thierryreding/linux-next.git
+>=20
+> Uhm.. what happened to sfr and why would we trust gitorious?
 
-But it should not? It checks vm_start/context.vdso and
-VDSO_HIGH_BASE == FIXADDR_USER_START in this case?
+sfr is on vacation. Back at the time when Mark Brown and I volunteered
+to continue doing the linux-next trees in Stephen's absence I didn't
+have a kernel.org account. Also we decided rather late that we wanted to
+do this so there was no time to set things up properly. We had to make
+do with what we had.
 
-> So it would return NULL for the gate vma, not a proper
-> name like you argue it should.
+Today's next-20131016 tag is signed with my GPG key that I use for my
+kernel.org account as well, so that should make it about equally trust-
+worthy as anything I'd be pushing to kernel.org.
 
-See above... but again, this doesn't really matter even if I am (likely)
-wrong.
+Thierry
 
-> > > But the main reason I added it was because task_mmu.c:show_map_vma() did
-> > > so too; I just wanted to be extra careful.
-> >
-> > Yes, but this code can actually hit gate_vma. (and I'd say that if some
-> > arch/ has the global gate_vma-like vma's, it should implement arch_vma_name
-> > correctly, but this is off-topic).
->
-> I'd tend to agree with you there, but clearly this isn't/wasn't the case
-> and the generic code grew a fallback or so.
+--q9KOos5vDmpwPx9o
+Content-Type: application/pgp-signature
 
-Agreed, this was just the "off-topic" note.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> > ---------------------------------------------------------------------------
-> > Please look at these 2 simple patches. Initially I was going to send
-> > the 3rd patch, but I simply can't understand the "align" logic.
-> >
-> > First of all, we surely do not need __GFP_ZERO for kzalloc(PATH_MAX),
-> > even if we need to nullify the alignment. So I am going to send another
-> > patch in any case.
-> >
-> > But do we really need to nullify the extra bytes after strlen()? If yes,
-> > for what? If no, we can simply do s/kzalloc/kmalloc/ and kill that
-> > memset(tmp, 0, sizeof(tmp)) at the start.
-> >
-> > Otoh. Why do we need the temporary string buffer (char tmp[16]) at all?
-> > We either use the result from d_path() (which has a room), or we use a
-> > string literal (may be returned by arch_vma_name), in the latter case
-> > it is safe to assume we can read the extra 7 bytes from .data?
-> >
-> > IOW. Could you explain why the patch below (on top of 1-2) is wrong?
->
-> The perf buffer works in multiples of u64 (8 bytes),
+iQIcBAEBAgAGBQJSXvxCAAoJEN0jrNd/PrOhQbYP/R0uwMOi7PYrvLufplu3snuk
+itBulji/2wjNbkhlkWAcXXEiLIVmjUrHU571LdBwg/jbALbK7yQTWHdiPcsRfWCA
+RtowhA/lsHGsl73ofQNj/K+VhrmXIyjrrTOSEz8Gd7FKoFhihk37JIfxibmw79bO
+8E1F5iY5PwNo2ZbNiURR9OBY1sEp6JM4+f+PNLWmwS/bGR0NUmz0I+SN4oln6yvX
+nWHBpCaH4sTCCPzVqPtRtGulnU2/CBgknei7HNEUiqaVU/XJXkOblg0l/DX/r6/d
+tUBte9gQ+ESnJbBV2JTYkzf/kMC4Eawv4QmM9+GecRvRhmHZ3AVqLBYYKD0coaeq
+gUdFglXtoHJ3aEhw2Q9n2mKOHax9eJU4lgeqM2L/MqwPfa9d15aHwlbTsBVGcBvr
+nj1e2nNOhHCAS2+wqGjg8yni+nk++jCYv76zg65fatTgaNQqxAsQWtWnMSYbrAwZ
+rkR0L10h4cVmxMsfhkeenXUx36wPm/QtnTk/XWngqfUjxNVarkg0dPA+FJZK8TiU
+DFMaxu2IkZ9ulM7LFBzxn4jlXNwo26p2MY/Ny73gg60M87XfJSxkhXHyKa5u6diX
+YmY1+ncVeVKtcI+NPnrZbRKDOW+LcfrvMxqXcf+O2g87Y4+sX1yOV3jrTdgTF7KQ
+dYDpwbITHbiVI+Q1L+VF
+=e0xY
+-----END PGP SIGNATURE-----
 
-Yes, yes, I see.
-
-> your proposed patch
-> gives a string shorter than size; remember:
->
-> 	size = ALIGN(strlen(name)+1, sizeof(u64));
->
-> And therefore the copy into the buffer will access beyond the end of
-> string,
-
-Yes. But this can only happen if this sting lives in .data, and
-
-> copying god knows what into userspace.
-
-This is what I can not understand. At all.
-
-OK. To simplify the discussion, suppose that it is only called with
-->vm_file != NULL and d_path() never fails.
-
-Why do we need to nullify the extra bytes after the end of string? IOW,
-why do we need kzalloc?
-
-Yes, we can copy the garbage to the userspace. So what? This should not
-matter at all. Exactly because userspace should never used the data after
-the end of string, no?
-
-Peter, just in case. I understand that this all is minor. Just I am
-confused. And in any case I do think we do not need __GFP_ZERO when
-it comes to PAGE_SIZE allocation.
-
-Oleg.
-
+--q9KOos5vDmpwPx9o--
