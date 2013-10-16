@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762098Ab3JPSpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:45:51 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:54494 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761339Ab3JPSpt (ORCPT
+	id S1762103Ab3JPSqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:46:47 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:43090 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760584Ab3JPSqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:45:49 -0400
+	Wed, 16 Oct 2013 14:46:45 -0400
+Subject: [PATCH 5/5] sched: Avoid throttle_cfs_rq racing with period_timer
+ stopping
+To: peterz@infradead.org, mingo@redhat.com
+From: Ben Segall <bsegall@google.com>
+Cc: pjt@google.com, linux-kernel@vger.kernel.org
+Date: Wed, 16 Oct 2013 11:16:32 -0700
+Message-ID: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
+References: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
-References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
-	<1381940926-25564-2-git-send-email-vinod.koul@intel.com>
-	<Pine.LNX.4.64.1310162028340.22648@axis700.grange>
-Date: Wed, 16 Oct 2013 11:45:48 -0700
-Message-ID: <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion status
-From: Dan Williams <dan.j.williams@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 11:29 AM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> Hi Vinod,
->
-> On Wed, 16 Oct 2013, Vinod Koul wrote:
->
->> the DMA_SUCCESS is a misnomer as dmaengine indicates the transfer is complete and
->> gives no guarantee of the transfer success. Hence we should use DMA_COMPLTE
->> instead of DMA_SUCCESS
->>
->> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
->> ---
->>  drivers/dma/dmaengine.c   |    2 +-
->>  include/linux/dmaengine.h |   12 ++++++------
->>  2 files changed, 7 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
->> index 9162ac8..81d8765 100644
->> --- a/drivers/dma/dmaengine.c
->> +++ b/drivers/dma/dmaengine.c
->> @@ -1062,7 +1062,7 @@ dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
->>       unsigned long dma_sync_wait_timeout = jiffies + msecs_to_jiffies(5000);
->>
->>       if (!tx)
->> -             return DMA_SUCCESS;
->> +             return DMA_COMPLETE;
->>
->>       while (tx->cookie == -EBUSY) {
->>               if (time_after_eq(jiffies, dma_sync_wait_timeout)) {
->> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->> index 0bc7275..4b460a6 100644
->> --- a/include/linux/dmaengine.h
->> +++ b/include/linux/dmaengine.h
->> @@ -45,13 +45,13 @@ static inline int dma_submit_error(dma_cookie_t cookie)
->>
->>  /**
->>   * enum dma_status - DMA transaction status
->> - * @DMA_SUCCESS: transaction completed successfully
->> + * @DMA_COMPLETE: transaction completed
->>   * @DMA_IN_PROGRESS: transaction not yet processed
->>   * @DMA_PAUSED: transaction is paused
->>   * @DMA_ERROR: transaction failed
->>   */
->>  enum dma_status {
->> -     DMA_SUCCESS,
->> +     DMA_COMPLETE,
->>       DMA_IN_PROGRESS,
->>       DMA_PAUSED,
->>       DMA_ERROR,
->
-> Doesn't this break kernel compilation for a total of 27 commits? Or am I
-> missing anything?
+throttle_cfs_rq doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq. If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-Yes, I think at the start DMA_COMPLETE should just be a alias for
-DMA_SUCCESS, then after all the driver renames are in delete
-DMA_SUCCESS.
+Fix this by calling __start_cfs_bandwidth in throttle if the timer is
+inactive.
+
+Also add some sched_debug lines for cfs_bandwidth.
+
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+---
+ kernel/sched/debug.c |    8 ++++++++
+ kernel/sched/fair.c  |    2 ++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e6ba5e3..5c34d18 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -229,6 +229,14 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 424c294..2dc6fbe 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3121,6 +3121,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
+ 
+
