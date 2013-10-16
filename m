@@ -1,62 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934048Ab3JPHlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:41:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58607 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035Ab3JPHlj (ORCPT
+	id S1760101Ab3JPHl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:41:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43985 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760004Ab3JPHkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:41:39 -0400
-Date: Wed, 16 Oct 2013 00:42:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: Paul Chavent <Paul.Chavent@onera.fr>, linux-kernel@vger.kernel.org,
-        Alexander Gordeev <agordeev@redhat.com>
-Subject: Re: [PATCH] pps : add non blocking option to PPS_FETCH ioctl.
-Message-Id: <20131016004227.602493c2.akpm@linux-foundation.org>
-In-Reply-To: <20131016072958.GD4285@enneenne.com>
-References: <1381495232-12152-1-git-send-email-paul.chavent@onera.fr>
-	<20131011124720.bf38f18affa8baf0b009875a@linux-foundation.org>
-	<20131015104350.GI4285@enneenne.com>
-	<20131015125545.1920ab5453136f3de5f2aa66@linux-foundation.org>
-	<525E37BF.4040303@onera.fr>
-	<20131016072958.GD4285@enneenne.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Oct 2013 03:40:21 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH v3 09/12] clk: msm: Add reset controller support
+Date: Wed, 16 Oct 2013 00:40:11 -0700
+Message-Id: <1381909214-12693-10-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.1.503.g2b7ca91
+In-Reply-To: <1381909214-12693-1-git-send-email-sboyd@codeaurora.org>
+References: <1381909214-12693-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 09:29:58 +0200 Rodolfo Giometti <giometti@enneenne.com> wrote:
+Reset controllers and clock controllers are combined into one IP
+block on qualcomm chipsets. Usually a reset signal is
+associated with each clock branch but sometimes a reset signal is
+associated with a handful of clocks. Either way the register
+interface is the same; set a bit to assert a reset and clear a
+bit to deassert a reset. Add support for these types of resets
+signals.
 
-> On Wed, Oct 16, 2013 at 08:52:47AM +0200, Paul Chavent wrote:
-> > 
-> > I would also prefer the separate ioctl. As you said it, it's a bit
-> > annoying to switch from blocking mode to non blocking mode if we
-> > need both mode. But i was not sure about the preferences of the
-> > maintainer : (i) change the api, or (ii) change the behavior with a
-> > widely supported interface (O_NONBLOCK).
-> 
-> As already stated the PPS RFC doesn't use ioctls to manage PPS data so
-> we can modify ioctls according our needs!
-> 
-> In fact we can modify the LinuxPPS wrapper functions to still remain
-> RFC compliant. :)
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/msm/Kconfig  |  1 +
+ drivers/clk/msm/Makefile |  1 +
+ drivers/clk/msm/reset.c  | 63 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/msm/reset.h  | 37 ++++++++++++++++++++++++++++
+ 4 files changed, 102 insertions(+)
+ create mode 100644 drivers/clk/msm/reset.c
+ create mode 100644 drivers/clk/msm/reset.h
 
-Sure.  I do think the new ioctl is better than O_NONBLOCK.  Are you OK with
-that?
+diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
+index 91558ce..5229c7e 100644
+--- a/drivers/clk/msm/Kconfig
++++ b/drivers/clk/msm/Kconfig
+@@ -2,4 +2,5 @@ config COMMON_CLK_MSM
+ 	tristate "Support for Qualcomm's MSM designs"
+ 	depends on OF
+ 	select REGMAP_MMIO
++	select RESET_CONTROLLER
+ 
+diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
+index e1cee29..8e4c799 100644
+--- a/drivers/clk/msm/Makefile
++++ b/drivers/clk/msm/Makefile
+@@ -4,3 +4,4 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += reset.o
+diff --git a/drivers/clk/msm/reset.c b/drivers/clk/msm/reset.c
+new file mode 100644
+index 0000000..b875dad
+--- /dev/null
++++ b/drivers/clk/msm/reset.c
+@@ -0,0 +1,63 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/bitops.h>
++#include <linux/export.h>
++#include <linux/regmap.h>
++#include <linux/reset-controller.h>
++#include <linux/delay.h>
++
++#include "reset.h"
++
++static int msm_reset(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	rcdev->ops->assert(rcdev, id);
++	udelay(1);
++	rcdev->ops->deassert(rcdev, id);
++	return 0;
++}
++
++static int
++msm_reset_assert(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	struct msm_reset_controller *rst;
++	const struct msm_reset_map *map;
++	u32 mask;
++
++	rst = to_msm_reset_controller(rcdev);
++	map = &rst->reset_map[id];
++	mask = BIT(map->bit);
++
++	return regmap_update_bits(rst->regmap, map->reg, mask, mask);
++}
++
++static int
++msm_reset_deassert(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	struct msm_reset_controller *rst;
++	const struct msm_reset_map *map;
++	u32 mask;
++
++	rst = to_msm_reset_controller(rcdev);
++	map = &rst->reset_map[id];
++	mask = BIT(map->bit);
++
++	return regmap_update_bits(rst->regmap, map->reg, mask, 0);
++}
++
++struct reset_control_ops msm_reset_ops = {
++	.reset = msm_reset,
++	.assert = msm_reset_assert,
++	.deassert = msm_reset_deassert,
++};
++EXPORT_SYMBOL_GPL(msm_reset_ops);
+diff --git a/drivers/clk/msm/reset.h b/drivers/clk/msm/reset.h
+new file mode 100644
+index 0000000..09de265
+--- /dev/null
++++ b/drivers/clk/msm/reset.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MSM_CLK_RESET_H__
++#define __MSM_CLK_RESET_H__
++
++#include <linux/reset-controller.h>
++
++struct msm_reset_map {
++	unsigned int reg;
++	u8 bit;
++};
++
++struct regmap;
++
++struct msm_reset_controller {
++	const struct msm_reset_map *reset_map;
++	struct regmap *regmap;
++	struct reset_controller_dev rcdev;
++};
++
++#define to_msm_reset_controller(r) \
++	container_of(r, struct msm_reset_controller, rcdev);
++
++extern struct reset_control_ops msm_reset_ops;
++
++#endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-> > I'm certainly not the best person to make the final decision, but i
-> > would like to help you if you need me (write doc, or change this
-> > patch).
-> 
-> In this scenario I think we can do as Andrew suggests modifying
-> LinuxPPS docs accordingly... maybe we can add a new file into
-> linux/Documentation/pps directory describing Linux PPS ioctls and how
-> they interact with PPS RFC functions.
-> 
-> Andrew, could this be an acceptable solution?
-
-Sounds great, thanks.
