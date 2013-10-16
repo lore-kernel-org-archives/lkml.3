@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760514Ab3JPJjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:39:19 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44797 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759444Ab3JPJjQ (ORCPT
+	id S1760379Ab3JPJoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:44:03 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48262 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760112Ab3JPJoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:39:16 -0400
-Message-ID: <525E5E79.6010905@linux.vnet.ibm.com>
-Date: Wed, 16 Oct 2013 15:08:01 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 16 Oct 2013 05:44:00 -0400
+Date: Wed, 16 Oct 2013 10:43:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] mfd: tc3589x: reform device tree probing
+Message-ID: <20131016094356.GE19112@lee--X1>
+References: <1381871803-22796-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 02/10][v6] powerpc/Power7: detect load/store instructions
-References: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com> <1381889202-16826-3-git-send-email-sukadev@linux.vnet.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B738E@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B738E@saturn3.aculab.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101609-9574-0000-0000-00000A18DCBF
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1381871803-22796-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 01:55 PM, David Laight wrote:
->> Implement instr_is_load_store_2_06() to detect whether a given instruction
->> is one of the fixed-point or floating-point load/store instructions in the
->> POWER Instruction Set Architecture v2.06.
-> ...
+On Tue, 15 Oct 2013, Linus Walleij wrote:
 
-The op code encoding is dependent on the ISA version ? Does the basic load
-and store instructions change with newer ISA versions ? BTW we have got a
-newer version for the ISA "PowerISA_V2.07_PUBLIC.pdf" here at power.org
-
-https://www.power.org/documentation/power-isa-version-2-07/
-
-Does not sound like a good idea to analyse the instructions with functions
-names which specify ISA version number. Besides, this function does not
-belong to specific processor or platform. It has to be bit generic.
- 
->> +int instr_is_load_store_2_06(const unsigned int *instr)
->> +{
->> +	unsigned int op, upper, lower;
->> +
->> +	op = instr_opcode(*instr);
->> +
->> +	if ((op >= 32 && op <= 58) || (op == 61 || op == 62))
->> +		return true;
->> +
->> +	if (op != 31)
->> +		return false;
->> +
->> +	upper = op >> 5;
->> +	lower = op & 0x1f;
->> +
->> +	/* Short circuit as many misses as we can */
->> +	if (lower < 3 || lower > 23)
->> +		return false;
->> +
->> +	if (lower == 3) {
->> +		if (upper >= 16)
->> +			return true;
->> +
->> +		return false;
->> +	}
->> +
->> +	if (lower == 7 || lower == 12)
->> +		return true;
->> +
->> +	if (lower >= 20) /* && lower <= 23 (implicit) */
->> +		return true;
->> +
->> +	return false;
->> +}
+> This changes the following mechanisms in the TC3589x device tree
+> probing path:
 > 
-> I can't help feeling the code could do with some comments about
-> which actual instructions are selected where.
+> - Use the .of_match_table in struct device_driver to match the
+>   device in the device tree.
+> - Add matches for the proper compatible strings "toshiba,..."
+>   and all sub-variants, just as is done for the .id matches.
+> - Move over all the allocation of platform data etc to the
+>   tc3589x_of_probe() function and follow the pattern of passing
+>   a platform data pointer back, or an error pointer on error,
+>   as found in the STMPE driver.
+> - Match the new (proper) compatible strings for the GPIO and
+>   keypad MFD cells.
+> - Use of_device_is_compatible() rather than just !strcmp()
+>   to discover which cells to instantiate.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mfd/tc3589x.c | 84 ++++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 59 insertions(+), 25 deletions(-)
 
-Yeah, I agree. At least which category of load-store instructions are
-getting selected in each case.
+Nice patch overall.
 
+> +	of_id = of_match_device(tc3589x_match, dev);
+> +	if (!of_id)
+> +		return ERR_PTR(-ENODEV);
+
+I still think -EINVAL is better in this case, but I see that some
+people are using -ENODEV as well and I'm not religious enough about it
+to care, so:
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+:)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
