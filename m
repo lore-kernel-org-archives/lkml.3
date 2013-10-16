@@ -1,59 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab3JPJaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:30:21 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:45689 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760112Ab3JPJaU (ORCPT
+	id S1760267Ab3JPJeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:34:07 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:55695 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760111Ab3JPJeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:30:20 -0400
-Date: Wed, 16 Oct 2013 11:30:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] perf: revert PERF_RECORD_MMAP2 support
-Message-ID: <20131016093017.GD23440@gmail.com>
-References: <20131015161843.GA17653@quad>
- <20131016061502.GB21109@gmail.com>
- <CABPqkBS3WOKRb3i6d7E=vru7WKffp+PGzi8HYDfyTtGABYHiNw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS3WOKRb3i6d7E=vru7WKffp+PGzi8HYDfyTtGABYHiNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 05:34:05 -0400
+Message-ID: <1381916039.17491.1.camel@phoenix>
+Subject: [PATCH] Revert "regulator: da9052: Use apply_[reg|bit] with regmap
+ based voltage_sel operations"
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Michael Grzeschik <mgr@pengutronix.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 16 Oct 2013 17:33:59 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This reverts commit 68f7506017ba67f1334cf086ffab76606f2c5ac4.
 
-* Stephane Eranian <eranian@google.com> wrote:
+Michael reported that with this patch we loose the fix_io code path from
+da9052_reg_update. Thus revert it.
 
-> > For example by a simple patch that returns -EINVAL (or -ENOSYS) if the 
-> > new flag is used - i.e. behaves like the old kernel in that regard - 
-> > but leaves the rest in place. (the 'rest' will hopefully be fixed for 
-> > v3.13)
->
-> That's what I did in my initial revert patch. But it did not include the 
-> perf tool revert.
+Reported-by: Michael Grzeschik <mgr@pengutronix.de>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi Mark,
+I'm busy recently and not able to cook a proper fix in regmap for this issue now.
+Unless someone can send the fix for *3.12*, otherwise we have no choice but have
+to revert this patch.
 
-Could the perf tool part have a minimal revert as well?
+Regards,
+Axel
+ drivers/regulator/da9052-regulator.c | 41 ++++++++++++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 6 deletions(-)
 
-> I believe in the end, we will still go with the extended MMAP record and 
-> not with the physical address (which adds a PERF_SAMPLE_*). So we can 
-> leave the attr->mmap2 bit defined and return -EINVAL for now.
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index c427e42..3adeaef 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -70,6 +70,7 @@ struct da9052_regulator_info {
+ 	int step_uV;
+ 	int min_uV;
+ 	int max_uV;
++	unsigned char activate_bit;
+ };
+ 
+ struct da9052_regulator {
+@@ -209,6 +210,36 @@ static int da9052_map_voltage(struct regulator_dev *rdev,
+ 	return sel;
+ }
+ 
++static int da9052_regulator_set_voltage_sel(struct regulator_dev *rdev,
++					    unsigned int selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int id = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_update(regulator->da9052, rdev->desc->vsel_reg,
++				rdev->desc->vsel_mask, selector);
++	if (ret < 0)
++		return ret;
++
++	/* Some LDOs and DCDCs are DVC controlled which requires enabling of
++	 * the activate bit to implment the changes on the output.
++	 */
++	switch (id) {
++	case DA9052_ID_BUCK1:
++	case DA9052_ID_BUCK2:
++	case DA9052_ID_BUCK3:
++	case DA9052_ID_LDO2:
++	case DA9052_ID_LDO3:
++		ret = da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
++					info->activate_bit, info->activate_bit);
++		break;
++	}
++
++	return ret;
++}
++
+ static struct regulator_ops da9052_dcdc_ops = {
+ 	.get_current_limit = da9052_dcdc_get_current_limit,
+ 	.set_current_limit = da9052_dcdc_set_current_limit,
+@@ -216,7 +247,7 @@ static struct regulator_ops da9052_dcdc_ops = {
+ 	.list_voltage = da9052_list_voltage,
+ 	.map_voltage = da9052_map_voltage,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.set_voltage_sel = da9052_regulator_set_voltage_sel,
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -226,7 +257,7 @@ static struct regulator_ops da9052_ldo_ops = {
+ 	.list_voltage = da9052_list_voltage,
+ 	.map_voltage = da9052_map_voltage,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.set_voltage_sel = da9052_regulator_set_voltage_sel,
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -243,14 +274,13 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.owner = THIS_MODULE,\
+ 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.vsel_mask = (1 << (sbits)) - 1,\
+-		.apply_reg = DA9052_SUPPLY_REG, \
+-		.apply_bit = (abits), \
+ 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
++	.activate_bit = (abits),\
+ }
+ 
+ #define DA9052_DCDC(_id, step, min, max, sbits, ebits, abits) \
+@@ -264,14 +294,13 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.owner = THIS_MODULE,\
+ 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.vsel_mask = (1 << (sbits)) - 1,\
+-		.apply_reg = DA9052_SUPPLY_REG, \
+-		.apply_bit = (abits), \
+ 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
++	.activate_bit = (abits),\
+ }
+ 
+ static struct da9052_regulator_info da9052_regulator_info[] = {
+-- 
+1.8.1.2
 
-Yeah.
 
-> As for the perf tool, we can remove everything and add that later on 
-> because the layout of the MMAP2 record may change.
 
-Yes - but can we keep the actual revert patch minimal? I.e. just prevent 
-mmap2 records from being generated, or so.
-
-Thanks,
-
-	Ingo
