@@ -1,175 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761723Ab3JPSft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:35:49 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64967 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761258Ab3JPSfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:35:47 -0400
-Date: Wed, 16 Oct 2013 11:35:43 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: rydberg@euromail.se, Kamal Mostafa <kamal@canonical.com>,
-        linux-kernel@vger.kernel.org, dudl@cypress.com, git@status.e4ward.com,
-        tim.gardner@canonical.com, linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/1][Resend] Input: cypress_ps2 - Return zero finger
- count if palm is detected.
-Message-ID: <20131016183543.GA21932@core.coreip.homeip.net>
-References: <cover.1379968154.git.joseph.salisbury@canonical.com>
- <007c09ae4ef7f72ffb657de0fb3854fcbc6d88f0.1379968154.git.joseph.salisbury@canonical.com>
- <1380571922.15513.29.camel@fourier>
- <525827B3.9080003@canonical.com>
+	id S1761697Ab3JPSiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:38:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51085 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab3JPSiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 14:38:10 -0400
+Date: Wed, 16 Oct 2013 20:38:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: still running into WARNING: CPU: at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4a6/0x4e0
+Message-ID: <20131016183807.GA1405@quack.suse.cz>
+References: <1381888924.2371.5.camel@buesod1.americas.hpqcorp.net>
+ <20131016125004.GC14278@quack.suse.cz>
+ <1381938967.4324.0.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="nFreZHaLTZJo0R7j"
 Content-Disposition: inline
-In-Reply-To: <525827B3.9080003@canonical.com>
+In-Reply-To: <1381938967.4324.0.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
 
-On Fri, Oct 11, 2013 at 12:30:43PM -0400, Joseph Salisbury wrote:
-> On 09/30/2013 04:12 PM, Kamal Mostafa wrote:
-> > On Tue, 2013-09-24 at 11:44 -0400, Joseph Salisbury wrote:
-> >> BugLink: http://bugs.launchpad.net/bugs/1229361
-> >>
-> >> This patch sets the finger count to 0 in the case of palm contact.
-> >>
-> >> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> >> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT (KEYBOARD,...,commit_signer:2/2=100%)
-> >> Cc: Henrik Rydberg <rydberg@euromail.se> (maintainer:INPUT MULTITOUCH...)
-> >> Cc: Kamal Mostafa <kamal@canonical.com> (commit_signer:2/2=100%)
-> >> Cc: Dudley Du <dudl@cypress.com> (commit_signer:2/2=100%)
-> >> Cc: Kyle Fazzari <git@status.e4ward.com> (commit_signer:1/2=50%)
-> >> Cc: Tim Gardner <tim.gardner@canonical.com> (commit_signer:1/2=50%)
-> >> Cc: linux-input@vger.kernel.org (open list:INPUT (KEYBOARD,...)
-> >> Cc: linux-kernel@vger.kernel.org (open list)
-> >> Cc: stable@vger.kernel.org
-> > This patch works fine: eliminates stream of junk driver messages with no
-> > ill effects.
-> >
-> > Tested-by: Kamal Mostafa <kamal@canonical.com>
-> >
-> >  -Kamal
-> >
-> >
-> >> ---
-> >>  drivers/input/mouse/cypress_ps2.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-> >> index 45b3eda..95b2c40 100644
-> >> --- a/drivers/input/mouse/cypress_ps2.c
-> >> +++ b/drivers/input/mouse/cypress_ps2.c
-> >> @@ -441,7 +441,7 @@ static int cypress_get_finger_count(unsigned char header_byte)
-> >>  			case 2: return 5;
-> >>  			default:
-> >>  				/* Invalid contact (e.g. palm). Ignore it. */
-> >> -				return -1;
-> >> +				return 0;
-> >>  		}
-> >>  	}
-> >>  
-> >> @@ -460,7 +460,7 @@ static int cypress_parse_packet(struct psmouse *psmouse,
-> >>  
-> >>  	contact_cnt = cypress_get_finger_count(header_byte);
-> >>  
-> >> -	if (contact_cnt < 0) /* e.g. palm detect */
-> >> +	if (contact_cnt < 0)
-> >>  		return -EINVAL;
-> >>  
-> >>  	report_data->contact_cnt = contact_cnt;
-> Hi Dmitry and Henrik,
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed 16-10-13 08:56:07, Davidlohr Bueso wrote:
+> On Wed, 2013-10-16 at 14:50 +0200, Jan Kara wrote:
+> > On Tue 15-10-13 19:02:04, Davidlohr Bueso wrote:
+> > > Hello Jan,
+> > > 
+> > > Just wanted to let you know I hit this[1] again on Linus' latest. The
+> > > setup/workload is *identical* to the reported one a few months ago.
+> > > 
+> > > [1] https://lkml.org/lkml/2013/8/1/532
+> > > 
+> > > Here's the complete output, I hope it helps...
+> >   Thanks for the headup. Last time I wasn't able to reproduce this and
+> > eventually forgot about the problem. Can I send you a debug patch and you
+> > would run a kernel with it? Thanks.
 > 
-> Have you had a chance to review this patch to consider it for inclusion
-> in mainline?
+> Sure.
+  OK, attached is the debug patch. Please apply it and send dmesg when the
+problem reproduces. Also please attach System.map so that I can map the
+'created at' addresses to symbols. Thanks.
 
-I think the main problem is that we were reporting PSMOUSE_BAD_DATA for
-palm packets.
-
-Could you try a slightly extended patch below to make sure it all still
-works?
-
-Thanks!
-
+								Honza
 -- 
-Dmitry
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-Input: cypress_ps2 - do not consider data bad if palm is detected
+--nFreZHaLTZJo0R7j
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-ext4-Debug-outstanding-io_ends.patch"
 
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
+>From 1411960edc40abe5db5344fed04bf6370dc432e8 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Wed, 16 Oct 2013 20:32:58 +0200
+Subject: [PATCH] ext4: Debug outstanding io_ends
 
-If hardware (or firmware) detects palm on the surface of the device it does
-not mean that the data packet is bad from the protocol standpoint. Instead
-of reporting PSMOUSE_BAD_DATA in this case simply threat it as if nothing
-touches the surface.
-
-BugLink: http://bugs.launchpad.net/bugs/1229361
-
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/input/mouse/cypress_ps2.c |   20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ fs/ext4/ext4.h    |  3 +++
+ fs/ext4/inode.c   | 24 ++++++++++++++++++++++--
+ fs/ext4/page-io.c | 11 +++++++++++
+ 3 files changed, 36 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index ef651cc..e499e55 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -439,7 +439,7 @@ static int cypress_get_finger_count(unsigned char header_byte)
- 			case 2: return 5;
- 			default:
- 				/* Invalid contact (e.g. palm). Ignore it. */
--				return -1;
-+				return 0;
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index af815ea9d7cc..82333b4ba7bf 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -187,6 +187,7 @@ struct ext4_map_blocks {
+  */
+ typedef struct ext4_io_end {
+ 	struct list_head	list;		/* per-file finished IO list */
++	struct list_head	full_list;
+ 	handle_t		*handle;	/* handle reserved for extent
+ 						 * conversion */
+ 	struct inode		*inode;		/* file being written to */
+@@ -196,6 +197,7 @@ typedef struct ext4_io_end {
+ 	loff_t			offset;		/* offset in the file */
+ 	ssize_t			size;		/* size of the extent */
+ 	atomic_t		count;		/* reference counter */
++	unsigned long		created_at;
+ } ext4_io_end_t;
+ 
+ struct ext4_io_submit {
+@@ -907,6 +909,7 @@ struct ext4_inode_info {
+ 	 * transaction reserved
+ 	 */
+ 	struct list_head i_rsv_conversion_list;
++	struct list_head i_ioend_list;
+ 	/*
+ 	 * Completed IOs that need unwritten extents handling and don't have
+ 	 * transaction reserved
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index e7e5b3d8f002..c053e977caa1 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -176,6 +176,20 @@ int ext4_truncate_restart_trans(handle_t *handle, struct inode *inode,
+ 	return ret;
+ }
+ 
++static void dump_ioends(struct inode *inode, struct list_head *head)
++{
++	ext4_io_end_t *io;
++	unsigned long flags;
++
++	spin_lock_irqsave(&EXT4_I(inode)->i_completed_io_lock, flags);
++	list_for_each_entry(io, head, full_list) {
++		printk("ioend %p, created at 0x%lx: handle=%p, bio=%p, flag=%u, offset=%lu, len=%u, count=%d\n",
++			io, io->created_at, io->handle, io->bio, io->flag, (unsigned long)io->offset,
++			(unsigned)io->size, (int)atomic_read(&io->count));
++	}
++	spin_unlock_irqrestore(&EXT4_I(inode)->i_completed_io_lock, flags);
++}
++
+ /*
+  * Called at the last iput() if i_nlink is zero.
+  */
+@@ -216,7 +230,10 @@ void ext4_evict_inode(struct inode *inode)
  		}
+ 		truncate_inode_pages(&inode->i_data, 0);
+ 
+-		WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
++		if (WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count))) {
++			printk("ioend_count=%d, i_unwritten=%d\n", (int)atomic_read(&EXT4_I(inode)->i_ioend_count), (int)atomic_read(&EXT4_I(inode)->i_unwritten));
++			dump_ioends(inode, &EXT4_I(inode)->i_ioend_list);
++		}
+ 		goto no_delete;
  	}
  
-@@ -452,17 +452,10 @@ static int cypress_parse_packet(struct psmouse *psmouse,
+@@ -227,7 +244,10 @@ void ext4_evict_inode(struct inode *inode)
+ 		ext4_begin_ordered_truncate(inode, 0);
+ 	truncate_inode_pages(&inode->i_data, 0);
+ 
+-	WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
++	if (WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count))) {
++		printk("ioend_count=%d, i_unwritten=%d\n", (int)atomic_read(&EXT4_I(inode)->i_ioend_count), (int)atomic_read(&EXT4_I(inode)->i_unwritten));
++		dump_ioends(inode, &EXT4_I(inode)->i_ioend_list);
++	}
+ 	if (is_bad_inode(inode))
+ 		goto no_delete;
+ 
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index d488f80ee32d..8cce9abf9d31 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -110,6 +110,7 @@ static void ext4_finish_bio(struct bio *bio)
+ static void ext4_release_io_end(ext4_io_end_t *io_end)
  {
- 	unsigned char *packet = psmouse->packet;
- 	unsigned char header_byte = packet[0];
--	int contact_cnt;
+ 	struct bio *bio, *next_bio;
++	unsigned long flags;
  
- 	memset(report_data, 0, sizeof(struct cytp_report_data));
+ 	BUG_ON(!list_empty(&io_end->list));
+ 	BUG_ON(io_end->flag & EXT4_IO_END_UNWRITTEN);
+@@ -118,6 +119,10 @@ static void ext4_release_io_end(ext4_io_end_t *io_end)
+ 	if (atomic_dec_and_test(&EXT4_I(io_end->inode)->i_ioend_count))
+ 		wake_up_all(ext4_ioend_wq(io_end->inode));
  
--	contact_cnt = cypress_get_finger_count(header_byte);
--
--	if (contact_cnt < 0) /* e.g. palm detect */
--		return -EINVAL;
--
--	report_data->contact_cnt = contact_cnt;
--
-+	report_data->contact_cnt = cypress_get_finger_count(header_byte);
- 	report_data->tap = (header_byte & ABS_MULTIFINGER_TAP) ? 1 : 0;
- 
- 	if (report_data->contact_cnt == 1) {
-@@ -535,11 +528,9 @@ static void cypress_process_packet(struct psmouse *psmouse, bool zero_pkt)
- 	int slots[CYTP_MAX_MT_SLOTS];
- 	int n;
- 
--	if (cypress_parse_packet(psmouse, cytp, &report_data))
--		return;
-+	cypress_parse_packet(psmouse, cytp, &report_data);
- 
- 	n = report_data.contact_cnt;
--
- 	if (n > CYTP_MAX_MT_SLOTS)
- 		n = CYTP_MAX_MT_SLOTS;
- 
-@@ -604,11 +595,6 @@ static psmouse_ret_t cypress_validate_byte(struct psmouse *psmouse)
- 	if ((packet[0] & 0x08) == 0x08)
- 		return PSMOUSE_BAD_DATA;
- 
--	contact_cnt = cypress_get_finger_count(packet[0]);
--
--	if (contact_cnt < 0)
--		return PSMOUSE_BAD_DATA;
--
- 	if (cytp->mode & CYTP_BIT_ABS_NO_PRESSURE)
- 		cypress_set_packet_size(psmouse, contact_cnt == 2 ? 7 : 4);
- 	else
++	spin_lock_irqsave(&EXT4_I(io_end->inode)->i_completed_io_lock, flags);
++	list_del(&io_end->full_list);
++	spin_unlock_irqrestore(&EXT4_I(io_end->inode)->i_completed_io_lock, flags);
++
+ 	for (bio = io_end->bio; bio; bio = next_bio) {
+ 		next_bio = bio->bi_private;
+ 		ext4_finish_bio(bio);
+@@ -252,10 +257,16 @@ ext4_io_end_t *ext4_init_io_end(struct inode *inode, gfp_t flags)
+ {
+ 	ext4_io_end_t *io = kmem_cache_zalloc(io_end_cachep, flags);
+ 	if (io) {
++		unsigned long flags;
++
++		spin_lock_irqsave(&EXT4_I(inode)->i_completed_io_lock, flags);
++		list_add(&io->full_list, &EXT4_I(inode)->i_ioend_list);
++		spin_unlock_irqrestore(&EXT4_I(inode)->i_completed_io_lock, flags);
+ 		atomic_inc(&EXT4_I(inode)->i_ioend_count);
+ 		io->inode = inode;
+ 		INIT_LIST_HEAD(&io->list);
+ 		atomic_set(&io->count, 1);
++		io->created_at = _RET_IP_;
+ 	}
+ 	return io;
+ }
+-- 
+1.8.1.4
+
+
+--nFreZHaLTZJo0R7j--
