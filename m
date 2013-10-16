@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761728Ab3JPRxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:53:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35948 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761645Ab3JPRqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 34/50] ipc: drop ipcctl_pre_down
-Date: Wed, 16 Oct 2013 10:45:20 -0700
-Message-Id: <20131016174402.479487564@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1761714Ab3JPRxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:53:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab3JPRxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:53:42 -0400
+Date: Wed, 16 Oct 2013 14:53:02 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131016175302.GB4100@infradead.org>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
+ <20131010180049.GD9929@pd.tnic>
+ <20131016124627.GA2611@gmail.com>
+ <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+Em Wed, Oct 16, 2013 at 03:13:54PM +0200, Stephane Eranian escreveu:
+> On Wed, Oct 16, 2013 at 2:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> > We should also tell user-space that the unit of this counter is 'Joule'.
+> >
+> > Then things like:
+> >
+> >         perf stat -a -e power/* sleep 1
+> >
+> > would output, without knowing any RAPL details:
+> >
+> >             0.20619 Joule    power/energy-core
+> >             2.42151 Joule    power/energy-pkg
+> >
+> Not sure there is already some support for this in perf stat. Arnaldo?
 
-------------------
+Nope, there is not, we would have to have some table somewhere with
+"event-regexp: unit-string"
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> If not that we need another sysfs file to export the unit. Another
+> possibility is for perf stat to recognize the power/* and extract the
+> unit from the event name. In my example power/joules-cores -> joules.
 
-commit 3b1c4ad37741e53804ffe0a30dd01e08b2ab6241 upstream.
+I.e. you would be encoding the counter unit as the suffix, might as well
+call it "power/cores.joules" and use the dot as the separator for the
+unit, but would be just a compact form to encode the counter->unit
+table.
 
-Now that sem, msgque and shm, through *_down(), all use the lockless
-variant of ipcctl_pre_down(), go ahead and delete it.
-
-[akpm@linux-foundation.org: fix function name in kerneldoc, cleanups]
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- ipc/util.c |   24 ++++--------------------
- ipc/util.h |    3 ---
- 2 files changed, 4 insertions(+), 23 deletions(-)
-
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -725,7 +725,7 @@ int ipc_update_perm(struct ipc64_perm *i
- }
- 
- /**
-- * ipcctl_pre_down - retrieve an ipc and check permissions for some IPC_XXX cmd
-+ * ipcctl_pre_down_nolock - retrieve an ipc and check permissions for some IPC_XXX cmd
-  * @ns:  the ipc namespace
-  * @ids:  the table of ids where to look for the ipc
-  * @id:   the id of the ipc to retrieve
-@@ -738,29 +738,13 @@ int ipc_update_perm(struct ipc64_perm *i
-  * It must be called without any lock held and
-  *  - retrieves the ipc with the given id in the given table.
-  *  - performs some audit and permission check, depending on the given cmd
-- *  - returns the ipc with the ipc lock held in case of success
-- *    or an err-code without any lock held otherwise.
-+ *  - returns a pointer to the ipc object or otherwise, the corresponding error.
-  *
-  * Call holding the both the rw_mutex and the rcu read lock.
-  */
--struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
--				      struct ipc_ids *ids, int id, int cmd,
--				      struct ipc64_perm *perm, int extra_perm)
--{
--	struct kern_ipc_perm *ipcp;
--
--	ipcp = ipcctl_pre_down_nolock(ns, ids, id, cmd, perm, extra_perm);
--	if (IS_ERR(ipcp))
--		goto out;
--
--	spin_lock(&ipcp->lock);
--out:
--	return ipcp;
--}
--
- struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
--					     struct ipc_ids *ids, int id, int cmd,
--					     struct ipc64_perm *perm, int extra_perm)
-+					struct ipc_ids *ids, int id, int cmd,
-+					struct ipc64_perm *perm, int extra_perm)
- {
- 	kuid_t euid;
- 	int err = -EPERM;
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -139,9 +139,6 @@ int ipc_update_perm(struct ipc64_perm *i
- struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
- 					     struct ipc_ids *ids, int id, int cmd,
- 					     struct ipc64_perm *perm, int extra_perm);
--struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
--				      struct ipc_ids *ids, int id, int cmd,
--				      struct ipc64_perm *perm, int extra_perm);
- 
- #ifndef CONFIG_ARCH_WANT_IPC_PARSE_VERSION
-   /* On IA-64, we always use the "64-bit version" of the IPC structures.  */ 
-
-
+- Arnaldo
