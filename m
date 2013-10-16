@@ -1,123 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934605Ab3JPRq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35581 "EHLO
+	id S1761964Ab3JPR5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:57:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761306Ab3JPRpi (ORCPT
+	with ESMTP id S934607Ab3JPRq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:38 -0400
+	Wed, 16 Oct 2013 13:46:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+        Francisco Jerez <currojerez@riseup.net>,
+        Ben Widawsky <ben@bwidawsk.net>, Daniel Vetter <daniel@ffwll.ch>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 26/69] drm/i915: Only apply DPMS to the encoder if enabled
-Date: Wed, 16 Oct 2013 10:44:35 -0700
-Message-Id: <20131016174316.111559029@linuxfoundation.org>
+Subject: [ 25/50] drm/i915/hsw: Disable L3 caching of atomic memory operations.
+Date: Wed, 16 Oct 2013 10:45:11 -0700
+Message-Id: <20131016174401.413524732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Francisco Jerez <currojerez@riseup.net>
 
-commit c9976dcf55c8aaa7037427b239f15e5acfc01a3a upstream.
+commit f3fc4884ebe6ae649d3723be14b219230d3b7fd2 upstream.
 
-The current test for an attached enabled encoder fails if we have
-multiple connectors aliased to the same encoder - both connectors
-believe they own the enabled encoder and so we attempt to both enable
-and disable DPMS on the encoder, leading to hilarity and an OOPs:
+Otherwise using any atomic memory operation will lock up the GPU due
+to a Haswell hardware bug.
 
-[  354.803064] WARNING: CPU: 0 PID: 482 at
-/usr/src/linux/dist/3.11.2/drivers/gpu/drm/i915/intel_display.c:3869 intel_modeset_check_state+0x764/0x770 [i915]()
-[  354.803064] wrong connector dpms state
-[  354.803084] Modules linked in: nfsd auth_rpcgss oid_registry exportfs nfs lockd sunrpc xt_nat iptable_nat nf_nat_ipv4 nf_nat xt_limit xt_LOG xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT ipv6 xt_recent xt_conntrack nf_conntrack iptable_filter ip_tables x_tables snd_hda_codec_realtek snd_hda_codec_hdmi x86_pkg_temp_thermal snd_hda_intel coretemp kvm_intel snd_hda_codec i915 kvm snd_hwdep snd_pcm_oss snd_mixer_oss crc32_pclmul snd_pcm crc32c_intel e1000e intel_agp igb ghash_clmulni_intel intel_gtt aesni_intel cfbfillrect aes_x86_64 cfbimgblt lrw cfbcopyarea drm_kms_helper ptp video thermal processor gf128mul snd_page_alloc drm snd_timer glue_helper 8250_pci snd pps_core ablk_helper agpgart cryptd sg soundcore fan i2c_algo_bit sr_mod thermal_sys 8250 i2c_i801 serial_core
-hwmon cdrom i2c_core evdev button
-[  354.803086] CPU: 0 PID: 482 Comm: kworker/0:1 Not tainted 3.11.2 #1
-[  354.803087] Hardware name: Supermicro X10SAE/X10SAE, BIOS 1.00 05/03/2013 [  354.803091] Workqueue: events console_callback
-[  354.803092]  0000000000000009 ffff88023611db48 ffffffff814048ac ffff88023611db90
-[  354.803093]  ffff88023611db80 ffffffff8103d4e3 ffff880230d82800 ffff880230f9b800
-[  354.803094]  ffff880230f99000 ffff880230f99448 ffff8802351c0e00 ffff88023611dbe0
-[  354.803094] Call Trace:
-[  354.803098]  [<ffffffff814048ac>] dump_stack+0x54/0x8d
-[  354.803101]  [<ffffffff8103d4e3>] warn_slowpath_common+0x73/0x90
-[  354.803103]  [<ffffffff8103d547>] warn_slowpath_fmt+0x47/0x50
-[  354.803109]  [<ffffffffa089f1be>] ? intel_ddi_connector_get_hw_state+0x5e/0x110 [i915]
-[  354.803114]  [<ffffffffa0896974>] intel_modeset_check_state+0x764/0x770 [i915]
-[  354.803117]  [<ffffffffa08969bb>] intel_connector_dpms+0x3b/0x60 [i915]
-[  354.803120]  [<ffffffffa037e1d0>] drm_fb_helper_dpms.isra.11+0x120/0x160 [drm_kms_helper]
-[  354.803122]  [<ffffffffa037e24e>] drm_fb_helper_blank+0x3e/0x80 [drm_kms_helper]
-[  354.803123]  [<ffffffff812116c2>] fb_blank+0x52/0xc0
-[  354.803125]  [<ffffffff8121e04b>] fbcon_blank+0x21b/0x2d0
-[  354.803127]  [<ffffffff81062243>] ? update_rq_clock.part.74+0x13/0x30
-[  354.803129]  [<ffffffff81047486>] ? lock_timer_base.isra.30+0x26/0x50
-[  354.803130]  [<ffffffff810472b2>] ? internal_add_timer+0x12/0x40
-[  354.803131]  [<ffffffff81047f48>] ? mod_timer+0xf8/0x1c0
-[  354.803133]  [<ffffffff81266d61>] do_unblank_screen+0xa1/0x1c0
-[  354.803134]  [<ffffffff81268087>] poke_blanked_console+0xc7/0xd0
-[  354.803136]  [<ffffffff812681cf>] console_callback+0x13f/0x160
-[  354.803137]  [<ffffffff81053258>] process_one_work+0x148/0x3d0
-[  354.803138]  [<ffffffff81053f19>] worker_thread+0x119/0x3a0
-[  354.803140]  [<ffffffff81053e00>] ? manage_workers.isra.30+0x2a0/0x2a0
-[  354.803141]  [<ffffffff8105994b>] kthread+0xbb/0xc0
-[  354.803142]  [<ffffffff81059890>] ? kthread_create_on_node+0x120/0x120
-[  354.803144]  [<ffffffff8140b32c>] ret_from_fork+0x7c/0xb0
-[  354.803145]  [<ffffffff81059890>] ? kthread_create_on_node+0x120/0x120
+v2: Use the _MASKED_BIT_ENABLE macro.  Drop drm parameter definition.
 
-This regression goes back to the big modeset rework and the conversion
-to the new dpms helpers which started with:
-
-commit 5ab432ef4997ce32c9406721b37ef6e97e57dae1
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sat Jun 30 08:59:56 2012 +0200
-
-    drm/i915/hdmi: convert to encoder->disable/enable
-
-Fixes: igt/kms_flip/dpms-off-confusion
-Reported-and-tested-by: Wakko Warner <wakko@animx.eu.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=68030
-Link:  http://lkml.kernel.org/r/20130928185023.GA21672@animx.eu.org
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Add regression citation, mention the igt testcase this fixes
-and slap a cc: stable on the patch.]
+Signed-off-by: Francisco Jerez <currojerez@riseup.net>
+Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
+Cc: Daniel Vetter <daniel@ffwll.ch>
+[danvet: Fix checkpatch fail.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |    6 ++++++
+ drivers/gpu/drm/i915/intel_pm.c |    5 +++++
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3946,8 +3946,6 @@ static void intel_connector_check_state(
-  * consider. */
- void intel_connector_dpms(struct drm_connector *connector, int mode)
- {
--	struct intel_encoder *encoder = intel_attached_encoder(connector);
--
- 	/* All the simple cases only support two dpms states. */
- 	if (mode != DRM_MODE_DPMS_ON)
- 		mode = DRM_MODE_DPMS_OFF;
-@@ -3958,10 +3956,8 @@ void intel_connector_dpms(struct drm_con
- 	connector->dpms = mode;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3791,6 +3791,9 @@
+ #define GEN7_SQ_CHICKEN_MBCUNIT_CONFIG		0x9030
+ #define  GEN7_SQ_CHICKEN_MBCUNIT_SQINTMOB	(1<<11)
  
- 	/* Only need to change hw state when actually enabled */
--	if (encoder->base.crtc)
--		intel_encoder_dpms(encoder, mode);
--	else
--		WARN_ON(encoder->connectors_active != false);
-+	if (connector->encoder)
-+		intel_encoder_dpms(to_intel_encoder(connector->encoder), mode);
++#define HSW_SCRATCH1				0xb038
++#define  HSW_SCRATCH1_L3_DATA_ATOMICS_DISABLE	(1<<27)
++
+ #define HSW_FUSE_STRAP		0x42014
+ #define  HSW_CDCLK_LIMIT	(1 << 24)
  
- 	intel_modeset_check_state(connector->dev);
- }
+@@ -4624,6 +4627,9 @@
+ #define GEN7_ROW_CHICKEN2_GT2		0xf4f4
+ #define   DOP_CLOCK_GATING_DISABLE	(1<<0)
+ 
++#define HSW_ROW_CHICKEN3		0xe49c
++#define  HSW_ROW_CHICKEN3_L3_GLOBAL_ATOMICS_DISABLE    (1 << 6)
++
+ #define G4X_AUD_VID_DID			(dev_priv->info->display_mmio_offset + 0x62020)
+ #define INTEL_AUDIO_DEVCL		0x808629FB
+ #define INTEL_AUDIO_DEVBLC		0x80862801
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4699,6 +4699,11 @@ static void haswell_init_clock_gating(st
+ 	I915_WRITE(GEN7_L3_CHICKEN_MODE_REGISTER,
+ 			GEN7_WA_L3_CHICKEN_MODE);
+ 
++	/* L3 caching of data atomics doesn't work -- disable it. */
++	I915_WRITE(HSW_SCRATCH1, HSW_SCRATCH1_L3_DATA_ATOMICS_DISABLE);
++	I915_WRITE(HSW_ROW_CHICKEN3,
++		   _MASKED_BIT_ENABLE(HSW_ROW_CHICKEN3_L3_GLOBAL_ATOMICS_DISABLE));
++
+ 	/* This is required by WaCatErrorRejectionIssue:hsw */
+ 	I915_WRITE(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG,
+ 			I915_READ(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG) |
 
 
