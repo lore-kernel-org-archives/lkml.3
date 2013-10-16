@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935044Ab3JPRvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:51:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36010 "EHLO
+	id S934699Ab3JPRqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934701Ab3JPRqj (ORCPT
+	with ESMTP id S1761473Ab3JPRp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:39 -0400
+	Wed, 16 Oct 2013 13:45:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -16,33 +16,34 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 43/50] ipc, shm: guard against non-existant vma in shmdt(2)
-Date: Wed, 16 Oct 2013 10:45:29 -0700
-Message-Id: <20131016174403.607244865@linuxfoundation.org>
+Subject: [ 51/69] ipc,shm: introduce shmctl_nolock
+Date: Wed, 16 Oct 2013 10:45:00 -0700
+Message-Id: <20131016174319.112856007@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 530fcd16d87cd2417c472a581ba5a1e501556c86 upstream.
+commit 68eccc1dc345539d589ae78ee43b835c1a06a134 upstream.
 
-When !CONFIG_MMU there's a chance we can derefence a NULL pointer when the
-VM area isn't found - check the return value of find_vma().
+Similar to semctl and msgctl, when calling msgctl, the *_INFO and *_STAT
+commands can be performed without acquiring the ipc object.
 
-Also, remove the redundant -EINVAL return: retval is set to the proper
-return code and *only* changed to 0, when we actually unmap the segments.
+Add a shmctl_nolock() function and move the logic of *_INFO and *_STAT out
+of msgctl().  Since we are just moving functionality, this change still
+takes the lock and it will be properly lockless in the next patch.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
@@ -51,20 +52,97 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ ipc/shm.c |   57 +++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 39 insertions(+), 18 deletions(-)
 
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -1295,8 +1295,7 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
- #else /* CONFIG_MMU */
- 	/* under NOMMU conditions, the exact address to be destroyed must be
- 	 * given */
--	retval = -EINVAL;
--	if (vma->vm_start == addr && vma->vm_ops == &shm_vm_ops) {
-+	if (vma && vma->vm_start == addr && vma->vm_ops == &shm_vm_ops) {
- 		do_munmap(mm, vma->vm_start, vma->vm_end - vma->vm_start);
- 		retval = 0;
+@@ -820,29 +820,24 @@ out_up:
+ 	return err;
+ }
+ 
+-SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
++static int shmctl_nolock(struct ipc_namespace *ns, int shmid,
++			 int cmd, int version, void __user *buf)
+ {
++	int err;
+ 	struct shmid_kernel *shp;
+-	int err, version;
+-	struct ipc_namespace *ns;
+ 
+-	if (cmd < 0 || shmid < 0) {
+-		err = -EINVAL;
+-		goto out;
++	/* preliminary security checks for *_INFO */
++	if (cmd == IPC_INFO || cmd == SHM_INFO) {
++		err = security_shm_shmctl(NULL, cmd);
++		if (err)
++			return err;
  	}
+ 
+-	version = ipc_parse_version(&cmd);
+-	ns = current->nsproxy->ipc_ns;
+-
+-	switch (cmd) { /* replace with proc interface ? */
++	switch (cmd) {
+ 	case IPC_INFO:
+ 	{
+ 		struct shminfo64 shminfo;
+ 
+-		err = security_shm_shmctl(NULL, cmd);
+-		if (err)
+-			return err;
+-
+ 		memset(&shminfo, 0, sizeof(shminfo));
+ 		shminfo.shmmni = shminfo.shmseg = ns->shm_ctlmni;
+ 		shminfo.shmmax = ns->shm_ctlmax;
+@@ -864,10 +859,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 	{
+ 		struct shm_info shm_info;
+ 
+-		err = security_shm_shmctl(NULL, cmd);
+-		if (err)
+-			return err;
+-
+ 		memset(&shm_info, 0, sizeof(shm_info));
+ 		down_read(&shm_ids(ns).rw_mutex);
+ 		shm_info.used_ids = shm_ids(ns).in_use;
+@@ -928,6 +919,36 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 			err = result;
+ 		goto out;
+ 	}
++	default:
++		return -EINVAL;
++	}
++
++out_unlock:
++	shm_unlock(shp);
++out:
++	return err;
++}
++
++SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
++{
++	struct shmid_kernel *shp;
++	int err, version;
++	struct ipc_namespace *ns;
++
++	if (cmd < 0 || shmid < 0) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	version = ipc_parse_version(&cmd);
++	ns = current->nsproxy->ipc_ns;
++
++	switch (cmd) {
++	case IPC_INFO:
++	case SHM_INFO:
++	case SHM_STAT:
++	case IPC_STAT:
++		return shmctl_nolock(ns, shmid, cmd, version, buf);
+ 	case SHM_LOCK:
+ 	case SHM_UNLOCK:
+ 	{
 
 
