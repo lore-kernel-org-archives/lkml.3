@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760902Ab3JPPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:40:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59329 "EHLO mail.zytor.com"
+	id S1760862Ab3JPPjx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:39:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60717 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab3JPPk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:40:26 -0400
-Message-ID: <525EB320.2000607@zytor.com>
-Date: Wed, 16 Oct 2013 08:39:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1760823Ab3JPPjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:39:47 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH V7 3/8] ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
+Date: Wed, 16 Oct 2013 10:39:03 -0500
+Message-ID: <1381937948-27057-4-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
+References: <1381937948-27057-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-CC: Linus Torvalds <torvalds@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data selectors
-References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
-In-Reply-To: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 05:00 AM, Jan Beulich wrote:
-> Having had reports of certain Windows versions, when put in some
-> special driver verification mode, blue-screening due to the FPU state
-> having changed across interrupt handler runs (resulting from a host/
-> hypervisor side context switch somewhere in the middle of the guest
-> interrupt handler execution) on Xen, and assuming that KVM would suffer
-> from the same problem, as well as having also noticed (long ago) that
-> 32-bit processes don't behave correctly in this regard when run on a
-> 64-bit kernel, this is the resulting attempt to port (and suitably
-> extend) the Xen side fix to Linux.
-> 
-> The basic idea here is to either use a priori information on the
-> intended state layout (in the case of 32-bit processes) or "sense" the
-> proper layout (in the case of KVM guests) by inspecting the already
-> saved FPU rip/rdp, and reading their actual values in a second save
-> operation.
-> 
-> This second save operation could be another [F]XSAVE, but on all
-> systems I measured this on using FNSTENV turned out to be the faster
-> alternative.
+With OMAP3+ and AM33xx supported SoC having defined CPU device tree
+entries with operating-points and clock nodes defined, we can now use
+the SoC generic cpufreq-cpu0 driver by registering appropriate device.
 
-It is not at all clear to me from the description what the flow is that
-causes the problem, whatever the problem is.  Perhaps it should be if I
-wasn't horribly sleep-deprived, but the description should be clear
-enough that one should be able to tell the problem at a glance.
+Cc: Benoit Cousson <bcousson@baylibre.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/mach-omap2/pm.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Please describe the flow that causes trouble.
-
-Is this basically a problem with the 32-bit version of FXSAVE versus the
-64-bit version?
-
-Furthermore, you define X86_FEATURE_NO_FPU_SEL, but you don't set it
-anywhere.  At least that bit needs to be factored out into a separate patch.
-
-+	if (config_enabled(CONFIG_IA32_EMULATION) &&
-+	    test_tsk_thread_flag(tsk, TIF_IA32))
-
-is_ia32_task()?
-
-	-hpa
-
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index e742118..360b2da 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -266,7 +266,12 @@ static void __init omap4_init_voltages(void)
+ 
+ static inline void omap_init_cpufreq(void)
+ {
+-	struct platform_device_info devinfo = { .name = "omap-cpufreq", };
++	struct platform_device_info devinfo = { };
++
++	if (!of_have_populated_dt())
++		devinfo.name = "omap-cpufreq";
++	else
++		devinfo.name = "cpufreq-cpu0";
+ 	platform_device_register_full(&devinfo);
+ }
+ 
+@@ -300,10 +305,11 @@ int __init omap2_common_pm_late_init(void)
+ 		/* Smartreflex device init */
+ 		omap_devinit_smartreflex();
+ 
+-		/* cpufreq dummy device instantiation */
+-		omap_init_cpufreq();
+ 	}
+ 
++	/* cpufreq dummy device instantiation */
++	omap_init_cpufreq();
++
+ #ifdef CONFIG_SUSPEND
+ 	suspend_set_ops(&omap_pm_ops);
+ #endif
+-- 
+1.7.9.5
 
