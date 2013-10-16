@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab3JPMVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:21:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48637 "EHLO mail.skyhub.de"
+	id S934170Ab3JPM0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:26:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55434 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab3JPMVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:21:12 -0400
-Date: Wed, 16 Oct 2013 14:20:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Aristeu Rozanski Filho <arozansk@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-Message-ID: <20131016122056.GE13608@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
- <20131015165435.GA2777@naverao1-tp.ibm.com>
- <20131015170039.GF7908@pd.tnic>
- <525D7BCD.7080303@linux.vnet.ibm.com>
- <20131015214346.68718bcd.m.chehab@samsung.com>
- <20131016091640.GA13608@pd.tnic>
- <20131016073539.5a48f65e.m.chehab@samsung.com>
- <20131016104221.GC13608@pd.tnic>
- <20131016085558.19fe143a@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131016085558.19fe143a@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932406Ab3JPM0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:26:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,507,1378882800"; 
+   d="scan'208";a="411897616"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CACz4_2er-_Xa8oRo_JJTC+HZtDTAcjJ+cNTjrXLhN0Dm7BtXFQ@mail.gmail.com>
+References: <20131015001201.GC3432@hippobay.mtv.corp.google.com>
+ <20131015100213.A0189E0090@blue.fi.intel.com>
+ <CACz4_2er-_Xa8oRo_JJTC+HZtDTAcjJ+cNTjrXLhN0Dm7BtXFQ@mail.gmail.com>
+Subject: Re: [PATCH 02/12] mm, thp, tmpfs: support to add huge page into page
+ cache for tmpfs
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131016122611.69CA0E0090@blue.fi.intel.com>
+Date: Wed, 16 Oct 2013 15:26:11 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 08:55:58AM -0300, Mauro Carvalho Chehab wrote:
-> On that log, "physical addr: 0x0000000851fe0000 node: 0 card: 0 module: 0 rank: 0 bank: 0 row: 28927 column: 1296"
-> is a string, instead of an hierarchical position, like what it is provided
-> on EDAC.
+Ning Qu wrote:
+> Yes, I can try. The code is pretty much similar with some minor difference.
+> 
+> One thing I can do is to move the spin lock part (together with the
+> corresponding err handling into a common function.
+> 
+> The only problem I can see right now is we need the following
+> additional line for shm:
+> 
+> __mod_zone_page_state(page_zone(page), NR_SHMEM, nr);
+> 
+> Which means we need to tell if it's coming from shm or not, is that OK
+> to add additional parameter just for that? Or is there any other
+> better way we can infer that information? Thanks!
 
-So you can't split strings in userspace?
-
-> Also, I suspect that, if an error happens to affect more than one DIMM
-> (e. g. part of the location is not available for a given error), that
-> the DIMM label will also not be properly shown.
-
-That's unrelated to these patches and needs to be reported properly by
-the firmware.
+I think you can account NR_SHMEM after common code succeed, don't you?
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ Kirill A. Shutemov
