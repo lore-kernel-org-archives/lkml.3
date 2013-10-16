@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760786Ab3JPPxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:53:50 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:42136 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760759Ab3JPPxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:53:48 -0400
-Date: Wed, 16 Oct 2013 11:53:44 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Hong zhi guo <honkiko@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hong Zhiguo <zhiguohong@tencent.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-Message-ID: <20131016155344.GA10012@htj.dyndns.org>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
- <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
- <20131015173252.GM31215@redhat.com>
- <CAA7+ByWjdYTi5uXT6apLYkON1RnrFEGjHU318OD1VMen2YHKOA@mail.gmail.com>
- <20131016141405.GE17611@redhat.com>
+	id S1760811Ab3JPPyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:54:11 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:60446 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752234Ab3JPPyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:54:09 -0400
+Date: Wed, 16 Oct 2013 10:54:29 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: BUG: mm, numa: test segfaults, only when NUMA balancing is on
+Message-ID: <20131016155429.GP25735@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131016141405.GE17611@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi guys,
 
-On Wed, Oct 16, 2013 at 10:14:06AM -0400, Vivek Goyal wrote:
-> - First of all, if you think that a group is entitiled for tokens even
->   when it is not doing IO, then why are you truncating the tokens after
->   dispatch of a BIO.
-> 
-> - Second in general it does not seem right that a group is entitiled to
->   tokens even when no IO is happening or group is not backlogged. That
->   would mean a group will not do IO for 10 hours and then be entitiled
->   to those tokens suddenly after 10 hours with a huge burst.
-> 
-> So I think you also agree that a group should not be entitiled to
-> tokens when group is not backlogged and that's why you seem to be
-> truncating extra tokens after dispatch of a BIO. If that's the case,
-> then even for first BIO, ideally a group should not be given tokens
-> for idle time.
+I ran into a bug a week or so ago, that I believe has something to do
+with NUMA balancing, but I'm having a tough time tracking down exactly
+what is causing it.  When running with the following configuration
+options set:
 
-Without going into details, having token reserve is an important part
-of token based implementation.  The large the reserve could be
-debatable but that's what provides "smoothing" of allocation.  e.g. if
-you trim bucket as soon as the queue becomes empty, a queue with
-sequential access pattern can easily get disadvantaged.  Another way
-to look at it is to consider as though the IO has been issued some
-time before than actual and waited for the token - it is the same to
-external observers.
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
+CONFIG_NUMA_BALANCING=y
+# CONFIG_HUGETLBFS is not set
+# CONFIG_HUGETLB_PAGE is not set
 
-So, while how large the reserve should be is definitely debatable,
-bucket scheduling *needs* idle reserve.
+I get intermittent segfaults when running the memscale test that we've
+been using to test some of the THP changes.  Here's a link to the test:
 
-Thanks.
+ftp://shell.sgi.com/collect/memscale/
 
--- 
-tejun
+I typically run the test with a line similar to this:
+
+./thp_memscale -C 0 -m 0 -c <cores> -b <memory>
+
+Where <cores> is the number of cores to spawn threads on, and <memory>
+is the amount of memory to reserve from each core.  The <memory> field
+can accept values like 512m or 1g, etc.  I typically run 256 cores and
+512m, though I think the problem should be reproducable on anything with
+128+ cores.
+
+The test never seems to have any problems when running with hugetlbfs
+on and NUMA balancing off, but it segfaults every once in a while with
+the config options above.  It seems to occur more frequently, the more
+cores you run on.  It segfaults on about 50% of the runs at 256 cores,
+and on almost every run at 512 cores.  The fewest number of cores I've
+seen a segfault on has been 128, though it seems to be rare on this many
+cores.
+
+At this point, I'm not familiar enough with NUMA balancing code to know
+what could be causing this, and we don't typically run with NUMA
+balancing on, so I don't see this in my everyday testing, but I felt
+that it was definitely worth bringing up.
+
+If anybody has any ideas of where I could poke around to find a
+solution, please let me know.
+
+- Alex
