@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760704Ab3JPPxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:53:15 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:54963 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab3JPPxN (ORCPT
+	id S1760752Ab3JPPxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:53:42 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5452 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759319Ab3JPPxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:53:13 -0400
-Date: Wed, 16 Oct 2013 17:50:56 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: linux-next: Tree for Oct 15
-Message-ID: <20131016155055.GA20211@ulmo.nvidia.com>
-References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
- <525E2257.7030604@roeck-us.net>
+	Wed, 16 Oct 2013 11:53:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Oct 2013 08:53:40 -0700
+Date: Wed, 16 Oct 2013 18:53:36 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: pull request for tegra clocks (resend with some CCs added this
+ time)
+Message-ID: <20131016155336.GN5643@tbergstrom-lnx.Nvidia.com>
+References: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
+ <20131016153550.GA22451@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <525E2257.7030604@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131016153550.GA22451@ulmo.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 16, 2013 at 05:35:51PM +0200, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Oct 15, 2013 at 06:36:20PM +0300, Peter De Schrijver wrote:
+> > The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
+> > 
+> >   Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
+> > 
+> > are available in the git repository at:
+> >   git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
+> > 
+> > Andrew Chew (1):
+> >       clk: tegra: Set the clk parent of host1x to pll_p
+> > 
+> > Mark Zhang (3):
+> >       clk: tegra: Correct sbc mux width & parent
+> >       clk: tegra: Fix vde/2d/3d clock src offset
+> >       clk: tegra: Set the clock parent of gr2d/gr3d to pll_c2
+> > 
+> > Peter De Schrijver (3):
+> >       ARM: tegra114: add missing clocks to binding
+> >       clk: tegra: replace enum tegra114_clk by binding header
+> >       clk: tegra: PLLE spread spectrum control
+> > 
+> > Thierry Reding (1):
+> >       clk: tegra114: Rename gr_2d/gr_3d to gr2d/gr3d
+> 
+> I think this pull request is missing the initialization of the display
+> controller clocks (TEGRA114_CLK_DISP1 and TEGRA114_CLK_DISP2) from
+> Mikko's Dalmore HDMI series.
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't think they were part of the original request to be included?
 
-On Tue, Oct 15, 2013 at 10:21:27PM -0700, Guenter Roeck wrote:
-> On 10/15/2013 07:02 AM, Thierry Reding wrote:
-> >Hi all,
-> >
-> >I've uploaded today's linux-next tree to the master branch of the
-> >repository below:
-> >
-> >         git://gitorious.org/thierryreding/linux-next.git
-> >
-> >A next-20131015 tag is also provided for convenience.
-> >
-> >Gained a new conflict, but nothing too exciting. x86 and ARM default
-> >configurations build fine. I've also used an x86 allmodconfig build to
-> >check for build errors. Mark fixed most of those in the trees that he
-> >created last Thursday and Friday, so I've cherry-picked them on top of
-> >the final merge. There was one new build failure in the staging tree
-> >that was trivial to fix so I added a patch to the tree as well.
-> >
->=20
-> This build does look much better than the previous ones. I 'only' get 12 =
-build failures
-> out of 106 configurations.
+Cheers,
 
-Thanks for running these!
-
-> Worst are powerpc builds, with 7 out of 14 builds failed.
-
-Yes, I'm seeing those too. I used to carry a fix for many of these in
-earlier linux-next trees but since I haven't had the time to run the
-PowerPC builds in a while I haven't cherry-picked it to new trees.
-
-If you want to give it a try with those fixes, here's the commit from
-next-20131009, which seems to be the last one to have it:
-
-	5a7a5211555a68a3144aa35015684e3a156cb11f powerpc: Fix various build failur=
-es
-
-I'll see if I can make some time available to add these in the next
-days.
-
-Thierry
-
---ibTvN161/egqYuK8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXrXfAAoJEN0jrNd/PrOh5QgQAKsIh83mywBWd96dDm6PIebe
-QQ8O9k1H2V73DBz1Wmj+rSjnNVlLrficiK51WKKZMsQWy/cY9UWz2m7OIeZKjwBS
-kOw2tn8p4i/XUakE+ZrAI8xkKz8I6PsB+EaiPqZbhmJ1cnei7siEC8kTLSH+kmOc
-ohL+QIch3X9W+F1uz7rgtbofsIkis44MpWPfg/tBjpw9fsJaUy9xlt7OTK4vLiOs
-rS8n3BKk6b4SfuNud5odb6V9Bx2V2hddyJTHauUoGpaRhzGUfDt7RHZMr3XRLpgv
-SQ369Lh7YnKdVvb/71NjMabrVIg6dS/2/eud7gSnfccjYW+jjpIX+e2RD6BoU8sg
-/5Gm7vlv7XkrBLNIIEu2dQw2ca0UXrl8zPmF+NJrMpO11iglBrWmwJC8Rzhjpm5A
-dY9O1o70xS4md5zPn31sb4kkmenXaXaaksyrLi3JTwTUwjxOXHWJGL4VczBu6NN6
-alSp6F9YzrKFe/2z42Vsk7l+3LvWMe+7YOhTtRx59vFoegeVRxR77nGinP+PAVmt
-wt6SgiLIyZ3+z4m2OMlBr4dP2rTvRk7g14++8TFPjqXwIMHnqh6Mnze/thmVuxde
-MVc20zb5WNR/GarA0b+sRLPvUECrgdToMoRixsZw13efkzqiXYy5XeXgdFtW272a
-WRpYj/QfXGsemL6HcJog
-=lk3d
------END PGP SIGNATURE-----
-
---ibTvN161/egqYuK8--
+Peter.
