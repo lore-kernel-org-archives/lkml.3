@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934331Ab3JPMrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:47:41 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42335 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab3JPMrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:47:40 -0400
-Date: Wed, 16 Oct 2013 18:17:33 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] uprobes: Change uprobe_copy_process() to dup
- return_instances
-Message-ID: <20131016124733.GG19729@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20131013191815.GA32466@redhat.com>
- <20131013191841.GA32499@redhat.com>
+	id S934295Ab3JPMuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:50:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760524Ab3JPMuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:50:07 -0400
+Date: Wed, 16 Oct 2013 14:50:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: still running into WARNING: CPU: at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4a6/0x4e0
+Message-ID: <20131016125004.GC14278@quack.suse.cz>
+References: <1381888924.2371.5.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131013191841.GA32499@redhat.com>
+In-Reply-To: <1381888924.2371.5.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101612-9332-0000-0000-000001CA505C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-10-13 21:18:41]:
-
-> uprobe_copy_process() assumes that the new child doesn't need
-> ->utask, it should be allocated by demand.
+On Tue 15-10-13 19:02:04, Davidlohr Bueso wrote:
+> Hello Jan,
 > 
-> But this is not true if the forking task has the pending ret-
-> probes, the child should report them as well and thus it needs
-> the copy of parent's ->return_instances chain. Otherwise the
-> child crashes when it returns from the probed function.
+> Just wanted to let you know I hit this[1] again on Linus' latest. The
+> setup/workload is *identical* to the reported one a few months ago.
 > 
-> Note: this change alone doesn't fix the problem, see the next
-> change.
+> [1] https://lkml.org/lkml/2013/8/1/532
 > 
-> Cc: stable@vger.kernel.org # 3.9+
-> Reported-by: Martin Cermak <mcermak@redhat.com>
-> Reported-by: David Smith <dsmith@redhat.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Here's the complete output, I hope it helps...
+  Thanks for the headup. Last time I wasn't able to reproduce this and
+eventually forgot about the problem. Can I send you a debug patch and you
+would run a kernel with it? Thanks.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+							Honza
 
-
+> ------------[ cut here ]------------
+> WARNING: CPU: 42 PID: 74607 at fs/ext4/inode.c:230 ext4_evict_inode+0x4a6/0x4e0 [ext4]()
+> Modules linked in: fuse autofs4 sunrpc 8021q garp stp llc cpufreq_ondemand pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 uinput iTCO_wdt iTCO_vendor_support ipmi_si ipmi_msghandler microcode pcspkr serio_raw lpc_ich mfd_core sg hpilo hpwdt i7core_edac edac_core netxen_nic freq_table ext4 jbd2 mbcache sr_mod cdrom sd_mod crc_t10dif crct10dif_common qla2xxx scsi_transport_fc scsi_tgt pata_acpi ata_generic ata_piix hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core dm_mirror dm_region_hash dm_log dm_mod
+> CPU: 42 PID: 74607 Comm: reaim Tainted: G        W    3.12.0-rc5 #40
+> Hardware name: HP ProLiant DL980 G7, BIOS P66 08/31/2222
+>  00000000000000e6 ffff8908c6c59d28 ffffffff81550dd8 00000000000000e6
+>  0000000000000000 ffff8908c6c59d68 ffffffff8104e29c ffff8908c6c59d78
+>  ffff880afae83500 ffff880afae83608 ffff880afae83450 ffff880afae83500
+> Call Trace:
+>  [<ffffffff81550dd8>] dump_stack+0x49/0x61
+>  [<ffffffff8104e29c>] warn_slowpath_common+0x8c/0xc0
+>  [<ffffffff8104e2ea>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffffa03afe16>] ext4_evict_inode+0x4a6/0x4e0 [ext4]
+>  [<ffffffff81197ab7>] evict+0xa7/0x1c0
+>  [<ffffffff81197cbf>] iput_final+0xef/0x190
+>  [<ffffffff81197d9e>] iput+0x3e/0x50
+>  [<ffffffff81195858>] d_kill+0xd8/0x110
+>  [<ffffffff81195a1b>] dput+0x18b/0x1c0
+>  [<ffffffff8117f588>] __fput+0x188/0x270
+>  [<ffffffff8117f73e>] ____fput+0xe/0x10
+>  [<ffffffff8106d0bf>] task_work_run+0x8f/0xf0
+>  [<ffffffff81003a84>] do_notify_resume+0x84/0x90
+>  [<ffffffff8155d9da>] int_signal+0x12/0x17
+> ---[ end trace ea7184a5fb48e185 ]---
+> 
+> 
+> Thanks,
+> Davidlohr
+> 
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
