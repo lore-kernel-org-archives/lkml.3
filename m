@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab3JPPDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:03:07 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48259 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab3JPPDG convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 16 Oct 2013 11:03:06 -0400
-Message-Id: <525EC6C402000078000FB895@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 16 Oct 2013 16:03:00 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Arjan van de Ven" <arjan@linux.intel.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux@roeck-us.net>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86: unify copy_from_user() checking
-References: <525E964402000078000FB70C@nat28.tlf.novell.com>
- <525E9BF7.7020706@linux.intel.com>
-In-Reply-To: <525E9BF7.7020706@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756417Ab3JPPFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:05:08 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:58327 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012Ab3JPPFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:05:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <525D6276.1030507@wwwdotorg.org>
+References: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com> <525D6276.1030507@wwwdotorg.org>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Wed, 16 Oct 2013 08:04:43 -0700
+Message-ID: <CAPtuhTg5VTqzzoz1kMPx7tzFzW6gjJx+BNnrqmjaG0UR_OH+xQ@mail.gmail.com>
+Subject: Re: pull request for tegra clocks (resend with some CCs added this time)
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.10.13 at 16:00, Arjan van de Ven <arjan@linux.intel.com> wrote:
->> +static inline unsigned long __must_check copy_from_user(void *to,
->> +					  const void __user *from,
->> +					  unsigned long n)
->> +{
->> +	int sz = __compiletime_object_size(to);
->> +
->> +	might_fault();
->> +	if (likely(sz == -1 || sz >= n))
->> +		n = _copy_from_user(to, from, n);
->> +	else if(__builtin_constant_p(n))
->> +		copy_from_user_overflow();
-> 
-> 
-> this part I am not so sure about.
-> the original intent was that even if n is not constant, the compiler must 
-> still be able
-> to prove that it is smaller than sz using the range tracking feature in gcc!
+I'm happy for the changes to be based on an -rc or clk-next. Either is fine.
 
-I had pointed out cases in the patch description where I was getting
-a warning when I think I shouldn't, and since I pay attention to
-warnings this keeps me going back to the sources whenever I didn't
-look at the reason long enough and forgot whether it's safe to ignore
-these warnings. Warnings are nice and useful, but especially when
-they sound dangerous having false positives isn't helpful at all.
+Thanks,
+Mike
 
-> In fact, that was the whole point.
-> The code (at the time, they're all fixed) found cases where the checks done 
-> to "n" were off by one
-> etc...
-> 
-> by requiring "n" to be constant for these checks you remove that layer of 
-> checking.
-> 
-> if you have found cases where this matters... maybe you found a new security 
-> issue...
-
-Iirc I could convince myself that in the cited cases the warnings
-were there for no reason.
-
-Jan
-
+On Tue, Oct 15, 2013 at 8:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/15/2013 09:36 AM, Peter De Schrijver wrote:
+>> The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
+>>
+>>   Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
+>>
+>> are available in the git repository at:
+>>   git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
+>
+> ??? That won't merge into Mike's tree correctly. The pull request should
+> be based on a -rc or final release in the Linus tree, e.g. based on
+> v3.12-rc1. Otherwise, if Mike merges this, it will pull in all patches
+> from other subsystems that went into linux-next.
