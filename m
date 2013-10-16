@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935147Ab3JPSEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:04:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35823 "EHLO
+	id S932862Ab3JPRqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932914Ab3JPRqL (ORCPT
+	with ESMTP id S1761299Ab3JPRpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:11 -0400
+	Wed, 16 Oct 2013 13:45:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 02/50] ALSA: hda - hdmi: Fix channel map switch not taking effect
-Date: Wed, 16 Oct 2013 10:44:48 -0700
-Message-Id: <20131016174358.650055327@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [ 11/69] KVM: PPC: Book3S HV: Fix typo in saving DSCR
+Date: Wed, 16 Oct 2013 10:44:20 -0700
+Message-Id: <20131016174314.259017467@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 39edac70e9aedf451fccaa851b273ace9fcca0bd upstream.
+commit cfc860253abd73e1681696c08ea268d33285a2c4 upstream.
 
-Currently hdmi_setup_audio_infoframe() reprograms the HDA channel
-mapping only when the infoframe is not up-to-date or the non-PCM flag
-has changed.
+This fixes a typo in the code that saves the guest DSCR (Data Stream
+Control Register) into the kvm_vcpu_arch struct on guest exit.  The
+effect of the typo was that the DSCR value was saved in the wrong place,
+so changes to the DSCR by the guest didn't persist across guest exit
+and entry, and some host kernel memory got corrupted.
 
-However, when just the channel map has been changed, the infoframe may
-still be up-to-date and non-PCM flag may not have changed, so the new
-channel map is not actually programmed into the HDA codec.
-
-Notably, this failing case is also always triggered when the device is
-already in a prepared state and a new channel map is configured while
-changing only the channel positions (for example, plain
-"speaker-test -c2 -m FR,FL").
-
-Fix that by always programming the channel map in
-hdmi_setup_audio_infoframe(). Tested on Intel HDMI.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -930,6 +930,14 @@ static void hdmi_setup_audio_infoframe(s
- 	}
+--- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
++++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+@@ -1054,7 +1054,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ BEGIN_FTR_SECTION
+ 	mfspr	r8, SPRN_DSCR
+ 	ld	r7, HSTATE_DSCR(r13)
+-	std	r8, VCPU_DSCR(r7)
++	std	r8, VCPU_DSCR(r9)
+ 	mtspr	SPRN_DSCR, r7
+ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
  
- 	/*
-+	 * always configure channel mapping, it may have been changed by the
-+	 * user in the meantime
-+	 */
-+	hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
-+				   channels, per_pin->chmap,
-+				   per_pin->chmap_set);
-+
-+	/*
- 	 * sizeof(ai) is used instead of sizeof(*hdmi_ai) or
- 	 * sizeof(*dp_ai) to avoid partial match/update problems when
- 	 * the user switches between HDMI/DP monitors.
-@@ -940,20 +948,10 @@ static void hdmi_setup_audio_infoframe(s
- 			    "pin=%d channels=%d\n",
- 			    pin_nid,
- 			    channels);
--		hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
--					   channels, per_pin->chmap,
--					   per_pin->chmap_set);
- 		hdmi_stop_infoframe_trans(codec, pin_nid);
- 		hdmi_fill_audio_infoframe(codec, pin_nid,
- 					    ai.bytes, sizeof(ai));
- 		hdmi_start_infoframe_trans(codec, pin_nid);
--	} else {
--		/* For non-pcm audio switch, setup new channel mapping
--		 * accordingly */
--		if (per_pin->non_pcm != non_pcm)
--			hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
--						   channels, per_pin->chmap,
--						   per_pin->chmap_set);
- 	}
- 
- 	per_pin->non_pcm = non_pcm;
 
 
