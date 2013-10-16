@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761140Ab3JPQum (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:50:42 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:21820 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761116Ab3JPQuk (ORCPT
+	id S1761061Ab3JPQwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:52:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:39118 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760798Ab3JPQwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:50:40 -0400
-Message-ID: <1381942237.4324.4.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc/sem.c: fix small codingstyle
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Joe Perches <joe@perches.com>, Libin <huawei.libin@huawei.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        guohanjun@huawei.com, xiexiuqi@huawei.com
-Date: Wed, 16 Oct 2013 09:50:37 -0700
-In-Reply-To: <525E50A6.1070206@colorfullife.com>
-References: <1381825183-49576-1-git-send-email-huawei.libin@huawei.com>
-	 <1381855484.2354.0.camel@buesod1.americas.hpqcorp.net>
-	 <1381862186.22110.33.camel@joe-AO722> <525E50A6.1070206@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 16 Oct 2013 12:52:42 -0400
+Date: Wed, 16 Oct 2013 12:52:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20131016125238.5f970fd5@gandalf.local.home>
+In-Reply-To: <20131016162537.GB10651@twins.programming.kicks-ass.net>
+References: <20131015174722.615394057@linux.com>
+	<20131015174747.813545438@linux.com>
+	<20131016084920.GT10651@twins.programming.kicks-ass.net>
+	<00000141c1d04300-e935e477-6669-4388-8109-c77064ee27e7-000000@email.amazonses.com>
+	<20131016153603.GZ10651@twins.programming.kicks-ass.net>
+	<00000141c1fae3ba-6b52fea1-74f9-42f7-b1db-70dda847e7f9-000000@email.amazonses.com>
+	<20131016162537.GB10651@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-16 at 10:39 +0200, Manfred Spraul wrote:
-> Hi Joe,
+On Wed, 16 Oct 2013 18:25:37 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+ 
+> But yes, the way its set-up an arch could indeed provide __this_cup_$op
+> itself -- without providing the _$n variants; in which case the
+> raw_cpu_$op provided by you is broken.
 > 
-> On 10/15/2013 08:36 PM, Joe Perches wrote:
-> > On Tue, 2013-10-15 at 09:44 -0700, Davidlohr Bueso wrote:
-> >> On Tue, 2013-10-15 at 16:19 +0800, Libin wrote:
-> >>> From: Li Bin <huawei.libin@huawei.com>
-> >>>
-> >>> small codingstyle fix: '*' should be adjacent to the data name.
-> >> There are *tons* of these, go crazy.
-> >>
-> > Here are the whitespace changes proposed by
-> > $ scripts/checkpatch -f --fix --types=pointer_location,spacing,space_before_tab ipc/*.[ch]
-> /me hides, probably most of them are mine.
+> Can't we have a 'simple' coccinelle script rename the entire __this_cpu*
+> implementation over to raw_cpu* and then provide generic __this_cpu* ->
+> raw_cpu maps?
 > 
-> Davidlohr: Do you have anything outstanding for ipc/*.c?
-> I have nothing.
 
-Nope.
+Perhaps we should match the way spinlocks are.
 
-> 
-> My proposal would be that the checkpatch -f patch should be added for 
-> 3.14, i.e. let's give the code one more cycle to calm down.
 
-I think it would be fine for the 3.13 merge window, but considering all
-the action for this release, I have no problem waiting longer.
+this_cpu*() be the normal use.
 
-> Grek just sent me 47 patches for the backport to 3.10-stable, I don't 
-> want any whitespace noise right now.
+raw_this_cpu() could perhaps not do the checks?
 
-+1
+arch_this_cpu() be the architecture specific version of this_cpu*
 
-Thanks,
-Davidlohr
 
+-- Steve
