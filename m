@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934699Ab3JPRqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35707 "EHLO
+	id S935072Ab3JPRv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761473Ab3JPRp4 (ORCPT
+	with ESMTP id S934682Ab3JPRqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:56 -0400
+	Wed, 16 Oct 2013 13:46:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -16,31 +16,54 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 51/69] ipc,shm: introduce shmctl_nolock
-Date: Wed, 16 Oct 2013 10:45:00 -0700
-Message-Id: <20131016174319.112856007@linuxfoundation.org>
+Subject: [ 32/50] ipc,shm: introduce lockless functions to obtain the ipc object
+Date: Wed, 16 Oct 2013 10:45:18 -0700
+Message-Id: <20131016174402.213558025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 68eccc1dc345539d589ae78ee43b835c1a06a134 upstream.
+commit 8b8d52ac382b17a19906b930cd69e2edb0aca8ba upstream.
 
-Similar to semctl and msgctl, when calling msgctl, the *_INFO and *_STAT
-commands can be performed without acquiring the ipc object.
+This is the third and final patchset that deals with reducing the amount
+of contention we impose on the ipc lock (kern_ipc_perm.lock).  These
+changes mostly deal with shared memory, previous work has already been
+done for semaphores and message queues:
 
-Add a shmctl_nolock() function and move the logic of *_INFO and *_STAT out
-of msgctl().  Since we are just moving functionality, this change still
-takes the lock and it will be properly lockless in the next patch.
+  http://lkml.org/lkml/2013/3/20/546 (sems)
+  http://lkml.org/lkml/2013/5/15/584 (mqueues)
+
+With these patches applied, a custom shm microbenchmark stressing shmctl
+doing IPC_STAT with 4 threads a million times, reduces the execution
+time by 50%.  A similar run, this time with IPC_SET, reduces the
+execution time from 3 mins and 35 secs to 27 seconds.
+
+Patches 1-8: replaces blindly taking the ipc lock for a smarter
+combination of rcu and ipc_obtain_object, only acquiring the spinlock
+when updating.
+
+Patch 9: renames the ids rw_mutex to rwsem, which is what it already was.
+
+Patch 10: is a trivial mqueue leftover cleanup
+
+Patch 11: adds a brief lock scheme description, requested by Andrew.
+
+This patch:
+
+Add shm_obtain_object() and shm_obtain_object_check(), which will allow us
+to get the ipc object without acquiring the lock.  Just as with other
+forms of ipc, these functions are basically wrappers around
+ipc_obtain_object*().
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
@@ -52,97 +75,37 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |   57 +++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 39 insertions(+), 18 deletions(-)
+ ipc/shm.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -820,29 +820,24 @@ out_up:
- 	return err;
+@@ -124,6 +124,26 @@ void __init shm_init (void)
+ 				IPC_SHM_IDS, sysvipc_shm_proc_show);
  }
  
--SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
-+static int shmctl_nolock(struct ipc_namespace *ns, int shmid,
-+			 int cmd, int version, void __user *buf)
- {
-+	int err;
- 	struct shmid_kernel *shp;
--	int err, version;
--	struct ipc_namespace *ns;
- 
--	if (cmd < 0 || shmid < 0) {
--		err = -EINVAL;
--		goto out;
-+	/* preliminary security checks for *_INFO */
-+	if (cmd == IPC_INFO || cmd == SHM_INFO) {
-+		err = security_shm_shmctl(NULL, cmd);
-+		if (err)
-+			return err;
- 	}
- 
--	version = ipc_parse_version(&cmd);
--	ns = current->nsproxy->ipc_ns;
--
--	switch (cmd) { /* replace with proc interface ? */
-+	switch (cmd) {
- 	case IPC_INFO:
- 	{
- 		struct shminfo64 shminfo;
- 
--		err = security_shm_shmctl(NULL, cmd);
--		if (err)
--			return err;
--
- 		memset(&shminfo, 0, sizeof(shminfo));
- 		shminfo.shmmni = shminfo.shmseg = ns->shm_ctlmni;
- 		shminfo.shmmax = ns->shm_ctlmax;
-@@ -864,10 +859,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	{
- 		struct shm_info shm_info;
- 
--		err = security_shm_shmctl(NULL, cmd);
--		if (err)
--			return err;
--
- 		memset(&shm_info, 0, sizeof(shm_info));
- 		down_read(&shm_ids(ns).rw_mutex);
- 		shm_info.used_ids = shm_ids(ns).in_use;
-@@ -928,6 +919,36 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 			err = result;
- 		goto out;
- 	}
-+	default:
-+		return -EINVAL;
-+	}
++static inline struct shmid_kernel *shm_obtain_object(struct ipc_namespace *ns, int id)
++{
++	struct kern_ipc_perm *ipcp = ipc_obtain_object(&shm_ids(ns), id);
 +
-+out_unlock:
-+	shm_unlock(shp);
-+out:
-+	return err;
++	if (IS_ERR(ipcp))
++		return ERR_CAST(ipcp);
++
++	return container_of(ipcp, struct shmid_kernel, shm_perm);
 +}
 +
-+SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
++static inline struct shmid_kernel *shm_obtain_object_check(struct ipc_namespace *ns, int id)
 +{
-+	struct shmid_kernel *shp;
-+	int err, version;
-+	struct ipc_namespace *ns;
++	struct kern_ipc_perm *ipcp = ipc_obtain_object_check(&shm_ids(ns), id);
 +
-+	if (cmd < 0 || shmid < 0) {
-+		err = -EINVAL;
-+		goto out;
-+	}
++	if (IS_ERR(ipcp))
++		return ERR_CAST(ipcp);
 +
-+	version = ipc_parse_version(&cmd);
-+	ns = current->nsproxy->ipc_ns;
++	return container_of(ipcp, struct shmid_kernel, shm_perm);
++}
 +
-+	switch (cmd) {
-+	case IPC_INFO:
-+	case SHM_INFO:
-+	case SHM_STAT:
-+	case IPC_STAT:
-+		return shmctl_nolock(ns, shmid, cmd, version, buf);
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
- 	{
+ /*
+  * shm_lock_(check_) routines are called in the paths where the rw_mutex
+  * is not necessarily held.
 
 
