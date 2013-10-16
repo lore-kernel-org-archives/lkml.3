@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3JPFAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:00:31 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52946 "EHLO
+	id S1754304Ab3JPFBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:01:15 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59850 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3JPFA0 (ORCPT
+	with ESMTP id S1751532Ab3JPFAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 01:00:26 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-24-525e1d677f4b
+	Wed, 16 Oct 2013 01:00:30 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-3e-525e1d68a7e2
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 05/18] perf ftrace: Add support for -a and -C option
-Date: Wed, 16 Oct 2013 14:00:08 +0900
-Message-Id: <1381899621-14638-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 17/18] perf ftrace: Tidy up the function graph output of 'show' subcommand
+Date: Wed, 16 Oct 2013 14:00:20 +0900
+Message-Id: <1381899621-14638-18-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
@@ -29,201 +29,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The -a/--all-cpus and -C/--cpu option is for controlling tracing cpus.
-To do that, add and use cpu_map__sprintf() function.
+Now it doesn't call pevent_print_event() but prints context info in
+itself using print_graph_duration().  Make it compact by only print
+cpu number and duration:
+
+  # perf ftrace show
+  ...
+   10)   0.065 us |  __fsnotify_parent();
+   10)            |  fsnotify() {
+   10)   0.060 us |    __srcu_read_lock();
+   10)   0.040 us |    __srcu_read_unlock();
+   10)   0.652 us |  }
+   10)   0.040 us |  fput();
+   10)            |  __audit_syscall_exit() {
+   10)            |    path_put() {
+   10)   0.037 us |      dput();
+   10)   0.032 us |      mntput();
+   10)   0.563 us |    }
+   10)   0.035 us |    unroll_tree_refs();
+   10)   0.035 us |    kfree();
+   10)   1.284 us |  }
+   10)            |  __audit_syscall_entry() {
+   10)   0.029 us |    current_kernel_time();
+   10)   0.239 us |  }
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 69 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/cpumap.c    | 45 +++++++++++++++++++++++++++++
- tools/perf/util/cpumap.h    |  1 +
- 3 files changed, 115 insertions(+)
+ tools/perf/builtin-ftrace.c | 35 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 33 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index bd415f2b1cde..642aa49c66d7 100644
+index 94f911946ef8..6720d560d6f8 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -18,6 +18,7 @@
- #include "util/evlist.h"
- #include "util/target.h"
- #include "util/thread_map.h"
-+#include "util/cpumap.h"
+@@ -898,6 +898,27 @@ static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace);
  
+ static struct event_format *fgraph_exit_event;
  
- #define DEFAULT_TRACER  "function_graph"
-@@ -80,6 +81,8 @@ static int append_tracing_file(const char *name, const char *val)
- 	return __write_tracing_file(name, val, true);
- }
- 
-+static int reset_tracing_cpu(void);
-+
- static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
- {
- 	if (write_tracing_file("tracing_on", "0") < 0)
-@@ -91,6 +94,9 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
- 	if (write_tracing_file("set_ftrace_pid", " ") < 0)
- 		return -1;
- 
-+	if (reset_tracing_cpu() < 0)
-+		return -1;
-+
- 	return 0;
- }
- 
-@@ -111,6 +117,60 @@ static int set_tracing_pid(struct perf_ftrace *ftrace)
- 	return 0;
- }
- 
-+static int set_tracing_cpu(struct perf_ftrace *ftrace)
++static void
++print_graph_duration(struct trace_seq *s, struct event_format *event,
++		     struct pevent_record *record)
 +{
-+	char *cpumask;
-+	size_t mask_size;
-+	int ret;
-+	int last_cpu;
-+	struct cpu_map *cpumap = ftrace->evlist->cpus;
++	unsigned long long duration;
++	unsigned long long rettime, calltime;
++	unsigned long usec, nsec;
 +
-+	if (!perf_target__has_cpu(&ftrace->target))
-+		return 0;
++	if (pevent_get_field_val(s, event, "rettime", record, &rettime, 1))
++		return;
 +
-+	last_cpu = cpumap->map[cpumap->nr - 1];
-+	mask_size = (last_cpu + 3) / 4 + 1;
-+	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
++	if (pevent_get_field_val(s, event, "calltime", record, &calltime, 1))
++		return;
 +
-+	cpumask = malloc(mask_size);
-+	if (cpumask == NULL) {
-+		pr_debug("failed to allocate cpu mask\n");
-+		return -1;
-+	}
++	duration = rettime - calltime;
++	usec = duration / 1000;
++	nsec = duration % 1000;
 +
-+	cpu_map__sprintf(cpumap, cpumask);
-+
-+	ret = write_tracing_file("tracing_cpumask", cpumask);
-+
-+	free(cpumask);
-+	return ret;
++	trace_seq_printf(s, "%3d) %3lu.%03lu us |  ", record->cpu, usec, nsec);
 +}
 +
-+static int reset_tracing_cpu(void)
-+{
-+	char *cpumask;
-+	size_t mask_size;
-+	int last_cpu;
-+	struct cpu_map *cpumap = cpu_map__new(NULL);
+ static int
+ fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
+ 		   struct event_format *event, void *context)
+@@ -930,9 +951,14 @@ fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
+ 	if (next && next->cpu == record->cpu &&
+ 	    pevent_data_type(event->pevent, next) == fgraph_exit_event->id) {
+ 		is_leaf = true;
 +
-+	last_cpu = cpumap->map[cpumap->nr - 1];
-+	mask_size = (last_cpu + 3) / 4 + 1;
-+	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
++		print_graph_duration(s, fgraph_exit_event, next);
 +
-+	cpumask = malloc(mask_size);
-+	if (cpumask == NULL) {
-+		pr_debug("failed to allocate cpu mask\n");
-+		return -1;
-+	}
-+
-+	cpu_map__sprintf(cpumap, cpumask);
-+
-+	write_tracing_file("tracing_cpumask", cpumask);
-+
-+	free(cpumask);
-+	return 0;
-+}
-+
- static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
- 	char *trace_file;
-@@ -147,6 +207,11 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 		goto out_reset;
+ 		/* consume record */
+ 		get_ordered_record(ftrace);
+ 		free(next);
++	} else {
++		trace_seq_printf(s, "%3d) %*s |  ", record->cpu, 10, "");
  	}
  
-+	if (set_tracing_cpu(ftrace) < 0) {
-+		pr_err("failed to set tracing cpumask\n");
-+		goto out_reset;
-+	}
-+
- 	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
- 		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
- 		goto out_reset;
-@@ -227,6 +292,10 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "trace on existing process id"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose"),
-+	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
-+		    "system-wide collection from all CPUs"),
-+	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
-+		    "list of cpus to monitor"),
- 	OPT_END()
- 	};
+ nested:
+@@ -973,6 +999,8 @@ fgraph_ret_handler(struct trace_seq *s, struct pevent_record *record,
+ 	unsigned long long depth;
+ 	int i;
  
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index beb8cf9f9976..7933839915ea 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -187,6 +187,51 @@ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp)
- 	return printed + fprintf(fp, "\n");
- }
++	print_graph_duration(s, event, record);
++
+ 	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
+ 		return trace_seq_putc(s, '!');
  
-+static char hex_char(char val)
-+{
-+	if (0 <= val && val <= 9)
-+		return val + '0';
-+	if (10 <= val && val < 16)
-+		return val - 10 + 'a';
-+	return '?';
-+}
-+
-+size_t cpu_map__sprintf(struct cpu_map *map, char *buf)
-+{
-+	int i, cpu;
-+	char *ptr = buf;
-+	unsigned char *bitmap;
-+	int last_cpu = map->map[map->nr - 1];
-+
-+	bitmap = zalloc((last_cpu + 7) / 8);
-+	if (bitmap == NULL) {
-+		buf[0] = '\0';
-+		return 0;
-+	}
-+
-+	for (i = 0; i < map->nr; i++) {
-+		cpu = map->map[i];
-+		bitmap[cpu / 8] |= 1 << (cpu % 8);
-+	}
-+
-+	for (cpu = last_cpu / 4 * 4; cpu >= 0; cpu -= 4) {
-+		unsigned char bits = bitmap[cpu / 8];
-+
-+		if (cpu % 8)
-+			bits >>= 4;
+@@ -1284,9 +1312,12 @@ static int do_ftrace_show(struct perf_ftrace *ftrace)
+ 			continue;
+ 		}
+ 
+-		pevent_print_event(ftrace->pevent, &seq, record);
+-		trace_seq_do_printf(&seq);
++		if (!strcmp(ftrace->tracer, "function_graph"))
++			pevent_event_info(&seq, event, record);
 +		else
-+			bits &= 0xf;
-+
-+		*ptr++ = hex_char(bits);
-+		if ((cpu % 32) == 0 && cpu > 0)
-+			*ptr++ = ',';
-+	}
-+	*ptr++ = '\0';
-+
-+	free(bitmap);
-+	return ptr - buf;
-+}
-+
- struct cpu_map *cpu_map__dummy_new(void)
- {
- 	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index b123bb9d6f55..a9a7f19f89d7 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -14,6 +14,7 @@ struct cpu_map *cpu_map__dummy_new(void);
- void cpu_map__delete(struct cpu_map *map);
- struct cpu_map *cpu_map__read(FILE *file);
- size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
-+size_t cpu_map__sprintf(struct cpu_map *map, char *buf);
- int cpu_map__get_socket(struct cpu_map *map, int idx);
- int cpu_map__get_core(struct cpu_map *map, int idx);
- int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
++			pevent_print_event(ftrace->pevent, &seq, record);
+ 
++		trace_seq_do_printf(&seq);
+ 		trace_seq_reset(&seq);
+ 
+ 		free(record);
 -- 
 1.7.11.7
 
