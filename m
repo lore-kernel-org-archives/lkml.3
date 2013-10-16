@@ -1,46 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761999Ab3JPS0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:26:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33285 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761286Ab3JPS0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:26:39 -0400
-Date: Wed, 16 Oct 2013 11:26:37 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] ARM: debug: msm: Add DEBUG_LL support for
- ARCH_MSM8974
-Message-ID: <20131016182637.GA21292@codeaurora.org>
-References: <1380841557-2673-1-git-send-email-rvaswani@codeaurora.org>
- <1380841557-2673-4-git-send-email-rvaswani@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1380841557-2673-4-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761534Ab3JPS2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:28:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20996 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759264Ab3JPS2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 14:28:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
+   d="scan'208";a="420164582"
+Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20131016065526.GB22509@gmail.com>
+References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
+	 <1380753493.11046.82.camel@schen9-DESK> <20131003073212.GC5775@gmail.com>
+	 <1381186674.11046.105.camel@schen9-DESK> <20131009061551.GD7664@gmail.com>
+	 <1381336441.11046.128.camel@schen9-DESK> <20131010075444.GD17990@gmail.com>
+	 <1381882156.11046.178.camel@schen9-DESK> <20131016065526.GB22509@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Oct 2013 11:28:34 -0700
+Message-ID: <1381948114.11046.194.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 04:05:56PM -0700, Rohit Vaswani wrote:
->Add debug uart support for MSM8974. This patch adds a Kconfig
->entry and the base address for the debug uart.
->
->Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->---
-> arch/arm/Kconfig.debug       | 9 +++++++++
-> arch/arm/include/debug/msm.S | 5 +++++
-> 2 files changed, 14 insertions(+)
+On Wed, 2013-10-16 at 08:55 +0200, Ingo Molnar wrote:
+> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> 
+> > On Thu, 2013-10-10 at 09:54 +0200, Ingo Molnar wrote:
+> > > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > 
+> > > > The throughput of pure mmap with mutex is below vs pure mmap is below:
+> > > > 
+> > > > % change in performance of the mmap with pthread-mutex vs pure mmap
+> > > > #threads        vanilla 	all rwsem    	without optspin
+> > > > 				patches
+> > > > 1               3.0%    	-1.0%   	-1.7%
+> > > > 5               7.2%    	-26.8%  	5.5%
+> > > > 10              5.2%    	-10.6%  	22.1%
+> > > > 20              6.8%    	16.4%   	12.5%
+> > > > 40              -0.2%   	32.7%   	0.0%
+> > > > 
+> > > > So with mutex, the vanilla kernel and the one without optspin both run 
+> > > > faster.  This is consistent with what Peter reported.  With optspin, the 
+> > > > picture is more mixed, with lower throughput at low to moderate number 
+> > > > of threads and higher throughput with high number of threads.
+> > > 
+> > > So, going back to your orignal table:
+> > > 
+> > > > % change in performance of the mmap with pthread-mutex vs pure mmap
+> > > > #threads        vanilla all     without optspin
+> > > > 1               3.0%    -1.0%   -1.7%
+> > > > 5               7.2%    -26.8%  5.5%
+> > > > 10              5.2%    -10.6%  22.1%
+> > > > 20              6.8%    16.4%   12.5%
+> > > > 40              -0.2%   32.7%   0.0%
+> > > >
+> > > > In general, vanilla and no-optspin case perform better with 
+> > > > pthread-mutex.  For the case with optspin, mmap with pthread-mutex is 
+> > > > worse at low to moderate contention and better at high contention.
+> > > 
+> > > it appears that 'without optspin' appears to be a pretty good choice - if 
+> > > it wasn't for that '1 thread' number, which, if I correctly assume is the 
+> > > uncontended case, is one of the most common usecases ...
+> > > 
+> > > How can the single-threaded case get slower? None of the patches should 
+> > > really cause noticeable overhead in the non-contended case. That looks 
+> > > weird.
+> > > 
+> > > It would also be nice to see the 2, 3, 4 thread numbers - those are the 
+> > > most common contention scenarios in practice - where do we see the first 
+> > > improvement in performance?
+> > > 
+> > > Also, it would be nice to include a noise/sttdev figure, it's really hard 
+> > > to tell whether -1.7% is statistically significant.
+> > 
+> > Ingo,
+> > 
+> > I think that the optimistic spin changes to rwsem should enhance 
+> > performance to real workloads after all.
+> > 
+> > In my previous tests, I was doing mmap followed immediately by 
+> > munmap without doing anything to the memory.  No real workload
+> > will behave that way and it is not the scenario that we 
+> > should optimize for.  A much better approximation of
+> > real usages will be doing mmap, then touching 
+> > the memories being mmaped, followed by munmap.  
+> 
+> That's why I asked for a working testcase to be posted ;-) Not just 
+> pseudocode - send the real .c thing please.
 
-Acked-by: David Brown <davidb@codeaurora.org>
+I was using a modified version of Anton's will-it-scale test.  I'll try
+to port the tests to perf bench to make it easier for other people to
+run the tests.
 
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> 
+> > This changes the dynamics of the rwsem as we are now dominated by read 
+> > acquisitions of mmap sem due to the page faults, instead of having only 
+> > write acquisitions from mmap. [...]
+> 
+> Absolutely, the page fault read case is the #1 optimization target of 
+> rwsems.
+> 
+> > [...] In this case, any delay in write acquisitions will be costly as we 
+> > will be blocking a lot of readers.  This is where optimistic spinning on 
+> > write acquisitions of mmap sem can provide a very significant boost to 
+> > the throughput.
+> > 
+> > I change the test case to the following with writes to
+> > the mmaped memory:
+> > 
+> > #define MEMSIZE (1 * 1024 * 1024)
+> > 
+> > char *testcase_description = "Anonymous memory mmap/munmap of 1MB";
+> > 
+> > void testcase(unsigned long long *iterations)
+> > {
+> >         int i;
+> > 
+> >         while (1) {
+> >                 char *c = mmap(NULL, MEMSIZE, PROT_READ|PROT_WRITE,
+> >                                MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+> >                 assert(c != MAP_FAILED);
+> >                 for (i=0; i<MEMSIZE; i+=8) {
+> >                         c[i] = 0xa;
+> >                 }
+> >                 munmap(c, MEMSIZE);
+> > 
+> >                 (*iterations)++;
+> >         }
+> > }
+> 
+> It would be _really_ nice to stick this into tools/perf/bench/ as:
+> 
+> 	perf bench mem pagefaults
+> 
+> or so, with a number of parallelism and workload patterns. See 
+> tools/perf/bench/numa.c for a couple of workload generators - although 
+> those are not page fault intense.
+> 
+> So that future generations can run all these tests too and such.
+
+Okay, will do.
+
+> 
+> > I compare the throughput where I have the complete rwsem patchset 
+> > against vanilla and the case where I take out the optimistic spin patch.  
+> > I have increased the run time by 10x from my pervious experiments and do 
+> > 10 runs for each case.  The standard deviation is ~1.5% so any changes 
+> > under 1.5% is statistically significant.
+> > 
+> > % change in throughput vs the vanilla kernel.
+> > Threads	all	No-optspin
+> > 1		+0.4%	-0.1%
+> > 2		+2.0%	+0.2%
+> > 3		+1.1%	+1.5%
+> > 4		-0.5%	-1.4%
+> > 5		-0.1%	-0.1%
+> > 10		+2.2%	-1.2%
+> > 20		+237.3%	-2.3%
+> > 40		+548.1%	+0.3%
+> 
+> The tail is impressive. The early parts are important as well, but it's 
+> really hard to tell the significance of the early portion without having 
+> an sttdev column.
+
+Here's the data with sdv column:
+
+n	all	sdv	No-optspin	sdv
+1	+0.4%	0.9%	-0.1%		0.8%
+2	+2.0%	0.8%	+0.2%		1.2%
+3	+1.1%	0.8%	+1.5%		0.6%
+4	-0.5%	0.9%	-1.4%		1.1%
+5	-0.1%	1.1%	-0.1%		1.1%
+10	+2.2%	0.8%	-1.2%		1.0%
+20	+237.3%	0.7%	-2.3%		1.3%
+40	+548.1%	0.8%	+0.3%		1.2%
+
+
+> ( "perf stat --repeat N" will give you sttdev output, in handy percentage 
+>   form. )
+> 
+> > Now when I test the case where we acquire mutex in the
+> > user space before mmap, I got the following data versus
+> > vanilla kernel.  There's little contention on mmap sem 
+> > acquisition in this case.
+> > 
+> > n	all	No-optspin
+> > 1	+0.8%	-1.2%
+> > 2	+1.0%	-0.5%
+> > 3	+1.8%	+0.2%
+> > 4	+1.5%	-0.4%
+> > 5	+1.1%	+0.4%
+> > 10	+1.5%	-0.3%
+> > 20	+1.4%	-0.2%
+> > 40	+1.3%	+0.4%
+
+Adding std-dev to above data:
+
+n	all	sdv	No-optspin	sdv
+1	+0.8%	1.0%	-1.2%		1.2%
+2	+1.0%	1.0%	-0.5%		1.0%
+3	+1.8%	0.7%	+0.2%		0.8%
+4	+1.5%	0.8%	-0.4%		0.7%
+5	+1.1%	1.1%	+0.4%		0.3%
+10	+1.5%	0.7%	-0.3%		0.7%
+20	+1.4%	0.8%	-0.2%		1.0%
+40	+1.3%	0.7%	+0.4%		0.5%
+
+> > 
+> > Thanks.
+> 
+> A bit hard to see as there's no comparison _between_ the pthread_mutex and 
+> plain-parallel versions. No contention isn't a great result if performance 
+> suffers because it's all serialized.
+
+Now the data for pthread-mutex vs plain-parallel vanilla testcase 
+with std-dev
+						
+n	vanilla	sdv	Rwsem-all	sdv	No-optspin	sdv
+1	+0.5%	0.9%	+1.4%		0.9%	-0.7%		1.0%
+2	-39.3%	1.0%	-38.7%		1.1%	-39.6%		1.1%
+3	-52.6%	1.2%	-51.8%		0.7%	-52.5%		0.7%
+4	-59.8%	0.8%	-59.2%		1.0%	-59.9%		0.9%
+5	-63.5%	1.4%	-63.1%		1.4%	-63.4%		1.0%
+10	-66.1%	1.3%	-65.6%		1.3%	-66.2%		1.3%
+20	+178.3%	0.9%	+182.3%		1.0%	+177.7%		1.1%
+40	+604.8%	1.1%	+614.0%		1.0%	+607.9%		0.9%
+
+The version with full rwsem patchset perform best across the threads.  
+Serialization actually hurts for smaller number of threads even for
+current vanilla kernel.
+
+I'll rerun the tests once I ported them to the perf bench.  It may take
+me a couple of days.
+
+Thanks.
+
+Tim
+
