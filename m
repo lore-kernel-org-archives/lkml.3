@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761609Ab3JPRqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35553 "EHLO
+	id S935181Ab3JPSGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:06:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761300Ab3JPRpe (ORCPT
+	with ESMTP id S1761605Ab3JPRqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:34 -0400
+	Wed, 16 Oct 2013 13:46:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 20/69] ARC: Fix signal frame management for SA_SIGINFO
-Date: Wed, 16 Oct 2013 10:44:29 -0700
-Message-Id: <20131016174315.362128296@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 68/69] ipc,msg: prevent race with rmid in msgsnd,msgrcv
+Date: Wed, 16 Oct 2013 10:45:17 -0700
+Message-Id: <20131016174321.223299967@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -27,86 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Ruppert <christian.ruppert@abilis.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-commit 10469350e345599dfef3fa78a7c19fb230e674c1 upstream.
+commit 4271b05a227dc6175b66c3d9941aeab09048aeb2 upstream.
 
-Previously, when a signal was registered with SA_SIGINFO, parameters 2
-and 3 of the signal handler were written to registers r1 and r2 before
-the register set was saved. This led to corruption of these two
-registers after returning from the signal handler (the wrong values were
-restored).
-With this patch, registers are now saved before any parameters are
-passed, thus maintaining the processor state from before signal entry.
+This fixes a race in both msgrcv() and msgsnd() between finding the msg
+and actually dealing with the queue, as another thread can delete shmid
+underneath us if we are preempted before acquiring the
+kern_ipc_perm.lock.
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Manfred illustrates this nicely:
+
+Assume a preemptible kernel that is preempted just after
+
+    msq = msq_obtain_object_check(ns, msqid)
+
+in do_msgrcv().  The only lock that is held is rcu_read_lock().
+
+Now the other thread processes IPC_RMID.  When the first task is
+resumed, then it will happily wait for messages on a deleted queue.
+
+Fix this by checking for if the queue has been deleted after taking the
+lock.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Reported-by: Manfred Spraul <manfred@colorfullife.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/signal.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ ipc/msg.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/arc/kernel/signal.c
-+++ b/arch/arc/kernel/signal.c
-@@ -101,7 +101,6 @@ SYSCALL_DEFINE0(rt_sigreturn)
- {
- 	struct rt_sigframe __user *sf;
- 	unsigned int magic;
--	int err;
- 	struct pt_regs *regs = current_pt_regs();
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -695,6 +695,12 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+ 			goto out_unlock0;
  
- 	/* Always make any pending restarted system calls return -EINTR */
-@@ -119,15 +118,16 @@ SYSCALL_DEFINE0(rt_sigreturn)
- 	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
- 		goto badframe;
- 
--	err = restore_usr_regs(regs, sf);
--	err |= __get_user(magic, &sf->sigret_magic);
--	if (err)
-+	if (__get_user(magic, &sf->sigret_magic))
- 		goto badframe;
- 
- 	if (unlikely(is_do_ss_needed(magic)))
- 		if (restore_altstack(&sf->uc.uc_stack))
- 			goto badframe;
- 
-+	if (restore_usr_regs(regs, sf))
-+		goto badframe;
++		/* raced with RMID? */
++		if (msq->q_perm.deleted) {
++			err = -EIDRM;
++			goto out_unlock0;
++		}
 +
- 	/* Don't restart from sigreturn */
- 	syscall_wont_restart(regs);
+ 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
+ 		if (err)
+ 			goto out_unlock0;
+@@ -901,6 +907,13 @@ long do_msgrcv(int msqid, void __user *b
+ 			goto out_unlock1;
  
-@@ -191,6 +191,15 @@ setup_rt_frame(int signo, struct k_sigac
- 		return 1;
- 
- 	/*
-+	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
-+	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
-+	 * during signal handler execution. This works for SA_SIGINFO as well
-+	 * although the semantics are now overloaded (the same reg state can be
-+	 * inspected by userland: but are they allowed to fiddle with it ?
-+	 */
-+	err |= stash_usr_regs(sf, regs, set);
+ 		ipc_lock_object(&msq->q_perm);
 +
-+	/*
- 	 * SA_SIGINFO requires 3 args to signal handler:
- 	 *  #1: sig-no (common to any handler)
- 	 *  #2: struct siginfo
-@@ -213,14 +222,6 @@ setup_rt_frame(int signo, struct k_sigac
- 		magic = MAGIC_SIGALTSTK;
- 	}
- 
--	/*
--	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
--	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
--	 * during signal handler execution. This works for SA_SIGINFO as well
--	 * although the semantics are now overloaded (the same reg state can be
--	 * inspected by userland: but are they allowed to fiddle with it ?
--	 */
--	err |= stash_usr_regs(sf, regs, set);
- 	err |= __put_user(magic, &sf->sigret_magic);
- 	if (err)
- 		return err;
++		/* raced with RMID? */
++		if (msq->q_perm.deleted) {
++			msg = ERR_PTR(-EIDRM);
++			goto out_unlock0;
++		}
++
+ 		msg = find_msg(msq, &msgtyp, mode);
+ 		if (!IS_ERR(msg)) {
+ 			/*
 
 
