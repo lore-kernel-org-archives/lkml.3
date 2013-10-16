@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935092Ab3JPSDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:03:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35839 "EHLO
+	id S935107Ab3JPSDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:03:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933970Ab3JPRqO (ORCPT
+	with ESMTP id S933953Ab3JPRqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:14 -0400
+	Wed, 16 Oct 2013 13:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 07/50] i2c: omap: Clear ARDY bit twice
-Date: Wed, 16 Oct 2013 10:44:53 -0700
-Message-Id: <20131016174359.269344817@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 06/50] vfs: allow O_PATH file descriptors for fstatfs()
+Date: Wed, 16 Oct 2013 10:44:52 -0700
+Message-Id: <20131016174359.148035655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,40 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4cdbf7d346e7461c3b93a26707c852e2c9db3753 upstream.
+commit 9d05746e7b16d8565dddbe3200faa1e669d23bbf upstream.
 
-Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
-"i2c-omap: Double clear of ARDY status in IRQ handler"
-added a workaround for undocumented errata ProDB0017052.
-But then commit 1d7afc95946487945cc7f5019b41255b72224b70
-"i2c: omap: ack IRQ in parts" refactored code and missed
-one of ARDY clearings. So current code violates errata.
-It causes often i2c bus timeouts on my Pandaboard.
+Olga reported that file descriptors opened with O_PATH do not work with
+fstatfs(), found during further development of ksh93's thread support.
 
-This patch adds a second clearing in place.
+There is no reason to not allow O_PATH file descriptors here (fstatfs is
+very much a path operation), so use "fdget_raw()".  See commit
+55815f70147d ("vfs: make O_PATH file descriptors usable for 'fstat()'")
+for a very similar issue reported for fstat() by the same team.
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reported-and-tested-by: ольга крыжановская <olga.kryzhanovska@gmail.com>
+Acked-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-omap.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/statfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -944,6 +944,9 @@ omap_i2c_isr_thread(int this_irq, void *
- 		/*
- 		 * ProDB0017052: Clear ARDY bit twice
- 		 */
-+		if (stat & OMAP_I2C_STAT_ARDY)
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
-+
- 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
- 					OMAP_I2C_STAT_AL)) {
- 			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
+--- a/fs/statfs.c
++++ b/fs/statfs.c
+@@ -94,7 +94,7 @@ retry:
+ 
+ int fd_statfs(int fd, struct kstatfs *st)
+ {
+-	struct fd f = fdget(fd);
++	struct fd f = fdget_raw(fd);
+ 	int error = -EBADF;
+ 	if (f.file) {
+ 		error = vfs_statfs(&f.file->f_path, st);
 
 
