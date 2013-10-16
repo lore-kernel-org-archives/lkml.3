@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934173Ab3JPLEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:04:38 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:58832 "EHLO
+	id S934227Ab3JPLFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:05:11 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:58815 "EHLO
 	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934027Ab3JPLDh (ORCPT
+	with ESMTP id S934006Ab3JPLDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:03:37 -0400
+	Wed, 16 Oct 2013 07:03:36 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH 8/8] zorro/UAPI: Use proper types (endianness/size) in <linux/zorro.h>
-Date: Wed, 16 Oct 2013 13:03:25 +0200
-Message-Id: <1381921405-11206-9-git-send-email-geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 6/8] zorro: ZTWO_VADDR() should return "void __iomem *"
+Date: Wed, 16 Oct 2013 13:03:23 +0200
+Message-Id: <1381921405-11206-7-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381921405-11206-1-git-send-email-geert@linux-m68k.org>
 References: <1381921405-11206-1-git-send-email-geert@linux-m68k.org>
@@ -21,325 +20,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix member definitions for non-native userspace handling:
-  - All multi-byte values are big-endian, hence use __be*,
-  - All pointers are 32-bit pointers under AmigaOS, but unused (except for
-    cd_BoardAddr) under Linux, hence use __be32.
+ZTWO_VADDR() converts from physical to virtual I/O addresses, so it should
+return "void __iomem *" instead of "unsigned long".
+
+This allows to drop several casts, but requires adding a few casts to
+accomodate legacy driver frameworks that store "unsigned long" I/O
+addresses.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Howells <dhowells@redhat.com>
 ---
- arch/m68k/amiga/config.c           |    9 +++----
- arch/m68k/amiga/platform.c         |    9 ++++---
- drivers/net/ethernet/amd/a2065.c   |    9 ++++---
- drivers/net/ethernet/amd/ariadne.c |    9 ++++---
- drivers/zorro/proc.c               |   10 ++++----
- drivers/zorro/zorro-sysfs.c        |   22 +++++++++++++----
- drivers/zorro/zorro.c              |    4 +++-
- include/uapi/linux/zorro.h         |   46 ++++++++++++++++++------------------
- 8 files changed, 72 insertions(+), 46 deletions(-)
+ arch/m68k/amiga/chipram.c             |    2 +-
+ arch/m68k/amiga/config.c              |    2 +-
+ arch/m68k/include/asm/amigahw.h       |    2 +-
+ drivers/block/z2ram.c                 |    4 ++--
+ drivers/ide/buddha.c                  |    2 +-
+ drivers/net/ethernet/8390/hydra.c     |    2 +-
+ drivers/net/ethernet/8390/zorro8390.c |    4 ++--
+ drivers/net/ethernet/amd/a2065.c      |    4 ++--
+ drivers/net/ethernet/amd/ariadne.c    |    4 ++--
+ drivers/parport/parport_mfc3.c        |    2 +-
+ drivers/scsi/a2091.c                  |    2 +-
+ drivers/scsi/a3000.c                  |    2 +-
+ drivers/scsi/a4000t.c                 |    2 +-
+ drivers/scsi/gvp11.c                  |    2 +-
+ drivers/scsi/zorro7xx.c               |    2 +-
+ drivers/video/amifb.c                 |    2 +-
+ drivers/video/cirrusfb.c              |    4 ++--
+ 17 files changed, 22 insertions(+), 22 deletions(-)
 
+diff --git a/arch/m68k/amiga/chipram.c b/arch/m68k/amiga/chipram.c
+index 99449fbf9a72..ba03cec3f711 100644
+--- a/arch/m68k/amiga/chipram.c
++++ b/arch/m68k/amiga/chipram.c
+@@ -87,7 +87,7 @@ void *amiga_chip_alloc_res(unsigned long size, struct resource *res)
+ 
+ 	atomic_sub(size, &chipavail);
+ 	pr_debug("amiga_chip_alloc_res: returning %pR\n", res);
+-	return (void *)ZTWO_VADDR(res->start);
++	return ZTWO_VADDR(res->start);
+ }
+ 
+ void amiga_chip_free(void *ptr)
 diff --git a/arch/m68k/amiga/config.c b/arch/m68k/amiga/config.c
-index acd9c1640cfc..65b5e937ebba 100644
+index d956ddbfebe1..acd9c1640cfc 100644
 --- a/arch/m68k/amiga/config.c
 +++ b/arch/m68k/amiga/config.c
-@@ -28,6 +28,7 @@
- #include <linux/keyboard.h>
+@@ -618,7 +618,7 @@ static int __init amiga_savekmsg_setup(char *arg)
  
- #include <asm/bootinfo.h>
-+#include <asm/byteorder.h>
- #include <asm/setup.h>
- #include <asm/pgtable.h>
- #include <asm/amigahw.h>
-@@ -176,10 +177,10 @@ int __init amiga_parse_bootinfo(const struct bi_record *record)
- 			const struct ConfigDev *cd = (struct ConfigDev *)data;
- 			struct zorro_dev_init *dev = &zorro_autocon_init[zorro_num_autocon++];
- 			dev->rom = cd->cd_Rom;
--			dev->slotaddr = cd->cd_SlotAddr;
--			dev->slotsize = cd->cd_SlotSize;
--			dev->boardaddr = (u32)cd->cd_BoardAddr;
--			dev->boardsize = cd->cd_BoardSize;
-+			dev->slotaddr = be16_to_cpu(cd->cd_SlotAddr);
-+			dev->slotsize = be16_to_cpu(cd->cd_SlotSize);
-+			dev->boardaddr = be32_to_cpu(cd->cd_BoardAddr);
-+			dev->boardsize = be32_to_cpu(cd->cd_BoardSize);
- 		} else
- 			printk("amiga_parse_bootinfo: too many AutoConfig devices\n");
- #endif /* CONFIG_ZORRO */
-diff --git a/arch/m68k/amiga/platform.c b/arch/m68k/amiga/platform.c
-index 7847b2b1b5b6..d34029d7b058 100644
---- a/arch/m68k/amiga/platform.c
-+++ b/arch/m68k/amiga/platform.c
-@@ -13,6 +13,7 @@
+ 	/* Just steal the block, the chipram allocator isn't functional yet */
+ 	amiga_chip_size -= SAVEKMSG_MAXMEM;
+-	savekmsg = (void *)ZTWO_VADDR(CHIP_PHYSADDR + amiga_chip_size);
++	savekmsg = ZTWO_VADDR(CHIP_PHYSADDR + amiga_chip_size);
+ 	savekmsg->magic1 = SAVEKMSG_MAGIC1;
+ 	savekmsg->magic2 = SAVEKMSG_MAGIC2;
+ 	savekmsg->magicptr = ZTWO_PADDR(savekmsg);
+diff --git a/arch/m68k/include/asm/amigahw.h b/arch/m68k/include/asm/amigahw.h
+index 7a19b5686a4a..3bef0b2ad945 100644
+--- a/arch/m68k/include/asm/amigahw.h
++++ b/arch/m68k/include/asm/amigahw.h
+@@ -266,7 +266,7 @@ struct CIA {
  
- #include <asm/amigahw.h>
- #include <asm/amigayle.h>
-+#include <asm/byteorder.h>
+ #define zTwoBase (0x80000000)
+ #define ZTWO_PADDR(x) (((unsigned long)(x))-zTwoBase)
+-#define ZTWO_VADDR(x) (((unsigned long)(x))+zTwoBase)
++#define ZTWO_VADDR(x) ((void __iomem *)(((unsigned long)(x))+zTwoBase))
  
- 
- #ifdef CONFIG_ZORRO
-@@ -66,10 +67,12 @@ static int __init z_dev_present(zorro_id id)
+ #define CUSTOM_PHYSADDR     (0xdff000)
+ #define amiga_custom ((*(volatile struct CUSTOM *)(zTwoBase+CUSTOM_PHYSADDR)))
+diff --git a/drivers/block/z2ram.c b/drivers/block/z2ram.c
+index 5a95baf4b104..8b2a60cee3a0 100644
+--- a/drivers/block/z2ram.c
++++ b/drivers/block/z2ram.c
+@@ -116,8 +116,8 @@ get_z2ram( void )
+ 	if ( test_bit( i, zorro_unused_z2ram ) )
+ 	{
+ 	    z2_count++;
+-	    z2ram_map[ z2ram_size++ ] = 
+-		ZTWO_VADDR( Z2RAM_START ) + ( i << Z2RAM_CHUNKSHIFT );
++	    z2ram_map[z2ram_size++] = (unsigned long)ZTWO_VADDR(Z2RAM_START) +
++				      (i << Z2RAM_CHUNKSHIFT);
+ 	    clear_bit( i, zorro_unused_z2ram );
+ 	}
+     }
+diff --git a/drivers/ide/buddha.c b/drivers/ide/buddha.c
+index b1d38590ac01..46eaf58d881b 100644
+--- a/drivers/ide/buddha.c
++++ b/drivers/ide/buddha.c
+@@ -198,7 +198,7 @@ fail_base2:
+ 				continue;
+ 			}
+ 		}	  
+-		buddha_board = ZTWO_VADDR(board);
++		buddha_board = (unsigned long)ZTWO_VADDR(board);
+ 		
+ 		/* write to BUDDHA_IRQ_MR to enable the board IRQ */
+ 		/* X-Surf doesn't have this.  IRQs are always on */
+diff --git a/drivers/net/ethernet/8390/hydra.c b/drivers/net/ethernet/8390/hydra.c
+index fb3dd4399cf3..f615fdec0f1b 100644
+--- a/drivers/net/ethernet/8390/hydra.c
++++ b/drivers/net/ethernet/8390/hydra.c
+@@ -113,7 +113,7 @@ static const struct net_device_ops hydra_netdev_ops = {
+ static int hydra_init(struct zorro_dev *z)
  {
- 	unsigned int i;
+     struct net_device *dev;
+-    unsigned long board = ZTWO_VADDR(z->resource.start);
++    unsigned long board = (unsigned long)ZTWO_VADDR(z->resource.start);
+     unsigned long ioaddr = board+HYDRA_NIC_BASE;
+     const char name[] = "NE2000";
+     int start_page, stop_page;
+diff --git a/drivers/net/ethernet/8390/zorro8390.c b/drivers/net/ethernet/8390/zorro8390.c
+index 85ec4c2d2645..ae2a12b7db62 100644
+--- a/drivers/net/ethernet/8390/zorro8390.c
++++ b/drivers/net/ethernet/8390/zorro8390.c
+@@ -287,7 +287,7 @@ static const struct net_device_ops zorro8390_netdev_ops = {
+ };
  
--	for (i = 0; i < zorro_num_autocon; i++)
--		if (zorro_autocon_init[i].rom.er_Manufacturer == ZORRO_MANUF(id) &&
--		    zorro_autocon_init[i].rom.er_Product == ZORRO_PROD(id))
-+	for (i = 0; i < zorro_num_autocon; i++) {
-+		const struct ExpansionRom *rom = &zorro_autocon_init[i].rom;
-+		if (be16_to_cpu(rom->er_Manufacturer) == ZORRO_MANUF(id) &&
-+		    rom->er_Product == ZORRO_PROD(id))
- 			return 1;
-+	}
+ static int zorro8390_init(struct net_device *dev, unsigned long board,
+-			  const char *name, unsigned long ioaddr)
++			  const char *name, void __iomem *ioaddr)
+ {
+ 	int i;
+ 	int err;
+@@ -354,7 +354,7 @@ static int zorro8390_init(struct net_device *dev, unsigned long board,
+ 	start_page = NESM_START_PG;
+ 	stop_page = NESM_STOP_PG;
  
- 	return 0;
- }
+-	dev->base_addr = ioaddr;
++	dev->base_addr = (unsigned long)ioaddr;
+ 	dev->irq = IRQ_AMIGA_PORTS;
+ 
+ 	/* Install the Interrupt handler */
 diff --git a/drivers/net/ethernet/amd/a2065.c b/drivers/net/ethernet/amd/a2065.c
-index f492a19328e5..56139184b801 100644
+index 0866e7627433..f492a19328e5 100644
 --- a/drivers/net/ethernet/amd/a2065.c
 +++ b/drivers/net/ethernet/amd/a2065.c
-@@ -57,6 +57,7 @@
- #include <linux/zorro.h>
- #include <linux/bitops.h>
- 
-+#include <asm/byteorder.h>
- #include <asm/irq.h>
- #include <asm/amigaints.h>
- #include <asm/amigahw.h>
-@@ -678,6 +679,7 @@ static int a2065_init_one(struct zorro_dev *z,
- 	unsigned long base_addr = board + A2065_LANCE;
- 	unsigned long mem_start = board + A2065_RAM;
- 	struct resource *r1, *r2;
-+	u32 serial;
- 	int err;
- 
- 	r1 = request_mem_region(base_addr, sizeof(struct lance_regs),
-@@ -702,6 +704,7 @@ static int a2065_init_one(struct zorro_dev *z,
- 	r1->name = dev->name;
- 	r2->name = dev->name;
- 
-+	serial = be32_to_cpu(z->rom.er_SerialNumber);
- 	dev->dev_addr[0] = 0x00;
- 	if (z->id != ZORRO_PROD_AMERISTAR_A2065) {	/* Commodore */
- 		dev->dev_addr[1] = 0x80;
-@@ -710,9 +713,9 @@ static int a2065_init_one(struct zorro_dev *z,
- 		dev->dev_addr[1] = 0x00;
- 		dev->dev_addr[2] = 0x9f;
- 	}
--	dev->dev_addr[3] = (z->rom.er_SerialNumber >> 16) & 0xff;
--	dev->dev_addr[4] = (z->rom.er_SerialNumber >> 8) & 0xff;
--	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
-+	dev->dev_addr[3] = (serial >> 16) & 0xff;
-+	dev->dev_addr[4] = (serial >> 8) & 0xff;
-+	dev->dev_addr[5] = serial & 0xff;
- 	dev->base_addr = (unsigned long)ZTWO_VADDR(base_addr);
- 	dev->mem_start = (unsigned long)ZTWO_VADDR(mem_start);
+@@ -713,8 +713,8 @@ static int a2065_init_one(struct zorro_dev *z,
+ 	dev->dev_addr[3] = (z->rom.er_SerialNumber >> 16) & 0xff;
+ 	dev->dev_addr[4] = (z->rom.er_SerialNumber >> 8) & 0xff;
+ 	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
+-	dev->base_addr = ZTWO_VADDR(base_addr);
+-	dev->mem_start = ZTWO_VADDR(mem_start);
++	dev->base_addr = (unsigned long)ZTWO_VADDR(base_addr);
++	dev->mem_start = (unsigned long)ZTWO_VADDR(mem_start);
  	dev->mem_end = dev->mem_start + A2065_RAM_SIZE;
+ 
+ 	priv->ll = (volatile struct lance_regs *)dev->base_addr;
 diff --git a/drivers/net/ethernet/amd/ariadne.c b/drivers/net/ethernet/amd/ariadne.c
-index 33822cb69366..b08101b31b8b 100644
+index c178eb4c8166..33822cb69366 100644
 --- a/drivers/net/ethernet/amd/ariadne.c
 +++ b/drivers/net/ethernet/amd/ariadne.c
-@@ -51,6 +51,7 @@
- #include <linux/zorro.h>
- #include <linux/bitops.h>
- 
-+#include <asm/byteorder.h>
- #include <asm/amigaints.h>
- #include <asm/amigahw.h>
- #include <asm/irq.h>
-@@ -718,6 +719,7 @@ static int ariadne_init_one(struct zorro_dev *z,
- 	struct resource *r1, *r2;
- 	struct net_device *dev;
- 	struct ariadne_private *priv;
-+	u32 serial;
- 	int err;
- 
- 	r1 = request_mem_region(base_addr, sizeof(struct Am79C960), "Am79C960");
-@@ -741,12 +743,13 @@ static int ariadne_init_one(struct zorro_dev *z,
- 	r1->name = dev->name;
- 	r2->name = dev->name;
- 
-+	serial = be32_to_cpu(z->rom.er_SerialNumber);
- 	dev->dev_addr[0] = 0x00;
- 	dev->dev_addr[1] = 0x60;
- 	dev->dev_addr[2] = 0x30;
--	dev->dev_addr[3] = (z->rom.er_SerialNumber >> 16) & 0xff;
--	dev->dev_addr[4] = (z->rom.er_SerialNumber >> 8) & 0xff;
--	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
-+	dev->dev_addr[3] = (serial >> 16) & 0xff;
-+	dev->dev_addr[4] = (serial >> 8) & 0xff;
-+	dev->dev_addr[5] = serial & 0xff;
- 	dev->base_addr = (unsigned long)ZTWO_VADDR(base_addr);
- 	dev->mem_start = (unsigned long)ZTWO_VADDR(mem_start);
+@@ -747,8 +747,8 @@ static int ariadne_init_one(struct zorro_dev *z,
+ 	dev->dev_addr[3] = (z->rom.er_SerialNumber >> 16) & 0xff;
+ 	dev->dev_addr[4] = (z->rom.er_SerialNumber >> 8) & 0xff;
+ 	dev->dev_addr[5] = z->rom.er_SerialNumber & 0xff;
+-	dev->base_addr = ZTWO_VADDR(base_addr);
+-	dev->mem_start = ZTWO_VADDR(mem_start);
++	dev->base_addr = (unsigned long)ZTWO_VADDR(base_addr);
++	dev->mem_start = (unsigned long)ZTWO_VADDR(mem_start);
  	dev->mem_end = dev->mem_start + ARIADNE_RAM_SIZE;
-diff --git a/drivers/zorro/proc.c b/drivers/zorro/proc.c
-index ea1ce822a8e0..6ac2579da0eb 100644
---- a/drivers/zorro/proc.c
-+++ b/drivers/zorro/proc.c
-@@ -14,6 +14,8 @@
- #include <linux/seq_file.h>
- #include <linux/init.h>
- #include <linux/export.h>
-+
-+#include <asm/byteorder.h>
- #include <asm/uaccess.h>
- #include <asm/amigahw.h>
- #include <asm/setup.h>
-@@ -41,10 +43,10 @@ proc_bus_zorro_read(struct file *file, char __user *buf, size_t nbytes, loff_t *
- 	/* Construct a ConfigDev */
- 	memset(&cd, 0, sizeof(cd));
- 	cd.cd_Rom = z->rom;
--	cd.cd_SlotAddr = z->slotaddr;
--	cd.cd_SlotSize = z->slotsize;
--	cd.cd_BoardAddr = (void *)zorro_resource_start(z);
--	cd.cd_BoardSize = zorro_resource_len(z);
-+	cd.cd_SlotAddr = cpu_to_be16(z->slotaddr);
-+	cd.cd_SlotSize = cpu_to_be16(z->slotsize);
-+	cd.cd_BoardAddr = cpu_to_be32(zorro_resource_start(z));
-+	cd.cd_BoardSize = cpu_to_be32(zorro_resource_len(z));
  
- 	if (copy_to_user(buf, (void *)&cd + pos, nbytes))
- 		return -EFAULT;
-diff --git a/drivers/zorro/zorro-sysfs.c b/drivers/zorro/zorro-sysfs.c
-index 26f7184ef9e1..36b210f9b6b2 100644
---- a/drivers/zorro/zorro-sysfs.c
-+++ b/drivers/zorro/zorro-sysfs.c
-@@ -16,6 +16,8 @@
- #include <linux/stat.h>
- #include <linux/string.h>
+ 	dev->netdev_ops = &ariadne_netdev_ops;
+diff --git a/drivers/parport/parport_mfc3.c b/drivers/parport/parport_mfc3.c
+index 7578d79b3688..2f650f68af14 100644
+--- a/drivers/parport/parport_mfc3.c
++++ b/drivers/parport/parport_mfc3.c
+@@ -300,7 +300,7 @@ static int __init parport_mfc3_init(void)
+ 		if (!request_mem_region(piabase, sizeof(struct pia), "PIA"))
+ 			continue;
  
-+#include <asm/byteorder.h>
-+
- #include "zorro.h"
+-		pp = (struct pia *)ZTWO_VADDR(piabase);
++		pp = ZTWO_VADDR(piabase);
+ 		pp->crb = 0;
+ 		pp->pddrb = 255; /* all data pins output */
+ 		pp->crb = PIA_DDR|32|8;
+diff --git a/drivers/scsi/a2091.c b/drivers/scsi/a2091.c
+index 30fa38a0ad39..9176bfbd5745 100644
+--- a/drivers/scsi/a2091.c
++++ b/drivers/scsi/a2091.c
+@@ -201,7 +201,7 @@ static int a2091_probe(struct zorro_dev *z, const struct zorro_device_id *ent)
+ 	instance->irq = IRQ_AMIGA_PORTS;
+ 	instance->unique_id = z->slotaddr;
  
+-	regs = (struct a2091_scsiregs *)ZTWO_VADDR(z->resource.start);
++	regs = ZTWO_VADDR(z->resource.start);
+ 	regs->DAWR = DAWR_A2091;
  
-@@ -33,10 +35,20 @@ static DEVICE_ATTR(name, S_IRUGO, show_##name, NULL);
+ 	wdregs.SASR = &regs->SASR;
+diff --git a/drivers/scsi/a3000.c b/drivers/scsi/a3000.c
+index c0f4f4290dd6..dd5b64726ddc 100644
+--- a/drivers/scsi/a3000.c
++++ b/drivers/scsi/a3000.c
+@@ -220,7 +220,7 @@ static int __init amiga_a3000_scsi_probe(struct platform_device *pdev)
  
- zorro_config_attr(id, id, "0x%08x\n");
- zorro_config_attr(type, rom.er_Type, "0x%02x\n");
--zorro_config_attr(serial, rom.er_SerialNumber, "0x%08x\n");
- zorro_config_attr(slotaddr, slotaddr, "0x%04x\n");
- zorro_config_attr(slotsize, slotsize, "0x%04x\n");
+ 	instance->irq = IRQ_AMIGA_PORTS;
  
-+static ssize_t
-+show_serial(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct zorro_dev *z;
-+
-+	z = to_zorro_dev(dev);
-+	return sprintf(buf, "0x%08x\n", be32_to_cpu(z->rom.er_SerialNumber));
-+}
-+
-+static DEVICE_ATTR(serial, S_IRUGO, show_serial, NULL);
-+
- static ssize_t zorro_show_resource(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct zorro_dev *z = to_zorro_dev(dev);
-@@ -60,10 +72,10 @@ static ssize_t zorro_read_config(struct file *filp, struct kobject *kobj,
- 	/* Construct a ConfigDev */
- 	memset(&cd, 0, sizeof(cd));
- 	cd.cd_Rom = z->rom;
--	cd.cd_SlotAddr = z->slotaddr;
--	cd.cd_SlotSize = z->slotsize;
--	cd.cd_BoardAddr = (void *)zorro_resource_start(z);
--	cd.cd_BoardSize = zorro_resource_len(z);
-+	cd.cd_SlotAddr = cpu_to_be16(z->slotaddr);
-+	cd.cd_SlotSize = cpu_to_be16(z->slotsize);
-+	cd.cd_BoardAddr = cpu_to_be32(zorro_resource_start(z));
-+	cd.cd_BoardSize = cpu_to_be32(zorro_resource_len(z));
+-	regs = (struct a3000_scsiregs *)ZTWO_VADDR(res->start);
++	regs = ZTWO_VADDR(res->start);
+ 	regs->DAWR = DAWR_A3000;
  
- 	return memory_read_from_buffer(buf, count, &off, &cd, sizeof(cd));
- }
-diff --git a/drivers/zorro/zorro.c b/drivers/zorro/zorro.c
-index 450abf100f06..707c1a5a0317 100644
---- a/drivers/zorro/zorro.c
-+++ b/drivers/zorro/zorro.c
-@@ -18,6 +18,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
+ 	wdregs.SASR = &regs->SASR;
+diff --git a/drivers/scsi/a4000t.c b/drivers/scsi/a4000t.c
+index 70c521f79f7c..f5a2ab41543b 100644
+--- a/drivers/scsi/a4000t.c
++++ b/drivers/scsi/a4000t.c
+@@ -56,7 +56,7 @@ static int __init amiga_a4000t_scsi_probe(struct platform_device *pdev)
+ 	scsi_addr = res->start + A4000T_SCSI_OFFSET;
  
-+#include <asm/byteorder.h>
- #include <asm/setup.h>
- #include <asm/amigahw.h>
+ 	/* Fill in the required pieces of hostdata */
+-	hostdata->base = (void __iomem *)ZTWO_VADDR(scsi_addr);
++	hostdata->base = ZTWO_VADDR(scsi_addr);
+ 	hostdata->clock = 50;
+ 	hostdata->chip710 = 1;
+ 	hostdata->dmode_extra = DMODE_FC2;
+diff --git a/drivers/scsi/gvp11.c b/drivers/scsi/gvp11.c
+index 2203ac281103..3b6f83ffddc4 100644
+--- a/drivers/scsi/gvp11.c
++++ b/drivers/scsi/gvp11.c
+@@ -310,7 +310,7 @@ static int gvp11_probe(struct zorro_dev *z, const struct zorro_device_id *ent)
+ 	if (!request_mem_region(address, 256, "wd33c93"))
+ 		return -EBUSY;
  
-@@ -161,7 +162,8 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 		z = &zorro_autocon[i];
+-	regs = (struct gvp11_scsiregs *)(ZTWO_VADDR(address));
++	regs = ZTWO_VADDR(address);
  
- 		z->rom = zi->rom;
--		z->id = (z->rom.er_Manufacturer<<16) | (z->rom.er_Product<<8);
-+		z->id = (be16_to_cpu(z->rom.er_Manufacturer) << 16) |
-+			(z->rom.er_Product << 8);
- 		if (z->id == ZORRO_PROD_GVP_EPC_BASE) {
- 			/* GVP quirk */
- 			unsigned long magic = zi->boardaddr + 0x8000;
-diff --git a/include/uapi/linux/zorro.h b/include/uapi/linux/zorro.h
-index 36a033e23d31..59d021b242ed 100644
---- a/include/uapi/linux/zorro.h
-+++ b/include/uapi/linux/zorro.h
-@@ -63,26 +63,26 @@ enum GVP_flags {
+ 	error = check_wd33c93(regs);
+ 	if (error)
+diff --git a/drivers/scsi/zorro7xx.c b/drivers/scsi/zorro7xx.c
+index cbf3476c68cd..aff31991aea9 100644
+--- a/drivers/scsi/zorro7xx.c
++++ b/drivers/scsi/zorro7xx.c
+@@ -104,7 +104,7 @@ static int zorro7xx_init_one(struct zorro_dev *z,
+ 	if (ioaddr > 0x01000000)
+ 		hostdata->base = ioremap(ioaddr, zorro_resource_len(z));
+ 	else
+-		hostdata->base = (void __iomem *)ZTWO_VADDR(ioaddr);
++		hostdata->base = ZTWO_VADDR(ioaddr);
  
+ 	hostdata->clock = 50;
+ 	hostdata->chip710 = 1;
+diff --git a/drivers/video/amifb.c b/drivers/video/amifb.c
+index a6780eecff0e..81ba95fd2b3b 100644
+--- a/drivers/video/amifb.c
++++ b/drivers/video/amifb.c
+@@ -3710,7 +3710,7 @@ default_chipset:
+ 	if (!videomemory) {
+ 		dev_warn(&pdev->dev,
+ 			 "Unable to map videomem cached writethrough\n");
+-		info->screen_base = (char *)ZTWO_VADDR(info->fix.smem_start);
++		info->screen_base = ZTWO_VADDR(info->fix.smem_start);
+ 	} else
+ 		info->screen_base = (char *)videomemory;
  
- struct Node {
--	struct  Node *ln_Succ;	/* Pointer to next (successor) */
--	struct  Node *ln_Pred;	/* Pointer to previous (predecessor) */
--	__u8    ln_Type;
--	__s8    ln_Pri;		/* Priority, for sorting */
--	__s8    *ln_Name;	/* ID string, null terminated */
-+	__be32 ln_Succ;		/* Pointer to next (successor) */
-+	__be32 ln_Pred;		/* Pointer to previous (predecessor) */
-+	__u8   ln_Type;
-+	__s8   ln_Pri;		/* Priority, for sorting */
-+	__be32 ln_Name;		/* ID string, null terminated */
- } __packed;
+diff --git a/drivers/video/cirrusfb.c b/drivers/video/cirrusfb.c
+index 97db3ba8f237..ce910327cc8e 100644
+--- a/drivers/video/cirrusfb.c
++++ b/drivers/video/cirrusfb.c
+@@ -2262,7 +2262,7 @@ static int cirrusfb_zorro_register(struct zorro_dev *z,
  
- struct ExpansionRom {
- 	/* -First 16 bytes of the expansion ROM */
--	__u8  er_Type;		/* Board type, size and flags */
--	__u8  er_Product;	/* Product number, assigned by manufacturer */
--	__u8  er_Flags;		/* Flags */
--	__u8  er_Reserved03;	/* Must be zero ($ff inverted) */
--	__u16 er_Manufacturer;	/* Unique ID, ASSIGNED BY COMMODORE-AMIGA! */
--	__u32 er_SerialNumber;	/* Available for use by manufacturer */
--	__u16 er_InitDiagVec;	/* Offset to optional "DiagArea" structure */
--	__u8  er_Reserved0c;
--	__u8  er_Reserved0d;
--	__u8  er_Reserved0e;
--	__u8  er_Reserved0f;
-+	__u8   er_Type;		/* Board type, size and flags */
-+	__u8   er_Product;	/* Product number, assigned by manufacturer */
-+	__u8   er_Flags;		/* Flags */
-+	__u8   er_Reserved03;	/* Must be zero ($ff inverted) */
-+	__be16 er_Manufacturer;	/* Unique ID, ASSIGNED BY COMMODORE-AMIGA! */
-+	__be32 er_SerialNumber;	/* Available for use by manufacturer */
-+	__be16 er_InitDiagVec;	/* Offset to optional "DiagArea" structure */
-+	__u8   er_Reserved0c;
-+	__u8   er_Reserved0d;
-+	__u8   er_Reserved0e;
-+	__u8   er_Reserved0f;
- } __packed;
- 
- /* er_Type board type bits */
-@@ -99,13 +99,13 @@ struct ConfigDev {
- 	__u8		cd_Flags;	/* (read/write) */
- 	__u8		cd_Pad;		/* reserved */
- 	struct ExpansionRom cd_Rom;	/* copy of board's expansion ROM */
--	void		*cd_BoardAddr;	/* where in memory the board was placed */
--	__u32		cd_BoardSize;	/* size of board in bytes */
--	__u16		cd_SlotAddr;	/* which slot number (PRIVATE) */
--	__u16		cd_SlotSize;	/* number of slots (PRIVATE) */
--	void		*cd_Driver;	/* pointer to node of driver */
--	struct ConfigDev *cd_NextCD;	/* linked list of drivers to config */
--	__u32		cd_Unused[4];	/* for whatever the driver wants */
-+	__be32		cd_BoardAddr;	/* where in memory the board was placed */
-+	__be32		cd_BoardSize;	/* size of board in bytes */
-+	__be16		cd_SlotAddr;	/* which slot number (PRIVATE) */
-+	__be16		cd_SlotSize;	/* number of slots (PRIVATE) */
-+	__be32		cd_Driver;	/* pointer to node of driver */
-+	__be32		cd_NextCD;	/* linked list of drivers to config */
-+	__be32		cd_Unused[4];	/* for whatever the driver wants */
- } __packed;
- 
- #define ZORRO_NUM_AUTO		16
+ 	info->fix.mmio_start = regbase;
+ 	cinfo->regbase = regbase > 16 * MB_ ? ioremap(regbase, 64 * 1024)
+-					    : (caddr_t)ZTWO_VADDR(regbase);
++					    : ZTWO_VADDR(regbase);
+ 	if (!cinfo->regbase) {
+ 		dev_err(info->device, "Cannot map registers\n");
+ 		error = -EIO;
+@@ -2272,7 +2272,7 @@ static int cirrusfb_zorro_register(struct zorro_dev *z,
+ 	info->fix.smem_start = rambase;
+ 	info->screen_size = ramsize;
+ 	info->screen_base = rambase > 16 * MB_ ? ioremap(rambase, ramsize)
+-					       : (caddr_t)ZTWO_VADDR(rambase);
++					       : ZTWO_VADDR(rambase);
+ 	if (!info->screen_base) {
+ 		dev_err(info->device, "Cannot map video RAM\n");
+ 		error = -EIO;
 -- 
 1.7.9.5
 
