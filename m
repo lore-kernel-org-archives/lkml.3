@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934945Ab3JPRsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:48:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36058 "EHLO
+	id S934958Ab3JPRsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:48:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36051 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934788Ab3JPRqp (ORCPT
+	with ESMTP id S934782Ab3JPRqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:45 -0400
+	Wed, 16 Oct 2013 13:46:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linn Crosetto <linn@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 50/50] x86: avoid remapping data in parse_setup_data()
-Date: Wed, 16 Oct 2013 10:45:36 -0700
-Message-Id: <20131016174404.491167204@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 41/50] ipc,msg: drop msg_unlock
+Date: Wed, 16 Oct 2013 10:45:27 -0700
+Message-Id: <20131016174403.369183035@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -29,109 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linn Crosetto <linn@hp.com>
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 30e46b574a1db7d14404e52dca8e1aa5f5155fd2 upstream.
+commit 4718787d1f626f45ddb239912bc07266b9880044 upstream.
 
-Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
-larger than early_memremap() is able to handle, which is currently
-limited to 256kB. If this occurs it leads to a NULL dereference in
-parse_setup_data().
+There is only one user left, drop this function and just call
+ipc_unlock_object() and rcu_read_unlock().
 
-To avoid this, remap the setup_data header and allow parsing functions
-for individual types to handle their own data remapping.
-
-Signed-off-by: Linn Crosetto <linn@hp.com>
-Link: http://lkml.kernel.org/r/1376430401-67445-1-git-send-email-linn@hp.com
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |    5 ++++-
- arch/x86/kernel/setup.c     |   19 ++++++++-----------
- 3 files changed, 13 insertions(+), 13 deletions(-)
+ ipc/msg.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -29,7 +29,7 @@ extern void e820_setup_gap(void);
- extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
- 			unsigned long start_addr, unsigned long long end_addr);
- struct setup_data;
--extern void parse_e820_ext(struct setup_data *data);
-+extern void parse_e820_ext(u64 phys_addr, u32 data_len);
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -70,8 +70,6 @@ struct msg_sender {
  
- #if defined(CONFIG_X86_64) || \
- 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -658,15 +658,18 @@ __init void e820_setup_gap(void)
-  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
-  * linked list of struct setup_data, which is parsed here.
-  */
--void __init parse_e820_ext(struct setup_data *sdata)
-+void __init parse_e820_ext(u64 phys_addr, u32 data_len)
- {
- 	int entries;
- 	struct e820entry *extmap;
-+	struct setup_data *sdata;
+ #define msg_ids(ns)	((ns)->ids[IPC_MSG_IDS])
  
-+	sdata = early_memremap(phys_addr, data_len);
- 	entries = sdata->len / sizeof(struct e820entry);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	early_iounmap(sdata, data_len);
- 	printk(KERN_INFO "e820: extended physical RAM map:\n");
- 	e820_print_map("extended");
- }
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -426,25 +426,23 @@ static void __init reserve_initrd(void)
- static void __init parse_setup_data(void)
- {
- 	struct setup_data *data;
--	u64 pa_data;
-+	u64 pa_data, pa_next;
+-#define msg_unlock(msq)		ipc_unlock(&(msq)->q_perm)
+-
+ static void freeque(struct ipc_namespace *, struct kern_ipc_perm *);
+ static int newque(struct ipc_namespace *, struct ipc_params *);
+ #ifdef CONFIG_PROC_FS
+@@ -278,7 +276,8 @@ static void freeque(struct ipc_namespace
+ 	expunge_all(msq, -EIDRM);
+ 	ss_wakeup(&msq->q_senders, 1);
+ 	msg_rmid(ns, msq);
+-	msg_unlock(msq);
++	ipc_unlock_object(&msq->q_perm);
++	rcu_read_unlock();
  
- 	pa_data = boot_params.hdr.setup_data;
- 	while (pa_data) {
--		u32 data_len, map_len;
-+		u32 data_len, map_len, data_type;
- 
- 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
- 			      (u64)sizeof(struct setup_data));
- 		data = early_memremap(pa_data, map_len);
- 		data_len = data->len + sizeof(struct setup_data);
--		if (data_len > map_len) {
--			early_iounmap(data, map_len);
--			data = early_memremap(pa_data, data_len);
--			map_len = data_len;
--		}
-+		data_type = data->type;
-+		pa_next = data->next;
-+		early_iounmap(data, map_len);
- 
--		switch (data->type) {
-+		switch (data_type) {
- 		case SETUP_E820_EXT:
--			parse_e820_ext(data);
-+			parse_e820_ext(pa_data, data_len);
- 			break;
- 		case SETUP_DTB:
- 			add_dtb(pa_data);
-@@ -452,8 +450,7 @@ static void __init parse_setup_data(void
- 		default:
- 			break;
- 		}
--		pa_data = data->next;
--		early_iounmap(data, map_len);
-+		pa_data = pa_next;
- 	}
- }
- 
+ 	list_for_each_entry_safe(msg, t, &msq->q_messages, m_list) {
+ 		atomic_dec(&ns->msg_hdrs);
 
 
