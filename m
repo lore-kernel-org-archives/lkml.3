@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560Ab3JPOFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:05:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26513 "EHLO
+	id S934590Ab3JPOFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:05:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26562 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934350Ab3JPOFo (ORCPT
+	with ESMTP id S934350Ab3JPOFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:05:44 -0400
+	Wed, 16 Oct 2013 10:05:48 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V9 10/33] iov_iter: let callers extract iovecs and bio_vecs
-Date: Wed, 16 Oct 2013 09:04:23 -0500
-Message-Id: <1381932286-14978-11-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V9 02/33] iov_iter: iov_iter_copy_from_user() should use non-atomic copy
+Date: Wed, 16 Oct 2013 09:04:15 -0500
+Message-Id: <1381932286-14978-3-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-direct IO treats memory from user iovecs and memory from arrays of
-kernel pages very differently.  User memory is pinned and worked with in
-batches while kernel pages are always pinned and don't require
-additional processing.
-
-Rather than try and provide an abstraction that includes these
-different behaviours we let direct IO extract the memory structs and
-hand them to the existing code.
-
-Signed-off-by: Zach Brown <zab@zabbo.net>
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
- include/linux/fs.h | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/iov-iter.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index fbe02cc..e717b47 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -372,6 +372,17 @@ static inline void iov_iter_init_bvec(struct iov_iter *i,
+diff --git a/fs/iov-iter.c b/fs/iov-iter.c
+index 52c23d9..563a6ba 100644
+--- a/fs/iov-iter.c
++++ b/fs/iov-iter.c
+@@ -6,8 +6,8 @@
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
  
- 	iov_iter_advance(i, written);
- }
-+
-+static inline int iov_iter_has_bvec(struct iov_iter *i)
-+{
-+	return i->ops == &ii_bvec_ops;
-+}
-+
-+static inline struct bio_vec *iov_iter_bvec(struct iov_iter *i)
-+{
-+	BUG_ON(!iov_iter_has_bvec(i));
-+	return (struct bio_vec *)i->data;
-+}
- #endif
- 
- extern struct iov_iter_ops ii_iovec_ops;
-@@ -389,8 +400,14 @@ static inline void iov_iter_init(struct iov_iter *i,
- 	iov_iter_advance(i, written);
- }
- 
-+static inline int iov_iter_has_iovec(struct iov_iter *i)
-+{
-+	return i->ops == &ii_iovec_ops;
-+}
-+
- static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
+-static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+-			const struct iovec *iov, size_t base, size_t bytes)
++static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
++				     size_t base, size_t bytes, int atomic)
  {
-+	BUG_ON(!iov_iter_has_iovec(i));
- 	return (struct iovec *)i->data;
- }
+ 	size_t copied = 0, left = 0;
  
+@@ -16,7 +16,10 @@ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+ 		int copy = min(bytes, iov->iov_len - base);
+ 
+ 		base = 0;
+-		left = __copy_from_user_inatomic(vaddr, buf, copy);
++		if (atomic)
++			left = __copy_from_user_inatomic(vaddr, buf, copy);
++		else
++			left = __copy_from_user(vaddr, buf, copy);
+ 		copied += copy;
+ 		bytes -= copy;
+ 		vaddr += copy;
+@@ -47,8 +50,8 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
+-						i->iov, i->iov_offset, bytes);
++		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++						i->iov_offset, bytes, 1);
+ 	}
+ 	kunmap_atomic(kaddr);
+ 
+@@ -75,8 +78,8 @@ size_t iov_iter_copy_from_user(struct page *page,
+ 		left = __copy_from_user(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
+-						i->iov, i->iov_offset, bytes);
++		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++						i->iov_offset, bytes, 0);
+ 	}
+ 	kunmap(page);
+ 	return copied;
 -- 
 1.8.4
 
