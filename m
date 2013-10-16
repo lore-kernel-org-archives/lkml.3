@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761413Ab3JPRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:22:58 -0400
+	id S1761387Ab3JPRWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:22:55 -0400
 Received: from mga11.intel.com ([192.55.52.93]:32753 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761321Ab3JPRWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761372Ab3JPRWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:22:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="417851300"
+   d="scan'208";a="417851305"
 From: Vinod Koul <vinod.koul@intel.com>
 To: dan.j.williams@intel.com, linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, g.liakhovetski@gmx.de,
-        linux@arm.linux.org.uk, Vinod Koul <vinod.koul@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH 13/28] dmaengine: ioat: use DMA_COMPLETE for dma completion status
-Date: Wed, 16 Oct 2013 21:58:31 +0530
-Message-Id: <1381940926-25564-14-git-send-email-vinod.koul@intel.com>
+        linux@arm.linux.org.uk, Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 14/28] dmaengine: iop: use DMA_COMPLETE for dma completion status
+Date: Wed, 16 Oct 2013 21:58:32 +0530
+Message-Id: <1381940926-25564-15-git-send-email-vinod.koul@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
 References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
@@ -25,74 +24,86 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-CC: Dave Jiang <dave.jiang@intel.com>
 ---
- drivers/dma/ioat/dma.c    |    4 ++--
- drivers/dma/ioat/dma_v3.c |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/dma/iop-adma.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 5ff6fc1..a0f0fce 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -733,7 +733,7 @@ ioat_dma_tx_status(struct dma_chan *c, dma_cookie_t cookie,
- 	enum dma_status ret;
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index dd8b44a..408fe6b 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -864,7 +864,7 @@ static enum dma_status iop_adma_status(struct dma_chan *chan,
+ 	int ret;
  
- 	ret = dma_cookie_status(c, cookie, txstate);
+ 	ret = dma_cookie_status(chan, cookie, txstate);
 -	if (ret == DMA_SUCCESS)
 +	if (ret == DMA_COMPLETE)
  		return ret;
  
- 	device->cleanup_fn((unsigned long) c);
-@@ -859,7 +859,7 @@ int ioat_dma_self_test(struct ioatdma_device *device)
+ 	iop_adma_slot_cleanup(iop_chan);
+@@ -983,7 +983,7 @@ static int iop_adma_memcpy_self_test(struct iop_adma_device *device)
+ 	msleep(1);
  
- 	if (tmo == 0 ||
- 	    dma->device_tx_status(dma_chan, cookie, NULL)
--					!= DMA_SUCCESS) {
-+					!= DMA_COMPLETE) {
- 		dev_err(dev, "Self-test copy timed out, disabling\n");
+ 	if (iop_adma_status(dma_chan, cookie, NULL) !=
+-			DMA_SUCCESS) {
++			DMA_COMPLETE) {
+ 		dev_err(dma_chan->device->dev,
+ 			"Self-test copy timed out, disabling\n");
  		err = -ENODEV;
- 		goto unmap_dma;
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index d8ececa..806b4ce 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -807,7 +807,7 @@ ioat3_tx_status(struct dma_chan *c, dma_cookie_t cookie,
- 	enum dma_status ret;
+@@ -1083,7 +1083,7 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
+ 	msleep(8);
  
- 	ret = dma_cookie_status(c, cookie, txstate);
--	if (ret == DMA_SUCCESS)
-+	if (ret == DMA_COMPLETE)
- 		return ret;
- 
- 	ioat3_cleanup(ioat);
-@@ -1468,7 +1468,7 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
- 
- 	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
- 
--	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-+	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
- 		dev_err(dev, "Self-test xor timed out\n");
+ 	if (iop_adma_status(dma_chan, cookie, NULL) !=
+-		DMA_SUCCESS) {
++		DMA_COMPLETE) {
+ 		dev_err(dma_chan->device->dev,
+ 			"Self-test xor timed out, disabling\n");
  		err = -ENODEV;
- 		goto dma_unmap;
-@@ -1530,7 +1530,7 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+@@ -1129,7 +1129,7 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
+ 	iop_adma_issue_pending(dma_chan);
+ 	msleep(8);
  
- 	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
- 
--	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-+	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
- 		dev_err(dev, "Self-test validate timed out\n");
+-	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
++	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+ 		dev_err(dma_chan->device->dev,
+ 			"Self-test zero sum timed out, disabling\n");
  		err = -ENODEV;
- 		goto dma_unmap;
-@@ -1577,7 +1577,7 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+@@ -1158,7 +1158,7 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
+ 	iop_adma_issue_pending(dma_chan);
+ 	msleep(8);
  
- 	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
- 
--	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-+	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
- 		dev_err(dev, "Self-test 2nd validate timed out\n");
+-	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
++	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+ 		dev_err(dma_chan->device->dev,
+ 			"Self-test non-zero sum timed out, disabling\n");
  		err = -ENODEV;
- 		goto dma_unmap;
+@@ -1254,7 +1254,7 @@ iop_adma_pq_zero_sum_self_test(struct iop_adma_device *device)
+ 	msleep(8);
+ 
+ 	if (iop_adma_status(dma_chan, cookie, NULL) !=
+-		DMA_SUCCESS) {
++		DMA_COMPLETE) {
+ 		dev_err(dev, "Self-test pq timed out, disabling\n");
+ 		err = -ENODEV;
+ 		goto free_resources;
+@@ -1291,7 +1291,7 @@ iop_adma_pq_zero_sum_self_test(struct iop_adma_device *device)
+ 	msleep(8);
+ 
+ 	if (iop_adma_status(dma_chan, cookie, NULL) !=
+-		DMA_SUCCESS) {
++		DMA_COMPLETE) {
+ 		dev_err(dev, "Self-test pq-zero-sum timed out, disabling\n");
+ 		err = -ENODEV;
+ 		goto free_resources;
+@@ -1323,7 +1323,7 @@ iop_adma_pq_zero_sum_self_test(struct iop_adma_device *device)
+ 	msleep(8);
+ 
+ 	if (iop_adma_status(dma_chan, cookie, NULL) !=
+-		DMA_SUCCESS) {
++		DMA_COMPLETE) {
+ 		dev_err(dev, "Self-test !pq-zero-sum timed out, disabling\n");
+ 		err = -ENODEV;
+ 		goto free_resources;
 -- 
 1.7.0.4
 
