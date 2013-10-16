@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434Ab3JPXnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 19:43:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14180 "EHLO mga02.intel.com"
+	id S1758644Ab3JPXyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 19:54:14 -0400
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:29141
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754052Ab3JPXnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 19:43:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,509,1378882800"; 
-   d="scan'208";a="420295492"
-Date: Wed, 16 Oct 2013 16:43:14 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Hans de Goede <hdegoede@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2] xhci: fix usb3 streams
-Message-ID: <20131016234314.GJ7082@xanatos>
-References: <20131015015424.GA5032@xanatos>
- <Pine.LNX.4.44L0.1310151049130.1377-100000@iolanthe.rowland.org>
+	id S1752419Ab3JPXyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 19:54:12 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 19:54:12 EDT
+Message-ID: <525F2397.40203@caviumnetworks.com>
+Date: Wed, 16 Oct 2013 16:39:03 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1310151049130.1377-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Bohan <mbohan@codeaurora.org>,
+        David Gibson <david@gibson.dropbear.id.au>
+CC: <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <ralf@linux-mips.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <david.daney@cavium.com>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH] of/lib: Export fdt routines to modules
+References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+In-Reply-To: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-PRVS: 0001227049
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(377454003)(479174003)(51704005)(24454002)(189002)(199002)(4396001)(47976001)(80022001)(65956001)(47736001)(49866001)(81542001)(74876001)(81342001)(66066001)(65806001)(83072001)(50986001)(53416003)(19580395003)(83322001)(33656001)(19580405001)(64126003)(80976001)(79102001)(76796001)(76786001)(50466002)(54316002)(85306002)(56776001)(56816003)(77096001)(36756003)(74662001)(74502001)(47446002)(76482001)(69226001)(74366001)(81686001)(31966008)(83506001)(81816001)(59766001)(77982001)(74706001)(46102001)(54356001)(47776003)(63696002)(53806001)(23756003)(51856001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB012;H:BL2PRD0712HT001.namprd07.prod.outlook.com;CLIP:64.2.3.195;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 10:53:57AM -0400, Alan Stern wrote:
-> On Mon, 14 Oct 2013, Gerd Hoffmann wrote:
-> 
-> > Gerd, Hans, any objections to this updated patch?  The warning is fixed
-> > with it.
-> > 
-> > The patch probably still needs to address the case where the ring
-> > expansion fails because we can't insert the new segments into the radix
-> > tree.  The patch should probably allocate the segments, attempt to add
-> > them to the radix tree, and fail without modifying the link TRBs of the
-> > ring.  I'd have to look more deeply into the code to see what exactly
-> > should be done there.
-> > 
-> > I would like that issue fixed before I merge these patches, so if you
-> > want to take a stab at fixing it, please do.
-> > 
-> > Sarah Sharp
-> 
-> Sarah, how did you manage to send an email with the "From:" line set to 
-> Gerd's name and address?
+On 10/16/2013 04:27 PM, Michael Bohan wrote:
+> Ever since the following commit, libfdt has been available for
+> usage in the kernel:
+>
+>       commit ab25383983fb8d7786696f5371e75e79c3e9a405
+>       Author: David Daney <david.daney@cavium.com>
+>       Date:   Thu Jul 5 18:12:38 2012 +0200
+>
+>       of/lib: Allow scripts/dtc/libfdt to be used from kernel code
+>
+> Export these functions to modules so that they may be used
+> from device drivers.
+>
+> Change-Id: I7f540b7cf860c4be414e32ce183be5268b2ae6af
+> Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+> ---
+>   lib/fdt.c     |    6 ++++++
+>   lib/fdt_ro.c  |   28 ++++++++++++++++++++++++++++
+>   lib/fdt_rw.c  |   13 +++++++++++++
+>   lib/fdt_sw.c  |    9 +++++++++
+>   lib/fdt_wip.c |    6 ++++++
+>   5 files changed, 62 insertions(+), 0 deletions(-)
+>
+> diff --git a/lib/fdt.c b/lib/fdt.c
+> index 97f2006..a3fe87b 100644
+> --- a/lib/fdt.c
+> +++ b/lib/fdt.c
+> @@ -1,2 +1,8 @@
+>   #include <linux/libfdt_env.h>
+> +#include <linux/module.h>
+>   #include "../scripts/dtc/libfdt/fdt.c"
+> +
+> +EXPORT_SYMBOL_GPL(fdt_next_tag);
 
-I sent it using git format-patch and mutt, and accidentally left Gerd's
->From line intact.  Looking at the headers, it seems like the default
-Intel exchange servers simply passed the email through.  Header forging,
-what fun!
+The code was all written by David Gibson, and is dual GPL/BSD licensed. 
+  So I am not sure you should be using the GPL flavor of the export 
+directive.
 
-> > 8<---------------------------------------------------------------->8
-> > 
-> > xhci maintains a radix tree for each stream endpoint because it must
-> > be able to map a trb address to the stream ring.  Each ring segment
-> > must be added to the ring for this to work.  Currently xhci sticks
-> > only the first segment of each stream ring into the radix tree.
-> > 
-> > Result is that things work initially, but as soon as the first segment
-> > is full xhci can't map the trb address from the completion event to the
-> > stream ring any more -> BOOM.  You'll find this message in the logs:
-> > 
-> >   ERROR Transfer event for disabled endpoint or incorrect stream ring
-> > 
-> > This patch adds a helper function to update the radix tree, and a
-> > function to remove ring segments from the tree.  Both functions loop
-> > over the segment list and handles all segments instead of just the
-> > first.
-> 
-> There may be a simpler approach to this problem.
-> 
-> When using a new ring segment, keep the first TRB entry in reserve.  
-> Don't put a normal TRB in there, instead leave it as a no-op entry
-> containing a pointer to the stream ring.  (Make the prior Link TRB
-> point to the second entry in the new segment instead of the first.)
-> 
-> Then you won't have to add to or remove anything from the radix tree.
 
-I don't understand how this would help.  Are you advocating a different
-way of mapping TRB DMA addresses to stream rings that would allow us to
-ditch the radix tree all together?
+But more than this.  I don't understand why a driver would be parsing 
+the FDT in the first place.  If there is a device tree, why hasn't it 
+been unflattened, and thus used via the normal device tree functions.
 
-Ok, so with your solution, we have a virtual stream ring pointer as the
-first TRB of the segment.  We get an event with the DMA address of a TRB
-in one of many stream rings on an endpoint.  From that, I think we can
-infer the DMA address of the first TRB on the segment, due to the
-alignment requirements and ring size.
-
-And then what do we do with that?  We don't have the virtual address of
-that first TRB, so the xHCI driver can't read the ring pointer from it.
-I'm confused as to what the next steps would be to solve this.
-
-Sarah Sharp
+David Daney
