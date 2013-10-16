@@ -1,58 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab3JPGJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:09:38 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:39796 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874Ab3JPGJg (ORCPT
+	id S1753435Ab3JPGJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:09:44 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:35900 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3JPGJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:09:36 -0400
-Date: Wed, 16 Oct 2013 08:09:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
- statistics update
-Message-ID: <20131016060932.GA21041@gmail.com>
-References: <20131015174722.615394057@linux.com>
- <20131015174745.197380080@linux.com>
- <1381862199.2045.51.camel@edumazet-glaptop.roam.corp.google.com>
+	Wed, 16 Oct 2013 02:09:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381862199.2045.51.camel@edumazet-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131015173252.GM31215@redhat.com>
+References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
+	<1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+	<20131015173252.GM31215@redhat.com>
+Date: Wed, 16 Oct 2013 14:09:40 +0800
+Message-ID: <CAA7+ByWjdYTi5uXT6apLYkON1RnrFEGjHU318OD1VMen2YHKOA@mail.gmail.com>
+Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
+From: Hong zhi guo <honkiko@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Hong Zhiguo <zhiguohong@tencent.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Vivek,
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Thanks for your careful review. I'll rename t_c to last_dispatch, it's
+much better.
 
-> On Tue, 2013-10-15 at 12:47 -0500, Christoph Lameter wrote:
-> > plain text document attachment (fix_snmp)
-> > ip4_datagram_connect is called with BH processing enabled. Therefore
-> > we cannot use IP_INC_STATS_BH but must use IP_INC_STATS which disables
-> > BH handling before incrementing the counter.
-> > 
-> > The following trace is triggered without this patch:
-> 
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Cc: netdev@vger.kernel.org
-> > Cc: David Miller <davem@davemloft.net>
-> > Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Strange, I thought I already Acked it...
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
+For the big burst issue, I've different opinion. Let's discuss it.
 
-Christoph, _please_ pick up people's Acked-by's in the future ... This is 
-basic courtesy towards reviewers.
+Any time a big IO means a big burst. Even if it's throttled at first
+time, queued in
+the service_queue, and then waited for a while, when it's delivered
+out, it IS still
+a big burst. So throttling the bio for another while makes no sense.
 
-Thanks,
+If a group has been idle for 5 minutes, then it owns the credit to
+deliver a big IO
+(within 300 * bps bytes). And the extra credit will be cut off after
+the delivery.
 
-	Ingo
+Waiting for your comments.
+
+Zhiguo
+
+
+On Wed, Oct 16, 2013 at 1:32 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
+>
+> [..]
+>
+> Hi Hong,
+>
+> Thanks for the token based throttling implementation. In general it looks
+> good and it simplies the logic. Couple of comments/concerns below.
+>
+>> @@ -133,14 +135,13 @@ struct throtl_grp {
+>>       /* IOPS limits */
+>>       unsigned int iops[2];
+>>
+>> -     /* Number of bytes disptached in current slice */
+>> -     uint64_t bytes_disp[2];
+>> -     /* Number of bio's dispatched in current slice */
+>> -     unsigned int io_disp[2];
+>> +     /* Token for throttling by bps */
+>> +     uint64_t bytes_token[2];
+>> +     /* Token for throttling by iops */
+>> +     unsigned int io_token[2];
+>>
+>> -     /* When did we start a new slice */
+>> -     unsigned long slice_start[2];
+>> -     unsigned long slice_end[2];
+>> +     /* Time check-point */
+>> +     unsigned long t_c[2];
+>
+> Can we rename this variable to say last_dispatch[2].
+>
+> [..]
+>>
+>> @@ -852,41 +708,26 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
+>>                                unsigned long *wait)
+>>  {
+>>       bool rw = bio_data_dir(bio);
+>> -     u64 bytes_allowed, extra_bytes, tmp;
+>> -     unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+>> -
+>> -     jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
+>> -
+>> -     /* Slice has just started. Consider one slice interval */
+>> -     if (!jiffy_elapsed)
+>> -             jiffy_elapsed_rnd = throtl_slice;
+>> -
+>> -     jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
+>> +     u64 extra_bytes, token;
+>> +     unsigned long jiffy_wait;
+>>
+>> -     tmp = tg->bps[rw] * jiffy_elapsed_rnd;
+>> -     do_div(tmp, HZ);
+>> -     bytes_allowed = tmp;
+>> +     token = (u64)tg->bps[rw] * (jiffies - tg->t_c[rw]);
+>
+> So here we seem to be calculating how many tokens a group is eligible
+> for. This is done based on since last time check. And last time check
+> was updated in last dispatch from the group.
+>
+> What happens if no IO happens in a group for some time, say for 5 minutes,
+> and then one big IO comes in. IIUC, we will allow a big burst of IO for
+> the first IO (tokens worth of full 5 minutes will be given to this group).
+> I think we should have a mechanism where we don't allow too big a burst
+> for the first IO. (Possibly limit the burst to THROTL_BURST_IO and
+> THROTL_BURST_BYTES until and unless a bigger IO is already queued and
+> we are waiting for it).
+>
+> In previous time slice logic, I took care of it by extend time slice
+> by 100ms and if no IO happens in the group for 100ms, time slice will
+> expire and next IO will get at max of 100ms of worth of credit (equivalent
+> of burst limits).
+>
+> Thanks
+> Vivek
+
+
+
+-- 
+best regards
+Hong Zhiguo
