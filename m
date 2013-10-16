@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761630Ab3JPSH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:07:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35775 "EHLO
+	id S1761672Ab3JPSIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:08:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35768 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761572Ab3JPRqE (ORCPT
+	with ESMTP id S1761566Ab3JPRqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 62/69] ipc: drop ipc_lock_check
-Date: Wed, 16 Oct 2013 10:45:11 -0700
-Message-Id: <20131016174320.480469131@linuxfoundation.org>
+Subject: [ 61/69] ipc, shm: drop shm_lock_check
+Date: Wed, 16 Oct 2013 10:45:10 -0700
+Message-Id: <20131016174320.367596894@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -33,9 +33,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 20b8875abcf2daa1dda5cf70bd6369df5e85d4c1 upstream.
+commit 7a25dd9e042b2b94202a67e5551112f4ac87285a upstream.
 
-No remaining users, we now use ipc_obtain_object_check().
+This function was replaced by a the lockless shm_obtain_object_check(),
+and no longer has any users.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Cc: Sedat Dilek <sedat.dilek@gmail.com>
@@ -47,44 +48,28 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/util.c |   16 ----------------
- ipc/util.h |    1 -
- 2 files changed, 17 deletions(-)
+ ipc/shm.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -686,22 +686,6 @@ out:
- 	return out;
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -167,17 +167,6 @@ static inline void shm_lock_by_ptr(struc
+ 	ipc_lock_object(&ipcp->shm_perm);
  }
  
--struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id)
+-static inline struct shmid_kernel *shm_lock_check(struct ipc_namespace *ns,
+-						int id)
 -{
--	struct kern_ipc_perm *out;
+-	struct kern_ipc_perm *ipcp = ipc_lock_check(&shm_ids(ns), id);
 -
--	out = ipc_lock(ids, id);
--	if (IS_ERR(out))
--		return out;
+-	if (IS_ERR(ipcp))
+-		return (struct shmid_kernel *)ipcp;
 -
--	if (ipc_checkid(out, id)) {
--		ipc_unlock(out);
--		return ERR_PTR(-EIDRM);
--	}
--
--	return out;
+-	return container_of(ipcp, struct shmid_kernel, shm_perm);
 -}
 -
- /**
-  * ipcget - Common sys_*get() code
-  * @ns : namsepace
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -177,7 +177,6 @@ static inline void ipc_unlock(struct ker
- 	rcu_read_unlock();
- }
- 
--struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id);
- struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
- int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
- 			struct ipc_ops *ops, struct ipc_params *params);
+ static inline void shm_rmid(struct ipc_namespace *ns, struct shmid_kernel *s)
+ {
+ 	ipc_rmid(&shm_ids(ns), &s->shm_perm);
 
 
