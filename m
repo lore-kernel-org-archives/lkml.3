@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761452Ab3JPTM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 15:12:56 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44212 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab3JPTMz (ORCPT
+	id S1761239Ab3JPTVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 15:21:47 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59270 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3JPTVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 15:12:55 -0400
-From: bsegall@google.com
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, pjt@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
-References: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
-	<20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com>
-	<20131016184144.GH2675@laptop.programming.kicks-ass.net>
-Date: Wed, 16 Oct 2013 12:12:52 -0700
-In-Reply-To: <20131016184144.GH2675@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Wed, 16 Oct 2013 20:41:44 +0200")
-Message-ID: <xm2661sxyqq3.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 16 Oct 2013 15:21:46 -0400
+From: Dhanunjaya Naidu Ravada <dhanunjaya.matrix@gmail.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, peterhuewe@gmx.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dhanunjaya <dhanunjaya.matrix@gmail.com>
+Subject: [PATCH 3/4] Staging: xgifb: fix braces {} are not necessary for single statement blocks
+Date: Thu, 17 Oct 2013 00:51:24 +0530
+Message-Id: <1381951285-20568-1-git-send-email-dhanunjaya.matrix@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+From: Dhanunjaya <dhanunjaya.matrix@gmail.com>
 
-> On Wed, Oct 16, 2013 at 11:16:17AM -0700, Ben Segall wrote:
->> + * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
->> + * hrtimer base being cleared by __hrtimer_start_range_ns. This is possibly
->> + * incorrect if we ever built with CPU_HOTPLUG.
->
-> Do clarify; most people build with hotplug enabled; due to wanting
-> suspend/resume stuff etc..
+This is a patch to the vb_setmode.c file that fixes braces {}
+are not necessary for single statement blocks warning found
+by the checkpatch.pl tool
 
-Whoops, that comment turned out to be incorrect anyway - I was worried
-about migrate_timers, but it is safe as it is. The following should be
-accurate:
+Signed-of-by: Dhanunjaya Naidu Ravada <dhanunjaya.matrix@gmail.com>
+---
+ drivers/staging/xgifb/vb_setmode.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-+ * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
-+ * hrtimer base being cleared by __hrtimer_start_range_ns. In the case of
-+ * migrate_hrtimers, base is never cleared, so we are fine.
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index 46dea3f..400c726 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -845,11 +845,10 @@ static unsigned short XGI_GetVCLK2Ptr(unsigned short ModeIdIndex,
+ 			VCLKIndex = TVCLKBASE_315_25 + HiTVVCLK;
+ 
+ 		if (pVBInfo->SetFlag & TVSimuMode) {
+-			if (modeflag & Charx8Dot) {
++			if (modeflag & Charx8Dot)
+ 				VCLKIndex = TVCLKBASE_315_25 + HiTVSimuVCLK;
+-			} else {
++			else
+ 				VCLKIndex = TVCLKBASE_315_25 + HiTVTextVCLK;
+-			}
+ 		}
+ 
+ 		/* 301lv */
+@@ -5274,9 +5273,8 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ 
+ 	outb(0x00, pVBInfo->P3c8);
+ 
+-	for (i = 0; i < 256 * 3; i++) {
++	for (i = 0; i < 256 * 3; i++)
+ 		outb(0x0F, (pVBInfo->P3c8 + 1)); /* DAC_TEST_PARMS */
+-	}
+ 
+ 	mdelay(1);
+ 
+@@ -5291,9 +5289,8 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ 	/* avoid display something, set BLACK DAC if not restore DAC */
+ 	outb(0x00, pVBInfo->P3c8);
+ 
+-	for (i = 0; i < 256 * 3; i++) {
++	for (i = 0; i < 256 * 3; i++)
+ 		outb(0, (pVBInfo->P3c8 + 1));
+-	}
+ 
+ 	xgifb_reg_set(pVBInfo->P3c4, 0x01, SR01);
+ 	xgifb_reg_set(pVBInfo->P3d4, 0x63, CR63);
+-- 
+1.8.1.2
+
