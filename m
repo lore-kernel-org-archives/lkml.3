@@ -1,146 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934639Ab3JPRqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35594 "EHLO
+	id S1761728Ab3JPRxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:53:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761309Ab3JPRpk (ORCPT
+	with ESMTP id S1761645Ab3JPRqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:40 -0400
+	Wed, 16 Oct 2013 13:46:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 38/69] ipc,msg: shorten critical region in msgsnd
-Date: Wed, 16 Oct 2013 10:44:47 -0700
-Message-Id: <20131016174317.539988452@linuxfoundation.org>
+Subject: [ 34/50] ipc: drop ipcctl_pre_down
+Date: Wed, 16 Oct 2013 10:45:20 -0700
+Message-Id: <20131016174402.479487564@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 3dd1f784ed6603d7ab1043e51e6371235edf2313 upstream.
+commit 3b1c4ad37741e53804ffe0a30dd01e08b2ab6241 upstream.
 
-do_msgsnd() is another function that does too many things with the ipc
-object lock acquired.  Take it only when needed when actually updating
-msq.
+Now that sem, msgque and shm, through *_down(), all use the lockless
+variant of ipcctl_pre_down(), go ahead and delete it.
 
+[akpm@linux-foundation.org: fix function name in kerneldoc, cleanups]
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 Cc: Rik van Riel <riel@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c |   37 ++++++++++++++++++++++++-------------
- 1 file changed, 24 insertions(+), 13 deletions(-)
+ ipc/util.c |   24 ++++--------------------
+ ipc/util.h |    3 ---
+ 2 files changed, 4 insertions(+), 23 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -698,10 +698,11 @@ long do_msgsnd(int msqid, long mtype, vo
- 	msg->m_type = mtype;
- 	msg->m_ts = msgsz;
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -725,7 +725,7 @@ int ipc_update_perm(struct ipc64_perm *i
+ }
  
--	msq = msg_lock_check(ns, msqid);
-+	rcu_read_lock();
-+	msq = msq_obtain_object_check(ns, msqid);
- 	if (IS_ERR(msq)) {
- 		err = PTR_ERR(msq);
--		goto out_free;
-+		goto out_unlock1;
- 	}
+ /**
+- * ipcctl_pre_down - retrieve an ipc and check permissions for some IPC_XXX cmd
++ * ipcctl_pre_down_nolock - retrieve an ipc and check permissions for some IPC_XXX cmd
+  * @ns:  the ipc namespace
+  * @ids:  the table of ids where to look for the ipc
+  * @id:   the id of the ipc to retrieve
+@@ -738,29 +738,13 @@ int ipc_update_perm(struct ipc64_perm *i
+  * It must be called without any lock held and
+  *  - retrieves the ipc with the given id in the given table.
+  *  - performs some audit and permission check, depending on the given cmd
+- *  - returns the ipc with the ipc lock held in case of success
+- *    or an err-code without any lock held otherwise.
++ *  - returns a pointer to the ipc object or otherwise, the corresponding error.
+  *
+  * Call holding the both the rw_mutex and the rcu read lock.
+  */
+-struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+-				      struct ipc_ids *ids, int id, int cmd,
+-				      struct ipc64_perm *perm, int extra_perm)
+-{
+-	struct kern_ipc_perm *ipcp;
+-
+-	ipcp = ipcctl_pre_down_nolock(ns, ids, id, cmd, perm, extra_perm);
+-	if (IS_ERR(ipcp))
+-		goto out;
+-
+-	spin_lock(&ipcp->lock);
+-out:
+-	return ipcp;
+-}
+-
+ struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
+-					     struct ipc_ids *ids, int id, int cmd,
+-					     struct ipc64_perm *perm, int extra_perm)
++					struct ipc_ids *ids, int id, int cmd,
++					struct ipc64_perm *perm, int extra_perm)
+ {
+ 	kuid_t euid;
+ 	int err = -EPERM;
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -139,9 +139,6 @@ int ipc_update_perm(struct ipc64_perm *i
+ struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
+ 					     struct ipc_ids *ids, int id, int cmd,
+ 					     struct ipc64_perm *perm, int extra_perm);
+-struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+-				      struct ipc_ids *ids, int id, int cmd,
+-				      struct ipc64_perm *perm, int extra_perm);
  
- 	for (;;) {
-@@ -709,11 +710,11 @@ long do_msgsnd(int msqid, long mtype, vo
- 
- 		err = -EACCES;
- 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
--			goto out_unlock_free;
-+			goto out_unlock1;
- 
- 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
- 		if (err)
--			goto out_unlock_free;
-+			goto out_unlock1;
- 
- 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
- 				1 + msq->q_qnum <= msq->q_qbytes) {
-@@ -723,32 +724,41 @@ long do_msgsnd(int msqid, long mtype, vo
- 		/* queue full, wait: */
- 		if (msgflg & IPC_NOWAIT) {
- 			err = -EAGAIN;
--			goto out_unlock_free;
-+			goto out_unlock1;
- 		}
-+
-+		ipc_lock_object(&msq->q_perm);
- 		ss_add(msq, &s);
- 
- 		if (!ipc_rcu_getref(msq)) {
- 			err = -EIDRM;
--			goto out_unlock_free;
-+			goto out_unlock0;
- 		}
- 
--		msg_unlock(msq);
-+		ipc_unlock_object(&msq->q_perm);
-+		rcu_read_unlock();
- 		schedule();
- 
--		ipc_lock_by_ptr(&msq->q_perm);
-+		rcu_read_lock();
-+		ipc_lock_object(&msq->q_perm);
-+
- 		ipc_rcu_putref(msq);
- 		if (msq->q_perm.deleted) {
- 			err = -EIDRM;
--			goto out_unlock_free;
-+			goto out_unlock0;
- 		}
-+
- 		ss_del(&s);
- 
- 		if (signal_pending(current)) {
- 			err = -ERESTARTNOHAND;
--			goto out_unlock_free;
-+			goto out_unlock0;
- 		}
-+
-+		ipc_unlock_object(&msq->q_perm);
- 	}
- 
-+	ipc_lock_object(&msq->q_perm);
- 	msq->q_lspid = task_tgid_vnr(current);
- 	msq->q_stime = get_seconds();
- 
-@@ -764,9 +774,10 @@ long do_msgsnd(int msqid, long mtype, vo
- 	err = 0;
- 	msg = NULL;
- 
--out_unlock_free:
--	msg_unlock(msq);
--out_free:
-+out_unlock0:
-+	ipc_unlock_object(&msq->q_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- 	if (msg != NULL)
- 		free_msg(msg);
- 	return err;
+ #ifndef CONFIG_ARCH_WANT_IPC_PARSE_VERSION
+   /* On IA-64, we always use the "64-bit version" of the IPC structures.  */ 
 
 
