@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab3JPCIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:08:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:13491 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755154Ab3JPCIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:08:04 -0400
-Date: Tue, 15 Oct 2013 22:07:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "Peter Zijlstra (peterz@infradead.org)" <peterz@infradead.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: Panic and page fault in loop during handling NMI backtrace
- handler
-Message-ID: <20131015220755.5ee861d5@gandalf.local.home>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01B630C1@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
-	<20131015124028.2221e85d@gandalf.local.home>
-	<27240C0AC20F114CBF8149A2696CBE4A01B630C1@SHSMSX101.ccr.corp.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1759069Ab3JPCHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:07:14 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54714 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755699Ab3JPCHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 22:07:10 -0400
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
+        Stephane Eranian <eranian@google.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: [PATCH 00/10][v6] powerpc/perf: Export memory hierarchy level in Power7/8.
+Date: Tue, 15 Oct 2013 19:06:32 -0700
+Message-Id: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101602-7182-0000-0000-000008C190B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 01:54:51 +0000
-"Liu, Chuansheng" <chuansheng.liu@intel.com> wrote:
+Power7 and Power8 processors save the memory hierarchy level (eg: L2, L3)
+from which a load or store instruction was satisfied. Export this hierarchy
+information to the user via the perf_mem_data_src object.
 
+Thanks to input from Stephane Eranian, Michael Ellerman, Michael Neuling
+and Anshuman Khandual.
 
-> > Since the NMI iretq nesting has been fixed, there's no reason that
-> I think you patch fix the infinite loop, we will have a test soon.
-> BTW, we are using 3.10, could you help to point out which NMI iretq nesting patch?
+Sukadev Bhattiprolu (10):
+  powerpc: Rename branch_opcode() to instr_opcode()
+  powerpc/Power7: detect load/store instructions
+  tools/perf: silence compiler warnings
+  tools/perf: Remove local byteorder.h.
+  powerpc/perf: Remove PME_ prefix for power7 events
+  powerpc/perf: Export Power8 generic events in sysfs
+  powerpc/perf: Add Power8 event PM_MRK_GRP_CMPL to sysfs.
+  powerpc/perf: Define big-endian version of perf_mem_data_src
+  powerpc/perf: Export Power8 memory hierarchy info to user space.
+  powerpc/perf: Export Power7 memory hierarchy info to user space.
 
-There were many. You can read about what was done here:
+ arch/powerpc/include/asm/code-patching.h     |    1 +
+ arch/powerpc/include/asm/perf_event_server.h |    4 +-
+ arch/powerpc/lib/code-patching.c             |   51 +++++++++++-
+ arch/powerpc/perf/core-book3s.c              |   11 +++
+ arch/powerpc/perf/power7-pmu.c               |  112 +++++++++++++++++++++++---
+ arch/powerpc/perf/power8-events-list.h       |   21 +++++
+ arch/powerpc/perf/power8-pmu.c               |   97 ++++++++++++++++++++--
+ include/uapi/linux/perf_event.h              |   16 ++++
+ tools/perf/Makefile                          |    1 -
+ tools/perf/util/include/asm/byteorder.h      |    2 -
+ tools/perf/util/include/linux/types.h        |   20 +++++
+ tools/perf/util/srcline.c                    |    4 +-
+ 12 files changed, 316 insertions(+), 24 deletions(-)
+ create mode 100644 arch/powerpc/perf/power8-events-list.h
+ delete mode 100644 tools/perf/util/include/asm/byteorder.h
 
- https://lwn.net/Articles/484932/
+-- 
+1.7.9.5
 
-The original is here:
-
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ccd49c2391773ffbf52bb80d75c4a92b16972517
-
-But more were added.
-
-But that is back in 3.3, so 3.10 has all the required updates.
-
--- Steve
