@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760811Ab3JPPyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:54:11 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:60446 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752234Ab3JPPyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:54:09 -0400
-Date: Wed, 16 Oct 2013 10:54:29 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: BUG: mm, numa: test segfaults, only when NUMA balancing is on
-Message-ID: <20131016155429.GP25735@sgi.com>
+	id S1760825Ab3JPPyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:54:37 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:37408 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234Ab3JPPyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:54:35 -0400
+Date: Wed, 16 Oct 2013 17:52:18 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, David Howells <dhowells@redhat.com>
+Subject: Re: linux-next: Tree for Oct 15 (asymmetric keys)
+Message-ID: <20131016155217.GB20211@ulmo.nvidia.com>
+References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
+ <525DC4FB.4010305@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y7xTucakfITjPcLV"
 Content-Disposition: inline
+In-Reply-To: <525DC4FB.4010305@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
 
-I ran into a bug a week or so ago, that I believe has something to do
-with NUMA balancing, but I'm having a tough time tracking down exactly
-what is causing it.  When running with the following configuration
-options set:
+--Y7xTucakfITjPcLV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
-CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
-CONFIG_NUMA_BALANCING=y
-# CONFIG_HUGETLBFS is not set
-# CONFIG_HUGETLB_PAGE is not set
+On Tue, Oct 15, 2013 at 03:43:07PM -0700, Randy Dunlap wrote:
+> On 10/15/13 07:02, Thierry Reding wrote:
+> > Hi all,
+> >=20
+> > I've uploaded today's linux-next tree to the master branch of the
+> > repository below:
+> >=20
+> >         git://gitorious.org/thierryreding/linux-next.git
+> >=20
+> > A next-20131015 tag is also provided for convenience.
+>=20
+> on x86_64:
+>=20
+> crypto/asymmetric_keys/x509_public_key.c: In function 'x509_key_preparse':
+> crypto/asymmetric_keys/x509_public_key.c:237:35: error: 'system_trusted_k=
+eyring' undeclared (first use in this function)
+>=20
+> when CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE=3Dm
+> and  CONFIG_SYSTEM_TRUSTED_KEYRING is not set.
+>=20
+>=20
+> Full randconfig file is attached.
 
-I get intermittent segfaults when running the memscale test that we've
-been using to test some of the THP changes.  Here's a link to the test:
+Thanks for catching these Randy!
 
-ftp://shell.sgi.com/collect/memscale/
+Thierry
 
-I typically run the test with a line similar to this:
+--Y7xTucakfITjPcLV
+Content-Type: application/pgp-signature
 
-./thp_memscale -C 0 -m 0 -c <cores> -b <memory>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Where <cores> is the number of cores to spawn threads on, and <memory>
-is the amount of memory to reserve from each core.  The <memory> field
-can accept values like 512m or 1g, etc.  I typically run 256 cores and
-512m, though I think the problem should be reproducable on anything with
-128+ cores.
+iQIcBAEBAgAGBQJSXrYxAAoJEN0jrNd/PrOhhTwP/2yM+WqjY4nsUdSHeUtVM3Dl
+DE9JhOqsdWCM2fNiMq6wDcN3MaudKi8X5+J4nDD/4JLLKdJIcQ2xrseazHPLGNAb
+G0izlpi9RyjrXV03TbU/IagR/xkqVJtAREQymtSfUCoBHtUuXlJYlCUoaQOfpa66
+NhaxDcUD4Ogv+RAdXfzwnqxNTX1NbzqKqAQykhUp/vENEZSDWE0txbGt860Vp2Ur
+Zszy7xQZaffcbk7x81OpsTlBIiAn9zWgymlHrFO+hM4U3T1oU9muo5tmCgRzXmXW
+/fyf0JP13Fn2cm67g//ofzaAC4TNOndnr+ltaJV2LrIMVsiPHlAUJFvudNO8+a9C
+PNroKEoCVlkHvmn2DY312luMM5G0Y4Y8oXjL9KSPZxG0QlcQwg5IAIWyvLkIRZKk
+j8P0IsaPBSlialCk9YWysfo6S94PUZz6g/UcpsSGjS2cOw6V+vGj9PsXMqJgmzxV
+4kiZsrIi54yj5mV6fouOrN3pN973lCa2ja36eF16EmEvX4o+UoxGtSUYvfvc8Wcw
+5NB2aeUHTDkzbyW70PHu2LMk7ibpgTfiJKo6klshpoaNJEavy2rRaRDDcGC77IHh
+h7dhfUvNoIARIdPB+gxVplR8sMbzF3y170kF28z7iluClC22swM7LRs1llAUyNVu
+LnYGHunWk0dChYOoSMqr
+=YG0L
+-----END PGP SIGNATURE-----
 
-The test never seems to have any problems when running with hugetlbfs
-on and NUMA balancing off, but it segfaults every once in a while with
-the config options above.  It seems to occur more frequently, the more
-cores you run on.  It segfaults on about 50% of the runs at 256 cores,
-and on almost every run at 512 cores.  The fewest number of cores I've
-seen a segfault on has been 128, though it seems to be rare on this many
-cores.
-
-At this point, I'm not familiar enough with NUMA balancing code to know
-what could be causing this, and we don't typically run with NUMA
-balancing on, so I don't see this in my everyday testing, but I felt
-that it was definitely worth bringing up.
-
-If anybody has any ideas of where I could poke around to find a
-solution, please let me know.
-
-- Alex
+--Y7xTucakfITjPcLV--
