@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab3JPA3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 20:29:34 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:59771 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759727Ab3JPA3c (ORCPT
+	id S1759936Ab3JPAeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 20:34:14 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57945 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759828Ab3JPAeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 20:29:32 -0400
-From: Felipe Pena <felipensp@gmail.com>
-To: James Smart <james.smart@emulex.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH] drivers: scsi: lpfc: Fix typo on NULL assignment
-Date: Tue, 15 Oct 2013 21:29:50 -0300
-Message-Id: <1381883390-4200-1-git-send-email-felipensp@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 15 Oct 2013 20:34:13 -0400
+Message-ID: <1381883650.2045.92.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Date: Tue, 15 Oct 2013 17:34:10 -0700
+In-Reply-To: <1381854064.22110.16.camel@joe-AO722>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+	 <20131012172124.GA18241@gmail.com>
+	 <20131014202854.GH26880@hmsreliant.think-freely.org>
+	 <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
+	 <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
+	 <1381790278.16896.2.camel@joe-AO722>
+	 <1381790686.2045.24.camel@edumazet-glaptop.roam.corp.google.com>
+	 <1381790982.16896.7.camel@joe-AO722> <20131015074123.GB25493@gmail.com>
+	 <1381854064.22110.16.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the lpfc_ct_free_iocb function after freeing associated memory to the
-ctiocb->context3, the ctiocb->context1 is set to NULL instead of context3.
+On Tue, 2013-10-15 at 09:21 -0700, Joe Perches wrote:
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
----
- drivers/scsi/lpfc/lpfc_ct.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Ingo, Eric _showed_ that the prefetch is good here.
+> How about looking at a little optimization to the minimal
+> prefetch that gives that level of performance.
 
-diff --git a/drivers/scsi/lpfc/lpfc_ct.c b/drivers/scsi/lpfc/lpfc_ct.c
-index 02e8cd9..da61d8d 100644
---- a/drivers/scsi/lpfc/lpfc_ct.c
-+++ b/drivers/scsi/lpfc/lpfc_ct.c
-@@ -280,7 +280,7 @@ lpfc_ct_free_iocb(struct lpfc_hba *phba, struct lpfc_iocbq *ctiocb)
- 		buf_ptr = (struct lpfc_dmabuf *) ctiocb->context3;
- 		lpfc_mbuf_free(phba, buf_ptr->virt, buf_ptr->phys);
- 		kfree(buf_ptr);
--		ctiocb->context1 = NULL;
-+		ctiocb->context3 = NULL;
- 	}
- 	lpfc_sli_release_iocbq(phba, ctiocb);
- 	return 0;
---
-1.7.10.4
+Wait a minute, my point was to remind that main cost is the
+memory fetching.
+
+Its nice to optimize cpu cycles if we are short of them,
+but in the csum_partial() case, the bottleneck is the memory.
+
+Also I was wondering on the implications of changing reads order,
+as it might fool cpu predictions.
+
+I do not particularly care about finding the right prefetch stride,
+I think Intel guys know better than me.
+
 
