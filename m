@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934493Ab3JPMf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:35:28 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:36712 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934279Ab3JPMby (ORCPT
+	id S934298Ab3JPMhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:37:15 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41128 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934095Ab3JPMhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:31:54 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 06/16] m68k/mac: Remove unused hardware profile tags
-Date: Wed, 16 Oct 2013 14:31:23 +0200
-Message-Id: <1381926693-6392-7-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381926693-6392-1-git-send-email-geert@linux-m68k.org>
-References: <1381926693-6392-1-git-send-email-geert@linux-m68k.org>
+	Wed, 16 Oct 2013 08:37:13 -0400
+Date: Wed, 16 Oct 2013 18:07:04 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
+        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Martin Cermak <mcermak@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] uprobes: Change the callsite of uprobe_copy_process()
+Message-ID: <20131016123704.GD19729@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131013191815.GA32466@redhat.com>
+ <20131013191831.GA32480@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131013191831.GA32480@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101612-0928-0000-0000-000002996A33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/bootinfo.h |   24 ------------------------
- 1 file changed, 24 deletions(-)
+* Oleg Nesterov <oleg@redhat.com> [2013-10-13 21:18:31]:
 
-diff --git a/arch/m68k/include/asm/bootinfo.h b/arch/m68k/include/asm/bootinfo.h
-index ef888d4af4e6..007c95759e6b 100644
---- a/arch/m68k/include/asm/bootinfo.h
-+++ b/arch/m68k/include/asm/bootinfo.h
-@@ -149,30 +149,6 @@ static inline void save_bootinfo(const struct bi_record *bi) {}
- #define BI_MAC_CPUID		0x800a	/* Mac CPU type (sanity check) */
- #define BI_MAC_ROMBASE		0x800b	/* Mac system ROM base address */
- 
--    /*
--     *  Macintosh hardware profile data - unused, see macintosh.h for
--     *  reasonable type values
--     */
--
--#define BI_MAC_VIA1BASE		0x8010	/* Mac VIA1 base address (always present) */
--#define BI_MAC_VIA2BASE		0x8011	/* Mac VIA2 base address (type varies) */
--#define BI_MAC_VIA2TYPE		0x8012	/* Mac VIA2 type (VIA, RBV, OSS) */
--#define BI_MAC_ADBTYPE		0x8013	/* Mac ADB interface type */
--#define BI_MAC_ASCBASE		0x8014	/* Mac Apple Sound Chip base address */
--#define BI_MAC_SCSI5380		0x8015	/* Mac NCR 5380 SCSI (base address, multi) */
--#define BI_MAC_SCSIDMA		0x8016	/* Mac SCSI DMA (base address) */
--#define BI_MAC_SCSI5396		0x8017	/* Mac NCR 53C96 SCSI (base address, multi) */
--#define BI_MAC_IDETYPE		0x8018	/* Mac IDE interface type */
--#define BI_MAC_IDEBASE		0x8019	/* Mac IDE interface base address */
--#define BI_MAC_NUBUS		0x801a	/* Mac Nubus type (none, regular, pseudo) */
--#define BI_MAC_SLOTMASK		0x801b	/* Mac Nubus slots present */
--#define BI_MAC_SCCTYPE		0x801c	/* Mac SCC serial type (normal, IOP) */
--#define BI_MAC_ETHTYPE		0x801d	/* Mac builtin ethernet type (Sonic, MACE */
--#define BI_MAC_ETHBASE		0x801e	/* Mac builtin ethernet base address */
--#define BI_MAC_PMU		0x801f	/* Mac power management / poweroff hardware */
--#define BI_MAC_IOP_SWIM		0x8020	/* Mac SWIM floppy IOP */
--#define BI_MAC_IOP_ADB		0x8021	/* Mac ADB IOP */
--
- 
-     /*
-      *  Apollo-specific tags
+> Preparation for the next patches.
+> 
+> Move the callsite of uprobe_copy_process() in copy_process() down
+> to the succesfull return. We do not care if copy_process() fails,
+> uprobe_free_utask() won't be called in this case so the wrong
+> ->utask != NULL doesn't matter.
+> 
+> OTOH, with this change we know that copy_process() can't fail when
+> uprobe_copy_process() is called, the new task should either return
+> to user-mode or call do_exit(). This way uprobe_copy_process() can:
+> 
+> 	1. setup p->utask != NULL if necessary
+> 
+> 	2. setup uprobes_state.xol_area
+> 
+> 	3. use task_work_add(p)
+> 
+> Also, move the definition of uprobe_copy_process() down so that it
+> can see get_utask().
+> 
+> Cc: stable@vger.kernel.org # 3.9+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+
 -- 
-1.7.9.5
+Thanks and Regards
+Srikar Dronamraju
 
