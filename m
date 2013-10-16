@@ -1,185 +1,728 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760788Ab3JPPNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:13:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14789 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab3JPPLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:11:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="375589486"
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
-        naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com
-Cc: arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [PATCH v2 5/9] DMI: Parse memory device (type 17) in SMBIOS
-Date: Wed, 16 Oct 2013 10:56:02 -0400
-Message-Id: <1381935366-11731-6-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+	id S1760792Ab3JPPOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:14:37 -0400
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:59244 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab3JPPOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:14:35 -0400
+Date: Wed, 16 Oct 2013 17:14:19 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        stuart.menefy@st.com, Lee Jones <lee.jones@linaro.org>,
+        stephen.gallimore@st.com, gabriel.fernandez@st.com
+Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Message-ID: <20131016151419.GA14104@ns203013.ovh.net>
+References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+ <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 12504244367299357476
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new interface to decode memory device (type 17)
-to help error reporting on DIMMs.
+> +/**
+> + * struct st_i2c_dev - private data of the controller
+> + * @adap: I2C adapter for this controller
+> + * @dev: device for this controller
+> + * @base: virtual memory area
+> + * @complete: completion of I2C message
+> + * @irq: interrupt line for th controller
+> + * @clk: hw ssc block clock
+> + * @mode: I2C mode of the controller. Standard or Fast only supported
+> + * @deglitch: Anti-glitch filters parameters
+> + * @client: I2C transfert information
+> + * @busy: I2C transfer on-going
+> + */
+> +struct st_i2c_dev {
+> +	struct i2c_adapter	adap;
+> +	struct device		*dev;
+> +	void __iomem		*base;
+> +	struct completion	complete;
+> +	int			irq;
+> +	struct clk		*clk;
+> +	int			mode;
+> +	struct st_i2c_deglitch	deglitch;
+> +	struct st_i2c_client	client;
+> +	bool			busy;
+> +};
+> +
+> +static inline void st_i2c_set_bits(void __iomem *reg, u32 mask)
+> +{
+> +	writel(readl(reg) | mask, reg);
+> +}
+> +
+> +static inline void st_i2c_clr_bits(void __iomem *reg, u32 mask)
+> +{
+> +	writel(readl(reg) & ~mask, reg);
+use set_bit api and use relaxed version
+> +}
+> +
+> +/* From I2C Specifications v0.5 */
+> +static struct st_i2c_timings i2c_timings[] = {
+> +	[I2C_MODE_STANDARD] = {
+> +		.rate			= 100000,
+> +		.rep_start_hold		= 4000,
+> +		.rep_start_setup	= 4700,
+> +		.start_hold		= 4000,
+> +		.data_setup_time	= 250,
+> +		.stop_setup_time	= 4000,
+> +		.bus_free_time		= 4700,
+> +	},
+> +	[I2C_MODE_FAST] = {
+> +		.rate			= 400000,
+> +		.rep_start_hold		= 600,
+> +		.rep_start_setup	= 600,
+> +		.start_hold		= 600,
+> +		.data_setup_time	= 100,
+> +		.stop_setup_time	= 600,
+> +		.bus_free_time		= 1300,
+> +	},
+> +};
 
-Original-author: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- arch/ia64/kernel/setup.c    |  1 +
- arch/x86/kernel/setup.c     |  1 +
- drivers/firmware/dmi_scan.c | 60 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/dmi.h         |  5 ++++
- 4 files changed, 67 insertions(+)
+so how do you plane to support other rate that 100k and 400k?
+> +
+> +static void st_i2c_flush_rx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	int count, i;
+> +
+> +	/*
+> +	 * Counter only counts up to 7 but fifo size is 8...
+> +	 * When fifo is full, counter is 0 and RIR bit of status register is
+> +	 * set
+> +	 */
+> +	if (readl(i2c_dev->base + SSC_STA) & SSC_STA_RIR)
+> +		count = SSC_RXFIFO_SIZE;
+> +	else
+> +		count = readl(i2c_dev->base + SSC_RX_FSTAT) &
+> +			SSC_RX_FSTAT_STATUS;
+> +
+> +	for (i = 0; i < count; i++)
+> +		readl(i2c_dev->base + SSC_RBUF);
+use readsl
 
-diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-index 4fc2e95..d86669b 100644
---- a/arch/ia64/kernel/setup.c
-+++ b/arch/ia64/kernel/setup.c
-@@ -1063,6 +1063,7 @@ check_bugs (void)
- static int __init run_dmi_scan(void)
- {
- 	dmi_scan_machine();
-+	dmi_memdev_walk();
- 	dmi_set_dump_stack_arch_desc();
- 	return 0;
- }
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f0de629..918d489 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -993,6 +993,7 @@ void __init setup_arch(char **cmdline_p)
- 		efi_init();
- 
- 	dmi_scan_machine();
-+	dmi_memdev_walk();
- 	dmi_set_dump_stack_arch_desc();
- 
- 	/*
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index fa0affb..59579a7 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -25,6 +25,13 @@ static int dmi_initialized;
- /* DMI system identification string used during boot */
- static char dmi_ids_string[128] __initdata;
- 
-+static struct dmi_memdev_info {
-+	const char *device;
-+	const char *bank;
-+	u16 handle;
-+} *dmi_memdev;
-+static int dmi_memdev_nr;
-+
- static const char * __init dmi_string_nosave(const struct dmi_header *dm, u8 s)
- {
- 	const u8 *bp = ((u8 *) dm) + dm->length;
-@@ -322,6 +329,42 @@ static void __init dmi_save_extended_devices(const struct dmi_header *dm)
- 	dmi_save_one_device(*d & 0x7f, dmi_string_nosave(dm, *(d - 1)));
- }
- 
-+static void __init count_mem_devices(const struct dmi_header *dm, void *v)
-+{
-+	if (dm->type != DMI_ENTRY_MEM_DEVICE)
-+		return;
-+	dmi_memdev_nr++;
-+}
-+
-+static void __init save_mem_devices(const struct dmi_header *dm, void *v)
-+{
-+	const char *d = (const char *)dm;
-+	static int nr;
-+
-+	if (dm->type != DMI_ENTRY_MEM_DEVICE)
-+		return;
-+	if (nr >= dmi_memdev_nr) {
-+		pr_warn(FW_BUG "Too many DIMM entries in SMBIOS table\n");
-+		return;
-+	}
-+	dmi_memdev[nr].handle = dm->handle;
-+	dmi_memdev[nr].device = dmi_string(dm, d[0x10]);
-+	dmi_memdev[nr].bank = dmi_string(dm, d[0x11]);
-+	nr++;
-+}
-+
-+void __init dmi_memdev_walk(void)
-+{
-+	if (!dmi_available)
-+		return;
-+
-+	if (dmi_walk_early(count_mem_devices) == 0 && dmi_memdev_nr) {
-+		dmi_memdev = dmi_alloc(sizeof(*dmi_memdev) * dmi_memdev_nr);
-+		if (dmi_memdev)
-+			dmi_walk_early(save_mem_devices);
-+	}
-+}
-+
- /*
-  *	Process a DMI table entry. Right now all we care about are the BIOS
-  *	and machine entries. For 2.5 we should pull the smbus controller info
-@@ -815,3 +858,20 @@ bool dmi_match(enum dmi_field f, const char *str)
- 	return !strcmp(info, str);
- }
- EXPORT_SYMBOL_GPL(dmi_match);
-+
-+void dmi_memdev_name(u16 handle, const char **bank, const char **device)
-+{
-+	int n;
-+
-+	if (dmi_memdev == NULL)
-+		return;
-+
-+	for (n = 0; n < dmi_memdev_nr; n++) {
-+		if (handle == dmi_memdev[n].handle) {
-+			*bank = dmi_memdev[n].bank;
-+			*device = dmi_memdev[n].device;
-+			break;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL_GPL(dmi_memdev_name);
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index b6eb7a0..f820f0a 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -99,6 +99,7 @@ extern const char * dmi_get_system_info(int field);
- extern const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from);
- extern void dmi_scan_machine(void);
-+extern void dmi_memdev_walk(void);
- extern void dmi_set_dump_stack_arch_desc(void);
- extern bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp);
- extern int dmi_name_in_vendors(const char *str);
-@@ -107,6 +108,7 @@ extern int dmi_available;
- extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
- 	void *private_data);
- extern bool dmi_match(enum dmi_field f, const char *str);
-+extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
- 
- #else
- 
-@@ -115,6 +117,7 @@ static inline const char * dmi_get_system_info(int field) { return NULL; }
- static inline const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from) { return NULL; }
- static inline void dmi_scan_machine(void) { return; }
-+static inline void dmi_memdev_walk(void) { }
- static inline void dmi_set_dump_stack_arch_desc(void) { }
- static inline bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp)
- {
-@@ -133,6 +136,8 @@ static inline int dmi_walk(void (*decode)(const struct dmi_header *, void *),
- 	void *private_data) { return -1; }
- static inline bool dmi_match(enum dmi_field f, const char *str)
- 	{ return false; }
-+static inline void dmi_memdev_name(u16 handle, const char **bank,
-+		const char **device) { }
- static inline const struct dmi_system_id *
- 	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
- 
--- 
-1.8.4.rc3
+use relaxed version as much as possible
 
+> +}
+> +
+> +static void st_i2c_soft_reset(struct st_i2c_dev *i2c_dev)
+> +{
+> +	/*
+> +	 * FIFO needs to be emptied before reseting the IP,
+> +	 * else the controller raises a BUSY error.
+> +	 */
+> +	st_i2c_flush_rx_fifo(i2c_dev);
+> +
+> +	st_i2c_set_bits(i2c_dev->base + SSC_CTL, SSC_CTL_SR);
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_CTL, SSC_CTL_SR);
+> +}
+> +
+> +/**
+> + * st_i2c_hw_config() - Prepare SSC block, calculate and apply tuning timings
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_hw_config(struct st_i2c_dev *i2c_dev)
+> +{
+> +	unsigned long rate;
+> +	u32 val, ns_per_clk;
+> +	struct st_i2c_timings *t = &i2c_timings[i2c_dev->mode];
+> +
+> +	st_i2c_soft_reset(i2c_dev);
+> +
+> +	val = SSC_CLR_REPSTRT | SSC_CLR_NACK | SSC_CLR_SSCARBL |
+> +		SSC_CLR_SSCAAS | SSC_CLR_SSCSTOP;
+> +	writel(val, i2c_dev->base + SSC_CLR);
+> +
+> +	/* SSC Control register setup */
+> +	val = SSC_CTL_PO | SSC_CTL_PH | SSC_CTL_HB | SSC_CTL_DATA_WIDTH_9;
+> +	writel(val, i2c_dev->base + SSC_CTL);
+> +
+> +	rate = clk_get_rate(i2c_dev->clk);
+> +	ns_per_clk = 1000000000 / rate;
+> +
+> +	/* Baudrate */
+> +	val = rate / (2 * t->rate);
+> +	writel(val, i2c_dev->base + SSC_BRG);
+> +
+> +	/* Pre-scaler baudrate */
+> +	writel(1, i2c_dev->base + SSC_PRE_SCALER_BRG);
+> +
+> +	/* Enable I2C mode */
+> +	writel(SSC_I2C_I2CM, i2c_dev->base + SSC_I2C);
+> +
+> +	/* Repeated start hold time */
+> +	val = t->rep_start_hold / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_REP_START_HOLD);
+> +
+> +	/* Repeated start set up time */
+> +	val = t->rep_start_setup / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_REP_START_SETUP);
+> +
+> +	/* Start hold time */
+> +	val = t->start_hold / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_START_HOLD);
+> +
+> +	/* Data set up time */
+> +	val = t->data_setup_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_DATA_SETUP);
+> +
+> +	/* Stop set up time */
+> +	val = t->stop_setup_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_STOP_SETUP);
+> +
+> +	/* Bus free time */
+> +	val = t->bus_free_time / ns_per_clk;
+> +	writel(val, i2c_dev->base + SSC_BUS_FREE);
+> +
+> +	/* Prescalers set up */
+> +	val = rate / 10000000;
+> +	writel(val, i2c_dev->base + SSC_PRSCALER);
+> +	writel(val, i2c_dev->base + SSC_PRSCALER_DATAOUT);
+> +
+> +	/* Noise suppression witdh */
+> +	val = i2c_dev->deglitch.scl_min_width_us * rate / 100000000;
+> +	writel(val, i2c_dev->base + SSC_NOISE_SUPP_WIDTH);
+> +
+> +	/* Noise suppression max output data delay width */
+> +	val = i2c_dev->deglitch.sda_min_width_us * rate / 100000000;
+> +	writel(val, i2c_dev->base + SSC_NOISE_SUPP_WIDTH_DATAOUT);
+> +}
+> +
+> +static int st_i2c_wait_free_bus(struct st_i2c_dev *i2c_dev)
+> +{
+> +	u32 sta;
+> +	int i;
+> +
+> +	for (i = 0; i < 10; i++) {
+> +		sta = readl(i2c_dev->base + SSC_STA);
+> +		if (!(sta & SSC_STA_BUSY))
+> +			return 0;
+> +
+> +		usleep_range(2000, 4000);
+can not use interrupt?
+> +	}
+> +
+> +	dev_err(i2c_dev->dev, "bus not free (status = 0x%08x)\n", sta);
+> +
+> +	return -EBUSY;
+> +}
+> +
+> +/**
+> + * st_i2c_write_tx_fifo() - Write a byte in the Tx FIFO
+> + * @i2c_dev: Controller's private data
+> + * @byte: Data to write in the Tx FIFO
+> + */
+> +static inline void st_i2c_write_tx_fifo(struct st_i2c_dev *i2c_dev, u8 byte)
+> +{
+> +	u16 tbuf = byte << 1;
+> +
+> +	writel(tbuf | 1, i2c_dev->base + SSC_TBUF);
+> +}
+> +
+> +/**
+> + * st_i2c_wr_fill_tx_fifo() - Fill the Tx FIFO in write mode
+> + * @i2c_dev: Controller's private data
+> + *
+> + * This functions fills the Tx FIFO with I2C transfert buffer when
+> + * in write mode.
+> + */
+> +static void st_i2c_wr_fill_tx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 tx_fstat, sta;
+> +	int i;
+> +
+> +	sta = readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_TX_FIFO_FULL)
+> +		return;
+> +
+> +	tx_fstat = readl(i2c_dev->base + SSC_TX_FSTAT) & SSC_TX_FSTAT_STATUS;
+> +
+> +	if (c->count < (SSC_TXFIFO_SIZE - tx_fstat))
+> +		i = c->count;
+> +	else
+> +		i = SSC_TXFIFO_SIZE - tx_fstat;
+> +
+> +	for (; i > 0; i--, c->count--, c->buf++)
+> +		st_i2c_write_tx_fifo(i2c_dev, *c->buf);
+> +}
+> +
+> +/**
+> + * st_i2c_rd_fill_tx_fifo() - Fill the Tx FIFO in read mode
+> + * @i2c_dev: Controller's private data
+> + *
+> + * This functions fills the Tx FIFO with fixed pattern when
+> + * in read mode to trigger clock.
+> + */
+> +static void st_i2c_rd_fill_tx_fifo(struct st_i2c_dev *i2c_dev, int max)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 tx_fstat, sta;
+> +	int i;
+> +
+> +	sta = readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_TX_FIFO_FULL)
+> +		return;
+> +
+> +	tx_fstat = readl(i2c_dev->base + SSC_TX_FSTAT) & SSC_TX_FSTAT_STATUS;
+> +
+> +	if (max < (SSC_TXFIFO_SIZE - tx_fstat))
+> +		i = max;
+> +	else
+> +		i = SSC_TXFIFO_SIZE - tx_fstat;
+> +
+> +	for (; i > 0; i--, c->xfered++)
+> +		st_i2c_write_tx_fifo(i2c_dev, 0xff);
+> +}
+> +
+> +static void st_i2c_read_rx_fifo(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 i, sta;
+> +	u16 rbuf;
+> +
+> +	sta = readl(i2c_dev->base + SSC_STA);
+> +	if (sta & SSC_STA_RIR) {
+> +		i = SSC_RXFIFO_SIZE;
+> +	} else {
+> +		i = readl(i2c_dev->base + SSC_RX_FSTAT);
+> +		i &= SSC_RX_FSTAT_STATUS;
+> +	}
+> +
+> +	for (; (i > 0) && (c->count > 0); i--, c->count--) {
+> +		rbuf = readl(i2c_dev->base + SSC_RBUF) >> 1;
+> +		*c->buf++ = (u8)rbuf & 0xff;
+> +	}
+> +
+> +	if (i) {
+> +		dev_err(i2c_dev->dev, "Unexpected %d bytes in rx fifo\n", i);
+> +		st_i2c_flush_rx_fifo(i2c_dev);
+> +	}
+> +}
+> +
+> +/**
+> + * st_i2c_terminate_xfer() - Send either STOP or REPSTART condition
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_terminate_xfer(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_IEN, SSC_IEN_TEEN);
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STRTG);
+> +
+> +	if (c->stop) {
+> +		st_i2c_set_bits(i2c_dev->base + SSC_IEN, SSC_IEN_STOPEN);
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +	} else {
+> +		st_i2c_set_bits(i2c_dev->base + SSC_IEN, SSC_IEN_REPSTRTEN);
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_REPSTRTG);
+> +	}
+> +}
+> +
+> +/**
+> + * st_i2c_handle_write() - Handle FIFO empty interrupt in case of write
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_handle_write(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +
+> +	st_i2c_flush_rx_fifo(i2c_dev);
+> +
+> +	if (!c->count)
+> +		/* End of xfer, send stop or repstart */
+> +		st_i2c_terminate_xfer(i2c_dev);
+> +	else
+> +		st_i2c_wr_fill_tx_fifo(i2c_dev);
+> +}
+> +
+> +/**
+> + * st_i2c_handle_write() - Handle FIFO enmpty interrupt in case of read
+> + * @i2c_dev: Controller's private data
+> + */
+> +static void st_i2c_handle_read(struct st_i2c_dev *i2c_dev)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 ien;
+> +
+> +	/* Trash the address read back */
+> +	if (!c->xfered) {
+> +		readl(i2c_dev->base + SSC_RBUF);
+> +		st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_TXENB);
+> +	} else
+> +		st_i2c_read_rx_fifo(i2c_dev);
+> +
+> +	if (!c->count) {
+> +		/* End of xfer, send stop or repstart */
+> +		st_i2c_terminate_xfer(i2c_dev);
+> +	} else if (c->count == 1) {
+> +		/* Penultimate byte to xfer, disable ACK gen. */
+> +		st_i2c_clr_bits(i2c_dev->base + SSC_I2C, SSC_I2C_ACKG);
+> +
+> +		/* Last received byte is to be handled by NACK interrupt */
+> +		ien = SSC_IEN_NACKEN | SSC_IEN_ARBLEN;
+> +		writel(ien, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_rd_fill_tx_fifo(i2c_dev, c->count);
+> +	} else
+> +		st_i2c_rd_fill_tx_fifo(i2c_dev, c->count - 1);
+> +}
+> +
+> +/**
+> + * st_i2c_isr() - Interrupt routine
+> + * @irq: interrupt number
+> + * @data: Controller's private data
+> + */
+> +static irqreturn_t st_i2c_isr(int irq, void *data)
+> +{
+> +	struct st_i2c_dev *i2c_dev = data;
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 sta, ien;
+> +	int it;
+> +
+> +	ien = readl(i2c_dev->base + SSC_IEN);
+> +	sta = readl(i2c_dev->base + SSC_STA);
+> +
+> +	/* Use __fls() to check error bits first */
+> +	it = __fls(sta & ien);
+> +	if (it < 0) {
+> +		dev_dbg(i2c_dev->dev, "spurious it (sta=0x%04x, ien=0x%04x)\n",
+> +				sta, ien);
+> +		return IRQ_NONE;
+> +	}
+> +
+> +	switch (1 << it) {
+> +	case SSC_STA_TE:
+> +		if (c->addr & I2C_M_RD)
+> +			st_i2c_handle_read(i2c_dev);
+> +		else
+> +			st_i2c_handle_write(i2c_dev);
+> +		break;
+> +
+> +	case SSC_STA_STOP:
+> +	case SSC_STA_REPSTRT:
+> +		writel(0, i2c_dev->base + SSC_IEN);
+> +		complete(&i2c_dev->complete);
+> +		break;
+> +
+> +	case SSC_STA_NACK:
+> +		writel(SSC_CLR_NACK, i2c_dev->base + SSC_CLR);
+> +
+> +		/* Last received byte handled by NACK interrupt */
+> +		if ((c->addr & I2C_M_RD) && (c->count == 1) && (c->xfered)) {
+> +			st_i2c_handle_read(i2c_dev);
+> +			break;
+> +		}
+> +
+> +		it = SSC_IEN_STOPEN | SSC_IEN_ARBLEN;
+> +		writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +		c->result = -EIO;
+> +		break;
+> +
+> +	case SSC_STA_ARBL:
+> +		writel(SSC_CLR_SSCARBL, i2c_dev->base + SSC_CLR);
+> +
+> +		it = SSC_IEN_STOPEN | SSC_IEN_ARBLEN;
+> +		writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STOPG);
+> +		c->result = -EIO;
+> +		break;
+> +
+> +	default:
+> +		dev_err(i2c_dev->dev,
+> +				"it %d unhandled (sta=0x%04x)\n", it, sta);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * st_i2c_xfer_msg() - Transfer a single I2C message
+> + * @i2c_dev: Controller's private data
+> + * @msg: I2C message to transfer
+> + * @is_first: first message of the sequence
+> + * @is_last: last message of the sequence
+> + */
+> +static int st_i2c_xfer_msg(struct st_i2c_dev *i2c_dev, struct i2c_msg *msg,
+> +			    bool is_first, bool is_last)
+> +{
+> +	struct st_i2c_client *c = &i2c_dev->client;
+> +	u32 ctl, i2c, it;
+> +	unsigned long timeout;
+> +	int ret;
+> +
+> +	c->addr		= (u8)(msg->addr << 1);
+> +	c->addr		|= (msg->flags & I2C_M_RD);
+> +	c->buf		= msg->buf;
+> +	c->count	= msg->len;
+> +	c->xfered	= 0;
+> +	c->result	= 0;
+> +	c->stop		= is_last;
+> +
+> +	INIT_COMPLETION(i2c_dev->complete);
+> +
+> +	ctl = SSC_CTL_EN | SSC_CTL_MS |	SSC_CTL_EN_RX_FIFO | SSC_CTL_EN_TX_FIFO;
+> +	st_i2c_set_bits(i2c_dev->base + SSC_CTL, ctl);
+> +
+> +	i2c = SSC_I2C_TXENB;
+> +	if (c->addr & I2C_M_RD)
+> +		i2c |= SSC_I2C_ACKG;
+> +	st_i2c_set_bits(i2c_dev->base + SSC_I2C, i2c);
+> +
+> +	/* Write slave address */
+> +	st_i2c_write_tx_fifo(i2c_dev, c->addr);
+> +
+> +	/* Pre-fill Tx fifo with data in case of write */
+> +	if (!(c->addr & I2C_M_RD))
+> +		st_i2c_wr_fill_tx_fifo(i2c_dev);
+> +
+> +	it = SSC_IEN_NACKEN | SSC_IEN_TEEN | SSC_IEN_ARBLEN;
+> +	writel(it, i2c_dev->base + SSC_IEN);
+> +
+> +	if (is_first) {
+> +		ret = st_i2c_wait_free_bus(i2c_dev);
+> +		if (ret)
+> +			return ret;
+> +
+> +		st_i2c_set_bits(i2c_dev->base + SSC_I2C, SSC_I2C_STRTG);
+> +	}
+> +
+> +	timeout = wait_for_completion_timeout(&i2c_dev->complete,
+> +			i2c_dev->adap.timeout);
+> +	ret = c->result;
+> +
+> +	if (!timeout) {
+> +		dev_err(i2c_dev->dev, "Write to slave 0x%x timed out\n",
+> +				c->addr);
+> +		ret = -ETIMEDOUT;
+> +	}
+> +
+> +	i2c = SSC_I2C_STOPG | SSC_I2C_REPSTRTG;
+> +	st_i2c_clr_bits(i2c_dev->base + SSC_I2C, i2c);
+> +
+> +	writel(SSC_CLR_SSCSTOP | SSC_CLR_REPSTRT, i2c_dev->base + SSC_CLR);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * st_i2c_xfer() - Transfer a single I2C message
+> + * @i2c_adap: Adapter pointer to the controller
+> + * @msgs: Pointer to data to be written.
+> + * @num: Number of messages to be executed
+> + */
+> +static int st_i2c_xfer(struct i2c_adapter *i2c_adap,
+> +			struct i2c_msg msgs[], int num)
+> +{
+> +	struct st_i2c_dev *i2c_dev = i2c_get_adapdata(i2c_adap);
+> +	int ret, i;
+> +
+> +	i2c_dev->busy = true;
+> +
+> +	ret = clk_prepare_enable(i2c_dev->clk);
+> +	if (ret) {
+> +		dev_err(i2c_dev->dev, "Failed to prepare_enable clock\n");
+> +		return ret;
+> +	}
+> +
+> +	pinctrl_pm_select_default_state(i2c_dev->dev);
+> +
+> +	st_i2c_hw_config(i2c_dev);
+> +
+> +	for (i = 0; (i < num) && !ret; i++)
+> +		ret = st_i2c_xfer_msg(i2c_dev, &msgs[i], i == 0, i == num - 1);
+> +
+> +	pinctrl_pm_select_idle_state(i2c_dev->dev);
+> +
+> +	clk_disable_unprepare(i2c_dev->clk);
+> +
+> +	i2c_dev->busy = false;
+> +
+> +	return (ret < 0) ? ret : i;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int st_i2c_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev =
+> +		container_of(dev, struct platform_device, dev);
+> +	struct st_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+> +
+> +	if (i2c_dev->busy)
+> +		return -EBUSY;
+> +
+> +	pinctrl_pm_select_sleep_state(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_resume(struct device *dev)
+> +{
+> +	pinctrl_pm_select_default_state(dev);
+> +	/* Go in idle state if available */
+> +	pinctrl_pm_select_idle_state(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(st_i2c_pm, st_i2c_suspend, st_i2c_resume);
+> +#define ST_I2C_PM	(&st_i2c_pm)
+> +#else
+> +#define ST_I2C_PM	NULL
+> +#endif
+> +
+> +static u32 st_i2c_func(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+> +}
+> +
+> +static struct i2c_algorithm st_i2c_algo = {
+> +	.master_xfer = st_i2c_xfer,
+> +	.functionality = st_i2c_func,
+> +};
+> +
+> +static int st_i2c_of_get_deglitch(struct device_node *np,
+> +		struct st_i2c_dev *i2c_dev)
+> +{
+> +	int ret;
+> +
+> +	ret = of_property_read_u32(np, "i2c-min-scl-pulse-width-us",
+> +			&i2c_dev->deglitch.scl_min_width_us);
+> +	if ((ret == -ENODATA) || (ret == -EOVERFLOW)) {
+> +		dev_err(i2c_dev->dev, "i2c-min-scl-pulse-width-us invalid\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = of_property_read_u32(np, "i2c-min-sda-pulse-width-us",
+> +			&i2c_dev->deglitch.sda_min_width_us);
+> +	if ((ret == -ENODATA) || (ret == -EOVERFLOW)) {
+> +		dev_err(i2c_dev->dev, "i2c-min-sda-pulse-width-us invalid\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct st_i2c_dev *i2c_dev;
+> +	struct resource *res;
+> +	u32 clk_rate;
+> +	struct i2c_adapter *adap;
+> +	int ret;
+> +
+> +	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
+> +	if (!i2c_dev)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	i2c_dev->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(i2c_dev->base))
+> +		return PTR_ERR(i2c_dev->base);
+> +
+> +	i2c_dev->irq = irq_of_parse_and_map(np, 0);
+> +	if (!i2c_dev->irq) {
+> +		dev_err(&pdev->dev, "IRQ missing or invalid\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	i2c_dev->clk = of_clk_get_by_name(np, "ssc");
+> +	if (IS_ERR(i2c_dev->clk)) {
+> +		dev_err(&pdev->dev, "Unable to request clock\n");
+> +		return PTR_ERR(i2c_dev->clk);
+> +	}
+> +
+> +	i2c_dev->mode = I2C_MODE_STANDARD;
+> +	ret = of_property_read_u32(np, "clock-frequency", &clk_rate);
+> +	if ((!ret) && (clk_rate == 400000))
+> +		i2c_dev->mode = I2C_MODE_FAST;
+> +
+> +	i2c_dev->dev = &pdev->dev;
+> +
+> +	ret = devm_request_irq(&pdev->dev, i2c_dev->irq, st_i2c_isr, 0,
+> +			pdev->name, i2c_dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
+> +		return ret;
+> +	}
+> +
+> +	pinctrl_pm_select_default_state(i2c_dev->dev);
+> +	/* In case idle state available, select it */
+> +	pinctrl_pm_select_idle_state(i2c_dev->dev);
+> +
+> +	ret = st_i2c_of_get_deglitch(np, i2c_dev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	adap = &i2c_dev->adap;
+> +	i2c_set_adapdata(adap, i2c_dev);
+> +	snprintf(adap->name, sizeof(adap->name), "ST I2C(0x%08x)", res->start);
+> +	adap->owner = THIS_MODULE;
+> +	adap->timeout = 2 * HZ;
+> +	adap->retries = 0;
+> +	adap->class = I2C_CLASS_HWMON | I2C_CLASS_DDC | I2C_CLASS_SPD;
+> +	adap->algo = &st_i2c_algo;
+> +	adap->dev.parent = &pdev->dev;
+> +	adap->dev.of_node = pdev->dev.of_node;
+> +
+> +	init_completion(&i2c_dev->complete);
+> +
+> +	ret = i2c_add_adapter(adap);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to add adapter\n");
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, i2c_dev);
+> +
+> +	dev_info(i2c_dev->dev, "%s initialized\n", adap->name);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_i2c_remove(struct platform_device *pdev)
+> +{
+> +	struct st_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+> +
+> +	i2c_del_adapter(&i2c_dev->adap);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id st_i2c_match[] = {
+> +	{ .compatible = "st,comms-ssc-i2c", },
+the rules is to put the first soc that use the ip in the compatible
+as st,sti7100-scc-i2c
+
+Best Regards,
+J.
