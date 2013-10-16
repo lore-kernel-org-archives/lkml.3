@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934518Ab3JPNV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 09:21:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41945 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934451Ab3JPNV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 09:21:26 -0400
-Date: Wed, 16 Oct 2013 15:21:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Liu Chuansheng <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
-Message-ID: <20131016132121.GA14938@localhost.localdomain>
-References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
- <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
- <1381870805.22110.37.camel@joe-AO722>
- <20131015211251.GE3269@localhost.localdomain>
- <1381872280.22110.41.camel@joe-AO722>
- <20131016115354.GC12773@localhost.localdomain>
- <20131016085928.5b8f9d95@gandalf.local.home>
+	id S1760679Ab3JPNYu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 09:24:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53863 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760554Ab3JPNYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 09:24:49 -0400
+Message-ID: <525E9380.7090905@ti.com>
+Date: Wed, 16 Oct 2013 08:24:16 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016085928.5b8f9d95@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <khilman@kernel.org>, <anton@enomsg.org>, <dwmw2@infradead.org>
+Subject: Re: [PATCH] PM/AVS: SmartReflex: fix fake probe success on debugfs
+ fail
+References: <1381923650-7556-1-git-send-email-manishv.b@ti.com>
+In-Reply-To: <1381923650-7556-1-git-send-email-manishv.b@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 08:59:28AM -0400, Steven Rostedt wrote:
-> On Wed, 16 Oct 2013 13:53:56 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On 10/16/2013 06:40 AM, Vishwanathrao Badarkhe, Manish wrote:
+> From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 > 
+> Currently, probe returns success(0) on "debugfs_create_dir"
+> function call failed. Return proper error on "debugfs_create_dir"
+> call failed.
+> 
+> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> ---
+> Not tested on any EVM. Bug has been found while doing static review.
+> Please confirm.
+
+
+IMHO, fail of creation of debugfs is not reason enough to fail the
+probe - further, this code needs a major revamp to work with device tree.
+
+> 
+> :100644 100644 db9973b... 7b101c1... M	drivers/power/avs/smartreflex.c
+>  drivers/power/avs/smartreflex.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+> index db9973b..7b101c1 100644
+> --- a/drivers/power/avs/smartreflex.c
+> +++ b/drivers/power/avs/smartreflex.c
+> @@ -921,7 +921,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
+>  	if (!sr_dbg_dir) {
+>  		sr_dbg_dir = debugfs_create_dir("smartreflex", NULL);
+>  		if (IS_ERR_OR_NULL(sr_dbg_dir)) {
+> -			ret = PTR_ERR(sr_dbg_dir);
+> +			ret = sr_dbg_dir ? PTR_ERR(sr_dbg_dir) : -EIO;
+>  			pr_err("%s:sr debugfs dir creation failed(%d)\n",
+>  				__func__, ret);
+>  			goto err_list_del;
+> @@ -932,7 +932,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
+>  	if (IS_ERR_OR_NULL(sr_info->dbg_dir)) {
+>  		dev_err(&pdev->dev, "%s: Unable to create debugfs directory\n",
+>  			__func__);
+> -		ret = PTR_ERR(sr_info->dbg_dir);
+> +		ret = sr_info->dbg_dir ? PTR_ERR(sr_info->dbg_dir) : -EIO;
+>  		goto err_debugfs;
+>  	}
 >  
-> > static int done;
-> > 
-> > if (!done) {
-> >     trace_printk(something);
-> >     trace_printk(something else);
-> >     trace_dump_stack();
-> >     done = 1;
-> > }
-> > 
-> > Having a DO_ONCE() would help a lot I think.
-> > 
-> > Now we can rename it to __DO_ONCE() and put a big fat comment to avoid it
-> > to be misused.
+> @@ -947,7 +947,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
+>  	if (IS_ERR_OR_NULL(nvalue_dir)) {
+>  		dev_err(&pdev->dev, "%s: Unable to create debugfs directory"
+>  			"for n-values\n", __func__);
+> -		ret = PTR_ERR(nvalue_dir);
+> +		ret = nvalue_dir ? PTR_ERR(nvalue_dir) : -EIO;
+>  		goto err_debugfs;
+>  	}
+>  
 > 
-> I wonder if we should make it just ONCE(), with no arguments that
-> should go into an if statement.
-> 
-> 
-> if (ONCE())
-> 	do_this_function_once();
 
-Or TRUE_ONCE() may be?
-But what don't you like in DO_ONCE()? Its upside is that it consolidate the whole
-call.
-
-Also there is still the COND() part to handle. Note that COND things
-need to return the condition as well.
-
-Thanks.
-
-> 
-> 
-> Where ONCE() is:
-> 
-> ({
-> 	static int __once;
-> 	int __old_once = __once;
-> 
-> 	__once = 1;
-> 	__old_once;
-> })
-> 
-> Or the xchg version:
-> 
-> ({
-> 	static int __once;
-> 
-> 	if (!__once)
-> 		xchg(&__once, 1);
-> 	else
-> 		1;
-> })
-> 
-> -- Steve
+-- 
+Regards,
+Nishanth Menon
