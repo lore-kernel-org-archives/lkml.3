@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935359Ab3JPSNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:13:42 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44915 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935349Ab3JPSNf convert rfc822-to-8bit (ORCPT
+	id S935364Ab3JPSOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:14:08 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:44128 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934511Ab3JPSOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:13:35 -0400
-Subject: Re: [PATCH] powerpc/qe_lib: Share the qe_lib for the others architecture
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20131015131606.GA2700@book.gsilab.sittig.org>
-Date: Wed, 16 Oct 2013 13:12:59 -0500
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Scott Wood <scottwood@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Xie Xiaobo <X.Xie@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <385E3F55-85BB-4E28-A396-FA54DEE1B1AB@kernel.crashing.org>
-References: <1381750622-1150-1-git-send-email-X.Xie@freescale.com> <8559CF98-88E4-4271-A873-1409359EFE5C@kernel.crashing.org> <3F4D4A39-3063-45F5-8B0E-3CD5F36B4035@kernel.crashing.org> <20131014200952.GA20517@kroah.com> <20131015131606.GA2700@book.gsilab.sittig.org>
-To: Gerhard Sittig <gsi@denx.de>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 16 Oct 2013 14:14:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131016175302.GB4100@infradead.org>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
+	<20131010180049.GD9929@pd.tnic>
+	<20131016124627.GA2611@gmail.com>
+	<CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+	<20131016175302.GB4100@infradead.org>
+Date: Wed, 16 Oct 2013 20:14:04 +0200
+Message-ID: <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Oct 15, 2013, at 8:16 AM, Gerhard Sittig wrote:
-
-> On Mon, Oct 14, 2013 at 13:09 -0700, Greg Kroah-Hartman wrote:
->> 
->> On Mon, Oct 14, 2013 at 02:40:44PM -0500, Kumar Gala wrote:
->>> 
->>> Greg,
->>> 
->>> Wondering your thoughts on drivers/qe vs something like
->>> drivers/soc/fsl/qe.  The QuiccEngine (qe) is a communication core on
->>> some of the Freescale networking SoCs that provides the ability to do
->>> various networking/communication functionality.  "Channels" on the QE
->>> can be used for various different things from ethernet, ATM, UART, or
->>> other functions.
->> 
->> What makes the code "QE" specific?  Are these devices that live on the
->> QE "bus", or are they controlling the QE controller?
-> 
-> You may think of the QUICC as a "programmable bitbang machine" if
-> you like.  The very same component runs arbitrary and rather
-> different protocols depending on how you setup its parameters.
-> 
-> There have been serial controllers capable of different protocols
-> like UART or SPI or I2S, but all of them are "serial
-> communication".  There have been memory controllers which could
-> bitbang different protocols (NAND, NOR/SRAM, DRAM), but all of
-> them are "memory".
-> 
-> The QUICC is just a little more versatile, and appears to cover
-> cases which reside in different Linux kernel subsystems (like:
-> it's neither serial nor network exclusively, but can be either
-> and potentially more).
-> 
-> IIUC the question which Kumar Gala was asking is where to put
-> code for the component which is neither a strict subset of any
-> subsystem.  Please correct me if I'm wrong.
-
-Thanks for the description.
-
-Yeah, the actual ethernet, usb, serial drivers that exist with QE live today in proper drivers/ dirs.  This is the infrastructure that those drivers utilize that isn't quite related to an existing subsystem.  Mostly set up of channel state/cfg/etc.
-
-- k
+On Wed, Oct 16, 2013 at 7:53 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Wed, Oct 16, 2013 at 03:13:54PM +0200, Stephane Eranian escreveu:
+>> On Wed, Oct 16, 2013 at 2:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> > We should also tell user-space that the unit of this counter is 'Joule'.
+>> >
+>> > Then things like:
+>> >
+>> >         perf stat -a -e power/* sleep 1
+>> >
+>> > would output, without knowing any RAPL details:
+>> >
+>> >             0.20619 Joule    power/energy-core
+>> >             2.42151 Joule    power/energy-pkg
+>> >
+>> Not sure there is already some support for this in perf stat. Arnaldo?
+>
+> Nope, there is not, we would have to have some table somewhere with
+> "event-regexp: unit-string"
+>
+>> If not that we need another sysfs file to export the unit. Another
+>> possibility is for perf stat to recognize the power/* and extract the
+>> unit from the event name. In my example power/joules-cores -> joules.
+>
+> I.e. you would be encoding the counter unit as the suffix, might as well
+> call it "power/cores.joules" and use the dot as the separator for the
+> unit, but would be just a compact form to encode the counter->unit
+> table.
+>
+May be easier to add a sysfs entry with the unit to display.
