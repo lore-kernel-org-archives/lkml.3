@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab3JPJEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:04:49 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54126 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab3JPJEp (ORCPT
+	id S1760275Ab3JPJGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:06:51 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10457 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757547Ab3JPJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:04:45 -0400
-Date: Wed, 16 Oct 2013 11:04:32 +0200
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@au1.ibm.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, jslaby@suse.cz,
-        gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
- HUPCL control
-Message-ID: <20131016090432.GA6053@linux.vnet.ibm.com>
-Mail-Followup-To: Benjamin Herrenschmidt <benh@au1.ibm.com>, jslaby@suse.cz,
-	gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-	heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-	linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-	linux-s390@vger.kernel.org
-References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
- <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
- <1381475711.5630.67.camel@pasglop>
- <20131011124707.GA6082@linux.vnet.ibm.com>
- <1381524204.5630.91.camel@pasglop>
- <20131015153626.GA6129@linux.vnet.ibm.com>
- <1381870070.17841.24.camel@pasglop>
+	Wed, 16 Oct 2013 05:06:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 16 Oct 2013 02:02:20 -0700
+Date: Wed, 16 Oct 2013 12:06:43 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 00/19] Introduce common infra for tegra clocks
+Message-ID: <20131016090643.GI5643@tbergstrom-lnx.Nvidia.com>
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
+ <525D8009.5040907@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1381870070.17841.24.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101609-1948-0000-0000-0000069A1EC2
+In-Reply-To: <525D8009.5040907@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 03:47:50PM -0500, Benjamin Herrenschmidt wrote:
-> On Tue, 2013-10-15 at 17:36 +0200, Hendrik Brueckner wrote:
-> > On Sat, Oct 12, 2013 at 07:43:24AM +1100, Benjamin Herrenschmidt wrote:
-> > > On Fri, 2013-10-11 at 14:47 +0200, Hendrik Brueckner wrote:
-> > > > The tiocmget/tiocmset callbacks are used to set and get modem status and
-> > > > triggered through an tty ioctl.
-> > > > 
-> > > > The dtr_rts() callback is different and it is used for DTS/RTS handshaking
-> > > > between the hvc_console (or any other tty_port) and the tty layer.  The tty
-> > > > port layer uses this callback to signal the hvc_console whether to raise or
-> > > > lower the DTR/RTS lines.  This is different than the ioctl interface to
-> > > > controls the modem status.
-> > > 
-> > > Well, DTR at least is the same via both callbacks... Also normal handshaking
-> > > is normally RTS/CTS, only some HW setups "hijacks" DTR for RTS (old Macs come
-> > > to mind).
-> > 
-> > Yep. DTR is changed in both callbacks but from different layers.  The
-> > tiocmget/tiocmset are triggered through the ioctl.  The dtr_rts() callback is
-> > called in hvc_close() to properly handle HUPCL to lower modem control lines
-> > after last process closes the device (hang up).
-> > 
-> > This is also done in the hvsilib_close() in hvsi_lib.c:
-> > 
-> > 	/* Clear our own DTR */
-> > 	if (!pv->tty || (pv->tty->termios.c_cflag & HUPCL))
-> > 		hvsilib_write_mctrl(pv, 0); 
-> > 
-> > This is actually what the dtr_rts() callback should trigger and I wonder
-> > whether it would be worth to introduce the dtr_rts() callback to encapsulate
-> > the "hvsilib_write_mctrl(pv, 0);" call from above.
-> > 
-> > On the other hand, the dtr_rts() callback is a good encapsulation to not
-> > directly access the hp->tty to potentially prevent a layering violation. At
-> > least for the hvc_iucv() I do not want to deal with the "underlying" tty layer
-> > and introduce additional reference accounting.
-> > 
-> > I hope this helps you to understand my rational for introducing the dtr_rts()
-> > callback.
+On Tue, Oct 15, 2013 at 07:48:57PM +0200, Stephen Warren wrote:
+> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> > This patchset introduces common infrastructure for clocks which exist in                                                                                       
+> > several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
+> > this new infrastructure.
 > 
-> I'm not sure :) We still end up basically with 2 callbacks to do the
-> same thing ... change the DTR line. It's odd at best, I still don't
-> quite see why hvc_console couldn't just use mctrl...
+> I took my local branch based on next-20131014, and applied the following:
 > 
-Indeed, two callbacks change the DTR line.  The main difference is that
-tiocmget/tiocmset can be called from user space by ioctl.  That's not the case
-for the dtr_cts callback.  Also, tiocmget/tiocmset provide more flags that can
-be changed (ST, SR, CTS, CD, RNG, RI,  ...)
+> * Joseph's "ARM: tegra: add clock properties for devices of Tegra124".
+> 
+> * The patches from your "pull request for tegra clocks" of today (I just
+> cherry-picked the commits rather than merging the pull request).
+> 
+> * Your patch series "Introduce common infra for tegra clocks" of today.
+> 
+> * Your patch series "Tegra124 clock support" of today.
+> 
+> The resultant branch is at:
+> git://github.com:swarren/linux-tegra.git linux-next_common
+> 
+> When building, I see a number of section mismatches:
+> 
+> > WARNING: drivers/clk/tegra/built-in.o(.text+0x534): Section mismatch in reference from the function _tegra_clk_register_periph() to the function .init.text:get_reg_bank()
+> > The function _tegra_clk_register_periph() references
+> > the function __init get_reg_bank().
+> > This is often because _tegra_clk_register_periph lacks a __init 
+> > annotation or the annotation of get_reg_bank is wrong.
+> > 
+> > WARNING: drivers/clk/tegra/built-in.o(.text+0x9ec): Section mismatch in reference from the function tegra_clk_register_periph_gate() to the function .init.text:get_reg_bank()
+> > The function tegra_clk_register_periph_gate() references
+> > the function __init get_reg_bank().
+> > This is often because tegra_clk_register_periph_gate lacks a __init 
+> > annotation or the annotation of get_reg_bank is wrong.
+> 
+> There are more, but they refer to references from the same two
+> functions. You may need to add CONFIG_DEBUG_SECTION_MISMATCH=y to
+> .config to see these; I can't remember if that's included in
+> tegra_defconfig.
+> 
+> Testing on Venice2 (Tegra124): I see the following WARN during boot,
+> which I think is new relative to the internal branch you gave me yesterday:
+> 
+> > [    0.295386] ------------[ cut here ]------------
+> > [    0.300450] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:187 tegra_init_from_table+0x78/0x158()
+> > [    0.310362] Modules linked in:
+> > [    0.313740] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131014-05418-g30b9d55 #48
+> > [    0.323397] [<c0016644>] (unwind_backtrace+0x0/0x138) from [<c001225c>] (show_stack+0x10/0x14)
+> > [    0.332753] [<c001225c>] (show_stack+0x10/0x14) from [<c0572274>] (dump_stack+0x80/0xc0)
+> > [    0.341559] [<c0572274>] (dump_stack+0x80/0xc0) from [<c0025d54>] (warn_slowpath_common+0x64/0x88)
+> > [    0.351283] [<c0025d54>] (warn_slowpath_common+0x64/0x88) from [<c0025d94>] (warn_slowpath_null+0x1c/0x24)
+> > [    0.361768] [<c0025d94>] (warn_slowpath_null+0x1c/0x24) from [<c07b4c1c>] (tegra_init_from_table+0x78/0x158)
+> > [    0.372440] [<c07b4c1c>] (tegra_init_from_table+0x78/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
+> > [    0.384138] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
+> > [    0.394903] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
+> > [    0.404535] [<c079a580>] (customize_machine+0x1c/0x40) from [<c00089e0>] (do_one_initcall+0xec/0x19c)
+> > [    0.414551] [<c00089e0>] (do_one_initcall+0xec/0x19c) from [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8)
+> > [    0.424944] [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8) from [<c056d5a8>] (kernel_init+0x8/0xe4)
+> > [    0.434764] [<c056d5a8>] (kernel_init+0x8/0xe4) from [<c000f0f8>] (ret_from_fork+0x14/0x3c)
+> > [    0.443850] ---[ end trace 98c2207379d4cf99 ]---
+> 
 
-Assume we would like to unify them have a single callback to change DTR, then
-we have to take care of these differences.  So the question to you now is
-whether you plan for a) other modem flags to be changed and b) if changing the
-DTR line (or other control flags) through an ioctl?
+Did you see  'tegra_init_from_table: Failed to set parent pll_c2 of epp ' before? Tegra124 doesn't have EPP...
 
-Depending on your results, I could work on sth that helps us both and reduces
-the callbacks.
+Cheers,
 
-Thanks and kind regards,
-  Hendrik
-
+Peter.
