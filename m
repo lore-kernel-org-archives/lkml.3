@@ -1,73 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934820Ab3JPR7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:59:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35881 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934548Ab3JPRqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934546Ab3JPRqV (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Oct 2013 13:46:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35569 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761303Ab3JPRpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:45:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 18/50] ARC: Ignore ptrace SETREGSET request for synthetic register "stop_pc"
-Date: Wed, 16 Oct 2013 10:45:04 -0700
-Message-Id: <20131016174400.590312903@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 23/69] compiler/gcc4: Add quirk for asm goto miscompilation bug
+Date: Wed, 16 Oct 2013 10:44:32 -0700
+Message-Id: <20131016174315.737346617@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-commit 5b24282846c064ee90d40fcb3a8f63b8e754fd28 upstream.
+commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
 
-ARCompact TRAP_S insn used for breakpoints, commits before exception is
-taken (updating architectural PC). So ptregs->ret contains next-PC and
-not the breakpoint PC itself. This is different from other restartable
-exceptions such as TLB Miss where ptregs->ret has exact faulting PC.
-gdb needs to know exact-PC hence ARC ptrace GETREGSET provides for
-@stop_pc which returns ptregs->ret vs. EFA depending on the
-situation.
+Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
+a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
+constructs, as outlined here:
 
-However, writing stop_pc (SETREGSET request), which updates ptregs->ret
-doesn't makes sense stop_pc doesn't always correspond to that reg as
-described above.
+  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
 
-This was not an issue so far since user_regs->ret / user_regs->stop_pc
-had same value and both writing to ptregs->ret was OK, needless, but NOT
-broken, hence not observed.
+Implement a workaround suggested by Jakub Jelinek.
 
-With gdb "jump", they diverge, and user_regs->ret updating ptregs is
-overwritten immediately with stop_pc, which this patch fixes.
-
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Suggested-by: Jakub Jelinek <jakub@redhat.com>
+Reviewed-by: Richard Henderson <rth@twiddle.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20131015062351.GA4666@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/ptrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/jump_label.h     |    2 +-
+ arch/mips/include/asm/jump_label.h    |    2 +-
+ arch/powerpc/include/asm/jump_label.h |    2 +-
+ arch/s390/include/asm/jump_label.h    |    2 +-
+ arch/sparc/include/asm/jump_label.h   |    2 +-
+ arch/x86/include/asm/cpufeature.h     |    2 +-
+ arch/x86/include/asm/jump_label.h     |    2 +-
+ include/linux/compiler-gcc4.h         |   15 +++++++++++++++
+ 8 files changed, 22 insertions(+), 7 deletions(-)
 
---- a/arch/arc/kernel/ptrace.c
-+++ b/arch/arc/kernel/ptrace.c
-@@ -102,7 +102,7 @@ static int genregs_set(struct task_struc
- 	REG_IGNORE_ONE(pad2);
- 	REG_IN_CHUNK(callee, efa, cregs);	/* callee_regs[r25..r13] */
- 	REG_IGNORE_ONE(efa);			/* efa update invalid */
--	REG_IN_ONE(stop_pc, &ptregs->ret);	/* stop_pc: PC update */
-+	REG_IGNORE_ONE(stop_pc);			/* PC updated via @ret */
+--- a/arch/arm/include/asm/jump_label.h
++++ b/arch/arm/include/asm/jump_label.h
+@@ -16,7 +16,7 @@
  
- 	return ret;
- }
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:\n\t"
++	asm_volatile_goto("1:\n\t"
+ 		 JUMP_LABEL_NOP "\n\t"
+ 		 ".pushsection __jump_table,  \"aw\"\n\t"
+ 		 ".word 1b, %l[l_yes], %c0\n\t"
+--- a/arch/mips/include/asm/jump_label.h
++++ b/arch/mips/include/asm/jump_label.h
+@@ -22,7 +22,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:\tnop\n\t"
++	asm_volatile_goto("1:\tnop\n\t"
+ 		"nop\n\t"
+ 		".pushsection __jump_table,  \"aw\"\n\t"
+ 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
+--- a/arch/powerpc/include/asm/jump_label.h
++++ b/arch/powerpc/include/asm/jump_label.h
+@@ -19,7 +19,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:\n\t"
++	asm_volatile_goto("1:\n\t"
+ 		 "nop\n\t"
+ 		 ".pushsection __jump_table,  \"aw\"\n\t"
+ 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
+--- a/arch/s390/include/asm/jump_label.h
++++ b/arch/s390/include/asm/jump_label.h
+@@ -15,7 +15,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("0:	brcl 0,0\n"
++	asm_volatile_goto("0:	brcl 0,0\n"
+ 		".pushsection __jump_table, \"aw\"\n"
+ 		ASM_ALIGN "\n"
+ 		ASM_PTR " 0b, %l[label], %0\n"
+--- a/arch/sparc/include/asm/jump_label.h
++++ b/arch/sparc/include/asm/jump_label.h
+@@ -9,7 +9,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-		asm goto("1:\n\t"
++		asm_volatile_goto("1:\n\t"
+ 			 "nop\n\t"
+ 			 "nop\n\t"
+ 			 ".pushsection __jump_table,  \"aw\"\n\t"
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -365,7 +365,7 @@ extern const char * const x86_power_flag
+ static __always_inline __pure bool __static_cpu_has(u16 bit)
+ {
+ #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
+-		asm goto("1: jmp %l[t_no]\n"
++		asm_volatile_goto("1: jmp %l[t_no]\n"
+ 			 "2:\n"
+ 			 ".section .altinstructions,\"a\"\n"
+ 			 " .long 1b - .\n"
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -13,7 +13,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:"
++	asm_volatile_goto("1:"
+ 		STATIC_KEY_INITIAL_NOP
+ 		".pushsection __jump_table,  \"aw\" \n\t"
+ 		_ASM_ALIGN "\n\t"
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -65,6 +65,21 @@
+ #define __visible __attribute__((externally_visible))
+ #endif
+ 
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#if GCC_VERSION <= 40801
++# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++#else
++# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
++#endif
+ 
+ #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+ #if GCC_VERSION >= 40400
 
 
