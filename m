@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab3JPUxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:53:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62466 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760800Ab3JPUxN (ORCPT
+	id S1762014Ab3JPU4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:56:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37298 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761392Ab3JPU4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:53:13 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [Resend][PATCH] intel_pstate: Fix type mismatch warning
-Date: Wed, 16 Oct 2013 23:05:03 +0200
-Message-ID: <1581193.8IWGTM6KOa@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <525ECBDE.5000801@linux.intel.com>
-References: <9494730.EGV2mTSpNl@vostro.rjw.lan> <2582369.lNhAMrrx8s@vostro.rjw.lan> <525ECBDE.5000801@linux.intel.com>
+	Wed, 16 Oct 2013 16:56:09 -0400
+Date: Wed, 16 Oct 2013 22:55:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] (Was: perf_event_mmap(vma) && !vma->vm_mm)
+Message-ID: <20131016205559.GF10651@twins.programming.kicks-ass.net>
+References: <20131012192203.GA21738@redhat.com>
+ <20131014102426.GX3081@twins.programming.kicks-ass.net>
+ <20131016200924.GA23214@redhat.com>
+ <20131016202822.GI2675@laptop.programming.kicks-ass.net>
+ <20131016204348.GA25121@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016204348.GA25121@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Oct 16, 2013 at 10:43:48PM +0200, Oleg Nesterov wrote:
+> Yes, we can copy the garbage to the userspace. So what? This should not
+> matter at all. Exactly because userspace should never used the data after
+> the end of string, no?
 
-The expression in line 398 of intel_pstate.c causes the following
-warning to be emitted:
+Security people tell me to _never_ leak anything. I'm not near creative
+enough to exploit such a thing; but I am amazed at the techniques I do
+read about at times. So its really a better safe than sorry thing.
 
-drivers/cpufreq/intel_pstate.c:398:3: warning: left shift count >= width of type
-
-which happens because unsigned long is 32-bit on some architectures.
-
-Fix that by using a helper u64 variable and simplify the code
-slightly.
-
-Tested-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/cpufreq/intel_pstate.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-Index: linux-pm/drivers/cpufreq/intel_pstate.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/intel_pstate.c
-+++ linux-pm/drivers/cpufreq/intel_pstate.c
-@@ -383,6 +383,7 @@ static void intel_pstate_get_min_max(str
- static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
- {
- 	int max_perf, min_perf;
-+	u64 val;
- 
- 	intel_pstate_get_min_max(cpu, &min_perf, &max_perf);
- 
-@@ -394,11 +395,11 @@ static void intel_pstate_set_pstate(stru
- 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
- 
- 	cpu->pstate.current_pstate = pstate;
-+	val = pstate << 8;
- 	if (limits.no_turbo)
--		wrmsrl(MSR_IA32_PERF_CTL, BIT(32) | (pstate << 8));
--	else
--		wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
-+		val |= (u64)1 << 32;
- 
-+	wrmsrl(MSR_IA32_PERF_CTL, val);
- }
- 
- static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
 
