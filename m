@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935471Ab3JPSRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35657 "EHLO
+	id S935492Ab3JPSSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:18:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35650 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761391Ab3JPRpt (ORCPT
+	with ESMTP id S1761383Ab3JPRpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:49 -0400
+	Wed, 16 Oct 2013 13:45:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 41/69] ipc/util.c, ipc_rcu_alloc: cacheline align allocation
-Date: Wed, 16 Oct 2013 10:44:50 -0700
-Message-Id: <20131016174317.930818483@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 28/69] drm/radeon: fix typo in CP DMA register headers
+Date: Wed, 16 Oct 2013 10:44:37 -0700
+Message-Id: <20131016174316.337807833@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -31,71 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manfred Spraul <manfred@colorfullife.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 196aa0132fc7261f34b10ae1bfb44abc1bc69b3c upstream.
+commit aa3e146d04b6ae37939daeebaec060562b3db559 upstream.
 
-Enforce that ipc_rcu_alloc returns a cacheline aligned pointer on SMP.
+Wrong bit offset for SRC endian swapping.
 
-Rationale:
-
-The SysV sem code tries to move the main spinlock into a seperate
-cacheline (____cacheline_aligned_in_smp).  This works only if
-ipc_rcu_alloc returns cacheline aligned pointers.  vmalloc and kmalloc
-return cacheline algined pointers, the implementation of ipc_rcu_alloc
-breaks that.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/util.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/evergreend.h |    4 ++--
+ drivers/gpu/drm/radeon/r600d.h      |    2 +-
+ drivers/gpu/drm/radeon/sid.h        |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -468,9 +468,7 @@ void ipc_free(void* ptr, int size)
- struct ipc_rcu {
- 	struct rcu_head rcu;
- 	atomic_t refcount;
--	/* "void *" makes sure alignment of following data is sane. */
--	void *data[0];
--};
-+} ____cacheline_aligned_in_smp;
- 
- /**
-  *	ipc_rcu_alloc	-	allocate ipc and rcu space 
-@@ -488,12 +486,14 @@ void *ipc_rcu_alloc(int size)
- 	if (unlikely(!out))
- 		return NULL;
- 	atomic_set(&out->refcount, 1);
--	return out->data;
-+	return out + 1;
- }
- 
- int ipc_rcu_getref(void *ptr)
- {
--	return atomic_inc_not_zero(&container_of(ptr, struct ipc_rcu, data)->refcount);
-+	struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
-+
-+	return atomic_inc_not_zero(&p->refcount);
- }
- 
- /**
-@@ -507,7 +507,7 @@ static void ipc_schedule_free(struct rcu
- 
- void ipc_rcu_putref(void *ptr)
- {
--	struct ipc_rcu *p = container_of(ptr, struct ipc_rcu, data);
-+	struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
- 
- 	if (!atomic_dec_and_test(&p->refcount))
- 		return;
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -1104,7 +1104,7 @@
+  * 6. COMMAND [29:22] | BYTE_COUNT [20:0]
+  */
+ #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
+-                /* 0 - SRC_ADDR
++                /* 0 - DST_ADDR
+ 		 * 1 - GDS
+ 		 */
+ #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
+@@ -1119,7 +1119,7 @@
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+ #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -1259,7 +1259,7 @@
+  */
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -928,7 +928,7 @@
+  * 6. COMMAND [30:21] | BYTE_COUNT [20:0]
+  */
+ #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
+-                /* 0 - SRC_ADDR
++                /* 0 - DST_ADDR
+ 		 * 1 - GDS
+ 		 */
+ #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
+@@ -943,7 +943,7 @@
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+ #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
 
 
