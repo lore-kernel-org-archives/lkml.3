@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3JPOmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:42:11 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48680 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab3JPOmI (ORCPT
+	id S1755714Ab3JPOnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:43:05 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56470 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab3JPOnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:42:08 -0400
+	Wed, 16 Oct 2013 10:43:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1381933924-32437-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1381933924-32437-1-git-send-email-alexandre.belloni@free-electrons.com>
-Date: Wed, 16 Oct 2013 16:42:07 +0200
-Message-ID: <CAPDyKFoegdoRQU0tOp0V=D4Gd=kbrE4i8EJdE668hU7+a=p4sg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: atmel-mci: add vmmc-supply support
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAKDJKT7W-1S_KzZ5XEYJQuMnQEu17xbRjeNmZgj=-73Z0Kz_Qg@mail.gmail.com>
+References: <1381923650-7556-1-git-send-email-manishv.b@ti.com>
+	<525E9380.7090905@ti.com>
+	<CAKDJKT7W-1S_KzZ5XEYJQuMnQEu17xbRjeNmZgj=-73Z0Kz_Qg@mail.gmail.com>
+Date: Wed, 16 Oct 2013 09:43:01 -0500
+X-Google-Sender-Auth: rDQ1YSyRvRLbyv984YHpph-wObA
+Message-ID: <CAGo_u6rNJyzxtxn=0o-RC4487O+QuL5xE+vb+sP8_QxMg7g4yw@mail.gmail.com>
+Subject: Re: [PATCH] PM/AVS: SmartReflex: fix fake probe success on debugfs fail
+From: Nishanth Menon <nm@ti.com>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, khilman@kernel.org,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2013 16:32, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
-> Other MMC hosts handle a regulator named vmmc-supply that allows to power the
-> MMC card or SDIO device before communicating on the bus.
+On Wed, Oct 16, 2013 at 9:24 AM, Manish Badarkhe
+<badarkhe.manish@gmail.com> wrote:
 >
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  drivers/mmc/host/atmel-mci.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
+>>
+>> IMHO, fail of creation of debugfs is not reason enough to fail the
+>> probe - further, this code needs a major revamp to work with device tree.
 >
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index 69e438e..deffa1f 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -23,6 +23,7 @@
->  #include <linux/of_device.h>
->  #include <linux/of_gpio.h>
->  #include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
->  #include <linux/scatterlist.h>
->  #include <linux/seq_file.h>
->  #include <linux/slab.h>
-> @@ -2355,6 +2356,7 @@ static int __init atmci_probe(struct platform_device *pdev)
->         struct mci_platform_data        *pdata;
->         struct atmel_mci                *host;
->         struct resource                 *regs;
-> +       struct regulator                *reg_vmmc;
->         unsigned int                    nr_slots;
->         int                             irq;
->         int                             ret;
-> @@ -2371,6 +2373,16 @@ static int __init atmci_probe(struct platform_device *pdev)
->                 }
->         }
->
-> +       reg_vmmc = devm_regulator_get(&pdev->dev, "vmmc");
+> Yes, fail of debugfs creation should not be enough reason to fail probe. But as
+> per current implementation of code, on debugfs failure smart reflex node is
+> getting deleted and probe get failed. This patch not made any changes in
+> logic of code but only makes proper use of  "IS_ERR_OR_NULL".
 
-Use "mmc_regulator_get_supply" instead. This will also try to setup
-the "ocr_avail" mask, which is likely what you need as well.
-
-Kind regards
-Ulf Hansson
-
-> +       if (!IS_ERR(reg_vmmc)) {
-> +               ret = regulator_enable(reg_vmmc);
-> +               if (ret) {
-> +                       dev_err(&pdev->dev,
-> +                               "Failed to enable vmmc regulator: %d\n", ret);
-> +                       return ret;
-> +               }
-> +       }
-> +
->         irq = platform_get_irq(pdev, 0);
->         if (irq < 0)
->                 return irq;
-> --
-> 1.8.1.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks for the clarification, it was not obvious from the commit
+message. Further, I would rather prefer to see a proper cleanup that
+handles error completely, since IS_ERR_OR_NULL is not really
+recommended anymore.
+Regards,
+Nishanth Menon
