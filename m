@@ -1,147 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760267Ab3JPJeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:34:07 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:55695 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760111Ab3JPJeF (ORCPT
+	id S1760335Ab3JPJf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:35:29 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:65368 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760111Ab3JPJf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:34:05 -0400
-Message-ID: <1381916039.17491.1.camel@phoenix>
-Subject: [PATCH] Revert "regulator: da9052: Use apply_[reg|bit] with regmap
- based voltage_sel operations"
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Michael Grzeschik <mgr@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 16 Oct 2013 17:33:59 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Oct 2013 05:35:27 -0400
+Date: Wed, 16 Oct 2013 11:33:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 0/11] update page table walker
+Message-ID: <20131016093308.GD21963@ulmo.nvidia.com>
+References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20131015134317.02d819f6905f790007ba1842@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2iBwrppp/7QCDedR"
+Content-Disposition: inline
+In-Reply-To: <20131015134317.02d819f6905f790007ba1842@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 68f7506017ba67f1334cf086ffab76606f2c5ac4.
 
-Michael reported that with this patch we loose the fix_io code path from
-da9052_reg_update. Thus revert it.
+--2iBwrppp/7QCDedR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: Michael Grzeschik <mgr@pengutronix.de>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Mark,
-I'm busy recently and not able to cook a proper fix in regmap for this issue now.
-Unless someone can send the fix for *3.12*, otherwise we have no choice but have
-to revert this patch.
+On Tue, Oct 15, 2013 at 01:43:17PM -0700, Andrew Morton wrote:
+> On Mon, 14 Oct 2013 13:36:59 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec=
+=2Ecom> wrote:
+>=20
+> > Page table walker is widely used when you want to traverse page table
+> > tree and do some work for the entries (and pages pointed to by them.)
+> > This is a common operation, and keep the code clean and maintainable
+> > is important. Moreover this patchset introduces caller-specific walk
+> > control function which is helpful for us to newly introduce page table
+> > walker to some other users. Core change comes from patch 1, so please
+> > see it for how it's supposed to work.
+> >=20
+> > This patchset changes core code in mm/pagewalk.c at first in patch 1 an=
+d 2,
+> > and then updates all of current users to make the code cleaner in patch
+> > 3-9. Patch 10 changes the interface of hugetlb_entry(), I put it here to
+> > keep bisectability of the whole patchset. Patch 11 applies page table w=
+alker
+> > to a new user queue_pages_range().
+>=20
+> Unfortunately this is very incompatible with pending changes in
+> fs/proc/task_mmu.c.  Especially Kirill's "mm, thp: change
+> pmd_trans_huge_lock() to return taken lock".
+>=20
+> Stephen will be away for a couple more weeks so I'll get an mmotm
+> released and hopefully Thierry and Mark will scoop it up(?).=20
+> Alternatively, http://git.cmpxchg.org/?p=3Dlinux-mmots.git;a=3Dsummary is
+> up to date.
+>=20
+> Please take a look, decide what you think we should do?
 
-Regards,
-Axel
- drivers/regulator/da9052-regulator.c | 41 ++++++++++++++++++++++++++++++------
- 1 file changed, 35 insertions(+), 6 deletions(-)
+Hi Andrew,
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index c427e42..3adeaef 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -70,6 +70,7 @@ struct da9052_regulator_info {
- 	int step_uV;
- 	int min_uV;
- 	int max_uV;
-+	unsigned char activate_bit;
- };
- 
- struct da9052_regulator {
-@@ -209,6 +210,36 @@ static int da9052_map_voltage(struct regulator_dev *rdev,
- 	return sel;
- }
- 
-+static int da9052_regulator_set_voltage_sel(struct regulator_dev *rdev,
-+					    unsigned int selector)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9052_regulator_info *info = regulator->info;
-+	int id = rdev_get_id(rdev);
-+	int ret;
-+
-+	ret = da9052_reg_update(regulator->da9052, rdev->desc->vsel_reg,
-+				rdev->desc->vsel_mask, selector);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Some LDOs and DCDCs are DVC controlled which requires enabling of
-+	 * the activate bit to implment the changes on the output.
-+	 */
-+	switch (id) {
-+	case DA9052_ID_BUCK1:
-+	case DA9052_ID_BUCK2:
-+	case DA9052_ID_BUCK3:
-+	case DA9052_ID_LDO2:
-+	case DA9052_ID_LDO3:
-+		ret = da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
-+					info->activate_bit, info->activate_bit);
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
- static struct regulator_ops da9052_dcdc_ops = {
- 	.get_current_limit = da9052_dcdc_get_current_limit,
- 	.set_current_limit = da9052_dcdc_set_current_limit,
-@@ -216,7 +247,7 @@ static struct regulator_ops da9052_dcdc_ops = {
- 	.list_voltage = da9052_list_voltage,
- 	.map_voltage = da9052_map_voltage,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
--	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.set_voltage_sel = da9052_regulator_set_voltage_sel,
- 	.is_enabled = regulator_is_enabled_regmap,
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
-@@ -226,7 +257,7 @@ static struct regulator_ops da9052_ldo_ops = {
- 	.list_voltage = da9052_list_voltage,
- 	.map_voltage = da9052_map_voltage,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
--	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.set_voltage_sel = da9052_regulator_set_voltage_sel,
- 	.is_enabled = regulator_is_enabled_regmap,
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
-@@ -243,14 +274,13 @@ static struct regulator_ops da9052_ldo_ops = {
- 		.owner = THIS_MODULE,\
- 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
- 		.vsel_mask = (1 << (sbits)) - 1,\
--		.apply_reg = DA9052_SUPPLY_REG, \
--		.apply_bit = (abits), \
- 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
- 		.enable_mask = 1 << (ebits),\
- 	},\
- 	.min_uV = (min) * 1000,\
- 	.max_uV = (max) * 1000,\
- 	.step_uV = (step) * 1000,\
-+	.activate_bit = (abits),\
- }
- 
- #define DA9052_DCDC(_id, step, min, max, sbits, ebits, abits) \
-@@ -264,14 +294,13 @@ static struct regulator_ops da9052_ldo_ops = {
- 		.owner = THIS_MODULE,\
- 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
- 		.vsel_mask = (1 << (sbits)) - 1,\
--		.apply_reg = DA9052_SUPPLY_REG, \
--		.apply_bit = (abits), \
- 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
- 		.enable_mask = 1 << (ebits),\
- 	},\
- 	.min_uV = (min) * 1000,\
- 	.max_uV = (max) * 1000,\
- 	.step_uV = (step) * 1000,\
-+	.activate_bit = (abits),\
- }
- 
- static struct da9052_regulator_info da9052_regulator_info[] = {
--- 
-1.8.1.2
+I haven't had the time to look at writing up the scripts to import the
+mmotm into the linux-next trees that I create. From what I understand,
+it might be unwise to just pull linux-mmots into linux-next because it
+isn't very well tested. Then again, increasing test coverage is one of
+the goals of linux-next. If you think it's safe to include linux-mmots
+in linux-next I can easily do that.
 
+Otherwise I'll see if I can resume work on the scripts I started to
+import the mmotm. Stephen has also provided the scripts that he used,
+but I haven't had much time to look at them in detail yet because of
+other things that have been keeping me busy.
 
+Thierry
 
+--2iBwrppp/7QCDedR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSXl1UAAoJEN0jrNd/PrOhkbcP/3pB6Fc8Va/veibYv8MCTinU
+eCglYT7+8DB/twBEvG548SN77IVkQxq22hVxPeFlH4RP6+cSaQlceZNtSQAwmn64
+gYACitl+XKW3woxVuwn0TXar8KmscR+bCA1o53DtztJpxdomu1cSbfTpyA0uj0VY
+VlgtDWtjmZHxb5Z9HWRl455y1RbSlA5C6TwCh0O7tyUkMMkQZp/qlFu/Vk1rfG5t
+RC5t8uP2nP72s1jYZt2oekM73k3XLDzEfdCyAauajb2MxQbD2T3qAiKcGDNzy6mr
+82bEXrgqby11bEX+oOOND+BF4IjJMAW4a6zQOSAkcXCPbGjI6VdIn1f5seFQ0SM3
+1Gvh+YH+wNKX9pMLDON278RX9qAYxrq6kAl9JSoNu2+7ymKizGSGd4Lq+DPiU0Zc
+7rzrPUUTuJaKEsUWhGnHRvuu/23N7tPIM1ePiiHGJcQu5RkrTfNmVRVZAEIWZgxi
+aFZY+TudQsVoUO0tQ5vILPAc/NVpYT+IQT5ZvW4kKeg6OfMpuYzLrrDQTYJ7oeZL
+8NlRsFL+klpBCYL/lj5V8yWf6KAmRShaRdoNfHqSJ0/suroN8pQF2OHuMb4End0N
+zFG8bVoAyKbNaod1IqxHLRaBFIPr2Pe/t8WU2rXwtYsAAonEd0j98KnKtLKNP0bU
+7jTtCXnd2+sMlqoLZtrk
+=aA3/
+-----END PGP SIGNATURE-----
+
+--2iBwrppp/7QCDedR--
