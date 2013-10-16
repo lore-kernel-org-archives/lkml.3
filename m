@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760653Ab3JPPLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:11:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55689 "EHLO mga02.intel.com"
+	id S1760742Ab3JPPLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:11:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13334 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759569Ab3JPPLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:11:33 -0400
+	id S1755718Ab3JPPLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:11:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="420062900"
+   d="scan'208";a="417782021"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
         naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com
 Cc: arozansk@redhat.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [PATCH v2 8/9] ACPI, APEI, CPER: Cleanup CPER memory error output format
-Date: Wed, 16 Oct 2013 10:56:05 -0400
-Message-Id: <1381935366-11731-9-git-send-email-gong.chen@linux.intel.com>
+Subject: [PATCH v2 6/9] ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
+Date: Wed, 16 Oct 2013 10:56:03 -0400
+Message-Id: <1381935366-11731-7-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
 References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
@@ -24,168 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep up only the most important fields for memory error
-reporting. The detail information will be moved to perf/trace
-interface.
+In latest UEFI spec(by now it is 2.4) memory error definition
+for CPER (UEFI 2.4 Appendix N Common Platform Error Record)
+adds some new fields. These fields help people to locate
+memory error on actual DIMM location.
 
-Suggested-by: Tony Luck <tony.luck@intel.com>
+Original-author: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
 ---
- drivers/acpi/apei/cper.c | 69 +++++++++++++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 36 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce-apei.c |  3 +--
+ drivers/acpi/apei/cper.c              |  7 ++++---
+ drivers/acpi/apei/ghes.c              |  4 ++--
+ drivers/edac/ghes_edac.c              |  5 ++---
+ include/linux/cper.h                  | 11 +++++++++--
+ 5 files changed, 18 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-apei.c b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+index cd8b166..de8b60a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+@@ -42,8 +42,7 @@ void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
+ 	struct mce m;
+ 
+ 	/* Only corrected MC is reported */
+-	if (!corrected || !(mem_err->validation_bits &
+-				CPER_MEM_VALID_PHYSICAL_ADDRESS))
++	if (!corrected || !(mem_err->validation_bits & CPER_MEM_VALID_PA))
+ 		return;
+ 
+ 	mce_setup(&m);
 diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index b1a8a55..f5bc227 100644
+index eb5f6d6..946ef52 100644
 --- a/drivers/acpi/apei/cper.c
 +++ b/drivers/acpi/apei/cper.c
-@@ -33,6 +33,9 @@
- #include <linux/pci.h>
- #include <linux/aer.h>
+@@ -8,7 +8,7 @@
+  * various tables, such as ERST, BERT and HEST etc.
+  *
+  * For more information about CPER, please refer to Appendix N of UEFI
+- * Specification version 2.3.
++ * Specification version 2.4.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License version
+@@ -191,16 +191,17 @@ static const char *cper_mem_err_type_strs[] = {
+ 	"memory sparing",
+ 	"scrub corrected error",
+ 	"scrub uncorrected error",
++	"physical memory map-out event",
+ };
  
-+#define INDENT_SP	" "
-+#define HW_CE_INFO \
-+	"Above error has been corrected by h/w and no further action required"
- /*
-  * CPER record ID need to be unique even after reboot, because record
-  * ID is used as index for ERST storage, while CPER records from
-@@ -206,29 +209,29 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+ {
+ 	if (mem->validation_bits & CPER_MEM_VALID_ERROR_STATUS)
+ 		printk("%s""error_status: 0x%016llx\n", pfx, mem->error_status);
+-	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)
++	if (mem->validation_bits & CPER_MEM_VALID_PA)
+ 		printk("%s""physical_address: 0x%016llx\n",
+ 		       pfx, mem->physical_addr);
+-	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK)
++	if (mem->validation_bits & CPER_MEM_VALID_PA_MASK)
  		printk("%s""physical_address_mask: 0x%016llx\n",
  		       pfx, mem->physical_addr_mask);
  	if (mem->validation_bits & CPER_MEM_VALID_NODE)
--		printk("%s""node: %d\n", pfx, mem->node);
-+		pr_debug("node: %d\n", mem->node);
- 	if (mem->validation_bits & CPER_MEM_VALID_CARD)
--		printk("%s""card: %d\n", pfx, mem->card);
-+		pr_debug("card: %d\n", mem->card);
- 	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
--		printk("%s""module: %d\n", pfx, mem->module);
-+		pr_debug("module: %d\n", mem->module);
- 	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
--		printk("%s""rank: %d\n", pfx, mem->rank);
-+		pr_debug("rank: %d\n", mem->rank);
- 	if (mem->validation_bits & CPER_MEM_VALID_BANK)
--		printk("%s""bank: %d\n", pfx, mem->bank);
-+		pr_debug("bank: %d\n", mem->bank);
- 	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
--		printk("%s""device: %d\n", pfx, mem->device);
-+		pr_debug("device: %d\n", mem->device);
- 	if (mem->validation_bits & CPER_MEM_VALID_ROW)
--		printk("%s""row: %d\n", pfx, mem->row);
-+		pr_debug("row: %d\n", mem->row);
- 	if (mem->validation_bits & CPER_MEM_VALID_COLUMN)
--		printk("%s""column: %d\n", pfx, mem->column);
-+		pr_debug("column: %d\n", mem->column);
- 	if (mem->validation_bits & CPER_MEM_VALID_BIT_POSITION)
--		printk("%s""bit_position: %d\n", pfx, mem->bit_pos);
-+		pr_debug("bit_position: %d\n", mem->bit_pos);
- 	if (mem->validation_bits & CPER_MEM_VALID_REQUESTOR_ID)
--		printk("%s""requestor_id: 0x%016llx\n", pfx, mem->requestor_id);
-+		pr_debug("requestor_id: 0x%016llx\n", mem->requestor_id);
- 	if (mem->validation_bits & CPER_MEM_VALID_RESPONDER_ID)
--		printk("%s""responder_id: 0x%016llx\n", pfx, mem->responder_id);
-+		pr_debug("responder_id: 0x%016llx\n", mem->responder_id);
- 	if (mem->validation_bits & CPER_MEM_VALID_TARGET_ID)
--		printk("%s""target_id: 0x%016llx\n", pfx, mem->target_id);
-+		pr_debug("target_id: 0x%016llx\n", mem->target_id);
- 	if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE) {
- 		u8 etype = mem->error_type;
- 		printk("%s""error_type: %d, %s\n", pfx, etype,
-@@ -296,55 +299,45 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
- }
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 0db6e4f..a30bc31 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -419,7 +419,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
  
--static const char * const cper_estatus_section_flag_strs[] = {
--	"primary",
--	"containment warning",
--	"reset",
--	"error threshold exceeded",
--	"resource not accessible",
--	"latent error",
--};
--
- static void cper_estatus_print_section(
- 	const char *pfx, const struct acpi_generic_data *gdata, int sec_no)
- {
- 	uuid_le *sec_type = (uuid_le *)gdata->section_type;
- 	__u16 severity;
-+	char newpfx[64];
- 
- 	severity = gdata->error_severity;
--	printk("%s""section: %d, severity: %d, %s\n", pfx, sec_no, severity,
-+	printk("%s""Error %d, type: %s\n", pfx, sec_no,
- 	       cper_severity_str(severity));
--	printk("%s""flags: 0x%02x\n", pfx, gdata->flags);
--	cper_print_bits(pfx, gdata->flags, cper_estatus_section_flag_strs,
--			ARRAY_SIZE(cper_estatus_section_flag_strs));
- 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_ID)
- 		printk("%s""fru_id: %pUl\n", pfx, (uuid_le *)gdata->fru_id);
- 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_TEXT)
- 		printk("%s""fru_text: %.20s\n", pfx, gdata->fru_text);
- 
-+	snprintf(newpfx, sizeof(newpfx), "%s%s", pfx, INDENT_SP);
- 	if (!uuid_le_cmp(*sec_type, CPER_SEC_PROC_GENERIC)) {
- 		struct cper_sec_proc_generic *proc_err = (void *)(gdata + 1);
--		printk("%s""section_type: general processor error\n", pfx);
-+		printk("%s""section_type: general processor error\n", newpfx);
- 		if (gdata->error_data_length >= sizeof(*proc_err))
--			cper_print_proc_generic(pfx, proc_err);
-+			cper_print_proc_generic(newpfx, proc_err);
- 		else
- 			goto err_section_too_small;
- 	} else if (!uuid_le_cmp(*sec_type, CPER_SEC_PLATFORM_MEM)) {
- 		struct cper_sec_mem_err *mem_err = (void *)(gdata + 1);
--		printk("%s""section_type: memory error\n", pfx);
-+		printk("%s""section_type: memory error\n", newpfx);
- 		if (gdata->error_data_length >= sizeof(*mem_err))
--			cper_print_mem(pfx, mem_err);
-+			cper_print_mem(newpfx, mem_err);
- 		else
- 			goto err_section_too_small;
- 	} else if (!uuid_le_cmp(*sec_type, CPER_SEC_PCIE)) {
- 		struct cper_sec_pcie *pcie = (void *)(gdata + 1);
--		printk("%s""section_type: PCIe error\n", pfx);
-+		printk("%s""section_type: PCIe error\n", newpfx);
- 		if (gdata->error_data_length >= sizeof(*pcie))
--			cper_print_pcie(pfx, pcie, gdata);
-+			cper_print_pcie(newpfx, pcie, gdata);
- 		else
- 			goto err_section_too_small;
- 	} else
--		printk("%s""section type: unknown, %pUl\n", pfx, sec_type);
-+		printk("%s""section type: unknown, %pUl\n", newpfx, sec_type);
- 
- 	return;
- 
-@@ -358,21 +351,25 @@ void cper_estatus_print(const char *pfx,
- 	struct acpi_generic_data *gdata;
- 	unsigned int data_len, gedata_len;
- 	int sec_no = 0;
-+	char newpfx[64];
- 	__u16 severity;
- 
--	printk("%s""Generic Hardware Error Status\n", pfx);
- 	severity = estatus->error_severity;
--	printk("%s""severity: %d, %s\n", pfx, severity,
--	       cper_severity_str(severity));
-+	printk("%s""event severity: %s\n", pfx, cper_severity_str(severity));
- 	data_len = estatus->data_length;
- 	gdata = (struct acpi_generic_data *)(estatus + 1);
-+	snprintf(newpfx, sizeof(newpfx), "%s%s", pfx, INDENT_SP);
- 	while (data_len >= sizeof(*gdata)) {
- 		gedata_len = gdata->error_data_length;
--		cper_estatus_print_section(pfx, gdata, sec_no);
-+		cper_estatus_print_section(newpfx, gdata, sec_no);
- 		data_len -= gedata_len + sizeof(*gdata);
- 		gdata = (void *)(gdata + 1) + gedata_len;
- 		sec_no++;
+ 	if (sec_sev == GHES_SEV_CORRECTED &&
+ 	    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
+-	    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
++	    (mem_err->validation_bits & CPER_MEM_VALID_PA)) {
+ 		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+ 		if (pfn_valid(pfn))
+ 			memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
+@@ -430,7 +430,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
  	}
-+	if (severity != CPER_SEV_FATAL)
-+		printk("%s%s\n", pfx,
-+		       "Above error has been corrected by h/w "
-+		       "and require no further action");
- }
- EXPORT_SYMBOL_GPL(cper_estatus_print);
+ 	if (sev == GHES_SEV_RECOVERABLE &&
+ 	    sec_sev == GHES_SEV_RECOVERABLE &&
+-	    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
++	    mem_err->validation_bits & CPER_MEM_VALID_PA) {
+ 		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+ 		memory_failure_queue(pfn, 0, 0);
+ 	}
+diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
+index bb53467..0ad797b 100644
+--- a/drivers/edac/ghes_edac.c
++++ b/drivers/edac/ghes_edac.c
+@@ -297,15 +297,14 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+ 	}
  
+ 	/* Error address */
+-	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
++	if (mem_err->validation_bits & CPER_MEM_VALID_PA) {
+ 		e->page_frame_number = mem_err->physical_addr >> PAGE_SHIFT;
+ 		e->offset_in_page = mem_err->physical_addr & ~PAGE_MASK;
+ 	}
+ 
+ 	/* Error grain */
+-	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK) {
++	if (mem_err->validation_bits & CPER_MEM_VALID_PA_MASK)
+ 		e->grain = ~(mem_err->physical_addr_mask & ~PAGE_MASK);
+-	}
+ 
+ 	/* Memory error location, mapped on e->location */
+ 	p = e->location;
+diff --git a/include/linux/cper.h b/include/linux/cper.h
+index 09ebe21..2fc0ec3 100644
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -218,8 +218,8 @@ enum {
+ #define CPER_PROC_VALID_IP			0x1000
+ 
+ #define CPER_MEM_VALID_ERROR_STATUS		0x0001
+-#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
+-#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
++#define CPER_MEM_VALID_PA			0x0002
++#define CPER_MEM_VALID_PA_MASK			0x0004
+ #define CPER_MEM_VALID_NODE			0x0008
+ #define CPER_MEM_VALID_CARD			0x0010
+ #define CPER_MEM_VALID_MODULE			0x0020
+@@ -232,6 +232,9 @@ enum {
+ #define CPER_MEM_VALID_RESPONDER_ID		0x1000
+ #define CPER_MEM_VALID_TARGET_ID		0x2000
+ #define CPER_MEM_VALID_ERROR_TYPE		0x4000
++#define CPER_MEM_VALID_RANK_NUMBER		0x8000
++#define CPER_MEM_VALID_CARD_HANDLE		0x10000
++#define CPER_MEM_VALID_MODULE_HANDLE		0x20000
+ 
+ #define CPER_PCIE_VALID_PORT_TYPE		0x0001
+ #define CPER_PCIE_VALID_VERSION			0x0002
+@@ -347,6 +350,10 @@ struct cper_sec_mem_err {
+ 	__u64	responder_id;
+ 	__u64	target_id;
+ 	__u8	error_type;
++	__u8	reserved;
++	__u16	rank;
++	__u16	mem_array_handle;	/* card handle in UEFI 2.4 */
++	__u16	mem_dev_handle;		/* module handle in UEFI 2.4 */
+ };
+ 
+ struct cper_sec_pcie {
 -- 
 1.8.4.rc3
 
