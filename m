@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761393Ab3JPTV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 15:21:57 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44812 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761288Ab3JPTVu (ORCPT
+	id S1761465Ab3JPTWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 15:22:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35110 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761288Ab3JPTWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 15:21:50 -0400
-From: Dhanunjaya Naidu Ravada <dhanunjaya.matrix@gmail.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, peterhuewe@gmx.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dhanunjaya <dhanunjaya.matrix@gmail.com>
-Subject: [PATCH 4/4] Staging: xgifb: fix space prohibited before semicolon.
-Date: Thu, 17 Oct 2013 00:51:25 +0530
-Message-Id: <1381951285-20568-2-git-send-email-dhanunjaya.matrix@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381951285-20568-1-git-send-email-dhanunjaya.matrix@gmail.com>
-References: <1381951285-20568-1-git-send-email-dhanunjaya.matrix@gmail.com>
+	Wed, 16 Oct 2013 15:22:17 -0400
+Message-ID: <1381929897.1864.0.camel@dabdike>
+Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: dgilbert@interlog.com
+Cc: vaughan <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>
+In-Reply-To: <52540C7F.8050207@interlog.com>
+References: <8761tilrl0.fsf@redhat.com> <874n8s2tjz.fsf@redhat.com>
+	 <5253A9E7.5030707@oracle.com> <52540C7F.8050207@interlog.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 16 Oct 2013 14:24:57 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 3.8.5 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dhanunjaya <dhanunjaya.matrix@gmail.com>
+On Tue, 2013-10-08 at 09:45 -0400, Douglas Gilbert wrote:
+> On 13-10-08 02:44 AM, vaughan wrote:
+> > Hi Madper,
+> >
+> > CC to Douglas to get comments.
+> > I use the rw_semaphore o_sem to protect excl open, introduced in commit
+> > 15b06f9a02406e5460001db6d5af5c738cd3d4e7 since v3.12-rc1.
+> > Is it forbidden to do like that in kernel?...
+> 
+> It appears you can not (allow sg_open() to hold a semaphore
+> then return to the user space). So you will need to do some
+> rework on that patch or revert it.
 
-This is a patch to the vb_table.h file that fixes the
-space prohibited before semicolon warning found by the
-checkpatch.pl tool.
+OK, there being no reply on this, I'll do the revert ... that's all four
+patches, correct?
 
-Signed-off-by: Dhanunjaya Naidu Ravada <dhanunjaya.matrix@gmail.com>
----
- drivers/staging/xgifb/vb_table.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+James
 
-diff --git a/drivers/staging/xgifb/vb_table.h b/drivers/staging/xgifb/vb_table.h
-index 7168eed..f17e5b9 100644
---- a/drivers/staging/xgifb/vb_table.h
-+++ b/drivers/staging/xgifb/vb_table.h
-@@ -1284,7 +1284,7 @@ static const struct SiS_LVDSData XGI_LVDS1024x768Des_1[] = {
- 	{0, 1048,   0, 771}, /* 04 (640x480x60Hz) */
- 	{0, 1048,   0, 771}, /* 05 (800x600x60Hz) */
- 	{0, 1048, 805, 770}  /* 06 (1024x768x60Hz) */
--} ;
-+};
- 
- static const struct SiS_LVDSData XGI_LVDS1024x768Des_2[] = {
- 	{1142,  856, 622, 587}, /* 00 (320x200,320x400,640x200,640x400) */
--- 
-1.8.1.2
 
