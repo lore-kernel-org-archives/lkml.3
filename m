@@ -1,193 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab3JPPKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:10:33 -0400
-Received: from mail.tpi.com ([74.45.170.26]:38402 "EHLO mail.tpi.com"
+	id S1758946Ab3JPPLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:11:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2983 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757152Ab3JPPKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:10:31 -0400
-From: Tim Gardner <timg@tpi.com>
-To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+	id S1754061Ab3JPPLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:11:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
+   d="scan'208";a="417781859"
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
+        naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com
+Cc: arozansk@redhat.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Tim Gardner <timg@tpi.com>, Steve French <sfrench@samba.org>
-Subject: [PATCH 2/2 linux-next] cifs: Make big endian multiplex ID sequences monotonic on the wire
-Date: Wed, 16 Oct 2013 09:09:50 -0600
-Message-Id: <1381936190-67628-2-git-send-email-timg@tpi.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381936190-67628-1-git-send-email-timg@tpi.com>
-References: <1381936190-67628-1-git-send-email-timg@tpi.com>
+Subject: [PATCH v2 0/9] Extended H/W error log driver
+Date: Wed, 16 Oct 2013 10:55:57 -0400
+Message-Id: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multiplex identifier (MID) in the SMB header is only
-ever used by the client, in conjunction with PID, to match responses
-from the server. As such, the endianess of the MID is not important.
-However, When tracing packet sequences on the wire, protocol analyzers
-such as wireshark display MID as little endian. It is much more informative
-for the on-the-wire MID sequences to match debug information emitted by the
-CIFS driver.  Therefore, one should write and read MID in the SMB header
-assuming it is always little endian.
+[PATCH v2 1/9] ACPI, APEI, CPER: Fix status check during error printing
+[PATCH v2 2/9] ACPI, CPER: Update cper info
+[PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
+[PATCH v2 4/9] ACPI, x86: Extended error log driver for x86 platform
+[PATCH v2 5/9] DMI: Parse memory device (type 17) in SMBIOS
+[PATCH v2 6/9] ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
+[PATCH v2 7/9] ACPI, APEI, CPER: Enhance memory reporting capability
+[PATCH v2 8/9] ACPI, APEI, CPER: Cleanup CPER memory error output format
+[PATCH v2 9/9] ACPI / trace: Add trace interface for eMCA driver
 
-Observed from wireshark during the protocol negotiation
-and session setup:
+This patch series adds an enhanced MCA event logging driver provided by Intel.
+Please refer to this link: htpp://www.intel.com/content/www/us/en/architecture-and-technology/enhanced-mca-logging-xeon-paper.html
 
-        Multiplex ID: 256
-        Multiplex ID: 256
-        Multiplex ID: 512
-        Multiplex ID: 512
-        Multiplex ID: 768
-        Multiplex ID: 768
+Certain usages such as Predictive Failure Analysis (PFA) require more
+information about the error than what can be described in processor
+machine check banks. Most server processors log additional information
+about the error in processor uncore registers. Since the addresses
+and layout of these registers vary widely from one processor to another,
+system software cannot readily make use of them. To complicate matters
+further, some of the additionalerror information cannot be constructed
+without detailed knowledge about platform topology. This enhanced MCA
+logging driver allows firmware to provide additional error information
+to MCE/CMCI handler and thus addresses this gap.
 
-After this patch on-the-wire MID values begin at 1 and increase monotonically.
+After applying this patch series, when a memory corrected error happens,
+we can get following information:
 
-Introduce get_next_mid64() for the internal consumers that use the full 64 bit
-multiplex identifier.
+dmesg output:
 
-Introduce the helpers get_mid() and compare_mid() to make the endian
-translation clear.
+[  949.545817] {1}Hardware error detected on CPU15
+[  949.549786] {1}event severity: corrected
+[  949.549786] {1} Error 0, type: corrected
+[  949.549786] {1}  section_type: memory error
+[  949.549786] {1}  physical_address: 0x0000001057eb0000
+[  949.549786] {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
+[  949.549786] {1}Above error has been corrected by h/w and require no further action
+[  949.549786] mce: [Hardware Error]: Machine check events logged
+[ 1010.902124] {2}Hardware error detected on CPU15
+[ 1010.906064] {2}event severity: corrected
+[ 1010.906064] {2} Error 0, type: corrected
+[ 1010.906064] {2}  section_type: memory error
+[ 1010.906064] {2}  physical_address: 0x0000001057eb0000
+[ 1010.906064] {2}  DIMM location: Memriser3 CHANNEL A DIMM 0
+[ 1010.906064] {2}Above error has been corrected by h/w and require no further action
+[ 1010.906064] mce: [Hardware Error]: Machine check events logged
 
-Cc: Steve French <sfrench@samba.org>
-Signed-off-by: Tim Gardner <timg@tpi.com>
----
 
-I'm looking at some of this code in excrutiating detail because I'm having trouble
-with a backport of CIFS from 3.9.7 on an embedded 2.6.31 powerpc. Its failing the RawNTLMSSP
-authentication and is almost certainly an endian issue. x86 on the same code base works
-quite well. Am I making a rash assumption that CIFS in 3.9 stable worked on big endian ?
 
- fs/cifs/cifsglob.h      |   25 ++++++++++++++++++++++++-
- fs/cifs/misc.c          |    9 +++++----
- fs/cifs/smb1ops.c       |    4 ++--
- fs/cifs/smb2transport.c |    2 +-
- fs/cifs/transport.c     |    2 +-
- 5 files changed, 33 insertions(+), 9 deletions(-)
 
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 52b6f6c..535e324 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -620,11 +620,34 @@ set_credits(struct TCP_Server_Info *server, const int val)
- }
- 
- static inline __u64
--get_next_mid(struct TCP_Server_Info *server)
-+get_next_mid64(struct TCP_Server_Info *server)
- {
- 	return server->ops->get_next_mid(server);
- }
- 
-+static inline __u16
-+get_next_mid(struct TCP_Server_Info *server)
-+{
-+	__u16 mid = get_next_mid64(server);
-+	/*
-+	 * The value in the SMB header should be little endian for easy
-+	 * on-the-wire decoding.
-+	 */
-+	return cpu_to_le16(mid);
-+}
-+
-+static inline __u16
-+get_mid(const struct smb_hdr *smb)
-+{
-+	return le16_to_cpu(smb->Mid);
-+}
-+
-+static inline bool
-+compare_mid(__u16 mid, const struct smb_hdr *smb)
-+{
-+	return mid == le16_to_cpu(smb->Mid);
-+}
-+
- /*
-  * When the server supports very large reads and writes via POSIX extensions,
-  * we can allow up to 2^24-1, minus the size of a READ/WRITE_AND_X header, not
-diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
-index 298e31e..c851d41 100644
---- a/fs/cifs/misc.c
-+++ b/fs/cifs/misc.c
-@@ -295,7 +295,8 @@ check_smb_hdr(struct smb_hdr *smb)
- 	if (smb->Command == SMB_COM_LOCKING_ANDX)
- 		return 0;
- 
--	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n", smb->Mid);
-+	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n",
-+		 le16_to_cpu(smb->Mid));
- 	return 1;
- }
- 
-@@ -358,11 +359,11 @@ checkSMB(char *buf, unsigned int total_read)
- 				return 0; /* bcc wrapped */
- 		}
- 		cifs_dbg(FYI, "Calculated size %u vs length %u mismatch for mid=%u\n",
--			 clc_len, 4 + rfclen, smb->Mid);
-+			 clc_len, 4 + rfclen, le16_to_cpu(smb->Mid));
- 
- 		if (4 + rfclen < clc_len) {
- 			cifs_dbg(VFS, "RFC1001 size %u smaller than SMB for mid=%u\n",
--				 rfclen, smb->Mid);
-+				 rfclen, le16_to_cpu(smb->Mid));
- 			return -EIO;
- 		} else if (rfclen > clc_len + 512) {
- 			/*
-@@ -375,7 +376,7 @@ checkSMB(char *buf, unsigned int total_read)
- 			 * data to 512 bytes.
- 			 */
- 			cifs_dbg(VFS, "RFC1001 size %u more than 512 bytes larger than SMB for mid=%u\n",
--				 rfclen, smb->Mid);
-+				 rfclen, le16_to_cpu(smb->Mid));
- 			return -EIO;
- 		}
- 	}
-diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-index 8233b17..5598af9 100644
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -67,7 +67,7 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
- 	mutex_unlock(&server->srv_mutex);
- 
- 	cifs_dbg(FYI, "issued NT_CANCEL for mid %u, rc = %d\n",
--		 in_buf->Mid, rc);
-+		 le16_to_cpu(in_buf->Mid), rc);
- 
- 	return rc;
- }
-@@ -101,7 +101,7 @@ cifs_find_mid(struct TCP_Server_Info *server, char *buffer)
- 
- 	spin_lock(&GlobalMid_Lock);
- 	list_for_each_entry(mid, &server->pending_mid_q, qhead) {
--		if (mid->mid == buf->Mid &&
-+		if (compare_mid(mid->mid, buf) &&
- 		    mid->mid_state == MID_REQUEST_SUBMITTED &&
- 		    le16_to_cpu(mid->command) == buf->Command) {
- 			spin_unlock(&GlobalMid_Lock);
-diff --git a/fs/cifs/smb2transport.c b/fs/cifs/smb2transport.c
-index 340abca..c523617 100644
---- a/fs/cifs/smb2transport.c
-+++ b/fs/cifs/smb2transport.c
-@@ -466,7 +466,7 @@ smb2_verify_signature(struct smb_rqst *rqst, struct TCP_Server_Info *server)
- static inline void
- smb2_seq_num_into_buf(struct TCP_Server_Info *server, struct smb2_hdr *hdr)
- {
--	hdr->MessageId = get_next_mid(server);
-+	hdr->MessageId = get_next_mid64(server);
- }
- 
- static struct mid_q_entry *
-diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
-index 6fdcb1b..057b2c0 100644
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -58,7 +58,7 @@ AllocMidQEntry(const struct smb_hdr *smb_buffer, struct TCP_Server_Info *server)
- 		return temp;
- 	else {
- 		memset(temp, 0, sizeof(struct mid_q_entry));
--		temp->mid = smb_buffer->Mid;	/* always LE */
-+		temp->mid = get_mid(smb_buffer);
- 		temp->pid = current->pid;
- 		temp->command = cpu_to_le16(smb_buffer->Command);
- 		cifs_dbg(FYI, "For smb_command %d\n", smb_buffer->Command);
--- 
-1.7.9.5
+trace output:
 
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 2/2   #P:120
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+          <idle>-0     [015] d.h.   951.584641: extlog_mem_event: 1 corrected error: unknown on Memriser3 CHANNEL A DIMM 0 (FRU: 00000000-0000-0000-0000-000000000000  physical addr: 0x0000001057eb0000 node: 1 card: 0 module: 0 rank: 0 bank: 0 row: 28917 column: 1400)
+          <idle>-0     [015] d.h.  1013.008596: extlog_mem_event: 2 corrected errors: unknown on Memriser3 CHANNEL A DIMM 0 (FRU: 00000000-0000-0000-0000-000000000000  physical addr: 0x0000001057eb0000 node: 1 card: 0 module: 0 rank: 0 bank: 0 row: 28917 column: 1400)
+
+
+dmesg output format has been updated based on the suggestion from Boris.
+For trace output format we still need further discussion. In the last
+patch(support trace interface) I have to reserve previous Kconfig format
+because I find once I put trace_event interface in the module, it will
+not work. I will paste another trace patch(it only works when acpi_extlog is
+builtin) for your answer.
