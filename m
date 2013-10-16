@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934608Ab3JPO1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:27:07 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:41527 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934536Ab3JPO1F (ORCPT
+	id S934533Ab3JPOcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:32:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45141 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934104Ab3JPOcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:27:05 -0400
-Date: Wed, 16 Oct 2013 14:27:03 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
- statistics update
-In-Reply-To: <20131016092601.GB23440@gmail.com>
-Message-ID: <00000141c1a9a88d-2fe8384a-435c-4c40-bafd-c3fc04960783-000000@email.amazonses.com>
-References: <20131015174722.615394057@linux.com> <20131015174745.197380080@linux.com> <20131016083545.GP10651@twins.programming.kicks-ass.net> <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com> <20131016092601.GB23440@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Wed, 16 Oct 2013 10:32:08 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] mmc: atmel-mci: add vmmc-supply support
+Date: Wed, 16 Oct 2013 16:32:04 +0200
+Message-Id: <1381933924-32437-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same issue in ipv6 code.
+Other MMC hosts handle a regulator named vmmc-supply that allows to power the
+MMC card or SDIO device before communicating on the bus.
 
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ drivers/mmc/host/atmel-mci.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Subject: net: Fix statistics update in ip6
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 69e438e..deffa1f 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -23,6 +23,7 @@
+ #include <linux/of_device.h>
+ #include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/scatterlist.h>
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+@@ -2355,6 +2356,7 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 	struct mci_platform_data	*pdata;
+ 	struct atmel_mci		*host;
+ 	struct resource			*regs;
++	struct regulator		*reg_vmmc;
+ 	unsigned int			nr_slots;
+ 	int				irq;
+ 	int				ret;
+@@ -2371,6 +2373,16 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	reg_vmmc = devm_regulator_get(&pdev->dev, "vmmc");
++	if (!IS_ERR(reg_vmmc)) {
++		ret = regulator_enable(reg_vmmc);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"Failed to enable vmmc regulator: %d\n", ret);
++			return ret;
++		}
++	}
++
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+ 		return irq;
+-- 
+1.8.1.2
 
-ipv6 does the same as ipv4. IP6_INC_STATS must be used outside
-of BH sections.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/net/ipv6/ip6_output.c
-===================================================================
---- linux.orig/net/ipv6/ip6_output.c	2013-10-10 11:01:01.119771564 -0500
-+++ linux/net/ipv6/ip6_output.c	2013-10-16 08:48:19.474562100 -0500
-@@ -909,7 +909,7 @@ static int ip6_dst_lookup_tail(struct so
-
- out_err_release:
- 	if (err == -ENETUNREACH)
--		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
-+		IP6_INC_STATS(net, NULL, IPSTATS_MIB_OUTNOROUTES);
- 	dst_release(*dst);
- 	*dst = NULL;
- 	return err;
