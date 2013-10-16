@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760364Ab3JPJ0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:26:08 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:39606 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760179Ab3JPJ0H (ORCPT
+	id S1760476Ab3JPJ1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:27:49 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:59737 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760078Ab3JPJ1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:26:07 -0400
-Date: Wed, 16 Oct 2013 11:26:01 +0200
+	Wed, 16 Oct 2013 05:27:47 -0400
+Date: Wed, 16 Oct 2013 11:27:44 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
- statistics update
-Message-ID: <20131016092601.GB23440@gmail.com>
-References: <20131015174722.615394057@linux.com>
- <20131015174745.197380080@linux.com>
- <20131016083545.GP10651@twins.programming.kicks-ass.net>
- <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] x86/efi: Add EFI framebuffer earlyprintk support
+Message-ID: <20131016092744.GC23440@gmail.com>
+References: <1381423261-30566-1-git-send-email-matt@console-pimps.org>
+ <20131010172844.GA26430@gmail.com>
+ <20131011140039.GF12321@console-pimps.org>
+ <20131012174934.GA18849@gmail.com>
+ <525B06CB.6090602@zytor.com>
+ <20131014075726.GB20435@gmail.com>
+ <20131016091648.GD10834@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com>
+In-Reply-To: <20131016091648.GD10834@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-> On Wed, 2013-10-16 at 10:35 +0200, Peter Zijlstra wrote:
-> > On Tue, Oct 15, 2013 at 12:47:23PM -0500, Christoph Lameter wrote:
-> > > ip4_datagram_connect is called with BH processing enabled. Therefore
-> > > we cannot use IP_INC_STATS_BH but must use IP_INC_STATS which disables
-> > > BH handling before incrementing the counter.
+> On Mon, 14 Oct, at 09:57:26AM, Ingo Molnar wrote:
+> > 
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > 
+> > > On 10/12/2013 10:49 AM, Ingo Molnar wrote:
+> > > > 
+> > > >>>> +static void early_efi_write_char(void *dst, char c, int h)
+> > > >>>> +{
+> > > >>>> +	const u8 *src;
+> > > >>>> +	u32 fgcolor = 0xaaaaaa;
+> > > >>>
+> > > >>> That's RGB grey, right? Why not 0xffffff for a very visible white?
+> > > >>  
+> > > >> The VGA earlyprintk code uses the equivalent grey, AFAIK, which is why I 
+> > > >> picked this value.
+> > > > 
+> > > > The VGA code should be changed to white too I suspect ;-)
+> > > > 
 > > > 
-> > > The following trace is triggered without this patch:
-> > > 
-> > > [ 9293.806634] __this_cpu_add operation in preemptible [00000000] code: ntpd/2150
+> > > For compatibility with the classical text console we use light grey as 
+> > > the default color and a double-stroked font (which was necessary on the 
+> > > CGA display since it didn't have enough bandwidth to handle 
+> > > single-stroked fonts well).  The problem with changing that to white is 
+> > > that you end up with a mismatch between the earlyprintk console and the 
+> > > "real" console, *or* we change the behavior of everyone's consoles...
 > > 
-> > You lost the BUG there; that really needs to be there:
+> > Btw., I have no problem at all with making the early console look separate 
+> > and making it clear when we switch to the 'real' console.
 > > 
-> >  - BUG makes people pay attention
-> >  - This was an actual BUG wasn't it?
-> > 
-> > Sure there can be false positives, but in all cases people should 
-> > amend the code. Sometimes with a comment explaining why the raw 
-> > primitive should be used; sometimes to fix an actual bug, but a patch 
-> > needs to be written. Therefore BUG!
+> > earlyprintk is a debug method, and more information can only be good.
 > 
-> Yep this is a real BUG for linux 2.6.36+ on 32bit arches,
-> 
-> The effect of this bug is that on 32bit arches, we might corrupt a 
-> seqcount : Later, we can spin forever on it.
+> Have we reached a consensus here? I've no strong opinion either way on 
+> the colour of the text.
 
-Ouch, that's a pretty serious bug ...
+I'd suggest we go white and see whether anyone complains legitimately ...
 
-The patch title should reflect this fact.
-
-> In linux 2.6.36 we converted IP mib from 32 to 64 bits, therefore this 
-> fix should be backported up to 2.6.36
-> 
-> Prior to 2.6.36, the bug was that some increments of SNMP stat could be 
-> lost, because two cpus could access the same location, hardly a 
-> problem...
+In any case:
 
 Acked-by: Ingo Molnar <mingo@kernel.org>
 
