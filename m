@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761660Ab3JPRtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:49:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36032 "EHLO
+	id S934980Ab3JPRtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:49:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934750Ab3JPRqm (ORCPT
+	with ESMTP id S934731Ab3JPRql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:42 -0400
+	Wed, 16 Oct 2013 13:46:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
         Manfred Spraul <manfred@colorfullife.com>,
-        Mike Galbraith <bitbucket@online.de>, Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 47/50] ipc/sem.c: optimize sem_lock()
-Date: Wed, 16 Oct 2013 10:45:33 -0700
-Message-Id: <20131016174404.122710496@linuxfoundation.org>
+Subject: [ 46/50] ipc: drop ipc_lock_check
+Date: Wed, 16 Oct 2013 10:45:32 -0700
+Message-Id: <20131016174403.989688740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -31,55 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manfred Spraul <manfred@colorfullife.com>
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 6d07b68ce16ae9535955ba2059dedba5309c3ca1 upstream.
+commit 20b8875abcf2daa1dda5cf70bd6369df5e85d4c1 upstream.
 
-Operations that need access to the whole array must guarantee that there
-are no simple operations ongoing.  Right now this is achieved by
-spin_unlock_wait(sem->lock) on all semaphores.
+No remaining users, we now use ipc_obtain_object_check().
 
-If complex_count is nonzero, then this spin_unlock_wait() is not
-necessary, because it was already performed in the past by the thread
-that increased complex_count and even though sem_perm.lock was dropped
-inbetween, no simple operation could have started, because simple
-operations cannot start when complex_count is non-zero.
-
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
 Cc: Rik van Riel <riel@redhat.com>
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/sem.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ ipc/util.c |   16 ----------------
+ ipc/util.h |    1 -
+ 2 files changed, 17 deletions(-)
 
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -248,12 +248,20 @@ static void merge_queues(struct sem_arra
-  * Caller must own sem_perm.lock.
-  * New simple ops cannot start, because simple ops first check
-  * that sem_perm.lock is free.
-+ * that a) sem_perm.lock is free and b) complex_count is 0.
-  */
- static void sem_wait_array(struct sem_array *sma)
- {
- 	int i;
- 	struct sem *sem;
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -678,22 +678,6 @@ out:
+ 	return out;
+ }
  
-+	if (sma->complex_count)  {
-+		/* The thread that increased sma->complex_count waited on
-+		 * all sem->lock locks. Thus we don't need to wait again.
-+		 */
-+		return;
-+	}
-+
- 	for (i = 0; i < sma->sem_nsems; i++) {
- 		sem = sma->sem_base + i;
- 		spin_unlock_wait(&sem->lock);
+-struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id)
+-{
+-	struct kern_ipc_perm *out;
+-
+-	out = ipc_lock(ids, id);
+-	if (IS_ERR(out))
+-		return out;
+-
+-	if (ipc_checkid(out, id)) {
+-		ipc_unlock(out);
+-		return ERR_PTR(-EIDRM);
+-	}
+-
+-	return out;
+-}
+-
+ /**
+  * ipcget - Common sys_*get() code
+  * @ns : namsepace
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -185,7 +185,6 @@ static inline void ipc_unlock(struct ker
+ 	rcu_read_unlock();
+ }
+ 
+-struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id);
+ struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+ 			struct ipc_ops *ops, struct ipc_params *params);
 
 
