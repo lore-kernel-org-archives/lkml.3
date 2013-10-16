@@ -1,196 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934695Ab3JPOGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:06:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26738 "EHLO
+	id S934677Ab3JPOGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:06:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26721 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934637Ab3JPOGE (ORCPT
+	with ESMTP id S934657Ab3JPOGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:06:04 -0400
+	Wed, 16 Oct 2013 10:06:02 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Subject: [PATCH V9 27/33] xfs: add support for read_iter and write_iter
-Date: Wed, 16 Oct 2013 09:04:40 -0500
-Message-Id: <1381932286-14978-28-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org
+Subject: [PATCH V9 15/33] aio: add aio support for iov_iter arguments
+Date: Wed, 16 Oct 2013 09:04:28 -0500
+Message-Id: <1381932286-14978-16-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Dave Chinner <dchinner@redhat.com>
-Cc: Ben Myers <bpm@sgi.com>
-Cc: Alex Elder <elder@kernel.org>
-Cc: xfs@oss.sgi.com
----
- fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
- 1 file changed, 20 insertions(+), 31 deletions(-)
+This adds iocb cmds which specify that memory is held in iov_iter
+structures.  This lets kernel callers specify memory that can be
+expressed in an iov_iter, which includes pages in bio_vec arrays.
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 4c749ab..818c623 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -227,10 +227,9 @@ xfs_file_fsync(
+Only kernel callers can provide an iov_iter so it doesn't make a lot of
+sense to expose the IOCB_CMD values for this as part of the user space
+ABI.
+
+But kernel callers should also be able to perform the usual aio
+operations which suggests using the the existing operation namespace and
+support code.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: linux-aio@kvack.org
+---
+ fs/aio.c            | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/aio.h |  8 ++++++++
+ 2 files changed, 60 insertions(+), 2 deletions(-)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index ae40141..b1d257a 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1199,13 +1199,55 @@ static ssize_t aio_setup_single_vector(struct kiocb *kiocb,
+ 	return 0;
  }
  
- STATIC ssize_t
--xfs_file_aio_read(
-+xfs_file_read_iter(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos)
++static ssize_t aio_read_iter(struct kiocb *iocb, struct iov_iter *iter)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret;
++
++	if (unlikely(!is_kernel_kiocb(iocb)))
++		return -EINVAL;
++
++	if (unlikely(!(file->f_mode & FMODE_READ)))
++		return -EBADF;
++
++	ret = security_file_permission(file, MAY_READ);
++	if (unlikely(ret))
++		return ret;
++
++	if (!file->f_op->read_iter)
++		return -EINVAL;
++
++	return file->f_op->read_iter(iocb, iter, iocb->ki_pos);
++}
++
++static ssize_t aio_write_iter(struct kiocb *iocb, struct iov_iter *iter)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret;
++
++	if (unlikely(!is_kernel_kiocb(iocb)))
++		return -EINVAL;
++
++	if (unlikely(!(file->f_mode & FMODE_WRITE)))
++		return -EBADF;
++
++	ret = security_file_permission(file, MAY_WRITE);
++	if (unlikely(ret))
++		return ret;
++
++	if (!file->f_op->write_iter)
++		return -EINVAL;
++
++	return file->f_op->write_iter(iocb, iter, iocb->ki_pos);
++}
++
+ /*
+  * aio_setup_iocb:
+  *	Performs the initial checks and aio retry method
+  *	setup for the kiocb at the time of io submission.
+  */
+ static ssize_t aio_run_iocb(struct kiocb *req, unsigned opcode,
+-			    char __user *buf, bool compat)
++			    void *buf, bool compat)
  {
- 	struct file		*file = iocb->ki_filp;
-@@ -251,9 +250,7 @@ xfs_file_aio_read(
- 	if (file->f_mode & FMODE_NOCMTIME)
- 		ioflags |= IO_INVIS;
+ 	struct file *file = req->ki_filp;
+ 	ssize_t ret;
+@@ -1270,6 +1312,14 @@ rw_common:
+ 			file_end_write(file);
+ 		break;
  
--	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
--	if (ret < 0)
--		return ret;
-+	size = iov_iter_count(iter);
++	case IOCB_CMD_READ_ITER:
++		ret = aio_read_iter(req, buf);
++		break;
++
++	case IOCB_CMD_WRITE_ITER:
++		ret = aio_write_iter(req, buf);
++		break;
++
+ 	case IOCB_CMD_FDSYNC:
+ 		if (!file->f_op->aio_fsync)
+ 			return -EINVAL;
+@@ -1440,7 +1490,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_nbytes = iocb->aio_nbytes;
  
- 	if (unlikely(ioflags & IO_ISDIRECT)) {
- 		xfs_buftarg_t	*target =
-@@ -306,7 +303,7 @@ xfs_file_aio_read(
+ 	ret = aio_run_iocb(req, iocb->aio_lio_opcode,
+-			   (char __user *)(unsigned long)iocb->aio_buf,
++			   (void *)(unsigned long)iocb->aio_buf,
+ 			   compat);
+ 	if (ret)
+ 		goto out_put_req;
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 734d9e6..f01e7e3 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -15,6 +15,14 @@ struct kiocb;
+ #define KIOCB_KEY		0
  
- 	trace_xfs_file_read(ip, size, pos, ioflags);
- 
--	ret = generic_file_aio_read(iocb, iovp, nr_segs, pos);
-+	ret = generic_file_read_iter(iocb, iter, pos);
- 	if (ret > 0)
- 		XFS_STATS_ADD(xs_read_bytes, ret);
- 
-@@ -622,10 +619,9 @@ restart:
- STATIC ssize_t
- xfs_file_dio_aio_write(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos,
--	size_t			ocount)
-+	size_t			count)
- {
- 	struct file		*file = iocb->ki_filp;
- 	struct address_space	*mapping = file->f_mapping;
-@@ -633,7 +629,6 @@ xfs_file_dio_aio_write(
- 	struct xfs_inode	*ip = XFS_I(inode);
- 	struct xfs_mount	*mp = ip->i_mount;
- 	ssize_t			ret = 0;
--	size_t			count = ocount;
- 	int			unaligned_io = 0;
- 	int			iolock;
- 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
-@@ -693,8 +688,8 @@ xfs_file_dio_aio_write(
- 	}
- 
- 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
--	ret = generic_file_direct_write(iocb, iovp,
--			&nr_segs, pos, &iocb->ki_pos, count, ocount);
-+	ret = generic_file_direct_write_iter(iocb, iter,
-+			pos, &iocb->ki_pos, count);
- 
- out:
- 	xfs_rw_iunlock(ip, iolock);
-@@ -707,10 +702,9 @@ out:
- STATIC ssize_t
- xfs_file_buffered_aio_write(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos,
--	size_t			ocount)
-+	size_t			count)
- {
- 	struct file		*file = iocb->ki_filp;
- 	struct address_space	*mapping = file->f_mapping;
-@@ -719,7 +713,6 @@ xfs_file_buffered_aio_write(
- 	ssize_t			ret;
- 	int			enospc = 0;
- 	int			iolock = XFS_IOLOCK_EXCL;
--	size_t			count = ocount;
- 
- 	xfs_rw_ilock(ip, iolock);
- 
-@@ -732,7 +725,7 @@ xfs_file_buffered_aio_write(
- 
- write_retry:
- 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
--	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
-+	ret = generic_file_buffered_write_iter(iocb, iter,
- 			pos, &iocb->ki_pos, count, 0);
- 
- 	/*
-@@ -753,10 +746,9 @@ out:
- }
- 
- STATIC ssize_t
--xfs_file_aio_write(
-+xfs_file_write_iter(
- 	struct kiocb		*iocb,
--	const struct iovec	*iovp,
--	unsigned long		nr_segs,
-+	struct iov_iter		*iter,
- 	loff_t			pos)
- {
- 	struct file		*file = iocb->ki_filp;
-@@ -764,17 +756,15 @@ xfs_file_aio_write(
- 	struct inode		*inode = mapping->host;
- 	struct xfs_inode	*ip = XFS_I(inode);
- 	ssize_t			ret;
--	size_t			ocount = 0;
-+	size_t			count = 0;
- 
- 	XFS_STATS_INC(xs_write_calls);
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
--	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
--	if (ret)
--		return ret;
-+	count = iov_iter_count(iter);
- 
--	if (ocount == 0)
-+	if (count == 0)
- 		return 0;
- 
- 	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
-@@ -783,10 +773,9 @@ xfs_file_aio_write(
- 	}
- 
- 	if (unlikely(file->f_flags & O_DIRECT))
--		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
-+		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
- 	else
--		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
--						  ocount);
-+		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
- 
- 	if (ret > 0) {
- 		ssize_t err;
-@@ -1411,8 +1400,8 @@ const struct file_operations xfs_file_operations = {
- 	.llseek		= xfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read	= xfs_file_aio_read,
--	.aio_write	= xfs_file_aio_write,
-+	.read_iter	= xfs_file_read_iter,
-+	.write_iter	= xfs_file_write_iter,
- 	.splice_read	= xfs_file_splice_read,
- 	.splice_write	= xfs_file_splice_write,
- 	.unlocked_ioctl	= xfs_file_ioctl,
+ /*
++ * opcode values not exposed to user space
++ */
++enum {
++	IOCB_CMD_READ_ITER = 0x10000,
++	IOCB_CMD_WRITE_ITER = 0x10001,
++};
++
++/*
+  * We use ki_cancel == KIOCB_CANCELLED to indicate that a kiocb has been either
+  * cancelled or completed (this makes a certain amount of sense because
+  * successful cancellation - io_cancel() - does deliver the completion to
 -- 
 1.8.4
 
