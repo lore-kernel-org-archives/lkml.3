@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762155Ab3JPVBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:01:54 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:35228 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761921Ab3JPVBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:01:52 -0400
-Date: Wed, 16 Oct 2013 23:02:13 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: daniel.vetter@ffwll.ch, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, przanoni@gmail.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: Re: [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert "Revert
- "drm/i915: revert eDP bpp clamping code changes""
-Message-ID: <20131016210213.GR4830@phenom.ffwll.local>
-Mail-Followup-To: Joseph Salisbury <joseph.salisbury@canonical.com>,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-	przanoni@gmail.com, airlied@linux.ie,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-References: <cover.1381939165.git.joseph.salisbury@canonical.com>
- <397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com>
+	id S1762167Ab3JPVCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:02:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761953Ab3JPVCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:02:35 -0400
+Date: Wed, 16 Oct 2013 22:55:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] (Was: perf_event_mmap(vma) && !vma->vm_mm)
+Message-ID: <20131016205531.GA26066@redhat.com>
+References: <20131012192203.GA21738@redhat.com> <20131014102426.GX3081@twins.programming.kicks-ass.net> <20131016200924.GA23214@redhat.com> <20131016202822.GI2675@laptop.programming.kicks-ass.net> <20131016204348.GA25121@redhat.com> <20131016205559.GF10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com>
-X-Operating-System: Linux phenom 3.10-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131016205559.GF10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 04:34:57PM -0400, Joseph Salisbury wrote:
-> BugLink: http://bugs.launchpad.net/bugs/1195483
-> 
-> This reverts commit 657445fe8660100ad174600ebfa61536392b7624.
-> 
-> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Paulo Zanoni <przanoni@gmail.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: stable@vger.kernel.org
+On 10/16, Peter Zijlstra wrote:
+>
+> On Wed, Oct 16, 2013 at 10:43:48PM +0200, Oleg Nesterov wrote:
+> > Yes, we can copy the garbage to the userspace. So what? This should not
+> > matter at all. Exactly because userspace should never used the data after
+> > the end of string, no?
+>
+> Security people tell me to _never_ leak anything. I'm not near creative
+> enough to exploit such a thing; but I am amazed at the techniques I do
+> read about at times. So its really a better safe than sorry thing.
 
-It's by far not that simple. Jani is working on both the underlying bug
-and a better w/a. See
+OK.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59841
+Still we can cleanup/simplify this. see the next email...
 
-for the full story in its entire glory.
+Oleg.
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
