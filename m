@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab3JPLiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:38:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49828 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933974Ab3JPLiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:38:10 -0400
-Message-ID: <525E7A86.4090507@ti.com>
-Date: Wed, 16 Oct 2013 17:07:42 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S934146Ab3JPLko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:40:44 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:55370 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab3JPLkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 07:40:43 -0400
+Date: Wed, 16 Oct 2013 13:40:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
+Message-ID: <20131016114036.GB12773@localhost.localdomain>
+References: <20131015163906.342d8ffa@gandalf.local.home>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: OMAP5: Add i2c aliases
-References: <1381856405-30970-1-git-send-email-nm@ti.com>
-In-Reply-To: <1381856405-30970-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015163906.342d8ffa@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 October 2013 10:30 PM, Nishanth Menon wrote:
-> Currently, i2c1 and i2c5 defer probe due to pinctrl dependencies.
-> This changes the i2c ID each bus is registered with in i2c-dev
-> interface.
+On Tue, Oct 15, 2013 at 04:39:06PM -0400, Steven Rostedt wrote:
+> Since the NMI iretq nesting has been fixed, there's no reason that
+> an NMI handler can not take a page fault for vmalloc'd code. No locks
+> are taken in that code path, and the software now handles nested NMIs
+> when the fault re-enables NMIs on iretq.
 > 
-> As a result of this, many userspace tools break and there is no
-> consistent manner to fix the same if the i2c dev interface have no
-> consistent numbering. Provide alias to allow ordering the i2c devices
-> correctly.
-
-This looks good Nishanth. Shouldn't we just go ahead and fix these for
-all OMAPs/AMxx devices which would have the same problem as OMAP5 ;)
-
-Acked-by: Rajendra Nayak <rnayak@ti.com> 
+> Not only that, if the vmalloc_fault() WARN_ON_ONCE() is hit, and that
+> warn on triggers a vmalloc fault for some reason, then we can go into
+> an infinite loop (the WARN_ON_ONCE() does the WARN() before updating
+> the variable to make it happen "once").
 > 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Reported-by: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Thanks! For now we probably indeed want this patch. But I hope it's only
+for the short term.
+
+I still think that allowing faults in NMIs is very nasty, as we expect NMIs to never
+be disturbed. I'm not even sure if that interacts correctly with the rcu_nmi_enter()
+and preempt_count & NMI_MASK things. Not sure how perf is ready for that either (now
+hardware events can be interrupted by fault trace events).
+
+So I hope we can think about something else for the long term.
+
 > ---
+>  arch/x86/mm/fault.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
->  arch/arm/boot/dts/omap5.dtsi |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-> index e18ee7e..8970deb 100644
-> --- a/arch/arm/boot/dts/omap5.dtsi
-> +++ b/arch/arm/boot/dts/omap5.dtsi
-> @@ -21,6 +21,11 @@
->  	interrupt-parent = <&gic>;
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 3aaeffc..78926c6 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -268,8 +268,6 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+>  	if (!(address >= VMALLOC_START && address < VMALLOC_END))
+>  		return -1;
 >  
->  	aliases {
-> +		i2c0 = &i2c1;
-> +		i2c1 = &i2c2;
-> +		i2c2 = &i2c3;
-> +		i2c3 = &i2c4;
-> +		i2c4 = &i2c5;
->  		serial0 = &uart1;
->  		serial1 = &uart2;
->  		serial2 = &uart3;
+> -	WARN_ON_ONCE(in_nmi());
+> -
+>  	/*
+>  	 * Synchronize this task's top level page-table
+>  	 * with the 'reference' page table.
+> -- 
+> 1.8.1.4
 > 
-
