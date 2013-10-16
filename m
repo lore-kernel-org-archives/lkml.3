@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762027Ab3JPR6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:58:09 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36338 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762013Ab3JPR6E (ORCPT
+	id S934743Ab3JPR6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:58:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35896 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934575Ab3JPRqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:58:04 -0400
-From: Dhanunjaya <dhanunjaya.matrix@gmail.com>
-To: eli.billauer@gmail.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dhanunjaya <dhanunjaya.matrix@gmail.com>
-Subject: [PATCH 2/2] Staging: xillybus: fix for quoted string split across lines
-Date: Wed, 16 Oct 2013 23:27:52 +0530
-Message-Id: <1381946272-18651-1-git-send-email-dhanunjaya.matrix@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 16 Oct 2013 13:46:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Gregory Fong <gregory.0xf0@gmail.com>, linux-mips@linux-mips.org
+Subject: [ 21/50] MIPS: stack protector: Fix per-task canary switch
+Date: Wed, 16 Oct 2013 10:45:07 -0700
+Message-Id: <20131016174400.952627917@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the xillybus_of.c file that fixes up a
-quoted string split across lines warning found by the
-checkpatch.pl tool.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Dhanunjaya <dhanunjaya.matrix@gmail.com>
+------------------
+
+From: James Hogan <james.hogan@imgtec.com>
+
+commit 8b3c569a3999a8fd5a819f892525ab5520777c92 upstream.
+
+Commit 1400eb6 (MIPS: r4k,octeon,r2300: stack protector: change canary
+per task) was merged in v3.11 and introduced assembly in the MIPS resume
+functions to update the value of the current canary in
+__stack_chk_guard. However it used PTR_L resulting in a load of the
+canary value, instead of PTR_LA to construct its address. The value is
+intended to be random but is then treated as an address in the
+subsequent LONG_S (store).
+
+This was observed to cause a fault and panic:
+
+CPU 0 Unable to handle kernel paging request at virtual address 139fea20, epc == 8000cc0c, ra == 8034f2a4
+Oops[#1]:
+...
+$24   : 139fea20 1e1f7cb6
+...
+Call Trace:
+[<8000cc0c>] resume+0xac/0x118
+[<8034f2a4>] __schedule+0x5f8/0x78c
+[<8034f4e0>] schedule_preempt_disabled+0x20/0x2c
+[<80348eec>] rest_init+0x74/0x84
+[<804dc990>] start_kernel+0x43c/0x454
+Code: 3c18804b  8f184030  8cb901f8 <af190000> 00c0e021  8cb002f0 8cb102f4  8cb202f8  8cb302fc
+
+This can also be forced by modifying
+arch/mips/include/asm/stackprotector.h so that the default
+__stack_chk_guard value is more likely to be a bad (or unaligned)
+pointer.
+
+Fix it to use PTR_LA instead, to load the address of the canary value,
+which the LONG_S can then use to write into it.
+
+Reported-by: bobjones (via #mipslinux on IRC)
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Gregory Fong <gregory.0xf0@gmail.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/6026/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/staging/xillybus/xillybus_of.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/mips/kernel/octeon_switch.S |    2 +-
+ arch/mips/kernel/r2300_switch.S  |    2 +-
+ arch/mips/kernel/r4k_switch.S    |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/xillybus/xillybus_of.c b/drivers/staging/xillybus/xillybus_of.c
-index 92c2931..822ef4d 100644
---- a/drivers/staging/xillybus/xillybus_of.c
-+++ b/drivers/staging/xillybus/xillybus_of.c
-@@ -117,8 +117,7 @@ static int xilly_drv_probe(struct platform_device *op)
+--- a/arch/mips/kernel/octeon_switch.S
++++ b/arch/mips/kernel/octeon_switch.S
+@@ -73,7 +73,7 @@
+ 3:
  
- 	rc = of_address_to_resource(dev->of_node, 0, &endpoint->res);
- 	if (rc) {
--		pr_warn("xillybus: Failed to obtain device tree "
--			"resource\n");
-+		pr_warn("xillybus: Failed to obtain device tree resource\n");
- 		goto failed_request_regions;
- 	}
+ #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+-	PTR_L	t8, __stack_chk_guard
++	PTR_LA	t8, __stack_chk_guard
+ 	LONG_L	t9, TASK_STACK_CANARY(a1)
+ 	LONG_S	t9, 0(t8)
+ #endif
+--- a/arch/mips/kernel/r2300_switch.S
++++ b/arch/mips/kernel/r2300_switch.S
+@@ -67,7 +67,7 @@ LEAF(resume)
+ 1:
  
-@@ -141,8 +140,7 @@ static int xilly_drv_probe(struct platform_device *op)
- 	rc = request_irq(irq, xillybus_isr, 0, xillyname, endpoint);
+ #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+-	PTR_L	t8, __stack_chk_guard
++	PTR_LA	t8, __stack_chk_guard
+ 	LONG_L	t9, TASK_STACK_CANARY(a1)
+ 	LONG_S	t9, 0(t8)
+ #endif
+--- a/arch/mips/kernel/r4k_switch.S
++++ b/arch/mips/kernel/r4k_switch.S
+@@ -69,7 +69,7 @@
+ 1:
  
- 	if (rc) {
--		pr_err("xillybus: Failed to register IRQ handler. "
--		       "Aborting.\n");
-+		pr_err("xillybus: Failed to register IRQ handler, Aborting...\n");
- 		rc = -ENODEV;
- 		goto failed_register_irq;
- 	}
--- 
-1.8.1.2
+ #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+-	PTR_L	t8, __stack_chk_guard
++	PTR_LA	t8, __stack_chk_guard
+ 	LONG_L	t9, TASK_STACK_CANARY(a1)
+ 	LONG_S	t9, 0(t8)
+ #endif
+
 
