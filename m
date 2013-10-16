@@ -1,211 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760729Ab3JPLqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:46:03 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:54983 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760182Ab3JPLqB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 16 Oct 2013 07:46:01 -0400
-Message-Id: <525E989602000078000FB740@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 16 Oct 2013 12:45:57 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] x86-64: don't track CPU model data that is
- used by 32-bit code only
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1760750Ab3JPLqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:46:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51860 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760680Ab3JPLqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 07:46:47 -0400
+Date: Wed, 16 Oct 2013 12:46:09 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] arm64, jump label: optimize jump label
+ implementation
+Message-ID: <20131016114608.GH5403@mudshark.cambridge.arm.com>
+References: <1381893492-7135-1-git-send-email-liuj97@gmail.com>
+ <1381893492-7135-7-git-send-email-liuj97@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1381893492-7135-7-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct cpu_dev's c_models is only ever set inside CONFIG_X86_32
-conditionals (or code that's being built for 32-bit only), so there's
-no use of reserving the (empty) space for the model names in a 64-bit
-kernel.
+On Wed, Oct 16, 2013 at 04:18:11AM +0100, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> Optimize jump label implementation for ARM64 by dynamically patching
+> kernel text.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/arm64/Kconfig                  |  1 +
+>  arch/arm64/include/asm/jump_label.h | 52 ++++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/Makefile          |  1 +
+>  arch/arm64/kernel/jump_label.c      | 60 +++++++++++++++++++++++++++++++++++++
+>  4 files changed, 114 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/jump_label.h
+>  create mode 100644 arch/arm64/kernel/jump_label.c
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index c044548..da388e4 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -17,6 +17,7 @@ config ARM64
+>  	select GENERIC_SMP_IDLE_THREAD
+>  	select GENERIC_TIME_VSYSCALL
+>  	select HARDIRQS_SW_RESEND
+> +	select HAVE_ARCH_JUMP_LABEL
+>  	select HAVE_ARCH_TRACEHOOK
+>  	select HAVE_DEBUG_BUGVERBOSE
+>  	select HAVE_DEBUG_KMEMLEAK
+> diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
+> new file mode 100644
+> index 0000000..d268fab
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/jump_label.h
+> @@ -0,0 +1,52 @@
+> +/*
+> + * Copyright (C) 2013 Huawei Ltd.
+> + * Author: Jiang Liu <jiang.liu@huawei.com>
+> + *
+> + * Based on arch/arm/include/asm/jump_label.h
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#ifndef _ASM_ARM64_JUMP_LABEL_H
+> +#define _ASM_ARM64_JUMP_LABEL_H
+> +#include <linux/types.h>
+> +
+> +#ifdef __KERNEL__
+> +
+> +#define JUMP_LABEL_NOP_SIZE 4
+> +
+> +static __always_inline bool arch_static_branch(struct static_key *key)
+> +{
+> +	asm goto("1:\n\t"
+> +		 "nop\n\t"
+> +		 ".pushsection __jump_table,  \"aw\"\n\t"
+> +		 ".align 3\n\t"
+> +		 ".quad 1b, %l[l_yes], %c0\n\t"
+> +		 ".popsection\n\t"
+> +		 :  :  "i"(key) :  : l_yes);
+> +
+> +	return false;
+> +l_yes:
+> +	return true;
+> +}
+> +
+> +#endif /* __KERNEL__ */
+> +
+> +typedef u64 jump_label_t;
+> +
+> +struct jump_entry {
+> +	jump_label_t code;
+> +	jump_label_t target;
+> +	jump_label_t key;
+> +};
+> +
+> +#endif	/* _ASM_ARM64_JUMP_LABEL_H */
+> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+> index 9af6cb3..b7db65e 100644
+> --- a/arch/arm64/kernel/Makefile
+> +++ b/arch/arm64/kernel/Makefile
+> @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
+>  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+>  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
+>  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+> +arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+>  
+>  obj-y					+= $(arm64-obj-y) vdso/
+>  obj-m					+= $(arm64-obj-m)
+> diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
+> new file mode 100644
+> index 0000000..74cbc73
+> --- /dev/null
+> +++ b/arch/arm64/kernel/jump_label.c
+> @@ -0,0 +1,60 @@
+> +/*
+> + * Copyright (C) 2013 Huawei Ltd.
+> + * Author: Jiang Liu <jiang.liu@huawei.com>
+> + *
+> + * Based on arch/arm/kernel/jump_label.c
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/kernel.h>
+> +#include <linux/jump_label.h>
+> +#include <asm/jump_label.h>
+> +#include <asm/insn.h>
+> +
+> +#ifdef HAVE_JUMP_LABEL
+> +
+> +static void __arch_jump_label_transform(struct jump_entry *entry,
+> +					enum jump_label_type type,
+> +					bool is_static)
+> +{
+> +	void *addr = (void *)entry->code;
+> +	u32 insn;
+> +
+> +	if (type == JUMP_LABEL_ENABLE) {
+> +		/* no way out if instruction offset is out of range(+/-128M) */
+> +		insn = aarch64_insn_gen_branch_imm(entry->code,
+> +						   entry->target, 0);
+> +		BUG_ON(!insn);
 
-Similarly, c_size_cache is only used in the #else of a CONFIG_X86_64
-conditional, so reserving space for (and in one case even initializing)
-that field is pointless for 64-bit kernels too.
+In this case, rather than BUG_ON, it would be better (somehow) to abort
+optimisation and instead patch in a branch to the actual condition check.
 
-While moving both fields to the end of the structure, I also noticed
-that
-- the c_models array size was one too small, potentially causing
-  table_lookup_model() to return garbage on Intel CPUs (intel.c's
-  instance was lacking the sentinel with family being zero), so the
-  patch bumps that by one,
-- c_models' vendor sub-field was unused (and anyway redundant with
-  the base structure's c_x86_vendor field), so the patch deletes it.
+> +	} else {
+> +		insn = aarch64_insn_gen_nop();
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
----
- arch/x86/kernel/cpu/amd.c     |    2 +-
- arch/x86/kernel/cpu/centaur.c |    6 ++++--
- arch/x86/kernel/cpu/common.c  |    4 +++-
- arch/x86/kernel/cpu/cpu.h     |   16 +++++++---------
- arch/x86/kernel/cpu/intel.c   |    8 ++++----
- arch/x86/kernel/cpu/umc.c     |    2 +-
- 6 files changed, 20 insertions(+), 18 deletions(-)
+You could make the code more concise by limiting your patching ability to
+branch immediates. Then a nop is simply a branch to the next instruction (I
+doubt any modern CPUs will choke on this, whereas the architecture requires
+a NOP to take time).
 
---- 3.12-rc5/arch/x86/kernel/cpu/amd.c
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/amd.c
-@@ -824,7 +824,7 @@ static const struct cpu_dev amd_cpu_dev 
- 	.c_ident	= { "AuthenticAMD" },
- #ifdef CONFIG_X86_32
- 	.c_models = {
--		{ .vendor = X86_VENDOR_AMD, .family = 4, .model_names =
-+		{ .family = 4, .model_names =
- 		  {
- 			  [3] = "486 DX/2",
- 			  [7] = "486 DX/2-WB",
---- 3.12-rc5/arch/x86/kernel/cpu/centaur.c
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/centaur.c
-@@ -468,10 +468,10 @@ static void init_centaur(struct cpuinfo_
- #endif
- }
- 
-+#ifdef CONFIG_X86_32
- static unsigned int
- centaur_size_cache(struct cpuinfo_x86 *c, unsigned int size)
- {
--#ifdef CONFIG_X86_32
- 	/* VIA C3 CPUs (670-68F) need further shifting. */
- 	if ((c->x86 == 6) && ((c->x86_model == 7) || (c->x86_model == 8)))
- 		size >>= 8;
-@@ -484,16 +484,18 @@ centaur_size_cache(struct cpuinfo_x86 *c
- 	if ((c->x86 == 6) && (c->x86_model == 9) &&
- 				(c->x86_mask == 1) && (size == 65))
- 		size -= 1;
--#endif
- 	return size;
- }
-+#endif
- 
- static const struct cpu_dev centaur_cpu_dev = {
- 	.c_vendor	= "Centaur",
- 	.c_ident	= { "CentaurHauls" },
- 	.c_early_init	= early_init_centaur,
- 	.c_init		= init_centaur,
-+#ifdef CONFIG_X86_32
- 	.c_size_cache	= centaur_size_cache,
-+#endif
- 	.c_x86_vendor	= X86_VENDOR_CENTAUR,
- };
- 
---- 3.12-rc5/arch/x86/kernel/cpu/common.c
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/common.c
-@@ -346,6 +346,7 @@ static void filter_cpuid_features(struct
- /* Look up CPU names by table lookup. */
- static const char *table_lookup_model(struct cpuinfo_x86 *c)
- {
-+#ifdef CONFIG_X86_32
- 	const struct cpu_model_info *info;
- 
- 	if (c->x86_model >= 16)
-@@ -356,11 +357,12 @@ static const char *table_lookup_model(st
- 
- 	info = this_cpu->c_models;
- 
--	while (info && info->family) {
-+	while (info->family) {
- 		if (info->family == c->x86)
- 			return info->model_names[c->x86_model];
- 		info++;
- 	}
-+#endif
- 	return NULL;		/* Not found */
- }
- 
---- 3.12-rc5/arch/x86/kernel/cpu/cpu.h
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/cpu.h
-@@ -1,12 +1,6 @@
- #ifndef ARCH_X86_CPU_H
- #define ARCH_X86_CPU_H
- 
--struct cpu_model_info {
--	int		vendor;
--	int		family;
--	const char	*model_names[16];
--};
--
- /* attempt to consolidate cpu attributes */
- struct cpu_dev {
- 	const char	*c_vendor;
-@@ -14,15 +8,19 @@ struct cpu_dev {
- 	/* some have two possibilities for cpuid string */
- 	const char	*c_ident[2];
- 
--	struct		cpu_model_info c_models[4];
--
- 	void            (*c_early_init)(struct cpuinfo_x86 *);
- 	void		(*c_bsp_init)(struct cpuinfo_x86 *);
- 	void		(*c_init)(struct cpuinfo_x86 *);
- 	void		(*c_identify)(struct cpuinfo_x86 *);
- 	void		(*c_detect_tlb)(struct cpuinfo_x86 *);
--	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
- 	int		c_x86_vendor;
-+#ifdef CONFIG_X86_32
-+	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
-+	struct cpu_model_info {
-+		int		family;
-+		const char	*model_names[16];
-+	}		c_models[5];
-+#endif
- };
- 
- struct _tlb_table {
---- 3.12-rc5/arch/x86/kernel/cpu/intel.c
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/intel.c
-@@ -666,7 +666,7 @@ static const struct cpu_dev intel_cpu_de
- 	.c_ident	= { "GenuineIntel" },
- #ifdef CONFIG_X86_32
- 	.c_models = {
--		{ .vendor = X86_VENDOR_INTEL, .family = 4, .model_names =
-+		{ .family = 4, .model_names =
- 		  {
- 			  [0] = "486 DX-25/33",
- 			  [1] = "486 DX-50",
-@@ -679,7 +679,7 @@ static const struct cpu_dev intel_cpu_de
- 			  [9] = "486 DX/4-WB"
- 		  }
- 		},
--		{ .vendor = X86_VENDOR_INTEL, .family = 5, .model_names =
-+		{ .family = 5, .model_names =
- 		  {
- 			  [0] = "Pentium 60/66 A-step",
- 			  [1] = "Pentium 60/66",
-@@ -690,7 +690,7 @@ static const struct cpu_dev intel_cpu_de
- 			  [8] = "Mobile Pentium MMX"
- 		  }
- 		},
--		{ .vendor = X86_VENDOR_INTEL, .family = 6, .model_names =
-+		{ .family = 6, .model_names =
- 		  {
- 			  [0] = "Pentium Pro A-step",
- 			  [1] = "Pentium Pro",
-@@ -704,7 +704,7 @@ static const struct cpu_dev intel_cpu_de
- 			  [11] = "Pentium III (Tualatin)",
- 		  }
- 		},
--		{ .vendor = X86_VENDOR_INTEL, .family = 15, .model_names =
-+		{ .family = 15, .model_names =
- 		  {
- 			  [0] = "Pentium 4 (Unknown)",
- 			  [1] = "Pentium 4 (Willamette)",
---- 3.12-rc5/arch/x86/kernel/cpu/umc.c
-+++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/umc.c
-@@ -12,7 +12,7 @@ static const struct cpu_dev umc_cpu_dev 
- 	.c_vendor	= "UMC",
- 	.c_ident	= { "UMC UMC UMC" },
- 	.c_models = {
--		{ .vendor = X86_VENDOR_UMC, .family = 4, .model_names =
-+		{ .family = 4, .model_names =
- 		  {
- 			  [1] = "U5D",
- 			  [2] = "U5S",
-
-
+Will
