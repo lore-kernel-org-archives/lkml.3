@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760978Ab3JPQlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:41:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53713 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755386Ab3JPQle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:41:34 -0400
-Date: Wed, 16 Oct 2013 18:41:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
-        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-Message-ID: <20131016164119.GI13608@pd.tnic>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
- <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
+	id S1760993Ab3JPQnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:43:00 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:47756 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab3JPQm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 12:42:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hd2n5uq33.wl%tiwai@suse.de>
+References: <1381940506-29855-1-git-send-email-geyslan@gmail.com>
+	<s5hd2n5uq33.wl%tiwai@suse.de>
+Date: Wed, 16 Oct 2013 13:42:58 -0300
+Message-ID: <CAGG-pUTOH8gd27VrzezDE+SO4wOSFe7kYzsZRK252rG+v3bfrg@mail.gmail.com>
+Subject: Re: [PATCH] sound: pci: emu10k1: Remove useless casting in emufx.c
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: kernel-br <kernel-br@googlegroups.com>, Jaroslav Kysela <perex@perex.cz>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        "moderated list:SOUND" <alsa-devel@alsa-project.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:56:00AM -0400, Chen, Gong wrote:
-> GENMASK is used to create a contiguous bitmask([hi:lo]). It is
-> implemented twice in current kernel. One is in EDAC driver, the other
-> is in SiS/XGI FB driver. Move it to a more generic place for other
-> usage.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Thomas Winischhofer <thomas@winischhofer.net>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+2013/10/16 Takashi Iwai <tiwai@suse.de>:
+> At Wed, 16 Oct 2013 13:21:45 -0300,
+> Geyslan G. Bem wrote:
+>>
+>> Casting (void *) value returned by kcalloc is useless
+>> as mentioned in Documentation/CodingStyle, Chap 14.
+>>
+>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>
+> You missed __user prefix.  You can't cast user and kernel pointers
+> implicitly.
+>
+>
+> Takashi
+>
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Takashi,
 
--- 
-Regards/Gruss,
-    Boris.
+My mistake, I'll fix that later.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thank you.
+
+>> ---
+>>  sound/pci/emu10k1/emufx.c | 12 +++++-------
+>>  1 file changed, 5 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
+>> index 0275209..3f51dac 100644
+>> --- a/sound/pci/emu10k1/emufx.c
+>> +++ b/sound/pci/emu10k1/emufx.c
+>> @@ -1183,9 +1183,8 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
+>>       mm_segment_t seg;
+>>
+>>       if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
+>> -         (icode->gpr_map = (u_int32_t __user *)
+>> -          kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
+>> -                  GFP_KERNEL)) == NULL ||
+>> +         (icode->gpr_map = kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
+>> +                                   GFP_KERNEL)) == NULL ||
+>>           (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+>>                               sizeof(*controls), GFP_KERNEL)) == NULL) {
+>>               err = -ENOMEM;
+>> @@ -1815,10 +1814,9 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
+>>
+>>       if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL)
+>>               return -ENOMEM;
+>> -     if ((icode->gpr_map = (u_int32_t __user *)
+>> -          kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
+>> -                  GFP_KERNEL)) == NULL ||
+>> -            (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+>> +     if ((icode->gpr_map = kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
+>> +                                   GFP_KERNEL)) == NULL ||
+>> +         (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+>>                               sizeof(struct snd_emu10k1_fx8010_control_gpr),
+>>                               GFP_KERNEL)) == NULL ||
+>>           (ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL)) == NULL) {
+>> --
+>> 1.8.4
+>>
