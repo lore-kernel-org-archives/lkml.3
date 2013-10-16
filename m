@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761279Ab3JPRp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:45:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35484 "EHLO
+	id S1761453Ab3JPRpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:45:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35520 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab3JPRpW (ORCPT
+	with ESMTP id S1761286Ab3JPRp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:22 -0400
+	Wed, 16 Oct 2013 13:45:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 02/69] ALSA: hda - hdmi: Fix channel map switch not taking effect
-Date: Wed, 16 Oct 2013 10:44:11 -0700
-Message-Id: <20131016174313.164530515@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [ 12/69] parisc: fix interruption handler to respect pagefault_disable()
+Date: Wed, 16 Oct 2013 10:44:21 -0700
+Message-Id: <20131016174314.399238520@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -26,71 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Helge Deller <deller@gmx.de>
 
-commit 39edac70e9aedf451fccaa851b273ace9fcca0bd upstream.
+commit 59b33f148cc08fb33cbe823fca1e34f7f023765e upstream.
 
-Currently hdmi_setup_audio_infoframe() reprograms the HDA channel
-mapping only when the infoframe is not up-to-date or the non-PCM flag
-has changed.
+Running an "echo t > /proc/sysrq-trigger" crashes the parisc kernel.  The
+problem is, that in print_worker_info() we try to read the workqueue info via
+the probe_kernel_read() functions which use pagefault_disable() to avoid
+crashes like this:
+    probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
+    probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
+    probe_kernel_read(name, wq->name, sizeof(name) - 1);
 
-However, when just the channel map has been changed, the infoframe may
-still be up-to-date and non-PCM flag may not have changed, so the new
-channel map is not actually programmed into the HDA codec.
+The problem here is, that the first probe_kernel_read(&pwq) might return zero
+in pwq and as such the following probe_kernel_reads() try to access contents of
+the page zero which is read protected and generate a kernel segfault.
 
-Notably, this failing case is also always triggered when the device is
-already in a prepared state and a new channel map is configured while
-changing only the channel positions (for example, plain
-"speaker-test -c2 -m FR,FL").
+With this patch we fix the interruption handler to call parisc_terminate()
+directly only if pagefault_disable() was not called (in which case
+preempt_count()==0).  Otherwise we hand over to the pagefault handler which
+will try to look up the faulting address in the fixup tables.
 
-Fix that by always programming the channel map in
-hdmi_setup_audio_infoframe(). Tested on Intel HDMI.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin  <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ arch/parisc/kernel/traps.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -930,6 +930,14 @@ static void hdmi_setup_audio_infoframe(s
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -805,14 +805,14 @@ void notrace handle_interruption(int cod
+ 	else {
+ 
+ 	    /*
+-	     * The kernel should never fault on its own address space.
++	     * The kernel should never fault on its own address space,
++	     * unless pagefault_disable() was called before.
+ 	     */
+ 
+-	    if (fault_space == 0) 
++	    if (fault_space == 0 && !in_atomic())
+ 	    {
+ 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
+ 		parisc_terminate("Kernel Fault", regs, code, fault_address);
+-	
+ 	    }
  	}
  
- 	/*
-+	 * always configure channel mapping, it may have been changed by the
-+	 * user in the meantime
-+	 */
-+	hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
-+				   channels, per_pin->chmap,
-+				   per_pin->chmap_set);
-+
-+	/*
- 	 * sizeof(ai) is used instead of sizeof(*hdmi_ai) or
- 	 * sizeof(*dp_ai) to avoid partial match/update problems when
- 	 * the user switches between HDMI/DP monitors.
-@@ -940,20 +948,10 @@ static void hdmi_setup_audio_infoframe(s
- 			    "pin=%d channels=%d\n",
- 			    pin_nid,
- 			    channels);
--		hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
--					   channels, per_pin->chmap,
--					   per_pin->chmap_set);
- 		hdmi_stop_infoframe_trans(codec, pin_nid);
- 		hdmi_fill_audio_infoframe(codec, pin_nid,
- 					    ai.bytes, sizeof(ai));
- 		hdmi_start_infoframe_trans(codec, pin_nid);
--	} else {
--		/* For non-pcm audio switch, setup new channel mapping
--		 * accordingly */
--		if (per_pin->non_pcm != non_pcm)
--			hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
--						   channels, per_pin->chmap,
--						   per_pin->chmap_set);
- 	}
- 
- 	per_pin->non_pcm = non_pcm;
 
 
