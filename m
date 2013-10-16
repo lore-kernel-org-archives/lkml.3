@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab3JPR6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:58:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35896 "EHLO
+	id S934690Ab3JPR6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:58:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934575Ab3JPRqY (ORCPT
+	with ESMTP id S934581Ab3JPRqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:46:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Gregory Fong <gregory.0xf0@gmail.com>, linux-mips@linux-mips.org
-Subject: [ 21/50] MIPS: stack protector: Fix per-task canary switch
-Date: Wed, 16 Oct 2013 10:45:07 -0700
-Message-Id: <20131016174400.952627917@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 22/50] drm/radeon/dpm/btc: off by one in btc_set_mc_special_registers()
+Date: Wed, 16 Oct 2013 10:45:08 -0700
+Message-Id: <20131016174401.070475541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -28,88 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8b3c569a3999a8fd5a819f892525ab5520777c92 upstream.
+commit 96d8df846f52a720c8ae1fadadfad7c9e733e336 upstream.
 
-Commit 1400eb6 (MIPS: r4k,octeon,r2300: stack protector: change canary
-per task) was merged in v3.11 and introduced assembly in the MIPS resume
-functions to update the value of the current canary in
-__stack_chk_guard. However it used PTR_L resulting in a load of the
-canary value, instead of PTR_LA to construct its address. The value is
-intended to be random but is then treated as an address in the
-subsequent LONG_S (store).
+It should be ">=" instead of ">" here.  The table->mc_reg_address[]
+array has SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE (16) elements.
 
-This was observed to cause a fault and panic:
-
-CPU 0 Unable to handle kernel paging request at virtual address 139fea20, epc == 8000cc0c, ra == 8034f2a4
-Oops[#1]:
-...
-$24   : 139fea20 1e1f7cb6
-...
-Call Trace:
-[<8000cc0c>] resume+0xac/0x118
-[<8034f2a4>] __schedule+0x5f8/0x78c
-[<8034f4e0>] schedule_preempt_disabled+0x20/0x2c
-[<80348eec>] rest_init+0x74/0x84
-[<804dc990>] start_kernel+0x43c/0x454
-Code: 3c18804b  8f184030  8cb901f8 <af190000> 00c0e021  8cb002f0 8cb102f4  8cb202f8  8cb302fc
-
-This can also be forced by modifying
-arch/mips/include/asm/stackprotector.h so that the default
-__stack_chk_guard value is more likely to be a bad (or unaligned)
-pointer.
-
-Fix it to use PTR_LA instead, to load the address of the canary value,
-which the LONG_S can then use to write into it.
-
-Reported-by: bobjones (via #mipslinux on IRC)
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Gregory Fong <gregory.0xf0@gmail.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/6026/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/octeon_switch.S |    2 +-
- arch/mips/kernel/r2300_switch.S  |    2 +-
- arch/mips/kernel/r4k_switch.S    |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/btc_dpm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/mips/kernel/octeon_switch.S
-+++ b/arch/mips/kernel/octeon_switch.S
-@@ -73,7 +73,7 @@
- 3:
+--- a/drivers/gpu/drm/radeon/btc_dpm.c
++++ b/drivers/gpu/drm/radeon/btc_dpm.c
+@@ -1913,7 +1913,7 @@ static int btc_set_mc_special_registers(
+ 			}
+ 			j++;
  
- #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
--	PTR_L	t8, __stack_chk_guard
-+	PTR_LA	t8, __stack_chk_guard
- 	LONG_L	t9, TASK_STACK_CANARY(a1)
- 	LONG_S	t9, 0(t8)
- #endif
---- a/arch/mips/kernel/r2300_switch.S
-+++ b/arch/mips/kernel/r2300_switch.S
-@@ -67,7 +67,7 @@ LEAF(resume)
- 1:
+-			if (j > SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
++			if (j >= SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
+ 				return -EINVAL;
  
- #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
--	PTR_L	t8, __stack_chk_guard
-+	PTR_LA	t8, __stack_chk_guard
- 	LONG_L	t9, TASK_STACK_CANARY(a1)
- 	LONG_S	t9, 0(t8)
- #endif
---- a/arch/mips/kernel/r4k_switch.S
-+++ b/arch/mips/kernel/r4k_switch.S
-@@ -69,7 +69,7 @@
- 1:
+ 			tmp = RREG32(MC_PMG_CMD_MRS);
+@@ -1928,7 +1928,7 @@ static int btc_set_mc_special_registers(
+ 			}
+ 			j++;
  
- #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
--	PTR_L	t8, __stack_chk_guard
-+	PTR_LA	t8, __stack_chk_guard
- 	LONG_L	t9, TASK_STACK_CANARY(a1)
- 	LONG_S	t9, 0(t8)
- #endif
+-			if (j > SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
++			if (j >= SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
+ 				return -EINVAL;
+ 			break;
+ 		case MC_SEQ_RESERVE_M >> 2:
+@@ -1942,7 +1942,7 @@ static int btc_set_mc_special_registers(
+ 			}
+ 			j++;
+ 
+-			if (j > SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
++			if (j >= SMC_EVERGREEN_MC_REGISTER_ARRAY_SIZE)
+ 				return -EINVAL;
+ 			break;
+ 		default:
 
 
