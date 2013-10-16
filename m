@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934913Ab3JPOLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:11:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33267 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934743Ab3JPOLL (ORCPT
+	id S934920Ab3JPOLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:11:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39651 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934563Ab3JPOF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:11:11 -0400
-Date: Wed, 16 Oct 2013 07:12:13 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, devel@driverdev.osuosl.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Archana kumari <archanakumari959@gmail.com>
-Subject: Re: [PATCH] [media] staging: media: Fix build for iMON LIRC driver
-Message-ID: <20131016141213.GA17567@kroah.com>
-References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
- <1381845763-10487-3-git-send-email-treding@nvidia.com>
- <20131016070340.GC11731@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016070340.GC11731@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 10:05:56 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
+        Asias He <asias@redhat.com>, Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V9 26/33] block_dev: add support for read_iter, write_iter
+Date: Wed, 16 Oct 2013 09:04:39 -0500
+Message-Id: <1381932286-14978-27-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:03:40AM +0300, Dan Carpenter wrote:
-> On Tue, Oct 15, 2013 at 04:02:43PM +0200, Thierry Reding wrote:
-> > Add a missing , between parameters in a call to dev_info().
-> > 
-> 
-> Greg already reverted the original patch.
-> 
-> The original patch wasn't sent to the list.  Archana, use
-> scripts/get_maintainer.pl to find out who to send patches to.  Don't
-> CC the linux-kernel list though because they don't care about details in
-> staging.
+From: Asias He <asias@redhat.com>
 
-Archana sent it through the OPW submission process, which has it's own
-mailing list, so as to not bother the driverdev mailing list.  It was
-my fault that I missed this error and took the patch, which is why I
-reverted it.
+Signed-off-by: Asias He <asias@redhat.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ drivers/char/raw.c |  4 ++--
+ fs/block_dev.c     | 19 +++++++++----------
+ include/linux/fs.h |  4 ++--
+ 3 files changed, 13 insertions(+), 14 deletions(-)
 
-thanks,
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index f3223aa..db5fa4e 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -285,9 +285,9 @@ static long raw_ctl_compat_ioctl(struct file *file, unsigned int cmd,
+ 
+ static const struct file_operations raw_fops = {
+ 	.read		= do_sync_read,
+-	.aio_read	= generic_file_aio_read,
++	.read_iter	= generic_file_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= blkdev_aio_write,
++	.write_iter	= blkdev_write_iter,
+ 	.fsync		= blkdev_fsync,
+ 	.open		= raw_open,
+ 	.release	= raw_release,
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index af016f4..34d9da0 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1508,8 +1508,7 @@ static long block_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+  * Does not take i_mutex for the write and thus is not for general purpose
+  * use.
+  */
+-ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-			 unsigned long nr_segs, loff_t pos)
++ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct blk_plug plug;
+@@ -1518,7 +1517,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+ 	blk_start_plug(&plug);
+-	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
+ 	if (ret > 0) {
+ 		ssize_t err;
+ 
+@@ -1529,10 +1528,10 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	blk_finish_plug(&plug);
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(blkdev_aio_write);
++EXPORT_SYMBOL_GPL(blkdev_write_iter);
+ 
+-static ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
+-			 unsigned long nr_segs, loff_t pos)
++static ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *iter,
++			 loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *bd_inode = file->f_mapping->host;
+@@ -1543,8 +1542,8 @@ static ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	size -= pos;
+ 	if (size < iocb->ki_nbytes)
+-		nr_segs = iov_shorten((struct iovec *)iov, nr_segs, size);
+-	return generic_file_aio_read(iocb, iov, nr_segs, pos);
++		iov_iter_shorten(iter, size);
++	return generic_file_read_iter(iocb, iter, pos);
+ }
+ 
+ /*
+@@ -1578,8 +1577,8 @@ const struct file_operations def_blk_fops = {
+ 	.llseek		= block_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= blkdev_aio_read,
+-	.aio_write	= blkdev_aio_write,
++	.read_iter	= blkdev_read_iter,
++	.write_iter	= blkdev_write_iter,
+ 	.mmap		= generic_file_mmap,
+ 	.fsync		= blkdev_fsync,
+ 	.unlocked_ioctl	= block_ioctl,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 3f29da3..9e29beb 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2531,8 +2531,8 @@ extern int generic_segment_checks(const struct iovec *iov,
+ 		unsigned long *nr_segs, size_t *count, int access_flags);
+ 
+ /* fs/block_dev.c */
+-extern ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-				unsigned long nr_segs, loff_t pos);
++extern ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				 loff_t pos);
+ extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
+ 			int datasync);
+ extern void block_sync_page(struct page *page);
+-- 
+1.8.4
 
-greg k-h
