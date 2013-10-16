@@ -1,135 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052Ab3JPAyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 20:54:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34980 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933711Ab3JPAyy (ORCPT
+	id S1758349Ab3JPBSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 21:18:54 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54635 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab3JPBSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 20:54:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <525DE35A.7040205@jp.fujitsu.com>
-Date: Wed, 16 Oct 2013 09:52:42 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v2 1/2] x86, apic: Add boot_cpu_is_bsp() to check if boot
- cpu is BSP
-References: <20131015054214.13666.11737.stgit@localhost6.localdomain6> <20131015054322.13666.31465.stgit@localhost6.localdomain6> <20131015191217.GN31215@redhat.com>
-In-Reply-To: <20131015191217.GN31215@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Oct 2013 21:18:52 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Kara <jack@suse.cz>, Ming Lei <ming.lei@canonical.com>,
+        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] ext4: fix performance regression in ext4_writepages
+Date: Wed, 16 Oct 2013 09:18:37 +0800
+Message-Id: <1381886317-19539-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/16 4:12), Vivek Goyal wrote:
-> On Tue, Oct 15, 2013 at 02:43:22PM +0900, HATAYAMA Daisuke wrote:
->> Kexec can enter the kdump 2nd kernel on AP if crash happens on AP. To
->> check if boot cpu is BSP, introduce a helper function
->> boot_cpu_is_bsp().
->>
->> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
->> ---
->>   arch/x86/include/asm/mpspec.h |    7 +++++++
->>   arch/x86/kernel/apic/apic.c   |   16 ++++++++++++++++
->>   arch/x86/kernel/setup.c       |    2 ++
->>   3 files changed, 25 insertions(+)
->>
->> diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
->> index 626cf70..54d5f98 100644
->> --- a/arch/x86/include/asm/mpspec.h
->> +++ b/arch/x86/include/asm/mpspec.h
->> @@ -47,11 +47,18 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
->>   extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
->>
->>   extern unsigned int boot_cpu_physical_apicid;
->> +extern bool boot_cpu_is_bsp;
->>   extern unsigned int max_physical_apicid;
->>   extern int mpc_default_type;
->>   extern unsigned long mp_lapic_addr;
->>
->>   #ifdef CONFIG_X86_LOCAL_APIC
->> +extern void boot_cpu_is_bsp_init(void);
->> +#else
->> +static inline void boot_cpu_is_bsp_init(void) { };
->> +#endif
->> +
->> +#ifdef CONFIG_X86_LOCAL_APIC
->>   extern int smp_found_config;
->>   #else
->>   # define smp_found_config 0
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index a7eb82d..62ee365 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -64,6 +64,12 @@ unsigned disabled_cpus;
->>   unsigned int boot_cpu_physical_apicid = -1U;
->>
->>   /*
->
-> [..]
->> + * Indicates whether the processor that is doing the boot up, is BSP
->> + * processor or not.
->> + */
->> +bool boot_cpu_is_bsp;
->
-> Should we set it to true by default? I think in most of the cases boot cpu
-> is going to be bsp too?
->
+Commit 4e7ea81db5(ext4: restructure writeback path) introduces
+another performance regression on random write:
 
-Agreed. Most likely value should be default.
+- one more page may be added to ext4 extent in mpage_prepare_extent_to_map,
+  and will be submitted for I/O so nr_to_write will become -1 before 'done'
+  is set
 
-The reason why I wrote so would be that -- if there's reason -- I wanted to
-write it uniform to other variables around it and wanted to avoid to let it
-have static storage in binary file.
+- the worse thing is that dirty pages may still be retrieved from page
+  cache after nr_to_write becomes negative, so lots of small chunks can be
+  submitted to block device when page writeback is catching up with write
+  path, and performance is hurted.
 
->> +
->> +/*
->>    * The highest APIC ID seen during enumeration.
->>    */
->>   unsigned int max_physical_apicid;
->> @@ -2589,3 +2595,13 @@ static int __init lapic_insert_resource(void)
->>    * that is using request_resource
->>    */
->>   late_initcall(lapic_insert_resource);
->> +
->> +void __init boot_cpu_is_bsp_init(void)
->> +{
->> +	if (cpu_has_apic) {
->> +		u32 l, h;
->> +
->> +		rdmsr_safe(MSR_IA32_APICBASE, &l, &h);
->> +		boot_cpu_is_bsp = (l & MSR_IA32_APICBASE_BSP) ? true : false;
->
-> I came across following thread.
->
-> https://lkml.org/lkml/2012/4/18/370
->
-> Can we hit above read msr on old P5 class machines? Or is it safe to
-> call unconditionally.
->
+On one arm A15 board with sata 3.0 SSD(CPU: 1.5GHz dura core, RAM: 2GB,
+SATA controller: 3.0Gbps), this patch can improve below test's result
+from 157MB/sec to 174MB/sec(>10%):
 
-No, it's dangerous to cause #UD, and current implementation doesn't check
-exception value returned by rdmsr_safe. It's meaningless to call rdmsr_safe.
+	dd if=/dev/zero of=./z.img bs=8K count=512K
 
-At least, checking boot_cpu_data.x86 >= 6 satisfies support of IA32_APIC_BASE
-MSR and this at the same time satisfies support of rdmsr instruction since the
-instruction was introduced at Pentium processor. So,
+The above test is actually prototype of block write in bonnie++ utility.
 
-if (boot_cpu_data.x86 >= 6 && cpu_has_apic()) {
-     u32 l, h;
+This patch makes sure no more pages than nr_to_write can be added to extent
+for mapping, so that nr_to_write won't become negative.
 
-     rdmsr(MSR_IA32_APICBASE, &l, &h);
-     boot_cpu_is_bsp = (l & MSR_IA32_APICBASE_BSP) ? true : false;  
-}
+Cc: Ted Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ fs/ext4/inode.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 32c04ab..32beaa4 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2295,6 +2295,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 	struct address_space *mapping = mpd->inode->i_mapping;
+ 	struct pagevec pvec;
+ 	unsigned int nr_pages;
++	long left = mpd->wbc->nr_to_write;
+ 	pgoff_t index = mpd->first_page;
+ 	pgoff_t end = mpd->last_page;
+ 	int tag;
+@@ -2330,6 +2331,17 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (page->index > end)
+ 				goto out;
+ 
++			/*
++			 * Accumulated enough dirty pages? This doesn't apply
++			 * to WB_SYNC_ALL mode. For integrity sync we have to
++			 * keep going because someone may be concurrently
++			 * dirtying pages, and we might have synced a lot of
++			 * newly appeared dirty pages, but have not synced all
++			 * of the old dirty pages.
++			 */
++			if (mpd->wbc->sync_mode == WB_SYNC_NONE && left <= 0)
++				goto out;
++
+ 			/* If we can't merge this page, we are done. */
+ 			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
+ 				goto out;
+@@ -2364,19 +2376,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (err <= 0)
+ 				goto out;
+ 			err = 0;
+-
+-			/*
+-			 * Accumulated enough dirty pages? This doesn't apply
+-			 * to WB_SYNC_ALL mode. For integrity sync we have to
+-			 * keep going because someone may be concurrently
+-			 * dirtying pages, and we might have synced a lot of
+-			 * newly appeared dirty pages, but have not synced all
+-			 * of the old dirty pages.
+-			 */
+-			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+-			    mpd->next_page - mpd->first_page >=
+-							mpd->wbc->nr_to_write)
+-				goto out;
++			left--;
+ 		}
+ 		pagevec_release(&pvec);
+ 		cond_resched();
 -- 
-Thanks.
-HATAYAMA, Daisuke
+1.7.9.5
 
