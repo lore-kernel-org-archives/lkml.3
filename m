@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762186Ab3JPVFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:05:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50265 "EHLO mx1.redhat.com"
+	id S1762157Ab3JPVHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:07:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7828 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761392Ab3JPVFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:05:04 -0400
-Date: Wed, 16 Oct 2013 22:58:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] (Was: perf_event_mmap(vma) && !vma->vm_mm)
-Message-ID: <20131016205800.GB26066@redhat.com>
-References: <20131012192203.GA21738@redhat.com> <20131014102426.GX3081@twins.programming.kicks-ass.net> <20131016200924.GA23214@redhat.com> <20131016202822.GI2675@laptop.programming.kicks-ass.net> <20131016204348.GA25121@redhat.com> <20131016205807.GG10651@twins.programming.kicks-ass.net>
+	id S1761828Ab3JPVHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:07:38 -0400
+Date: Wed, 16 Oct 2013 18:02:51 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/2] generic kernel watchdog reset at pvclock read (v2)
+Message-ID: <20131016210251.GE479@amt.cnet>
+References: <20131008010515.516032211@amt.cnet>
+ <20131012003924.092908362@amt.cnet>
+ <20131016182500.GJ227855@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131016205807.GG10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131016182500.GJ227855@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16, Peter Zijlstra wrote:
->
-> On Wed, Oct 16, 2013 at 10:43:48PM +0200, Oleg Nesterov wrote:
-> > Peter, just in case. I understand that this all is minor. Just I am
-> > confused. And in any case I do think we do not need __GFP_ZERO when
-> > it comes to PAGE_SIZE allocation.
->
-> Yeah; we could probably avoid it; if only the strcpy functions would
-> return how many bytes they copied :/ Then we could create a nice little
-> helper to \0 the tail end for alignment.
->
-> Anyway, as long as the resulting code is obvious and makes it hard to
-> leak something I'm fine.
+On Wed, Oct 16, 2013 at 02:25:00PM -0400, Don Zickus wrote:
+> On Fri, Oct 11, 2013 at 09:39:24PM -0300, Marcelo Tosatti wrote:
+> > v2:
+> > - do not create hung_task.h, move defines to sched.h (Don Zickus)
+> > - switch patch order (Paolo)
+> 
+> As long as it solves kvm's problems, I am ok with it.
+> 
+> Marcelo,
+> 
+> Is there still corner cases out there that get bit with softlockups or
+> hung_task after this patchset?
 
-OK. I'll wait for your review on this series, then send the next patch.
+Not that i am aware of.
 
-d_path() case can clear the extra bytes, everything else can use a single
+> Acked-by: Don Zickus <dzickus@redhat.com>
 
-	if (name != buf)
-		name = str*copy(tmp, buf);
-
-to avoid the leak.
-
-Oleg.
+Thanks.
 
