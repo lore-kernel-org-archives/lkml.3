@@ -1,79 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760324Ab3JPX1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 19:27:09 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:34678 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab3JPX1H (ORCPT
+	id S1760937Ab3JPX2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 19:28:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54791 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab3JPX23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 19:27:07 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "fdeslaur@gmail.com" <fdeslaur@gmail.com>,
-        "raphael.beamonte@gmail.com" <raphael.beamonte@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v3] Introduce page fault tracepoint
-Thread-Topic: [PATCH v3] Introduce page fault tracepoint
-Thread-Index: AQHOrad/oNbddzIzgE+oLKBHsS+xvpn26/MAgAFEJ1A=
-Date: Wed, 16 Oct 2013 23:25:54 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443EF85AD@USINDEM103.corp.hds.com>
-References: <522E43D5.9010505@hds.com> <525DD612.6050409@zytor.com>
-In-Reply-To: <525DD612.6050409@zytor.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-16_07:2013-10-17,2013-10-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310160112
+	Wed, 16 Oct 2013 19:28:29 -0400
+From: Michael Bohan <mbohan@codeaurora.org>
+To: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, david.daney@cavium.com
+Cc: linux-arm-msm@vger.kernel.org
+Subject: [PATCH] of/lib: Export fdt routines to modules
+Date: Wed, 16 Oct 2013 16:27:45 -0700
+Message-Id: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9GNRY6b005609
 
-Thank you for reviewing.
+Ever since the following commit, libfdt has been available for
+usage in the kernel:
 
-> >     http://marc.info/?l=linux-mm&m=136807959830182&w=2
-> >     http://marc.info/?l=linux-mm&m=136807959130175&w=2
-> >
-> 
-> For permanence, please use links of the form:
-> 
-> 	http://lkml.kernel.org/r/message-id
-> 
-> (Yes, they currently point to marc.info, but can be redirected to point
-> to any archive.)
+     commit ab25383983fb8d7786696f5371e75e79c3e9a405
+     Author: David Daney <david.daney@cavium.com>
+     Date:   Thu Jul 5 18:12:38 2012 +0200
 
-I will fix it.
+     of/lib: Allow scripts/dtc/libfdt to be used from kernel code
 
-> This is needlessly confusing, which is apart of why reviewing this patch
-> took a lot more time than it should.
-> 
-> Please break this patch into two: one which sets up the tracing IDT and
-> one to create the #PF tracepoint.  The assumption is, I am assuming,
-> there will be more.
+Export these functions to modules so that they may be used
+from device drivers.
 
-OK. I will divide the patch into two or more to make the review smooth.
+Change-Id: I7f540b7cf860c4be414e32ce183be5268b2ae6af
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+---
+ lib/fdt.c     |    6 ++++++
+ lib/fdt_ro.c  |   28 ++++++++++++++++++++++++++++
+ lib/fdt_rw.c  |   13 +++++++++++++
+ lib/fdt_sw.c  |    9 +++++++++
+ lib/fdt_wip.c |    6 ++++++
+ 5 files changed, 62 insertions(+), 0 deletions(-)
 
-Seiji
+diff --git a/lib/fdt.c b/lib/fdt.c
+index 97f2006..a3fe87b 100644
+--- a/lib/fdt.c
++++ b/lib/fdt.c
+@@ -1,2 +1,8 @@
+ #include <linux/libfdt_env.h>
++#include <linux/module.h>
+ #include "../scripts/dtc/libfdt/fdt.c"
++
++EXPORT_SYMBOL_GPL(fdt_next_tag);
++EXPORT_SYMBOL_GPL(fdt_next_node);
++EXPORT_SYMBOL_GPL(fdt_check_header);
++EXPORT_SYMBOL_GPL(fdt_move);
+diff --git a/lib/fdt_ro.c b/lib/fdt_ro.c
+index f73c04e..97269bc 100644
+--- a/lib/fdt_ro.c
++++ b/lib/fdt_ro.c
+@@ -1,2 +1,30 @@
+ #include <linux/libfdt_env.h>
++#include <linux/module.h>
+ #include "../scripts/dtc/libfdt/fdt_ro.c"
++
++EXPORT_SYMBOL_GPL(fdt_string);
++EXPORT_SYMBOL_GPL(fdt_num_mem_rsv);
++EXPORT_SYMBOL_GPL(fdt_get_mem_rsv);
++EXPORT_SYMBOL_GPL(fdt_subnode_offset_namelen);
++EXPORT_SYMBOL_GPL(fdt_subnode_offset);
++EXPORT_SYMBOL_GPL(fdt_path_offset);
++EXPORT_SYMBOL_GPL(fdt_get_name);
++EXPORT_SYMBOL_GPL(fdt_first_property_offset);
++EXPORT_SYMBOL_GPL(fdt_next_property_offset);
++EXPORT_SYMBOL_GPL(fdt_get_property_by_offset);
++EXPORT_SYMBOL_GPL(fdt_get_property_namelen);
++EXPORT_SYMBOL_GPL(fdt_get_property);
++EXPORT_SYMBOL_GPL(fdt_getprop_by_offset);
++EXPORT_SYMBOL_GPL(fdt_getprop_namelen);
++EXPORT_SYMBOL_GPL(fdt_getprop);
++EXPORT_SYMBOL_GPL(fdt_get_phandle);
++EXPORT_SYMBOL_GPL(fdt_get_alias_namelen);
++EXPORT_SYMBOL_GPL(fdt_get_alias);
++EXPORT_SYMBOL_GPL(fdt_get_path);
++EXPORT_SYMBOL_GPL(fdt_supernode_atdepth_offset);
++EXPORT_SYMBOL_GPL(fdt_node_depth);
++EXPORT_SYMBOL_GPL(fdt_parent_offset);
++EXPORT_SYMBOL_GPL(fdt_node_offset_by_prop_value);
++EXPORT_SYMBOL_GPL(fdt_node_offset_by_phandle);
++EXPORT_SYMBOL_GPL(fdt_node_check_compatible);
++EXPORT_SYMBOL_GPL(fdt_node_offset_by_compatible);
+diff --git a/lib/fdt_rw.c b/lib/fdt_rw.c
+index 0c1f0f4..30de9ec 100644
+--- a/lib/fdt_rw.c
++++ b/lib/fdt_rw.c
+@@ -1,2 +1,15 @@
+ #include <linux/libfdt_env.h>
++#include <linux/module.h>
+ #include "../scripts/dtc/libfdt/fdt_rw.c"
++
++EXPORT_SYMBOL_GPL(fdt_open_into);
++EXPORT_SYMBOL_GPL(fdt_pack);
++EXPORT_SYMBOL_GPL(fdt_add_mem_rsv);
++EXPORT_SYMBOL_GPL(fdt_del_mem_rsv);
++EXPORT_SYMBOL_GPL(fdt_set_name);
++EXPORT_SYMBOL_GPL(fdt_setprop);
++EXPORT_SYMBOL_GPL(fdt_appendprop);
++EXPORT_SYMBOL_GPL(fdt_delprop);
++EXPORT_SYMBOL_GPL(fdt_add_subnode_namelen);
++EXPORT_SYMBOL_GPL(fdt_add_subnode);
++EXPORT_SYMBOL_GPL(fdt_del_node);
+diff --git a/lib/fdt_sw.c b/lib/fdt_sw.c
+index 9ac7e50..17d6ba1 100644
+--- a/lib/fdt_sw.c
++++ b/lib/fdt_sw.c
+@@ -1,2 +1,11 @@
+ #include <linux/libfdt_env.h>
++#include <linux/module.h>
+ #include "../scripts/dtc/libfdt/fdt_sw.c"
++
++EXPORT_SYMBOL_GPL(fdt_create);
++EXPORT_SYMBOL_GPL(fdt_add_reservemap_entry);
++EXPORT_SYMBOL_GPL(fdt_finish_reservemap);
++EXPORT_SYMBOL_GPL(fdt_begin_node);
++EXPORT_SYMBOL_GPL(fdt_property);
++EXPORT_SYMBOL_GPL(fdt_end_node);
++EXPORT_SYMBOL_GPL(fdt_finish);
+diff --git a/lib/fdt_wip.c b/lib/fdt_wip.c
+index 45b3fc3..22b606d 100644
+--- a/lib/fdt_wip.c
++++ b/lib/fdt_wip.c
+@@ -1,2 +1,8 @@
+ #include <linux/libfdt_env.h>
++#include <linux/module.h>
+ #include "../scripts/dtc/libfdt/fdt_wip.c"
++
++EXPORT_SYMBOL_GPL(fdt_setprop_inplace);
++EXPORT_SYMBOL_GPL(fdt_setprop_inplace_u32);
++EXPORT_SYMBOL_GPL(fdt_nop_property);
++EXPORT_SYMBOL_GPL(fdt_nop_node);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-> 
-> 	-hpa
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
