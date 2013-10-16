@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762095Ab3JPSnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:43:16 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:46034 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761366Ab3JPSnO (ORCPT
+	id S1762098Ab3JPSpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:45:51 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:54494 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761339Ab3JPSpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:43:14 -0400
+	Wed, 16 Oct 2013 14:45:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <525ED75402000078000FB95B@nat28.tlf.novell.com>
-References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
-	<CA+55aFwCe=t4dDbDhHTWhzA3zMEyyS2WSYBP2Sfe0eogGEBS1w@mail.gmail.com>
-	<525ECEA102000078000FB906@nat28.tlf.novell.com>
-	<CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
-	<525ED75402000078000FB95B@nat28.tlf.novell.com>
-Date: Wed, 16 Oct 2013 11:43:13 -0700
-X-Google-Sender-Auth: SrXyZ8751sYj9fpbxle9qPHB0lQ
-Message-ID: <CA+55aFxxOXp6Aabpvd-6PzJCH4LnE-SobOxd3TZvNVxopKDnMw@mail.gmail.com>
-Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data selectors
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
+	<1381940926-25564-2-git-send-email-vinod.koul@intel.com>
+	<Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+Date: Wed, 16 Oct 2013 11:45:48 -0700
+Message-ID: <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion status
+From: Dan Williams <dan.j.williams@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 9:13 AM, Jan Beulich <JBeulich@suse.com> wrote:
+On Wed, Oct 16, 2013 at 11:29 AM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> Hi Vinod,
 >
-> But again - this isn't being done for ordinary 64-bit applications,
-> this is only happening for KVM guests. And there not being a
-> protocol for telling the caller whether a certain context hold
-> 64-bit offsets or selector/offset pairs shouldn't be a reason to
-> think of a solution to the problem.
+> On Wed, 16 Oct 2013, Vinod Koul wrote:
+>
+>> the DMA_SUCCESS is a misnomer as dmaengine indicates the transfer is complete and
+>> gives no guarantee of the transfer success. Hence we should use DMA_COMPLTE
+>> instead of DMA_SUCCESS
+>>
+>> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+>> ---
+>>  drivers/dma/dmaengine.c   |    2 +-
+>>  include/linux/dmaengine.h |   12 ++++++------
+>>  2 files changed, 7 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+>> index 9162ac8..81d8765 100644
+>> --- a/drivers/dma/dmaengine.c
+>> +++ b/drivers/dma/dmaengine.c
+>> @@ -1062,7 +1062,7 @@ dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+>>       unsigned long dma_sync_wait_timeout = jiffies + msecs_to_jiffies(5000);
+>>
+>>       if (!tx)
+>> -             return DMA_SUCCESS;
+>> +             return DMA_COMPLETE;
+>>
+>>       while (tx->cookie == -EBUSY) {
+>>               if (time_after_eq(jiffies, dma_sync_wait_timeout)) {
+>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>> index 0bc7275..4b460a6 100644
+>> --- a/include/linux/dmaengine.h
+>> +++ b/include/linux/dmaengine.h
+>> @@ -45,13 +45,13 @@ static inline int dma_submit_error(dma_cookie_t cookie)
+>>
+>>  /**
+>>   * enum dma_status - DMA transaction status
+>> - * @DMA_SUCCESS: transaction completed successfully
+>> + * @DMA_COMPLETE: transaction completed
+>>   * @DMA_IN_PROGRESS: transaction not yet processed
+>>   * @DMA_PAUSED: transaction is paused
+>>   * @DMA_ERROR: transaction failed
+>>   */
+>>  enum dma_status {
+>> -     DMA_SUCCESS,
+>> +     DMA_COMPLETE,
+>>       DMA_IN_PROGRESS,
+>>       DMA_PAUSED,
+>>       DMA_ERROR,
+>
+> Doesn't this break kernel compilation for a total of 27 commits? Or am I
+> missing anything?
 
-So having looked at this some more, I would *really* prefer a
-different solution. The overwriting of the rip/rdp data just really
-annoys me.
-
-Is there any reason to not just do it like the following instead:
-
- - get rid of the "word_size" thing, instead just add separate
-"fcs/fos" fields (that do *not* alias with rip/rdp).
-
- - on 64-bit, always use 64-bit ops, exactly the way we do now
-
- - if the resulting rip/rpd is zero in the high bits (and we have
-reason to believe the values exist at all, so X86_FEATURE_NO_FPU_SEL
-and the AMD test and/or checking that they aren't zero in the low bits
-too), do an *additional* fnstenv to the sstack, and then just save the
-resulting fcs/fos in the non-overlapping things. Use a simple helper
-function for this (that just gets called after the xsave/fxsave logic)
-
- - same on restore.
-
-No games. No "this is the word-size of the thing we've saved in
-memory". No overlapping "this field means one thing or another".
-
-For signal handling, save/restore the new fop/fos thing, so that
-nobody ever sees the changed format, but FP state gets correctly and
-fully restored over signals too, not just kernel FP stuff.
-
-Hmm? That would make me *much* happier, I suspect.
-
-           Linus
+Yes, I think at the start DMA_COMPLETE should just be a alias for
+DMA_SUCCESS, then after all the driver renames are in delete
+DMA_SUCCESS.
