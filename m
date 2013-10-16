@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab3JPFA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:00:29 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62800 "EHLO
+	id S1759103Ab3JPFCc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:02:32 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52946 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab3JPFA0 (ORCPT
+	with ESMTP id S1752174Ab3JPFA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 01:00:26 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-28-525e1d6781ed
+	Wed, 16 Oct 2013 01:00:29 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-38-525e1d681b94
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 06/18] perf ftrace: Split "live" sub-command
-Date: Wed, 16 Oct 2013 14:00:09 +0900
-Message-Id: <1381899621-14638-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/18] perf tools: Add document for perf-ftrace command
+Date: Wed, 16 Oct 2013 14:00:16 +0900
+Message-Id: <1381899621-14638-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
@@ -29,220 +29,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Separate out the default behavior to "live" subcommand.  It's a
-preparation to support more subcommands like "record" and "report".
-
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 133 ++++++++++++++++++++++++++------------------
- 1 file changed, 80 insertions(+), 53 deletions(-)
+ tools/perf/Documentation/perf-ftrace.txt | 117 +++++++++++++++++++++++++++++++
+ 1 file changed, 117 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
 
-diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 642aa49c66d7..1bb6d1ff0eb1 100644
---- a/tools/perf/builtin-ftrace.c
-+++ b/tools/perf/builtin-ftrace.c
-@@ -171,19 +171,13 @@ static int reset_tracing_cpu(void)
- 	return 0;
- }
- 
--static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
-+static int do_ftrace_live(struct perf_ftrace *ftrace)
- {
- 	char *trace_file;
- 	int trace_fd;
- 	char buf[4096];
--	struct pollfd pollfd = {
--		.events = POLLIN,
--	};
--
--	if (geteuid() != 0) {
--		pr_err("ftrace only works for root!\n");
--		return -1;
--	}
-+	/* sleep 1ms if no data read */
-+	struct timespec req = { .tv_nsec = 1000000 };
- 
- 	signal(SIGINT, sig_handler);
- 	signal(SIGUSR1, sig_handler);
-@@ -196,12 +190,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (write_tracing_file("trace", "0") < 0)
- 		goto out;
- 
--	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
--						  &ftrace->target,
--						  argv, false, true) < 0) {
--		goto out;
--	}
--
- 	if (set_tracing_pid(ftrace) < 0) {
- 		pr_err("failed to set ftrace pid\n");
- 		goto out_reset;
-@@ -233,7 +221,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	}
- 
- 	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
--	pollfd.fd = trace_fd;
- 
- 	if (write_tracing_file("tracing_on", "1") < 0) {
- 		pr_err("can't enable tracing\n");
-@@ -243,16 +230,18 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	perf_evlist__start_workload(ftrace->evlist);
- 
- 	while (!done) {
--		if (poll(&pollfd, 1, -1) < 0)
--			break;
-+		int n = read(trace_fd, buf, sizeof(buf));
- 
--		if (pollfd.revents & POLLIN) {
--			int n = read(trace_fd, buf, sizeof(buf));
--			if (n < 0)
--				break;
--			if (fwrite(buf, n, 1, stdout) != 1)
-+		if (n < 0) {
-+			if (errno == EINTR || errno == EAGAIN)
-+				goto sleep;
-+			else
- 				break;
--		}
-+		} else if (n == 0) {
-+sleep:
-+			clock_nanosleep(CLOCK_MONOTONIC, 0, &req, NULL);
-+		} else if (fwrite(buf, n, 1, stdout) != 1)
-+			break;
- 	}
- 
- 	write_tracing_file("tracing_on", "0");
-@@ -274,61 +263,99 @@ out:
- 	return done ? 0 : -1;
- }
- 
--int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
-+static int
-+__cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
- {
--	int ret;
--	struct perf_ftrace ftrace = {
--		.target = { .uid = UINT_MAX, },
--	};
--	const char * const ftrace_usage[] = {
--		"perf ftrace [<options>] [<command>]",
--		"perf ftrace [<options>] -- <command> [<options>]",
-+	int ret = -1;
-+	const char * const live_usage[] = {
-+		"perf ftrace live [<options>] [<command>]",
-+		"perf ftrace live [<options>] -- <command> [<options>]",
- 		NULL
- 	};
--	const struct option ftrace_options[] = {
--	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
-+	const struct option live_options[] = {
-+	OPT_STRING('t', "tracer", &ftrace->tracer, "tracer",
- 		   "tracer to use: function_graph or function"),
--	OPT_STRING('p', "pid", &ftrace.target.pid, "pid",
-+	OPT_STRING('p', "pid", &ftrace->target.pid, "pid",
- 		   "trace on existing process id"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose"),
--	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &ftrace->target.system_wide,
- 		    "system-wide collection from all CPUs"),
--	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
- 	OPT_END()
- 	};
- 
--	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
--			    PARSE_OPT_STOP_AT_NON_OPTION);
--	if (!argc && perf_target__none(&ftrace.target))
--		usage_with_options(ftrace_usage, ftrace_options);
-+	argc = parse_options(argc, argv, live_options, live_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc && perf_target__none(&ftrace->target))
-+		usage_with_options(live_usage, live_options);
- 
--	ret = perf_target__validate(&ftrace.target);
-+	ret = perf_target__validate(&ftrace->target);
- 	if (ret) {
- 		char errbuf[512];
- 
--		perf_target__strerror(&ftrace.target, ret, errbuf, 512);
-+		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
- 		pr_err("%s\n", errbuf);
- 		return -EINVAL;
- 	}
- 
--	ftrace.evlist = perf_evlist__new();
--	if (ftrace.evlist == NULL)
-+	ftrace->evlist = perf_evlist__new();
-+	if (ftrace->evlist == NULL)
- 		return -ENOMEM;
- 
--	ret = perf_evlist__create_maps(ftrace.evlist, &ftrace.target);
-+	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
- 	if (ret < 0)
--		goto out_delete_evlist;
-+		goto out;
+diff --git a/tools/perf/Documentation/perf-ftrace.txt b/tools/perf/Documentation/perf-ftrace.txt
+new file mode 100644
+index 000000000000..841699f3924d
+--- /dev/null
++++ b/tools/perf/Documentation/perf-ftrace.txt
+@@ -0,0 +1,117 @@
++perf-ftrace(1)
++==============
 +
-+	if (ftrace->tracer == NULL)
-+		ftrace->tracer = DEFAULT_TRACER;
++NAME
++----
++perf-ftrace - A front end for kernel's ftrace
 +
-+	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
-+						  &ftrace->target,
-+						  argv, false, true) < 0)
-+		goto out_maps;
++SYNOPSIS
++--------
++[verse]
++'perf ftrace' {live|record} [<options>] [<command>]
++'perf ftrace' {show|report} [<options>]
 +
-+	ret = do_ftrace_live(ftrace);
++DESCRIPTION
++-----------
++This command reads the ftrace buffer and displays the trace recorded.
 +
-+out_maps:
-+	perf_evlist__delete_maps(ftrace->evlist);
-+out:
-+	perf_evlist__delete(ftrace->evlist);
++There are several variants of perf ftrace:
 +
-+	return ret;
-+}
++  'perf ftrace live <command>' to see a live trace of kernel functions
++  via trace_pipe during executing the <command>.  If <command> is not
++  specified, one of the target options (-p, -a or -C) should be given.
++  It just prints out the result to stdout and doesn't save any files.
 +
-+int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	int ret;
-+	struct perf_ftrace ftrace = {
-+		.target = { .uid = UINT_MAX, },
-+	};
-+	const char * const ftrace_usage[] = {
-+		"perf ftrace {live} [<options>] [<command>]",
-+		"perf ftrace {live} [<options>] -- <command> [<options>]",
-+		NULL
-+	};
-+	const struct option ftrace_options[] = {
-+	OPT_END()
-+	};
- 
--	if (ftrace.tracer == NULL)
--		ftrace.tracer = DEFAULT_TRACER;
-+	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc)
-+		usage_with_options(ftrace_usage, ftrace_options);
- 
--	ret = __cmd_ftrace(&ftrace, argc, argv);
-+	if (geteuid() != 0) {
-+		pr_err("ftrace only works for root!\n");
-+		return -1;
-+	}
- 
--	perf_evlist__delete_maps(ftrace.evlist);
--out_delete_evlist:
--	perf_evlist__delete(ftrace.evlist);
-+	if (strcmp(argv[0], "live") == 0) {
-+		ret = __cmd_ftrace_live(&ftrace, argc, argv);
-+	} else {
-+		usage_with_options(ftrace_usage, ftrace_options);
-+	}
- 
- 	return ret;
- }
++  'perf ftrace record <command>' to record trace entries of kernel
++  functions during the execution of the <command>.  Like 'perf ftrace
++  live', at least one of <command> and/or target options should be
++  given in order to start recording.  The recorded results are saved
++  under a directory ('perf.data.dir' by default) and will be used by
++  other perf-ftrace tools like 'show' and 'report'.
++
++  'perf ftrace show' to see the trace of recorded functions.  It shows
++  functions sorted by time so the end result might be interspersed if
++  there's a concurrent execution.
++
++  'perf ftrace report' to display the result in an usual perf-report
++  style - entries are sorted by given sort keys and output is resorted
++  by its overhead.
++
++OPTIONS
++-------
++<command>...::
++	Any command you can specify in a shell.
++
++-t::
++--tracer=::
++	The ftrace tracer to be used (default: function_graph).
++	Currently, only 'function' and 'function_graph' are supported
++	by 'record' command. 'live' command accepts any available
++	tracer in system and outputs trace result directly from the
++	ftrace's trace_pipe.
++
++-p::
++--pid=::
++	Record events on existing process ID (comma separated list).
++	Used by 'live' and 'record' subcommands only.
++
++-a::
++--all-cpus::
++	Force system-wide collection.  Scripts run without a <command>
++	normally use -a by default, while scripts run with a <command>
++	normally don't - this option allows the latter to be run in
++	system-wide mode.  Used by 'live' and 'record' subcommands only.
++
++-C::
++--cpu:: Only process samples for the list of CPUs provided.
++	Multiple CPUs can be provided as a comma-separated list with
++	no space: 0,1. Ranges of CPUs are specified with -: 0-2.
++	Default is to report samples on all online CPUs.
++
++-s::
++--sort=::
++	Sort histogram entries by given key(s) - multiple keys can be
++	specified in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, cpu.
++
++	Each key has following meaning:
++
++	- comm: command (name) of the task
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- cpu: cpu number the task ran at the time of sample
++
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
++	Used by 'report' subcommands only.
++
++-i::
++--input=::
++	Input directory name excluding '.dir' at the end.
++	(default: perf.data)
++
++-o::
++--output=::
++	Output directory name excluding '.dir' at the end.
++	(default: perf.data)
++
++-v::
++--verbose::
++	Be more verbose (show counter open errors, etc).
++
++-D::
++--dump-raw-trace::
++	Dump raw trace in ASCII.  Used by 'report' subcommands only.
++
++-I::
++--show-info::
++	Display extended information about the record.  This adds
++	information which may be very large and thus may clutter the
++	display.  It currently includes: cpu and numa topology of the
++	host system.  It can only be used with the 'report' subcommand.
++
++SEE ALSO
++--------
++linkperf:perf-record[1], linkperf:perf-report[1],
++linkperf:perf-script[1]
 -- 
 1.7.11.7
 
