@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935527Ab3JPSUD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:20:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761347Ab3JPRpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1761345Ab3JPRpo (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Oct 2013 13:45:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35515 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761285Ab3JPRp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:45:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 33/69] ipc: move locking out of ipcctl_pre_down_nolock
-Date: Wed, 16 Oct 2013 10:44:42 -0700
-Message-Id: <20131016174316.934857873@linuxfoundation.org>
+        Dave Jones <davej@fedoraproject.org>, "Theodore Tso" <tytso@mit.edu>,
+        Eric Sandeen <sandeen@redhat.com>
+Subject: [ 10/69] ext4: fix memory leak in xattr
+Date: Wed, 16 Oct 2013 10:44:19 -0700
+Message-Id: <20131016174314.129148470@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -30,248 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+From: Dave Jones <davej@redhat.com>
 
-commit 7b4cc5d8411bd4e9d61d8714f53859740cf830c2 upstream.
+commit 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc upstream.
 
-This function currently acquires both the rw_mutex and the rcu lock on
-successful lookups, leaving the callers to explicitly unlock them,
-creating another two level locking situation.
+If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
+potentionally return from the function without having freed these
+allocations.  If we don't do the return, we over-write the previous
+allocation pointers, so we leak either way.
 
-Make the callers (including those that still use ipcctl_pre_down())
-explicitly lock and unlock the rwsem and rcu lock.
+Spotted with Coverity.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
+[ Fixed by tytso to set is and bs to NULL after freeing these
+  pointers, in case in the retry loop we later end up triggering an
+  error causing a jump to cleanup, at which point we could have a double
+  free bug. -- Ted ]
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c  |   24 +++++++++++++++++-------
- ipc/sem.c  |   27 ++++++++++++++++-----------
- ipc/shm.c  |   23 +++++++++++++++++------
- ipc/util.c |   21 ++++++---------------
- 4 files changed, 56 insertions(+), 39 deletions(-)
+ fs/ext4/xattr.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -407,31 +407,38 @@ static int msgctl_down(struct ipc_namesp
- 			return -EFAULT;
- 	}
- 
-+	down_write(&msg_ids(ns).rw_mutex);
-+	rcu_read_lock();
-+
- 	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
- 			       &msqid64.msg_perm, msqid64.msg_qbytes);
--	if (IS_ERR(ipcp))
--		return PTR_ERR(ipcp);
-+	if (IS_ERR(ipcp)) {
-+		err = PTR_ERR(ipcp);
-+		/* the ipc lock is not held upon failure */
-+		goto out_unlock1;
-+	}
- 
- 	msq = container_of(ipcp, struct msg_queue, q_perm);
- 
- 	err = security_msg_queue_msgctl(msq, cmd);
- 	if (err)
--		goto out_unlock;
-+		goto out_unlock0;
- 
- 	switch (cmd) {
- 	case IPC_RMID:
-+		/* freeque unlocks the ipc object and rcu */
- 		freeque(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
- 		if (msqid64.msg_qbytes > ns->msg_ctlmnb &&
- 		    !capable(CAP_SYS_RESOURCE)) {
- 			err = -EPERM;
--			goto out_unlock;
-+			goto out_unlock0;
- 		}
- 
- 		err = ipc_update_perm(&msqid64.msg_perm, ipcp);
- 		if (err)
--			goto out_unlock;
-+			goto out_unlock0;
- 
- 		msq->q_qbytes = msqid64.msg_qbytes;
- 
-@@ -448,8 +455,11 @@ static int msgctl_down(struct ipc_namesp
- 	default:
- 		err = -EINVAL;
- 	}
--out_unlock:
--	msg_unlock(msq);
-+
-+out_unlock0:
-+	ipc_unlock_object(&msq->q_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- out_up:
- 	up_write(&msg_ids(ns).rw_mutex);
- 	return err;
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1289,39 +1289,44 @@ static int semctl_down(struct ipc_namesp
- 			return -EFAULT;
- 	}
- 
-+	down_write(&sem_ids(ns).rw_mutex);
-+	rcu_read_lock();
-+
- 	ipcp = ipcctl_pre_down_nolock(ns, &sem_ids(ns), semid, cmd,
- 				      &semid64.sem_perm, 0);
--	if (IS_ERR(ipcp))
--		return PTR_ERR(ipcp);
-+	if (IS_ERR(ipcp)) {
-+		err = PTR_ERR(ipcp);
-+		/* the ipc lock is not held upon failure */
-+		goto out_unlock1;
-+	}
- 
- 	sma = container_of(ipcp, struct sem_array, sem_perm);
- 
- 	err = security_sem_semctl(sma, cmd);
--	if (err) {
--		rcu_read_unlock();
--		goto out_up;
--	}
-+	if (err)
-+		goto out_unlock1;
- 
--	switch(cmd){
-+	switch (cmd) {
- 	case IPC_RMID:
- 		sem_lock(sma, NULL, -1);
-+		/* freeary unlocks the ipc object and rcu */
- 		freeary(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
- 		sem_lock(sma, NULL, -1);
- 		err = ipc_update_perm(&semid64.sem_perm, ipcp);
- 		if (err)
--			goto out_unlock;
-+			goto out_unlock0;
- 		sma->sem_ctime = get_seconds();
- 		break;
- 	default:
--		rcu_read_unlock();
- 		err = -EINVAL;
--		goto out_up;
-+		goto out_unlock1;
- 	}
- 
--out_unlock:
-+out_unlock0:
- 	sem_unlock(sma, -1);
-+out_unlock1:
- 	rcu_read_unlock();
- out_up:
- 	up_write(&sem_ids(ns).rw_mutex);
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -757,31 +757,42 @@ static int shmctl_down(struct ipc_namesp
- 			return -EFAULT;
- 	}
- 
-+	down_write(&shm_ids(ns).rw_mutex);
-+	rcu_read_lock();
-+
- 	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid, cmd,
- 			       &shmid64.shm_perm, 0);
--	if (IS_ERR(ipcp))
--		return PTR_ERR(ipcp);
-+	if (IS_ERR(ipcp)) {
-+		err = PTR_ERR(ipcp);
-+		/* the ipc lock is not held upon failure */
-+		goto out_unlock1;
-+	}
- 
- 	shp = container_of(ipcp, struct shmid_kernel, shm_perm);
- 
- 	err = security_shm_shmctl(shp, cmd);
- 	if (err)
--		goto out_unlock;
-+		goto out_unlock0;
-+
- 	switch (cmd) {
- 	case IPC_RMID:
-+		/* do_shm_rmid unlocks the ipc object and rcu */
- 		do_shm_rmid(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
- 		err = ipc_update_perm(&shmid64.shm_perm, ipcp);
- 		if (err)
--			goto out_unlock;
-+			goto out_unlock0;
- 		shp->shm_ctim = get_seconds();
- 		break;
- 	default:
- 		err = -EINVAL;
- 	}
--out_unlock:
--	shm_unlock(shp);
-+
-+out_unlock0:
-+	ipc_unlock_object(&shp->shm_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- out_up:
- 	up_write(&shm_ids(ns).rw_mutex);
- 	return err;
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -746,8 +746,10 @@ int ipc_update_perm(struct ipc64_perm *i
-  * It must be called without any lock held and
-  *  - retrieves the ipc with the given id in the given table.
-  *  - performs some audit and permission check, depending on the given cmd
-- *  - returns the ipc with both ipc and rw_mutex locks held in case of success
-+ *  - returns the ipc with the ipc lock held in case of success
-  *    or an err-code without any lock held otherwise.
-+ *
-+ * Call holding the both the rw_mutex and the rcu read lock.
-  */
- struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
- 				      struct ipc_ids *ids, int id, int cmd,
-@@ -772,13 +774,10 @@ struct kern_ipc_perm *ipcctl_pre_down_no
- 	int err = -EPERM;
- 	struct kern_ipc_perm *ipcp;
- 
--	down_write(&ids->rw_mutex);
--	rcu_read_lock();
--
- 	ipcp = ipc_obtain_object_check(ids, id);
- 	if (IS_ERR(ipcp)) {
- 		err = PTR_ERR(ipcp);
--		goto out_up;
-+		goto err;
- 	}
- 
- 	audit_ipc_obj(ipcp);
-@@ -789,16 +788,8 @@ struct kern_ipc_perm *ipcctl_pre_down_no
- 	euid = current_euid();
- 	if (uid_eq(euid, ipcp->cuid) || uid_eq(euid, ipcp->uid)  ||
- 	    ns_capable(ns->user_ns, CAP_SYS_ADMIN))
--		return ipcp;
--
--out_up:
--	/*
--	 * Unsuccessful lookup, unlock and return
--	 * the corresponding error.
--	 */
--	rcu_read_unlock();
--	up_write(&ids->rw_mutex);
--
-+		return ipcp; /* successful lookup */
-+err:
- 	return ERR_PTR(err);
- }
- 
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1350,6 +1350,8 @@ retry:
+ 				    s_min_extra_isize) {
+ 					tried_min_extra_isize++;
+ 					new_extra_isize = s_min_extra_isize;
++					kfree(is); is = NULL;
++					kfree(bs); bs = NULL;
+ 					goto retry;
+ 				}
+ 				error = -1;
 
 
