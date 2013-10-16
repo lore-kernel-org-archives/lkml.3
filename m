@@ -1,124 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746Ab3JPLBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:01:34 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:55747 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760596Ab3JPLAM (ORCPT
+	id S1760761Ab3JPLBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:01:53 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30752 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760650Ab3JPLBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:00:12 -0400
-From: Robert Richter <rric@kernel.org>
-To: linux-edac@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>,
-        Robert Richter <rric@kernel.org>
-Subject: [PATCH 1/5] edac, highbank: Fix interrupt setup of mem and l2 controller
-Date: Wed, 16 Oct 2013 12:59:34 +0200
-Message-Id: <1381921178-28511-2-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381921178-28511-1-git-send-email-rric@kernel.org>
-References: <1381921178-28511-1-git-send-email-rric@kernel.org>
+	Wed, 16 Oct 2013 07:01:52 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnkaAAlxXlJ5LFuj/2dsb2JhbABagXECAYETOL0chUSBIRd0giUBAQQBOhwjBQsIAw4KCSUPBSUDIROIAAUNvk8EFo87B4QlA5Qng1ySA4M4KA
+Date: Wed, 16 Oct 2013 22:01:46 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: mpatocka@redhat.com, dm-devel@redhat.com, devel@driverdev.osuosl.org,
+        thornber@redhat.com, snitzer@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+        ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net, tj@kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: A review of dm-writeboost
+Message-ID: <20131016110146.GH4446@dastard>
+References: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com>
+ <52550841.5030001@gmail.com>
+ <525BAB32.5050901@gmail.com>
+ <alpine.LRH.2.02.1310151950530.4664@file01.intranet.prod.int.rdu2.redhat.com>
+ <20131016060750.GE4446@dastard>
+ <525E6BBE.40004@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525E6BBE.40004@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@linaro.org>
+On Wed, Oct 16, 2013 at 07:34:38PM +0900, Akira Hayakawa wrote:
+> Dave
+> 
+> > Akira, can you please post the entire set of messages you are
+> > getting when XFS showing problems? That way I can try to confirm
+> > whether it's a regression in XFS or something else.
+> 
+> Environment:
+> - The kernel version is 3.12-rc1
+> - The debuggee is a KVM virtual machine equipped with 8 vcpus.
+> - writeboost version is commit 236732eb84684e8473353812acb3302232e1eab0
+>   You can clone it from https://github.com/akiradeveloper/dm-writeboost
+> 
+> Test:
+> 1. Make a writeboost device with 3MB cache device and 3GB backing store
+>    with default option (segment size order is 7 and RAM buffer is 2MB allocated).
+> 2. start testing/1 script (compiling Ruby and make test after it)
+> 3. set blockup variable to 1 via message interface few seconds later.
+>    The writeboost device starts to return -EIO on all incoming requests.
+>    I guess this behavior causes the problem.
+> 
+> In some case, XFS doesn't collapse after setting blockup to 1.
+> When I set the variable to 1 about 10 or 20 seconds later,
+> it didn't collapse but neatly stops the compile and
+> after again I set it to 0, it restarts the compile.
+> XFS does collapse (badly shutting down the filesystem as seen below) in some case
+> but doesn't collapse in another case sounds to me that
+> the former case runs into a very corner case bug.
 
-Register and enable interrupts after the edac registration. Otherwise
-incomming ecc error interrupts lead to crashes during device setup.
+XFS shuts down because you've returned EIO to a log IO. That's a
+fatal error. If you do the same to an ext4 journal write, it will do
+the equivalent of shut down (e.g. complain and turn read-only).
 
-Fixing this in drivers for mc and l2.
+> The entire set of messages via virsh console is shown below.
+> Some lines related to writeboost are all benign.
+> The daemons are just stopping because blockup variable is 1.
+> 
+> [  146.284626] XFS (dm-3): metadata I/O error: block 0x300d91 ("xlog_iodone") error 5 numblks 64
+> [  146.285825] XFS (dm-3): Log I/O Error Detected.  Shutting down filesystem
+> [  146.286699] XFS (dm-3): Please umount the filesystem and rectify the problem(s)
 
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
----
- drivers/edac/highbank_l2_edac.c | 18 ++++++++++--------
- drivers/edac/highbank_mc_edac.c | 18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+What happened before this? Please attach the *full* log.
 
-diff --git a/drivers/edac/highbank_l2_edac.c b/drivers/edac/highbank_l2_edac.c
-index c2bd8c6..10d3d29 100644
---- a/drivers/edac/highbank_l2_edac.c
-+++ b/drivers/edac/highbank_l2_edac.c
-@@ -90,28 +90,30 @@ static int highbank_l2_err_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
-+	dci->mod_name = dev_name(&pdev->dev);
-+	dci->dev_name = dev_name(&pdev->dev);
-+
-+	if (edac_device_add_device(dci))
-+		goto err;
-+
- 	drvdata->db_irq = platform_get_irq(pdev, 0);
- 	res = devm_request_irq(&pdev->dev, drvdata->db_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
-+		goto err2;
- 
- 	drvdata->sb_irq = platform_get_irq(pdev, 1);
- 	res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
--
--	dci->mod_name = dev_name(&pdev->dev);
--	dci->dev_name = dev_name(&pdev->dev);
--
--	if (edac_device_add_device(dci))
--		goto err;
-+		goto err2;
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_device_del_device(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_device_free_ctl_info(dci);
-diff --git a/drivers/edac/highbank_mc_edac.c b/drivers/edac/highbank_mc_edac.c
-index 4695dd2..7a78307 100644
---- a/drivers/edac/highbank_mc_edac.c
-+++ b/drivers/edac/highbank_mc_edac.c
-@@ -189,14 +189,6 @@ static int highbank_mc_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = platform_get_irq(pdev, 0);
--	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
--			       0, dev_name(&pdev->dev), mci);
--	if (res < 0) {
--		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
--		goto err;
--	}
--
- 	mci->mtype_cap = MEM_FLAG_DDR3;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
- 	mci->edac_cap = EDAC_FLAG_SECDED;
-@@ -217,10 +209,20 @@ static int highbank_mc_probe(struct platform_device *pdev)
- 	if (res < 0)
- 		goto err;
- 
-+	irq = platform_get_irq(pdev, 0);
-+	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
-+			       0, dev_name(&pdev->dev), mci);
-+	if (res < 0) {
-+		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
-+		goto err2;
-+	}
-+
- 	highbank_mc_create_debugfs_nodes(mci);
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_mc_del_mc(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_mc_free(mci);
+> [  146.560036] device-mapper: writeboost: err@modulator_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [  147.244036] device-mapper: writeboost: err@migrate_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [  172.052006] BUG: soft lockup - CPU#0 stuck for 23s! [script:3170]
+> [  172.436003] BUG: soft lockup - CPU#4 stuck for 22s! [kworker/4:1:57]
+
+These should be emitting a stack trace. Can you turn up the logging
+level you are using so that they emit a full stack trace? The
+messages are useless without the stack dump....
+
+Also, 23 seconds before this timestamp is 149s, about 3s after the
+XFS filesystem shut down, so it's not clear that the XFS shutdown is
+related to the soft lockup yet. That's what we need the stack traces
+for...
+
+> [  180.560040] device-mapper: writeboost: err@recorder_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [  180.561179] device-mapper: writeboost: err@sync_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+
+What's with the 35s delay between these writeboost messages? Have
+you only done a partial shutdown of the block device and it takes
+This length of time for it to completely block IO?
+
+Cheers,
+
+Dave.
 -- 
-1.8.4.rc3
-
+Dave Chinner
+david@fromorbit.com
