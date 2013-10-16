@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760906Ab3JPQNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:13:47 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53501 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760635Ab3JPQNp convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
-	Wed, 16 Oct 2013 12:13:45 -0400
-Message-Id: <525ED75402000078000FB95B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 16 Oct 2013 17:13:40 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "KVM list" <kvm@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data
- selectors
-References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
- <CA+55aFwCe=t4dDbDhHTWhzA3zMEyyS2WSYBP2Sfe0eogGEBS1w@mail.gmail.com>
- <525ECEA102000078000FB906@nat28.tlf.novell.com>
- <CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
-In-Reply-To: <CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1760923Ab3JPQOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:14:34 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:36309 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759389Ab3JPQOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 12:14:32 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: JBottomley@parallels.com
+Cc: scameron@beardog.cce.hp.com, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH] drivers: scsi: Remove useless casting in hpsa.c
+Date: Wed, 16 Oct 2013 13:10:10 -0300
+Message-Id: <1381939810-28976-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.10.13 at 17:50, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Wed, Oct 16, 2013 at 8:36 AM, Jan Beulich <JBeulich@suse.com> wrote:
->>
->> In that case we use a 32-bit operand size [F]XRSTOR, and hence
->> the upper halves get treated as selectors, and the offsets get
->> zero-extended from the low halves, i.e. we preserve even more
->> state for such a 64-bit environment now too (albeit I doubt any
->> 64-bit code actually cares)
-> 
-> No, it does *not* preserve "more state".
+Casting (void *) value returned by kmalloc is useless
+as mentioned in Documentation/CodingStyle, Chap 14.
 
-So you're thinking of whenever the state gets copied out to some
-(user) memory block, whereas the "more state" I wrote about
-applies to what is stored in CPU registers. And I also said that
-copying the state to use memory may require extra adjustments.
-The question just is how to properly do that - without corrupting
-state in the way you validly point out, but also without losing
-state.
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ drivers/scsi/hpsa.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> It preserves *less* state, because the upper 32 bits of rip are now
-> corrupted. Any 64-bit application that actually looks at the FP
-> rip/rdp fields now get the WRONG VALUES.
-
-But again - this isn't being done for ordinary 64-bit applications,
-this is only happening for KVM guests. And there not being a
-protocol for telling the caller whether a certain context hold
-64-bit offsets or selector/offset pairs shouldn't be a reason to
-think of a solution to the problem.
-
-Jan
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 891c86b..896a57d 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3093,8 +3093,7 @@ static int hpsa_big_passthru_ioctl(struct ctlr_info *h, void __user *argp)
+ 		return -EINVAL;
+ 	if (!capable(CAP_SYS_RAWIO))
+ 		return -EPERM;
+-	ioc = (BIG_IOCTL_Command_struct *)
+-	    kmalloc(sizeof(*ioc), GFP_KERNEL);
++	ioc = kmalloc(sizeof(*ioc), GFP_KERNEL);
+ 	if (!ioc) {
+ 		status = -ENOMEM;
+ 		goto cleanup1;
+-- 
+1.8.4
 
