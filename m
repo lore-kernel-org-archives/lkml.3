@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964878Ab3JPSTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:19:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35638 "EHLO
+	id S964861Ab3JPSTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:19:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761365Ab3JPRpq (ORCPT
+	with ESMTP id S1761372Ab3JPRpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:45:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 35/69] ipc,msg: introduce msgctl_nolock
-Date: Wed, 16 Oct 2013 10:44:44 -0700
-Message-Id: <20131016174317.179195818@linuxfoundation.org>
+Subject: [ 36/69] ipc,msg: introduce lockless functions to obtain the ipc object
+Date: Wed, 16 Oct 2013 10:44:45 -0700
+Message-Id: <20131016174317.287427785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -32,14 +32,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 2cafed30f150f7314f98717b372df8173516cae0 upstream.
+commit a5001a0d9768568de5d613c3b3a5b9c7721299da upstream.
 
-Similar to semctl, when calling msgctl, the *_INFO and *_STAT commands
-can be performed without acquiring the ipc object.
-
-Add a msgctl_nolock() function and move the logic of *_INFO and *_STAT
-out of msgctl().  This change still takes the lock and it will be
-properly lockless in the next patch
+Add msq_obtain_object() and msq_obtain_object_check(), which will allow
+us to get the ipc object without acquiring the lock.  Just as with
+semaphores, these functions are basically wrappers around
+ipc_obtain_object*().
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -50,97 +48,38 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c |   49 ++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 34 insertions(+), 15 deletions(-)
+ ipc/msg.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 --- a/ipc/msg.c
 +++ b/ipc/msg.c
-@@ -467,17 +467,11 @@ out_up:
- 	return err;
+@@ -166,6 +166,27 @@ static inline struct msg_queue *msg_lock
+ 	return container_of(ipcp, struct msg_queue, q_perm);
  }
  
--SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
-+static int msgctl_nolock(struct ipc_namespace *ns, int msqid,
-+			 int cmd, int version, void __user *buf)
- {
-+	int err;
- 	struct msg_queue *msq;
--	int err, version;
--	struct ipc_namespace *ns;
--
--	if (msqid < 0 || cmd < 0)
--		return -EINVAL;
--
--	version = ipc_parse_version(&cmd);
--	ns = current->nsproxy->ipc_ns;
- 
- 	switch (cmd) {
- 	case IPC_INFO:
-@@ -488,6 +482,7 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int,
- 
- 		if (!buf)
- 			return -EFAULT;
-+
- 		/*
- 		 * We must not return kernel stack data.
- 		 * due to padding, it's not enough
-@@ -519,7 +514,8 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int,
- 			return -EFAULT;
- 		return (max_id < 0) ? 0 : max_id;
- 	}
--	case MSG_STAT:	/* msqid is an index rather than a msg queue id */
-+
-+	case MSG_STAT:
- 	case IPC_STAT:
- 	{
- 		struct msqid64_ds tbuf;
-@@ -563,19 +559,42 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int,
- 			return -EFAULT;
- 		return success_return;
- 	}
--	case IPC_SET:
--	case IPC_RMID:
--		err = msgctl_down(ns, msqid, cmd, buf, version);
--		return err;
-+
- 	default:
--		return  -EINVAL;
-+		return -EINVAL;
- 	}
- 
-+	return err;
- out_unlock:
- 	msg_unlock(msq);
- 	return err;
- }
- 
-+SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
++static inline struct msg_queue *msq_obtain_object(struct ipc_namespace *ns, int id)
 +{
-+	int version;
-+	struct ipc_namespace *ns;
++	struct kern_ipc_perm *ipcp = ipc_obtain_object(&msg_ids(ns), id);
 +
-+	if (msqid < 0 || cmd < 0)
-+		return -EINVAL;
++	if (IS_ERR(ipcp))
++		return ERR_CAST(ipcp);
 +
-+	version = ipc_parse_version(&cmd);
-+	ns = current->nsproxy->ipc_ns;
-+
-+	switch (cmd) {
-+	case IPC_INFO:
-+	case MSG_INFO:
-+	case MSG_STAT:	/* msqid is an index rather than a msg queue id */
-+	case IPC_STAT:
-+		return msgctl_nolock(ns, msqid, cmd, version, buf);
-+	case IPC_SET:
-+	case IPC_RMID:
-+		return msgctl_down(ns, msqid, cmd, buf, version);
-+	default:
-+		return  -EINVAL;
-+	}
++	return container_of(ipcp, struct msg_queue, q_perm);
 +}
 +
- static int testmsg(struct msg_msg *msg, long type, int mode)
++static inline struct msg_queue *msq_obtain_object_check(struct ipc_namespace *ns,
++							int id)
++{
++	struct kern_ipc_perm *ipcp = ipc_obtain_object_check(&msg_ids(ns), id);
++
++	if (IS_ERR(ipcp))
++		return ERR_CAST(ipcp);
++
++	return container_of(ipcp, struct msg_queue, q_perm);
++}
++
+ static inline void msg_rmid(struct ipc_namespace *ns, struct msg_queue *s)
  {
- 	switch(mode)
+ 	ipc_rmid(&msg_ids(ns), &s->q_perm);
 
 
