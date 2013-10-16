@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761053Ab3JPVs0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:48:26 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4206 "EHLO mms3.broadcom.com"
+	id S1760948Ab3JPVsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:48:24 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4182 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757184Ab3JPVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756143Ab3JPVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 17:48:16 -0400
 X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
 From: "Tim Kryger" <tim.kryger@linaro.org>
@@ -19,44 +19,72 @@ To: "Christian Daudt" <bcm@fixthebug.org>,
 cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [RESEND PATCH v2 0/6] Update Kona drivers to use clocks
-Date: Wed, 16 Oct 2013 14:47:04 -0700
-Message-ID: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+Subject: [RESEND PATCH v2 2/6] ARM: dts: Specify clocks for UARTs on
+ bcm11351
+Date: Wed, 16 Oct 2013 14:47:06 -0700
+Message-ID: <1381960030-1640-3-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E41D61A2E42312501-01-01
+X-WSS-ID: 7E41D61A2E42312500-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series declares the clocks present on bcm11351 (aka bcm281xx) SoCs
-to be fixed at the rates configured by development bootloaders and then
-updates the Kona drivers to make use of clock calls where appropriate.
+Rather than declaring the frequency of the external clock, specify the
+label of the clock such that the driver may determine the frequency on
+its own.
 
-This patch series depends on the following three commits being present:
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+---
+ arch/arm/boot/dts/bcm11351.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-https://lkml.org/lkml/2013/9/18/409
-https://lkml.org/lkml/2013/9/20/305
-http://www.spinics.net/lists/arm-kernel/msg274973.html
-
-Changes in v2:
-  - Renamed bsc4_clk to pmu_bsc_clk
-
-Tim Kryger (6):
-  ARM: dts: Declare clocks as fixed on bcm11351
-  ARM: dts: Specify clocks for UARTs on bcm11351
-  ARM: dts: Specify clocks for SDHCIs on bcm11351
-  clocksource: kona: Add basic use of external clock
-  ARM: dts: Specify clocks for timer on bcm11351
-  mmc: sdhci-bcm-kona: Add basic use of clocks
-
- arch/arm/boot/dts/bcm11351.dtsi      | 111 +++++++++++++++++++++++++++++++++--
- drivers/clocksource/bcm_kona_timer.c |  14 ++++-
- drivers/mmc/host/sdhci-bcm-kona.c    |  30 +++++++++-
- 3 files changed, 145 insertions(+), 10 deletions(-)
-
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index c6464fb..ce65367 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -43,7 +43,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e000000 0x1000>;
+-		clock-frequency = <13000000>;
++		clocks = <&uartb_clk>;
+ 		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -53,7 +53,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e001000 0x1000>;
+-		clock-frequency = <13000000>;
++		clocks = <&uartb2_clk>;
+ 		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -63,7 +63,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e002000 0x1000>;
+-		clock-frequency = <13000000>;
++		clocks = <&uartb3_clk>;
+ 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -73,7 +73,7 @@
+ 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+ 		status = "disabled";
+ 		reg = <0x3e003000 0x1000>;
+-		clock-frequency = <13000000>;
++		clocks = <&uartb4_clk>;
+ 		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
 -- 
 1.8.0.1
 
