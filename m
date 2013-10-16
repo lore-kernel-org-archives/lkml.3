@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760631Ab3JPVsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:48:18 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3072 "EHLO mms1.broadcom.com"
+	id S1755398Ab3JPVzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:55:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5677 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab3JPVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:48:16 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Tim Kryger" <tim.kryger@linaro.org>
-To: "Christian Daudt" <bcm@fixthebug.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Daniel Lezcano" <daniel.lezcano@linaro.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, "Chris Ball" <cjb@laptop.org>
-cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [RESEND PATCH v2 3/6] ARM: dts: Specify clocks for SDHCIs on
- bcm11351
-Date: Wed, 16 Oct 2013 14:47:07 -0700
-Message-ID: <1381960030-1640-4-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
-MIME-Version: 1.0
-X-WSS-ID: 7E41D6104FK2359523-01-01
-Content-Type: text/plain
+	id S1750892Ab3JPVzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:55:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,509,1378882800"; 
+   d="scan'208";a="420252510"
+Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20131016065526.GB22509@gmail.com>
+References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
+	 <1380753493.11046.82.camel@schen9-DESK> <20131003073212.GC5775@gmail.com>
+	 <1381186674.11046.105.camel@schen9-DESK> <20131009061551.GD7664@gmail.com>
+	 <1381336441.11046.128.camel@schen9-DESK> <20131010075444.GD17990@gmail.com>
+	 <1381882156.11046.178.camel@schen9-DESK> <20131016065526.GB22509@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Oct 2013 14:55:30 -0700
+Message-ID: <1381960530.11046.200.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify the external clock label in each SDHCI node.
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
----
- arch/arm/boot/dts/bcm11351.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+> 
+> It would be _really_ nice to stick this into tools/perf/bench/ as:
+> 
+> 	perf bench mem pagefaults
+> 
+> or so, with a number of parallelism and workload patterns. See 
+> tools/perf/bench/numa.c for a couple of workload generators - although 
+> those are not page fault intense.
+> 
+> So that future generations can run all these tests too and such.
+> 
+> > I compare the throughput where I have the complete rwsem patchset 
+> > against vanilla and the case where I take out the optimistic spin patch.  
+> > I have increased the run time by 10x from my pervious experiments and do 
+> > 10 runs for each case.  The standard deviation is ~1.5% so any changes 
+> > under 1.5% is statistically significant.
+> > 
+> > % change in throughput vs the vanilla kernel.
+> > Threads	all	No-optspin
+> > 1		+0.4%	-0.1%
+> > 2		+2.0%	+0.2%
+> > 3		+1.1%	+1.5%
+> > 4		-0.5%	-1.4%
+> > 5		-0.1%	-0.1%
+> > 10		+2.2%	-1.2%
+> > 20		+237.3%	-2.3%
+> > 40		+548.1%	+0.3%
+> 
+> The tail is impressive. The early parts are important as well, but it's 
+> really hard to tell the significance of the early portion without having 
+> an sttdev column.
+> 
+> ( "perf stat --repeat N" will give you sttdev output, in handy percentage 
+>   form. )
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index ce65367..193659c 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -101,6 +101,7 @@
- 	sdio1: sdio@3f180000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f180000 0x10000>;
-+		clocks = <&sdio1_clk>;
- 		interrupts = <0x0 77 0x4>;
- 		status = "disabled";
- 	};
-@@ -108,6 +109,7 @@
- 	sdio2: sdio@3f190000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f190000 0x10000>;
-+		clocks = <&sdio2_clk>;
- 		interrupts = <0x0 76 0x4>;
- 		status = "disabled";
- 	};
-@@ -115,6 +117,7 @@
- 	sdio3: sdio@3f1a0000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1a0000 0x10000>;
-+		clocks = <&sdio3_clk>;
- 		interrupts = <0x0 74 0x4>;
- 		status = "disabled";
- 	};
-@@ -122,6 +125,7 @@
- 	sdio4: sdio@3f1b0000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1b0000 0x10000>;
-+		clocks = <&sdio4_clk>;
- 		interrupts = <0x0 73 0x4>;
- 		status = "disabled";
- 	};
--- 
-1.8.0.1
+Quick naive question as I haven't hacked perf bench before.  
+Now perf stat gives the statistics of the performance counter or events.
+How do I get it to compute the stats of 
+the throughput reported by perf bench?
 
+Something like
+
+perf stat -r 10 -- perf bench mm memset --iterations 10
+
+doesn't quite give what I need.
+
+Pointers appreciated.
+
+Tim
 
