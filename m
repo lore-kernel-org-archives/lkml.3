@@ -1,562 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab3JPVkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:40:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57603 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755565Ab3JPVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:40:00 -0400
-Date: Wed, 16 Oct 2013 23:39:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Subject: Re: [PATCH 23/26] ib: Convert qib_get_user_pages() to
- get_user_pages_unlocked()
-Message-ID: <20131016213956.GA4595@quack.suse.cz>
-References: <1380724087-13927-1-git-send-email-jack@suse.cz>
- <1380724087-13927-24-git-send-email-jack@suse.cz>
- <32E1700B9017364D9B60AED9960492BC211B0176@FMSMSX107.amr.corp.intel.com>
- <20131004183315.GA19557@quack.suse.cz>
- <32E1700B9017364D9B60AED9960492BC211B07B7@FMSMSX107.amr.corp.intel.com>
- <20131007172604.GD30441@quack.suse.cz>
- <20131008190604.GB14223@quack.suse.cz>
+	id S1760563Ab3JPVmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:42:37 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63841 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760423Ab3JPVme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:42:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjQHAPwHX1J5LFuj/2dsb2JhbABagwe5QIU+gR4XdIIlAQEEAScTHCMFCwgDDgoJJQ8FJQMhE4gABb9ZFo4IgTMHhCUDmAOSA4M4KIErAR8D
+Date: Thu, 17 Oct 2013 08:42:00 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: mpatocka@redhat.com, dm-devel@redhat.com, devel@driverdev.osuosl.org,
+        thornber@redhat.com, snitzer@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        joe@perches.com, akpm@linux-foundation.org, m.chehab@samsung.com,
+        ejt@redhat.com, agk@redhat.com, cesarb@cesarb.net, tj@kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: A review of dm-writeboost
+Message-ID: <20131016214200.GI4446@dastard>
+References: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com>
+ <52550841.5030001@gmail.com>
+ <525BAB32.5050901@gmail.com>
+ <alpine.LRH.2.02.1310151950530.4664@file01.intranet.prod.int.rdu2.redhat.com>
+ <20131016060750.GE4446@dastard>
+ <525E6BBE.40004@gmail.com>
+ <20131016110146.GH4446@dastard>
+ <525E83E4.9090803@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131008190604.GB14223@quack.suse.cz>
+In-Reply-To: <525E83E4.9090803@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 08-10-13 21:06:04, Jan Kara wrote:
-> On Mon 07-10-13 19:26:04, Jan Kara wrote:
-> > On Mon 07-10-13 15:38:24, Marciniszyn, Mike wrote:
-> > > > > This patch and the sibling ipath patch will nominally take the mmap_sem
-> > > > > twice where the old routine only took it once.   This is a performance
-> > > > > issue.
-> > > >   It will take mmap_sem only once during normal operation. Only if
-> > > > get_user_pages_unlocked() fail, we have to take mmap_sem again to undo
-> > > > the change of mm->pinned_vm.
-> > > > 
-> > > > > Is the intent here to deprecate get_user_pages()?
-> > > 
-> > > The old code looked like:
-> > > __qib_get_user_pages()
-> > > 	(broken) ulimit test
-> > >              for (...)
-> > > 		get_user_pages()
-> > > 
-> > > qib_get_user_pages()
-> > > 	mmap_sem lock
-> > > 	__qib_get_user_pages()
-> > >              mmap_sem() unlock
-> > > 
-> > > The new code is:
-> > > 
-> > > get_user_pages_unlocked()
-> > > 	mmap_sem  lock
-> > > 	get_user_pages()
-> > > 	mmap_sem unlock
-> > > 
-> > > qib_get_user_pages()
-> > > 	mmap_sem lock
-> > >              ulimit test and locked pages maintenance
-> > >              mmap_sem unlock
-> > > 	for (...)
-> > > 		get_user_pages_unlocked()
-> > > 
-> > > I count an additional pair of mmap_sem transactions in the normal case.
-> >   Ah, sorry, you are right.
-> > 
-> > > > > Could the lock limit test be pushed into another version of the
-> > > > > wrapper so that there is only one set of mmap_sem transactions?
-> > > >   I'm sorry, I don't understand what you mean here...
-> > > > 
-> > > 
-> > > This is what I had in mind:
-> > > 
-> > > get_user_pages_ulimit_unlocked()
-> > > 	mmap_sem  lock
-> > > 	ulimit test and locked pages maintenance (from qib/ipath)
-> > >              for (...)
-> > > 	       get_user_pages_unlocked()	
-> > > 	mmap_sem unlock
-> > > 	
-> > > qib_get_user_pages()
-> > > 	get_user_pages_ulimit_unlocked()
-> > > 
-> > > This really pushes the code into a new wrapper common to ipath/qib and
-> > > any others that might want to combine locking with ulimit enforcement.
-> >   We could do that but frankly, I'd rather change ulimit enforcement to not
-> > require mmap_sem and use atomic counter instead. I'll see what I can do.
->   OK, so something like the attached patch (compile tested only). What do
-> you think? I'm just not 100% sure removing mmap_sem surrounding stuff like
-> __ipath_release_user_pages() is safe. I don't see a reason why it shouldn't
-> be - we have references to the pages and we only mark them dirty and put the
-> reference - but maybe I miss something subtle...
-  Ping? Any opinion on this?
+On Wed, Oct 16, 2013 at 09:17:40PM +0900, Akira Hayakawa wrote:
+> Dave
+> 
+> > XFS shuts down because you've returned EIO to a log IO. That's a
+> > fatal error. If you do the same to an ext4 journal write, it will do
+> > the equivalent of shut down (e.g. complain and turn read-only).
+> You mean block device should not return -EIO anyway if
+> it doesn't want XFS to suddenly shut down?
 
-								Honza
+Yes. EIO means an IO error has occurred. That causes failure paths
+to be triggered in the upper layers.
 
-> From 44fe90e8303b293370f077ae665d6e43846cf277 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Tue, 8 Oct 2013 14:16:24 +0200
-> Subject: [PATCH] mm: Switch mm->pinned_vm to atomic_long_t
-> 
-> Currently updates to mm->pinned_vm were protected by mmap_sem.
-> kernel/events/core.c actually held it only for reading so that may have
-> been racy. The only other user - Infiniband - used mmap_sem for writing
-> but it caused quite some complications to it.
-> 
-> So switch mm->pinned_vm and convert all the places using it. This allows
-> quite some simplifications to Infiniband code and it now doesn't have to
-> care about mmap_sem at all.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  drivers/infiniband/core/umem.c                 | 56 +++------------------
->  drivers/infiniband/core/uverbs_cmd.c           |  1 -
->  drivers/infiniband/core/uverbs_main.c          |  2 -
->  drivers/infiniband/hw/ipath/ipath_file_ops.c   |  2 +-
->  drivers/infiniband/hw/ipath/ipath_kernel.h     |  1 -
->  drivers/infiniband/hw/ipath/ipath_user_pages.c | 70 +++-----------------------
->  drivers/infiniband/hw/qib/qib_user_pages.c     | 20 ++------
->  fs/proc/task_mmu.c                             |  2 +-
->  include/linux/mm_types.h                       |  2 +-
->  include/rdma/ib_umem.h                         |  3 --
->  include/rdma/ib_verbs.h                        |  1 -
->  kernel/events/core.c                           | 13 +++--
->  12 files changed, 29 insertions(+), 144 deletions(-)
-> 
-> diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-> index 0640a89021a9..294d2e468177 100644
-> --- a/drivers/infiniband/core/umem.c
-> +++ b/drivers/infiniband/core/umem.c
-> @@ -80,6 +80,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
->  {
->  	struct ib_umem *umem;
->  	struct page **page_list;
-> +	struct mm_struct *mm = current->mm;
->  	struct ib_umem_chunk *chunk;
->  	unsigned long locked;
->  	unsigned long lock_limit;
-> @@ -126,20 +127,13 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
->  
->  	npages = PAGE_ALIGN(size + umem->offset) >> PAGE_SHIFT;
->  
-> -	down_write(&current->mm->mmap_sem);
-> -
->  	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
->  	locked = npages;
-> -	if (npages + current->mm->pinned_vm > lock_limit &&
-> +	if (atomic_long_add_return(&mm->pinned_vm, npages) > lock_limit &&
->  	    !capable(CAP_IPC_LOCK)) {
-> -		up_write(&current->mm->mmap_sem);
-> -		kfree(umem);
-> -		free_page((unsigned long) page_list);
-> -		return ERR_PTR(-ENOMEM);
-> +		ret = -ENOMEM;
-> +		goto out;
->  	}
-> -	current->mm->pinned_vm += npages;
-> -
-> -	up_write(&current->mm->mmap_sem);
->  
->  	cur_base = addr & PAGE_MASK;
->  
-> @@ -201,9 +195,7 @@ out:
->  	if (ret < 0) {
->  		__ib_umem_release(context->device, umem, 0);
->  		kfree(umem);
-> -		down_write(&current->mm->mmap_sem);
-> -		current->mm->pinned_vm -= locked;
-> -		up_write(&current->mm->mmap_sem);
-> +		atomic_long_sub(&mm->pinned_vm, locked);
->  	}
->  	free_page((unsigned long) page_list);
->  
-> @@ -211,17 +203,6 @@ out:
->  }
->  EXPORT_SYMBOL(ib_umem_get);
->  
-> -static void ib_umem_account(struct work_struct *work)
-> -{
-> -	struct ib_umem *umem = container_of(work, struct ib_umem, work);
-> -
-> -	down_write(&umem->mm->mmap_sem);
-> -	umem->mm->pinned_vm -= umem->diff;
-> -	up_write(&umem->mm->mmap_sem);
-> -	mmput(umem->mm);
-> -	kfree(umem);
-> -}
-> -
->  /**
->   * ib_umem_release - release memory pinned with ib_umem_get
->   * @umem: umem struct to release
-> @@ -234,37 +215,14 @@ void ib_umem_release(struct ib_umem *umem)
->  
->  	__ib_umem_release(umem->context->device, umem, 1);
->  
-> -	mm = get_task_mm(current);
-> +	mm = current->mm;
->  	if (!mm) {
->  		kfree(umem);
->  		return;
->  	}
->  
->  	diff = PAGE_ALIGN(umem->length + umem->offset) >> PAGE_SHIFT;
-> -
-> -	/*
-> -	 * We may be called with the mm's mmap_sem already held.  This
-> -	 * can happen when a userspace munmap() is the call that drops
-> -	 * the last reference to our file and calls our release
-> -	 * method.  If there are memory regions to destroy, we'll end
-> -	 * up here and not be able to take the mmap_sem.  In that case
-> -	 * we defer the vm_locked accounting to the system workqueue.
-> -	 */
-> -	if (context->closing) {
-> -		if (!down_write_trylock(&mm->mmap_sem)) {
-> -			INIT_WORK(&umem->work, ib_umem_account);
-> -			umem->mm   = mm;
-> -			umem->diff = diff;
-> -
-> -			queue_work(ib_wq, &umem->work);
-> -			return;
-> -		}
-> -	} else
-> -		down_write(&mm->mmap_sem);
-> -
-> -	current->mm->pinned_vm -= diff;
-> -	up_write(&mm->mmap_sem);
-> -	mmput(mm);
-> +	atomic_long_sub(&mm->pinned_vm, diff);
->  	kfree(umem);
->  }
->  EXPORT_SYMBOL(ib_umem_release);
-> diff --git a/drivers/infiniband/core/uverbs_cmd.c b/drivers/infiniband/core/uverbs_cmd.c
-> index f2b81b9ee0d6..16381c6eae77 100644
-> --- a/drivers/infiniband/core/uverbs_cmd.c
-> +++ b/drivers/infiniband/core/uverbs_cmd.c
-> @@ -332,7 +332,6 @@ ssize_t ib_uverbs_get_context(struct ib_uverbs_file *file,
->  	INIT_LIST_HEAD(&ucontext->ah_list);
->  	INIT_LIST_HEAD(&ucontext->xrcd_list);
->  	INIT_LIST_HEAD(&ucontext->rule_list);
-> -	ucontext->closing = 0;
->  
->  	resp.num_comp_vectors = file->device->num_comp_vectors;
->  
-> diff --git a/drivers/infiniband/core/uverbs_main.c b/drivers/infiniband/core/uverbs_main.c
-> index 75ad86c4abf8..8fdc9ca62c27 100644
-> --- a/drivers/infiniband/core/uverbs_main.c
-> +++ b/drivers/infiniband/core/uverbs_main.c
-> @@ -196,8 +196,6 @@ static int ib_uverbs_cleanup_ucontext(struct ib_uverbs_file *file,
->  	if (!context)
->  		return 0;
->  
-> -	context->closing = 1;
-> -
->  	list_for_each_entry_safe(uobj, tmp, &context->ah_list, list) {
->  		struct ib_ah *ah = uobj->object;
->  
-> diff --git a/drivers/infiniband/hw/ipath/ipath_file_ops.c b/drivers/infiniband/hw/ipath/ipath_file_ops.c
-> index 6d7f453b4d05..f219f15ad1cf 100644
-> --- a/drivers/infiniband/hw/ipath/ipath_file_ops.c
-> +++ b/drivers/infiniband/hw/ipath/ipath_file_ops.c
-> @@ -2025,7 +2025,7 @@ static void unlock_expected_tids(struct ipath_portdata *pd)
->  		dd->ipath_pageshadow[i] = NULL;
->  		pci_unmap_page(dd->pcidev, dd->ipath_physshadow[i],
->  			PAGE_SIZE, PCI_DMA_FROMDEVICE);
-> -		ipath_release_user_pages_on_close(&ps, 1);
-> +		ipath_release_user_pages(&ps, 1);
->  		cnt++;
->  		ipath_stats.sps_pageunlocks++;
->  	}
-> diff --git a/drivers/infiniband/hw/ipath/ipath_kernel.h b/drivers/infiniband/hw/ipath/ipath_kernel.h
-> index 6559af60bffd..afc2f868541b 100644
-> --- a/drivers/infiniband/hw/ipath/ipath_kernel.h
-> +++ b/drivers/infiniband/hw/ipath/ipath_kernel.h
-> @@ -1083,7 +1083,6 @@ static inline void ipath_sdma_desc_unreserve(struct ipath_devdata *dd, u16 cnt)
->  
->  int ipath_get_user_pages(unsigned long, size_t, struct page **);
->  void ipath_release_user_pages(struct page **, size_t);
-> -void ipath_release_user_pages_on_close(struct page **, size_t);
->  int ipath_eeprom_read(struct ipath_devdata *, u8, void *, int);
->  int ipath_eeprom_write(struct ipath_devdata *, u8, const void *, int);
->  int ipath_tempsense_read(struct ipath_devdata *, u8 regnum);
-> diff --git a/drivers/infiniband/hw/ipath/ipath_user_pages.c b/drivers/infiniband/hw/ipath/ipath_user_pages.c
-> index a89af9654112..8081e76fa72c 100644
-> --- a/drivers/infiniband/hw/ipath/ipath_user_pages.c
-> +++ b/drivers/infiniband/hw/ipath/ipath_user_pages.c
-> @@ -68,26 +68,22 @@ int ipath_get_user_pages(unsigned long start_page, size_t num_pages,
->  			 struct page **p)
->  {
->  	unsigned long lock_limit;
-> +	struct mm_struct *mm = current->mm;
->  	size_t got;
->  	int ret;
->  
-> -	down_write(&current->mm->mmap_sem);
->  	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-> -
-> -	if (current->mm->pinned_vm + num_pages > lock_limit && 
-> +	if (atomic_long_add_return(&mm->pinned_vm, num_pages) > lock_limit &&
->  	    !capable(CAP_IPC_LOCK)) {
-> -		up_write(&current->mm->mmap_sem);
->  		ret = -ENOMEM;
-> -		goto bail;
-> +		goto bail_sub;
->  	}
-> -	current->mm->pinned_vm += num_pages;
-> -	up_write(&current->mm->mmap_sem);
->  
->  	ipath_cdbg(VERBOSE, "pin %lx pages from vaddr %lx\n",
->  		   (unsigned long) num_pages, start_page);
->  
->  	for (got = 0; got < num_pages; got += ret) {
-> -		ret = get_user_pages_unlocked(current, current->mm,
-> +		ret = get_user_pages_unlocked(current, mm,
->  					      start_page + got * PAGE_SIZE,
->  					      num_pages - got, 1, 1,
->  					      p + got);
-> @@ -101,9 +97,8 @@ int ipath_get_user_pages(unsigned long start_page, size_t num_pages,
->  
->  bail_release:
->  	__ipath_release_user_pages(p, got, 0);
-> -	down_write(&current->mm->mmap_sem);
-> -	current->mm->pinned_vm -= num_pages;
-> -	up_write(&current->mm->mmap_sem);
-> +bail_sub:
-> +	atomic_long_sub(&mm->pinned_vm, num_pages);
->  bail:
->  	return ret;
->  }
-> @@ -166,56 +161,7 @@ dma_addr_t ipath_map_single(struct pci_dev *hwdev, void *ptr, size_t size,
->  
->  void ipath_release_user_pages(struct page **p, size_t num_pages)
->  {
-> -	down_write(&current->mm->mmap_sem);
-> -
-> -	__ipath_release_user_pages(p, num_pages, 1);
-> -
-> -	current->mm->pinned_vm -= num_pages;
-> -
-> -	up_write(&current->mm->mmap_sem);
-> -}
-> -
-> -struct ipath_user_pages_work {
-> -	struct work_struct work;
-> -	struct mm_struct *mm;
-> -	unsigned long num_pages;
-> -};
-> -
-> -static void user_pages_account(struct work_struct *_work)
-> -{
-> -	struct ipath_user_pages_work *work =
-> -		container_of(_work, struct ipath_user_pages_work, work);
-> -
-> -	down_write(&work->mm->mmap_sem);
-> -	work->mm->pinned_vm -= work->num_pages;
-> -	up_write(&work->mm->mmap_sem);
-> -	mmput(work->mm);
-> -	kfree(work);
-> -}
-> -
-> -void ipath_release_user_pages_on_close(struct page **p, size_t num_pages)
-> -{
-> -	struct ipath_user_pages_work *work;
-> -	struct mm_struct *mm;
-> -
->  	__ipath_release_user_pages(p, num_pages, 1);
-> -
-> -	mm = get_task_mm(current);
-> -	if (!mm)
-> -		return;
-> -
-> -	work = kmalloc(sizeof(*work), GFP_KERNEL);
-> -	if (!work)
-> -		goto bail_mm;
-> -
-> -	INIT_WORK(&work->work, user_pages_account);
-> -	work->mm = mm;
-> -	work->num_pages = num_pages;
-> -
-> -	queue_work(ib_wq, &work->work);
-> -	return;
-> -
-> -bail_mm:
-> -	mmput(mm);
-> -	return;
-> +	if (current->mm)
-> +		atomic_long_sub(&current->mm->pinned_vm, num_pages);
->  }
-> diff --git a/drivers/infiniband/hw/qib/qib_user_pages.c b/drivers/infiniband/hw/qib/qib_user_pages.c
-> index 57ce83c2d1d9..049ab8db5f32 100644
-> --- a/drivers/infiniband/hw/qib/qib_user_pages.c
-> +++ b/drivers/infiniband/hw/qib/qib_user_pages.c
-> @@ -68,16 +68,13 @@ int qib_get_user_pages(unsigned long start_page, size_t num_pages,
->  	int ret;
->  	struct mm_struct *mm = current->mm;
->  
-> -	down_write(&mm->mmap_sem);
->  	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
->  
-> -	if (mm->pinned_vm + num_pages > lock_limit && !capable(CAP_IPC_LOCK)) {
-> -		up_write(&mm->mmap_sem);
-> +	if (atomic_long_add_return(&mm->pinned_vm, num_pages) > lock_limit &&
-> +	    !capable(CAP_IPC_LOCK)) {
->  		ret = -ENOMEM;
->  		goto bail;
->  	}
-> -	mm->pinned_vm += num_pages;
-> -	up_write(&mm->mmap_sem);
->  
->  	for (got = 0; got < num_pages; got += ret) {
->  		ret = get_user_pages_unlocked(current, mm,
-> @@ -94,9 +91,7 @@ int qib_get_user_pages(unsigned long start_page, size_t num_pages,
->  
->  bail_release:
->  	__qib_release_user_pages(p, got, 0);
-> -	down_write(&mm->mmap_sem);
-> -	mm->pinned_vm -= num_pages;
-> -	up_write(&mm->mmap_sem);
-> +	atomic_long_sub(&mm->pinned_vm, num_pages);
->  bail:
->  	return ret;
->  }
-> @@ -135,13 +130,8 @@ dma_addr_t qib_map_page(struct pci_dev *hwdev, struct page *page,
->  
->  void qib_release_user_pages(struct page **p, size_t num_pages)
->  {
-> -	if (current->mm) /* during close after signal, mm can be NULL */
-> -		down_write(&current->mm->mmap_sem);
-> -
->  	__qib_release_user_pages(p, num_pages, 1);
->  
-> -	if (current->mm) {
-> -		current->mm->pinned_vm -= num_pages;
-> -		up_write(&current->mm->mmap_sem);
-> -	}
-> +	if (current->mm)
-> +		atomic_long_sub(&current->mm->pinned_vm, num_pages);
->  }
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 7366e9d63cee..9123bfef1dea 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -57,7 +57,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
->  		hiwater_vm << (PAGE_SHIFT-10),
->  		total_vm << (PAGE_SHIFT-10),
->  		mm->locked_vm << (PAGE_SHIFT-10),
-> -		mm->pinned_vm << (PAGE_SHIFT-10),
-> +		atomic_long_read(&mm->pinned_vm) << (PAGE_SHIFT-10),
->  		hiwater_rss << (PAGE_SHIFT-10),
->  		total_rss << (PAGE_SHIFT-10),
->  		data << (PAGE_SHIFT-10),
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index d9851eeb6e1d..f2bf72a86b70 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -355,7 +355,7 @@ struct mm_struct {
->  
->  	unsigned long total_vm;		/* Total pages mapped */
->  	unsigned long locked_vm;	/* Pages that have PG_mlocked set */
-> -	unsigned long pinned_vm;	/* Refcount permanently increased */
-> +	atomic_long_t pinned_vm;	/* Refcount permanently increased */
->  	unsigned long shared_vm;	/* Shared pages (files) */
->  	unsigned long exec_vm;		/* VM_EXEC & ~VM_WRITE */
->  	unsigned long stack_vm;		/* VM_GROWSUP/DOWN */
-> diff --git a/include/rdma/ib_umem.h b/include/rdma/ib_umem.h
-> index 9ee0d2e51b16..2dbbd2c56074 100644
-> --- a/include/rdma/ib_umem.h
-> +++ b/include/rdma/ib_umem.h
-> @@ -47,9 +47,6 @@ struct ib_umem {
->  	int                     writable;
->  	int                     hugetlb;
->  	struct list_head	chunk_list;
-> -	struct work_struct	work;
-> -	struct mm_struct       *mm;
-> -	unsigned long		diff;
->  };
->  
->  struct ib_umem_chunk {
-> diff --git a/include/rdma/ib_verbs.h b/include/rdma/ib_verbs.h
-> index e393171e2fac..bce6d2b91ec7 100644
-> --- a/include/rdma/ib_verbs.h
-> +++ b/include/rdma/ib_verbs.h
-> @@ -961,7 +961,6 @@ struct ib_ucontext {
->  	struct list_head	ah_list;
->  	struct list_head	xrcd_list;
->  	struct list_head	rule_list;
-> -	int			closing;
->  };
->  
->  struct ib_uobject {
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index dd236b66ca3a..80d2ba7bd51c 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3922,7 +3922,7 @@ again:
->  	 */
->  
->  	atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
-> -	vma->vm_mm->pinned_vm -= mmap_locked;
-> +	atomic_long_sub(&vma->vm_mm->pinned_vm, mmap_locked);
->  	free_uid(mmap_user);
->  
->  	ring_buffer_put(rb); /* could be last */
-> @@ -3944,7 +3944,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
->  	struct ring_buffer *rb;
->  	unsigned long vma_size;
->  	unsigned long nr_pages;
-> -	long user_extra, extra;
-> +	long user_extra, extra = 0;
->  	int ret = 0, flags = 0;
->  
->  	/*
-> @@ -4006,16 +4006,14 @@ again:
->  
->  	user_locked = atomic_long_read(&user->locked_vm) + user_extra;
->  
-> -	extra = 0;
->  	if (user_locked > user_lock_limit)
->  		extra = user_locked - user_lock_limit;
->  
->  	lock_limit = rlimit(RLIMIT_MEMLOCK);
->  	lock_limit >>= PAGE_SHIFT;
-> -	locked = vma->vm_mm->pinned_vm + extra;
->  
-> -	if ((locked > lock_limit) && perf_paranoid_tracepoint_raw() &&
-> -		!capable(CAP_IPC_LOCK)) {
-> +	if (atomic_long_add_return(&vma->vm_mm->pinned_vm, extra) > lock_limit &&
-> +	    perf_paranoid_tracepoint_raw() && !capable(CAP_IPC_LOCK)) {
->  		ret = -EPERM;
->  		goto unlock;
->  	}
-> @@ -4039,7 +4037,6 @@ again:
->  	rb->mmap_user = get_current_user();
->  
->  	atomic_long_add(user_extra, &user->locked_vm);
-> -	vma->vm_mm->pinned_vm += extra;
->  
->  	ring_buffer_attach(event, rb);
->  	rcu_assign_pointer(event->rb, rb);
-> @@ -4049,6 +4046,8 @@ again:
->  unlock:
->  	if (!ret)
->  		atomic_inc(&event->mmap_count);
-> +	else if (extra)
-> +		atomic_long_sub(&vma->vm_mm->pinned_vm, extra);
->  	mutex_unlock(&event->mmap_mutex);
->  
->  	/*
-> -- 
-> 1.8.1.4
-> 
+I really don't understand what you are trying to achieve with this
+"blockup" thing. If something goes wrong with the device, then you
+*cannot recover* by sending EIO to any new IOs and then continuing
+on at a later time as though nothing has happened. The moment a
+filesystem gets EIO from a metadata write, it is likely to be
+corrupted and if you continue onwards after that you simply
+propagate the corruption.
 
+> As Mikulas said, connection failure often be the cause of
+> I/O error from the underlying devices.
+
+Connection failure is *rarely* the cause of IO errors, except in
+environments where SANs are in use. Even then multipathing makes
+fatal connection failure a rare occurrence. Broken hardware is a
+much more common cause of problems at the storage layers.
+
+> That ext4 and XFS are both determine shutting down in
+> erroneous journal writes is also due to the limitation of journal write?
+> or just a compromise in implementation? This is just for my curiosity.
+
+A failed, unrecoverable journal write violates the filesystem
+consistency model of any journalling filesystem. Operations must be
+stopped and the hardware and filesystem must be repaired, otherwise
+loss of data will occur.
+
+i.e. You're tellingthe filesystem that it's had a fatal IO error by
+returning EIO, and the filesystems are treating it as though they've
+seen a fatal IO error.
+
+
+Simple rule: Don't complete IOs with EIO if you haven't had a fatal
+IO error.
+
+>         struct wb_cache *cache = data;
+>         struct wb_device *wb = cache->wb;
+>         unsigned long intvl;
+> 
+>         while (!kthread_should_stop()) {
+> 
+>                 wait_on_blockup();
+
+Ugh. You should be using workqueue with timed work for this.
+
+BTW, you're missing the handling needed by these kernel threads
+for suspend-to-disk/ram....
+
+> [   68.825016] XFS (dm-3): Mounting Filesystem
+> [   68.847027] XFS (dm-3): Ending clean mount
+> [   72.100112] device-mapper: writeboost: err@dm_safe_io_internal() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [   72.109702] device-mapper: writeboost: err@migrate_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [   72.812097] device-mapper: writeboost: err@modulator_proc() system is blocked up on I/O error. set blockup to 0 after checkup.
+> [   73.894429] Buffer I/O error on device dm-3, logical block 98354
+> [   73.895824] lost page write due to I/O error on dm-3
+
+Data IO has been lost due to EIOs. You've corrupted user files when
+this error is emitted.
+
+...
+
+> [   73.930022] XFS (dm-3): metadata I/O error: block 0x40 ("xfs_buf_iodone_callbacks") error 5 numblks 16
+> [   74.036759] XFS (dm-3): metadata I/O error: block 0x300c7f ("xlog_iodone") error 5 numblks 64
+> [   74.043456] XFS (dm-3): xfs_do_force_shutdown(0x2) called from line 1161 of file fs/xfs/xfs_log.c.  Return address = 0xffffffffa03a6417
+> [   74.047556] XFS (dm-3): Log I/O Error Detected.  Shutting down filesystem
+> [   74.049893] XFS (dm-3): Please umount the filesystem and rectify the problem(s)
+> [   74.051467] XFS (dm-3): metadata I/O error: block 0x300cbf ("xlog_iodone") error 5 numblks 64
+> [   74.053190] XFS (dm-3): xfs_do_force_shutdown(0x2) called from line 1161 of file fs/xfs/xfs_log.c.  Return address = 0xffffffffa03a6417
+
+And these are all the log buffers containing uncommitted changes
+being aborted due to EIO. The filesystem state in memory now doesn't
+match the state on disk, and so it's effectively corrupt and shuts
+down.
+
+....
+
+> [  100.052005] BUG: soft lockup - CPU#0 stuck for 23s! [kworker/0:1H:215]
+...
+> [  100.052005] RIP: 0010:[<ffffffff81081463>]  [<ffffffff81081463>] do_raw_spin_lock+0x16/0x23
+> [  100.052005] Workqueue: xfslogd xfs_buf_iodone_work [xfs]
+> [  100.052005] Call Trace:
+> [  100.052005]  [<ffffffffa03aa836>] ? xfs_buf_iodone+0x1b/0x49 [xfs]
+> [  100.052005]  [<ffffffffa03a99c2>] ? xfs_buf_do_callbacks+0x22/0x30 [xfs]
+> [  100.052005]  [<ffffffffa03a9bd2>] ? xfs_buf_iodone_callbacks+0x16b/0x1c4 [xfs]
+> [  100.052005]  [<ffffffff8104b7ab>] ? process_one_work+0x191/0x294
+> [  100.052005]  [<ffffffff8104bc5d>] ? worker_thread+0x121/0x1e7
+> [  100.052005]  [<ffffffff8104bb3c>] ? rescuer_thread+0x269/0x269
+> [  100.052005]  [<ffffffff81050641>] ? kthread+0x81/0x89
+> [  100.052005]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+> [  100.052005]  [<ffffffff8137f4ec>] ? ret_from_fork+0x7c/0xb0
+> [  100.052005]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+
+You need to compile your kernel with framepointers enabled so we get
+reliable stack traces. I think it's stuck on a spinlock in
+xfs_buf_iodone, which would imply the AIL lock.
+
+.....
+
+> [  100.244006] CPU: 2 PID: 3167 Comm: xfsaild/dm-3 Tainted: G           O 3.12.0-rc1 #8
+
+FWIW, you should probably be testing the lastest Linus kernel
+(3.12-rc5, IIRC) rather than -rc1....
+
+....
+
+> [  100.244006] RIP: 0010:[<ffffffff81081463>]  [<ffffffff81081463>] do_raw_spin_lock+0x16/0x23
+> [  100.244006] Call Trace:
+> [  100.244006]  [<ffffffffa0372e3d>] ? xfs_trans_committed_bulk+0x2f/0x19d [xfs]
+> [  100.244006]  [<ffffffffa036050e>] ? _xfs_buf_ioapply+0x271/0x29c [xfs]
+> [  100.244006]  [<ffffffff81050e94>] ? remove_wait_queue+0xe/0x48
+> [  100.244006]  [<ffffffffa03a5b85>] ? xlog_wait+0x62/0x6b [xfs]
+> [  100.244006]  [<ffffffff8105bbfb>] ? try_to_wake_up+0x190/0x190
+> [  100.244006]  [<ffffffffa03a78e6>] ? xlog_state_get_iclog_space+0x5a/0x1fb [xfs]
+> [  100.244006]  [<ffffffff810fa1c3>] ? __cache_free.isra.46+0x178/0x187
+> [  100.244006]  [<ffffffffa03a8e0b>] ? xlog_cil_committed+0x2f/0xe6 [xfs]
+> [  100.244006]  [<ffffffffa03a926c>] ? xlog_cil_push+0x2f6/0x311 [xfs]
+> [  100.244006]  [<ffffffff81058701>] ? mmdrop+0xd/0x1c
+> [  100.244006]  [<ffffffffa03a9780>] ? xlog_cil_force_lsn+0x71/0xdd [xfs]
+> [  100.244006]  [<ffffffffa03a8162>] ? _xfs_log_force+0x55/0x1a0 [xfs]
+> [  100.244006]  [<ffffffffa03a82cc>] ? xfs_log_force+0x1f/0x4e [xfs]
+> [  100.244006]  [<ffffffffa03aba15>] ? xfsaild+0x144/0x4cd [xfs]
+> [  100.244006]  [<ffffffff810592dc>] ? finish_task_switch+0x7f/0xaa
+> [  100.244006]  [<ffffffffa03ab8d1>] ? xfs_trans_ail_cursor_first+0x76/0x76 [xfs]
+> [  100.244006]  [<ffffffffa03ab8d1>] ? xfs_trans_ail_cursor_first+0x76/0x76 [xfs]
+> [  100.244006]  [<ffffffff81050641>] ? kthread+0x81/0x89
+> [  100.244006]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+> [  100.244006]  [<ffffffff8137f4ec>] ? ret_from_fork+0x7c/0xb0
+> [  100.244006]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+
+It's stuck on a spin lock, but I don't know what function it's
+in because the stack trace is indeterminate (i.e. need frame
+pointers enabled). It might be the AIL lock (as it's the xfsaild),
+but I can't tell.
+
+> [  100.436010] BUG: soft lockup - CPU#4 stuck for 22s! [kworker/4:2:537]
+...
+> [  100.436010] Workqueue: xfs-reclaim/dm-3 xfs_reclaim_worker [xfs]
+> [  100.436010] RIP: 0010:[<ffffffff81081460>]  [<ffffffff81081460>] do_raw_spin_lock+0x13/0x23
+> [  100.436010] Call Trace:
+> [  100.436010]  [<ffffffffa03ab5f3>] ? xfs_iflush_abort+0x35/0x9a [xfs]
+> [  100.436010]  [<ffffffffa03667a3>] ? xfs_reclaim_inode+0x85/0x246 [xfs]
+> [  100.436010]  [<ffffffffa0366aab>] ? xfs_reclaim_inodes_ag+0x147/0x1fc [xfs]
+> [  100.436010]  [<ffffffff8105bbfb>] ? try_to_wake_up+0x190/0x190
+> [  100.436010]  [<ffffffff81056927>] ? __wake_up_common+0x42/0x78
+> [  100.436010]  [<ffffffff810d5a18>] ? fold_diff+0x22/0x2e
+> [  100.436010]  [<ffffffff810408d8>] ? lock_timer_base.isra.35+0x23/0x48
+> [  100.436010]  [<ffffffff81040750>] ? internal_add_timer+0xd/0x28
+> [  100.436010]  [<ffffffff8104125b>] ? __mod_timer+0xfa/0x10c
+> [  100.436010]  [<ffffffffa0367382>] ? xfs_reclaim_inodes+0x16/0x1b [xfs]
+> [  100.436010]  [<ffffffffa036739c>] ? xfs_reclaim_worker+0x15/0x1e [xfs]
+> [  100.436010]  [<ffffffff8104b7ab>] ? process_one_work+0x191/0x294
+> [  100.436010]  [<ffffffff8104bc5d>] ? worker_thread+0x121/0x1e7
+> [  100.436010]  [<ffffffff8104bb3c>] ? rescuer_thread+0x269/0x269
+> [  100.436010]  [<ffffffff81050641>] ? kthread+0x81/0x89
+> [  100.436010]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+> [  100.436010]  [<ffffffff8137f4ec>] ? ret_from_fork+0x7c/0xb0
+> [  100.436010]  [<ffffffff810505c0>] ? __kthread_parkme+0x5d/0x5d
+
+Also stuck on a spin lock, but again it is not obvious what function
+it is in and hence what spinlock is affected. xfs_iflush_abort()
+does take the AIL lock, so that might be it.
+
+> [  100.628005] BUG: soft lockup - CPU#6 stuck for 22s! [script:3151]
+> [  100.628005] RIP: 0010:[<ffffffff81081463>]  [<ffffffff81081463>] do_raw_spin_lock+0x16/0x23
+> [  100.628005] Call Trace:
+> [  100.628005]  [<ffffffffa03abe25>] ? xfs_ail_push_all+0x13/0x4f [xfs]
+> [  100.628005]  [<ffffffffa03673bf>] ? xfs_reclaim_inodes_nr+0x1a/0x34 [xfs]
+> [  100.628005]  [<ffffffff8110875e>] ? super_cache_scan+0x121/0x13e
+> [  100.628005]  [<ffffffff810cdb7a>] ? shrink_slab+0x1e3/0x2f9
+> [  100.628005]  [<ffffffff81119526>] ? iput+0x34/0x13d
+> [  100.628005]  [<ffffffff81148d14>] ? do_coredump+0xbc3/0xbc3
+> [  100.628005]  [<ffffffff81148e3f>] ? drop_caches_sysctl_handler+0x65/0x76
+> [  100.628005]  [<ffffffff81157b7c>] ? proc_sys_call_handler+0x98/0xbf
+> [  100.628005]  [<ffffffff81105eca>] ? vfs_write+0x9e/0x104
+> [  100.628005]  [<ffffffff811061c1>] ? SyS_write+0x51/0x85
+> [  100.628005]  [<ffffffff8137f592>] ? system_call_fastpath+0x16/0x1b
+
+That can only be stuck on the AIL spin lock.
+
+So, I've just audited all the uses of the AIL lock, and I cannot
+find an unbalanced user of the AIL lock. If we've leaked the spin
+lock, it's not an obvious or easy to trigger bug. Can you turn on
+lockdep as well as CONFIG_XFS_DEBUG and see what warnings that
+throws?
+
+Cheers,
+
+Dave.
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Dave Chinner
+david@fromorbit.com
