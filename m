@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934794Ab3JPOIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:08:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44949 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934296Ab3JPOIg (ORCPT
+	id S934857Ab3JPOJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:09:02 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26670 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934632Ab3JPOF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:08:36 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] bq2415x_charger: fix max battery regulation voltage
-Date: Wed, 16 Oct 2013 16:08:31 +0200
-Message-Id: <1381932511-31719-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 16 Oct 2013 10:05:57 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org
+Subject: [PATCH V9 30/33] afs: add support for read_iter and write_iter
+Date: Wed, 16 Oct 2013 09:04:43 -0500
+Message-Id: <1381932286-14978-31-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per the datasheets, maximum battery regulation voltage is 4440mV.
-
-The formula is (voltage - offset) / step, so the maximum value is:
-(4440 - 3500) / 20 = 47
-
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: linux-afs@lists.infradead.org
 ---
- drivers/power/bq2415x_charger.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/afs/file.c     | 4 ++--
+ fs/afs/internal.h | 3 +--
+ fs/afs/write.c    | 9 ++++-----
+ 3 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-index 0727f92..df893dd 100644
---- a/drivers/power/bq2415x_charger.c
-+++ b/drivers/power/bq2415x_charger.c
-@@ -605,9 +605,13 @@ static int bq2415x_set_battery_regulation_voltage(struct bq2415x_device *bq,
+diff --git a/fs/afs/file.c b/fs/afs/file.c
+index 66d50fe..3b71622 100644
+--- a/fs/afs/file.c
++++ b/fs/afs/file.c
+@@ -33,8 +33,8 @@ const struct file_operations afs_file_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= generic_file_aio_read,
+-	.aio_write	= afs_file_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= afs_file_write,
+ 	.mmap		= generic_file_readonly_mmap,
+ 	.splice_read	= generic_file_splice_read,
+ 	.fsync		= afs_fsync,
+diff --git a/fs/afs/internal.h b/fs/afs/internal.h
+index a306bb6..9c048ff 100644
+--- a/fs/afs/internal.h
++++ b/fs/afs/internal.h
+@@ -747,8 +747,7 @@ extern int afs_write_end(struct file *file, struct address_space *mapping,
+ extern int afs_writepage(struct page *, struct writeback_control *);
+ extern int afs_writepages(struct address_space *, struct writeback_control *);
+ extern void afs_pages_written_back(struct afs_vnode *, struct afs_call *);
+-extern ssize_t afs_file_write(struct kiocb *, const struct iovec *,
+-			      unsigned long, loff_t);
++extern ssize_t afs_file_write(struct kiocb *, struct iov_iter *, loff_t);
+ extern int afs_writeback_all(struct afs_vnode *);
+ extern int afs_fsync(struct file *, loff_t, loff_t, int);
+ 
+diff --git a/fs/afs/write.c b/fs/afs/write.c
+index a890db4..9fa2f59 100644
+--- a/fs/afs/write.c
++++ b/fs/afs/write.c
+@@ -625,15 +625,14 @@ void afs_pages_written_back(struct afs_vnode *vnode, struct afs_call *call)
+ /*
+  * write to an AFS file
+  */
+-ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
+-		       unsigned long nr_segs, loff_t pos)
++ssize_t afs_file_write(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
  {
- 	int val = (mV/10 - 350) / 2;
+ 	struct afs_vnode *vnode = AFS_FS_I(file_inode(iocb->ki_filp));
+ 	ssize_t result;
+-	size_t count = iov_length(iov, nr_segs);
++	size_t count = iov_iter_count(iter);
  
-+	/*
-+	 * According to datasheet, maximum battery regulation voltage is
-+	 * 4440mV which is b101111 = 47.
-+	 */
- 	if (val < 0)
- 		val = 0;
--	else if (val > 94) /* FIXME: Max is 94 or 122 ? Set max value ? */
-+	else if (val > 47)
- 		return -EINVAL;
+ 	_enter("{%x.%u},{%zu},%lu,",
+-	       vnode->fid.vid, vnode->fid.vnode, count, nr_segs);
++	       vnode->fid.vid, vnode->fid.vnode, count, iter->nr_segs);
  
- 	return bq2415x_i2c_write_mask(bq, BQ2415X_REG_VOLTAGE, val,
+ 	if (IS_SWAPFILE(&vnode->vfs_inode)) {
+ 		printk(KERN_INFO
+@@ -644,7 +643,7 @@ ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (!count)
+ 		return 0;
+ 
+-	result = generic_file_aio_write(iocb, iov, nr_segs, pos);
++	result = generic_file_write_iter(iocb, iter, pos);
+ 	if (IS_ERR_VALUE(result)) {
+ 		_leave(" = %zd", result);
+ 		return result;
 -- 
-1.8.1.2
+1.8.4
 
