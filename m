@@ -1,78 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab3JPXyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 19:54:14 -0400
-Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:29141
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419Ab3JPXyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 19:54:12 -0400
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 19:54:12 EDT
-Message-ID: <525F2397.40203@caviumnetworks.com>
-Date: Wed, 16 Oct 2013 16:39:03 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1760913Ab3JPXzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 19:55:46 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42903 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760675Ab3JPXzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 19:55:44 -0400
+Date: Wed, 16 Oct 2013 17:55:41 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: tianyu.lan@intel.com
+Cc: tony.luck@intel.com, lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
+ resource conversion
+Message-ID: <20131016235541.GD17866@google.com>
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
+ <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-To: Michael Bohan <mbohan@codeaurora.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-CC: <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <ralf@linux-mips.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <david.daney@cavium.com>,
-        <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH] of/lib: Export fdt routines to modules
-References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
-In-Reply-To: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-Forefront-PRVS: 0001227049
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(377454003)(479174003)(51704005)(24454002)(189002)(199002)(4396001)(47976001)(80022001)(65956001)(47736001)(49866001)(81542001)(74876001)(81342001)(66066001)(65806001)(83072001)(50986001)(53416003)(19580395003)(83322001)(33656001)(19580405001)(64126003)(80976001)(79102001)(76796001)(76786001)(50466002)(54316002)(85306002)(56776001)(56816003)(77096001)(36756003)(74662001)(74502001)(47446002)(76482001)(69226001)(74366001)(81686001)(31966008)(83506001)(81816001)(59766001)(77982001)(74706001)(46102001)(54356001)(47776003)(63696002)(53806001)(23756003)(51856001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB012;H:BL2PRD0712HT001.namprd07.prod.outlook.com;CLIP:64.2.3.195;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 04:27 PM, Michael Bohan wrote:
-> Ever since the following commit, libfdt has been available for
-> usage in the kernel:
->
->       commit ab25383983fb8d7786696f5371e75e79c3e9a405
->       Author: David Daney <david.daney@cavium.com>
->       Date:   Thu Jul 5 18:12:38 2012 +0200
->
->       of/lib: Allow scripts/dtc/libfdt to be used from kernel code
->
-> Export these functions to modules so that they may be used
-> from device drivers.
->
-> Change-Id: I7f540b7cf860c4be414e32ce183be5268b2ae6af
-> Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+On Fri, Oct 11, 2013 at 08:19:01PM +0800, tianyu.lan@intel.com wrote:
+> From: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> Using ACPI resource functions to convert ACPI resource to generic resource
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 > ---
->   lib/fdt.c     |    6 ++++++
->   lib/fdt_ro.c  |   28 ++++++++++++++++++++++++++++
->   lib/fdt_rw.c  |   13 +++++++++++++
->   lib/fdt_sw.c  |    9 +++++++++
->   lib/fdt_wip.c |    6 ++++++
->   5 files changed, 62 insertions(+), 0 deletions(-)
->
-> diff --git a/lib/fdt.c b/lib/fdt.c
-> index 97f2006..a3fe87b 100644
-> --- a/lib/fdt.c
-> +++ b/lib/fdt.c
-> @@ -1,2 +1,8 @@
->   #include <linux/libfdt_env.h>
-> +#include <linux/module.h>
->   #include "../scripts/dtc/libfdt/fdt.c"
+> This patch just passes through compilation test due to no ia64 machine on hand.
+> 
+>  arch/ia64/pci/pci.c | 38 +++++++++++++++++++++-----------------
+>  1 file changed, 21 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+> index 2326790..14fa175 100644
+> --- a/arch/ia64/pci/pci.c
+> +++ b/arch/ia64/pci/pci.c
+> @@ -232,8 +232,9 @@ out:
+>  	return ~0;
+>  }
+>  
+> -static acpi_status resource_to_window(struct acpi_resource *resource,
+> -				      struct acpi_resource_address64 *addr)
+> +static acpi_status resource_to_window(struct acpi_resource *ares,
+> +				      struct acpi_resource_address64 *addr,
+> +				      struct resource *res)
+>  {
+>  	acpi_status status;
+>  
+> @@ -244,7 +245,7 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
+>  	 *	- producers, i.e., the address space is routed downstream,
+>  	 *	  not consumed by the bridge itself
+>  	 */
+> -	status = acpi_resource_to_address64(resource, addr);
+> +	status = acpi_dev_resource_address_space_full(ares, addr, res);
+>  	if (ACPI_SUCCESS(status) &&
+>  	    (addr->resource_type == ACPI_MEMORY_RANGE ||
+>  	     addr->resource_type == ACPI_IO_RANGE) &&
+> @@ -255,51 +256,54 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
+>  	return AE_ERROR;
+>  }
+>  
+> -static acpi_status count_window(struct acpi_resource *resource, void *data)
+> +static acpi_status count_window(struct acpi_resource *ares, void *data)
+>  {
+>  	unsigned int *windows = (unsigned int *) data;
+>  	struct acpi_resource_address64 addr;
+> +	struct resource res;
+>  	acpi_status status;
+>  
+> -	status = resource_to_window(resource, &addr);
+> +	status = resource_to_window(ares, &addr, &res);
+>  	if (ACPI_SUCCESS(status))
+>  		(*windows)++;
+>  
+>  	return AE_OK;
+>  }
+>  
+> -static acpi_status add_window(struct acpi_resource *res, void *data)
+> +static acpi_status add_window(struct acpi_resource *ares, void *data)
+>  {
+>  	struct pci_root_info *info = data;
+> -	struct resource *resource;
+> +	struct resource *resource = &info->res[info->res_num];
+>  	struct acpi_resource_address64 addr;
+>  	acpi_status status;
+> -	unsigned long flags, offset = 0;
+> +	unsigned long offset = 0;
+>  	struct resource *root;
+>  
+>  	/* Return AE_OK for non-window resources to keep scanning for more */
+> -	status = resource_to_window(res, &addr);
+> +	status = resource_to_window(ares, &addr, resource);
+>  	if (!ACPI_SUCCESS(status))
+>  		return AE_OK;
+>  
+> -	if (addr.resource_type == ACPI_MEMORY_RANGE) {
+> -		flags = IORESOURCE_MEM;
+> +	if (resource->flags & IORESOURCE_MEM) {
+>  		root = &iomem_resource;
+>  		offset = addr.translation_offset;
+> -	} else if (addr.resource_type == ACPI_IO_RANGE) {
+> -		flags = IORESOURCE_IO;
+> +	} else if (resource->flags & IORESOURCE_IO) {
+>  		root = &ioport_resource;
+>  		offset = add_io_space(info, &addr);
+>  		if (offset == ~0)
+>  			return AE_OK;
 > +
-> +EXPORT_SYMBOL_GPL(fdt_next_tag);
+> +		/*
+> +		 * io space address translation offset depends
+> +		 * on the return value of add_io_space(). So
+> +		 * Repopulate resource->start and end here.
 
-The code was all written by David Gibson, and is dual GPL/BSD licensed. 
-  So I am not sure you should be using the GPL flavor of the export 
-directive.
+"Repopulate" makes it sound like "resource->start" got clobbered
+somewhere.  But it didn't.  I think it's just that each bridge can
+support its own I/O port range, and the PCI port numbers reported
+in the acpi_resource may not be distinct, and add_io_space() adds
+an offset so all the I/O port ranges fit into one global I/O port
+space.
 
+For example, I think these two bridges have the same port numbers
+(0x0-0xfff) in their acpi_resource, but the second has an offset
+of 0x1000000 in the system I/O port space, and I think this offset
+is what add_io_space() returns:
 
-But more than this.  I don't understand why a driver would be parsing 
-the FDT in the first place.  If there is a device tree, why hasn't it 
-been unflattened, and thus used via the normal device tree functions.
+  HWP0002:00: host bridge window [io  0x0000-0x0fff]	   (PCI [0x0-0xfff])
+  HWP0002:09: host bridge window [io  0x1000000-0x1000fff] (PCI [0x0-0xfff])
 
-David Daney
+> +		 */
+> +		resource->start = addr.minimum + offset;
+> +		resource->end = resource->start + addr.address_length - 1;
+
+Can't we use this:
+
+		resource->start += offset;
+		resource->end += offset;
+
+to avoid breaking the encapsulation of struct acpi_resource_address64?
+
+>  	} else
+>  		return AE_OK;
+>  
+> -	resource = &info->res[info->res_num];
+>  	resource->name = info->name;
+> -	resource->flags = flags;
+> -	resource->start = addr.minimum + offset;
+> -	resource->end = resource->start + addr.address_length - 1;
+>  	info->res_offset[info->res_num] = offset;
+>  
+>  	if (insert_resource(root, resource)) {
+> -- 
+> 1.8.2.1
+> 
