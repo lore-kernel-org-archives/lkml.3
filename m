@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760547Ab3JPKTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 06:19:39 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13801 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760265Ab3JPKTh (ORCPT
+	id S1760565Ab3JPKZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:25:42 -0400
+Received: from emh04.mail.saunalahti.fi ([62.142.5.110]:36586 "EHLO
+	emh04.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760286Ab3JPKZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 06:19:37 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 16 Oct 2013 03:19:37 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] ARM: dma-mapping: Drop GFP_COMP for DMA memory allocations
-Date: Wed, 16 Oct 2013 13:19:13 +0300
-Message-ID: <1381918756-10389-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 16 Oct 2013 06:25:40 -0400
+Message-ID: <1381919067.11885.19.camel@porter.coelho.fi>
+Subject: Re: [RFC] clk: add flags to distinguish xtal clocks
+From: Luca Coelho <luca@coelho.fi>
+To: Mike Turquette <mturquette@linaro.org>, balbi@ti.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>
+Date: Wed, 16 Oct 2013 13:24:27 +0300
+In-Reply-To: <20131008152743.GB13128@radagast>
+References: <1372971912-10877-1-git-send-email-coelho@ti.com>
+	 <20130704222538.10823.2559@quantum>
+	 <1372977465.21065.136.camel@cumari.coelho.fi>
+	 <20130704231953.10823.94331@quantum>
+	 <1373010853.21065.159.camel@cumari.coelho.fi>
+	 <1375105842.20048.18.camel@cumari.coelho.fi>
+	 <20131007074424.7445.52119@quantum> <20131008152743.GB13128@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arm_iommu_alloc_attrs wants to split pages after allocation in order
-to reduce the memory footprint. This does not work well with GFP_COMP
-pages, so drop this flag before allocation.
+Hi,
 
-ref: ea2e7057c0234cfb8b09467d8f137760d371fc72:
+Sorry for the delayed response.
 
-    ARM: 7172/1: dma: Drop GFP_COMP for DMA memory allocations
+On Tue, 2013-10-08 at 10:27 -0500, Felipe Balbi wrote:
+> Fixing Luca's address since he left TI
 
-    dma_alloc_coherent wants to split pages after allocation in order to
-    reduce the memory footprint. This does not work well with GFP_COMP
-    pages, so drop this flag before allocation.
+Thanks, Felipe! I wouldn't have seen this otherwise.
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mm/dma-mapping.c | 7 +++++++
- 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index f5e1a84..955dd3e 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -1321,6 +1321,13 @@ static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
- 	struct page **pages;
- 	void *addr = NULL;
+> On Mon, Oct 07, 2013 at 12:44:24AM -0700, Mike Turquette wrote:
+> > Quoting Luciano Coelho (2013-07-29 06:50:42)
+> > > Hi Mike,
+> > > 
+> > > On Fri, 2013-07-05 at 10:54 +0300, Luciano Coelho wrote:
+> > > > On Thu, 2013-07-04 at 16:19 -0700, Mike Turquette wrote:
+> > > > > Quoting Luciano Coelho (2013-07-04 15:37:45)
+> > > > > > On Thu, 2013-07-04 at 15:25 -0700, Mike Turquette wrote:
+> > > > > > > Or is it the same clock input and basically the problem is that you need
+> > > > > > > to know what kind of waveform to expect (e.g. square versus sine)?
+> > > > > > 
+> > > > > > It's the same clock input in the chip's perspective.  One clock input
+> > > > > > that can be any of the combinations I mentioned above.  Again, I'm not
+> > > > > > familiar with clocks, so I guess the square vs. sine explanation is
+> > > > > > plausible.  What I could see in the firmware is that it handles the
+> > > > > > clocks differently if they're xtal or not.
+> > > > > 
+> > > > > OMAP has a similar thing where sys_clkin (the fast reference clock for
+> > > > > the chip) can be 19.2, 26, 38.4, etc. This is easy to handle since only
+> > > > > the rates matter.
+> > > > 
+> > > > Right, this part is easy and I already have the code for that.  What I'm
+> > > > missing is a way to pass this XTAL flag to the chip.
+> > > > 
+> > > > 
+> > > > > In your case you need some extra metadata to know what to do. I'm really
+> > > > > not sure if CLK_IS_TYPE_XTAL is the most useful form this metadata can
+> > > > > take. It would be best to know if the waveform is what you really need
+> > > > > to know, or perhaps something else. For instance you might be affected
+> > > > > by some clock signal stabilization time. Can you talk to your hardware
+> > > > > guys and figure it out? I'd rather model the actual needs instead of
+> > > > > just tossing a flag in there.
+> > > > 
+> > > > I get your point.  I have tried to investigate how this flag is used by
+> > > > the firmware and I could see that it is used to set different "buffer
+> > > > gains" and "delays" when waking up (I guess this means when the clock is
+> > > > starting, so probably related to stabilization time).  They specify two
+> > > > "modes", "boost" and "normal" and use different delay values for each.
+> > > 
+> > > I tried but I couldn't find any more information on how exactly this
+> > > works.  But since this change is really simple and there seems to be
+> > > other people who need the same information, couldn't we add it as is and
+> > > try to figure out more specific information about the clocks later on?
+> > > 
+> > > Even if XTAL is not that useful if we know the other details, at least
+> > > it wouldn't hurt to have the flag there anyway.
+> > 
+> > Luca,
+> > 
+> > By any chance did you come to a different solution for this problem? I
+> > can take the patch, but I do not feel like we're solving the right
+> > problem the right way.
+
+Unfortunately I didn't find any better solution for this.  From the
+WiLink firmware's point of view, there was not much information about
+the details of stabilization time requirements and such.
+
  
-+	/* Following is a work-around (a.k.a. hack) to prevent pages
-+	 * with __GFP_COMP being passed to split_page() which cannot
-+	 * handle them.  The real problem is that this flag probably
-+	 * should be 0 on ARM as it is not supported on this
-+	 * platform--see CONFIG_HUGETLB_PAGE. */
-+	gfp &= ~(__GFP_COMP);
-+
- 	*handle = DMA_ERROR_CODE;
- 	size = PAGE_ALIGN(size);
- 
--- 
-1.8.1.5
+> > If not I will take it for 3.13.
+
+That would be great! As I mentioned above, the XTAL/non-XTAL flag
+wouldn't hurt, even if in most cases it may not provide the necessary
+details for the clock code.  But at least for the WiLink hardware it is
+very useful. ;)
+
+--
+Cheers,
+Luca.
 
