@@ -1,70 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935199Ab3JPSG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:06:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36084 "EHLO
+	id S964804Ab3JPSGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:06:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934615Ab3JPSG2 (ORCPT
+	with ESMTP id S1761599Ab3JPRqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:06:28 -0400
-Date: Wed, 16 Oct 2013 11:06:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dhanunjaya <dhanunjaya.matrix@gmail.com>
-Cc: eli.billauer@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: xillybus: fix for quoted string split
- across lines
-Message-ID: <20131016180627.GA17116@kroah.com>
-References: <1381946272-18651-1-git-send-email-dhanunjaya.matrix@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381946272-18651-1-git-send-email-dhanunjaya.matrix@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 13:46:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Jia He <jiakernel@gmail.com>, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 67/69] ipc/sem.c: update sem_otime for all operations
+Date: Wed, 16 Oct 2013 10:45:16 -0700
+Message-Id: <20131016174321.107934866@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 11:27:52PM +0530, Dhanunjaya wrote:
-> This is a patch to the xillybus_of.c file that fixes up a
-> quoted string split across lines warning found by the
-> checkpatch.pl tool.
-> 
-> Signed-off-by: Dhanunjaya <dhanunjaya.matrix@gmail.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I need a full name here please.
+------------------
 
-> ---
->  drivers/staging/xillybus/xillybus_of.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/xillybus/xillybus_of.c b/drivers/staging/xillybus/xillybus_of.c
-> index 92c2931..822ef4d 100644
-> --- a/drivers/staging/xillybus/xillybus_of.c
-> +++ b/drivers/staging/xillybus/xillybus_of.c
-> @@ -117,8 +117,7 @@ static int xilly_drv_probe(struct platform_device *op)
->  
->  	rc = of_address_to_resource(dev->of_node, 0, &endpoint->res);
->  	if (rc) {
-> -		pr_warn("xillybus: Failed to obtain device tree "
-> -			"resource\n");
-> +		pr_warn("xillybus: Failed to obtain device tree resource\n");
+From: Manfred Spraul <manfred@colorfullife.com>
 
-This should be using dev_warn() instead.
+commit 0e8c665699e953fa58dc1b0b0d09e5dce7343cc7 upstream.
 
->  		goto failed_request_regions;
->  	}
->  
-> @@ -141,8 +140,7 @@ static int xilly_drv_probe(struct platform_device *op)
->  	rc = request_irq(irq, xillybus_isr, 0, xillyname, endpoint);
->  
->  	if (rc) {
-> -		pr_err("xillybus: Failed to register IRQ handler. "
-> -		       "Aborting.\n");
-> +		pr_err("xillybus: Failed to register IRQ handler, Aborting...\n");
+In commit 0a2b9d4c7967 ("ipc/sem.c: move wake_up_process out of the
+spinlock section"), the update of semaphore's sem_otime(last semop time)
+was moved to one central position (do_smart_update).
 
-dev_err() instead please here as well.
+But since do_smart_update() is only called for operations that modify
+the array, this means that wait-for-zero semops do not update sem_otime
+anymore.
 
-thanks,
+The fix is simple:
+Non-alter operations must update sem_otime.
 
-greg k-h
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Reported-by: Jia He <jiakernel@gmail.com>
+Tested-by: Jia He <jiakernel@gmail.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ ipc/sem.c |   42 +++++++++++++++++++++++++++++-------------
+ 1 file changed, 29 insertions(+), 13 deletions(-)
+
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -918,6 +918,24 @@ again:
+ }
+ 
+ /**
++ * set_semotime(sma, sops) - set sem_otime
++ * @sma: semaphore array
++ * @sops: operations that modified the array, may be NULL
++ *
++ * sem_otime is replicated to avoid cache line trashing.
++ * This function sets one instance to the current time.
++ */
++static void set_semotime(struct sem_array *sma, struct sembuf *sops)
++{
++	if (sops == NULL) {
++		sma->sem_base[0].sem_otime = get_seconds();
++	} else {
++		sma->sem_base[sops[0].sem_num].sem_otime =
++							get_seconds();
++	}
++}
++
++/**
+  * do_smart_update(sma, sops, nsops, otime, pt) - optimized update_queue
+  * @sma: semaphore array
+  * @sops: operations that were performed
+@@ -967,17 +985,10 @@ static void do_smart_update(struct sem_a
+ 			}
+ 		}
+ 	}
+-	if (otime) {
+-		if (sops == NULL) {
+-			sma->sem_base[0].sem_otime = get_seconds();
+-		} else {
+-			sma->sem_base[sops[0].sem_num].sem_otime =
+-								get_seconds();
+-		}
+-	}
++	if (otime)
++		set_semotime(sma, sops);
+ }
+ 
+-
+ /* The following counts are associated to each semaphore:
+  *   semncnt        number of tasks waiting on semval being nonzero
+  *   semzcnt        number of tasks waiting on semval being zero
+@@ -1839,12 +1850,17 @@ SYSCALL_DEFINE4(semtimedop, int, semid,
+ 
+ 	error = perform_atomic_semop(sma, sops, nsops, un,
+ 					task_tgid_vnr(current));
+-	if (error <= 0) {
+-		if (alter && error == 0)
++	if (error == 0) {
++		/* If the operation was successful, then do
++		 * the required updates.
++		 */
++		if (alter)
+ 			do_smart_update(sma, sops, nsops, 1, &tasks);
+-
+-		goto out_unlock_free;
++		else
++			set_semotime(sma, sops);
+ 	}
++	if (error <= 0)
++		goto out_unlock_free;
+ 
+ 	/* We need to sleep on this operation, so we put the current
+ 	 * task into the pending queue and go to sleep.
+
+
