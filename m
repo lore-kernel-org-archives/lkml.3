@@ -1,161 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab3JPBb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 21:31:58 -0400
-Received: from tundra.namei.org ([65.99.196.166]:58210 "EHLO tundra.namei.org"
+	id S1757533Ab3JPBfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 21:35:31 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:34428 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751277Ab3JPBb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 21:31:56 -0400
-Date: Wed, 16 Oct 2013 12:36:15 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [GIT] Apparmor bugfixes for 3.12
-Message-ID: <alpine.LRH.2.02.1310161234120.19614@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751605Ab3JPBf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 21:35:29 -0400
+Message-ID: <525DED5C.2010506@interlog.com>
+Date: Tue, 15 Oct 2013 21:35:24 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [Announce] sg3_utils-1.37 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple more regressions fixed, please pull.
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the Linux 3, 2.6 and 2.4 kernel series. It also has ports to
+FreeBSD, Tru64, Solaris, and Windows (cygwin and MinGW).
 
-The following changes since commit 34ec4de42be5006abdd8d0c08b306ffaa64d0d5d:
+This version contains many fixes, some code cleanup and some
+small extensions. This version tracks various changes made
+by www.t10.org since May 2013.
 
-  Merge tag 'devicetree-for-linus' of git://git.secretlab.ca/git/linux (2013-10-15 17:14:13 -0700)
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The sg_ses utility (for enclosure devices) is discussed at:
+     http://sg.danny.cz/sg/sg_ses.html
+The SG_IO ioctl is discussed at:
+     http://sg.danny.cz/sg/sg_io.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
-are available in the git repository at:
+A release announcement will be sent to freecode.com .
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+Changelog for sg3_utils-1.37 [20131014] [svn: r522]
+   - sg_compare_and_write: fix wrprotect setting
+     - add --quiet option to suppress miscompare report
+     - merge features from another implementation
+   - sg_inq: fix referrals VPD page
+     - dev_id VPD: T10 vendor id designator clean up
+   - sg_logs: improve for tape drives, general cleanup
+   - sg_persist: fix core dump on -Q option
+   - sg_unmap: fix core dump on -g option
+   - sg_vpd: dev_id VPD: T10 vendor id designator clean up
+     - cleanup up dev_id NAA-3: locally assigned
+   - sg_ses: add --nickname and --nickid options
+     - eiioe added to additional element status page (ses3r6)
+     - multiple --filter options to prune output
+   - sg_verify: improve miscompare handling
+     - rename --btychk=ndo option to --ndo=ndo (hide former)
+     - add --quiet option
+   - sg_xcopy: allow sg and bsg devices
+     - fix for bpt going negative
+     - limit each XCOPY(LID1) command to 65535 blocks
+     - fix for seek in multi-segment copies
+   - sg_sanitize: skip 15 second safety delay with --fail
+   - sg_libs: extended copy opcode renamed (spc4r34)
+     - sg_ll_receive_copy_results(): expand for all sa_s
+     - add sg_get_sense_key()
+     - add sg_ll_3party_copy_out()
+     - add dStrHexErr(): ascii hex to stderr
+     - add dStrHexStr(): ascii hex to string
+     - add SG_LIB_CAT_MISCOMPARE to categories
+     - clean header files
+   - sg_pt_freebsd: sanity check on sense_resid; fix leaks
+   - scripts/rescan-scsi-bus.sh KG's v1.57 + HR patch
+     - improve wlun handling, detect updated and resized
+       devices, better multipath support
+   - Makefile.am cleanup
+   - examples: add sg_tst_excl and sg_tst_excl2
 
-John Johansen (2):
-      apparmor: fix memleak of the profile hash
-      apparmor: fix bad lock balance when introspecting policy
+Changelog for sg3_utils-1.36 [20130531] [svn: r497]
+...
 
- security/apparmor/apparmorfs.c |    4 +---
- security/apparmor/policy.c     |    1 +
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
----
-
-commit ed2c7da3a40c58410508fe24e12d03e508d7ec01
-Author: John Johansen <john.johansen@canonical.com>
-Date:   Mon Oct 14 11:46:27 2013 -0700
-
-    apparmor: fix bad lock balance when introspecting policy
-    
-    BugLink: http://bugs.launchpad.net/bugs/1235977
-    
-    The profile introspection seq file has a locking bug when policy is viewed
-    from a virtual root (task in a policy namespace), introspection from the
-    real root is not affected.
-    
-    The test for root
-        while (parent) {
-    is correct for the real root, but incorrect for tasks in a policy namespace.
-    This allows the task to walk backup the policy tree past its virtual root
-    causing it to be unlocked before the virtual root should be in the p_stop
-    fn.
-    
-    This results in the following lockdep back trace:
-    [   78.479744] [ BUG: bad unlock balance detected! ]
-    [   78.479792] 3.11.0-11-generic #17 Not tainted
-    [   78.479838] -------------------------------------
-    [   78.479885] grep/2223 is trying to release lock (&ns->lock) at:
-    [   78.479952] [<ffffffff817bf3be>] mutex_unlock+0xe/0x10
-    [   78.480002] but there are no more locks to release!
-    [   78.480037]
-    [   78.480037] other info that might help us debug this:
-    [   78.480037] 1 lock held by grep/2223:
-    [   78.480037]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812111bd>] seq_read+0x3d/0x3d0
-    [   78.480037]
-    [   78.480037] stack backtrace:
-    [   78.480037] CPU: 0 PID: 2223 Comm: grep Not tainted 3.11.0-11-generic #17
-    [   78.480037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-    [   78.480037]  ffffffff817bf3be ffff880007763d60 ffffffff817b97ef ffff8800189d2190
-    [   78.480037]  ffff880007763d88 ffffffff810e1c6e ffff88001f044730 ffff8800189d2190
-    [   78.480037]  ffffffff817bf3be ffff880007763e00 ffffffff810e5bd6 0000000724fe56b7
-    [   78.480037] Call Trace:
-    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
-    [   78.480037]  [<ffffffff817b97ef>] dump_stack+0x54/0x74
-    [   78.480037]  [<ffffffff810e1c6e>] print_unlock_imbalance_bug+0xee/0x100
-    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
-    [   78.480037]  [<ffffffff810e5bd6>] lock_release_non_nested+0x226/0x300
-    [   78.480037]  [<ffffffff817bf2fe>] ? __mutex_unlock_slowpath+0xce/0x180
-    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
-    [   78.480037]  [<ffffffff810e5d5c>] lock_release+0xac/0x310
-    [   78.480037]  [<ffffffff817bf2b3>] __mutex_unlock_slowpath+0x83/0x180
-    [   78.480037]  [<ffffffff817bf3be>] mutex_unlock+0xe/0x10
-    [   78.480037]  [<ffffffff81376c91>] p_stop+0x51/0x90
-    [   78.480037]  [<ffffffff81211408>] seq_read+0x288/0x3d0
-    [   78.480037]  [<ffffffff811e9d9e>] vfs_read+0x9e/0x170
-    [   78.480037]  [<ffffffff811ea8cc>] SyS_read+0x4c/0xa0
-    [   78.480037]  [<ffffffff817ccc9d>] system_call_fastpath+0x1a/0x1f
-    
-    Signed-off-by: John Johansen <john.johansen@canonical.com>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-index 95c2b26..7db9954 100644
---- a/security/apparmor/apparmorfs.c
-+++ b/security/apparmor/apparmorfs.c
-@@ -580,15 +580,13 @@ static struct aa_namespace *__next_namespace(struct aa_namespace *root,
- 
- 	/* check if the next ns is a sibling, parent, gp, .. */
- 	parent = ns->parent;
--	while (parent) {
-+	while (ns != root) {
- 		mutex_unlock(&ns->lock);
- 		next = list_entry_next(ns, base.list);
- 		if (!list_entry_is_head(next, &parent->sub_ns, base.list)) {
- 			mutex_lock(&next->lock);
- 			return next;
- 		}
--		if (parent == root)
--			return NULL;
- 		ns = parent;
- 		parent = parent->parent;
- 	}
-
-commit 5cb3e91ebd0405519795f243adbfc4ed2a6fe53f
-Author: John Johansen <john.johansen@canonical.com>
-Date:   Mon Oct 14 11:44:34 2013 -0700
-
-    apparmor: fix memleak of the profile hash
-    
-    BugLink: http://bugs.launchpad.net/bugs/1235523
-    
-    This fixes the following kmemleak trace:
-    unreferenced object 0xffff8801e8c35680 (size 32):
-      comm "apparmor_parser", pid 691, jiffies 4294895667 (age 13230.876s)
-      hex dump (first 32 bytes):
-        e0 d3 4e b5 ac 6d f4 ed 3f cb ee 48 1c fd 40 cf  ..N..m..?..H..@.
-        5b cc e9 93 00 00 00 00 00 00 00 00 00 00 00 00  [...............
-      backtrace:
-        [<ffffffff817a97ee>] kmemleak_alloc+0x4e/0xb0
-        [<ffffffff811ca9f3>] __kmalloc+0x103/0x290
-        [<ffffffff8138acbc>] aa_calc_profile_hash+0x6c/0x150
-        [<ffffffff8138074d>] aa_unpack+0x39d/0xd50
-        [<ffffffff8137eced>] aa_replace_profiles+0x3d/0xd80
-        [<ffffffff81376937>] profile_replace+0x37/0x50
-        [<ffffffff811e9f2d>] vfs_write+0xbd/0x1e0
-        [<ffffffff811ea96c>] SyS_write+0x4c/0xa0
-        [<ffffffff817ccb1d>] system_call_fastpath+0x1a/0x1f
-        [<ffffffffffffffff>] 0xffffffffffffffff
-    
-    Signed-off-by: John Johansen <john.johansen@canonical.com>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
-index 345bec0..705c287 100644
---- a/security/apparmor/policy.c
-+++ b/security/apparmor/policy.c
-@@ -610,6 +610,7 @@ void aa_free_profile(struct aa_profile *profile)
- 	aa_put_dfa(profile->policy.dfa);
- 	aa_put_replacedby(profile->replacedby);
- 
-+	kzfree(profile->hash);
- 	kzfree(profile);
- }
- 
+Doug Gilbert
