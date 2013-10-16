@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759906Ab3JPFDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:03:00 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65065 "EHLO
+	id S1751503Ab3JPFA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:00:26 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62800 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab3JPFA2 (ORCPT
+	with ESMTP id S1750858Ab3JPFAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 01:00:28 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-35-525e1d686a04
+	Wed, 16 Oct 2013 01:00:23 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-08-525e1d6586ab
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,70 +16,195 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 11/18] perf ftrace: Use pager for displaying result
-Date: Wed, 16 Oct 2013 14:00:14 +0900
-Message-Id: <1381899621-14638-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 00/18] perf tools: Introduce new 'ftrace' command (5)
+Date: Wed, 16 Oct 2013 14:00:03 +0900
+Message-Id: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
-References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello,
 
-It's convenient to use pager when seeing many lines of result.
+This patchset implements a front-end tool for kernel's ftrace.  It
+uses function_graph tracer by default and normal function tracer is
+also supported.  (Of course you need to enable those tracers in your
+kernel first.)
 
-Note that setup_pager() should be called after perf_evlist__
-prepare_workload() since they can interfere each other regarding
-shared stdio streams.
+This version is almost merely a rebase onto current development, and I
+throw it out only for not buried in the piles of patches. :) So
+there're something that weren't addressed yet from previous feedback.
+But I really want to have an agreement on multi-file support before
+going further.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-ftrace.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+v5 changes:
+  * rebase on current acme/perf/core
+  * fix bug on record subcommand
+  * add basic filter support 
 
-diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 676b2aa7590f..83ed6d797087 100644
---- a/tools/perf/builtin-ftrace.c
-+++ b/tools/perf/builtin-ftrace.c
-@@ -227,6 +227,7 @@ static int do_ftrace_live(struct perf_ftrace *ftrace)
- 	signal(SIGINT, sig_handler);
- 	signal(SIGUSR1, sig_handler);
- 	signal(SIGCHLD, sig_handler);
-+	signal(SIGPIPE, sig_handler);
- 
- 	if (setup_tracing_files(ftrace) < 0)
- 		goto out_reset;
-@@ -1465,6 +1466,8 @@ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
- 						  argv, false, true) < 0)
- 		goto out_maps;
- 
-+	setup_pager();
-+
- 	ret = do_ftrace_live(ftrace);
- 
- out_maps:
-@@ -1586,6 +1589,8 @@ __cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (ftrace->dirname == NULL)
- 		ftrace->dirname = DEFAULT_DIRNAME;
- 
-+	setup_pager();
-+
- 	ret = do_ftrace_show(ftrace);
- 
- 	perf_evlist__delete_maps(ftrace->evlist);
-@@ -1646,6 +1651,7 @@ __cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
- 
- 	perf_hpp__init();
- 
-+	setup_pager();
- 	setup_sorting();
- 
- 	symbol_conf.exclude_other = false;
+I pushed it out to 'perf/ftrace-v5' branch on my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks,
+Namhyung
+
+
+Namhyung Kim (18):
+  perf util: Save pid-cmdline mapping into tracing header
+  perf util: Add more debug message on failure path
+  perf tools: Introduce new 'ftrace' tool
+  perf ftrace: Add support for --pid option
+  perf ftrace: Add support for -a and -C option
+  perf ftrace: Split "live" sub-command
+  perf ftrace: Add 'record' sub-command
+  perf ftrace: Add 'show' sub-command
+  perf ftrace: Add 'report' sub-command
+  perf ftrace: Add dump_printf() for low-level debugging
+  perf ftrace: Use pager for displaying result
+  perf ftrace: Cleanup using ftrace_setup/teardown()
+  perf tools: Add document for perf-ftrace command
+  perf ftrace: Add a signal handler for SIGSEGV
+  perf ftrace: Add --clock option
+  perf ftrace: Show leaf-functions as oneliner
+  perf ftrace: Tidy up the function graph output of 'show' subcommand
+  perf ftrace: Add --filter option
+
+ tools/perf/Documentation/perf-ftrace.txt |  122 ++
+ tools/perf/Makefile.perf                 |    1 +
+ tools/perf/builtin-ftrace.c              | 1861 ++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                     |    1 +
+ tools/perf/command-list.txt              |    1 +
+ tools/perf/perf.c                        |    1 +
+ tools/perf/util/cpumap.c                 |   45 +
+ tools/perf/util/cpumap.h                 |    1 +
+ tools/perf/util/debug.c                  |    8 +-
+ tools/perf/util/debug.h                  |    2 +-
+ tools/perf/util/header.c                 |    4 +-
+ tools/perf/util/session.c                |    2 +-
+ tools/perf/util/trace-event-info.c       |   33 +-
+ tools/perf/util/trace-event-parse.c      |   17 +
+ tools/perf/util/trace-event-read.c       |   77 +-
+ tools/perf/util/trace-event.h            |    1 +
+ 16 files changed, 2156 insertions(+), 21 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
+ create mode 100644 tools/perf/builtin-ftrace.c
+
+
+Following is the original description and example.
+-----
+It consists of 4 subcommands: live, record, show and report.
+
+'perf ftrace live' just triggers ftrace and relay kernel buffer
+contents to stdout.  It does no processing in the tool side.
+
+'perf ftrace record' starts ftrace and saves its result to per-cpu
+files and a perf.header file in the perf.data.dir directory.
+Recording was done by multiple threads (a thread per cpu) in order not
+to miss events overrun.  The perf.header file is compatible to current
+perf.data file and contains useful information and sample data.
+
+The sample data were synthesized for each recorded cpu to provide more
+information - I'm not sure it's really needed though.
+
+Once you had run 'perf ftrace record', you could play with other
+subcommands.
+
+'perf ftrace show' displays function traces like 'live' subcommand or
+trace-cmd does.  It's not useful than them at this time but it could
+be improved soon.
+
+'perf ftrace report' displays usual 'perf report' style output from
+the function trace data.  You can see which function is called most
+frequently for example.  Currently it uses 1 as a period value for
+each entry but we might use funcgraph_exit->calltime to get proper
+overhead later.
+
+Example below:
+
+  # perf ftrace record sleep 0.1
+  # ls -l perf.data.dir
+  total 5568
+  -rw-r--r--. 1 root root 3514375 Apr 23 16:43 perf.header
+  -rw-r--r--. 1 root root   90112 Apr 23 16:43 trace-cpu0.buf
+  -rw-r--r--. 1 root root       0 Apr 23 16:43 trace-cpu1.buf
+  -rw-r--r--. 1 root root 2093056 Apr 23 16:43 trace-cpu2.buf
+  -rw-r--r--. 1 root root       0 Apr 23 16:43 trace-cpu3.buf
+
+  # perf ftrace show
+  overriding event (11) ftrace:funcgraph_entry with new print handler
+  overriding event (10) ftrace:funcgraph_exit with new print handler
+    0)   0.065 us |  __fsnotify_parent();
+    0)            |  fsnotify() {
+    0)   0.060 us |    __srcu_read_lock();
+    0)   0.040 us |    __srcu_read_unlock();
+    0)   0.652 us |  }
+    0)   0.040 us |  fput();
+    0)            |  __audit_syscall_exit() {
+    0)            |    path_put() {
+    0)   0.037 us |      dput();
+    0)   0.032 us |      mntput();
+    0)   0.563 us |    }
+    0)   0.035 us |    unroll_tree_refs();
+    0)   0.035 us |    kfree();
+    0)   1.284 us |  }
+    0)            |  __audit_syscall_entry() {
+    0)   0.029 us |    current_kernel_time();
+    0)   0.239 us |  }
+    0)            |  sys_write() {
+    0)   0.155 us |    fget_light();
+    0)            |    vfs_write() {
+    0)            |      rw_verify_area() {
+    0)            |        security_file_permission() {
+    0)            |          selinux_file_permission() {
+    0)            |            file_has_perm() {
+    0)            |              inode_has_perm.isra.31.constprop.61() {
+    0)   0.181 us |                avc_has_perm_flags();
+    0)   0.405 us |              }
+    0)   0.629 us |            }
+    0)   1.024 us |          }
+    0)   1.247 us |        }
+    0)   1.596 us |      }
+    0)            |      do_sync_write() {
+
+  # perf ftrace report
+  # ========
+  # captured on: Tue Jul 30 18:02:34 2013
+  # hostname : sejong.aot.lge.com
+  # os release : 3.9.10-100.fc17.x86_64
+  # perf version : 3.11.rc1.gcdd406
+  # arch : x86_64
+  # nrcpus online : 12
+  # nrcpus avail : 12
+  # cpudesc : Intel(R) Core(TM) i7-3930K CPU @ 3.20GHz
+  # cpuid : GenuineIntel,6,45,7
+  # total memory : 32901840 kB
+  # cmdline : /home/namhyung/project/linux/tools/perf/perf ftrace record sleep 0.1 
+  # event : name = ftrace:funcgraph_entry, type = 2, config = 0xb, config1 = 0x0,
+  # event : name = ftrace:funcgraph_exit, type = 2, config = 0xa, config1 = 0x0,
+  # HEADER_CPU_TOPOLOGY info available, use -I to display
+  # HEADER_NUMA_TOPOLOGY info available, use -I to display
+  # ========
+  #
+  # Samples: 22K of event 'ftrace:funcgraph_entry'
+  # Event count (approx.): 22433
+  #
+  # Overhead  Command      Shared Object                          Symbol
+  # ........  .......  .................  ..............................
+  #
+       7.90%    sleep  [kernel.kallsyms]  [k] _cond_resched             
+       4.57%    sleep  [kernel.kallsyms]  [k] ebitmap_get_bit           
+       3.50%    sleep  [kernel.kallsyms]  [k] __phys_addr               
+       3.12%    sleep  [kernel.kallsyms]  [k] _raw_spin_lock            
+       3.09%    sleep  [kernel.kallsyms]  [k] kmem_cache_free           
+       2.93%    sleep  [kernel.kallsyms]  [k] __slab_free               
+       2.86%    sleep  [kernel.kallsyms]  [k] __tlb_remove_page         
+       2.35%    sleep  [kernel.kallsyms]  [k] vm_normal_page            
+       2.33%    sleep  [kernel.kallsyms]  [k] page_remove_rmap          
+       1.87%    sleep  [kernel.kallsyms]  [k] mutex_unlock               
+
 -- 
 1.7.11.7
 
