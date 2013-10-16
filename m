@@ -1,167 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760556Ab3JPJwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:52:31 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:44800 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760286Ab3JPJwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:52:30 -0400
-Message-ID: <525E61D9.10204@suse.cz>
-Date: Wed, 16 Oct 2013 11:52:25 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>
-CC: x86@kernel.org, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/1] dumpstack: fix printk_address for direct addresses
-References: <1381608817-3507-1-git-send-email-jslaby@suse.cz> <1381613710.8864.27.camel@joe-AO722>
-In-Reply-To: <1381613710.8864.27.camel@joe-AO722>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760414Ab3JPJ4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:56:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46289 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760162Ab3JPJ4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 05:56:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,506,1378882800"; 
+   d="scan'208";a="308449883"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Linux-Arch <linux-arch@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+In-Reply-To: <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1381428359-14843-20-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
+Subject: Re: [PATCH 19/34] m68k: handle pgtable_page_ctor() fail
 Content-Transfer-Encoding: 7bit
+Message-Id: <20131016095612.34707E0090@blue.fi.intel.com>
+Date: Wed, 16 Oct 2013 12:56:12 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2013 11:35 PM, Joe Perches wrote:
-> On Sat, 2013-10-12 at 22:13 +0200, Jiri Slaby wrote:
-> []
->> To fix that, we use %pS only for stack addresses printouts (via newly
->> added printk_stack_address) and %pB for regs->ip (via printk_address).
->> I.e. we revert to the old behaviour for all except call stacks. And
->> since from all those reliable is 1, we remove that parameter from
->> printk_address.
+Geert Uytterhoeven wrote:
+> On Thu, Oct 10, 2013 at 8:05 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > ---
+> >  arch/m68k/include/asm/motorola_pgalloc.h | 5 ++++-
+> >  arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
+> >  2 files changed, 8 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
+> > index 2f02f264e6..dd254eeb03 100644
+> > --- a/arch/m68k/include/asm/motorola_pgalloc.h
+> > +++ b/arch/m68k/include/asm/motorola_pgalloc.h
+> > @@ -40,7 +40,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long addres
+> >         flush_tlb_kernel_page(pte);
+> >         nocache_page(pte);
+>         ^^^^^^^^^^^^^^^^^^
+> >         kunmap(page);
+> > -       pgtable_page_ctor(page);
+> > +       if (!pgtable_page_ctor(page)) {
+> > +               __free_page(page);
 > 
-> I'm still waiting for you to apply this:
-> 
-> https://lkml.org/lkml/2013/7/22/701
-> https://lkml.org/lkml/2013/7/22/700
-> 
-> Oh wait, wrong Jiri... ;-)
-> 
-> Anyway, I'd rather your specific changes be done inline
-> so it's less possible to have interleaved messages.
+> Shouldn't you mark the page cacheable again, like is done in pte_free()?
 
-Why you are putting this here?
+Hm. You're right. Updated patch below.
 
->> diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-> []
->> @@ -21,7 +21,7 @@ enum die_val {
->>  	DIE_NMIUNKNOWN,
->>  };
->>  
->> -extern void printk_address(unsigned long address, int reliable);
->> +extern void printk_address(unsigned long address);
-> 
-> I think this can be removed.
+BTW, what's the point of playing with kmap()/kunmap() there? Looks like
+m68k doesn't support highmem.
 
-I'm waiting for an x86's guys input as to what do they prefer to be done?
+And even if it will support, code in pte_alloc_one() doesn't make any
+sense: kmap() creates temporary mapping for highmem page and it
+nocache_page() sets flags in pte which will be destroyed by kunmap().
 
->> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-> []
->> @@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
->>  int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
->>  static int die_counter;
->>  
->> -void printk_address(unsigned long address, int reliable)
->> +static void printk_stack_address(unsigned long address, int reliable)
->>  {
->>  	pr_cont(" [<%p>] %s%pB\n",
->>  		(void *)address, reliable ? "" : "? ", (void *)address);
->>  }
-> 
-> This is now used only once and could/should be done
-> at the single use site.
-> 
->> +void printk_address(unsigned long address)
->> +{
->> +	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
->> +}
->> +
-> 
-> And this could/should be done inline in the few
-> places it's used.
-> 
->>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->>  static void
->>  print_ftrace_graph_addr(unsigned long addr, void *data,
->> @@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
->>  {
->>  	touch_nmi_watchdog();
->>  	printk(data);
->> -	printk_address(addr, reliable);
->> +	printk_stack_address(addr, reliable);
-> 
-> 	printk("%s [<%p>] %s%pB\n",
-> 	       data, (void *)addr, reliable ? "" : "? ", (void *)addr);
-> 
->> @@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
->>  #else
->>  	/* Executive summary in case the oops scrolled away */
->>  	printk(KERN_ALERT "RIP ");
->> -	printk_address(regs->ip, 1);
->> +	printk_address(regs->ip);
-> 
-> 	printk(KERN_ALERT "RIP [<%p>] %pS\n",
-> 	       (void *)regs->ip, (void *)regs->ip);
-> 
->> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-> []
->> @@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
->>  	unsigned int ds, cs, es;
->>  
->>  	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
->> -	printk_address(regs->ip, 1);
->> +	printk_address(regs->ip);
-> 
-> 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] [<%p>] %pS\n",
-> 	       regs->cs & 0xffff, regs->ip,
-> 	       (void *)regs->ip, (void *)regs->ip);
-> 
-> This one looks ugly to me.
-> It emits the address twice.
-> 
->>  	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
->>  			regs->sp, regs->flags);
->>  	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
->> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
->> index 3aaeffc..18feeb3 100644
->> --- a/arch/x86/mm/fault.c
->> +++ b/arch/x86/mm/fault.c
->> @@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
->>  
->>  	printk(KERN_CONT " at %p\n", (void *) address);
->>  	printk(KERN_ALERT "IP:");
->> -	printk_address(regs->ip, 1);
->> +	printk_address(regs->ip);
-> 
-> 	printk(KERN_ALERT "IP: [<%p>] %pS\n",
-> 	       (void *)regs->ip, (void *)regs->ip);
->  
->>  	dump_pagetable(address);
->>  }
->> diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
->> index 9126dfb..019b6ec 100644
->> --- a/arch/x86/platform/uv/uv_nmi.c
->> +++ b/arch/x86/platform/uv/uv_nmi.c
->> @@ -402,7 +402,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
->>  	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
->>  		cpu, current->pid, current->comm);
->>  
->> -	printk_address(regs->ip, 1);
->> +	printk_address(regs->ip);
-> 
-> 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s [<%p>] %pS\n",
-> 	       cpu, current->pid, current->comm,
-> 	       (void *)regs->ip, (void *)regs->ip);
-> 
-> 
+It think kmap() should be replaced by page_address() and kunmap() should
+be dropped.
 
+>From 2f9dce7982e4459e91cd49e38256c24d69786f8b Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 9 Oct 2013 03:58:39 +0300
+Subject: [PATCHv2] m68k: handle pgtable_page_ctor() fail
 
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/motorola_pgalloc.h | 8 ++++++--
+ arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
+index 2f02f264e6..24bcba496c 100644
+--- a/arch/m68k/include/asm/motorola_pgalloc.h
++++ b/arch/m68k/include/asm/motorola_pgalloc.h
+@@ -29,18 +29,22 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ 
+ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address)
+ {
+-	struct page *page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
++	struct page *page;
+ 	pte_t *pte;
+ 
++	page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
+ 	if(!page)
+ 		return NULL;
++	if (!pgtable_page_ctor(page)) {
++		__free_page(page);
++		return NULL;
++	}
+ 
+ 	pte = kmap(page);
+ 	__flush_page_to_ram(pte);
+ 	flush_tlb_kernel_page(pte);
+ 	nocache_page(pte);
+ 	kunmap(page);
+-	pgtable_page_ctor(page);
+ 	return page;
+ }
+ 
+diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
+index 48d80d5a66..f868506e33 100644
+--- a/arch/m68k/include/asm/sun3_pgalloc.h
++++ b/arch/m68k/include/asm/sun3_pgalloc.h
+@@ -59,7 +59,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+ 		return NULL;
+ 
+ 	clear_highpage(page);
+-	pgtable_page_ctor(page);
++	if (!pgtable_page_ctor(page)) {
++		__free_page(page);
++		return NULL;
++	}
+ 	return page;
+ 
+ }
 -- 
-js
-suse labs
+ Kirill A. Shutemov
