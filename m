@@ -1,281 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760484Ab3JPIrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:47:47 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59579 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760267Ab3JPIoU (ORCPT
+	id S934014Ab3JPIsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:48:45 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:37910 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933953Ab3JPIsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:44:20 -0400
-X-AuditID: 9c930179-b7c78ae000003065-8c-525e51dea06b
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 09/15] slab: change the management method of free objects of the slab
-Date: Wed, 16 Oct 2013 17:44:06 +0900
-Message-Id: <1381913052-23875-10-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Oct 2013 04:48:38 -0400
+Message-ID: <525E52E2.5050109@6wind.com>
+Date: Wed, 16 Oct 2013 10:48:34 +0200
+From: Guillaume Gaudonville <guillaume.gaudonville@6wind.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Guillaume Gaudonville <gaudonville@6wind.com>,
+        linux-kernel@vger.kernel.org, serge.hallyn@canonical.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, cmetcalf@tilera.com
+Subject: Re: [RFC PATCH linux-next] ns: do not allocate a new nsproxy at each
+ call
+References: <1381858522-21341-1-git-send-email-guillaume.gaudonville@6wind.com> <87y55u1ip2.fsf@xmission.com>
+In-Reply-To: <87y55u1ip2.fsf@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current free objects management method of the slab is weird, because
-it touch random position of the array of kmem_bufctl_t when we try to
-get free object. See following example.
+On 10/15/2013 08:40 PM, Eric W. Biederman wrote:
+> "Guillaume Gaudonville" <gaudonville@6wind.com> writes:
+>
+>> Currently, at each call of setns system call a new nsproxy is allocated,
+>> the old nsproxy namespaces are copied into the new one and the old nsproxy
+>> is freed if the task was the only one to use it.
+>>
+>> It can creates large delays on hardware with large number of cpus since
+>> to free a nsproxy a synchronize_rcu() call is done.
+>>
+>> When a task is the only one to use a nsproxy, only the task can do an action
+>> that will make this nsproxy to be shared by another task or thread (fork,...).
+>> So when the refcount of the nsproxy is equal to 1, we can simply update the
+>> current nsproxy field without allocating a new one and freeing the old one.
+>>
+>> The install operations of each kind of namespace cannot fails, so there's no
+>> need to check for an error and calling ops->install().
+>>
+>> Tested on TileGX (36 cores) and Intel (32 cores).
+> This may be worth doing (I am a little scared of a design that has setns
+> on a fast path) but right now this isn't safe.
+>
+> Currently pidns_install ends with:
+>
+> 	put_pid_ns(nsproxy->pid_ns_for_children);
+> 	nsproxy->pid_ns_for_children = get_pid_ns(new);
+> 	return 0;
+>
+>
+> And netns_install ends with:
+>
+> 	put_net(nsproxy->net_ns);
+> 	nsproxy->net_ns = get_net(net);
+> 	return 0;
+>
+> The put before the set is not atomic and is not safe unless
+> the nsproxy is private.  I think this is fixable but it requires a more
+> indepth look at the code than you have done.
+My expectation was that nobody else but the task itself could increase the
+nsproxy refcount (ie. use it), if the refcount was equal to 1. So there
+was no possible races while playing with nsproxy in that case.
+Do you mean that someone else than the task itself could play with the 
+nsproxy,
+even if its refcount is equal to 1?
 
-struct slab's free = 6
-kmem_bufctl_t array: 1 END 5 7 0 4 3 2
+>
+> Mind if I ask where this comes up?
+The issue has been seen on a daemon that is performing monitoring and
+configuration tasks in different netns.
+>
+>
+>> Reported-by: Chris Metcalf <cmetcalf@tilera.com>
+>> Signed-off-by: Guillaume Gaudonville <guillaume.gaudonville@6wind.com>
+>> ---
+>>   kernel/nsproxy.c |   12 ++++++++++++
+>>   1 files changed, 12 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+>> index afc0456..afc04ac 100644
+>> --- a/kernel/nsproxy.c
+>> +++ b/kernel/nsproxy.c
+>> @@ -255,6 +255,18 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>>   	if (nstype && (ops->type != nstype))
+>>   		goto out;
+>>   
+>> +	/*
+>> +	 * If count == 1, only the current task can increment it,
+>> +	 * by doing a fork for example so we can safely update the
+>> +	 * current nsproxy pointers without allocate a new one,
+>> +	 * update it and destroy the old one
+>> +	 */
+>> +	if (atomic_read(&tsk->nsproxy->count) == 1) {
+>> +		err = ops->install(tsk->nsproxy, ei->ns);
+>> +		fput(file);
+>> +		return err;
+>> +	}
+> As a minor nit, but to match the rest of the code in this function that
+> should read:
+>
+>> +	if (atomic_read(&tsk->nsproxy->count) == 1) {
+>> +		err = ops->install(tsk->nsproxy, ei->ns);
+>> +		goto out;
+>> +	}
+> There is no need to add an additional exit point to reason about.
+>
+>> +
+>>   	new_nsproxy = create_new_namespaces(0, tsk, current_user_ns(), tsk->fs);
+>>   	if (IS_ERR(new_nsproxy)) {
+>>   		err = PTR_ERR(new_nsproxy);
 
-To get free objects, we access this array with following pattern.
-6 -> 3 -> 7 -> 2 -> 5 -> 4 -> 0 -> 1 -> END
 
-If we have many objects, this array would be larger and be not in the same
-cache line. It is not good for performance.
-
-We can do same thing through more easy way, like as the stack.
-Only thing we have to do is to maintain stack top to free object. I use
-free field of struct slab for this purpose. After that, if we need to get
-an object, we can get it at stack top and manipulate top pointer.
-That's all. This method already used in array_cache management.
-Following is an access pattern when we use this method.
-
-struct slab's free = 0
-kmem_bufctl_t array: 6 3 7 2 5 4 0 1
-
-To get free objects, we access this array with following pattern.
-0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
-
-This may help cache line footprint if slab has many objects, and,
-in addition, this makes code much much simpler.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 75c6082..05fe37e 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -183,9 +183,6 @@ static bool pfmemalloc_active __read_mostly;
-  */
- 
- typedef unsigned int kmem_bufctl_t;
--#define BUFCTL_END	(((kmem_bufctl_t)(~0U))-0)
--#define BUFCTL_FREE	(((kmem_bufctl_t)(~0U))-1)
--#define	BUFCTL_ACTIVE	(((kmem_bufctl_t)(~0U))-2)
- #define	SLAB_LIMIT	(((kmem_bufctl_t)(~0U))-3)
- 
- /*
-@@ -2653,9 +2650,8 @@ static void cache_init_objs(struct kmem_cache *cachep,
- 		if (cachep->ctor)
- 			cachep->ctor(objp);
- #endif
--		slab_bufctl(slabp)[i] = i + 1;
-+		slab_bufctl(slabp)[i] = i;
- 	}
--	slab_bufctl(slabp)[i - 1] = BUFCTL_END;
- }
- 
- static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
-@@ -2671,16 +2667,14 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
- static void *slab_get_obj(struct kmem_cache *cachep, struct slab *slabp,
- 				int nodeid)
- {
--	void *objp = index_to_obj(cachep, slabp, slabp->free);
--	kmem_bufctl_t next;
-+	void *objp;
- 
- 	slabp->inuse++;
--	next = slab_bufctl(slabp)[slabp->free];
-+	objp = index_to_obj(cachep, slabp, slab_bufctl(slabp)[slabp->free]);
- #if DEBUG
--	slab_bufctl(slabp)[slabp->free] = BUFCTL_FREE;
- 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
- #endif
--	slabp->free = next;
-+	slabp->free++;
- 
- 	return objp;
- }
-@@ -2689,19 +2683,23 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
- 				void *objp, int nodeid)
- {
- 	unsigned int objnr = obj_to_index(cachep, slabp, objp);
--
- #if DEBUG
-+	kmem_bufctl_t i;
-+
- 	/* Verify that the slab belongs to the intended node */
- 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
- 
--	if (slab_bufctl(slabp)[objnr] + 1 <= SLAB_LIMIT + 1) {
--		printk(KERN_ERR "slab: double free detected in cache "
--				"'%s', objp %p\n", cachep->name, objp);
--		BUG();
-+	/* Verify double free bug */
-+	for (i = slabp->free; i < cachep->num; i++) {
-+		if (slab_bufctl(slabp)[i] == objnr) {
-+			printk(KERN_ERR "slab: double free detected in cache "
-+					"'%s', objp %p\n", cachep->name, objp);
-+			BUG();
-+		}
- 	}
- #endif
--	slab_bufctl(slabp)[objnr] = slabp->free;
--	slabp->free = objnr;
-+	slabp->free--;
-+	slab_bufctl(slabp)[slabp->free] = objnr;
- 	slabp->inuse--;
- }
- 
-@@ -2862,9 +2860,6 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
- 	BUG_ON(objnr >= cachep->num);
- 	BUG_ON(objp != index_to_obj(cachep, slabp, objnr));
- 
--#ifdef CONFIG_DEBUG_SLAB_LEAK
--	slab_bufctl(slabp)[objnr] = BUFCTL_FREE;
--#endif
- 	if (cachep->flags & SLAB_POISON) {
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 		if ((cachep->size % PAGE_SIZE)==0 && OFF_SLAB(cachep)) {
-@@ -2881,33 +2876,9 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
- 	return objp;
- }
- 
--static void check_slabp(struct kmem_cache *cachep, struct slab *slabp)
--{
--	kmem_bufctl_t i;
--	int entries = 0;
--
--	/* Check slab's freelist to see if this obj is there. */
--	for (i = slabp->free; i != BUFCTL_END; i = slab_bufctl(slabp)[i]) {
--		entries++;
--		if (entries > cachep->num || i >= cachep->num)
--			goto bad;
--	}
--	if (entries != cachep->num - slabp->inuse) {
--bad:
--		printk(KERN_ERR "slab: Internal list corruption detected in "
--			"cache '%s'(%d), slabp %p(%d). Tainted(%s). Hexdump:\n",
--			cachep->name, cachep->num, slabp, slabp->inuse,
--			print_tainted());
--		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_OFFSET, 16, 1, slabp,
--			sizeof(*slabp) + cachep->num * sizeof(kmem_bufctl_t),
--			1);
--		BUG();
--	}
--}
- #else
- #define kfree_debugcheck(x) do { } while(0)
- #define cache_free_debugcheck(x,objp,z) (objp)
--#define check_slabp(x,y) do { } while(0)
- #endif
- 
- static void *cache_alloc_refill(struct kmem_cache *cachep, gfp_t flags,
-@@ -2957,7 +2928,6 @@ retry:
- 		}
- 
- 		slabp = list_entry(entry, struct slab, list);
--		check_slabp(cachep, slabp);
- 		check_spinlock_acquired(cachep);
- 
- 		/*
-@@ -2975,11 +2945,10 @@ retry:
- 			ac_put_obj(cachep, ac, slab_get_obj(cachep, slabp,
- 									node));
- 		}
--		check_slabp(cachep, slabp);
- 
- 		/* move slabp to correct slabp list: */
- 		list_del(&slabp->list);
--		if (slabp->free == BUFCTL_END)
-+		if (slabp->free == cachep->num)
- 			list_add(&slabp->list, &n->slabs_full);
- 		else
- 			list_add(&slabp->list, &n->slabs_partial);
-@@ -3054,16 +3023,6 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
- 		*dbg_redzone1(cachep, objp) = RED_ACTIVE;
- 		*dbg_redzone2(cachep, objp) = RED_ACTIVE;
- 	}
--#ifdef CONFIG_DEBUG_SLAB_LEAK
--	{
--		struct slab *slabp;
--		unsigned objnr;
--
--		slabp = virt_to_slab(objp);
--		objnr = (unsigned)(objp - slabp->s_mem) / cachep->size;
--		slab_bufctl(slabp)[objnr] = BUFCTL_ACTIVE;
--	}
--#endif
- 	objp += obj_offset(cachep);
- 	if (cachep->ctor && cachep->flags & SLAB_POISON)
- 		cachep->ctor(objp);
-@@ -3269,7 +3228,6 @@ retry:
- 
- 	slabp = list_entry(entry, struct slab, list);
- 	check_spinlock_acquired_node(cachep, nodeid);
--	check_slabp(cachep, slabp);
- 
- 	STATS_INC_NODEALLOCS(cachep);
- 	STATS_INC_ACTIVE(cachep);
-@@ -3278,12 +3236,11 @@ retry:
- 	BUG_ON(slabp->inuse == cachep->num);
- 
- 	obj = slab_get_obj(cachep, slabp, nodeid);
--	check_slabp(cachep, slabp);
- 	n->free_objects--;
- 	/* move slabp to correct slabp list: */
- 	list_del(&slabp->list);
- 
--	if (slabp->free == BUFCTL_END)
-+	if (slabp->free == cachep->num)
- 		list_add(&slabp->list, &n->slabs_full);
- 	else
- 		list_add(&slabp->list, &n->slabs_partial);
-@@ -3445,11 +3402,9 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 		n = cachep->node[node];
- 		list_del(&slabp->list);
- 		check_spinlock_acquired_node(cachep, node);
--		check_slabp(cachep, slabp);
- 		slab_put_obj(cachep, slabp, objp, node);
- 		STATS_DEC_ACTIVE(cachep);
- 		n->free_objects++;
--		check_slabp(cachep, slabp);
- 
- 		/* fixup slab chains */
- 		if (slabp->inuse == 0) {
-@@ -4308,12 +4263,23 @@ static inline int add_caller(unsigned long *n, unsigned long v)
- static void handle_slab(unsigned long *n, struct kmem_cache *c, struct slab *s)
- {
- 	void *p;
--	int i;
-+	int i, j;
-+
- 	if (n[0] == n[1])
- 		return;
- 	for (i = 0, p = s->s_mem; i < c->num; i++, p += c->size) {
--		if (slab_bufctl(s)[i] != BUFCTL_ACTIVE)
-+		bool active = true;
-+
-+		for (j = s->free; j < c->num; j++) {
-+			/* Skip freed item */
-+			if (slab_bufctl(s)[j] == i) {
-+				active = false;
-+				break;
-+			}
-+		}
-+		if (!active)
- 			continue;
-+
- 		if (!add_caller(n, (unsigned long)*dbg_userword(c, p)))
- 			return;
- 	}
 -- 
-1.7.9.5
+Guillaume Gaudonville
+6WIND
+Software Engineer
+
+Tel: +33 1 39 30 92 53
+Mob: +33 6 47 85 34 33
+Fax: +33 1 39 30 92 11
+guillaume.gaudonville@6wind.com
+www.6wind.com
+Join the Multicore Packet Processing Forum: www.multicorepacketprocessing.com
+
+Ce courriel ainsi que toutes les pièces jointes, est uniquement destiné à son ou ses destinataires. Il contient des informations confidentielles qui sont la propriété de 6WIND. Toute révélation, distribution ou copie des informations qu'il contient est strictement interdite. Si vous avez reçu ce message par erreur, veuillez immédiatement le signaler à l'émetteur et détruire toutes les données reçues
+
+This e-mail message, including any attachments, is for the sole use of the intended recipient(s) and contains information that is confidential and proprietary to 6WIND. All unauthorized review, use, disclosure or distribution is prohibited. If you are not the intended recipient, please contact the sender by reply e-mail and destroy all copies of the original message.
 
