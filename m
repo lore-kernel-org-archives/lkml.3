@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760488Ab3JPKMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 06:12:25 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:35373 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab3JPKMX (ORCPT
+	id S1760547Ab3JPKTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:19:39 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13801 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760265Ab3JPKTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 06:12:23 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2] m68k/setup: Use pr_*() and __func__ instead of plain printk()
-Date: Wed, 16 Oct 2013 12:12:15 +0200
-Message-Id: <1381918335-23545-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 16 Oct 2013 06:19:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Oct 2013 03:19:37 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <linux-tegra@vger.kernel.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] ARM: dma-mapping: Drop GFP_COMP for DMA memory allocations
+Date: Wed, 16 Oct 2013 13:19:13 +0300
+Message-ID: <1381918756-10389-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+arm_iommu_alloc_attrs wants to split pages after allocation in order
+to reduce the memory footprint. This does not work well with GFP_COMP
+pages, so drop this flag before allocation.
+
+ref: ea2e7057c0234cfb8b09467d8f137760d371fc72:
+
+    ARM: 7172/1: dma: Drop GFP_COMP for DMA memory allocations
+
+    dma_alloc_coherent wants to split pages after allocation in order to
+    reduce the memory footprint. This does not work well with GFP_COMP
+    pages, so drop this flag before allocation.
+
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
-v2:
-  - Use __func__
+ arch/arm/mm/dma-mapping.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
- arch/m68k/kernel/setup_mm.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index 4f6158aa8d48..2299080d77f2 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -163,7 +163,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 				m68k_memory[m68k_num_memory].size = data[1];
- 				m68k_num_memory++;
- 			} else
--				printk("m68k_parse_bootinfo: too many memory chunks\n");
-+				pr_warn("%s: too many memory chunks\n",
-+					__func__);
- 			break;
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index f5e1a84..955dd3e 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -1321,6 +1321,13 @@ static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
+ 	struct page **pages;
+ 	void *addr = NULL;
  
- 		case BI_RAMDISK:
-@@ -199,8 +200,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 				unknown = 1;
- 		}
- 		if (unknown)
--			printk("m68k_parse_bootinfo: unknown tag 0x%04x ignored\n",
--			       record->tag);
-+			pr_warn("%s: unknown tag 0x%04x ignored\n", __func__,
-+				   record->tag);
- 		record = (struct bi_record *)((unsigned long)record +
- 					      record->size);
- 	}
-@@ -208,8 +209,8 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
- 	m68k_realnum_memory = m68k_num_memory;
- #ifdef CONFIG_SINGLE_MEMORY_CHUNK
- 	if (m68k_num_memory > 1) {
--		printk("Ignoring last %i chunks of physical memory\n",
--		       (m68k_num_memory - 1));
-+		pr_warn("%s: ignoring last %i chunks of physical memory\n",
-+			__func__, (m68k_num_memory - 1));
- 		m68k_num_memory = 1;
- 	}
- #endif
-@@ -249,7 +250,7 @@ void __init setup_arch(char **cmdline_p)
- 		asm (".chip 68060; movec %%pcr,%0; .chip 68k"
- 		     : "=d" (pcr));
- 		if (((pcr >> 8) & 0xff) <= 5) {
--			printk("Enabling workaround for errata I14\n");
-+			pr_warn("Enabling workaround for errata I14\n");
- 			asm (".chip 68060; movec %0,%%pcr; .chip 68k"
- 			     : : "d" (pcr | 0x20));
- 		}
-@@ -355,7 +356,7 @@ void __init setup_arch(char **cmdline_p)
- 				     BOOTMEM_DEFAULT);
- 		initrd_start = (unsigned long)phys_to_virt(m68k_ramdisk.addr);
- 		initrd_end = initrd_start + m68k_ramdisk.size;
--		printk("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
-+		pr_info("initrd: %08lx - %08lx\n", initrd_start, initrd_end);
- 	}
- #endif
++	/* Following is a work-around (a.k.a. hack) to prevent pages
++	 * with __GFP_COMP being passed to split_page() which cannot
++	 * handle them.  The real problem is that this flag probably
++	 * should be 0 on ARM as it is not supported on this
++	 * platform--see CONFIG_HUGETLB_PAGE. */
++	gfp &= ~(__GFP_COMP);
++
+ 	*handle = DMA_ERROR_CODE;
+ 	size = PAGE_ALIGN(size);
  
-@@ -540,9 +541,9 @@ void check_bugs(void)
- {
- #ifndef CONFIG_M68KFPU_EMU
- 	if (m68k_fputype == 0) {
--		printk(KERN_EMERG "*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
-+		pr_emerg("*** YOU DO NOT HAVE A FLOATING POINT UNIT, "
- 			"WHICH IS REQUIRED BY LINUX/M68K ***\n");
--		printk(KERN_EMERG "Upgrade your hardware or join the FPU "
-+		pr_emerg("Upgrade your hardware or join the FPU "
- 			"emulation project\n");
- 		panic("no FPU");
- 	}
 -- 
-1.7.9.5
+1.8.1.5
 
