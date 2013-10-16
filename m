@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935121Ab3JPSDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:03:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35832 "EHLO
+	id S933655Ab3JPRqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933857Ab3JPRqN (ORCPT
+	with ESMTP id S1761292Ab3JPRpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:13 -0400
+	Wed, 16 Oct 2013 13:45:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 05/50] random: run random_int_secret_init() run after all late_initcalls
-Date: Wed, 16 Oct 2013 10:44:51 -0700
-Message-Id: <20131016174359.003595309@linuxfoundation.org>
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [ 18/69] ARC: Fix 32-bit wrap around in access_ok()
+Date: Wed, 16 Oct 2013 10:44:27 -0700
+Message-Id: <20131016174315.114565125@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 47d06e532e95b71c0db3839ebdef3fe8812fca2c upstream.
+commit 0752adfda15f0eca9859a76da3db1800e129ad43 upstream.
 
-The some platforms (e.g., ARM) initializes their clocks as
-late_initcalls for some unknown reason.  So make sure
-random_int_secret_init() is run after all of the late_initcalls are
-run.
+Anton reported
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+ | LTP tests syscalls/process_vm_readv01 and process_vm_writev01 fail
+ | similarly in one testcase test_iov_invalid -> lvec->iov_base.
+ | Testcase expects errno EFAULT and return code -1,
+ | but it gets return code 1 and ERRNO is 0 what means success.
+
+Essentially test case was passing a pointer of -1 which access_ok()
+was not catching. It was doing [@addr + @sz <= TASK_SIZE] which would
+pass for @addr == -1
+
+Fixed that by rewriting as [@addr <= TASK_SIZE - @sz]
+
+Reported-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c  |    3 +--
- include/linux/random.h |    1 +
- init/main.c            |    2 ++
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ arch/arc/include/asm/uaccess.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1462,12 +1462,11 @@ struct ctl_table random_table[] = {
+--- a/arch/arc/include/asm/uaccess.h
++++ b/arch/arc/include/asm/uaccess.h
+@@ -43,7 +43,7 @@
+  * Because it essentially checks if buffer end is within limit and @len is
+  * non-ngeative, which implies that buffer start will be within limit too.
+  *
+- * The reason for rewriting being, for majorit yof cases, @len is generally
++ * The reason for rewriting being, for majority of cases, @len is generally
+  * compile time constant, causing first sub-expression to be compile time
+  * subsumed.
+  *
+@@ -53,7 +53,7 @@
+  *
+  */
+ #define __user_ok(addr, sz)	(((sz) <= TASK_SIZE) && \
+-				 (((addr)+(sz)) <= get_fs()))
++				 ((addr) <= (get_fs() - (sz))))
+ #define __access_ok(addr, sz)	(unlikely(__kernel_ok) || \
+ 				 likely(__user_ok((addr), (sz))))
  
- static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
- 
--static int __init random_int_secret_init(void)
-+int random_int_secret_init(void)
- {
- 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
- 	return 0;
- }
--late_initcall(random_int_secret_init);
- 
- /*
-  * Get a random word for internal kernel use only. Similar to urandom but
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -17,6 +17,7 @@ extern void add_interrupt_randomness(int
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
-+extern int random_int_secret_init(void);
- 
- #ifndef MODULE
- extern const struct file_operations random_fops, urandom_fops;
---- a/init/main.c
-+++ b/init/main.c
-@@ -75,6 +75,7 @@
- #include <linux/blkdev.h>
- #include <linux/elevator.h>
- #include <linux/sched_clock.h>
-+#include <linux/random.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -778,6 +779,7 @@ static void __init do_basic_setup(void)
- 	do_ctors();
- 	usermodehelper_enable();
- 	do_initcalls();
-+	random_int_secret_init();
- }
- 
- static void __init do_pre_smp_initcalls(void)
 
 
