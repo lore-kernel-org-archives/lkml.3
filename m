@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab3JPM7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:59:24 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:29555 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934287Ab3JPM7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:59:19 -0400
-Date: Wed, 16 Oct 2013 14:58:56 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 03/03] GPIO: Add TB10x GPIO driver
-Message-ID: <20131016125855.GA20308@ab42.lan>
-References: <20131008122145.GA21985@ab42.lan>
- <1381235122-23730-3-git-send-email-christian.ruppert@abilis.com>
- <CACRpkdaMq1bzcTP6KZCGuWSm2MB0vSmJ4aRskuQNB8at4YnWRQ@mail.gmail.com>
- <20131015134526.GB7461@ab42.lan>
- <CACRpkdZjfNJtAsbge+HsWZQjNREnJQ7msyPy9g3cMLtc8KhmPg@mail.gmail.com>
+	id S934407Ab3JPM7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:59:31 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:63809 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934287Ab3JPM72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:59:28 -0400
+Message-ID: <525E8DAD.60801@gmail.com>
+Date: Wed, 16 Oct 2013 07:59:25 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZjfNJtAsbge+HsWZQjNREnJQ7msyPy9g3cMLtc8KhmPg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Neil Zhang <zhangwm@marvell.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yu Tang <ytang5@marvell.com>, Zhou Zhu <zzhu3@marvell.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [Question] Ask for arm arch timer
+References: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF280@SC-VEXCH4.marvell.com>
+In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF280@SC-VEXCH4.marvell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 01:29:44PM +0200, Linus Walleij wrote:
-> On Tue, Oct 15, 2013 at 3:45 PM, Christian Ruppert
-> <christian.ruppert@abilis.com> wrote:
-> > On Wed, Oct 09, 2013 at 02:19:17PM +0200, Linus Walleij wrote:
-> 
-> >> It's not like I'm 100% certain on where to use one or the other
-> >> construct (a mechanism like the above is needed for threaded
-> >> IRQs I've noticed) but the chained handler seems more to the
-> >> point does it not?
-> >>
-> >> The only downside I've seen is that the parent IRQ does not get
-> >> a name and the accumulated IRQ stats in /proc/interrupts but
-> >> surely we can live without that (or fix it).
-> >>
-> >> Since I'm a bit rusty on chained IRQs correct me if I'm wrong...
-> >
-> > OK, it took me a while to figure this back out again because as far as
-> > I'm familiar with the IRQ framework you're right. The reason I'm not
-> > using irq_set_chained_handler is that we have one driver instance per
-> > GPIO bank and all GPIO banks share the same interrupt line. This means
-> > every driver instance needs its own (different) user data and a simple
-> > call to irq_set_handler_data(tb10x_gpio) won't suffice. I'm not aware of
-> > any mechanism that allows interrupt sharing with the
-> > irq_set_chained_handler() mechanism.
-> 
-> OK yes makes perfect sense. We'll live with this then.
-> 
-> I didn't see a new version of this patch with the other two, shall
-> I just apply this last version in the pin control tree with the
-> two other patches?
+[adding Will and Catalin...]
 
-If you don't see anything else which needs changing please do so, yes.
+On 10/16/2013 07:39 AM, Neil Zhang wrote:
+> Hi Rob,
+> I saw your following patch called clocksource_of_init() directly in time_init() for arm64.
+> My question is that what should we do if there are some Soc special work need to be done before arch timer can be used?
+> Thanks in advance.
 
-Best regards,
-  Christian
+If the timer itself is different, then you should have a different DT
+compatible string which you can use to trigger additional initialization.
+
+Integration level initialization like enabling clocks would need
+something different as no machine descriptors exist for arm64.
+
+Another option would be do the setup in secure world or the bootloader.
+
+Can you be more specific what initialization is needed.
+
+Rob
+
+> commit 0583fe478a7d93be2c814b7e50d6e81c287edfe8
+> Author: Rob Herring <rob.herring@calxeda.com>
+> Date:   Wed Apr 10 18:27:51 2013 -0500
+> 
+>     ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+> 
+> 
+> Best Regards,
+> Neil Zhang
+> 
+> 
+
