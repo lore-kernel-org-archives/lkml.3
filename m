@@ -1,401 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3JPGxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:53:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47574 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753576Ab3JPGxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:53:01 -0400
-Message-ID: <525E37CA.2000605@suse.de>
-Date: Wed, 16 Oct 2013 08:52:58 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755231Ab3JPGze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:55:34 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45531 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3JPGzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:55:32 -0400
+Date: Wed, 16 Oct 2013 08:55:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
+Message-ID: <20131016065526.GB22509@gmail.com>
+References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
+ <1380753493.11046.82.camel@schen9-DESK>
+ <20131003073212.GC5775@gmail.com>
+ <1381186674.11046.105.camel@schen9-DESK>
+ <20131009061551.GD7664@gmail.com>
+ <1381336441.11046.128.camel@schen9-DESK>
+ <20131010075444.GD17990@gmail.com>
+ <1381882156.11046.178.camel@schen9-DESK>
 MIME-Version: 1.0
-To: Steffen Maier <maier@linux.vnet.ibm.com>
-Cc: Vaughan Cao <vaughan.cao@oracle.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
- in the middle
-References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com> <525BEF2B.2030907@suse.de> <525BF256.6060707@suse.de> <525C0CAE.3030803@linux.vnet.ibm.com>
-In-Reply-To: <525C0CAE.3030803@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/mixed;
- boundary="------------010300060008020305000903"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381882156.11046.178.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010300060008020305000903
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 
-On 10/14/2013 05:24 PM, Steffen Maier wrote:
-> On 10/14/2013 03:32 PM, Hannes Reinecke wrote:
->> On 10/14/2013 03:18 PM, Hannes Reinecke wrote:
->>> On 10/14/2013 02:51 PM, Steffen Maier wrote:
->>>> On 10/14/2013 01:13 PM, Hannes Reinecke wrote:
->>>>> On 10/13/2013 07:23 PM, Vaughan Cao wrote:
->>>>>> [1.] One line summary of the problem:
->>>>>> special sense code asc,ascq=04h,0Ch abort scsi scan in the middle
->>>>>>
->>>>>> [2.] Full description of the problem/report:
->>>>>> For instance, storage represents 8 iscsi LUNs, however the LUN
->>>>>> No.7
->>>>>> is not well configured or has something wrong.
->>>>>> Then messages received:
->>>>>> kernel: scsi 5:0:0:0: Unexpected response from lun 7 while
->>>>>> scanning, scan aborted
->>>>>> Which will make LUN No.8 unavailable.
->>>>>> It's confirmed that Windows and Solaris systems will continue the
->>>>>> scan and make LUN No.1,2,3,4,5,6 and 8 available.
->>>>>>
->>>>>> Log snippet is as below:
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi scan:
->>>>>> INQUIRY pass 1 length 36
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Send:
->>>>>> 0xffff8801e9bd4280
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB:
->>>>>> Inquiry: 12 00 00 00 24 00
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: buffer =
->>>>>> 0xffff8801f71fc180, bufflen = 36, queuecommand 0xffffffffa00b99e7
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: leaving scsi_dispatch_cmnd()
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Done:
->>>>>> 0xffff8801e9bd4280 SUCCESS
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Result:
->>>>>> hostbyte=DID_OK driverbyte=DRIVER_OK
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB:
->>>>>> Inquiry: 12 00 00 00 24 00
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Sense Key :
->>>>>> Not Ready [current]
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Add. Sense:
->>>>>> Logical unit not accessible, target port in unavailable state
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi host
->>>>>> busy 1 failed 0
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: 0 sectors total, 36 bytes
->>>>>> done.
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi scan: INQUIRY failed
->>>>>> with code 0x8000002
->>>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:0: Unexpected
->>>>>> response from lun 7 while scanning, scan aborted
->>>>>>
->>>>>> According to scsi_report_lun_scan(), I found:
->>>>>> Linux use an inquiry command to probe a lun according to the
->>>>>> result
->>>>>> of report_lun command.
->>>>>> It assumes every probe cmd will get a legal result. Otherwise, it
->>>>>> regards the whole peripheral not exist or dead.
->>>>>> If the return of inquiry passes its legal checking and indicates
->>>>>> 'LUN not present', it won't break but also continue with the scan
->>>>>> process.
->>>>>> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
->>>>>> (Logical unit not accessible, target port in unavailable state).
->>>>>> And this is ignored, so scsi_probe_lun() returns -EIO and the
->>>>>> scan
->>>>>> process is aborted.
->>>>>>
->>>>>> I have two questions:
->>>>>> 1. Is it correct for hardware to return a sense 04h,0Ch to
->>>>>> inquiry
->>>>>> again, even after presenting this lun in responce to REPORT_LUN
->>>>>> command?
->>>>> Yes, this is correct. 'REPORT LUNS' is supported in
->>>>> 'Unavailable' state.
->>>>>
->>>>>> 2. Since windows and solaris can continue scan, is it
->>>>>> reasonable for
->>>>>> linux to do the same, even for a fault-tolerance purpose?
->>>>>>
->>>>> Hmm. Yes, and no.
->>>>>
->>>>> _Actually_ this is an issue with the target, as it looks as if it
->>>>> will return the above sense code while sending an 'INQUIRY' to the
->>>>> device.
->>>>> SPC explicitely states that the INQUIRY command should _not_ fail
->>>>> for unavailable devices.
->>>>> But yeah, we probably should work around this issues.
->>>>> Nevertheless, please raise this issue with your array vendor.
->>>>>
->>>>> Please try the attached patch.
->>>>>
->>>>> Cheers,
->>>>>
->>>>> Hannes
->>>>>
->>>>
->>>>>  From b0e90778f012010c881f8bdc03bce63a36921b77 Mon Sep 17
->>>>> 00:00:00 2001
->>>>> From: Hannes Reinecke <hare@suse.de>
->>>>> Date: Mon, 14 Oct 2013 13:11:22 +0200
->>>>> Subject: [PATCH] scsi_scan: continue report_lun_scan after error
->>>>>
->>>>> When scsi_probe_and_add_lun() fails in scsi_report_lun_scan() this
->>>>> does _not_ indicate that the entire target is done for.
->>>>> So continue scanning for the remaining devices.
->>>>>
->>>>> Signed-off-by: Hannes Reinecke <hare@suse.de>
->>>>>
->>>>> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->>>>> index 307a811..973a121 100644
->>>>> --- a/drivers/scsi/scsi_scan.c
->>>>> +++ b/drivers/scsi/scsi_scan.c
->>>>> @@ -1484,13 +1484,12 @@ static int scsi_report_lun_scan(struct
->>>>> scsi_target *starget, int bflags,
->>>>>                   lun, NULL, NULL, rescan, NULL);
->>>>>               if (res == SCSI_SCAN_NO_RESPONSE) {
->>>>>                   /*
->>>>> -                 * Got some results, but now none, abort.
->>>>> +                 * Got some results, but now none, ignore.
->>>>>                    */
->>>>>                   sdev_printk(KERN_ERR, sdev,
->>>>>                       "Unexpected response"
->>>>> -                        " from lun %d while scanning, scan"
->>>>> -                        " aborted\n", lun);
->>>>> -                break;
->>>>> +                    " from lun %d while scanning,"
->>>>> +                    " ignoring device\n", lun);
->>>>>               }
->>>>>           }
->>>>>       }
->>>>
->>>> In LLDDs that do their own initiator based LUN masking (because
->>>> the midlayer does not have this
->>>> functionality to enable hardware virtualization without NPIV, or
->>> to work around suboptimal LUN
->>>> masking on the target), they are likely to return -ENXIO from
->>> slave_alloc(), making scsi_alloc_sdev()
->>>> return NULL, being converted to SCSI_SCAN_NO_RESPONSE by
->>> scsi_probe_and_add_lun() and thus going
->>>> through the same code path above.
->>>>
->>> Ah. Hmm. Yes, they would.
->>>
->>> However, I personally would question this approach, as SPC states
->>> that
->>>
->>>> The REPORT LUNS command (see table 284) requests the device
->>>> server to return the peripheral device logical unit inventory
->>>> accessible to the I_T nexus.
->>>
->>> So by plain reading this would meant that you either should modify
->>> 'REPORT LUNS' to not show the masked LUNs, or set the pqual field to
->>> '0x10' or '0x11' for those LUNs.
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> On Thu, 2013-10-10 at 09:54 +0200, Ingo Molnar wrote:
+> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > 
+> > > The throughput of pure mmap with mutex is below vs pure mmap is below:
+> > > 
+> > > % change in performance of the mmap with pthread-mutex vs pure mmap
+> > > #threads        vanilla 	all rwsem    	without optspin
+> > > 				patches
+> > > 1               3.0%    	-1.0%   	-1.7%
+> > > 5               7.2%    	-26.8%  	5.5%
+> > > 10              5.2%    	-10.6%  	22.1%
+> > > 20              6.8%    	16.4%   	12.5%
+> > > 40              -0.2%   	32.7%   	0.0%
+> > > 
+> > > So with mutex, the vanilla kernel and the one without optspin both run 
+> > > faster.  This is consistent with what Peter reported.  With optspin, the 
+> > > picture is more mixed, with lower throughput at low to moderate number 
+> > > of threads and higher throughput with high number of threads.
+> > 
+> > So, going back to your orignal table:
+> > 
+> > > % change in performance of the mmap with pthread-mutex vs pure mmap
+> > > #threads        vanilla all     without optspin
+> > > 1               3.0%    -1.0%   -1.7%
+> > > 5               7.2%    -26.8%  5.5%
+> > > 10              5.2%    -10.6%  22.1%
+> > > 20              6.8%    16.4%   12.5%
+> > > 40              -0.2%   32.7%   0.0%
+> > >
+> > > In general, vanilla and no-optspin case perform better with 
+> > > pthread-mutex.  For the case with optspin, mmap with pthread-mutex is 
+> > > worse at low to moderate contention and better at high contention.
+> > 
+> > it appears that 'without optspin' appears to be a pretty good choice - if 
+> > it wasn't for that '1 thread' number, which, if I correctly assume is the 
+> > uncontended case, is one of the most common usecases ...
+> > 
+> > How can the single-threaded case get slower? None of the patches should 
+> > really cause noticeable overhead in the non-contended case. That looks 
+> > weird.
+> > 
+> > It would also be nice to see the 2, 3, 4 thread numbers - those are the 
+> > most common contention scenarios in practice - where do we see the first 
+> > improvement in performance?
+> > 
+> > Also, it would be nice to include a noise/sttdev figure, it's really hard 
+> > to tell whether -1.7% is statistically significant.
 > 
-> We need to distinguish two cases:
-> 1) suboptimal lun masking on the target
-> 2) hardware virtualization without NPIV
+> Ingo,
 > 
-> Regarding 1, one could require fixing lun masking on the target.
-> However, some users cannot or do not want to do it very fine
-> granular. That's why s390 also does deferred device probing ("set
-> online" in sysfs) or even limits bus sensing (cio_ignore).
+> I think that the optimistic spin changes to rwsem should enhance 
+> performance to real workloads after all.
 > 
-> Regarding 2, fixing lun masking on the target does not help because
-> without NPIV, the target cannot distinguish the different virtual
-> initators since they are all behind one shared WWPN (and N-Port_ID).
-> This forces zfcp to implement initiator based lun masking, because
-> only the user can tell which lun to attach to which of the virtual
-> initiators sharing the same physical port. Without that, Linux would
-> attach all luns to all virtual initiators, i.e. share inadvertently.
+> In my previous tests, I was doing mmap followed immediately by 
+> munmap without doing anything to the memory.  No real workload
+> will behave that way and it is not the scenario that we 
+> should optimize for.  A much better approximation of
+> real usages will be doing mmap, then touching 
+> the memories being mmaped, followed by munmap.  
+
+That's why I asked for a working testcase to be posted ;-) Not just 
+pseudocode - send the real .c thing please.
+
+> This changes the dynamics of the rwsem as we are now dominated by read 
+> acquisitions of mmap sem due to the page faults, instead of having only 
+> write acquisitions from mmap. [...]
+
+Absolutely, the page fault read case is the #1 optimization target of 
+rwsems.
+
+> [...] In this case, any delay in write acquisitions will be costly as we 
+> will be blocking a lot of readers.  This is where optimistic spinning on 
+> write acquisitions of mmap sem can provide a very significant boost to 
+> the throughput.
 > 
->>>> E.g. zfcp does return -ENXIO if the particular LUN was not made
->>>> known to the unit whitelist
->>>> (via zfcp sysfs attribute unit_add).
->>>> If we attach LUN 0 (via unit_add) and trigger a target scan with
->>>> SCAN_WILD_CARD for the scsi
->>>> lun (e.g. on remote port recovery), we see exactly above error
->>> message for the first LUN in
->>>> the response of report lun which is not explicitly attached to
->>>> zfcp.
->>>> IIRC, other LLDDs such as bfa also do similar stuff
->>>> [http://marc.info/?l=linux-scsi&m=134489842105383&w=2].
->>>>
->>>> For those cases, I think it makes sense to abort
->>>> scsi_report_lun_scan().
->>>> Otherwise we would force the LLDD to return -ENXIO for every
->>> single LUN reported by report lun but not
->>>> explicitly added to the LLDD LUN whitelist; and this would likely
->>> *flood kernel messages*.
->>>>
->>>> Maybe Vaughan's case needs to be distinguished in a patch.
->>>>
->>> Well, as mentioned initially, the real issue is that the target
->>> aborts an INQUIRY while being in 'Unavailable'. Which, according to
->>> SPC-3 (or later), is a violation of the spec.
->>>
->>> So we _could_ just tell them to go away, but admittedly that's bad
->>> style. Which means we'll have to implement a workaround; the above
->>> was just a simple way of implementing it. If that's not working of
->>> course we'll have to do something else.
->>>
->> What about this patch:
->>
->> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->> index 973a121..01a7d69 100644
->> --- a/drivers/scsi/scsi_scan.c
->> +++ b/drivers/scsi/scsi_scan.c
->> @@ -594,6 +594,19 @@ static int scsi_probe_lun(struct scsi_device
->> *sdev, unsigne
->> d char *inq_result,
->>                                       (sshdr.asc == 0x29)) &&
->>                                      (sshdr.ascq == 0))
->>                                          continue;
->> +                               /*
->> +                                * Some buggy implementations return
->> +                                * 'target port in unavailable state'
->> +                                * even on INQUIRY.
->> +                                * Set peripheral qualifier 3
->> +                                * for these devices.
->> +                                */
->> +                               if ((sshdr.sense_key == NOT_READY) &&
->> +                                   ((sshdr.asc == 0x04) &&
->> +                                    (sshdr.ascq == 0x0C))) {
+> I change the test case to the following with writes to
+> the mmaped memory:
 > 
-> style question: lower case hex digits? 0x0c
+> #define MEMSIZE (1 * 1024 * 1024)
 > 
-Yeah. This is a test, after all ...
-
-> Any reason why you put the conjunction of asc and ascq inside its
-> own brackets instead of having all three (including sense_key) on
-> the same level of one larger conjunction (as the code above does for
-> UA asc 0x28/0x29 ascq 0x00)? Should be semantically equivalent,
-> isn't it? But then again, ascq always goes with asc, so they form a
-> kind of pair.
+> char *testcase_description = "Anonymous memory mmap/munmap of 1MB";
 > 
-No reason, Just copy&paste error from the above statement ...
-
->> +                                   inq_result[0] = 3 << 5;
->> +                                   return 0;
->> +                               }
->>                          }
->>                  } else {
->>                          /*
->>
->> (watchout, linebreaks mangled and all that).
->> Should be working for this particular case without interrupting
->> normal workflow, now should it not?
+> void testcase(unsigned long long *iterations)
+> {
+>         int i;
 > 
-> The approach of distinguishing the workaround close to the response
-> of the inquiry sounds good to me. I suppose it won't break zfcp
-> which is good. Unfortunately, I don't know what the ramifications of
-> PQ==3 are (the SPC-4 description sounds good, though), nor enough
-> details about this common code to tell if e.g. the early return is
-> OK (skipping setting sdev->scsi_level near the end of
-> scsi_probe_lun()). But then again, without inquiry reply we cannot
-> get the level from the response. So I think the early return is OK
-> after all.
-> I guess we want to get around "if (result) return -EIO;" but also do
-> not want to execute the parts depending on result==0.
+>         while (1) {
+>                 char *c = mmap(NULL, MEMSIZE, PROT_READ|PROT_WRITE,
+>                                MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+>                 assert(c != MAP_FAILED);
+>                 for (i=0; i<MEMSIZE; i+=8) {
+>                         c[i] = 0xa;
+>                 }
+>                 munmap(c, MEMSIZE);
 > 
-> SPC-4 says that for PQ==3 the PDT should be set to 0x1f. Do we need
-> to fake this here as well? (I assume the target did not fill in a
-> PDT on its own when replying with sense data.)
+>                 (*iterations)++;
+>         }
+> }
+
+It would be _really_ nice to stick this into tools/perf/bench/ as:
+
+	perf bench mem pagefaults
+
+or so, with a number of parallelism and workload patterns. See 
+tools/perf/bench/numa.c for a couple of workload generators - although 
+those are not page fault intense.
+
+So that future generations can run all these tests too and such.
+
+> I compare the throughput where I have the complete rwsem patchset 
+> against vanilla and the case where I take out the optimistic spin patch.  
+> I have increased the run time by 10x from my pervious experiments and do 
+> 10 runs for each case.  The standard deviation is ~1.5% so any changes 
+> under 1.5% is statistically significant.
 > 
-> The clarification on the T10 reflector seems to say that Linux would
-> then accept LUNs with PQ 3, but the target shall not have put LUs
-> with PQ 3 into the LU inventory in the first place?
-> Anyway, I'm not opposed to the workaround.
+> % change in throughput vs the vanilla kernel.
+> Threads	all	No-optspin
+> 1		+0.4%	-0.1%
+> 2		+2.0%	+0.2%
+> 3		+1.1%	+1.5%
+> 4		-0.5%	-1.4%
+> 5		-0.1%	-0.1%
+> 10		+2.2%	-1.2%
+> 20		+237.3%	-2.3%
+> 40		+548.1%	+0.3%
+
+The tail is impressive. The early parts are important as well, but it's 
+really hard to tell the significance of the early portion without having 
+an sttdev column.
+
+( "perf stat --repeat N" will give you sttdev output, in handy percentage 
+  form. )
+
+> Now when I test the case where we acquire mutex in the
+> user space before mmap, I got the following data versus
+> vanilla kernel.  There's little contention on mmap sem 
+> acquisition in this case.
 > 
-Well, first and foremost this is a workaround for buggy array
-firmware. If any port would be in 'unavailable' the target port is
-still required to respond to an INQUIRY.
-_Not_ doing so leaves us with no indication what's going on here.
+> n	all	No-optspin
+> 1	+0.8%	-1.2%
+> 2	+1.0%	-0.5%
+> 3	+1.8%	+0.2%
+> 4	+1.5%	-0.4%
+> 5	+1.1%	+0.4%
+> 10	+1.5%	-0.3%
+> 20	+1.4%	-0.2%
+> 40	+1.3%	+0.4%
+> 
+> Thanks.
 
-The main reason why I chose PQ=3 here is that we'll end up ignoring
-this device scsi_probe_and_add_lun() later on.
-Saving my coding higher up the stack.
-And, seeing that the device is never actually allocated, the
-modifications we did for the inquiry data will be deleted anyway.
+A bit hard to see as there's no comparison _between_ the pthread_mutex and 
+plain-parallel versions. No contention isn't a great result if performance 
+suffers because it's all serialized.
 
-So using PQ=3 here is just a vehicle for telling the system to not
-create a SCSI device at this LUN, _not_ something which has some
-relevance to SPC.
+Thanks,
 
-But seeing that this approach raises quite some issues I've attached
-a different patch.
-Vaughan, could you test with that, too? Should be functionally
-equivalent to the previous one.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
-
---------------010300060008020305000903
-Content-Type: text/x-patch;
- name="scsi_scan-continue-scan-for-LUNs-in.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="scsi_scan-continue-scan-for-LUNs-in.patch"
-
->From 12a949d293e698960984225cdd69cd68d1bdecbc Mon Sep 17 00:00:00 2001
-From: Hannes Reinecke <hare@suse.de>
-Date: Wed, 16 Oct 2013 08:49:15 +0200
-Subject: [PATCH] scsi_scan: Continue scan for LUNs in 'unavailable' ALUA
- state
-
-Some buggy array firmware will terminate the INQUIRY command
-when in 'unavailable' ALUA state. This will cause the scan
-to be aborted, so devices beyond that LUN will never be
-scanned.
-
-While this behaviour is a violation of SPC, we should
-nevertheless behave nicely and allow scanning to continue.
-
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 973a121..ec02f97 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -594,6 +594,16 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
- 				     (sshdr.asc == 0x29)) &&
- 				    (sshdr.ascq == 0))
- 					continue;
-+				/*
-+				 * Some buggy implementations return
-+				 * 'target port in unavailable state'
-+				 * even on INQUIRY.
-+				 */
-+				if ((sshdr.sense_key == NOT_READY) &&
-+				    (sshdr.asc == 0x04) &&
-+				    (sshdr.ascq == 0x0c)) {
-+					return SCSI_SCAN_TARGET_PRESENT;
-+				}
- 			}
- 		} else {
- 			/*
-@@ -661,7 +671,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
- 	/* If the last transfer attempt got an error, assume the
- 	 * peripheral doesn't exist or is dead. */
- 	if (result)
--		return -EIO;
-+		return SCSI_SCAN_NO_RESPONSE;
- 
- 	/* Don't report any more data than the device says is valid */
- 	sdev->inquiry_len = min(try_inquiry_len, response_len);
-@@ -711,7 +721,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
- 		sdev->scsi_level++;
- 	sdev->sdev_target->scsi_level = sdev->scsi_level;
- 
--	return 0;
-+	return SCSI_SCAN_LUN_PRESENT;
- }
- 
- /**
-@@ -1046,7 +1056,8 @@ static int scsi_probe_and_add_lun(struct scsi_target *starget,
- 	if (!result)
- 		goto out_free_sdev;
- 
--	if (scsi_probe_lun(sdev, result, result_len, &bflags))
-+	res = scsi_probe_lun(sdev, result, result_len, &bflags);
-+	if (res != SCSI_SCAN_LUN_PRESENT)
- 		goto out_free_result;
- 
- 	if (bflagsp)
-
---------------010300060008020305000903--
+	Ingo
