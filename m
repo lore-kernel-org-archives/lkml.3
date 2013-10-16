@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760065Ab3JPG6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:58:16 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56381 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759025Ab3JPG6N (ORCPT
+	id S1760081Ab3JPG6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:58:39 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34660 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab3JPG6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:58:13 -0400
+	Wed, 16 Oct 2013 02:58:10 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: eranian@google.com, michaele@au1.ibm.com, mikey@neuling.org,
         sukadev@linux.vnet.ibm.com
-Subject: [V3 04/10] x86, perf: Add conditional branch filtering support
-Date: Wed, 16 Oct 2013 12:26:51 +0530
-Message-Id: <1381906617-11392-5-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [V3 01/10] perf: New conditional branch filter criteria in branch stack sampling
+Date: Wed, 16 Oct 2013 12:26:48 +0530
+Message-Id: <1381906617-11392-2-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101606-3864-0000-0000-00000A8E8263
+x-cbid: 13101606-8878-0000-0000-00000942F62B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds conditional branch filtering support,
-enabling it for PERF_SAMPLE_BRANCH_COND in perf branch
-stack sampling framework by utilizing an available
-software filter X86_BR_JCC.
+POWER8 PMU based BHRB supports filtering for conditional branches.
+This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
+will extend the existing perf ABI. Other architectures can provide
+this functionality with either HW filtering support (if present) or
+with SW filtering of instructions.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ include/uapi/linux/perf_event.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index d5be06a..9723773 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -371,6 +371,9 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	if (br_type & PERF_SAMPLE_BRANCH_NO_TX)
- 		mask |= X86_BR_NO_TX;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 0b1df41..5da52b6 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -160,8 +160,9 @@ enum perf_branch_sample_type {
+ 	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+ 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+ 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
++	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
  
-+	if (br_type & PERF_SAMPLE_BRANCH_COND)
-+		mask |= X86_BR_JCC;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -665,6 +668,7 @@ static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
- 	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
- 	 */
- 	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
-+	[PERF_SAMPLE_BRANCH_COND]     = LBR_JCC,
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
++	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
  };
  
- static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
-@@ -676,6 +680,7 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
- 	[PERF_SAMPLE_BRANCH_ANY_CALL]	= LBR_REL_CALL | LBR_IND_CALL
- 					| LBR_FAR,
- 	[PERF_SAMPLE_BRANCH_IND_CALL]	= LBR_IND_CALL,
-+	[PERF_SAMPLE_BRANCH_COND]       = LBR_JCC,
- };
- 
- /* core */
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.7.11.7
 
