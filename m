@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761571Ab3JPRw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35972 "EHLO
+	id S1761680Ab3JPRxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:53:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934659Ab3JPRqf (ORCPT
+	with ESMTP id S934641Ab3JPRqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:35 -0400
+	Wed, 16 Oct 2013 13:46:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 37/50] ipc,shm: shorten critical region for shmctl
-Date: Wed, 16 Oct 2013 10:45:23 -0700
-Message-Id: <20131016174402.859768355@linuxfoundation.org>
+Subject: [ 35/50] ipc,shm: introduce shmctl_nolock
+Date: Wed, 16 Oct 2013 10:45:21 -0700
+Message-Id: <20131016174402.618737988@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -33,12 +33,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 2caacaa82a51b78fc0c800e206473874094287ed upstream.
+commit 68eccc1dc345539d589ae78ee43b835c1a06a134 upstream.
 
-With the *_INFO, *_STAT, IPC_RMID and IPC_SET commands already optimized,
-deal with the remaining SHM_LOCK and SHM_UNLOCK commands.  Take the
-shm_perm lock after doing the initial auditing and security checks.  The
-rest of the logic remains unchanged.
+Similar to semctl and msgctl, when calling msgctl, the *_INFO and *_STAT
+commands can be performed without acquiring the ipc object.
+
+Add a shmctl_nolock() function and move the logic of *_INFO and *_STAT out
+of msgctl().  Since we are just moving functionality, this change still
+takes the lock and it will be properly lockless in the next patch.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
@@ -50,116 +52,97 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |   49 +++++++++++++++++++++++++------------------------
- 1 file changed, 25 insertions(+), 24 deletions(-)
+ ipc/shm.c |   57 +++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 39 insertions(+), 18 deletions(-)
 
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -947,10 +947,8 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	int err, version;
- 	struct ipc_namespace *ns;
+@@ -827,29 +827,24 @@ out_up:
+ 	return err;
+ }
+ 
+-SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
++static int shmctl_nolock(struct ipc_namespace *ns, int shmid,
++			 int cmd, int version, void __user *buf)
+ {
++	int err;
+ 	struct shmid_kernel *shp;
+-	int err, version;
+-	struct ipc_namespace *ns;
  
 -	if (cmd < 0 || shmid < 0) {
 -		err = -EINVAL;
 -		goto out;
--	}
-+	if (cmd < 0 || shmid < 0)
-+		return -EINVAL;
++	/* preliminary security checks for *_INFO */
++	if (cmd == IPC_INFO || cmd == SHM_INFO) {
++		err = security_shm_shmctl(NULL, cmd);
++		if (err)
++			return err;
+ 	}
  
- 	version = ipc_parse_version(&cmd);
- 	ns = current->nsproxy->ipc_ns;
-@@ -961,36 +959,40 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	case SHM_STAT:
- 	case IPC_STAT:
- 		return shmctl_nolock(ns, shmid, cmd, version, buf);
-+	case IPC_RMID:
-+	case IPC_SET:
-+		return shmctl_down(ns, shmid, cmd, buf, version);
+-	version = ipc_parse_version(&cmd);
+-	ns = current->nsproxy->ipc_ns;
+-
+-	switch (cmd) { /* replace with proc interface ? */
++	switch (cmd) {
+ 	case IPC_INFO:
+ 	{
+ 		struct shminfo64 shminfo;
+ 
+-		err = security_shm_shmctl(NULL, cmd);
+-		if (err)
+-			return err;
+-
+ 		memset(&shminfo, 0, sizeof(shminfo));
+ 		shminfo.shmmni = shminfo.shmseg = ns->shm_ctlmni;
+ 		shminfo.shmmax = ns->shm_ctlmax;
+@@ -871,10 +866,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 	{
+ 		struct shm_info shm_info;
+ 
+-		err = security_shm_shmctl(NULL, cmd);
+-		if (err)
+-			return err;
+-
+ 		memset(&shm_info, 0, sizeof(shm_info));
+ 		down_read(&shm_ids(ns).rw_mutex);
+ 		shm_info.used_ids = shm_ids(ns).in_use;
+@@ -935,6 +926,36 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 			err = result;
+ 		goto out;
+ 	}
++	default:
++		return -EINVAL;
++	}
++
++out_unlock:
++	shm_unlock(shp);
++out:
++	return err;
++}
++
++SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
++{
++	struct shmid_kernel *shp;
++	int err, version;
++	struct ipc_namespace *ns;
++
++	if (cmd < 0 || shmid < 0) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	version = ipc_parse_version(&cmd);
++	ns = current->nsproxy->ipc_ns;
++
++	switch (cmd) {
++	case IPC_INFO:
++	case SHM_INFO:
++	case SHM_STAT:
++	case IPC_STAT:
++		return shmctl_nolock(ns, shmid, cmd, version, buf);
  	case SHM_LOCK:
  	case SHM_UNLOCK:
  	{
- 		struct file *shm_file;
- 
--		shp = shm_lock_check(ns, shmid);
-+		rcu_read_lock();
-+		shp = shm_obtain_object_check(ns, shmid);
- 		if (IS_ERR(shp)) {
- 			err = PTR_ERR(shp);
--			goto out;
-+			goto out_unlock1;
- 		}
- 
- 		audit_ipc_obj(&(shp->shm_perm));
-+		err = security_shm_shmctl(shp, cmd);
-+		if (err)
-+			goto out_unlock1;
- 
-+		ipc_lock_object(&shp->shm_perm);
- 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			kuid_t euid = current_euid();
- 			err = -EPERM;
- 			if (!uid_eq(euid, shp->shm_perm.uid) &&
- 			    !uid_eq(euid, shp->shm_perm.cuid))
--				goto out_unlock;
-+				goto out_unlock0;
- 			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
--				goto out_unlock;
-+				goto out_unlock0;
- 		}
- 
--		err = security_shm_shmctl(shp, cmd);
--		if (err)
--			goto out_unlock;
--
- 		shm_file = shp->shm_file;
- 		if (is_file_hugepages(shm_file))
--			goto out_unlock;
-+			goto out_unlock0;
- 
- 		if (cmd == SHM_LOCK) {
- 			struct user_struct *user = current_user();
-@@ -999,32 +1001,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 				shp->shm_perm.mode |= SHM_LOCKED;
- 				shp->mlock_user = user;
- 			}
--			goto out_unlock;
-+			goto out_unlock0;
- 		}
- 
- 		/* SHM_UNLOCK */
- 		if (!(shp->shm_perm.mode & SHM_LOCKED))
--			goto out_unlock;
-+			goto out_unlock0;
- 		shmem_lock(shm_file, 0, shp->mlock_user);
- 		shp->shm_perm.mode &= ~SHM_LOCKED;
- 		shp->mlock_user = NULL;
- 		get_file(shm_file);
--		shm_unlock(shp);
-+		ipc_unlock_object(&shp->shm_perm);
-+		rcu_read_unlock();
- 		shmem_unlock_mapping(shm_file->f_mapping);
-+
- 		fput(shm_file);
--		goto out;
--	}
--	case IPC_RMID:
--	case IPC_SET:
--		err = shmctl_down(ns, shmid, cmd, buf, version);
- 		return err;
-+	}
- 	default:
- 		return -EINVAL;
- 	}
- 
--out_unlock:
--	shm_unlock(shp);
--out:
-+out_unlock0:
-+	ipc_unlock_object(&shp->shm_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- 	return err;
- }
- 
 
 
