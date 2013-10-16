@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761158Ab3JPRj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:39:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61006 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754061Ab3JPRj4 (ORCPT
+	id S1761279Ab3JPRp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:45:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35484 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757184Ab3JPRpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:39:56 -0400
-Date: Wed, 16 Oct 2013 13:39:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20131016133954.1e2d8d3b@gandalf.local.home>
-In-Reply-To: <20131016171153.GC10651@twins.programming.kicks-ass.net>
-References: <20131015174722.615394057@linux.com>
-	<20131015174747.813545438@linux.com>
-	<20131016084920.GT10651@twins.programming.kicks-ass.net>
-	<00000141c1d04300-e935e477-6669-4388-8109-c77064ee27e7-000000@email.amazonses.com>
-	<20131016153603.GZ10651@twins.programming.kicks-ass.net>
-	<00000141c1fae3ba-6b52fea1-74f9-42f7-b1db-70dda847e7f9-000000@email.amazonses.com>
-	<20131016162537.GB10651@twins.programming.kicks-ass.net>
-	<20131016125238.5f970fd5@gandalf.local.home>
-	<20131016171153.GC10651@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 16 Oct 2013 13:45:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 02/69] ALSA: hda - hdmi: Fix channel map switch not taking effect
+Date: Wed, 16 Oct 2013 10:44:11 -0700
+Message-Id: <20131016174313.164530515@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 19:11:53 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> Anyway; I don't think the spinlock pattern matches too good and I don't
-> mind the proposed:
-> 
->   this_cpu_$op    (disables IRQs itself)
->   __this_cpu_$op  (with preemption check)
->   raw_cpu_$op	  (without preemption check)
-> 
+------------------
 
-That sounds fine too.
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
--- Steve
+commit 39edac70e9aedf451fccaa851b273ace9fcca0bd upstream.
+
+Currently hdmi_setup_audio_infoframe() reprograms the HDA channel
+mapping only when the infoframe is not up-to-date or the non-PCM flag
+has changed.
+
+However, when just the channel map has been changed, the infoframe may
+still be up-to-date and non-PCM flag may not have changed, so the new
+channel map is not actually programmed into the HDA codec.
+
+Notably, this failing case is also always triggered when the device is
+already in a prepared state and a new channel map is configured while
+changing only the channel positions (for example, plain
+"speaker-test -c2 -m FR,FL").
+
+Fix that by always programming the channel map in
+hdmi_setup_audio_infoframe(). Tested on Intel HDMI.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/patch_hdmi.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -930,6 +930,14 @@ static void hdmi_setup_audio_infoframe(s
+ 	}
+ 
+ 	/*
++	 * always configure channel mapping, it may have been changed by the
++	 * user in the meantime
++	 */
++	hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
++				   channels, per_pin->chmap,
++				   per_pin->chmap_set);
++
++	/*
+ 	 * sizeof(ai) is used instead of sizeof(*hdmi_ai) or
+ 	 * sizeof(*dp_ai) to avoid partial match/update problems when
+ 	 * the user switches between HDMI/DP monitors.
+@@ -940,20 +948,10 @@ static void hdmi_setup_audio_infoframe(s
+ 			    "pin=%d channels=%d\n",
+ 			    pin_nid,
+ 			    channels);
+-		hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-					   channels, per_pin->chmap,
+-					   per_pin->chmap_set);
+ 		hdmi_stop_infoframe_trans(codec, pin_nid);
+ 		hdmi_fill_audio_infoframe(codec, pin_nid,
+ 					    ai.bytes, sizeof(ai));
+ 		hdmi_start_infoframe_trans(codec, pin_nid);
+-	} else {
+-		/* For non-pcm audio switch, setup new channel mapping
+-		 * accordingly */
+-		if (per_pin->non_pcm != non_pcm)
+-			hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-						   channels, per_pin->chmap,
+-						   per_pin->chmap_set);
+ 	}
+ 
+ 	per_pin->non_pcm = non_pcm;
+
+
