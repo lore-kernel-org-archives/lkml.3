@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761775Ab3JPSyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:54:02 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:62110 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761557Ab3JPSx7 (ORCPT
+	id S1761647Ab3JPSyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:54:11 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:61358 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761613Ab3JPSyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:53:59 -0400
+	Wed, 16 Oct 2013 14:54:01 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Shaohua Li <shli@kernel.org>, NeilBrown <neilb@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
+To: Jonathan Austin <jonathan.austin@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Olof Johansson <olof@lixom.net>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the tip tree
-Date: Wed, 16 Oct 2013 20:51:39 +0200
-Message-Id: <1381949500-501-2-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of the kvm-arm tree
+Date: Wed, 16 Oct 2013 20:51:40 +0200
+Message-Id: <1381949500-501-3-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381949500-501-1-git-send-email-treding@nvidia.com>
 References: <1381949500-501-1-git-send-email-treding@nvidia.com>
@@ -23,83 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the tip tree got a conflict in
+Today's linux-next merge of the kvm-arm tree got conflicts in
 
-	include/linux/wait.h
+	arch/arm/kvm/reset.c
 
-caused by commits 1ab2460 (wait: add wait_event_cmd()) and fb869b6
-(sched/wait: Clean up wait.h details a bit).
+caused by commits e8c2d99 (KVM: ARM: Add support for Cortex-A7) and ac570e0
+(ARM: kvm: rename cpu_reset to avoid name clash).
 
-I've cleaned it up (see below). Please verify that the resolution looks
+I've fixed them up (see below). Please verify that the resolution looks
 good.
 
 Thanks,
 Thierry
 ---
-diff --cc include/linux/wait.h
-index d9eff54,a2726c7..0395985
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@@ -253,59 -275,9 +275,45 @@@ do {									
-  	__ret;								\
-  })
+diff --cc arch/arm/kvm/reset.c
+index c02ba4a,d9bbd83..d153e64
+--- a/arch/arm/kvm/reset.c
++++ b/arch/arm/kvm/reset.c
+@@@ -62,12 -62,13 +62,13 @@@ int kvm_reset_vcpu(struct kvm_vcpu *vcp
+  	const struct kvm_irq_level *cpu_vtimer_irq;
   
- +#define __wait_event_cmd(wq, condition, cmd1, cmd2)			\
- +do {									\
- +	DEFINE_WAIT(__wait);						\
- +									\
- +	for (;;) {							\
- +		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
- +		if (condition)						\
- +			break;						\
- +		cmd1;							\
- +		schedule();						\
- +		cmd2;							\
- +	}								\
- +	finish_wait(&wq, &__wait);					\
- +} while (0)
- +
- +/**
- + * wait_event_cmd - sleep until a condition gets true
- + * @wq: the waitqueue to wait on
- + * @condition: a C expression for the event to wait for
- + * cmd1: the command will be executed before sleep
- + * cmd2: the command will be executed after sleep
- + *
- + * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
- + * @condition evaluates to true. The @condition is checked each time
- + * the waitqueue @wq is woken up.
- + *
- + * wake_up() has to be called after changing any variable that could
- + * change the result of the wait condition.
- + */
- +#define wait_event_cmd(wq, condition, cmd1, cmd2)			\
- +do {									\
- +	if (condition)							\
- +		break;							\
- +	__wait_event_cmd(wq, condition, cmd1, cmd2);			\
- +} while (0)
- +
-- #define __wait_event_interruptible(wq, condition, ret)			\
-- do {									\
-- 	DEFINE_WAIT(__wait);						\
-- 									\
-- 	for (;;) {							\
-- 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-- 		if (condition)						\
-- 			break;						\
-- 		if (!signal_pending(current)) {				\
-- 			schedule();					\
-- 			continue;					\
-- 		}							\
-- 		ret = -ERESTARTSYS;					\
-- 		break;							\
-- 	}								\
-- 	finish_wait(&wq, &__wait);					\
-- } while (0)
-+ #define __wait_event_interruptible(wq, condition)			\
-+ 	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,		\
-+ 		      schedule())
-  
-  /**
-   * wait_event_interruptible - sleep until a condition gets true
+  	switch (vcpu->arch.target) {
++ 	case KVM_ARM_TARGET_CORTEX_A7:
+  	case KVM_ARM_TARGET_CORTEX_A15:
+- 		if (vcpu->vcpu_id > a15_max_cpu_idx)
++ 		if (vcpu->vcpu_id > cortexa_max_cpu_idx)
+  			return -EINVAL;
+- 		reset_regs = &a15_regs_reset;
+ -		cpu_reset = &cortexa_regs_reset;
+++		reset_regs = &cortexa_regs_reset;
+  		vcpu->arch.midr = read_cpuid_id();
+- 		cpu_vtimer_irq = &a15_vtimer_irq;
++ 		cpu_vtimer_irq = &cortexa_vtimer_irq;
+  		break;
+  	default:
+  		return -ENODEV;
