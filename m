@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761352Ab3JPXV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 19:21:29 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:53110 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab3JPXV1 (ORCPT
+	id S1760324Ab3JPX1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 19:27:09 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:34678 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab3JPX1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 19:21:27 -0400
-Message-ID: <1381965672.17841.71.camel@pasglop>
-Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
- HUPCL control
-From: Benjamin Herrenschmidt <benh@au1.ibm.com>
-To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Date: Wed, 16 Oct 2013 18:21:12 -0500
-In-Reply-To: <20131016090432.GA6053@linux.vnet.ibm.com>
-References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
-	 <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
-	 <1381475711.5630.67.camel@pasglop>
-	 <20131011124707.GA6082@linux.vnet.ibm.com>
-	 <1381524204.5630.91.camel@pasglop>
-	 <20131015153626.GA6129@linux.vnet.ibm.com>
-	 <1381870070.17841.24.camel@pasglop>
-	 <20131016090432.GA6053@linux.vnet.ibm.com>
-Organization: IBM Australia
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101623-5490-0000-0000-00000455102F
+	Wed, 16 Oct 2013 19:27:07 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "fdeslaur@gmail.com" <fdeslaur@gmail.com>,
+        "raphael.beamonte@gmail.com" <raphael.beamonte@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Subject: RE: [PATCH v3] Introduce page fault tracepoint
+Thread-Topic: [PATCH v3] Introduce page fault tracepoint
+Thread-Index: AQHOrad/oNbddzIzgE+oLKBHsS+xvpn26/MAgAFEJ1A=
+Date: Wed, 16 Oct 2013 23:25:54 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443EF85AD@USINDEM103.corp.hds.com>
+References: <522E43D5.9010505@hds.com> <525DD612.6050409@zytor.com>
+In-Reply-To: <525DD612.6050409@zytor.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-16_07:2013-10-17,2013-10-16,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310160112
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9GNRY6b005609
 
-On Wed, 2013-10-16 at 11:04 +0200, Hendrik Brueckner wrote:
-> Indeed, two callbacks change the DTR line.  The main difference is that
-> tiocmget/tiocmset can be called from user space by ioctl.  That's not the case
-> for the dtr_cts callback.  Also, tiocmget/tiocmset provide more flags that can
-> be changed (ST, SR, CTS, CD, RNG, RI,  ...)
+Thank you for reviewing.
+
+> >     http://marc.info/?l=linux-mm&m=136807959830182&w=2
+> >     http://marc.info/?l=linux-mm&m=136807959130175&w=2
+> >
 > 
-> Assume we would like to unify them have a single callback to change DTR, then
-> we have to take care of these differences.  So the question to you now is
-> whether you plan for a) other modem flags to be changed and b) if changing the
-> DTR line (or other control flags) through an ioctl?
+> For permanence, please use links of the form:
 > 
-> Depending on your results, I could work on sth that helps us both and reduces
-> the callbacks.
+> 	http://lkml.kernel.org/r/message-id
+> 
+> (Yes, they currently point to marc.info, but can be redirected to point
+> to any archive.)
 
-Can we not just have the users of dtr_cts just call the backend's tiocmset ?
+I will fix it.
 
-If they need to filter or clamp bits, we could handle all that in hvc_console
-by caching the user intended value and passing a cooked value down to the backend..
+> This is needlessly confusing, which is apart of why reviewing this patch
+> took a lot more time than it should.
+> 
+> Please break this patch into two: one which sets up the tracing IDT and
+> one to create the #PF tracepoint.  The assumption is, I am assuming,
+> there will be more.
 
-None of that is urgent or anything, it's just odd and would be nice to cleanup.
+OK. I will divide the patch into two or more to make the review smooth.
 
-Cheers,
-Ben.
+Seiji
 
+> 
+> 	-hpa
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
