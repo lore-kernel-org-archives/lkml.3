@@ -1,213 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935347Ab3JPSNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:13:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35690 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761447Ab3JPRpy (ORCPT
+	id S935359Ab3JPSNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:13:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44915 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935349Ab3JPSNf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 39/69] ipc,msg: shorten critical region in msgrcv
-Date: Wed, 16 Oct 2013 10:44:48 -0700
-Message-Id: <20131016174317.670343227@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 16 Oct 2013 14:13:35 -0400
+Subject: Re: [PATCH] powerpc/qe_lib: Share the qe_lib for the others architecture
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20131015131606.GA2700@book.gsilab.sittig.org>
+Date: Wed, 16 Oct 2013 13:12:59 -0500
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Scott Wood <scottwood@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Xie Xiaobo <X.Xie@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <385E3F55-85BB-4E28-A396-FA54DEE1B1AB@kernel.crashing.org>
+References: <1381750622-1150-1-git-send-email-X.Xie@freescale.com> <8559CF98-88E4-4271-A873-1409359EFE5C@kernel.crashing.org> <3F4D4A39-3063-45F5-8B0E-3CD5F36B4035@kernel.crashing.org> <20131014200952.GA20517@kroah.com> <20131015131606.GA2700@book.gsilab.sittig.org>
+To: Gerhard Sittig <gsi@denx.de>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Oct 15, 2013, at 8:16 AM, Gerhard Sittig wrote:
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> On Mon, Oct 14, 2013 at 13:09 -0700, Greg Kroah-Hartman wrote:
+>> 
+>> On Mon, Oct 14, 2013 at 02:40:44PM -0500, Kumar Gala wrote:
+>>> 
+>>> Greg,
+>>> 
+>>> Wondering your thoughts on drivers/qe vs something like
+>>> drivers/soc/fsl/qe.  The QuiccEngine (qe) is a communication core on
+>>> some of the Freescale networking SoCs that provides the ability to do
+>>> various networking/communication functionality.  "Channels" on the QE
+>>> can be used for various different things from ethernet, ATM, UART, or
+>>> other functions.
+>> 
+>> What makes the code "QE" specific?  Are these devices that live on the
+>> QE "bus", or are they controlling the QE controller?
+> 
+> You may think of the QUICC as a "programmable bitbang machine" if
+> you like.  The very same component runs arbitrary and rather
+> different protocols depending on how you setup its parameters.
+> 
+> There have been serial controllers capable of different protocols
+> like UART or SPI or I2S, but all of them are "serial
+> communication".  There have been memory controllers which could
+> bitbang different protocols (NAND, NOR/SRAM, DRAM), but all of
+> them are "memory".
+> 
+> The QUICC is just a little more versatile, and appears to cover
+> cases which reside in different Linux kernel subsystems (like:
+> it's neither serial nor network exclusively, but can be either
+> and potentially more).
+> 
+> IIUC the question which Kumar Gala was asking is where to put
+> code for the component which is neither a strict subset of any
+> subsystem.  Please correct me if I'm wrong.
 
-commit 41a0d523d0f626e9da0dc01de47f1b89058033cf upstream.
+Thanks for the description.
 
-do_msgrcv() is the last msg queue function that abuses the ipc lock Take
-it only when needed when actually updating msq.
+Yeah, the actual ethernet, usb, serial drivers that exist with QE live today in proper drivers/ dirs.  This is the infrastructure that those drivers utilize that isn't quite related to an existing subsystem.  Mostly set up of channel state/cfg/etc.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Rik van Riel <riel@redhat.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- ipc/msg.c |   58 ++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 26 deletions(-)
-
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -886,21 +886,19 @@ static struct msg_msg *find_msg(struct m
- 	return found ?: ERR_PTR(-EAGAIN);
- }
- 
--
--long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
--	       int msgflg,
-+long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgflg,
- 	       long (*msg_handler)(void __user *, struct msg_msg *, size_t))
- {
--	struct msg_queue *msq;
--	struct msg_msg *msg;
- 	int mode;
-+	struct msg_queue *msq;
- 	struct ipc_namespace *ns;
--	struct msg_msg *copy = NULL;
-+	struct msg_msg *msg, *copy = NULL;
- 
- 	ns = current->nsproxy->ipc_ns;
- 
- 	if (msqid < 0 || (long) bufsz < 0)
- 		return -EINVAL;
-+
- 	if (msgflg & MSG_COPY) {
- 		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
- 		if (IS_ERR(copy))
-@@ -908,8 +906,10 @@ long do_msgrcv(int msqid, void __user *b
- 	}
- 	mode = convert_mode(&msgtyp, msgflg);
- 
--	msq = msg_lock_check(ns, msqid);
-+	rcu_read_lock();
-+	msq = msq_obtain_object_check(ns, msqid);
- 	if (IS_ERR(msq)) {
-+		rcu_read_unlock();
- 		free_copy(copy);
- 		return PTR_ERR(msq);
- 	}
-@@ -919,10 +919,10 @@ long do_msgrcv(int msqid, void __user *b
- 
- 		msg = ERR_PTR(-EACCES);
- 		if (ipcperms(ns, &msq->q_perm, S_IRUGO))
--			goto out_unlock;
-+			goto out_unlock1;
- 
-+		ipc_lock_object(&msq->q_perm);
- 		msg = find_msg(msq, &msgtyp, mode);
--
- 		if (!IS_ERR(msg)) {
- 			/*
- 			 * Found a suitable message.
-@@ -930,7 +930,7 @@ long do_msgrcv(int msqid, void __user *b
- 			 */
- 			if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
- 				msg = ERR_PTR(-E2BIG);
--				goto out_unlock;
-+				goto out_unlock0;
- 			}
- 			/*
- 			 * If we are copying, then do not unlink message and do
-@@ -938,8 +938,9 @@ long do_msgrcv(int msqid, void __user *b
- 			 */
- 			if (msgflg & MSG_COPY) {
- 				msg = copy_msg(msg, copy);
--				goto out_unlock;
-+				goto out_unlock0;
- 			}
-+
- 			list_del(&msg->m_list);
- 			msq->q_qnum--;
- 			msq->q_rtime = get_seconds();
-@@ -948,14 +949,16 @@ long do_msgrcv(int msqid, void __user *b
- 			atomic_sub(msg->m_ts, &ns->msg_bytes);
- 			atomic_dec(&ns->msg_hdrs);
- 			ss_wakeup(&msq->q_senders, 0);
--			msg_unlock(msq);
--			break;
-+
-+			goto out_unlock0;
- 		}
-+
- 		/* No message waiting. Wait for a message */
- 		if (msgflg & IPC_NOWAIT) {
- 			msg = ERR_PTR(-ENOMSG);
--			goto out_unlock;
-+			goto out_unlock0;
- 		}
-+
- 		list_add_tail(&msr_d.r_list, &msq->q_receivers);
- 		msr_d.r_tsk = current;
- 		msr_d.r_msgtype = msgtyp;
-@@ -966,8 +969,9 @@ long do_msgrcv(int msqid, void __user *b
- 			msr_d.r_maxsize = bufsz;
- 		msr_d.r_msg = ERR_PTR(-EAGAIN);
- 		current->state = TASK_INTERRUPTIBLE;
--		msg_unlock(msq);
- 
-+		ipc_unlock_object(&msq->q_perm);
-+		rcu_read_unlock();
- 		schedule();
- 
- 		/* Lockless receive, part 1:
-@@ -978,7 +982,7 @@ long do_msgrcv(int msqid, void __user *b
- 		 * Prior to destruction, expunge_all(-EIRDM) changes r_msg.
- 		 * Thus if r_msg is -EAGAIN, then the queue not yet destroyed.
- 		 * rcu_read_lock() prevents preemption between reading r_msg
--		 * and the spin_lock() inside ipc_lock_by_ptr().
-+		 * and acquiring the q_perm.lock in ipc_lock_object().
- 		 */
- 		rcu_read_lock();
- 
-@@ -997,32 +1001,34 @@ long do_msgrcv(int msqid, void __user *b
- 		 * If there is a message or an error then accept it without
- 		 * locking.
- 		 */
--		if (msg != ERR_PTR(-EAGAIN)) {
--			rcu_read_unlock();
--			break;
--		}
-+		if (msg != ERR_PTR(-EAGAIN))
-+			goto out_unlock1;
- 
- 		/* Lockless receive, part 3:
- 		 * Acquire the queue spinlock.
- 		 */
--		ipc_lock_by_ptr(&msq->q_perm);
--		rcu_read_unlock();
-+		ipc_lock_object(&msq->q_perm);
- 
- 		/* Lockless receive, part 4:
- 		 * Repeat test after acquiring the spinlock.
- 		 */
- 		msg = (struct msg_msg*)msr_d.r_msg;
- 		if (msg != ERR_PTR(-EAGAIN))
--			goto out_unlock;
-+			goto out_unlock0;
- 
- 		list_del(&msr_d.r_list);
- 		if (signal_pending(current)) {
- 			msg = ERR_PTR(-ERESTARTNOHAND);
--out_unlock:
--			msg_unlock(msq);
--			break;
-+			goto out_unlock0;
- 		}
-+
-+		ipc_unlock_object(&msq->q_perm);
- 	}
-+
-+out_unlock0:
-+	ipc_unlock_object(&msq->q_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- 	if (IS_ERR(msg)) {
- 		free_copy(copy);
- 		return PTR_ERR(msg);
-
-
+- k
