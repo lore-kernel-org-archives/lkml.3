@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3JPEKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 00:10:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53885 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab3JPEHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 00:07:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,504,1378882800"; 
-   d="scan'208";a="419797687"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, sathyanarayanan.kuppuswamy@linux.intel.com,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v5 03/12] mrst: Fixed checkpatch warnings
-Date: Tue, 15 Oct 2013 21:11:32 -0700
-Message-Id: <1381896701-23476-4-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381896701-23476-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1381896701-23476-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1751135Ab3JPETX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 00:19:23 -0400
+Received: from critiquepaper.com ([69.172.205.218]:34334 "EHLO
+	mcser.mjdsystems.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750844Ab3JPETW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 00:19:22 -0400
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 00:19:22 EDT
+From: Matthew Dawson <matthew@mjdsystems.ca>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        trivial@kernel.org, Matthew Dawson <matthew@mjdsystems.ca>
+Subject: [PATCH] usb: misc: usb3503: Fix compile error due to incorrect regmap depedency
+Date: Wed, 16 Oct 2013 00:11:24 -0400
+Message-Id: <1381896684-13402-1-git-send-email-matthew@mjdsystems.ca>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+The USB3503 driver had an incorrect depedency on REGMAP, instead of
+REGMAP_I2C.  This caused the build to fail since the necessary regmap
+i2c pieces were not available.
 
-Fixed checkpatch warnings in mrst related files.
-
-Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Matthew Dawson <matthew@mjdsystems.ca>
 ---
- arch/x86/platform/mrst/mrst.c | 2 +-
+ drivers/usb/misc/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 235a742..2a45eab 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -977,7 +977,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 		case SFI_DEV_TYPE_UART:
- 		case SFI_DEV_TYPE_HSI:
- 		default:
--			;
-+			break;
- 		}
- 	}
- 	return 0;
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index e2b21c1..ba5f70f 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -246,6 +246,6 @@ config USB_EZUSB_FX2
+ config USB_HSIC_USB3503
+        tristate "USB3503 HSIC to USB20 Driver"
+        depends on I2C
+-       select REGMAP
++       select REGMAP_I2C
+        help
+          This option enables support for SMSC USB3503 HSIC to USB 2.0 Driver.
 -- 
-1.8.4.rc3
+1.8.1.5
 
