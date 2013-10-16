@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461Ab3JPNOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 09:14:40 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63885 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934157Ab3JPNOj (ORCPT
+	id S934317Ab3JPNRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 09:17:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56346 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758933Ab3JPNRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 09:14:39 -0400
-Date: Wed, 16 Oct 2013 09:14:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
-Message-ID: <20131016091437.146cb9d4@gandalf.local.home>
-In-Reply-To: <20131016130856.GE12773@localhost.localdomain>
-References: <20131015163906.342d8ffa@gandalf.local.home>
-	<20131016114036.GB12773@localhost.localdomain>
-	<20131016084518.44eaf61a@gandalf.local.home>
-	<20131016130856.GE12773@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 16 Oct 2013 09:17:52 -0400
+Message-ID: <525E91D4.30509@ti.com>
+Date: Wed, 16 Oct 2013 18:47:08 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <rogerq@ti.com>, George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH v2 2/2] ARM: dts: omap5: Add dr_mode for dwc3
+References: <52580F34.8030809@ti.com> <1381816199-7966-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1381816199-7966-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 15:08:57 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Benoit,
 
-
-> Faults can call rcu_user_exit() / rcu_user_enter(). This is not supposed to happen
-> between rcu_nmi_enter() and rcu_nmi_exit(). rdtp->dynticks would be incremented in the
-> wrong way.
+On Tuesday 15 October 2013 11:19 AM, Kishon Vijay Abraham I wrote:
+> From: George Cherian <george.cherian@ti.com>
 > 
-> Ah but we have an in_interrupt() check in context_tracking_user_enter() that protects
-> us against that.
-
-I will say that we should probably warn if it's any fault other than a
-vmalloc fault. A vmalloc fault should only happen in kernel space, and
-should not be happening from user code.
-
+> Added dr_mode property in dwc3 and set its default mode to device.
+> Currently dwc3 driver doesn't have support for OTG mode. So explicitly
+> setting to peripheral even dwc3 is a OTG controller since OMAP5 has
+> already got an EHCI host.
 > 
-> > 
-> > > 
-> > > So I hope we can think about something else for the long term.
-> > 
-> > I still don't understand what's wrong with it. As long as the faulting
-> > code does not grab any locks there shouldn't be anything wrong with
-> > faulting in NMI. For vmalloc, it is just updating page tables.
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+
+Can you take this patch for 3.13?
+
+Thanks
+Kishon
+> ---
+> Changes from v1:
+> Changed the commit log to explain why dr_mode was not set to OTG.
+>  arch/arm/boot/dts/omap5.dtsi |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> NMI code is written with the idea that it can't be interrupted. May be that
-> paranoia (again), you know. And I can't point you any problem in practice.
-> I just think that allowing such a thing is asking for troubles.
-
-The WARN_ON() that I removed is from vmalloc fault. I don't see an
-issue with NMIs faulting via vmalloc. For any other page fault, sure, I
-would be concerned about it. But what's wrong with an NMI running
-module code?
-
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index 6d0a1d5..ef598af 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -652,6 +652,7 @@
+>  				reg = <0x4a030000 0x10000>;
+>  				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
+>  				usb-phy = <&usb2_phy>, <&usb3_phy>;
+> +				dr_mode = "peripheral";
+>  				tx-fifo-resize;
+>  			};
+>  		};
 > 
-> But I'm ok with your patch, it fixes a real bug and as long as we don't have
-> a better solution, we should keep that.
-> 
-> BTW, does faulting in NMIs re-enable NMIs?
 
-Yes, but we now have code to handle that :-)
-
--- Steve
