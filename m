@@ -1,67 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab3JPCHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:07:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33116 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab3JPCHK (ORCPT
+	id S1759857Ab3JPCNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:13:15 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:36105 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757698Ab3JPCNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:07:10 -0400
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
-        Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 01/10][v6] powerpc: Rename branch_opcode() to instr_opcode()
-Date: Tue, 15 Oct 2013 19:06:33 -0700
-Message-Id: <1381889202-16826-2-git-send-email-sukadev@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101602-6688-0000-0000-00000293B351
+	Tue, 15 Oct 2013 22:13:11 -0400
+Message-ID: <525DF632.1030507@gmail.com>
+Date: Tue, 15 Oct 2013 22:13:06 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Chang Xiangzhong <changxiangzhong@gmail.com>
+CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] For for each TSN t being newly acked (Not only cumulatively,
+ but also SELECTIVELY) cacc_saw_newack should be set to 1.
+References: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
+In-Reply-To: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic used in branch_opcode() to extract the opcode for an instruction
-applies to non branch instructions also. So rename to instr_opcode().
+On 10/15/2013 02:13 PM, Chang Xiangzhong wrote:
+> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- arch/powerpc/lib/code-patching.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Your proposed solution is very nice, but it does 2 things in one
+patch.
+  1) It fixes the bug
+  2) It refactors the code to improve the flow.
 
-diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
-index 17e5b23..2bc9db3 100644
---- a/arch/powerpc/lib/code-patching.c
-+++ b/arch/powerpc/lib/code-patching.c
-@@ -72,19 +72,19 @@ unsigned int create_cond_branch(const unsigned int *addr,
- 	return instruction;
- }
- 
--static unsigned int branch_opcode(unsigned int instr)
-+static unsigned int instr_opcode(unsigned int instr)
- {
- 	return (instr >> 26) & 0x3F;
- }
- 
- static int instr_is_branch_iform(unsigned int instr)
- {
--	return branch_opcode(instr) == 18;
-+	return instr_opcode(instr) == 18;
- }
- 
- static int instr_is_branch_bform(unsigned int instr)
- {
--	return branch_opcode(instr) == 16;
-+	return instr_opcode(instr) == 16;
- }
- 
- int instr_is_relative_branch(unsigned int instr)
--- 
-1.7.9.5
+While (2) is very nice, it needs a much more careful review.
+Can you please split this into 2 patches?  First patch can
+make the code look like this:
+
+	if (sctp_acked(sack, tsn)) {
+		...
+		if (!tchunk->tsn_gap_acked) {
+			tchunk->tsn_gap_acked = 1;
+			*highest_new_tsn_in_sack = tsn;
+			bytes_acked += sctp_data_size(tchunk);
+                         if (!tchunk->transport)
+				migrate_bytes += sctp_data_size(tchunk);
+			forward_progress = true;
+
+			/*
+			 * SFR-CACC algorithm:
+			 * 2) If the SACK contains gap acks
+			 * and the flag CHANGEOVER_ACTIVE is
+			 * set the receiver of the SACK MUST
+			 * take the following action:
+			...
+		}
+	}
+
+Then you can file a second patch to improve the flow/refactor the 
+function.  You have to be very careful here though and be sure to
+run through all the regression tests since you would be modifying
+a very critcal part of the code.
+
+Thanks
+-vlad
+
+> ---
+>   net/sctp/outqueue.c |   76 ++++++++++++++++++++++++---------------------------
+>   1 file changed, 35 insertions(+), 41 deletions(-)
+>
+> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+> index 94df758..84ef3b8 100644
+> --- a/net/sctp/outqueue.c
+> +++ b/net/sctp/outqueue.c
+> @@ -1357,13 +1357,13 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+>
+>   		tsn = ntohl(tchunk->subh.data_hdr->tsn);
+>   		if (sctp_acked(sack, tsn)) {
+> -			/* If this queue is the retransmit queue, the
+> -			 * retransmit timer has already reclaimed
+> -			 * the outstanding bytes for this chunk, so only
+> -			 * count bytes associated with a transport.
+> -			 */
+> -			if (transport) {
+> -				/* If this chunk is being used for RTT
+> +			if (!tchunk->tsn_gap_acked) {
+> +				/* If this queue is the retransmit queue, the
+> +				 * retransmit timer has already reclaimed
+> +				 * the outstanding bytes for this chunk, so only
+> +				 * count bytes associated with a transport.
+> +				 *
+> +				 * If this chunk is being used for RTT
+>   				 * measurement, calculate the RTT and update
+>   				 * the RTO using this value.
+>   				 *
+> @@ -1374,28 +1374,44 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+>   				 * first instance of the packet or a later
+>   				 * instance).
+>   				 */
+> -				if (!tchunk->tsn_gap_acked &&
+> -				    tchunk->rtt_in_progress) {
+> +				if (transport && tchunk->rtt_in_progress) {
+>   					tchunk->rtt_in_progress = 0;
+>   					rtt = jiffies - tchunk->sent_at;
+>   					sctp_transport_update_rto(transport,
+> -								  rtt);
+> +						rtt);
+>   				}
+> -			}
+>
+> -			/* If the chunk hasn't been marked as ACKED,
+> -			 * mark it and account bytes_acked if the
+> -			 * chunk had a valid transport (it will not
+> -			 * have a transport if ASCONF had deleted it
+> -			 * while DATA was outstanding).
+> -			 */
+> -			if (!tchunk->tsn_gap_acked) {
+> +				/* If the chunk hasn't been marked as ACKED,
+> +				 * mark it and account bytes_acked if the
+> +				 * chunk had a valid transport (it will not
+> +				 * have a transport if ASCONF had deleted it
+> +				 * while DATA was outstanding).
+> +				 */
+>   				tchunk->tsn_gap_acked = 1;
+>   				*highest_new_tsn_in_sack = tsn;
+>   				bytes_acked += sctp_data_size(tchunk);
+>   				if (!tchunk->transport)
+>   					migrate_bytes += sctp_data_size(tchunk);
+>   				forward_progress = true;
+> +
+> +				/* SFR-CACC algorithm:
+> +				 * 2) If the SACK contains gap acks
+> +				 * and the flag CHANGEOVER_ACTIVE is
+> +				 * set the receiver of the SACK MUST
+> +				 * take the following action:
+> +				 *
+> +				 * B) For each TSN t being acked that
+> +				 * has not been acked in any SACK so
+> +				 * far, set cacc_saw_newack to 1 for
+> +				 * the destination that the TSN was
+> +				 * sent to.
+> +				 */
+> +				if (transport &&
+> +					sack->num_gap_ack_blocks &&
+> +					q->asoc->peer.primary_path->cacc.
+> +					changeover_active
+> +				   )
+> +					transport->cacc.cacc_saw_newack = 1;
+>   			}
+>
+>   			if (TSN_lte(tsn, sack_ctsn)) {
+> @@ -1411,30 +1427,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+>   				restart_timer = 1;
+>   				forward_progress = true;
+>
+> -				if (!tchunk->tsn_gap_acked) {
+> -					/*
+> -					 * SFR-CACC algorithm:
+> -					 * 2) If the SACK contains gap acks
+> -					 * and the flag CHANGEOVER_ACTIVE is
+> -					 * set the receiver of the SACK MUST
+> -					 * take the following action:
+> -					 *
+> -					 * B) For each TSN t being acked that
+> -					 * has not been acked in any SACK so
+> -					 * far, set cacc_saw_newack to 1 for
+> -					 * the destination that the TSN was
+> -					 * sent to.
+> -					 */
+> -					if (transport &&
+> -					    sack->num_gap_ack_blocks &&
+> -					    q->asoc->peer.primary_path->cacc.
+> -					    changeover_active)
+> -						transport->cacc.cacc_saw_newack
+> -							= 1;
+> -				}
+> -
+>   				list_add_tail(&tchunk->transmitted_list,
+> -					      &q->sacked);
+> +					&q->sacked);
+>   			} else {
+>   				/* RFC2960 7.2.4, sctpimpguide-05 2.8.2
+>   				 * M2) Each time a SACK arrives reporting
+>
 
