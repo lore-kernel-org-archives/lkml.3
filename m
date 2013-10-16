@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760611Ab3JPLyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:54:05 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49958 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760301Ab3JPLyD (ORCPT
+	id S934089Ab3JPL4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:56:08 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:57554 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760182Ab3JPL4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:54:03 -0400
-Date: Wed, 16 Oct 2013 13:53:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Liu Chuansheng <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
-Message-ID: <20131016115354.GC12773@localhost.localdomain>
-References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
- <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
- <1381870805.22110.37.camel@joe-AO722>
- <20131015211251.GE3269@localhost.localdomain>
- <1381872280.22110.41.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381872280.22110.41.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 07:56:07 -0400
+X-AuditID: cbfec372-b7fe76d000003347-f7-525e7ed4dd84
+Date: Wed, 16 Oct 2013 08:55:58 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+Message-id: <20131016085558.19fe143a@samsung.com>
+In-reply-to: <20131016104221.GC13608@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+ <20131015165435.GA2777@naverao1-tp.ibm.com> <20131015170039.GF7908@pd.tnic>
+ <525D7BCD.7080303@linux.vnet.ibm.com>
+ <20131015214346.68718bcd.m.chehab@samsung.com>
+ <20131016091640.GA13608@pd.tnic>
+ <20131016073539.5a48f65e.m.chehab@samsung.com> <20131016104221.GC13608@pd.tnic>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/hIN0rdXFBBr9+61i0nfjNZvF5wz82
+	i1vvbC2W7+tntLi8aw6bxf2Wp+wWZw4dYrR4c+EeiwOHx/fWPhaPxXteMnnMOxno8eDQZhaP
+	9/uusnl83iQXwBbFZZOSmpNZllqkb5fAlXHl3jWWgg7+is7fS5gaGP9xdzFyckgImEic+3WN
+	DcIWk7hwbz2QzcUhJLCEUeLbo9PsEE43k0T/0V6wKhYBVYn111tYQGw2ASOJV40trCC2iICS
+	xNdFc5lAGpgFupgkzq34xA6SEBbwkjjVcocJxOYVMJTYv3gCmM0poCsx9fJyZogNS5klXkzZ
+	ArSBA+gOJ4mtU30h6gUlfky+B7aMWUBLYvO2JlYIW15i85q3zBMYBWYhKZuFpGwWkrIFjMyr
+	GEVLi5MLipPScw31ihNzi0vz0vWS83M3MUICv2gH47MNVocYBTgYlXh4FWJjg4RYE8uKK3MP
+	MUpwMCuJ8EYExwUJ8aYkVlalFuXHF5XmpBYfYmTi4JRqYFzKp+jEmdw6oaE24rPe1l389/sD
+	5M+tCbsS67smfNq6cyFsNiFR4jnZ1fsl4vbHLrbtnp+kkutyIORMosrd2vci/SpMUT7CKk/K
+	rE8tb/J5tW6rzOdTchnP5A+kyXxtT2jkPT+xRMPaqCTGd9Hsl8dF5M4c+vRfOerCo1ftC9ZW
+	bKo/9WX/GiWW4oxEQy3mouJEAHjjvaFaAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 02:24:40PM -0700, Joe Perches wrote:
-> On Tue, 2013-10-15 at 23:12 +0200, Frederic Weisbecker wrote:
-> > On Tue, Oct 15, 2013 at 02:00:05PM -0700, Joe Perches wrote:
-> > > On Tue, 2013-10-15 at 22:50 +0200, Frederic Weisbecker wrote:
-> > > []
-> > > > diff --git a/include/linux/printk.h b/include/linux/printk.h
-> > > []
-> > > > @@ -252,14 +253,7 @@ extern asmlinkage void dump_stack(void) __cold;
-> > > >  
-> > > >  #ifdef CONFIG_PRINTK
-> > > >  #define printk_once(fmt, ...)			\
-> > > > -({						\
-> > > > -	static bool __print_once;		\
-> > > > -						\
-> > > > -	if (!__print_once) {			\
-> > > > -		__print_once = true;		\
-> > > > -		printk(fmt, ##__VA_ARGS__);	\
-> > > > -	}					\
-> > > > -})
-> > > > +	DO_ONCE(printk(fmt, ##__VA_ARGS__));
-> > > 
-> > > It's hard to believe the overhead is worth it.
+Em Wed, 16 Oct 2013 12:42:21 +0200
+Borislav Petkov <bp@alien8.de> escreveu:
+
+> On Wed, Oct 16, 2013 at 07:35:39AM -0300, Mauro Carvalho Chehab wrote:
+> > Well, try to write some code on userspace to discover what's the error.
 > > 
-> > Which overhead?
+> > An error threshold mechanism on userspace will only work if userspace 
+> > knows that the error belongs to the same DIMM.
 > 
-> The one you were proposing with xchg
+> Just read the first mail again:
 > 
-> Apparently the 1/3 series you submitted
-> didn't use it.
-> 
-> Given that it didn't, does the indirection
-> to DO_ONCE really help?
+>           <idle>-0     [000] d.h. 56068.488759: extlog_mem_event: 3 corrected errors:unknown on Memriser1 CHANNEL A DIMM 0(FRU: 00000000-0000
+> -0000-0000-000000000000  physical addr: 0x0000000851fe0000 node: 0 card: 0 module: 0 rank: 0 bank: 0 row: 28927 column: 1296)
 
-Yes, the diffstat has more "-" than "+" :o)
-But we might get the xchg() in the end. Andrew proposed
-a nice tradeoff against the performance issue:
+On that log, "physical addr: 0x0000000851fe0000 node: 0 card: 0 module: 0 rank: 0 bank: 0 row: 28927 column: 1296"
+is a string, instead of an hierarchical position, like what it is provided
+on EDAC.
 
-if (!__warned)
-    return;
-__old_warned = xchg(__warned, 1);
-if (!__old_warned)
-    do_warning
+Worse than that, not all data may be available, as CPER allows to
+ommit some data.
 
-> 
-> btw:
-> 
-> https://lkml.org/lkml/2009/5/21/300
-> 
-> Perhaps Alan's comment still applies:
-> 
-> https://lkml.org/lkml/2009/5/21/305
+Also, I suspect that, if an error happens to affect more than one DIMM
+(e. g. part of the location is not available for a given error),
+that the DIMM label will also not be properly shown.
 
-Alan was right having such a macro handy is tempting to use in a driver or so,
-and that would be most of the time for bad reasons. It's not an object synchronization.
+Also, writing the userspace counterpart that would work properly is
+extremely hard, if the information about the memory layout is not known
+in advance. So, in practice, if the above memory error is provided, all
+userspace will likely be able to do is to store it and require someone
+to manually identify what's happening.
 
-Now I don't entirely agree with him because it consolidates existing code. It's a
-good CPP library when something really needs a global state to execute something
-only once.
+On the other hand, if node, channel and dimm number information is
+properly filled (like it happens on EDAC), usersapce can rely on those
+data, in order to apply per dimm, per channel and per node thresholds.
 
-It's especially useful for debugging. I mean I often miss such a macro. I use very
-often the following pattern for debugging:
+It may even use the physical address to identify if the problem is only on
+a certain region of a physical DIMM and poison that region, while it is
+not possible to replace the damaged component.
 
-static int done;
-
-if (!done) {
-    trace_printk(something);
-    trace_printk(something else);
-    trace_dump_stack();
-    done = 1;
-}
-
-Having a DO_ONCE() would help a lot I think.
-
-Now we can rename it to __DO_ONCE() and put a big fat comment to avoid it
-to be misused.
-
-Hm?
+Regards,
+Mauro
