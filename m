@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab3JPQJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:09:38 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:48011 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab3JPQJg (ORCPT
+	id S1760819Ab3JPQKK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:10:10 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6928 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3JPQKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:09:36 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: dudl@cypress.com, kamal@canonical.com, mario_limonciello@dell.com,
-        git@status.e4ward.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-br@googlegroups.com,
-        "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] drivers: input: mouse: Remove useless casting in cypress_ps2.c
-Date: Wed, 16 Oct 2013 13:05:12 -0300
-Message-Id: <1381939512-28534-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 16 Oct 2013 12:10:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 16 Oct 2013 09:05:41 -0700
+Message-ID: <525EBA5F.5080608@nvidia.com>
+Date: Wed, 16 Oct 2013 09:10:07 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] gpiolib: add gpiod_get() and gpiod_put() functions
+References: <1381515273-25466-1-git-send-email-acourbot@nvidia.com>	<1381515273-25466-4-git-send-email-acourbot@nvidia.com>	<52587C37.3070606@nvidia.com> <CACRpkdZTqZKyG3Lbs_GmdnqB0yEjRApsaUhJA9-s_uPb_Wrq8A@mail.gmail.com>
+In-Reply-To: <CACRpkdZTqZKyG3Lbs_GmdnqB0yEjRApsaUhJA9-s_uPb_Wrq8A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting (void *) value returned by kzalloc is useless
-as mentioned in Documentation/CodingStyle, Chap 14.
+On 10/16/2013 04:37 AM, Linus Walleij wrote:
+> On Sat, Oct 12, 2013 at 12:31 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+>>> +#else
+>>> +static struct device_node *of_find_gpio(struct device *dev, const char *id
+>>> +                                     unsigned int idx, unsigned long flags)
+>>> +{
+>>> +     return ERR_PTR(-ENODEV);
+>>> +}
+>>> +#endif
+>>
+>> ... and of course I forgot to fix the main compilation error. Linus,
+>> would you mind squashing what follows into this patch? Apologies for
+>> the inconvenience.
+>
+> I guess you'll fix this if you respin it?
+>
+> If it's too much trouble now we can just defer this for early in the v3.14
+> cycle.
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- drivers/input/mouse/cypress_ps2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No problem, I will try to rebase on top of your for-next, and squash 
+this today.
 
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index f51765f..ef651cc 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -679,7 +679,7 @@ int cypress_init(struct psmouse *psmouse)
- {
- 	struct cytp_data *cytp;
- 
--	cytp = (struct cytp_data *)kzalloc(sizeof(struct cytp_data), GFP_KERNEL);
-+	cytp = kzalloc(sizeof(struct cytp_data), GFP_KERNEL);
- 	psmouse->private = (void *)cytp;
- 	if (cytp == NULL)
- 		return -ENOMEM;
--- 
-1.8.4
-
+Thanks,
+Alex.
