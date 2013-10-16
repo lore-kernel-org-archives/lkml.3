@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761852Ab3JPRzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:55:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35929 "EHLO
+	id S1761877Ab3JPRzl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:55:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35927 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761303Ab3JPRqa (ORCPT
+	with ESMTP id S1761301Ab3JPRq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:30 -0400
+	Wed, 16 Oct 2013 13:46:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 30/50] drm/radeon: fix typo in CP DMA register headers
-Date: Wed, 16 Oct 2013 10:45:16 -0700
-Message-Id: <20131016174401.988595888@linuxfoundation.org>
+Subject: [ 29/50] drm/radeon: forever loop on error in radeon_do_test_moves()
+Date: Wed, 16 Oct 2013 10:45:15 -0700
+Message-Id: <20131016174401.868104051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -26,71 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit aa3e146d04b6ae37939daeebaec060562b3db559 upstream.
+commit 89cd67b326fa95872cc2b4524cd807128db6071d upstream.
 
-Wrong bit offset for SRC endian swapping.
+The error path does this:
 
+	for (--i; i >= 0; --i) {
+
+which is a forever loop because "i" is unsigned.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreend.h |    4 ++--
- drivers/gpu/drm/radeon/r600d.h      |    2 +-
- drivers/gpu/drm/radeon/sid.h        |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/radeon_test.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -1494,7 +1494,7 @@
-  * 6. COMMAND [29:22] | BYTE_COUNT [20:0]
-  */
- #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
--                /* 0 - SRC_ADDR
-+                /* 0 - DST_ADDR
- 		 * 1 - GDS
- 		 */
- #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
-@@ -1509,7 +1509,7 @@
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
- #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -1487,7 +1487,7 @@
-  */
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -1490,7 +1490,7 @@
-  * 6. COMMAND [30:21] | BYTE_COUNT [20:0]
-  */
- #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
--                /* 0 - SRC_ADDR
-+                /* 0 - DST_ADDR
- 		 * 1 - GDS
- 		 */
- #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
-@@ -1505,7 +1505,7 @@
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
- #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
+--- a/drivers/gpu/drm/radeon/radeon_test.c
++++ b/drivers/gpu/drm/radeon/radeon_test.c
+@@ -36,8 +36,8 @@ static void radeon_do_test_moves(struct
+ 	struct radeon_bo *vram_obj = NULL;
+ 	struct radeon_bo **gtt_obj = NULL;
+ 	uint64_t gtt_addr, vram_addr;
+-	unsigned i, n, size;
+-	int r, ring;
++	unsigned n, size;
++	int i, r, ring;
+ 
+ 	switch (flag) {
+ 	case RADEON_TEST_COPY_DMA:
 
 
