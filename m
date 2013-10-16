@@ -1,207 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab3JPPmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:42:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5132 "EHLO mx1.redhat.com"
+	id S932679Ab3JPPme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:42:34 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43906 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933219Ab3JPPmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:42:40 -0400
-Date: Wed, 16 Oct 2013 11:40:07 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Tim Gardner <timg@tpi.com>
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>
-Subject: Re: [PATCH 2/2 linux-next] cifs: Make big endian multiplex ID
- sequences monotonic on the wire
-Message-ID: <20131016114007.3b7d4fc6@tlielax.poochiereds.net>
-In-Reply-To: <1381936190-67628-2-git-send-email-timg@tpi.com>
-References: <1381936190-67628-1-git-send-email-timg@tpi.com>
-	<1381936190-67628-2-git-send-email-timg@tpi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760776Ab3JPPjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:39:36 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V7 1/8] ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
+Date: Wed, 16 Oct 2013 10:39:01 -0500
+Message-ID: <1381937948-27057-2-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
+References: <1381937948-27057-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 09:09:50 -0600
-Tim Gardner <timg@tpi.com> wrote:
+OMAP3+ supports both device tree and non-device tree boot.
+Device tree bindings for OMAP3+ is supposed to be added via dts following:
+Documentation/devicetree/bindings/power/opp.txt
 
-> The multiplex identifier (MID) in the SMB header is only
-> ever used by the client, in conjunction with PID, to match responses
-> from the server. As such, the endianess of the MID is not important.
-> However, When tracing packet sequences on the wire, protocol analyzers
-> such as wireshark display MID as little endian. It is much more informative
-> for the on-the-wire MID sequences to match debug information emitted by the
-> CIFS driver.  Therefore, one should write and read MID in the SMB header
-> assuming it is always little endian.
-> 
-> Observed from wireshark during the protocol negotiation
-> and session setup:
-> 
->         Multiplex ID: 256
->         Multiplex ID: 256
->         Multiplex ID: 512
->         Multiplex ID: 512
->         Multiplex ID: 768
->         Multiplex ID: 768
-> 
-> After this patch on-the-wire MID values begin at 1 and increase monotonically.
-> 
-> Introduce get_next_mid64() for the internal consumers that use the full 64 bit
-> multiplex identifier.
-> 
-> Introduce the helpers get_mid() and compare_mid() to make the endian
-> translation clear.
-> 
-> Cc: Steve French <sfrench@samba.org>
-> Signed-off-by: Tim Gardner <timg@tpi.com>
-> ---
-> 
-> I'm looking at some of this code in excrutiating detail because I'm having trouble
-> with a backport of CIFS from 3.9.7 on an embedded 2.6.31 powerpc. Its failing the RawNTLMSSP
-> authentication and is almost certainly an endian issue. x86 on the same code base works
-> quite well. Am I making a rash assumption that CIFS in 3.9 stable worked on big endian ?
-> 
->  fs/cifs/cifsglob.h      |   25 ++++++++++++++++++++++++-
->  fs/cifs/misc.c          |    9 +++++----
->  fs/cifs/smb1ops.c       |    4 ++--
->  fs/cifs/smb2transport.c |    2 +-
->  fs/cifs/transport.c     |    2 +-
->  5 files changed, 33 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-> index 52b6f6c..535e324 100644
-> --- a/fs/cifs/cifsglob.h
-> +++ b/fs/cifs/cifsglob.h
-> @@ -620,11 +620,34 @@ set_credits(struct TCP_Server_Info *server, const int val)
->  }
->  
->  static inline __u64
-> -get_next_mid(struct TCP_Server_Info *server)
-> +get_next_mid64(struct TCP_Server_Info *server)
->  {
->  	return server->ops->get_next_mid(server);
->  }
->  
-> +static inline __u16
-> +get_next_mid(struct TCP_Server_Info *server)
-> +{
-> +	__u16 mid = get_next_mid64(server);
-> +	/*
-> +	 * The value in the SMB header should be little endian for easy
-> +	 * on-the-wire decoding.
-> +	 */
-> +	return cpu_to_le16(mid);
-> +}
-> +
-> +static inline __u16
-> +get_mid(const struct smb_hdr *smb)
-> +{
-> +	return le16_to_cpu(smb->Mid);
-> +}
-> +
-> +static inline bool
-> +compare_mid(__u16 mid, const struct smb_hdr *smb)
-> +{
-> +	return mid == le16_to_cpu(smb->Mid);
-> +}
-> +
->  /*
->   * When the server supports very large reads and writes via POSIX extensions,
->   * we can allow up to 2^24-1, minus the size of a READ/WRITE_AND_X header, not
-> diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
-> index 298e31e..c851d41 100644
-> --- a/fs/cifs/misc.c
-> +++ b/fs/cifs/misc.c
-> @@ -295,7 +295,8 @@ check_smb_hdr(struct smb_hdr *smb)
->  	if (smb->Command == SMB_COM_LOCKING_ANDX)
->  		return 0;
->  
-> -	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n", smb->Mid);
-> +	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n",
-> +		 le16_to_cpu(smb->Mid));
->  	return 1;
->  }
->  
-> @@ -358,11 +359,11 @@ checkSMB(char *buf, unsigned int total_read)
->  				return 0; /* bcc wrapped */
->  		}
->  		cifs_dbg(FYI, "Calculated size %u vs length %u mismatch for mid=%u\n",
-> -			 clc_len, 4 + rfclen, smb->Mid);
-> +			 clc_len, 4 + rfclen, le16_to_cpu(smb->Mid));
->  
->  		if (4 + rfclen < clc_len) {
->  			cifs_dbg(VFS, "RFC1001 size %u smaller than SMB for mid=%u\n",
-> -				 rfclen, smb->Mid);
-> +				 rfclen, le16_to_cpu(smb->Mid));
->  			return -EIO;
->  		} else if (rfclen > clc_len + 512) {
->  			/*
-> @@ -375,7 +376,7 @@ checkSMB(char *buf, unsigned int total_read)
->  			 * data to 512 bytes.
->  			 */
->  			cifs_dbg(VFS, "RFC1001 size %u more than 512 bytes larger than SMB for mid=%u\n",
-> -				 rfclen, smb->Mid);
-> +				 rfclen, le16_to_cpu(smb->Mid));
->  			return -EIO;
->  		}
->  	}
+Since we now have device tree entries for OMAP3+ cpu OPPs,
+The current code wrongly adds duplicate OPPs. So, dont register OPPs
+when booting using device tree.
 
-It would be more efficient to byte-swap smb->Mid only once and store
-that in a u16 here and then print that out instead of doing it multiple
-times.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/mach-omap2/opp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-> diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-> index 8233b17..5598af9 100644
-> --- a/fs/cifs/smb1ops.c
-> +++ b/fs/cifs/smb1ops.c
-> @@ -67,7 +67,7 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
->  	mutex_unlock(&server->srv_mutex);
->  
->  	cifs_dbg(FYI, "issued NT_CANCEL for mid %u, rc = %d\n",
-> -		 in_buf->Mid, rc);
-> +		 le16_to_cpu(in_buf->Mid), rc);
->  
->  	return rc;
->  }
-> @@ -101,7 +101,7 @@ cifs_find_mid(struct TCP_Server_Info *server, char *buffer)
->  
->  	spin_lock(&GlobalMid_Lock);
->  	list_for_each_entry(mid, &server->pending_mid_q, qhead) {
-> -		if (mid->mid == buf->Mid &&
-> +		if (compare_mid(mid->mid, buf) &&
->  		    mid->mid_state == MID_REQUEST_SUBMITTED &&
->  		    le16_to_cpu(mid->command) == buf->Command) {
->  			spin_unlock(&GlobalMid_Lock);
-> diff --git a/fs/cifs/smb2transport.c b/fs/cifs/smb2transport.c
-> index 340abca..c523617 100644
-> --- a/fs/cifs/smb2transport.c
-> +++ b/fs/cifs/smb2transport.c
-> @@ -466,7 +466,7 @@ smb2_verify_signature(struct smb_rqst *rqst, struct TCP_Server_Info *server)
->  static inline void
->  smb2_seq_num_into_buf(struct TCP_Server_Info *server, struct smb2_hdr *hdr)
->  {
-> -	hdr->MessageId = get_next_mid(server);
-> +	hdr->MessageId = get_next_mid64(server);
->  }
->  
->  static struct mid_q_entry *
-> diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
-> index 6fdcb1b..057b2c0 100644
-> --- a/fs/cifs/transport.c
-> +++ b/fs/cifs/transport.c
-> @@ -58,7 +58,7 @@ AllocMidQEntry(const struct smb_hdr *smb_buffer, struct TCP_Server_Info *server)
->  		return temp;
->  	else {
->  		memset(temp, 0, sizeof(struct mid_q_entry));
-> -		temp->mid = smb_buffer->Mid;	/* always LE */
-> +		temp->mid = get_mid(smb_buffer);
->  		temp->pid = current->pid;
->  		temp->command = cpu_to_le16(smb_buffer->Command);
->  		cifs_dbg(FYI, "For smb_command %d\n", smb_buffer->Command);
-
-Otherwise, this seems like a good thing to do...
-
+diff --git a/arch/arm/mach-omap2/opp.c b/arch/arm/mach-omap2/opp.c
+index bd41d59..82fd8c7 100644
+--- a/arch/arm/mach-omap2/opp.c
++++ b/arch/arm/mach-omap2/opp.c
+@@ -17,6 +17,7 @@
+  * GNU General Public License for more details.
+  */
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/opp.h>
+ #include <linux/cpu.h>
+ 
+@@ -40,6 +41,9 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
+ {
+ 	int i, r;
+ 
++	if (of_have_populated_dt())
++		return -EINVAL;
++
+ 	if (!opp_def || !opp_def_size) {
+ 		pr_err("%s: invalid params!\n", __func__);
+ 		return -EINVAL;
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.9.5
+
