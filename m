@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760333Ab3JPItg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:49:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48912 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760268Ab3JPItc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:49:32 -0400
-Date: Wed, 16 Oct 2013 10:49:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20131016084920.GT10651@twins.programming.kicks-ass.net>
-References: <20131015174722.615394057@linux.com>
- <20131015174747.813545438@linux.com>
+	id S1760366Ab3JPIuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:50:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38337 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760271Ab3JPIuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 04:50:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,506,1378882800"; 
+   d="scan'208";a="419888848"
+Date: Wed, 16 Oct 2013 13:27:02 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Youquan Song <youquan.song@linux.jf.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Song, Youquan" <youquan.song@intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] dma: Add interface to calculate data transferred
+Message-ID: <20131016075702.GW2954@intel.com>
+References: <1381527738-9339-1-git-send-email-youquan.song@intel.com>
+ <1381527738-9339-2-git-send-email-youquan.song@intel.com>
+ <20131011133343.GB32689@kroah.com>
+ <20131013152633.GM2954@intel.com>
+ <20131015183142.GA12494@linux-youquan.bj.intel.com>
+ <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
+ <20131016053857.GV2954@intel.com>
+ <1381912571.29062.135.camel@smile>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131015174747.813545438@linux.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1381912571.29062.135.camel@smile>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 12:47:28PM -0500, Christoph Lameter wrote:
-> V3->V4:
-> 	- Drop CONFIG_DEBUG_THIS_CPU_OPERATIONS
-> 	- Add support for logging the exact operation that caused the issue.
+On Wed, Oct 16, 2013 at 02:06:30PM +0530, Shevchenko, Andriy wrote:
+> On Wed, 2013-10-16 at 11:08 +0530, Vinod Koul wrote:
+> > On Tue, Oct 15, 2013 at 08:55:20AM -0700, Dan Williams wrote:
+> > > On Tue, Oct 15, 2013 at 11:31 AM, Youquan Song
+> > > <youquan.song@linux.intel.com> wrote:
+> > > > On Sun, Oct 13, 2013 at 08:56:33PM +0530, Vinod Koul wrote:
+> > > >> On Fri, Oct 11, 2013 at 06:33:43AM -0700, Greg KH wrote:
+> > > >> > On Fri, Oct 11, 2013 at 05:42:17PM -0400, Youquan Song wrote:
+> > > > The issue is that when I using UART to transfer data between to COMs
+> > > > which using Designware DMA controller channel. But I check the specific
+> > > > DMA channel by "cat /sys/class/dma/dma0chan3/bytes_transferred", but it
+> > > > should all "0". I have transferred data by UART port, why its DMA
+> > > > channel report "0" bytes transferred?  So I guess that it is possible
+> > > > the DMA device driver issue or the data does not use the Designware DMA channel
+> > > > fro transferred.  After check the code, I notice only when the DMA
+> > > > channel used by network device driver and it will record how much data has been
+> > > >  tranferred, why other device driver will not calculate it. Since DMA
+> > > > channel is used by other device driver, why only network is specific?  since it is
+> > > > common interface, the current /sys/class/dma/dma0chan*/bytes_transferred has
+> > > > much possibility to mislead the user.
+> > > 
+> > > Yes, and for that reason I think we should delete "
+> > > /sys/class/dma/dma0chan*/bytes_transferred" it really serves no useful
+> > > purpose besides "is my dma channel working" which can be determined by
+> > > other means.
+> > Well am going to take it a bit further and ask you why do we need the
+> > /sys/class/dma? I have never used it for slave work.
 > 
-> We define a check function in order to avoid trouble with the
-> include files. Then the higher level __this_cpu macros are
-> modified to invoke the check before __this_cpu operation
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/include/linux/percpu.h
-> ===================================================================
-> --- linux.orig/include/linux/percpu.h	2013-10-10 11:30:17.111743444 -0500
-> +++ linux/include/linux/percpu.h	2013-10-10 10:30:26.817316787 -0500
-> @@ -175,6 +175,12 @@ extern phys_addr_t per_cpu_ptr_to_phys(v
->  
->  extern void __bad_size_call_parameter(void);
->  
-> +#ifdef CONFIG_DEBUG_PREEMPT
-> +extern void __this_cpu_preempt_check(const char *op);
-> +#else
-> +static inline void __this_cpu_preempt_check(const char *op) { }
-> +#endif
-> +
->  #define __pcpu_size_call_return(stem, variable)				\
->  ({	typeof(variable) pscr_ret__;					\
->  	__verify_pcpu_ptr(&(variable));					\
-> @@ -538,7 +544,8 @@ do {									\
->  # ifndef __this_cpu_read_8
->  #  define __this_cpu_read_8(pcp)	(*__this_cpu_ptr(&(pcp)))
->  # endif
-> -# define __this_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
-> +# define __this_cpu_read(pcp) \
-> +	(__this_cpu_preempt_check("read"),__pcpu_size_call_return(__this_cpu_read_, (pcp)))
->  #endif
->  
+> How user (who, f.e., would like to run dmatest) will know names of the
+> channels provided?
+Ok dmatest requires this, I overlooked that part
 
-So I didn't understand what was wrong with:
+> How could we see what channels of certain dma controller are requested /
+> busy from userspace?
+But do end user care or need to know about this?
 
-#define __this_cpu_read(pcp) \
-	(__this_cpu_preempt_check("read"), raw_this_cpu_read(pcp))
-
-And idem for all others. This is 1) shorter to write; and 2) makes it
-blindingly obvious that the implementations are actually the same.
-
-> Index: linux/lib/smp_processor_id.c
-> ===================================================================
-> --- linux.orig/lib/smp_processor_id.c	2013-10-10 11:30:17.111743444 -0500
-> +++ linux/lib/smp_processor_id.c	2013-10-10 10:32:16.046357108 -0500
-> @@ -7,7 +7,7 @@
->  #include <linux/kallsyms.h>
->  #include <linux/sched.h>
->  
-> -notrace unsigned int debug_smp_processor_id(void)
-> +notrace static unsigned int check_preemption_disabled(char *what)
->  {
->  	unsigned long preempt_count = preempt_count();
->  	int this_cpu = raw_smp_processor_id();
-> @@ -39,9 +39,9 @@ notrace unsigned int debug_smp_processor
->  	if (!printk_ratelimit())
->  		goto out_enable;
->  
-> -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
-> -			"code: %s/%d\n",
-> -			preempt_count() - 1, current->comm, current->pid);
-> +	printk(KERN_ERR "%s in preemptible [%08x] code: %s/%d\n",
-> +		what, preempt_count() - 1, current->comm, current->pid);
-> +
-
-Like already said; NAK until that "BUG" remains.
+--
+~Vinod
