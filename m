@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935041Ab3JPSCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:02:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35851 "EHLO
+	id S935017Ab3JPSCL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:02:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934307Ab3JPRqQ (ORCPT
+	with ESMTP id S934334Ab3JPRqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:16 -0400
+	Wed, 16 Oct 2013 13:46:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>, "Theodore Tso" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: [ 10/50] ext4: fix memory leak in xattr
-Date: Wed, 16 Oct 2013 10:44:56 -0700
-Message-Id: <20131016174359.643248978@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [ 11/50] KVM: PPC: Book3S HV: Fix typo in saving DSCR
+Date: Wed, 16 Oct 2013 10:44:57 -0700
+Message-Id: <20131016174359.745602363@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -27,41 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc upstream.
+commit cfc860253abd73e1681696c08ea268d33285a2c4 upstream.
 
-If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
-potentionally return from the function without having freed these
-allocations.  If we don't do the return, we over-write the previous
-allocation pointers, so we leak either way.
+This fixes a typo in the code that saves the guest DSCR (Data Stream
+Control Register) into the kvm_vcpu_arch struct on guest exit.  The
+effect of the typo was that the DSCR value was saved in the wrong place,
+so changes to the DSCR by the guest didn't persist across guest exit
+and entry, and some host kernel memory got corrupted.
 
-Spotted with Coverity.
-
-[ Fixed by tytso to set is and bs to NULL after freeing these
-  pointers, in case in the retry loop we later end up triggering an
-  error causing a jump to cleanup, at which point we could have a double
-  free bug. -- Ted ]
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1350,6 +1350,8 @@ retry:
- 				    s_min_extra_isize) {
- 					tried_min_extra_isize++;
- 					new_extra_isize = s_min_extra_isize;
-+					kfree(is); is = NULL;
-+					kfree(bs); bs = NULL;
- 					goto retry;
- 				}
- 				error = -1;
+--- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
++++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+@@ -1054,7 +1054,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ BEGIN_FTR_SECTION
+ 	mfspr	r8, SPRN_DSCR
+ 	ld	r7, HSTATE_DSCR(r13)
+-	std	r8, VCPU_DSCR(r7)
++	std	r8, VCPU_DSCR(r9)
+ 	mtspr	SPRN_DSCR, r7
+ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ 
 
 
