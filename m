@@ -1,148 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761680Ab3JPRxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:53:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35955 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934641Ab3JPRqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934639Ab3JPRqd (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Oct 2013 13:46:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761309Ab3JPRpk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:45:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 35/50] ipc,shm: introduce shmctl_nolock
-Date: Wed, 16 Oct 2013 10:45:21 -0700
-Message-Id: <20131016174402.618737988@linuxfoundation.org>
+Subject: [ 38/69] ipc,msg: shorten critical region in msgsnd
+Date: Wed, 16 Oct 2013 10:44:47 -0700
+Message-Id: <20131016174317.539988452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 68eccc1dc345539d589ae78ee43b835c1a06a134 upstream.
+commit 3dd1f784ed6603d7ab1043e51e6371235edf2313 upstream.
 
-Similar to semctl and msgctl, when calling msgctl, the *_INFO and *_STAT
-commands can be performed without acquiring the ipc object.
-
-Add a shmctl_nolock() function and move the logic of *_INFO and *_STAT out
-of msgctl().  Since we are just moving functionality, this change still
-takes the lock and it will be properly lockless in the next patch.
+do_msgsnd() is another function that does too many things with the ipc
+object lock acquired.  Take it only when needed when actually updating
+msq.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |   57 +++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 39 insertions(+), 18 deletions(-)
+ ipc/msg.c |   37 ++++++++++++++++++++++++-------------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -827,29 +827,24 @@ out_up:
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -698,10 +698,11 @@ long do_msgsnd(int msqid, long mtype, vo
+ 	msg->m_type = mtype;
+ 	msg->m_ts = msgsz;
+ 
+-	msq = msg_lock_check(ns, msqid);
++	rcu_read_lock();
++	msq = msq_obtain_object_check(ns, msqid);
+ 	if (IS_ERR(msq)) {
+ 		err = PTR_ERR(msq);
+-		goto out_free;
++		goto out_unlock1;
+ 	}
+ 
+ 	for (;;) {
+@@ -709,11 +710,11 @@ long do_msgsnd(int msqid, long mtype, vo
+ 
+ 		err = -EACCES;
+ 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+-			goto out_unlock_free;
++			goto out_unlock1;
+ 
+ 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
+ 		if (err)
+-			goto out_unlock_free;
++			goto out_unlock1;
+ 
+ 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
+ 				1 + msq->q_qnum <= msq->q_qbytes) {
+@@ -723,32 +724,41 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		/* queue full, wait: */
+ 		if (msgflg & IPC_NOWAIT) {
+ 			err = -EAGAIN;
+-			goto out_unlock_free;
++			goto out_unlock1;
+ 		}
++
++		ipc_lock_object(&msq->q_perm);
+ 		ss_add(msq, &s);
+ 
+ 		if (!ipc_rcu_getref(msq)) {
+ 			err = -EIDRM;
+-			goto out_unlock_free;
++			goto out_unlock0;
+ 		}
+ 
+-		msg_unlock(msq);
++		ipc_unlock_object(&msq->q_perm);
++		rcu_read_unlock();
+ 		schedule();
+ 
+-		ipc_lock_by_ptr(&msq->q_perm);
++		rcu_read_lock();
++		ipc_lock_object(&msq->q_perm);
++
+ 		ipc_rcu_putref(msq);
+ 		if (msq->q_perm.deleted) {
+ 			err = -EIDRM;
+-			goto out_unlock_free;
++			goto out_unlock0;
+ 		}
++
+ 		ss_del(&s);
+ 
+ 		if (signal_pending(current)) {
+ 			err = -ERESTARTNOHAND;
+-			goto out_unlock_free;
++			goto out_unlock0;
+ 		}
++
++		ipc_unlock_object(&msq->q_perm);
+ 	}
+ 
++	ipc_lock_object(&msq->q_perm);
+ 	msq->q_lspid = task_tgid_vnr(current);
+ 	msq->q_stime = get_seconds();
+ 
+@@ -764,9 +774,10 @@ long do_msgsnd(int msqid, long mtype, vo
+ 	err = 0;
+ 	msg = NULL;
+ 
+-out_unlock_free:
+-	msg_unlock(msq);
+-out_free:
++out_unlock0:
++	ipc_unlock_object(&msq->q_perm);
++out_unlock1:
++	rcu_read_unlock();
+ 	if (msg != NULL)
+ 		free_msg(msg);
  	return err;
- }
- 
--SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
-+static int shmctl_nolock(struct ipc_namespace *ns, int shmid,
-+			 int cmd, int version, void __user *buf)
- {
-+	int err;
- 	struct shmid_kernel *shp;
--	int err, version;
--	struct ipc_namespace *ns;
- 
--	if (cmd < 0 || shmid < 0) {
--		err = -EINVAL;
--		goto out;
-+	/* preliminary security checks for *_INFO */
-+	if (cmd == IPC_INFO || cmd == SHM_INFO) {
-+		err = security_shm_shmctl(NULL, cmd);
-+		if (err)
-+			return err;
- 	}
- 
--	version = ipc_parse_version(&cmd);
--	ns = current->nsproxy->ipc_ns;
--
--	switch (cmd) { /* replace with proc interface ? */
-+	switch (cmd) {
- 	case IPC_INFO:
- 	{
- 		struct shminfo64 shminfo;
- 
--		err = security_shm_shmctl(NULL, cmd);
--		if (err)
--			return err;
--
- 		memset(&shminfo, 0, sizeof(shminfo));
- 		shminfo.shmmni = shminfo.shmseg = ns->shm_ctlmni;
- 		shminfo.shmmax = ns->shm_ctlmax;
-@@ -871,10 +866,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	{
- 		struct shm_info shm_info;
- 
--		err = security_shm_shmctl(NULL, cmd);
--		if (err)
--			return err;
--
- 		memset(&shm_info, 0, sizeof(shm_info));
- 		down_read(&shm_ids(ns).rw_mutex);
- 		shm_info.used_ids = shm_ids(ns).in_use;
-@@ -935,6 +926,36 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 			err = result;
- 		goto out;
- 	}
-+	default:
-+		return -EINVAL;
-+	}
-+
-+out_unlock:
-+	shm_unlock(shp);
-+out:
-+	return err;
-+}
-+
-+SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
-+{
-+	struct shmid_kernel *shp;
-+	int err, version;
-+	struct ipc_namespace *ns;
-+
-+	if (cmd < 0 || shmid < 0) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	version = ipc_parse_version(&cmd);
-+	ns = current->nsproxy->ipc_ns;
-+
-+	switch (cmd) {
-+	case IPC_INFO:
-+	case SHM_INFO:
-+	case SHM_STAT:
-+	case IPC_STAT:
-+		return shmctl_nolock(ns, shmid, cmd, version, buf);
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
- 	{
 
 
