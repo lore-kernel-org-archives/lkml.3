@@ -1,59 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761177Ab3JPWqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:46:54 -0400
-Received: from ozlabs.org ([203.10.76.45]:41618 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756281Ab3JPWqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760684Ab3JPWqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:46:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61499 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753730Ab3JPWqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 18:46:51 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH] virtio tools: use ansi versions of asm and volatile
-In-Reply-To: <1381833790-18687-1-git-send-email-artagnon@gmail.com>
-References: <1381833790-18687-1-git-send-email-artagnon@gmail.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 16 Oct 2013 10:39:09 +1030
-Message-ID: <87haci9ivu.fsf@rustcorp.com.au>
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v2 2/2] cpufreq: exynos4210: Use the common clock framework to set APLL clock rate
+Date: Thu, 17 Oct 2013 00:58:42 +0200
+Message-ID: <1627215.GFg6tQENRA@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1381320523-28183-3-git-send-email-l.majewski@samsung.com>
+References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com> <1381320523-28183-1-git-send-email-l.majewski@samsung.com> <1381320523-28183-3-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra <artagnon@gmail.com> writes:
-> asm and volatile are provided for backward compatibility; use the ansi
-> versions __asm__ and __volatile__.
+On Wednesday, October 09, 2013 02:08:43 PM Lukasz Majewski wrote:
+> In the exynos4210_set_apll() function, the APLL frequency is set with
+> direct register manipulation.
+> 
+> Such approach is not allowed in the common clock framework. The frequency
+> is changed, but the corresponding clock value is not updated. This causes
+> wrong frequency read from cpufreq's cpuinfo_cur_freq sysfs attribute.
+> 
+> Also direct manipulation with PLL's S parameter has been removed. It is
+> already done at PLL35xx code.
+> 
+> Tested at:
+> - Exynos4210 - Trats board (linux 3.12-rc4)
+> 
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 
-Really?  I don't see that in the gcc documentation.  In fact, I didn't
-know __volatile__ at all:
+I need an ACK or Reviewed-by from someone in the CC list here.
 
- If you are writing a header file that should be includable in ISO C
- programs, write `__asm__' instead of `asm'.  *Note Alternate Keywords::.
+Thanks!
 
-We're not...
-
-Cheers,
-Rusty.
-
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> Changes for v2:
+> - Remove PLL's S parameter setting via registers. It is now done with PLL35xx
+>   code.
+> - Remove exynos4210_pms_change() function
+> 
+> Change-Id: Ie5fb3c7946ba77b6f3d5e91af72eef2fd06770c1
 > ---
->  tools/virtio/asm/barrier.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/virtio/asm/barrier.h b/tools/virtio/asm/barrier.h
-> index aff61e1..b2fbbfc 100644
-> --- a/tools/virtio/asm/barrier.h
-> +++ b/tools/virtio/asm/barrier.h
-> @@ -1,5 +1,5 @@
->  #if defined(__i386__) || defined(__x86_64__)
-> -#define barrier() asm volatile("" ::: "memory")
-> +#define barrier() __asm__ __volatile__("" ::: "memory")
->  #define mb() __sync_synchronize()
+>  drivers/cpufreq/exynos4210-cpufreq.c |   67 ++++------------------------------
+>  1 file changed, 8 insertions(+), 59 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/exynos4210-cpufreq.c b/drivers/cpufreq/exynos4210-cpufreq.c
+> index add7fbe..f2c7506 100644
+> --- a/drivers/cpufreq/exynos4210-cpufreq.c
+> +++ b/drivers/cpufreq/exynos4210-cpufreq.c
+> @@ -81,9 +81,9 @@ static void exynos4210_set_clkdiv(unsigned int div_index)
 >  
->  #define smp_mb()	mb()
-> -- 
-> 1.8.4.477.g5d89aa9
+>  static void exynos4210_set_apll(unsigned int index)
+>  {
+> -	unsigned int tmp;
+> +	unsigned int tmp, freq = apll_freq_4210[index].freq;
+>  
+> -	/* 1. MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
+> +	/* MUX_CORE_SEL = MPLL, ARMCLK uses MPLL for lock time */
+>  	clk_set_parent(moutcore, mout_mpll);
+>  
+>  	do {
+> @@ -92,21 +92,9 @@ static void exynos4210_set_apll(unsigned int index)
+>  		tmp &= 0x7;
+>  	} while (tmp != 0x2);
+>  
+> -	/* 2. Set APLL Lock time */
+> -	__raw_writel(EXYNOS4_APLL_LOCKTIME, EXYNOS4_APLL_LOCK);
+> -
+> -	/* 3. Change PLL PMS values */
+> -	tmp = __raw_readl(EXYNOS4_APLL_CON0);
+> -	tmp &= ~((0x3ff << 16) | (0x3f << 8) | (0x7 << 0));
+> -	tmp |= apll_freq_4210[index].mps;
+> -	__raw_writel(tmp, EXYNOS4_APLL_CON0);
+> +	clk_set_rate(mout_apll, freq * 1000);
+>  
+> -	/* 4. wait_lock_time */
+> -	do {
+> -		tmp = __raw_readl(EXYNOS4_APLL_CON0);
+> -	} while (!(tmp & (0x1 << EXYNOS4_APLLCON0_LOCKED_SHIFT)));
+> -
+> -	/* 5. MUX_CORE_SEL = APLL */
+> +	/* MUX_CORE_SEL = APLL */
+>  	clk_set_parent(moutcore, mout_apll);
+>  
+>  	do {
+> @@ -115,53 +103,15 @@ static void exynos4210_set_apll(unsigned int index)
+>  	} while (tmp != (0x1 << EXYNOS4_CLKSRC_CPU_MUXCORE_SHIFT));
+>  }
+>  
+> -static bool exynos4210_pms_change(unsigned int old_index, unsigned int new_index)
+> -{
+> -	unsigned int old_pm = apll_freq_4210[old_index].mps >> 8;
+> -	unsigned int new_pm = apll_freq_4210[new_index].mps >> 8;
+> -
+> -	return (old_pm == new_pm) ? 0 : 1;
+> -}
+> -
+>  static void exynos4210_set_frequency(unsigned int old_index,
+>  				     unsigned int new_index)
+>  {
+> -	unsigned int tmp;
+> -
+>  	if (old_index > new_index) {
+> -		if (!exynos4210_pms_change(old_index, new_index)) {
+> -			/* 1. Change the system clock divider values */
+> -			exynos4210_set_clkdiv(new_index);
+> -
+> -			/* 2. Change just s value in apll m,p,s value */
+> -			tmp = __raw_readl(EXYNOS4_APLL_CON0);
+> -			tmp &= ~(0x7 << 0);
+> -			tmp |= apll_freq_4210[new_index].mps & 0x7;
+> -			__raw_writel(tmp, EXYNOS4_APLL_CON0);
+> -		} else {
+> -			/* Clock Configuration Procedure */
+> -			/* 1. Change the system clock divider values */
+> -			exynos4210_set_clkdiv(new_index);
+> -			/* 2. Change the apll m,p,s value */
+> -			exynos4210_set_apll(new_index);
+> -		}
+> +		exynos4210_set_clkdiv(new_index);
+> +		exynos4210_set_apll(new_index);
+>  	} else if (old_index < new_index) {
+> -		if (!exynos4210_pms_change(old_index, new_index)) {
+> -			/* 1. Change just s value in apll m,p,s value */
+> -			tmp = __raw_readl(EXYNOS4_APLL_CON0);
+> -			tmp &= ~(0x7 << 0);
+> -			tmp |= apll_freq_4210[new_index].mps & 0x7;
+> -			__raw_writel(tmp, EXYNOS4_APLL_CON0);
+> -
+> -			/* 2. Change the system clock divider values */
+> -			exynos4210_set_clkdiv(new_index);
+> -		} else {
+> -			/* Clock Configuration Procedure */
+> -			/* 1. Change the apll m,p,s value */
+> -			exynos4210_set_apll(new_index);
+> -			/* 2. Change the system clock divider values */
+> -			exynos4210_set_clkdiv(new_index);
+> -		}
+> +		exynos4210_set_apll(new_index);
+> +		exynos4210_set_clkdiv(new_index);
+>  	}
+>  }
+>  
+> @@ -194,7 +144,6 @@ int exynos4210_cpufreq_init(struct exynos_dvfs_info *info)
+>  	info->volt_table = exynos4210_volt_table;
+>  	info->freq_table = exynos4210_freq_table;
+>  	info->set_freq = exynos4210_set_frequency;
+> -	info->need_apll_change = exynos4210_pms_change;
+>  
+>  	return 0;
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
