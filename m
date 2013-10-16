@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab3JPDKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 23:10:12 -0400
-Received: from smtprelay0239.hostedemail.com ([216.40.44.239]:57645 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752336Ab3JPDKK (ORCPT
+	id S1756207Ab3JPDUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 23:20:31 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:37584 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3JPDUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 23:10:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3167:3353:3622:3865:3867:3868:3870:3871:3872:3874:4043:4321:5007:6119:7576:7652:7875:7903:9545:10004:10400:10848:10967:11026:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:13436,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bomb74_12494418f74e
-X-Filterd-Recvd-Size: 2520
-Message-ID: <1381893006.22110.45.camel@joe-AO722>
-Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
-From: Joe Perches <joe@perches.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Date: Tue, 15 Oct 2013 20:10:06 -0700
-In-Reply-To: <20131016024633.GC6898@gchen.bj.intel.com>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
-	 <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
-	 <20131011090630.GB5925@pd.tnic> <20131011154759.GJ5925@pd.tnic>
-	 <1381888638.22110.43.camel@joe-AO722>
-	 <20131016024633.GC6898@gchen.bj.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Oct 2013 23:20:30 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/7] Optimize jump label implementation for ARM64
+Date: Wed, 16 Oct 2013 11:18:05 +0800
+Message-Id: <1381893492-7135-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 22:46 -0400, Chen Gong wrote:
-> On Tue, Oct 15, 2013 at 06:57:18PM -0700, Joe Perches wrote:
-> > Date: Tue, 15 Oct 2013 18:57:18 -0700
-> > From: Joe Perches <joe@perches.com>
-> > To: Borislav Petkov <bp@alien8.de>
-> > Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-> >  linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-> > Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
-> > X-Mailer: Evolution 3.6.4-0ubuntu1 
-> > 
-> > On Fri, 2013-10-11 at 17:47 +0200, Borislav Petkov wrote:
-> > > On Fri, Oct 11, 2013 at 11:06:30AM +0200, Borislav Petkov wrote:
-> > > > > -	printk("%s""APEI generic hardware error status\n", pfx);
-> > > > > +	printk("%s""Generic Hardware Error Status\n", pfx);
-> > > > 
-> > > > Btw, what's the story with printk not using KERN_x levels in this file?
-> > > > Why are we falling back to default printk levels for all printks here
-> > > > and shouldn't we rather prioritize them by urgency into, say, KERN_ERR,
-> > > > KERN_INFO, etc?
-> > > 
-> > > Ignore that - checkpatch complained about it but I kinda missed that
-> > > we're handing down the prefix.
-> > 
-> > I think it'd be better to rename pfx to level
-> > as that's what printk.h calls them.
-> > 
-> No. pfx includes log level and prefix string both.
+From: Jiang Liu <jiang.liu@huawei.com>
 
-Perhaps it'd be better to separate them.
+This patchset tries to optimize arch specfic jump label implementation
+for ARM64 by dynamic kernel text patching.
 
-I haven't looked too hard, but is apei_status_print
-the only place it's used with more than KERN_<LEVEL>?
+To enable this feature, your toolchain must support "asm goto" extension
+and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
+"%c", so you need a GCC patch similiar to this:
+http://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/arm/arm.c?view=patch&r1=175293&r2=175565&pathrev=175565
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
+
+It has been tested on ARM Fast mode and a real hardware platform.
+
+Any comments are welcomed!
+
+V2->V3:
+1) fix a bug in comparing signed and unsigned values
+2) detect big endian by checking __AARCH64EB__
+
+V1->V2: address review comments of V1
+1) refine comments
+2) add a new interface to always synchronize with stop_machine()
+   when patching code
+3) handle endian issue when patching code
+
+Jiang Liu (7):
+  arm64: introduce basic aarch64 instruction decoding helpers
+  arm64: introduce interfaces to hotpatch kernel and module code
+  arm64: move encode_insn_immediate() from module.c to insn.c
+  arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
+  arm64, jump label: detect %c support for ARM64
+  arm64, jump label: optimize jump label implementation
+  jump_label: use defined macros instead of hard-coding for better
+    readability
+
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/insn.h       |  79 ++++++++++
+ arch/arm64/include/asm/jump_label.h |  52 +++++++
+ arch/arm64/kernel/Makefile          |   3 +-
+ arch/arm64/kernel/insn.c            | 285 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/jump_label.c      |  60 ++++++++
+ arch/arm64/kernel/module.c          | 151 ++++---------------
+ include/linux/jump_label.h          |  15 +-
+ scripts/gcc-goto.sh                 |   2 +-
+ 9 files changed, 522 insertions(+), 126 deletions(-)
+ create mode 100644 arch/arm64/include/asm/insn.h
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/insn.c
+ create mode 100644 arch/arm64/kernel/jump_label.c
+
+-- 
+1.8.1.2
 
