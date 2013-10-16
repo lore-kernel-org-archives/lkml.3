@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934850Ab3JPSAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:00:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35878 "EHLO
+	id S934885Ab3JPSAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:00:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35874 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934538Ab3JPRqV (ORCPT
+	with ESMTP id S934527Ab3JPRqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:21 -0400
+	Wed, 16 Oct 2013 13:46:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Ruppert <christian.ruppert@abilis.com>,
         Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 17/50] ARC: Fix signal frame management for SA_SIGINFO
-Date: Wed, 16 Oct 2013 10:45:03 -0700
-Message-Id: <20131016174400.459571044@linuxfoundation.org>
+Subject: [ 16/50] ARC: Workaround spinlock livelock in SMP SystemC simulation
+Date: Wed, 16 Oct 2013 10:45:02 -0700
+Message-Id: <20131016174400.343767632@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -27,86 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Ruppert <christian.ruppert@abilis.com>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 10469350e345599dfef3fa78a7c19fb230e674c1 upstream.
+commit 6c00350b573c0bd3635436e43e8696951dd6e1b6 upstream.
 
-Previously, when a signal was registered with SA_SIGINFO, parameters 2
-and 3 of the signal handler were written to registers r1 and r2 before
-the register set was saved. This led to corruption of these two
-registers after returning from the signal handler (the wrong values were
-restored).
-With this patch, registers are now saved before any parameters are
-passed, thus maintaining the processor state from before signal entry.
+Some ARC SMP systems lack native atomic R-M-W (LLOCK/SCOND) insns and
+can only use atomic EX insn (reg with mem) to build higher level R-M-W
+primitives. This includes a SystemC based SMP simulation model.
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+So rwlocks need to use a protecting spinlock for atomic cmp-n-exchange
+operation to update reader(s)/writer count.
+
+The spinlock operation itself looks as follows:
+
+	mov reg, 1		; 1=locked, 0=unlocked
+retry:
+	EX reg, [lock]		; load existing, store 1, atomically
+	BREQ reg, 1, rety	; if already locked, retry
+
+In single-threaded simulation, SystemC alternates between the 2 cores
+with "N" insn each based scheduling. Additionally for insn with global
+side effect, such as EX writing to shared mem, a core switch is
+enforced too.
+
+Given that, 2 cores doing a repeated EX on same location, Linux often
+got into a livelock e.g. when both cores were fiddling with tasklist
+lock (gdbserver / hackbench) for read/write respectively as the
+sequence diagram below shows:
+
+           core1                                   core2
+         --------                                --------
+1. spin lock [EX r=0, w=1] - LOCKED
+2. rwlock(Read)            - LOCKED
+3. spin unlock  [ST 0]     - UNLOCKED
+                                         spin lock [EX r=0,w=1] - LOCKED
+                      -- resched core 1----
+
+5. spin lock [EX r=1] - ALREADY-LOCKED
+
+                      -- resched core 2----
+6.                                       rwlock(Write) - READER-LOCKED
+7.                                       spin unlock [ST 0]
+8.                                       rwlock failed, retry again
+
+9.                                       spin lock  [EX r=0, w=1]
+                      -- resched core 1----
+
+10  spinlock locked in #9, retry #5
+11. spin lock [EX gets 1]
+                      -- resched core 2----
+...
+...
+
+The fix was to unlock using the EX insn too (step 7), to trigger another
+SystemC scheduling pass which would let core1 proceed, eliding the
+livelock.
+
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/signal.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ arch/arc/include/asm/spinlock.h |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/arch/arc/kernel/signal.c
-+++ b/arch/arc/kernel/signal.c
-@@ -101,7 +101,6 @@ SYSCALL_DEFINE0(rt_sigreturn)
+--- a/arch/arc/include/asm/spinlock.h
++++ b/arch/arc/include/asm/spinlock.h
+@@ -45,7 +45,14 @@ static inline int arch_spin_trylock(arch
+ 
+ static inline void arch_spin_unlock(arch_spinlock_t *lock)
  {
- 	struct rt_sigframe __user *sf;
- 	unsigned int magic;
--	int err;
- 	struct pt_regs *regs = current_pt_regs();
- 
- 	/* Always make any pending restarted system calls return -EINTR */
-@@ -119,15 +118,16 @@ SYSCALL_DEFINE0(rt_sigreturn)
- 	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
- 		goto badframe;
- 
--	err = restore_usr_regs(regs, sf);
--	err |= __get_user(magic, &sf->sigret_magic);
--	if (err)
-+	if (__get_user(magic, &sf->sigret_magic))
- 		goto badframe;
- 
- 	if (unlikely(is_do_ss_needed(magic)))
- 		if (restore_altstack(&sf->uc.uc_stack))
- 			goto badframe;
- 
-+	if (restore_usr_regs(regs, sf))
-+		goto badframe;
+-	lock->slock = __ARCH_SPIN_LOCK_UNLOCKED__;
++	unsigned int tmp = __ARCH_SPIN_LOCK_UNLOCKED__;
 +
- 	/* Don't restart from sigreturn */
- 	syscall_wont_restart(regs);
- 
-@@ -191,6 +191,15 @@ setup_rt_frame(int signo, struct k_sigac
- 		return 1;
- 
- 	/*
-+	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
-+	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
-+	 * during signal handler execution. This works for SA_SIGINFO as well
-+	 * although the semantics are now overloaded (the same reg state can be
-+	 * inspected by userland: but are they allowed to fiddle with it ?
-+	 */
-+	err |= stash_usr_regs(sf, regs, set);
++	__asm__ __volatile__(
++	"	ex  %0, [%1]		\n"
++	: "+r" (tmp)
++	: "r"(&(lock->slock))
++	: "memory");
 +
-+	/*
- 	 * SA_SIGINFO requires 3 args to signal handler:
- 	 *  #1: sig-no (common to any handler)
- 	 *  #2: struct siginfo
-@@ -213,14 +222,6 @@ setup_rt_frame(int signo, struct k_sigac
- 		magic = MAGIC_SIGALTSTK;
- 	}
+ 	smp_mb();
+ }
  
--	/*
--	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
--	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
--	 * during signal handler execution. This works for SA_SIGINFO as well
--	 * although the semantics are now overloaded (the same reg state can be
--	 * inspected by userland: but are they allowed to fiddle with it ?
--	 */
--	err |= stash_usr_regs(sf, regs, set);
- 	err |= __put_user(magic, &sf->sigret_magic);
- 	if (err)
- 		return err;
 
 
