@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760862Ab3JPPjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:39:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60717 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760823Ab3JPPjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:39:47 -0400
+	id S1760848Ab3JPPjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:39:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35218 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760805Ab3JPPjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:39:44 -0400
 From: Nishanth Menon <nm@ti.com>
 To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Tony Lindgren <tony@atomide.com>
 CC: Kevin Hilman <khilman@deeprootsystems.com>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH V7 3/8] ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
-Date: Wed, 16 Oct 2013 10:39:03 -0500
-Message-ID: <1381937948-27057-4-git-send-email-nm@ti.com>
+        J Keerthy <j-keerthy@ti.com>
+Subject: [PATCH V7 8/8] ARM: dts: OMAP3: add clock nodes for CPU
+Date: Wed, 16 Oct 2013 10:39:08 -0500
+Message-ID: <1381937948-27057-9-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
 References: <1381937948-27057-1-git-send-email-nm@ti.com>
@@ -25,51 +26,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With OMAP3+ and AM33xx supported SoC having defined CPU device tree
-entries with operating-points and clock nodes defined, we can now use
-the SoC generic cpufreq-cpu0 driver by registering appropriate device.
+OMAP34xx and OMAP36xx platforms use dpll1 clock. Add same to common
+definition.
+
+AM33XX, OMAP443x, OMAP446x and OMAP447x platforms use dpll_mpu clock
+Add same to common definition.
+
+OMAP5, DRA7 platforms use dpll_mpu_ck clock for CPU. Add same to common
+definition.
 
 Cc: Benoit Cousson <bcousson@baylibre.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
+[nm@ti.com: keep in sync with clock node changes]
+[j-keerthy@ti.com: OMAP5 and DRA7 nodes]
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/pm.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/am33xx.dtsi |    4 ++++
+ arch/arm/boot/dts/dra7.dtsi   |    5 +++++
+ arch/arm/boot/dts/omap3.dtsi  |    5 +++++
+ arch/arm/boot/dts/omap4.dtsi  |    5 +++++
+ arch/arm/boot/dts/omap5.dtsi  |    6 ++++++
+ 5 files changed, 25 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
-index e742118..360b2da 100644
---- a/arch/arm/mach-omap2/pm.c
-+++ b/arch/arm/mach-omap2/pm.c
-@@ -266,7 +266,12 @@ static void __init omap4_init_voltages(void)
- 
- static inline void omap_init_cpufreq(void)
- {
--	struct platform_device_info devinfo = { .name = "omap-cpufreq", };
-+	struct platform_device_info devinfo = { };
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 2a994d6..09f16a0 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -55,6 +55,10 @@
+ 				275000  1125000
+ 			>;
+ 			voltage-tolerance = <2>; /* 2 percentage */
 +
-+	if (!of_have_populated_dt())
-+		devinfo.name = "omap-cpufreq";
-+	else
-+		devinfo.name = "cpufreq-cpu0";
- 	platform_device_register_full(&devinfo);
- }
- 
-@@ -300,10 +305,11 @@ int __init omap2_common_pm_late_init(void)
- 		/* Smartreflex device init */
- 		omap_devinit_smartreflex();
- 
--		/* cpufreq dummy device instantiation */
--		omap_init_cpufreq();
- 	}
- 
-+	/* cpufreq dummy device instantiation */
-+	omap_init_cpufreq();
++			clocks = <&dpll_mpu_ck>;
++			clock-names = "cpu";
 +
- #ifdef CONFIG_SUSPEND
- 	suspend_set_ops(&omap_pm_ops);
- #endif
+ 			clock-latency = <300000>; /* From omap-cpufreq driver */
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 92cbe3b..e723b52 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -42,6 +42,11 @@
+ 				1000000	1060000
+ 				1176000	1160000
+ 				>;
++
++			clocks = <&dpll_mpu_ck>;
++			clock-names = "cpu";
++
++			clock-latency = <300000>; /* From omap-cpufreq driver */
+ 		};
+ 		cpu@1 {
+ 			device_type = "cpu";
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 7f5d8a8..4f3778a 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -32,6 +32,11 @@
+ 			compatible = "arm,cortex-a8";
+ 			device_type = "cpu";
+ 			reg = <0x0>;
++
++			clocks = <&dpll1_ck>;
++			clock-names = "cpu";
++
++			clock-latency = <300000>; /* From omap-cpufreq driver */
+ 		};
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 17a3618..decff2a 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -32,6 +32,11 @@
+ 			device_type = "cpu";
+ 			next-level-cache = <&L2>;
+ 			reg = <0x0>;
++
++			clocks = <&dpll_mpu_ck>;
++			clock-names = "cpu";
++
++			clock-latency = <300000>; /* From omap-cpufreq driver */
+ 		};
+ 		cpu@1 {
+ 			compatible = "arm,cortex-a9";
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 69874de..e18ee7e 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -44,6 +44,12 @@
+ 				1000000 1060000
+ 				1500000 1250000
+ 			>;
++
++			clocks = <&dpll_mpu_ck>;
++			clock-names = "cpu";
++
++			clock-latency = <300000>; /* From omap-cpufreq driver */
++
+ 		};
+ 		cpu@1 {
+ 			device_type = "cpu";
 -- 
 1.7.9.5
 
