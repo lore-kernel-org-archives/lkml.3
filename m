@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934861Ab3JPOY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:24:56 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36104 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934239Ab3JPOYw (ORCPT
+	id S934608Ab3JPO1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:27:07 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:41527 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934536Ab3JPO1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:24:52 -0400
+	Wed, 16 Oct 2013 10:27:05 -0400
+Date: Wed, 16 Oct 2013 14:27:03 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
+ statistics update
+In-Reply-To: <20131016092601.GB23440@gmail.com>
+Message-ID: <00000141c1a9a88d-2fe8384a-435c-4c40-bafd-c3fc04960783-000000@email.amazonses.com>
+References: <20131015174722.615394057@linux.com> <20131015174745.197380080@linux.com> <20131016083545.GP10651@twins.programming.kicks-ass.net> <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com> <20131016092601.GB23440@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <525E9380.7090905@ti.com>
-References: <1381923650-7556-1-git-send-email-manishv.b@ti.com>
-	<525E9380.7090905@ti.com>
-Date: Wed, 16 Oct 2013 19:54:52 +0530
-Message-ID: <CAKDJKT7W-1S_KzZ5XEYJQuMnQEu17xbRjeNmZgj=-73Z0Kz_Qg@mail.gmail.com>
-Subject: Re: [PATCH] PM/AVS: SmartReflex: fix fake probe success on debugfs fail
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org, khilman@kernel.org,
-        Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth
-
-On Wed, Oct 16, 2013 at 6:54 PM, Nishanth Menon <nm@ti.com> wrote:
-> On 10/16/2013 06:40 AM, Vishwanathrao Badarkhe, Manish wrote:
->> From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
->>
->> Currently, probe returns success(0) on "debugfs_create_dir"
->> function call failed. Return proper error on "debugfs_create_dir"
->> call failed.
->>
->> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
->> ---
->> Not tested on any EVM. Bug has been found while doing static review.
->> Please confirm.
->
->
-> IMHO, fail of creation of debugfs is not reason enough to fail the
-> probe - further, this code needs a major revamp to work with device tree.
-
-Yes, fail of debugfs creation should not be enough reason to fail probe. But as
-per current implementation of code, on debugfs failure smart reflex node is
-getting deleted and probe get failed. This patch not made any changes in
-logic of code but only makes proper use of  "IS_ERR_OR_NULL".
+Same issue in ipv6 code.
 
 
->> :100644 100644 db9973b... 7b101c1... M        drivers/power/avs/smartreflex.c
->>  drivers/power/avs/smartreflex.c |    6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
->> index db9973b..7b101c1 100644
->> --- a/drivers/power/avs/smartreflex.c
->> +++ b/drivers/power/avs/smartreflex.c
->> @@ -921,7 +921,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->>       if (!sr_dbg_dir) {
->>               sr_dbg_dir = debugfs_create_dir("smartreflex", NULL);
->>               if (IS_ERR_OR_NULL(sr_dbg_dir)) {
->> -                     ret = PTR_ERR(sr_dbg_dir);
->> +                     ret = sr_dbg_dir ? PTR_ERR(sr_dbg_dir) : -EIO;
->>                       pr_err("%s:sr debugfs dir creation failed(%d)\n",
->>                               __func__, ret);
->>                       goto err_list_del;
->> @@ -932,7 +932,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->>       if (IS_ERR_OR_NULL(sr_info->dbg_dir)) {
->>               dev_err(&pdev->dev, "%s: Unable to create debugfs directory\n",
->>                       __func__);
->> -             ret = PTR_ERR(sr_info->dbg_dir);
->> +             ret = sr_info->dbg_dir ? PTR_ERR(sr_info->dbg_dir) : -EIO;
->>               goto err_debugfs;
->>       }
->>
->> @@ -947,7 +947,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->>       if (IS_ERR_OR_NULL(nvalue_dir)) {
->>               dev_err(&pdev->dev, "%s: Unable to create debugfs directory"
->>                       "for n-values\n", __func__);
->> -             ret = PTR_ERR(nvalue_dir);
->> +             ret = nvalue_dir ? PTR_ERR(nvalue_dir) : -EIO;
->>               goto err_debugfs;
->>       }
->>
+Subject: net: Fix statistics update in ip6
 
-Regards
-Manish Baarkhe
+ipv6 does the same as ipv4. IP6_INC_STATS must be used outside
+of BH sections.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/net/ipv6/ip6_output.c
+===================================================================
+--- linux.orig/net/ipv6/ip6_output.c	2013-10-10 11:01:01.119771564 -0500
++++ linux/net/ipv6/ip6_output.c	2013-10-16 08:48:19.474562100 -0500
+@@ -909,7 +909,7 @@ static int ip6_dst_lookup_tail(struct so
+
+ out_err_release:
+ 	if (err == -ENETUNREACH)
+-		IP6_INC_STATS_BH(net, NULL, IPSTATS_MIB_OUTNOROUTES);
++		IP6_INC_STATS(net, NULL, IPSTATS_MIB_OUTNOROUTES);
+ 	dst_release(*dst);
+ 	*dst = NULL;
+ 	return err;
