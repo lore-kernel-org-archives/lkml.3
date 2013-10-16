@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761617Ab3JPSs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:48:27 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:65261 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761225Ab3JPSsZ (ORCPT
+	id S1761841Ab3JPSsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:48:47 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:61393 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761360Ab3JPSsp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:48:25 -0400
+	Wed, 16 Oct 2013 14:48:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131016184133.GB21932@core.coreip.homeip.net>
-References: <1381939512-28534-1-git-send-email-geyslan@gmail.com>
-	<20131016184133.GB21932@core.coreip.homeip.net>
-Date: Wed, 16 Oct 2013 15:48:24 -0300
-Message-ID: <CAGG-pUQFCOh6oCfYdtb4Hfuo5V65+7z5Z6D-rF9-EEw25=whSw@mail.gmail.com>
-Subject: Re: [PATCH] drivers: input: mouse: Remove useless casting in cypress_ps2.c
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: dudl@cypress.com, kamal@canonical.com, mario_limonciello@dell.com,
-        git@status.e4ward.com, linux-input@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>
+In-Reply-To: <20131016120951.B5012E0090@blue.fi.intel.com>
+References: <20131015001304.GH3432@hippobay.mtv.corp.google.com>
+ <20131015110146.7E8BEE0090@blue.fi.intel.com> <CACz4_2fiF+vaAbFixgGF+Uxn0av4H8y-aMQdyi3yYs5pdS2WBA@mail.gmail.com>
+ <20131016120951.B5012E0090@blue.fi.intel.com>
+From: Ning Qu <quning@google.com>
+Date: Wed, 16 Oct 2013 11:48:24 -0700
+Message-ID: <CACz4_2eAots8Xk3C8Vosqc24vs28OtsD4LecsH19MjWeQaw+2Q@mail.gmail.com>
+Subject: Re: [PATCH 07/12] mm, thp, tmpfs: handle huge page in
+ shmem_undo_range for truncate
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/16 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
-> Hi Geyslan,
->
-> On Wed, Oct 16, 2013 at 01:05:12PM -0300, Geyslan G. Bem wrote:
->> Casting (void *) value returned by kzalloc is useless
->> as mentioned in Documentation/CodingStyle, Chap 14.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> ---
->>  drivers/input/mouse/cypress_ps2.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
->> index f51765f..ef651cc 100644
->> --- a/drivers/input/mouse/cypress_ps2.c
->> +++ b/drivers/input/mouse/cypress_ps2.c
->> @@ -679,7 +679,7 @@ int cypress_init(struct psmouse *psmouse)
->>  {
->>       struct cytp_data *cytp;
->>
->> -     cytp = (struct cytp_data *)kzalloc(sizeof(struct cytp_data), GFP_KERNEL);
->> +     cytp = kzalloc(sizeof(struct cytp_data), GFP_KERNEL);
->
-> I already have a patch for this from Jingoo Han in my queue.
+Best wishes,
+-- 
+Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
 
-No problem.
->
->>       psmouse->private = (void *)cytp;
->
-> But this cast is also not needed, so if you could send me a patch for it
-> I'd appreciate that.
 
-Sure, I can.
->
->>       if (cytp == NULL)
->>               return -ENOMEM;
->> --
->> 1.8.4
+On Wed, Oct 16, 2013 at 5:09 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Ning Qu wrote:
+>> > Again. Here and below ifdef is redundant: PageTransHugeCache() is zero
+>> > compile-time and  thp case will be optimize out.
 >>
+>> The problem is actually from HPAGE_CACHE_INDEX_MASK, it is marked as
+>> build bug when CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is false. So we
+>> either wrap some logic inside a inline function, or we have to be like
+>> this .. Or we don't treat the HPAGE_CACHE_INDEX_MASK as a build bug?
 >
-> Thanks.
+> HPAGE_CACHE_INDEX_MASK shouldn't be a problem.
+> If it's wrapped into 'if PageTransHugeCache(page)' or similar it will be
+> eliminated by compiler if thp-pc disabled and build bug will not be
+> triggered.
+>
+Yes, you are totally right about this. I have remove all the ifdef for
+CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE now. Thanks!
+
+>>
+>> >
+>> > And do we really need a copy of truncate logic here? Is there a way to
+>> > share code?
+>> >
+>> The truncate between tmpfs and general one is similar but not exactly
+>> the same (no readahead), so share the whole function might not be a
+>> good choice from the perspective of tmpfs? Anyway, there are other
+>> similar functions in tmpfs, e.g. the one you mentioned for
+>> shmem_add_to_page_cache. It is possible to share the code, I am just
+>> worried it will make the logic more complicated?
+>
+> I think introducing thp-pc is good opportunity to refactor all these code.
 >
 > --
-> Dmitry
+>  Kirill A. Shutemov
