@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab3JPTWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 15:22:18 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35110 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761288Ab3JPTWR (ORCPT
+	id S1760633Ab3JPTYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 15:24:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36617 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3JPTYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 15:22:17 -0400
-Message-ID: <1381929897.1864.0.camel@dabdike>
-Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: dgilbert@interlog.com
-Cc: vaughan <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        SCSI development list <linux-scsi@vger.kernel.org>
-In-Reply-To: <52540C7F.8050207@interlog.com>
-References: <8761tilrl0.fsf@redhat.com> <874n8s2tjz.fsf@redhat.com>
-	 <5253A9E7.5030707@oracle.com> <52540C7F.8050207@interlog.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 16 Oct 2013 14:24:57 +0100
-Mime-Version: 1.0
-X-Mailer: Evolution 3.8.5 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Oct 2013 15:24:10 -0400
+Date: Wed, 16 Oct 2013 12:24:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: linux-pwm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ryan Mallon <rmallon@gmail.com>, thierry.reding@gmail.com,
+        arnd@arndb.de
+Subject: Re: [PATCH v2] pwm: add ep93xx PWM support
+Message-ID: <20131016192409.GA19574@kroah.com>
+References: <201310151840.03569.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201310151840.03569.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 09:45 -0400, Douglas Gilbert wrote:
-> On 13-10-08 02:44 AM, vaughan wrote:
-> > Hi Madper,
-> >
-> > CC to Douglas to get comments.
-> > I use the rw_semaphore o_sem to protect excl open, introduced in commit
-> > 15b06f9a02406e5460001db6d5af5c738cd3d4e7 since v3.12-rc1.
-> > Is it forbidden to do like that in kernel?...
+On Tue, Oct 15, 2013 at 06:40:03PM -0700, H Hartley Sweeten wrote:
+> Remove the non-standard EP93xx PWM driver in drivers/misc and add
+> a new driver for the PWM controllers on the EP93xx platform based
+> on the PWM framework.
 > 
-> It appears you can not (allow sg_open() to hold a semaphore
-> then return to the user space). So you will need to do some
-> rework on that patch or revert it.
+> These PWM controllers each support 1 PWM channel with programmable
+> duty cycle, frequency, and polarity inversion.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-OK, there being no reply on this, I'll do the revert ... that's all four
-patches, correct?
-
-James
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
