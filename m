@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935158Ab3JPSF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:05:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35812 "EHLO
+	id S935172Ab3JPSFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:05:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761619Ab3JPRqJ (ORCPT
+	with ESMTP id S1761300Ab3JPRqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Mike Galbraith <bitbucket@online.de>, Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 65/69] ipc/sem.c: optimize sem_lock()
-Date: Wed, 16 Oct 2013 10:45:14 -0700
-Message-Id: <20131016174320.846628343@linuxfoundation.org>
+        Linn Crosetto <linn@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [ 69/69] x86: avoid remapping data in parse_setup_data()
+Date: Wed, 16 Oct 2013 10:45:18 -0700
+Message-Id: <20131016174321.349642916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -31,55 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manfred Spraul <manfred@colorfullife.com>
+From: Linn Crosetto <linn@hp.com>
 
-commit 6d07b68ce16ae9535955ba2059dedba5309c3ca1 upstream.
+commit 30e46b574a1db7d14404e52dca8e1aa5f5155fd2 upstream.
 
-Operations that need access to the whole array must guarantee that there
-are no simple operations ongoing.  Right now this is achieved by
-spin_unlock_wait(sem->lock) on all semaphores.
+Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
+larger than early_memremap() is able to handle, which is currently
+limited to 256kB. If this occurs it leads to a NULL dereference in
+parse_setup_data().
 
-If complex_count is nonzero, then this spin_unlock_wait() is not
-necessary, because it was already performed in the past by the thread
-that increased complex_count and even though sem_perm.lock was dropped
-inbetween, no simple operation could have started, because simple
-operations cannot start when complex_count is non-zero.
+To avoid this, remap the setup_data header and allow parsing functions
+for individual types to handle their own data remapping.
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Rik van Riel <riel@redhat.com>
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Linn Crosetto <linn@hp.com>
+Link: http://lkml.kernel.org/r/1376430401-67445-1-git-send-email-linn@hp.com
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/sem.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/include/asm/e820.h |    2 +-
+ arch/x86/kernel/e820.c      |    5 ++++-
+ arch/x86/kernel/setup.c     |   19 ++++++++-----------
+ 3 files changed, 13 insertions(+), 13 deletions(-)
 
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -257,12 +257,20 @@ static void sem_rcu_free(struct rcu_head
-  * Caller must own sem_perm.lock.
-  * New simple ops cannot start, because simple ops first check
-  * that sem_perm.lock is free.
-+ * that a) sem_perm.lock is free and b) complex_count is 0.
-  */
- static void sem_wait_array(struct sem_array *sma)
- {
- 	int i;
- 	struct sem *sem;
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -29,7 +29,7 @@ extern void e820_setup_gap(void);
+ extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
+ 			unsigned long start_addr, unsigned long long end_addr);
+ struct setup_data;
+-extern void parse_e820_ext(struct setup_data *data);
++extern void parse_e820_ext(u64 phys_addr, u32 data_len);
  
-+	if (sma->complex_count)  {
-+		/* The thread that increased sma->complex_count waited on
-+		 * all sem->lock locks. Thus we don't need to wait again.
-+		 */
-+		return;
-+	}
-+
- 	for (i = 0; i < sma->sem_nsems; i++) {
- 		sem = sma->sem_base + i;
- 		spin_unlock_wait(&sem->lock);
+ #if defined(CONFIG_X86_64) || \
+ 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -658,15 +658,18 @@ __init void e820_setup_gap(void)
+  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
+  * linked list of struct setup_data, which is parsed here.
+  */
+-void __init parse_e820_ext(struct setup_data *sdata)
++void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+ {
+ 	int entries;
+ 	struct e820entry *extmap;
++	struct setup_data *sdata;
+ 
++	sdata = early_memremap(phys_addr, data_len);
+ 	entries = sdata->len / sizeof(struct e820entry);
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	early_iounmap(sdata, data_len);
+ 	printk(KERN_INFO "e820: extended physical RAM map:\n");
+ 	e820_print_map("extended");
+ }
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -426,25 +426,23 @@ static void __init reserve_initrd(void)
+ static void __init parse_setup_data(void)
+ {
+ 	struct setup_data *data;
+-	u64 pa_data;
++	u64 pa_data, pa_next;
+ 
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		u32 data_len, map_len;
++		u32 data_len, map_len, data_type;
+ 
+ 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+ 			      (u64)sizeof(struct setup_data));
+ 		data = early_memremap(pa_data, map_len);
+ 		data_len = data->len + sizeof(struct setup_data);
+-		if (data_len > map_len) {
+-			early_iounmap(data, map_len);
+-			data = early_memremap(pa_data, data_len);
+-			map_len = data_len;
+-		}
++		data_type = data->type;
++		pa_next = data->next;
++		early_iounmap(data, map_len);
+ 
+-		switch (data->type) {
++		switch (data_type) {
+ 		case SETUP_E820_EXT:
+-			parse_e820_ext(data);
++			parse_e820_ext(pa_data, data_len);
+ 			break;
+ 		case SETUP_DTB:
+ 			add_dtb(pa_data);
+@@ -452,8 +450,7 @@ static void __init parse_setup_data(void
+ 		default:
+ 			break;
+ 		}
+-		pa_data = data->next;
+-		early_iounmap(data, map_len);
++		pa_data = pa_next;
+ 	}
+ }
+ 
 
 
