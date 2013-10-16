@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3JPGb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:31:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41258 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab3JPGb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:31:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,505,1378882800"; 
-   d="scan'208";a="393612595"
-Date: Wed, 16 Oct 2013 11:08:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Youquan Song <youquan.song@linux.jf.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Youquan Song <youquan.song@intel.com>, andriy.shevchenko@intel.com,
-        mika.westerberg@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] dma: Add interface to calculate data transferred
-Message-ID: <20131016053857.GV2954@intel.com>
-References: <1381527738-9339-1-git-send-email-youquan.song@intel.com>
- <1381527738-9339-2-git-send-email-youquan.song@intel.com>
- <20131011133343.GB32689@kroah.com>
- <20131013152633.GM2954@intel.com>
- <20131015183142.GA12494@linux-youquan.bj.intel.com>
- <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
+	id S932478Ab3JPGcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:32:13 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34723 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702Ab3JPGcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:32:08 -0400
+Message-ID: <525E32FC.3010604@oracle.com>
+Date: Wed, 16 Oct 2013 14:32:28 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: [PATCH 1/3] PCI: Refactor restore_msi_irqs - code movement
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 08:55:20AM -0700, Dan Williams wrote:
-> On Tue, Oct 15, 2013 at 11:31 AM, Youquan Song
-> <youquan.song@linux.intel.com> wrote:
-> > On Sun, Oct 13, 2013 at 08:56:33PM +0530, Vinod Koul wrote:
-> >> On Fri, Oct 11, 2013 at 06:33:43AM -0700, Greg KH wrote:
-> >> > On Fri, Oct 11, 2013 at 05:42:17PM -0400, Youquan Song wrote:
-> > The issue is that when I using UART to transfer data between to COMs
-> > which using Designware DMA controller channel. But I check the specific
-> > DMA channel by "cat /sys/class/dma/dma0chan3/bytes_transferred", but it
-> > should all "0". I have transferred data by UART port, why its DMA
-> > channel report "0" bytes transferred?  So I guess that it is possible
-> > the DMA device driver issue or the data does not use the Designware DMA channel
-> > fro transferred.  After check the code, I notice only when the DMA
-> > channel used by network device driver and it will record how much data has been
-> >  tranferred, why other device driver will not calculate it. Since DMA
-> > channel is used by other device driver, why only network is specific?  since it is
-> > common interface, the current /sys/class/dma/dma0chan*/bytes_transferred has
-> > much possibility to mislead the user.
-> 
-> Yes, and for that reason I think we should delete "
-> /sys/class/dma/dma0chan*/bytes_transferred" it really serves no useful
-> purpose besides "is my dma channel working" which can be determined by
-> other means.
-Well am going to take it a bit further and ask you why do we need the
-/sys/class/dma? I have never used it for slave work.
+Move default_restore_msi_irqs down to reference msi_mask_irq and msix_mask_irq.
 
-Does it get used anywhere in async_tx?
+This patch lays the groundwork for patch titled:
+'PCI: Refactor MSI/MSIX mask restore code to fix interrupt lost issue'
 
---
-~Vinod
+Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/pci/msi.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index d5f90d6..ecd4cdf 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -116,24 +116,6 @@ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
+ 	return default_teardown_msi_irqs(dev);
+ }
+ 
+-void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+-{
+-	struct msi_desc *entry;
+-
+-	entry = NULL;
+-	if (dev->msix_enabled) {
+-		list_for_each_entry(entry, &dev->msi_list, list) {
+-			if (irq == entry->irq)
+-				break;
+-		}
+-	} else if (dev->msi_enabled)  {
+-		entry = irq_get_msi_desc(irq);
+-	}
+-
+-	if (entry)
+-		write_msi_msg(irq, &entry->msg);
+-}
+-
+ void __weak arch_restore_msi_irqs(struct pci_dev *dev, int irq)
+ {
+ 	return default_restore_msi_irqs(dev, irq);
+@@ -252,6 +234,24 @@ void unmask_msi_irq(struct irq_data *data)
+ 	msi_set_mask_bit(data, 0);
+ }
+ 
++void default_restore_msi_irqs(struct pci_dev *dev, int irq)
++{
++	struct msi_desc *entry;
++
++	entry = NULL;
++	if (dev->msix_enabled) {
++		list_for_each_entry(entry, &dev->msi_list, list) {
++			if (irq == entry->irq)
++				break;
++		}
++	} else if (dev->msi_enabled)  {
++		entry = irq_get_msi_desc(irq);
++	}
++
++	if (entry)
++		write_msi_msg(irq, &entry->msg);
++}
++
+ void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+ {
+ 	BUG_ON(entry->dev->current_state != PCI_D0);
+-- 
+1.7.3
+
