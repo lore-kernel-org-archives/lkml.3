@@ -1,149 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714Ab3JPLnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:43:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50003 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760182Ab3JPLnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:43:05 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tj@kernel.org>
-CC: <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>,
-        <b.zolnierkie@samsung.com>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Balaji T K <balajitk@ti.com>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 1/2] ata: ahci_platform: Manage SATA PHY
-Date: Wed, 16 Oct 2013 14:42:52 +0300
-Message-ID: <1381923773-10596-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381923773-10596-1-git-send-email-rogerq@ti.com>
-References: <1381923773-10596-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1760729Ab3JPLqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:46:03 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:54983 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760182Ab3JPLqB convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 16 Oct 2013 07:46:01 -0400
+Message-Id: <525E989602000078000FB740@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 16 Oct 2013 12:45:57 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] x86-64: don't track CPU model data that is
+ used by 32-bit code only
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Balaji T K <balajitk@ti.com>
+struct cpu_dev's c_models is only ever set inside CONFIG_X86_32
+conditionals (or code that's being built for 32-bit only), so there's
+no use of reserving the (empty) space for the model names in a 64-bit
+kernel.
 
-Some platforms have a PHY hooked up to the
-SATA controller. The PHY needs to be initialized
-and powered up for SATA to work. We do that
-using the PHY framework.
+Similarly, c_size_cache is only used in the #else of a CONFIG_X86_64
+conditional, so reserving space for (and in one case even initializing)
+that field is pointless for 64-bit kernels too.
 
-[Roger Q] Cleaned up.
+While moving both fields to the end of the structure, I also noticed
+that
+- the c_models array size was one too small, potentially causing
+  table_lookup_model() to return garbage on Intel CPUs (intel.c's
+  instance was lacking the sentinel with family being zero), so the
+  patch bumps that by one,
+- c_models' vendor sub-field was unused (and anyway redundant with
+  the base structure's c_x86_vendor field), so the patch deletes it.
 
-CC: Tejun Heo <tj@kernel.org>
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- .../devicetree/bindings/ata/ahci-platform.txt      |    3 +-
- drivers/ata/ahci.h                                 |    2 ++
- drivers/ata/ahci_platform.c                        |   29 +++++++++++++++++++-
- 3 files changed, 32 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/amd.c     |    2 +-
+ arch/x86/kernel/cpu/centaur.c |    6 ++++--
+ arch/x86/kernel/cpu/common.c  |    4 +++-
+ arch/x86/kernel/cpu/cpu.h     |   16 +++++++---------
+ arch/x86/kernel/cpu/intel.c   |    8 ++++----
+ arch/x86/kernel/cpu/umc.c     |    2 +-
+ 6 files changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 89de156..c8a6cea 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -4,7 +4,8 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
- Each SATA controller should have its own node.
+--- 3.12-rc5/arch/x86/kernel/cpu/amd.c
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/amd.c
+@@ -824,7 +824,7 @@ static const struct cpu_dev amd_cpu_dev 
+ 	.c_ident	= { "AuthenticAMD" },
+ #ifdef CONFIG_X86_32
+ 	.c_models = {
+-		{ .vendor = X86_VENDOR_AMD, .family = 4, .model_names =
++		{ .family = 4, .model_names =
+ 		  {
+ 			  [3] = "486 DX/2",
+ 			  [7] = "486 DX/2-WB",
+--- 3.12-rc5/arch/x86/kernel/cpu/centaur.c
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/centaur.c
+@@ -468,10 +468,10 @@ static void init_centaur(struct cpuinfo_
+ #endif
+ }
  
- Required properties:
--- compatible        : compatible list, contains "snps,spear-ahci"
-+- compatible        : compatible list, contains "snps,spear-ahci",
-+			snps,exynos5440-ahci or "snps,dwc-ahci"
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
++#ifdef CONFIG_X86_32
+ static unsigned int
+ centaur_size_cache(struct cpuinfo_x86 *c, unsigned int size)
+ {
+-#ifdef CONFIG_X86_32
+ 	/* VIA C3 CPUs (670-68F) need further shifting. */
+ 	if ((c->x86 == 6) && ((c->x86_model == 7) || (c->x86_model == 8)))
+ 		size >>= 8;
+@@ -484,16 +484,18 @@ centaur_size_cache(struct cpuinfo_x86 *c
+ 	if ((c->x86 == 6) && (c->x86_model == 9) &&
+ 				(c->x86_mask == 1) && (size == 65))
+ 		size -= 1;
+-#endif
+ 	return size;
+ }
++#endif
  
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 1145637..94484cb 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -37,6 +37,7 @@
- 
- #include <linux/clk.h>
- #include <linux/libata.h>
-+#include <linux/phy/phy.h>
- 
- /* Enclosure Management Control */
- #define EM_CTRL_MSG_TYPE              0x000f0000
-@@ -322,6 +323,7 @@ struct ahci_host_priv {
- 	u32			em_buf_sz;	/* EM buffer size in byte */
- 	u32			em_msg_type;	/* EM message type */
- 	struct clk		*clk;		/* Only for platforms supporting clk */
-+	struct phy		*phy;		/* If platforms use phy */
- 	void			*plat_data;	/* Other platform data */
+ static const struct cpu_dev centaur_cpu_dev = {
+ 	.c_vendor	= "Centaur",
+ 	.c_ident	= { "CentaurHauls" },
+ 	.c_early_init	= early_init_centaur,
+ 	.c_init		= init_centaur,
++#ifdef CONFIG_X86_32
+ 	.c_size_cache	= centaur_size_cache,
++#endif
+ 	.c_x86_vendor	= X86_VENDOR_CENTAUR,
  };
  
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 2daaee0..5a0f1418 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -141,6 +141,21 @@ static int ahci_probe(struct platform_device *pdev)
- 		}
+--- 3.12-rc5/arch/x86/kernel/cpu/common.c
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/common.c
+@@ -346,6 +346,7 @@ static void filter_cpuid_features(struct
+ /* Look up CPU names by table lookup. */
+ static const char *table_lookup_model(struct cpuinfo_x86 *c)
+ {
++#ifdef CONFIG_X86_32
+ 	const struct cpu_model_info *info;
+ 
+ 	if (c->x86_model >= 16)
+@@ -356,11 +357,12 @@ static const char *table_lookup_model(st
+ 
+ 	info = this_cpu->c_models;
+ 
+-	while (info && info->family) {
++	while (info->family) {
+ 		if (info->family == c->x86)
+ 			return info->model_names[c->x86_model];
+ 		info++;
  	}
++#endif
+ 	return NULL;		/* Not found */
+ }
  
-+	hpriv->phy = devm_phy_get(dev, "sata-phy");
-+	if (IS_ERR(hpriv->phy)) {
-+		dev_dbg(dev, "can't get sata-phy\n");
-+		/* return only if -EPROBE_DEFER */
-+		if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
-+			rc = -EPROBE_DEFER;
-+			goto disable_unprepare_clk;
-+		}
-+	}
-+
-+	if (!IS_ERR(hpriv->phy)) {
-+		phy_init(hpriv->phy);
-+		phy_power_on(hpriv->phy);
-+	}
-+
- 	/*
- 	 * Some platforms might need to prepare for mmio region access,
- 	 * which could be done in the following init call. So, the mmio
-@@ -150,7 +165,7 @@ static int ahci_probe(struct platform_device *pdev)
- 	if (pdata && pdata->init) {
- 		rc = pdata->init(dev, hpriv->mmio);
- 		if (rc)
--			goto disable_unprepare_clk;
-+			goto disable_phy;
- 	}
+--- 3.12-rc5/arch/x86/kernel/cpu/cpu.h
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/cpu.h
+@@ -1,12 +1,6 @@
+ #ifndef ARCH_X86_CPU_H
+ #define ARCH_X86_CPU_H
  
- 	ahci_save_initial_config(dev, hpriv,
-@@ -220,6 +235,12 @@ static int ahci_probe(struct platform_device *pdev)
- pdata_exit:
- 	if (pdata && pdata->exit)
- 		pdata->exit(dev);
-+disable_phy:
-+	if (!IS_ERR(hpriv->phy)) {
-+		phy_power_off(hpriv->phy);
-+		phy_exit(hpriv->phy);
-+	}
-+
- disable_unprepare_clk:
- 	if (!IS_ERR(hpriv->clk))
- 		clk_disable_unprepare(hpriv->clk);
-@@ -238,6 +259,11 @@ static void ahci_host_stop(struct ata_host *host)
- 	if (pdata && pdata->exit)
- 		pdata->exit(dev);
+-struct cpu_model_info {
+-	int		vendor;
+-	int		family;
+-	const char	*model_names[16];
+-};
+-
+ /* attempt to consolidate cpu attributes */
+ struct cpu_dev {
+ 	const char	*c_vendor;
+@@ -14,15 +8,19 @@ struct cpu_dev {
+ 	/* some have two possibilities for cpuid string */
+ 	const char	*c_ident[2];
  
-+	if (!IS_ERR(hpriv->phy)) {
-+		phy_power_off(hpriv->phy);
-+		phy_exit(hpriv->phy);
-+	}
-+
- 	if (!IS_ERR(hpriv->clk)) {
- 		clk_disable_unprepare(hpriv->clk);
- 		clk_put(hpriv->clk);
-@@ -328,6 +354,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
- static const struct of_device_id ahci_of_match[] = {
- 	{ .compatible = "snps,spear-ahci", },
- 	{ .compatible = "snps,exynos5440-ahci", },
-+	{ .compatible = "snps,dwc-ahci", },
- 	{},
+-	struct		cpu_model_info c_models[4];
+-
+ 	void            (*c_early_init)(struct cpuinfo_x86 *);
+ 	void		(*c_bsp_init)(struct cpuinfo_x86 *);
+ 	void		(*c_init)(struct cpuinfo_x86 *);
+ 	void		(*c_identify)(struct cpuinfo_x86 *);
+ 	void		(*c_detect_tlb)(struct cpuinfo_x86 *);
+-	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
+ 	int		c_x86_vendor;
++#ifdef CONFIG_X86_32
++	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
++	struct cpu_model_info {
++		int		family;
++		const char	*model_names[16];
++	}		c_models[5];
++#endif
  };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
--- 
-1.7.9.5
+ 
+ struct _tlb_table {
+--- 3.12-rc5/arch/x86/kernel/cpu/intel.c
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/intel.c
+@@ -666,7 +666,7 @@ static const struct cpu_dev intel_cpu_de
+ 	.c_ident	= { "GenuineIntel" },
+ #ifdef CONFIG_X86_32
+ 	.c_models = {
+-		{ .vendor = X86_VENDOR_INTEL, .family = 4, .model_names =
++		{ .family = 4, .model_names =
+ 		  {
+ 			  [0] = "486 DX-25/33",
+ 			  [1] = "486 DX-50",
+@@ -679,7 +679,7 @@ static const struct cpu_dev intel_cpu_de
+ 			  [9] = "486 DX/4-WB"
+ 		  }
+ 		},
+-		{ .vendor = X86_VENDOR_INTEL, .family = 5, .model_names =
++		{ .family = 5, .model_names =
+ 		  {
+ 			  [0] = "Pentium 60/66 A-step",
+ 			  [1] = "Pentium 60/66",
+@@ -690,7 +690,7 @@ static const struct cpu_dev intel_cpu_de
+ 			  [8] = "Mobile Pentium MMX"
+ 		  }
+ 		},
+-		{ .vendor = X86_VENDOR_INTEL, .family = 6, .model_names =
++		{ .family = 6, .model_names =
+ 		  {
+ 			  [0] = "Pentium Pro A-step",
+ 			  [1] = "Pentium Pro",
+@@ -704,7 +704,7 @@ static const struct cpu_dev intel_cpu_de
+ 			  [11] = "Pentium III (Tualatin)",
+ 		  }
+ 		},
+-		{ .vendor = X86_VENDOR_INTEL, .family = 15, .model_names =
++		{ .family = 15, .model_names =
+ 		  {
+ 			  [0] = "Pentium 4 (Unknown)",
+ 			  [1] = "Pentium 4 (Willamette)",
+--- 3.12-rc5/arch/x86/kernel/cpu/umc.c
++++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/umc.c
+@@ -12,7 +12,7 @@ static const struct cpu_dev umc_cpu_dev 
+ 	.c_vendor	= "UMC",
+ 	.c_ident	= { "UMC UMC UMC" },
+ 	.c_models = {
+-		{ .vendor = X86_VENDOR_UMC, .family = 4, .model_names =
++		{ .family = 4, .model_names =
+ 		  {
+ 			  [1] = "U5D",
+ 			  [2] = "U5S",
+
 
