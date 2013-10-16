@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760366Ab3JPIuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:50:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38337 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760271Ab3JPIuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:50:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,506,1378882800"; 
-   d="scan'208";a="419888848"
-Date: Wed, 16 Oct 2013 13:27:02 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Youquan Song <youquan.song@linux.jf.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] dma: Add interface to calculate data transferred
-Message-ID: <20131016075702.GW2954@intel.com>
-References: <1381527738-9339-1-git-send-email-youquan.song@intel.com>
- <1381527738-9339-2-git-send-email-youquan.song@intel.com>
- <20131011133343.GB32689@kroah.com>
- <20131013152633.GM2954@intel.com>
- <20131015183142.GA12494@linux-youquan.bj.intel.com>
- <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
- <20131016053857.GV2954@intel.com>
- <1381912571.29062.135.camel@smile>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381912571.29062.135.camel@smile>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760497Ab3JPIum (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:50:42 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47795 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760029Ab3JPIoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 04:44:17 -0400
+X-AuditID: 9c930179-b7c78ae000003065-76-525e51dc9500
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 04/15] slab: remove nodeid in struct slab
+Date: Wed, 16 Oct 2013 17:44:01 +0900
+Message-Id: <1381913052-23875-5-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 02:06:30PM +0530, Shevchenko, Andriy wrote:
-> On Wed, 2013-10-16 at 11:08 +0530, Vinod Koul wrote:
-> > On Tue, Oct 15, 2013 at 08:55:20AM -0700, Dan Williams wrote:
-> > > On Tue, Oct 15, 2013 at 11:31 AM, Youquan Song
-> > > <youquan.song@linux.intel.com> wrote:
-> > > > On Sun, Oct 13, 2013 at 08:56:33PM +0530, Vinod Koul wrote:
-> > > >> On Fri, Oct 11, 2013 at 06:33:43AM -0700, Greg KH wrote:
-> > > >> > On Fri, Oct 11, 2013 at 05:42:17PM -0400, Youquan Song wrote:
-> > > > The issue is that when I using UART to transfer data between to COMs
-> > > > which using Designware DMA controller channel. But I check the specific
-> > > > DMA channel by "cat /sys/class/dma/dma0chan3/bytes_transferred", but it
-> > > > should all "0". I have transferred data by UART port, why its DMA
-> > > > channel report "0" bytes transferred?  So I guess that it is possible
-> > > > the DMA device driver issue or the data does not use the Designware DMA channel
-> > > > fro transferred.  After check the code, I notice only when the DMA
-> > > > channel used by network device driver and it will record how much data has been
-> > > >  tranferred, why other device driver will not calculate it. Since DMA
-> > > > channel is used by other device driver, why only network is specific?  since it is
-> > > > common interface, the current /sys/class/dma/dma0chan*/bytes_transferred has
-> > > > much possibility to mislead the user.
-> > > 
-> > > Yes, and for that reason I think we should delete "
-> > > /sys/class/dma/dma0chan*/bytes_transferred" it really serves no useful
-> > > purpose besides "is my dma channel working" which can be determined by
-> > > other means.
-> > Well am going to take it a bit further and ask you why do we need the
-> > /sys/class/dma? I have never used it for slave work.
-> 
-> How user (who, f.e., would like to run dmatest) will know names of the
-> channels provided?
-Ok dmatest requires this, I overlooked that part
+We can get nodeid using address translation, so this field is not useful.
+Therefore, remove it.
 
-> How could we see what channels of certain dma controller are requested /
-> busy from userspace?
-But do end user care or need to know about this?
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
---
-~Vinod
+diff --git a/mm/slab.c b/mm/slab.c
+index 34eb115..71ba8f5 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -222,7 +222,6 @@ struct slab {
+ 			void *s_mem;		/* including colour offset */
+ 			unsigned int inuse;	/* num of objs active in slab */
+ 			kmem_bufctl_t free;
+-			unsigned short nodeid;
+ 		};
+ 		struct slab_rcu __slab_cover_slab_rcu;
+ 	};
+@@ -1099,8 +1098,7 @@ static void drain_alien_cache(struct kmem_cache *cachep,
+ 
+ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+ {
+-	struct slab *slabp = virt_to_slab(objp);
+-	int nodeid = slabp->nodeid;
++	int nodeid = page_to_nid(virt_to_page(objp));
+ 	struct kmem_cache_node *n;
+ 	struct array_cache *alien = NULL;
+ 	int node;
+@@ -1111,7 +1109,7 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+ 	 * Make sure we are not freeing a object from another node to the array
+ 	 * cache on this cpu.
+ 	 */
+-	if (likely(slabp->nodeid == node))
++	if (likely(nodeid == node))
+ 		return 0;
+ 
+ 	n = cachep->node[node];
+@@ -2630,7 +2628,6 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep,
+ 	}
+ 	slabp->inuse = 0;
+ 	slabp->s_mem = addr + colour_off;
+-	slabp->nodeid = nodeid;
+ 	slabp->free = 0;
+ 	return slabp;
+ }
+@@ -2707,7 +2704,7 @@ static void *slab_get_obj(struct kmem_cache *cachep, struct slab *slabp,
+ 	next = slab_bufctl(slabp)[slabp->free];
+ #if DEBUG
+ 	slab_bufctl(slabp)[slabp->free] = BUFCTL_FREE;
+-	WARN_ON(slabp->nodeid != nodeid);
++	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
+ #endif
+ 	slabp->free = next;
+ 
+@@ -2721,7 +2718,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
+ 
+ #if DEBUG
+ 	/* Verify that the slab belongs to the intended node */
+-	WARN_ON(slabp->nodeid != nodeid);
++	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
+ 
+ 	if (slab_bufctl(slabp)[objnr] + 1 <= SLAB_LIMIT + 1) {
+ 		printk(KERN_ERR "slab: double free detected in cache "
+-- 
+1.7.9.5
+
