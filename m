@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934943Ab3JPSOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:14:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35667 "EHLO
+	id S935401Ab3JPSOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:14:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35675 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761429Ab3JPRpx (ORCPT
+	with ESMTP id S1761281Ab3JPRpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:53 -0400
+	Wed, 16 Oct 2013 13:45:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
         Manfred Spraul <manfred@colorfullife.com>,
+        Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 47/69] ipc/msg.c: Fix lost wakeup in msgsnd().
-Date: Wed, 16 Oct 2013 10:44:56 -0700
-Message-Id: <20131016174318.635572379@linuxfoundation.org>
+Subject: [ 45/69] ipc/sem.c: replace shared sem_otime with per-semaphore value
+Date: Wed, 16 Oct 2013 10:44:54 -0700
+Message-Id: <20131016174318.393497621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -31,89 +33,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manfred Spraul <manfred@colorfullife.com>
 
-commit bebcb928c820d0ee83aca4b192adc195e43e66a2 upstream.
+commit d12e1e50e47e0900dbbf52237b7e171f4f15ea1e upstream.
 
-The check if the queue is full and adding current to the wait queue of
-pending msgsnd() operations (ss_add()) must be atomic.
+sem_otime contains the time of the last semaphore operation that
+completed successfully.  Every operation updates this value, thus access
+from multiple cpus can cause thrashing.
 
-Otherwise:
- - the thread that performs msgsnd() finds a full queue and decides to
-   sleep.
- - the thread that performs msgrcv() first reads all messages from the
-   queue and then sleeps, because the queue is empty.
- - the msgrcv() calls do not perform any wakeups, because the msgsnd()
-   task has not yet called ss_add().
- - then the msgsnd()-thread first calls ss_add() and then sleeps.
+Therefore the patch replaces the variable with a per-semaphore variable.
+The per-array sem_otime is only calculated when required.
 
-Net result: msgsnd() and msgrcv() both sleep forever.
+No performance improvement on a single-socket i3 - only important for
+larger systems.
 
-Observed with msgctl08 from ltp with a preemptible kernel.
-
-Fix: Call ipc_lock_object() before performing the check.
-
-The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
- - msgctl(IPC_SET) explicitely mentions that it tries to expunge any
-   pending operations that are not allowed anymore with the new
-   permissions.  If security_msg_queue_msgsnd() is called without locks,
-   then there might be races.
- - it makes the patch much simpler.
-
-Reported-and-tested-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Acked-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ include/linux/sem.h |    1 -
+ ipc/sem.c           |   37 +++++++++++++++++++++++++++++++------
+ 2 files changed, 31 insertions(+), 7 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, vo
- 		goto out_unlock1;
- 	}
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -12,7 +12,6 @@ struct task_struct;
+ struct sem_array {
+ 	struct kern_ipc_perm	____cacheline_aligned_in_smp
+ 				sem_perm;	/* permissions .. see ipc.h */
+-	time_t			sem_otime;	/* last semop time */
+ 	time_t			sem_ctime;	/* last change time */
+ 	struct sem		*sem_base;	/* ptr to first semaphore in array */
+ 	struct list_head	pending_alter;	/* pending operations */
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -99,6 +99,7 @@ struct sem {
+ 					/* that alter the semaphore */
+ 	struct list_head pending_const; /* pending single-sop operations */
+ 					/* that do not alter the semaphore*/
++	time_t	sem_otime;	/* candidate for sem_otime */
+ } ____cacheline_aligned_in_smp;
  
-+	ipc_lock_object(&msq->q_perm);
+ /* One queue for each sleeping process in the system. */
+@@ -911,8 +912,14 @@ static void do_smart_update(struct sem_a
+ 			}
+ 		}
+ 	}
+-	if (otime)
+-		sma->sem_otime = get_seconds();
++	if (otime) {
++		if (sops == NULL) {
++			sma->sem_base[0].sem_otime = get_seconds();
++		} else {
++			sma->sem_base[sops[0].sem_num].sem_otime =
++								get_seconds();
++		}
++	}
+ }
+ 
+ 
+@@ -1058,6 +1065,21 @@ static unsigned long copy_semid_to_user(
+ 	}
+ }
+ 
++static time_t get_semotime(struct sem_array *sma)
++{
++	int i;
++	time_t res;
 +
- 	for (;;) {
- 		struct msg_sender s;
++	res = sma->sem_base[0].sem_otime;
++	for (i = 1; i < sma->sem_nsems; i++) {
++		time_t to = sma->sem_base[i].sem_otime;
++
++		if (to > res)
++			res = to;
++	}
++	return res;
++}
++
+ static int semctl_nolock(struct ipc_namespace *ns, int semid,
+ 			 int cmd, int version, void __user *p)
+ {
+@@ -1131,9 +1153,9 @@ static int semctl_nolock(struct ipc_name
+ 			goto out_unlock;
  
- 		err = -EACCES;
- 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
--			goto out_unlock1;
-+			goto out_unlock0;
+ 		kernel_to_ipc64_perm(&sma->sem_perm, &tbuf.sem_perm);
+-		tbuf.sem_otime  = sma->sem_otime;
+-		tbuf.sem_ctime  = sma->sem_ctime;
+-		tbuf.sem_nsems  = sma->sem_nsems;
++		tbuf.sem_otime = get_semotime(sma);
++		tbuf.sem_ctime = sma->sem_ctime;
++		tbuf.sem_nsems = sma->sem_nsems;
+ 		rcu_read_unlock();
+ 		if (copy_semid_to_user(p, &tbuf, version))
+ 			return -EFAULT;
+@@ -2025,6 +2047,9 @@ static int sysvipc_sem_proc_show(struct
+ {
+ 	struct user_namespace *user_ns = seq_user_ns(s);
+ 	struct sem_array *sma = it;
++	time_t sem_otime;
++
++	sem_otime = get_semotime(sma);
  
- 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
- 		if (err)
--			goto out_unlock1;
-+			goto out_unlock0;
- 
- 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
- 				1 + msq->q_qnum <= msq->q_qbytes) {
-@@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, vo
- 		/* queue full, wait: */
- 		if (msgflg & IPC_NOWAIT) {
- 			err = -EAGAIN;
--			goto out_unlock1;
-+			goto out_unlock0;
- 		}
- 
--		ipc_lock_object(&msq->q_perm);
- 		ss_add(msq, &s);
- 
- 		if (!ipc_rcu_getref(msq)) {
-@@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, vo
- 			goto out_unlock0;
- 		}
- 
--		ipc_unlock_object(&msq->q_perm);
- 	}
--
--	ipc_lock_object(&msq->q_perm);
- 	msq->q_lspid = task_tgid_vnr(current);
- 	msq->q_stime = get_seconds();
- 
+ 	return seq_printf(s,
+ 			  "%10d %10d  %4o %10u %5u %5u %5u %5u %10lu %10lu\n",
+@@ -2036,7 +2061,7 @@ static int sysvipc_sem_proc_show(struct
+ 			  from_kgid_munged(user_ns, sma->sem_perm.gid),
+ 			  from_kuid_munged(user_ns, sma->sem_perm.cuid),
+ 			  from_kgid_munged(user_ns, sma->sem_perm.cgid),
+-			  sma->sem_otime,
++			  sem_otime,
+ 			  sma->sem_ctime);
+ }
+ #endif
 
 
