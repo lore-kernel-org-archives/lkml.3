@@ -1,34 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762078Ab3JPSlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:41:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34255 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761398Ab3JPSlr (ORCPT
+	id S1762095Ab3JPSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:43:16 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:46034 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761366Ab3JPSnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:41:47 -0400
-Date: Wed, 16 Oct 2013 20:41:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ben Segall <bsegall@google.com>
-Cc: mingo@redhat.com, pjt@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] sched: Fix cfs_bandwidth misuse of
- hrtimer_expires_remaining
-Message-ID: <20131016184144.GH2675@laptop.programming.kicks-ass.net>
-References: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
- <20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com>
+	Wed, 16 Oct 2013 14:43:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <525ED75402000078000FB95B@nat28.tlf.novell.com>
+References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
+	<CA+55aFwCe=t4dDbDhHTWhzA3zMEyyS2WSYBP2Sfe0eogGEBS1w@mail.gmail.com>
+	<525ECEA102000078000FB906@nat28.tlf.novell.com>
+	<CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
+	<525ED75402000078000FB95B@nat28.tlf.novell.com>
+Date: Wed, 16 Oct 2013 11:43:13 -0700
+X-Google-Sender-Auth: SrXyZ8751sYj9fpbxle9qPHB0lQ
+Message-ID: <CA+55aFxxOXp6Aabpvd-6PzJCH4LnE-SobOxd3TZvNVxopKDnMw@mail.gmail.com>
+Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data selectors
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 11:16:17AM -0700, Ben Segall wrote:
-> + * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
-> + * hrtimer base being cleared by __hrtimer_start_range_ns. This is possibly
-> + * incorrect if we ever built with CPU_HOTPLUG.
+On Wed, Oct 16, 2013 at 9:13 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>
+> But again - this isn't being done for ordinary 64-bit applications,
+> this is only happening for KVM guests. And there not being a
+> protocol for telling the caller whether a certain context hold
+> 64-bit offsets or selector/offset pairs shouldn't be a reason to
+> think of a solution to the problem.
 
-Do clarify; most people build with hotplug enabled; due to wanting
-suspend/resume stuff etc..
+So having looked at this some more, I would *really* prefer a
+different solution. The overwriting of the rip/rdp data just really
+annoys me.
+
+Is there any reason to not just do it like the following instead:
+
+ - get rid of the "word_size" thing, instead just add separate
+"fcs/fos" fields (that do *not* alias with rip/rdp).
+
+ - on 64-bit, always use 64-bit ops, exactly the way we do now
+
+ - if the resulting rip/rpd is zero in the high bits (and we have
+reason to believe the values exist at all, so X86_FEATURE_NO_FPU_SEL
+and the AMD test and/or checking that they aren't zero in the low bits
+too), do an *additional* fnstenv to the sstack, and then just save the
+resulting fcs/fos in the non-overlapping things. Use a simple helper
+function for this (that just gets called after the xsave/fxsave logic)
+
+ - same on restore.
+
+No games. No "this is the word-size of the thing we've saved in
+memory". No overlapping "this field means one thing or another".
+
+For signal handling, save/restore the new fop/fos thing, so that
+nobody ever sees the changed format, but FP state gets correctly and
+fully restored over signals too, not just kernel FP stuff.
+
+Hmm? That would make me *much* happier, I suspect.
+
+           Linus
