@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762134Ab3JPUwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:52:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37195 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761501Ab3JPUwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:52:20 -0400
-Date: Wed, 16 Oct 2013 22:52:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131016205207.GE10651@twins.programming.kicks-ass.net>
-References: <1381949500-501-1-git-send-email-treding@nvidia.com>
- <1381949500-501-2-git-send-email-treding@nvidia.com>
- <20131016200645.GD10651@twins.programming.kicks-ass.net>
- <20131016201410.GA26785@twins.programming.kicks-ass.net>
- <20131017073100.2cab1ffa@notabene.brown>
+	id S933887Ab3JPUwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:52:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56933 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761976Ab3JPUw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 16:52:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
+   d="scan'208";a="394007860"
+Date: Wed, 16 Oct 2013 13:52:27 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Don Zickus <dzickus@redhat.com>, dave.hansen@linux.intel.com,
+        eranian@google.com, jmario@redhat.com, linux-kernel@vger.kernel.org,
+        acme@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131016205227.GJ7456@tassilo.jf.intel.com>
+References: <20131014203549.GY227855@redhat.com>
+ <20131015101404.GD10651@twins.programming.kicks-ass.net>
+ <20131015130226.GX26785@twins.programming.kicks-ass.net>
+ <20131015143227.GY26785@twins.programming.kicks-ass.net>
+ <20131015150736.GZ26785@twins.programming.kicks-ass.net>
+ <20131015154104.GA227855@redhat.com>
+ <20131016105755.GX10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131017073100.2cab1ffa@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131016105755.GX10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Neil;
+> So avoid having to call copy_from_user_nmi() for every instruction.
+> Since we already limit the max basic block size, we can easily
+> pre-allocate a piece of memory to copy the entire thing into in one
+> go.
 
-it looks like its one of your patches isn't it?
+It would be better/more generic if you split copy_from_user_nmi() into
+init() copy() end() 
 
-http://www.spinics.net/lists/raid/msg44100.html
-http://www.spinics.net/lists/raid/msg44101.html
+(and some state that checks if the underlying page changes)
 
-Given that I can't find them in a lkml archive means nobody's ever seen
-those patches.
+Then first you don't need the buffer and it could be also
+be applied to the other cases, like the stack unwinding,
+where copying everything is likely too slow.
 
-Anyway; has that 3/3 patch ever been ran with lockdep enabled? 
-
-Stuff like:
-
-+	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
-+		spin_lock_init(conf->hash_locks + i);
-
-And:
-
-+static void __lock_all_hash_locks(struct r5conf *conf)
-+{
-+	int i;
-+	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
-+		spin_lock(conf->hash_locks + i);
-+}
-
-Tends to complain real loud.
-
-This leaves one to wonder... 
-  'fancy' locking scheme:1, validation effort:0
-
-
+-Andi
