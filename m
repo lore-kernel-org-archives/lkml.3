@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab3JPHQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:16:17 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:38937 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab3JPHQQ (ORCPT
+	id S1760015Ab3JPHWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:22:43 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:38617 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3JPHWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:16:16 -0400
-X-RZG-AUTH: :JmMMdE6mfuytNHJKQY544OOMs8VeiIua9Jm4YqehrBzfF0hfOnyRNxGkH9ixBJMG2gdbdo8=
-X-RZG-CLASS-ID: mo00
-Date: Wed, 16 Oct 2013 09:16:08 +0200
-From: Johannes Koch <johannes@ortsraum.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Christian Volkmann <cv@cv-sv.de>
-Subject: Re: [PATCH 1/1] cx23885-dvb: fix ds3000 ts2020 split for TEVII S471
-Message-ID: <20131016070245.GA3296@Loki.fritz.box>
-References: <1376513927-6217-1-git-send-email-cv@cv-sv.de>
- <20130926135157.2a26f245@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130926135157.2a26f245@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 03:22:39 -0400
+From: Chang Xiangzhong <changxiangzhong@gmail.com>
+To: vyasevich@gmail.com
+Cc: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chang Xiangzhong <changxiangzhong@gmail.com>
+Subject: [PATCH v3] net: sctp: fix a cacc_saw_newack missetting issue
+Date: Wed, 16 Oct 2013 09:22:11 +0200
+Message-Id: <1381908131-24809-1-git-send-email-changxiangzhong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Mauro,
+For for each TSN t being newly acked (Not only cumulatively,
+but also SELECTIVELY) cacc_saw_newack should be set to 1.
 
-On Thu, Sep 26, 2013 at 01:51:57PM -0300, Mauro Carvalho Chehab wrote:
-> The difference between your patch and the applied one is:
-> 
-> diff --git a/drivers/media/pci/cx23885/cx23885-dvb.c b/drivers/media/pci/cx23885/cx23885-dvb.c
-> index 971e4ff..8ed7b94 100644
-> --- a/drivers/media/pci/cx23885/cx23885-dvb.c
-> +++ b/drivers/media/pci/cx23885/cx23885-dvb.c
-> @@ -1055,7 +1055,6 @@ static int dvb_register(struct cx23885_tsport *port)
->  				&tevii_ts2020_config, &i2c_bus->i2c_adap);
->  			fe0->dvb.frontend->ops.set_voltage = f300_set_voltage;
->  		}
-> -
->  		break;
->  	case CX23885_BOARD_DVBWORLD_2005:
->  		i2c_bus = &dev->i2c_bus[1];
-> @@ -1285,6 +1284,7 @@ static int dvb_register(struct cx23885_tsport *port)
->  		if (fe0->dvb.frontend != NULL) {
->  			dvb_attach(ts2020_attach, fe0->dvb.frontend,
->  				&tevii_ts2020_config, &i2c_bus->i2c_adap);
-> +			fe0->dvb.frontend->ops.set_voltage = f300_set_voltage;
->  		}
->  		break;
->  	case CX23885_BOARD_PROF_8000:
-> 
-> 
-> So, basically, on our patch, you're also filling ops.set_voltage. 
-> 
-> As I don't know the board details, I can't tell if this is required or
-> not.
-> 
-> Christian/Johannes,
-> 
-> Could you please double-check it? If this is needed, please send me a new
-> patch, rebased on the top of linux-media git tree.
+Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+---
+ net/sctp/outqueue.c |   53 ++++++++++++++++++++++++---------------------------
+ 1 file changed, 25 insertions(+), 28 deletions(-)
 
-no, setting the voltage via dvb.frontend->ops.set_voltage is not needed for
-the TeVii S471. See also the patch that introduced S471 support:
-https://linuxtv.org/patch/11189/.
-
-Best regards
- Johannes
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index 94df758..da9a778 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -1383,19 +1383,38 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				}
+ 			}
+ 
+-			/* If the chunk hasn't been marked as ACKED,
+-			 * mark it and account bytes_acked if the
+-			 * chunk had a valid transport (it will not
+-			 * have a transport if ASCONF had deleted it
+-			 * while DATA was outstanding).
+-			 */
+ 			if (!tchunk->tsn_gap_acked) {
++				/* If the chunk hasn't been marked as ACKED,
++				 * mark it and account bytes_acked if the
++				 * chunk had a valid transport (it will not
++				 * have a transport if ASCONF had deleted it
++				 * while DATA was outstanding).
++				 */
+ 				tchunk->tsn_gap_acked = 1;
+ 				*highest_new_tsn_in_sack = tsn;
+ 				bytes_acked += sctp_data_size(tchunk);
+ 				if (!tchunk->transport)
+ 					migrate_bytes += sctp_data_size(tchunk);
+ 				forward_progress = true;
++
++				/*
++				 * SFR-CACC algorithm:
++				 * 2) If the SACK contains gap acks
++				 * and the flag CHANGEOVER_ACTIVE is
++				 * set the receiver of the SACK MUST
++				 * take the following action:
++				 *
++				 * B) For each TSN t being acked that
++				 * has not been acked in any SACK so
++				 * far, set cacc_saw_newack to 1 for
++				 * the destination that the TSN was
++				 * sent to.
++				 */
++				if (transport &&
++					sack->num_gap_ack_blocks &&
++					q->asoc->peer.primary_path->cacc.
++					changeover_active)
++					transport->cacc.cacc_saw_newack = 1;
+ 			}
+ 
+ 			if (TSN_lte(tsn, sack_ctsn)) {
+@@ -1411,28 +1430,6 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				restart_timer = 1;
+ 				forward_progress = true;
+ 
+-				if (!tchunk->tsn_gap_acked) {
+-					/*
+-					 * SFR-CACC algorithm:
+-					 * 2) If the SACK contains gap acks
+-					 * and the flag CHANGEOVER_ACTIVE is
+-					 * set the receiver of the SACK MUST
+-					 * take the following action:
+-					 *
+-					 * B) For each TSN t being acked that
+-					 * has not been acked in any SACK so
+-					 * far, set cacc_saw_newack to 1 for
+-					 * the destination that the TSN was
+-					 * sent to.
+-					 */
+-					if (transport &&
+-					    sack->num_gap_ack_blocks &&
+-					    q->asoc->peer.primary_path->cacc.
+-					    changeover_active)
+-						transport->cacc.cacc_saw_newack
+-							= 1;
+-				}
+-
+ 				list_add_tail(&tchunk->transmitted_list,
+ 					      &q->sacked);
+ 			} else {
+-- 
+1.7.9.5
 
