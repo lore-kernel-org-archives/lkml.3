@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761493Ab3JPRp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:45:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35529 "EHLO
+	id S934758Ab3JPSML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:12:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35711 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761288Ab3JPRpa (ORCPT
+	with ESMTP id S1761477Ab3JPRp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:30 -0400
+	Wed, 16 Oct 2013 13:45:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 14/69] ARC: Setup Vector Table Base in early boot
-Date: Wed, 16 Oct 2013 10:44:23 -0700
-Message-Id: <20131016174314.637381911@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 52/69] ipc,shm: make shmctl_nolock lockless
+Date: Wed, 16 Oct 2013 10:45:01 -0700
+Message-Id: <20131016174319.240084991@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -26,44 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 05b016ecf5e7a8c24409d8e9effb5d2ec9107708 upstream.
+commit c97cb9ccab8c85428ec21eff690642ad2ce1fa8a upstream.
 
-Otherwise early boot exceptions such as instructions errors due to
-configuration mismatch between kernel and hardware go off to la-la land,
-as opposed to hitting the handler and panic()'ing properly.
+While the INFO cmd doesn't take the ipc lock, the STAT commands do acquire
+it unnecessarily.  We can do the permissions and security checks only
+holding the rcu lock.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/head.S |    2 ++
- arch/arc/kernel/irq.c  |    2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ ipc/shm.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -27,6 +27,8 @@ stext:
- 	; Don't clobber r0-r4 yet. It might have bootloader provided info
- 	;-------------------------------------------------------------------
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -882,27 +882,31 @@ static int shmctl_nolock(struct ipc_name
+ 		struct shmid64_ds tbuf;
+ 		int result;
  
-+	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
++		rcu_read_lock();
+ 		if (cmd == SHM_STAT) {
+-			shp = shm_lock(ns, shmid);
++			shp = shm_obtain_object(ns, shmid);
+ 			if (IS_ERR(shp)) {
+ 				err = PTR_ERR(shp);
+-				goto out;
++				goto out_unlock;
+ 			}
+ 			result = shp->shm_perm.id;
+ 		} else {
+-			shp = shm_lock_check(ns, shmid);
++			shp = shm_obtain_object_check(ns, shmid);
+ 			if (IS_ERR(shp)) {
+ 				err = PTR_ERR(shp);
+-				goto out;
++				goto out_unlock;
+ 			}
+ 			result = 0;
+ 		}
 +
- #ifdef CONFIG_SMP
- 	; Only Boot (Master) proceeds. Others wait in platform dependent way
- 	;	IDENTITY Reg [ 3  2  1  0 ]
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -32,8 +32,6 @@ void __cpuinit arc_init_IRQ(void)
- {
- 	int level_mask = 0;
+ 		err = -EACCES;
+ 		if (ipcperms(ns, &shp->shm_perm, S_IRUGO))
+ 			goto out_unlock;
++
+ 		err = security_shm_shmctl(shp, cmd);
+ 		if (err)
+ 			goto out_unlock;
++
+ 		memset(&tbuf, 0, sizeof(tbuf));
+ 		kernel_to_ipc64_perm(&shp->shm_perm, &tbuf.shm_perm);
+ 		tbuf.shm_segsz	= shp->shm_segsz;
+@@ -912,8 +916,9 @@ static int shmctl_nolock(struct ipc_name
+ 		tbuf.shm_cpid	= shp->shm_cprid;
+ 		tbuf.shm_lpid	= shp->shm_lprid;
+ 		tbuf.shm_nattch	= shp->shm_nattch;
+-		shm_unlock(shp);
+-		if(copy_shmid_to_user (buf, &tbuf, version))
++		rcu_read_unlock();
++
++		if (copy_shmid_to_user(buf, &tbuf, version))
+ 			err = -EFAULT;
+ 		else
+ 			err = result;
+@@ -924,7 +929,7 @@ static int shmctl_nolock(struct ipc_name
+ 	}
  
--	write_aux_reg(AUX_INTR_VEC_BASE, _int_vec_base_lds);
--
- 	/* Disable all IRQs: enable them as devices request */
- 	write_aux_reg(AUX_IENABLE, 0);
- 
+ out_unlock:
+-	shm_unlock(shp);
++	rcu_read_unlock();
+ out:
+ 	return err;
+ }
 
 
