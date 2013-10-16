@@ -1,332 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760071Ab3JPFEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:04:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62800 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab3JPFAY (ORCPT
+	id S1751679Ab3JPFVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:21:35 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49910 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab3JPFVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 01:00:24 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-21-525e1d67a18f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 03/18] perf tools: Introduce new 'ftrace' tool
-Date: Wed, 16 Oct 2013 14:00:06 +0900
-Message-Id: <1381899621-14638-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
-References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Oct 2013 01:21:33 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <525E2257.7030604@roeck-us.net>
+Date: Tue, 15 Oct 2013 22:21:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Mark Brown <broonie@kernel.org>
+Subject: Re: linux-next: Tree for Oct 15
+References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1381845763-10487-1-git-send-email-treding@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 10/15/2013 07:02 AM, Thierry Reding wrote:
+> Hi all,
+>
+> I've uploaded today's linux-next tree to the master branch of the
+> repository below:
+>
+>          git://gitorious.org/thierryreding/linux-next.git
+>
+> A next-20131015 tag is also provided for convenience.
+>
+> Gained a new conflict, but nothing too exciting. x86 and ARM default
+> configurations build fine. I've also used an x86 allmodconfig build to
+> check for build errors. Mark fixed most of those in the trees that he
+> created last Thursday and Friday, so I've cherry-picked them on top of
+> the final merge. There was one new build failure in the staging tree
+> that was trivial to fix so I added a patch to the tree as well.
+>
 
-The ftrace command is a simple wrapper of kernel's ftrace
-functionality.  It only supports single thread tracing currently and
-just reads trace_pipe in text and then write it to stdout.
+This build does look much better than the previous ones. I 'only' get 12 build failures
+out of 106 configurations. Worst are powerpc builds, with 7 out of 14 builds failed.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile.perf    |   1 +
- tools/perf/builtin-ftrace.c | 228 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h        |   1 +
- tools/perf/command-list.txt |   1 +
- tools/perf/perf.c           |   1 +
- 5 files changed, 232 insertions(+)
- create mode 100644 tools/perf/builtin-ftrace.c
+Details are at http://server.roeck-us.net:8010/builders; look for the 'next' column.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index c873e039aafb..79058b6a8435 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -431,6 +431,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
- BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
- BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-ftrace.o
- BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
- BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
- 
-diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-new file mode 100644
-index 000000000000..6f3dd02c5b9a
---- /dev/null
-+++ b/tools/perf/builtin-ftrace.c
-@@ -0,0 +1,228 @@
-+/*
-+ * builtin-ftrace.c
-+ *
-+ * Copyright (c) 2013  LG Electronics,  Namhyung Kim <namhyung@kernel.org>
-+ *
-+ * Released under the GPL v2.
-+ */
-+
-+#include "builtin.h"
-+#include "perf.h"
-+
-+#include <unistd.h>
-+#include <signal.h>
-+
-+#include "util/debug.h"
-+#include "util/parse-options.h"
-+#include "util/evlist.h"
-+#include "util/target.h"
-+#include "util/thread_map.h"
-+
-+
-+#define DEFAULT_TRACER  "function_graph"
-+
-+struct perf_ftrace {
-+	struct perf_evlist *evlist;
-+	struct perf_target target;
-+	const char *tracer;
-+};
-+
-+static bool done;
-+
-+static void sig_handler(int sig __maybe_unused)
-+{
-+	done = true;
-+}
-+
-+static int write_tracing_file(const char *name, const char *val)
-+{
-+	char *file;
-+	int fd, ret = -1;
-+	ssize_t size = strlen(val);
-+
-+	file = get_tracing_file(name);
-+	if (!file) {
-+		pr_debug("cannot get tracing file: %s\n", name);
-+		return -1;
-+	}
-+
-+	fd = open(file, O_WRONLY);
-+	if (fd < 0) {
-+		pr_debug("cannot open tracing file: %s\n", name);
-+		goto out;
-+	}
-+
-+	if (write(fd, val, size) == size)
-+		ret = 0;
-+	else
-+		pr_debug("write '%s' to tracing/%s failed\n", val, name);
-+
-+	close(fd);
-+out:
-+	put_tracing_file(file);
-+	return ret;
-+}
-+
-+static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
-+{
-+	if (write_tracing_file("tracing_on", "0") < 0)
-+		return -1;
-+
-+	if (write_tracing_file("current_tracer", "nop") < 0)
-+		return -1;
-+
-+	if (write_tracing_file("set_ftrace_pid", " ") < 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
-+{
-+	char *trace_file;
-+	int trace_fd;
-+	char *trace_pid;
-+	char buf[4096];
-+	struct pollfd pollfd = {
-+		.events = POLLIN,
-+	};
-+
-+	if (geteuid() != 0) {
-+		pr_err("ftrace only works for root!\n");
-+		return -1;
-+	}
-+
-+	if (argc < 1)
-+		return -1;
-+
-+	signal(SIGINT, sig_handler);
-+	signal(SIGUSR1, sig_handler);
-+	signal(SIGCHLD, sig_handler);
-+
-+	reset_tracing_files(ftrace);
-+
-+	/* reset ftrace buffer */
-+	if (write_tracing_file("trace", "0") < 0)
-+		goto out;
-+
-+	if (perf_evlist__prepare_workload(ftrace->evlist, &ftrace->target,
-+					  argv, false, true) < 0)
-+		goto out;
-+
-+	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
-+		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
-+		goto out;
-+	}
-+
-+	if (asprintf(&trace_pid, "%d", ftrace->evlist->threads->map[0]) < 0) {
-+		pr_err("failed to allocate pid string\n");
-+		goto out;
-+	}
-+
-+	if (write_tracing_file("set_ftrace_pid", trace_pid) < 0) {
-+		pr_err("failed to set pid: %s\n", trace_pid);
-+		goto out_free_pid;
-+	}
-+
-+	trace_file = get_tracing_file("trace_pipe");
-+	if (!trace_file) {
-+		pr_err("failed to open trace_pipe\n");
-+		goto out_free_pid;
-+	}
-+
-+	trace_fd = open(trace_file, O_RDONLY);
-+
-+	put_tracing_file(trace_file);
-+
-+	if (trace_fd < 0) {
-+		pr_err("failed to open trace_pipe\n");
-+		goto out_free_pid;
-+	}
-+
-+	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
-+	pollfd.fd = trace_fd;
-+
-+	if (write_tracing_file("tracing_on", "1") < 0) {
-+		pr_err("can't enable tracing\n");
-+		goto out_close_fd;
-+	}
-+
-+	perf_evlist__start_workload(ftrace->evlist);
-+
-+	while (!done) {
-+		if (poll(&pollfd, 1, -1) < 0)
-+			break;
-+
-+		if (pollfd.revents & POLLIN) {
-+			int n = read(trace_fd, buf, sizeof(buf));
-+			if (n < 0)
-+				break;
-+			if (fwrite(buf, n, 1, stdout) != 1)
-+				break;
-+		}
-+	}
-+
-+	write_tracing_file("tracing_on", "0");
-+
-+	/* read remaining buffer contents */
-+	while (true) {
-+		int n = read(trace_fd, buf, sizeof(buf));
-+		if (n <= 0)
-+			break;
-+		if (fwrite(buf, n, 1, stdout) != 1)
-+			break;
-+	}
-+
-+out_close_fd:
-+	close(trace_fd);
-+out_free_pid:
-+	free(trace_pid);
-+out:
-+	reset_tracing_files(ftrace);
-+
-+	return done ? 0 : -1;
-+}
-+
-+int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	int ret;
-+	struct perf_ftrace ftrace = {
-+		.target = { .uid = UINT_MAX, },
-+	};
-+	const char * const ftrace_usage[] = {
-+		"perf ftrace [<options>] [<command>]",
-+		"perf ftrace [<options>] -- <command> [<options>]",
-+		NULL
-+	};
-+	const struct option ftrace_options[] = {
-+	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
-+		   "tracer to use: function_graph or function"),
-+	OPT_INCR('v', "verbose", &verbose,
-+		 "be more verbose"),
-+	OPT_END()
-+	};
-+
-+	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
-+			    PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc)
-+		usage_with_options(ftrace_usage, ftrace_options);
-+
-+	ftrace.evlist = perf_evlist__new();
-+	if (ftrace.evlist == NULL)
-+		return -ENOMEM;
-+
-+	ret = perf_evlist__create_maps(ftrace.evlist, &ftrace.target);
-+	if (ret < 0)
-+		goto out_delete_evlist;
-+
-+	if (ftrace.tracer == NULL)
-+		ftrace.tracer = DEFAULT_TRACER;
-+
-+	ret = __cmd_ftrace(&ftrace, argc, argv);
-+
-+	perf_evlist__delete_maps(ftrace.evlist);
-+out_delete_evlist:
-+	perf_evlist__delete(ftrace.evlist);
-+
-+	return ret;
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b210d62907e4..55da75c4e990 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -37,6 +37,7 @@ extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
- extern int cmd_mem(int argc, const char **argv, const char *prefix);
-+extern int cmd_ftrace(int argc, const char **argv, const char *prefix);
- 
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 0906fc401c52..c24d76e61bc1 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -9,6 +9,7 @@ perf-buildid-cache		mainporcelain common
- perf-buildid-list		mainporcelain common
- perf-diff			mainporcelain common
- perf-evlist			mainporcelain common
-+perf-ftrace			mainporcelain common
- perf-inject			mainporcelain common
- perf-kmem			mainporcelain common
- perf-kvm			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 8b38b4e80ec2..2009d2d0e0b8 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -61,6 +61,7 @@ static struct cmd_struct commands[] = {
- #endif
- 	{ "inject",	cmd_inject,	0 },
- 	{ "mem",	cmd_mem,	0 },
-+	{ "ftrace",	cmd_ftrace,	0 },
- };
- 
- struct pager_config {
--- 
-1.7.11.7
+Guenter
 
