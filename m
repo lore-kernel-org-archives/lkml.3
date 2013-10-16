@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab3JPGPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:15:08 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:42551 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3JPGPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:15:06 -0400
-Date: Wed, 16 Oct 2013 08:15:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        dsahern@gmail.com, acme@redhat.com, ak@linux.intel.com,
-        jolsa@redhat.com, hughd@google.com
-Subject: Re: [PATCH] perf: revert PERF_RECORD_MMAP2 support
-Message-ID: <20131016061502.GB21109@gmail.com>
-References: <20131015161843.GA17653@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015161843.GA17653@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753388Ab3JPGSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:18:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59891 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750885Ab3JPGSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:18:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,505,1378882800"; 
+   d="scan'208";a="375363220"
+Subject: sched/rt: Pick up the throttled rt tasks in case no other non-rt
+ tasks
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: mingo@kernel.org, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Oct 2013 23:43:36 +0800
+Message-ID: <1381938216.26153.63.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Stephane Eranian <eranian@google.com> wrote:
+Meet the case that on CPU2, there are just two tasks to be run,
+one is one rt task A, another is idle task, but at this time,
+and the rt_rq is throttled.
 
-> 
-> This unified patch removes the following commits
-> for both kernel and perf tool:
-> 
-> 6adb0b0 perf tools: Add default handler for mmap2 events
-> 384c671 perf trace: Add mmap2 handler
-> 5c5e854 perf tools: Add attr->mmap2 support
-> d008d52 perf: Fix up MMAP2 buffer space reservation
-> 13d7a24 perf: Add attr->mmap2 attribute to an event
-> 
-> The MMAP2 record extension is not quite ready for prime time.
-> We have identified address space cases where mappings would
-> not be reported properly when apps fiddled directly with clone()
-> and VM_CLONE. We will revisit the patch series soon.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  include/uapi/linux/perf_event.h |   24 +----------------
->  kernel/events/core.c            |   47 +++-----------------------------
->  tools/perf/builtin-annotate.c   |    1 -
->  tools/perf/builtin-inject.c     |   15 -----------
->  tools/perf/builtin-mem.c        |    1 -
->  tools/perf/builtin-report.c     |    1 -
->  tools/perf/builtin-script.c     |    1 -
->  tools/perf/builtin-trace.c      |    1 -
->  tools/perf/tests/perf-record.c  |   15 +++--------
->  tools/perf/util/build-id.c      |    1 -
->  tools/perf/util/event.c         |   56 +++++++++------------------------------
->  tools/perf/util/event.h         |   19 -------------
->  tools/perf/util/evsel.c         |   16 +++--------
->  tools/perf/util/header.c        |    3 ---
->  tools/perf/util/machine.c       |   53 +-----------------------------------
->  tools/perf/util/machine.h       |    1 -
->  tools/perf/util/map.c           |    8 +-----
->  tools/perf/util/map.h           |    8 ++----
->  tools/perf/util/session.c       |   27 +------------------
->  tools/perf/util/tool.h          |    1 -
->  20 files changed, 30 insertions(+), 269 deletions(-)
+CPU1		                 CPU2
+				 staying in idle task;
+waking up rt task A on
+target CPU 2;
 
-Ugh, that's way too large.
+                                 exiting from idle task;
+                                 DO schedule()
+                                   pick up RT next task
+					pick_next_task_rt()
+						_pick_next_task_rt()
+						rt_rq is throttled
+					return NULL rt task to be picked
 
-I thought the plan was to do a minimal revert. Is there really no way to 
-do this in a (much) shorter fashion?
+				 CPU2 then went into idle task AGAIN;
+                                 after 2s, CPU2 is waken up again;
+                                 rt task A is get running;
 
-For example by a simple patch that returns -EINVAL (or -ENOSYS) if the new 
-flag is used - i.e. behaves like the old kernel in that regard - but 
-leaves the rest in place. (the 'rest' will hopefully be fixed for v3.13)
+Here rt task A is delayed for some time, even when CPU2 is in idle state.
 
-Tooling will then fall back as if it was an old kernel - i.e. no changes 
-needed there at all. Right?
+so in case there are just rt tasks running, we can pick up one of them
+even rt_rq is throttled.
 
-Hm?
+Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/sched/rt.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-	Ingo
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 01970c8..d521050 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1305,8 +1305,16 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+ 	if (!rt_rq->rt_nr_running)
+ 		return NULL;
+ 
+-	if (rt_rq_throttled(rt_rq))
+-		return NULL;
++	if (rt_rq_throttled(rt_rq)) {
++		/*
++		 * If in current rq, expects for idle task, the other tasks
++		 * are rt tasks, we should continue to pick one of the rt tasks.
++		 * Otherwise, the rt tasks will be delayed while current
++		 * CPU is in idle.
++		*/
++		if ((rt_rq->rt_nr_running + 1) != rq->nr_running)
++			return NULL;
++	}
+ 
+ 	do {
+ 		rt_se = pick_next_rt_entity(rq, rt_rq);
+-- 
+1.7.9.5
+
+
+
