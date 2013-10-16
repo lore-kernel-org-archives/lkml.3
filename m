@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3JPC0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:26:36 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30159 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab3JPC0e (ORCPT
+	id S1757047Ab3JPCsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:48:11 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42260 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab3JPCsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:26:34 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AksXANr4XVJ5LFuj/2dsb2JhbABagXECAYETwz+BJxd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhE4gABb4oFo12gT4Hgx+BBgOYA5IDgzgogSw
-Date: Wed, 16 Oct 2013 13:26:06 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
-Message-ID: <20131016022606.GD4446@dastard>
-References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
- <20131011003930.GC4446@dastard>
- <20131014214250.GG856@cmpxchg.org>
- <20131015014123.GQ4446@dastard>
- <20131015174128.GH856@cmpxchg.org>
- <20131015234147.GA4446@dastard>
- <525DF466.6030308@redhat.com>
+	Tue, 15 Oct 2013 22:48:10 -0400
+X-AuditID: 9c930197-b7b88ae0000032c4-46-525dfe6744a6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/3] perf tools: Add data object to handle perf data file
+References: <1381847254-28809-1-git-send-email-jolsa@redhat.com>
+	<1381847254-28809-2-git-send-email-jolsa@redhat.com>
+Date: Wed, 16 Oct 2013 11:48:07 +0900
+In-Reply-To: <1381847254-28809-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Tue, 15 Oct 2013 16:27:32 +0200")
+Message-ID: <87a9ia9biw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525DF466.6030308@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 10:05:26PM -0400, Rik van Riel wrote:
-> On 10/15/2013 07:41 PM, Dave Chinner wrote:
-> > On Tue, Oct 15, 2013 at 01:41:28PM -0400, Johannes Weiner wrote:
-> 
-> >> I'm not forgetting about them, I just track them very coarsely by
-> >> linking up address spaces and then lazily enforce their upper limit
-> >> when memory is tight by using the shrinker callback.  The assumption
-> >> was that actually scanning them is such a rare event that we trade the
-> >> rare computational costs for smaller memory consumption most of the
-> >> time.
-> > 
-> > Sure, I understand the tradeoff that you made. But there's nothing
-> > worse than a system that slows down unpredictably because of some
-> > magic threshold in some subsystem has been crossed and
-> > computationally expensive operations kick in.
-> 
-> The shadow shrinker should remove the radix nodes with
-> the oldest shadow entries first, so true LRU should actually
-> work for the radix tree nodes.
-> 
-> Actually, since we only care about the age of the youngest
-> shadow entry in each radix tree node, FIFO will be the same
-> as LRU for that list.
-> 
-> That means the shrinker can always just take the radix tree
-> nodes off the end.
+Hi Jiri,
 
-Right, but it can't necessarily free the node as it may still have
-pointers to pages in it. In that case, it would have to simply
-rotate the page to the end of the LRU again.
+On Tue, 15 Oct 2013 16:27:32 +0200, Jiri Olsa wrote:
+> This patch is adding 'struct perf_data_file' object as
+> a placeholder for all attributes regarding perf.data
+> file handling. Changing perf_session__new to take it
+> as an argument.
+>
+> The rest of the functionality will be added later to keep
+> this change simple enough, because all the places using
+> perf_session are changed now.
 
-Unless, of course, we kept track of the number of exceptional
-entries in a node and didn't add it to the reclaim list until there
-were no non-expceptional entries in the node....
+All three look good.
 
-> >> But it
-> >> looks like tracking radix tree nodes with a list and backpointers to
-> >> the mapping object for the lock etc. will be a major pain in the ass.
-> > 
-> > Perhaps so - it may not work out when we get down to the fine
-> > details...
-> 
-> I suspect that a combination of lifetime rules (inode cannot
-> disappear until all the radix tree nodes) and using RCU free
-> for the radix tree nodes, and the inodes might do the trick.
-> 
-> That would mean that, while holding the rcu read lock, the
-> back pointer from a radix tree node to the inode will always
-> point to valid memory.
+Btw, are you planning to support multiple per-cpu file record?  As you
+know I suggested perf.data.dir approach in my perf-ftrace patchset (I'll
+resend a new version soonish) something like below.  What do you think?
 
-Yes, that is what I was thinking...
+  perf.data.dir/
+    |-- perf-cpu0.data
+    |-- perf-cpu1.data
+    |-- perf-cpu2.data
+    `-- perf-cpu3.data
 
-> That allows the shrinker to lock the inode, and verify that
-> the inode is still valid, before it attempts to rcu free the
-> radix tree node with shadow entries.
+Maybe we could split sample data and other data (e.g. COMM, MMAP or some
+user data?) to another file(s).
 
-Lock the mapping, not the inode. The radix tree is protected by the
-mapping_lock, not an inode lock. i.e. I'd hope that this can all b
-contained within the struct address_space and not require any
-knowledge of inodes or inode lifecycles at all.
-
-> It also means that locking only needs to be in the inode,
-> and on the LRU list for shadow radix tree nodes.
-> 
-> Does that sound sane?
-> 
-> Am I overlooking something?
-
-It's pretty much along the same lines of what I was thinking, but
-lets see what Johannes thinks.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Namhyung
