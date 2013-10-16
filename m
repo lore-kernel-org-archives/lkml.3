@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760837Ab3JPWOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:14:49 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56896 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3JPWOr (ORCPT
+	id S1761010Ab3JPWPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:15:11 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:62633 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760888Ab3JPWPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 18:14:47 -0400
-Date: Wed, 16 Oct 2013 15:14:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/50] 3.11.6-stable review
-Message-ID: <20131016221440.GA18297@roeck-us.net>
-References: <20131016174358.335646140@linuxfoundation.org>
+	Wed, 16 Oct 2013 18:15:07 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
+        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tarek Dakhran <t.dakhran@samsung.com>
+Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
+References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
+Date: Wed, 16 Oct 2013 15:15:03 -0700
+In-Reply-To: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
+	(Vyacheslav Tyrtov's message of "Mon, 14 Oct 2013 19:08:21 +0400")
+Message-ID: <87k3hc3lso.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:44:46AM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.11.6 release.
-> There are 50 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Oct 18 17:43:24 UTC 2013.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.6-rc1.gz
-> and the diffstat can be found below.
-> 
+Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
 
-Build results:
-	total: 110 pass: 108 skipped: 2 fail: 0
+> The series of patches represent support of Exynos 5410 SoC
+>     
+> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
+> Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
+>     
+> Patches add new platform description, support of clock controller,
+> dual cluster support and device tree for Exynos 5410 
+>    
+> Has been build on v3.12-rc5.
+> Has been tested on Exynos 5410 reference board (exynos_defconfig).
 
-qemu tests all passed, with the usual warning for the 'sh' target.
+Has anyone tried this on the exynos5410 based odroid-xu yet?  
+
+I tried booting this on my recently arrived odroid-xu, but am not
+getting it to boot.
+
+I'm not yet terribly familiar with this SoC, what are the settings 
+needed for DEBUG_LL on this board?
 
 Thanks,
-Guenter
+
+Kevin
