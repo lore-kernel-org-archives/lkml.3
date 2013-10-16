@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760063Ab3JPFDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:03:55 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59850 "EHLO
+	id S1760046Ab3JPFDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:03:54 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65065 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3JPFAZ (ORCPT
+	with ESMTP id S1751094Ab3JPFAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 01:00:25 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-1e-525e1d67e56c
+X-AuditID: 9c93016f-b7c63ae00000696f-22-525e1d67a6d7
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 02/18] perf util: Add more debug message on failure path
-Date: Wed, 16 Oct 2013 14:00:05 +0900
-Message-Id: <1381899621-14638-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/18] perf ftrace: Add support for --pid option
+Date: Wed, 16 Oct 2013 14:00:07 +0900
+Message-Id: <1381899621-14638-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
@@ -29,136 +29,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's helpful for debugging on tracing features.
+The -p (--pid) option enables to trace existing process by its pid.
 
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c           |  4 ++-
- tools/perf/util/trace-event-read.c | 53 ++++++++++++++++++++++++++------------
- 2 files changed, 39 insertions(+), 18 deletions(-)
+ tools/perf/builtin-ftrace.c | 89 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 63 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index c3e5a3b817ab..f8afefbe99ae 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2721,8 +2721,10 @@ static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
- 	}
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index 6f3dd02c5b9a..bd415f2b1cde 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -11,6 +11,7 @@
  
- 	event = pevent_find_event(pevent, evsel->attr.config);
--	if (event == NULL)
-+	if (event == NULL) {
-+		pr_debug("cannot find event format for %d\n", (int)evsel->attr.config);
- 		return -1;
-+	}
+ #include <unistd.h>
+ #include <signal.h>
++#include <fcntl.h>
  
- 	if (!evsel->name) {
- 		snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index e084e5e654b6..0e3b3f527320 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -262,39 +262,53 @@ static int read_header_files(struct pevent *pevent)
- 
- static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
- {
-+	int ret;
- 	char *buf;
- 
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading ftrace file.\n");
-+		goto out;
- 	}
- 
--	parse_ftrace_file(pevent, buf, size);
-+	ret = parse_ftrace_file(pevent, buf, size);
-+	if (ret < 0)
-+		pr_debug("error parsing ftrace file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
+ #include "util/debug.h"
+ #include "util/parse-options.h"
+@@ -34,11 +35,12 @@ static void sig_handler(int sig __maybe_unused)
+ 	done = true;
  }
  
- static int read_event_file(struct pevent *pevent, char *sys,
- 			    unsigned long long size)
+-static int write_tracing_file(const char *name, const char *val)
++static int __write_tracing_file(const char *name, const char *val, bool append)
  {
-+	int ret;
- 	char *buf;
+ 	char *file;
+ 	int fd, ret = -1;
+ 	ssize_t size = strlen(val);
++	int flags = O_WRONLY;
  
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
+ 	file = get_tracing_file(name);
+ 	if (!file) {
+@@ -46,7 +48,12 @@ static int write_tracing_file(const char *name, const char *val)
  		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
- 		free(buf);
--		return -1;
-+		goto out;
  	}
  
--	parse_event_file(pevent, buf, size, sys);
-+	ret = parse_event_file(pevent, buf, size, sys);
-+	if (ret < 0)
-+		pr_debug("error parsing event file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
+-	fd = open(file, O_WRONLY);
++	if (append)
++		flags |= O_APPEND;
++	else
++		flags |= O_TRUNC;
++
++	fd = open(file, flags);
+ 	if (fd < 0) {
+ 		pr_debug("cannot open tracing file: %s\n", name);
+ 		goto out;
+@@ -63,6 +70,16 @@ out:
+ 	return ret;
  }
  
- static int read_ftrace_files(struct pevent *pevent)
-@@ -347,6 +361,7 @@ static int read_saved_cmdline(struct pevent *pevent)
++static int write_tracing_file(const char *name, const char *val)
++{
++	return __write_tracing_file(name, val, false);
++}
++
++static int append_tracing_file(const char *name, const char *val)
++{
++	return __write_tracing_file(name, val, true);
++}
++
+ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
  {
- 	unsigned long long size;
- 	char *buf;
-+	int ret;
+ 	if (write_tracing_file("tracing_on", "0") < 0)
+@@ -77,11 +94,27 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
+ 	return 0;
+ }
  
- 	/* it can have 0 size */
- 	size = read8(pevent);
-@@ -354,18 +369,22 @@ static int read_saved_cmdline(struct pevent *pevent)
- 		return 0;
- 
- 	buf = malloc(size + 1);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
++static int set_tracing_pid(struct perf_ftrace *ftrace)
++{
++	int i;
++	char buf[16];
++
++	if (perf_target__has_cpu(&ftrace->target))
++		return 0;
++
++	for (i = 0; i < thread_map__nr(ftrace->evlist->threads); i++) {
++		scnprintf(buf, sizeof(buf), "%d",
++			  ftrace->evlist->threads->map[i]);
++		if (append_tracing_file("set_ftrace_pid", buf) < 0)
++			return -1;
 +	}
- 
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading saved cmdlines\n");
-+		goto out;
++	return 0;
++}
++
+ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+ 	char *trace_file;
+ 	int trace_fd;
+-	char *trace_pid;
+ 	char buf[4096];
+ 	struct pollfd pollfd = {
+ 		.events = POLLIN,
+@@ -92,42 +125,37 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 		return -1;
  	}
  
- 	parse_saved_cmdline(pevent, buf, size);
+-	if (argc < 1)
+-		return -1;
 -
-+	ret = 0;
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+ 	signal(SIGCHLD, sig_handler);
+ 
+-	reset_tracing_files(ftrace);
++	if (reset_tracing_files(ftrace) < 0)
++		goto out;
+ 
+ 	/* reset ftrace buffer */
+ 	if (write_tracing_file("trace", "0") < 0)
+ 		goto out;
+ 
+-	if (perf_evlist__prepare_workload(ftrace->evlist, &ftrace->target,
+-					  argv, false, true) < 0)
+-		goto out;
+-
+-	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
+-		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
++	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
++						  &ftrace->target,
++						  argv, false, true) < 0) {
+ 		goto out;
+ 	}
+ 
+-	if (asprintf(&trace_pid, "%d", ftrace->evlist->threads->map[0]) < 0) {
+-		pr_err("failed to allocate pid string\n");
+-		goto out;
++	if (set_tracing_pid(ftrace) < 0) {
++		pr_err("failed to set ftrace pid\n");
++		goto out_reset;
+ 	}
+ 
+-	if (write_tracing_file("set_ftrace_pid", trace_pid) < 0) {
+-		pr_err("failed to set pid: %s\n", trace_pid);
+-		goto out_free_pid;
++	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
++		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
++		goto out_reset;
+ 	}
+ 
+ 	trace_file = get_tracing_file("trace_pipe");
+ 	if (!trace_file) {
+ 		pr_err("failed to open trace_pipe\n");
+-		goto out_free_pid;
++		goto out_reset;
+ 	}
+ 
+ 	trace_fd = open(trace_file, O_RDONLY);
+@@ -136,7 +164,7 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 
+ 	if (trace_fd < 0) {
+ 		pr_err("failed to open trace_pipe\n");
+-		goto out_free_pid;
++		goto out_reset;
+ 	}
+ 
+ 	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
+@@ -175,11 +203,9 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 
+ out_close_fd:
+ 	close(trace_fd);
+-out_free_pid:
+-	free(trace_pid);
+-out:
++out_reset:
+ 	reset_tracing_files(ftrace);
+-
 +out:
- 	free(buf);
--	return 0;
-+	return ret;
+ 	return done ? 0 : -1;
  }
  
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+@@ -197,6 +223,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	const struct option ftrace_options[] = {
+ 	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
+ 		   "tracer to use: function_graph or function"),
++	OPT_STRING('p', "pid", &ftrace.target.pid, "pid",
++		   "trace on existing process id"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose"),
+ 	OPT_END()
+@@ -204,9 +232,18 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc)
++	if (!argc && perf_target__none(&ftrace.target))
+ 		usage_with_options(ftrace_usage, ftrace_options);
+ 
++	ret = perf_target__validate(&ftrace.target);
++	if (ret) {
++		char errbuf[512];
++
++		perf_target__strerror(&ftrace.target, ret, errbuf, 512);
++		pr_err("%s\n", errbuf);
++		return -EINVAL;
++	}
++
+ 	ftrace.evlist = perf_evlist__new();
+ 	if (ftrace.evlist == NULL)
+ 		return -ENOMEM;
 -- 
 1.7.11.7
 
