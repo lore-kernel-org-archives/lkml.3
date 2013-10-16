@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760948Ab3JPVsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:48:24 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4182 "EHLO mms3.broadcom.com"
+	id S1760771Ab3JPVsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:48:21 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4229 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143Ab3JPVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757303Ab3JPVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 17:48:16 -0400
 X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
 From: "Tim Kryger" <tim.kryger@linaro.org>
@@ -19,72 +19,138 @@ To: "Christian Daudt" <bcm@fixthebug.org>,
 cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [RESEND PATCH v2 2/6] ARM: dts: Specify clocks for UARTs on
+Subject: [RESEND PATCH v2 1/6] ARM: dts: Declare clocks as fixed on
  bcm11351
-Date: Wed, 16 Oct 2013 14:47:06 -0700
-Message-ID: <1381960030-1640-3-git-send-email-tim.kryger@linaro.org>
+Date: Wed, 16 Oct 2013 14:47:05 -0700
+Message-ID: <1381960030-1640-2-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
 References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E41D61A2E42312500-01-01
+X-WSS-ID: 7E41D61A2E42312503-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than declaring the frequency of the external clock, specify the
-label of the clock such that the driver may determine the frequency on
-its own.
+Declare clocks that are enabled and configured by bootloaders as fixed
+rate clocks in the DTS such that device drivers may use standard clock
+function calls.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/bcm11351.dtsi | 97 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 97 insertions(+)
 
 diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index c6464fb..ce65367 100644
+index 98e6bc0..c6464fb 100644
 --- a/arch/arm/boot/dts/bcm11351.dtsi
 +++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -43,7 +43,7 @@
- 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+@@ -126,4 +126,101 @@
  		status = "disabled";
- 		reg = <0x3e000000 0x1000>;
--		clock-frequency = <13000000>;
-+		clocks = <&uartb_clk>;
- 		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -53,7 +53,7 @@
- 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e001000 0x1000>;
--		clock-frequency = <13000000>;
-+		clocks = <&uartb2_clk>;
- 		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -63,7 +63,7 @@
- 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e002000 0x1000>;
--		clock-frequency = <13000000>;
-+		clocks = <&uartb3_clk>;
- 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -73,7 +73,7 @@
- 		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e003000 0x1000>;
--		clock-frequency = <13000000>;
-+		clocks = <&uartb4_clk>;
- 		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
+ 	};
+ 
++	clocks {
++		bsc1_clk: bsc1 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		bsc2_clk: bsc2 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		bsc3_clk: bsc3 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		pmu_bsc_clk: pmu_bsc {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		hub_timer_clk: hub_timer {
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++			#clock-cells = <0>;
++		};
++
++		pwm_clk: pwm {
++			compatible = "fixed-clock";
++			clock-frequency = <26000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio1_clk: sdio1 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio2_clk: sdio2 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio3_clk: sdio3 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio4_clk: sdio4 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		tmon_1m_clk: tmon_1m {
++			compatible = "fixed-clock";
++			clock-frequency = <1000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb_clk: uartb {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb2_clk: uartb2 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb3_clk: uartb3 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb4_clk: uartb4 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		usb_otg_ahb_clk: usb_otg_ahb {
++			compatible = "fixed-clock";
++			clock-frequency = <52000000>;
++			#clock-cells = <0>;
++		};
++	};
+ };
 -- 
 1.8.0.1
 
