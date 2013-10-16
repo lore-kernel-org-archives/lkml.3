@@ -1,189 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3JPGdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:33:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35223 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab3JPGde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:33:34 -0400
-Message-ID: <525E3348.9040007@oracle.com>
-Date: Wed, 16 Oct 2013 14:33:44 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S932953Ab3JPGdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:33:53 -0400
+Received: from smtp-out.abv.bg ([194.153.145.99]:56323 "EHLO smtp-out.abv.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751874Ab3JPGdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:33:52 -0400
+DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
+	b=u0PD0g/pDQyOX7mK+jl3r9Is/adIXfNGMsL7lXf+Y5IgX2yVlNjVRT+wgGCxqDzAR
+	oqcdW4fFTd+cYyWiOIFnDHTbAl4M6bolxtuGB7bZcGLEyAHTYpkdTS68i+C0z1xxJLl
+	tt7rrxr+ZDduSxESlhHTKQhzBCehWTe00XzqYTg=
+Date: Wed, 16 Oct 2013 09:33:51 +0300 (EEST)
+From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: pali.rohar@gmail.com, pc+n900@asdf.org, pavel@ucw.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Message-ID: <1046037275.21008.1381905231138.JavaMail.apache@mail83.abv.bg>
+Subject: Re: OMAPFB: CMA allocation failures
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3/3] Update x86_msi.restore_msi_irqs API param
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-Mailer: AbvMail 1.0
+X-Originating-IP: 46.249.74.23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change x86_msi.restore_msi_irqs(struct pci_dev *dev, int irq) to
-x86_msi.restore_msi_irqs(struct pci_dev *dev)
+ Hi Tomi,
 
->From its naming, restore_msi_irqs is used to restore multiple msix irqs,
-param 'int irq' is unneeded. This could make code looks consistent in vm
-and bare metal.
+ >I think we should somehow find out what the pages are that cannot be
+ >migrated, and where they come from.
+ >
+ >So there are &quot;anonymous pages without mapping&quot; with page_count(page) !=
+ >1. I have to say I don't know what that means =). I need to find some
+ >time to study the mm.
 
-Dom0 msix restore code could be optimized a bit with this change.
+I put some more traces in the point of failure, the result:
 
-Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/pci.h      |    2 +-
- arch/x86/include/asm/x86_init.h |    2 +-
- arch/x86/kernel/x86_init.c      |    4 ++--
- arch/x86/pci/xen.c              |    2 +-
- drivers/pci/msi.c               |   21 ++++++++++++++-------
- include/linux/msi.h             |    4 ++--
- 6 files changed, 21 insertions(+), 14 deletions(-)
+page_count(page) == 2, page->flags == 0x0008025D, which is:
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 7d74432..d44baf4 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -104,7 +104,7 @@ extern void pci_iommu_alloc(void);
- struct msi_desc;
- int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void native_teardown_msi_irq(unsigned int irq);
--void native_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void native_restore_msi_irqs(struct pci_dev *dev);
- int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
- 		  unsigned int irq_base, unsigned int irq_offset);
- #else
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 828a156..f58a9c7 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -180,7 +180,7 @@ struct x86_msi_ops {
- 			       u8 hpet_id);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
--	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
-+	void (*restore_msi_irqs)(struct pci_dev *dev);
- 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
- };
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 8ce0072..234b072 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -134,9 +134,9 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	x86_msi.teardown_msi_irq(irq);
- }
- 
--void arch_restore_msi_irqs(struct pci_dev *dev, int irq)
-+void arch_restore_msi_irqs(struct pci_dev *dev)
- {
--	x86_msi.restore_msi_irqs(dev, irq);
-+	x86_msi.restore_msi_irqs(dev);
- }
- #endif
- 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 48e8461..cdd869f 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -337,7 +337,7 @@ out:
- 	return ret;
- }
- 
--static void xen_initdom_restore_msi_irqs(struct pci_dev *dev, int irq)
-+static void xen_initdom_restore_msi_irqs(struct pci_dev *dev)
- {
- 	int ret = 0;
- 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 38237f4..c16928e 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -116,9 +116,9 @@ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
- 	return default_teardown_msi_irqs(dev);
- }
- 
--void __weak arch_restore_msi_irqs(struct pci_dev *dev, int irq)
-+void __weak arch_restore_msi_irqs(struct pci_dev *dev)
- {
--	return default_restore_msi_irqs(dev, irq);
-+	return default_restore_msi_irqs(dev);
- }
- 
- static void msi_set_enable(struct pci_dev *dev, int enable)
-@@ -234,7 +234,7 @@ void unmask_msi_irq(struct irq_data *data)
- 	msi_set_mask_bit(data, 0);
- }
- 
--void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-+static void default_restore_msi_irq(struct pci_dev *dev, int irq)
- {
- 	int pos;
- 	u16 control;
-@@ -265,6 +265,15 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
- 	}
- }
- 
-+void default_restore_msi_irqs(struct pci_dev *dev)
-+{
-+	struct msi_desc *entry;
-+
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		default_restore_msi_irq(dev, entry->irq);
-+	}
-+}
-+
- void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
- {
- 	BUG_ON(entry->dev->current_state != PCI_D0);
-@@ -433,7 +442,7 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
- 
- 	pci_intx_for_msi(dev, 0);
- 	msi_set_enable(dev, 0);
--	arch_restore_msi_irqs(dev, dev->irq);
-+	arch_restore_msi_irqs(dev);
- 
- 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
- 	control &= ~PCI_MSI_FLAGS_QSIZE;
-@@ -457,9 +466,7 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
- 	control |= PCI_MSIX_FLAGS_ENABLE | PCI_MSIX_FLAGS_MASKALL;
- 	pci_write_config_word(dev, dev->msix_cap + PCI_MSIX_FLAGS, control);
- 
--	list_for_each_entry(entry, &dev->msi_list, list) {
--		arch_restore_msi_irqs(dev, entry->irq);
--	}
-+	arch_restore_msi_irqs(dev);
- 
- 	control &= ~PCI_MSIX_FLAGS_MASKALL;
- 	pci_write_config_word(dev, dev->msix_cap + PCI_MSIX_FLAGS, control);
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index b17ead8..cea1123 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -60,10 +60,10 @@ void arch_teardown_msi_irq(unsigned int irq);
- int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void arch_teardown_msi_irqs(struct pci_dev *dev);
- int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
--void arch_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void arch_restore_msi_irqs(struct pci_dev *dev);
- 
- void default_teardown_msi_irqs(struct pci_dev *dev);
--void default_restore_msi_irqs(struct pci_dev *dev, int irq);
-+void default_restore_msi_irqs(struct pci_dev *dev);
- 
- struct msi_chip {
- 	struct module *owner;
--- 
-1.7.3
+PG_locked, PG_referenced, PG_uptodate, PG_dirty, PG_active, PG_arch_1, PG_unevictable
 
+Whatever those mean :). I have no idea how to identify where those pages come from.
+
+ >Well, as I said, you're the first one to report any errors, after the
+ >change being in use for a year. Maybe people just haven't used recent
+ >enough kernels, and the issue is only now starting to emerge, but I
+ >wouldn't draw any conclusions yet.
+
+I am (almost) sure I am the first one to test video playback on OMAP3 with DSP video
+acceleration, using recent kernel and Maemo5 on n900 :). So there is high probability the issue was not reported earlier because noone have tested it thoroughly after the change.
+
+ >If the CMA would have big generic issues, I think we would've seen
+ >issues earlier. So I'm guessing it's some driver or app in your setup
+ >that's causing the issues. Maybe the driver/app is broken, or maybe that
+ >specific behavior is not handled well by CMA. In both case I think we
+ >need to identify what that driver/app is.
+
+What I know is going on, is that there is heavy fs I/O at the same time - there is
+a thumbnailer process running in background which tries to extract thumbnails of all video
+files in the system. Also, there are other processes doing various jobs (e-mail fetching, IM
+accounts login, whatnot). And in addition Xorg mlocks parts of its address space. Of course all
+this happens with lots of memory being swapped in and out. I guess all this is related.
+
+However, even after the system has settled, the CMA failures continue to happen. It looks like
+some pages are allocated from CMA which should not be.
+
+ >I wonder how I could try to reproduce this with a generic omap3 board...
+
+I can always reproduce it here (well, not on generic board, but I guess it is even better to test in real-life conditions), so if you need some specific tests or traces or whatever, I
+can do them for you.
+
+Regards,
+Ivo
