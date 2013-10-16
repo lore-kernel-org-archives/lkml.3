@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab3JPPmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:42:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43910 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760800Ab3JPPjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:39:41 -0400
+	id S933182Ab3JPPmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:42:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35214 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760775Ab3JPPjg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:39:36 -0400
 From: Nishanth Menon <nm@ti.com>
 To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Tony Lindgren <tony@atomide.com>
 CC: Kevin Hilman <khilman@deeprootsystems.com>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V7 0/8] ARM: OMAP3+: support cpufreq-cpu0 for device tree boot
-Date: Wed, 16 Oct 2013 10:39:00 -0500
-Message-ID: <1381937948-27057-1-git-send-email-nm@ti.com>
+        <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH V7 7/8] ARM: dts: DRA7: Add CPU OPP table
+Date: Wed, 16 Oct 2013 10:39:07 -0500
+Message-ID: <1381937948-27057-8-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
+References: <1381937948-27057-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: J Keerthy <j-keerthy@ti.com>
 
-This series enables the use of cpufreq-cpu0 generic driver for all
-OMAP and related derivatives. Only patch#8 in the series, which
-introduces CPU clock nodes, depends on Tero's V8 patch series for clock
-nodes[1]
+Add DT OPP table for DRA7xx family of devices. This data is decoded by
+OF with of_init_opp_table() helper function.
 
-I will stop copy pasting the series complete history and point at [2].
+The data is based on DRA75x, DRA74x Data Manual revision F (Sept 2013).
 
-Main changes since V6[3]:
-- squashed patches for a minimal set
-- i have organized the series such that 1 to 7 can immediately be merged
-  if desired:
-	- patches 1,2,3 can go to Tony's omap-for-v3.13/quirk [4]
-	- patches 4-7 can go to Benoit's for_3.13/dts [5]
-	- patch 8 needs to depend on [1] and should eventually go to [5]
+TODO: add OPP_HIGH after AVS-Class0 is functional
+NOTE: The voltage and frequency values work well only on NOM samples
+and it is mandatory to use ABB/AVS Class 0 support for all OPPs.
 
-NOTES: obviously without clock nodes cpufreq will not function.
+Clock nodes are pending clock node alignment.
 
-Test Script: http://pastebin.com/VvJPjsne
+[nm@ti.com: cleanups and rebase to latest]
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Test-log:
-BeagleBoard-XM (OMAP36xx): http://pastebin.com/XZDNaHPf
-PandaBoard-ES (OMAP4460): http://pastebin.com/qQCmA2ng
-BeagleBone-Black(AM335x): http://pastebin.com/98FX4uYW
-OMAP5uEVM (OMAP5432): http://pastebin.com/NXj3L636
-DRA7-EVM (DRA7xx): http://pastebin.com/0kKT3TXy
-
-J Keerthy (3):
-  ARM: dts: dra7-evm: add smps123 supply for CPU
-  ARM: dts: OMAP5: Add CPU OPP table
-  ARM: dts: DRA7: Add CPU OPP table
-
-Nishanth Menon (5):
-  ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
-  ARM: OMAP2+: add missing lateinit hook for calling pm late init
-  ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
-  ARM: dts: omap5-uevm: add smps123 supply for CPU
-  ARM: dts: OMAP3: add clock nodes for CPU
-
-[1] http://marc.info/?t=138133284200006&r=1&w=2
-[2] http://marc.info/?l=linux-arm-kernel&m=136804009618594&w=2
-[3] http://marc.info/?l=devicetree&m=138135419203492&w=2
-[4] https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.13/quirk
-
- arch/arm/boot/dts/am33xx.dtsi       |    4 ++++
- arch/arm/boot/dts/dra7-evm.dts      |    4 ++++
- arch/arm/boot/dts/dra7.dtsi         |   13 ++++++++++++-
- arch/arm/boot/dts/omap3.dtsi        |    5 +++++
- arch/arm/boot/dts/omap4.dtsi        |    5 +++++
- arch/arm/boot/dts/omap5-uevm.dts    |    4 ++++
- arch/arm/boot/dts/omap5.dtsi        |   15 ++++++++++++++-
- arch/arm/mach-omap2/board-generic.c |    4 ++++
- arch/arm/mach-omap2/common.h        |    4 ++++
- arch/arm/mach-omap2/io.c            |   20 ++++++++++++++++++++
- arch/arm/mach-omap2/opp.c           |    4 ++++
- arch/arm/mach-omap2/pm.c            |   12 +++++++++---
- 12 files changed, 89 insertions(+), 5 deletions(-)
-
-Regards,
-Nishanth Menon
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 02e430b..92cbe3b 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -36,6 +36,12 @@
+ 			device_type = "cpu";
+ 			compatible = "arm,cortex-a15";
+ 			reg = <0>;
++
++			operating-points = <
++				/* kHz    uV */
++				1000000	1060000
++				1176000	1160000
++				>;
+ 		};
+ 		cpu@1 {
+ 			device_type = "cpu";
 -- 
 1.7.9.5
 
