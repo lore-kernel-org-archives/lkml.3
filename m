@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256Ab3JPLhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:37:39 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41930 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933974Ab3JPLhi convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 16 Oct 2013 07:37:38 -0400
-Message-Id: <525E969E02000078000FB710@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 16 Oct 2013 12:37:34 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: honor ACPI FADT flag indicating absence of a CMOS
- RTC
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S934273Ab3JPLhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:37:50 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50141 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933974Ab3JPLhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 07:37:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <52587C37.3070606@nvidia.com>
+References: <1381515273-25466-1-git-send-email-acourbot@nvidia.com>
+	<1381515273-25466-4-git-send-email-acourbot@nvidia.com>
+	<52587C37.3070606@nvidia.com>
+Date: Wed, 16 Oct 2013 13:37:45 +0200
+Message-ID: <CACRpkdZTqZKyG3Lbs_GmdnqB0yEjRApsaUhJA9-s_uPb_Wrq8A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] gpiolib: add gpiod_get() and gpiod_put() functions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We shouldn't be creating a corresponding platform device in that case.
+On Sat, Oct 12, 2013 at 12:31 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+>> +#else
+>> +static struct device_node *of_find_gpio(struct device *dev, const char *id
+>> +                                     unsigned int idx, unsigned long flags)
+>> +{
+>> +     return ERR_PTR(-ENODEV);
+>> +}
+>> +#endif
+>
+> ... and of course I forgot to fix the main compilation error. Linus,
+> would you mind squashing what follows into this patch? Apologies for
+> the inconvenience.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+I guess you'll fix this if you respin it?
 
----
- arch/x86/kernel/rtc.c |    5 +++++
- 1 file changed, 5 insertions(+)
+If it's too much trouble now we can just defer this for early in the v3.14
+cycle.
 
---- 3.12-rc5/arch/x86/kernel/rtc.c
-+++ 3.12-rc5-x86-ACPI-no-RTC/arch/x86/kernel/rtc.c
-@@ -192,6 +192,11 @@ static __init int add_rtc_cmos(void)
- 	if (mrst_identify_cpu())
- 		return -ENODEV;
- 
-+#ifdef CONFIG_ACPI
-+	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC)
-+		return -ENODEV;
-+#endif
-+
- 	platform_device_register(&rtc_device);
- 	dev_info(&rtc_device.dev,
- 		 "registered platform RTC device (no PNP device found)\n");
-
-
-
+Yours,
+Linus Walleij
