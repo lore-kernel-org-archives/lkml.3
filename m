@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934386Ab3JPM7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:59:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35861 "EHLO comal.ext.ti.com"
+	id S934436Ab3JPM7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:59:24 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:29555 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760550Ab3JPM7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:59:16 -0400
-Message-ID: <525E8D91.5090400@ti.com>
-Date: Wed, 16 Oct 2013 07:58:57 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S934287Ab3JPM7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:59:19 -0400
+Date: Wed, 16 Oct 2013 14:58:56 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 03/03] GPIO: Add TB10x GPIO driver
+Message-ID: <20131016125855.GA20308@ab42.lan>
+References: <20131008122145.GA21985@ab42.lan>
+ <1381235122-23730-3-git-send-email-christian.ruppert@abilis.com>
+ <CACRpkdaMq1bzcTP6KZCGuWSm2MB0vSmJ4aRskuQNB8at4YnWRQ@mail.gmail.com>
+ <20131015134526.GB7461@ab42.lan>
+ <CACRpkdZjfNJtAsbge+HsWZQjNREnJQ7msyPy9g3cMLtc8KhmPg@mail.gmail.com>
 MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: OMAP5: Add i2c aliases
-References: <1381856405-30970-1-git-send-email-nm@ti.com> <525E7A86.4090507@ti.com>
-In-Reply-To: <525E7A86.4090507@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZjfNJtAsbge+HsWZQjNREnJQ7msyPy9g3cMLtc8KhmPg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 06:37 AM, Rajendra Nayak wrote:
-> On Tuesday 15 October 2013 10:30 PM, Nishanth Menon wrote:
->> Currently, i2c1 and i2c5 defer probe due to pinctrl dependencies.
->> This changes the i2c ID each bus is registered with in i2c-dev
->> interface.
->>
->> As a result of this, many userspace tools break and there is no
->> consistent manner to fix the same if the i2c dev interface have no
->> consistent numbering. Provide alias to allow ordering the i2c devices
->> correctly.
+On Wed, Oct 16, 2013 at 01:29:44PM +0200, Linus Walleij wrote:
+> On Tue, Oct 15, 2013 at 3:45 PM, Christian Ruppert
+> <christian.ruppert@abilis.com> wrote:
+> > On Wed, Oct 09, 2013 at 02:19:17PM +0200, Linus Walleij wrote:
 > 
-> This looks good Nishanth. Shouldn't we just go ahead and fix these for
-> all OMAPs/AMxx devices which would have the same problem as OMAP5 ;)
-
-yes ofcourse. i can do a couple of patches:
-1 - for all OMAPs
-2 - for all AM platforms.
-
+> >> It's not like I'm 100% certain on where to use one or the other
+> >> construct (a mechanism like the above is needed for threaded
+> >> IRQs I've noticed) but the chained handler seems more to the
+> >> point does it not?
+> >>
+> >> The only downside I've seen is that the parent IRQ does not get
+> >> a name and the accumulated IRQ stats in /proc/interrupts but
+> >> surely we can live without that (or fix it).
+> >>
+> >> Since I'm a bit rusty on chained IRQs correct me if I'm wrong...
+> >
+> > OK, it took me a while to figure this back out again because as far as
+> > I'm familiar with the IRQ framework you're right. The reason I'm not
+> > using irq_set_chained_handler is that we have one driver instance per
+> > GPIO bank and all GPIO banks share the same interrupt line. This means
+> > every driver instance needs its own (different) user data and a simple
+> > call to irq_set_handler_data(tb10x_gpio) won't suffice. I'm not aware of
+> > any mechanism that allows interrupt sharing with the
+> > irq_set_chained_handler() mechanism.
 > 
-> Acked-by: Rajendra Nayak <rnayak@ti.com> 
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>
->>  arch/arm/boot/dts/omap5.dtsi |    5 +++++
->>  1 file changed, 5 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
->> index e18ee7e..8970deb 100644
->> --- a/arch/arm/boot/dts/omap5.dtsi
->> +++ b/arch/arm/boot/dts/omap5.dtsi
->> @@ -21,6 +21,11 @@
->>  	interrupt-parent = <&gic>;
->>  
->>  	aliases {
->> +		i2c0 = &i2c1;
->> +		i2c1 = &i2c2;
->> +		i2c2 = &i2c3;
->> +		i2c3 = &i2c4;
->> +		i2c4 = &i2c5;
->>  		serial0 = &uart1;
->>  		serial1 = &uart2;
->>  		serial2 = &uart3;
->>
+> OK yes makes perfect sense. We'll live with this then.
 > 
+> I didn't see a new version of this patch with the other two, shall
+> I just apply this last version in the pin control tree with the
+> two other patches?
 
+If you don't see anything else which needs changing please do so, yes.
 
--- 
-Regards,
-Nishanth Menon
+Best regards,
+  Christian
