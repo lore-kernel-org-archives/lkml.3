@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934928Ab3JPSAx (ORCPT <rfc822;w@1wt.eu>);
+	id S934955Ab3JPSA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:00:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55876 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934512Ab3JPSAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 14:00:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35871 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934512Ab3JPRqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 15/50] ARC: Fix 32-bit wrap around in access_ok()
-Date: Wed, 16 Oct 2013 10:45:01 -0700
-Message-Id: <20131016174400.212175702@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Date: Wed, 16 Oct 2013 20:00:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
+        arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
+Message-ID: <20131016180038.GO13608@pd.tnic>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <20131016160550.GG13608@pd.tnic>
+ <20131016125646.7141b580@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131016125646.7141b580@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 16, 2013 at 12:56:46PM -0400, Steven Rostedt wrote:
+> On Wed, 16 Oct 2013 18:05:50 +0200
+> Borislav Petkov <bp@alien8.de> wrote:
+> 
+>  
+> > > For trace output format we still need further discussion. In the last
+> > > patch(support trace interface) I have to reserve previous Kconfig
+> > > format because I find once I put trace_event interface in the module,
+> > > it will not work. I will paste another trace patch(it only works when
+> 
+> What did not work?
+> 
+> > > acpi_extlog is builtin) for your answer.
+> > 
+> > I think to be able to define TRACE_EVENTs in modules, you need
+> > https://lwn.net/Articles/383362/
+> > 
+> > Steve, that still true?
+> > 
+> 
+> Take a look at samples/trace_events/
+> 
+> That's a module that uses TRACE_EVENTs.
+> 
+> What exactly is the problem here?
 
-------------------
+Right, the only difference I can see is that include/ras/ras_event.h
+doesn't have those below:
 
-From: Vineet Gupta <vgupta@synopsys.com>
+#undef TRACE_INCLUDE_PATH
+#undef TRACE_INCLUDE_FILE
+#define TRACE_INCLUDE_PATH .
 
-commit 0752adfda15f0eca9859a76da3db1800e129ad43 upstream.
+Perhaps that is the problem?
 
-Anton reported
+Gong, what is exactly the issue you're observing?
 
- | LTP tests syscalls/process_vm_readv01 and process_vm_writev01 fail
- | similarly in one testcase test_iov_invalid -> lvec->iov_base.
- | Testcase expects errno EFAULT and return code -1,
- | but it gets return code 1 and ERRNO is 0 what means success.
+Thanks.
 
-Essentially test case was passing a pointer of -1 which access_ok()
-was not catching. It was doing [@addr + @sz <= TASK_SIZE] which would
-pass for @addr == -1
+-- 
+Regards/Gruss,
+    Boris.
 
-Fixed that by rewriting as [@addr <= TASK_SIZE - @sz]
-
-Reported-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arc/include/asm/uaccess.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/arc/include/asm/uaccess.h
-+++ b/arch/arc/include/asm/uaccess.h
-@@ -43,7 +43,7 @@
-  * Because it essentially checks if buffer end is within limit and @len is
-  * non-ngeative, which implies that buffer start will be within limit too.
-  *
-- * The reason for rewriting being, for majorit yof cases, @len is generally
-+ * The reason for rewriting being, for majority of cases, @len is generally
-  * compile time constant, causing first sub-expression to be compile time
-  * subsumed.
-  *
-@@ -53,7 +53,7 @@
-  *
-  */
- #define __user_ok(addr, sz)	(((sz) <= TASK_SIZE) && \
--				 (((addr)+(sz)) <= get_fs()))
-+				 ((addr) <= (get_fs() - (sz))))
- #define __access_ok(addr, sz)	(unlikely(__kernel_ok) || \
- 				 likely(__user_ok((addr), (sz))))
- 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
