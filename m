@@ -1,144 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758416Ab3JPB3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 21:29:05 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48567 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab3JPB3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 21:29:03 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <525DEB54.4030401@jp.fujitsu.com>
-Date: Wed, 16 Oct 2013 10:26:44 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1758605Ab3JPBb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 21:31:58 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58210 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751277Ab3JPBb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 21:31:56 -0400
+Date: Wed, 16 Oct 2013 12:36:15 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [GIT] Apparmor bugfixes for 3.12
+Message-ID: <alpine.LRH.2.02.1310161234120.19614@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v2 2/2] x86, apic: Disable BSP if boot cpu is AP
-References: <20131015054214.13666.11737.stgit@localhost6.localdomain6> <20131015054327.13666.1689.stgit@localhost6.localdomain6> <20131015193049.GO31215@redhat.com>
-In-Reply-To: <20131015193049.GO31215@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/16 4:30), Vivek Goyal wrote:
-> On Tue, Oct 15, 2013 at 02:43:27PM +0900, HATAYAMA Daisuke wrote:
->> Currently, on x86 architecture, if crash happens on AP in the kdump
->> 1st kernel, the 2nd kernel fails to wake up multiple CPUs. The typical
->> behaviour we actually see is immediate system reset or hang.
->>
->> This comes from the hardware specification that the processor with BSP
->> flag is jumped at BIOS init code when receiving INIT; the behaviour we
->> then see depends on the init code.
->>
->> This never happens if we use only one cpu in the 2nd kernel. So, we
->> have avoided the issue by the workaround that specifying maxcpus=1 or
->> nr_cpus=1 in kernel parameter of the 2nd kernel.
->>
->> In order to address the issue, this patch disables BSP if boot cpu is
->> an AP, and thus we don't try to wake up the BSP by sending INIT.
->>
->> Before this idea we discussed the following two ideas but we cannot
->> adopt them in each reasons:
->>
->> 1. Switch CPU from AP to BSP via IPI NMI at crash in the 1st kernel
->>
->>     This is done in the kdump crash path where logic is in inconsistent
->>     state. Any part of memory can be corrupted, including
->>     hardware-related table being accessed for example when paging is
->>     performed or interruption is performed.
->>
->> 2. Unset BSP flag of the boot cpu in the 1st kernel
->>
->>     Unsetting BSP flag can affect some real world firmware badly. For
->>     example, Ma verified that some HP systems fail to reboot under this
->>     configuration. See:
->>
->>     http://lkml.indiana.edu/hypermail/linux/kernel/1308.1/03574.html
->>
->> Due to the idea 1, we have to address the issue in the 2nd kernel on
->> AP. Then, it's impossible to know which CPU is BSP by rdmsr
->> instruction because the CPU is the one we are now trying to wake
->> up. From the same reason, it's also impossible to unset BSP flag of
->> the BSP by wrmsr instruction.
->>
->> Next, due to the idea 2, BSP is halting in the 1st kernel while
->> keeping BSP flag set (or possibly could be running somewhere in
->> catastrophic state.) In generall, CPUs except for the boot cpu in the
->> 2nd kernel -- the cpu under which crash happened --- can be thought of
->> as remaining in any inconsistent state in the 1st kernel. For APs,
->> it's possible to recover sane state by initiating INIT to them; see
->> 3.7.3 Processor-specific INIT in MultiProcessor
->> specification. However, there's no way for BSP. Therefore, there's no
->> other way to disable BSP.
->>
->> My motivation is to generate crash dump quickly on the system with
->> huge memory. We can assume such system also has a lot of N-cpus and
->> (N-1)-cpus are still available.
->>
->> To identify which CPU is BSP, we lookup ACPI table or MP table. One
->> concern is that ACPI guidlines BIOS *should* list the BSP in the first
->> MADT LAPIC entry; not *must*. In this sense, this logic relis on BIOS
->> following ACPI's guideline. On the other hand, we don't need to worry
->> about this in MP table case because it has explit BSP flag.
->>
->> To avoid any undesirable bahaviour caused by any broken BIOS that
->> doesn't conform to the guideline, it's enough to limit the number of
->> cpus to 1 by specifying maxcpu=1 or nr_cpus=1, as is currently done in
->> default kdump configuration. (But of course, it's problematic in
->> maxcpu=1 case if trying to wake up other cpus later in user space.)
->>
->> SFI and devicetree doesn't provide BSP information, so there's no
->> functionality change in their codes, only assigning false for all the
->> entries, keeping interface uniform.
->
-> Hi Hatayama,
->
-> So we rely on ACPI reporting BSP properly. And SFI and device tree does
-> not provide BSP info. So for those cases situations where BSP is not
-> reported, situaiton is little dicy. We might try to bring up those cpus
-> and bring down the system.
->
+A couple more regressions fixed, please pull.
 
-Yes, I intend that. If there's no BIOS facility reporting BSP information
-in the system, max_cpus=1 or nrcpus=1 should be specified just as so far.
+The following changes since commit 34ec4de42be5006abdd8d0c08b306ffaa64d0d5d:
 
-> I am wondering if there is any attribute of cpu which we can pass to
-> second kernel on command line. And tell second kernel not to bring up
-> that specific cpu. (Say exclude_cpu=<cpu_attr>)? If this works, then
-> if ACPI or other mechanism don't report BSP, we could possibly assume
-> that cpu 0 is BSP and ask second kernel to not try to boot it.
->
+  Merge tag 'devicetree-for-linus' of git://git.secretlab.ca/git/linux (2013-10-15 17:14:13 -0700)
 
-I've come up with similar idea. If there's such kernel option, rest of
-the processing can be implemented in user-land, i.e., get apicid of
-BSP from /proc/cpuid and set it in kernel command line of 2nd kernel.
-What kexec-tools should do on fedora/RHEL? Also, this idea covers SFI
-and device tree.
+are available in the git repository at:
 
-The reason why I didn't choose such idea was first passing the value
-via command-line seems rather ad-hoc. The second reason is that in any
-case it's compromised design. Rigorously, we cannot get correct mapping
-of apicid to {BSP, APIC} at the 1st kernel. That is, there's a class of
-the bugs that affect BSP flag of each processor. For example, on
-catastrophic state, all the cpus can have BSP flag on the 2nd kernel due
-to wrmsr instructions generated by the bug causing crash. In this sense,
-current implementation is less reliable than max_cpus=1 case.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
-If addressing this rigorously, for example, we need to check status of
-BSP flag between 1st kernel and 2nd kernel to keep processor with BSP
-flag unique, exclude cpus in catastrophic state that are not checked,
-and to tell the 2nd kernel which cpu can be wake up.
+John Johansen (2):
+      apparmor: fix memleak of the profile hash
+      apparmor: fix bad lock balance when introspecting policy
 
-This is not simple so I've avoided in current implementation.
+ security/apparmor/apparmorfs.c |    4 +---
+ security/apparmor/policy.c     |    1 +
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+---
 
+commit ed2c7da3a40c58410508fe24e12d03e508d7ec01
+Author: John Johansen <john.johansen@canonical.com>
+Date:   Mon Oct 14 11:46:27 2013 -0700
+
+    apparmor: fix bad lock balance when introspecting policy
+    
+    BugLink: http://bugs.launchpad.net/bugs/1235977
+    
+    The profile introspection seq file has a locking bug when policy is viewed
+    from a virtual root (task in a policy namespace), introspection from the
+    real root is not affected.
+    
+    The test for root
+        while (parent) {
+    is correct for the real root, but incorrect for tasks in a policy namespace.
+    This allows the task to walk backup the policy tree past its virtual root
+    causing it to be unlocked before the virtual root should be in the p_stop
+    fn.
+    
+    This results in the following lockdep back trace:
+    [   78.479744] [ BUG: bad unlock balance detected! ]
+    [   78.479792] 3.11.0-11-generic #17 Not tainted
+    [   78.479838] -------------------------------------
+    [   78.479885] grep/2223 is trying to release lock (&ns->lock) at:
+    [   78.479952] [<ffffffff817bf3be>] mutex_unlock+0xe/0x10
+    [   78.480002] but there are no more locks to release!
+    [   78.480037]
+    [   78.480037] other info that might help us debug this:
+    [   78.480037] 1 lock held by grep/2223:
+    [   78.480037]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff812111bd>] seq_read+0x3d/0x3d0
+    [   78.480037]
+    [   78.480037] stack backtrace:
+    [   78.480037] CPU: 0 PID: 2223 Comm: grep Not tainted 3.11.0-11-generic #17
+    [   78.480037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+    [   78.480037]  ffffffff817bf3be ffff880007763d60 ffffffff817b97ef ffff8800189d2190
+    [   78.480037]  ffff880007763d88 ffffffff810e1c6e ffff88001f044730 ffff8800189d2190
+    [   78.480037]  ffffffff817bf3be ffff880007763e00 ffffffff810e5bd6 0000000724fe56b7
+    [   78.480037] Call Trace:
+    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
+    [   78.480037]  [<ffffffff817b97ef>] dump_stack+0x54/0x74
+    [   78.480037]  [<ffffffff810e1c6e>] print_unlock_imbalance_bug+0xee/0x100
+    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
+    [   78.480037]  [<ffffffff810e5bd6>] lock_release_non_nested+0x226/0x300
+    [   78.480037]  [<ffffffff817bf2fe>] ? __mutex_unlock_slowpath+0xce/0x180
+    [   78.480037]  [<ffffffff817bf3be>] ? mutex_unlock+0xe/0x10
+    [   78.480037]  [<ffffffff810e5d5c>] lock_release+0xac/0x310
+    [   78.480037]  [<ffffffff817bf2b3>] __mutex_unlock_slowpath+0x83/0x180
+    [   78.480037]  [<ffffffff817bf3be>] mutex_unlock+0xe/0x10
+    [   78.480037]  [<ffffffff81376c91>] p_stop+0x51/0x90
+    [   78.480037]  [<ffffffff81211408>] seq_read+0x288/0x3d0
+    [   78.480037]  [<ffffffff811e9d9e>] vfs_read+0x9e/0x170
+    [   78.480037]  [<ffffffff811ea8cc>] SyS_read+0x4c/0xa0
+    [   78.480037]  [<ffffffff817ccc9d>] system_call_fastpath+0x1a/0x1f
+    
+    Signed-off-by: John Johansen <john.johansen@canonical.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
+index 95c2b26..7db9954 100644
+--- a/security/apparmor/apparmorfs.c
++++ b/security/apparmor/apparmorfs.c
+@@ -580,15 +580,13 @@ static struct aa_namespace *__next_namespace(struct aa_namespace *root,
+ 
+ 	/* check if the next ns is a sibling, parent, gp, .. */
+ 	parent = ns->parent;
+-	while (parent) {
++	while (ns != root) {
+ 		mutex_unlock(&ns->lock);
+ 		next = list_entry_next(ns, base.list);
+ 		if (!list_entry_is_head(next, &parent->sub_ns, base.list)) {
+ 			mutex_lock(&next->lock);
+ 			return next;
+ 		}
+-		if (parent == root)
+-			return NULL;
+ 		ns = parent;
+ 		parent = parent->parent;
+ 	}
+
+commit 5cb3e91ebd0405519795f243adbfc4ed2a6fe53f
+Author: John Johansen <john.johansen@canonical.com>
+Date:   Mon Oct 14 11:44:34 2013 -0700
+
+    apparmor: fix memleak of the profile hash
+    
+    BugLink: http://bugs.launchpad.net/bugs/1235523
+    
+    This fixes the following kmemleak trace:
+    unreferenced object 0xffff8801e8c35680 (size 32):
+      comm "apparmor_parser", pid 691, jiffies 4294895667 (age 13230.876s)
+      hex dump (first 32 bytes):
+        e0 d3 4e b5 ac 6d f4 ed 3f cb ee 48 1c fd 40 cf  ..N..m..?..H..@.
+        5b cc e9 93 00 00 00 00 00 00 00 00 00 00 00 00  [...............
+      backtrace:
+        [<ffffffff817a97ee>] kmemleak_alloc+0x4e/0xb0
+        [<ffffffff811ca9f3>] __kmalloc+0x103/0x290
+        [<ffffffff8138acbc>] aa_calc_profile_hash+0x6c/0x150
+        [<ffffffff8138074d>] aa_unpack+0x39d/0xd50
+        [<ffffffff8137eced>] aa_replace_profiles+0x3d/0xd80
+        [<ffffffff81376937>] profile_replace+0x37/0x50
+        [<ffffffff811e9f2d>] vfs_write+0xbd/0x1e0
+        [<ffffffff811ea96c>] SyS_write+0x4c/0xa0
+        [<ffffffff817ccb1d>] system_call_fastpath+0x1a/0x1f
+        [<ffffffffffffffff>] 0xffffffffffffffff
+    
+    Signed-off-by: John Johansen <john.johansen@canonical.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
+index 345bec0..705c287 100644
+--- a/security/apparmor/policy.c
++++ b/security/apparmor/policy.c
+@@ -610,6 +610,7 @@ void aa_free_profile(struct aa_profile *profile)
+ 	aa_put_dfa(profile->policy.dfa);
+ 	aa_put_replacedby(profile->replacedby);
+ 
++	kzfree(profile->hash);
+ 	kzfree(profile);
+ }
+ 
