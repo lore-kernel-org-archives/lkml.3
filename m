@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935364Ab3JPSOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:14:08 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:44128 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934511Ab3JPSOF (ORCPT
+	id S934943Ab3JPSOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:14:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35667 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761429Ab3JPRpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:14:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131016175302.GB4100@infradead.org>
-References: <1381416608-2741-1-git-send-email-eranian@google.com>
-	<20131010180049.GD9929@pd.tnic>
-	<20131016124627.GA2611@gmail.com>
-	<CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
-	<20131016175302.GB4100@infradead.org>
-Date: Wed, 16 Oct 2013 20:14:04 +0200
-Message-ID: <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Oct 2013 13:45:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 47/69] ipc/msg.c: Fix lost wakeup in msgsnd().
+Date: Wed, 16 Oct 2013 10:44:56 -0700
+Message-Id: <20131016174318.635572379@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 7:53 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Wed, Oct 16, 2013 at 03:13:54PM +0200, Stephane Eranian escreveu:
->> On Wed, Oct 16, 2013 at 2:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> > We should also tell user-space that the unit of this counter is 'Joule'.
->> >
->> > Then things like:
->> >
->> >         perf stat -a -e power/* sleep 1
->> >
->> > would output, without knowing any RAPL details:
->> >
->> >             0.20619 Joule    power/energy-core
->> >             2.42151 Joule    power/energy-pkg
->> >
->> Not sure there is already some support for this in perf stat. Arnaldo?
->
-> Nope, there is not, we would have to have some table somewhere with
-> "event-regexp: unit-string"
->
->> If not that we need another sysfs file to export the unit. Another
->> possibility is for perf stat to recognize the power/* and extract the
->> unit from the event name. In my example power/joules-cores -> joules.
->
-> I.e. you would be encoding the counter unit as the suffix, might as well
-> call it "power/cores.joules" and use the dot as the separator for the
-> unit, but would be just a compact form to encode the counter->unit
-> table.
->
-May be easier to add a sysfs entry with the unit to display.
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Manfred Spraul <manfred@colorfullife.com>
+
+commit bebcb928c820d0ee83aca4b192adc195e43e66a2 upstream.
+
+The check if the queue is full and adding current to the wait queue of
+pending msgsnd() operations (ss_add()) must be atomic.
+
+Otherwise:
+ - the thread that performs msgsnd() finds a full queue and decides to
+   sleep.
+ - the thread that performs msgrcv() first reads all messages from the
+   queue and then sleeps, because the queue is empty.
+ - the msgrcv() calls do not perform any wakeups, because the msgsnd()
+   task has not yet called ss_add().
+ - then the msgsnd()-thread first calls ss_add() and then sleeps.
+
+Net result: msgsnd() and msgrcv() both sleep forever.
+
+Observed with msgctl08 from ltp with a preemptible kernel.
+
+Fix: Call ipc_lock_object() before performing the check.
+
+The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
+ - msgctl(IPC_SET) explicitely mentions that it tries to expunge any
+   pending operations that are not allowed anymore with the new
+   permissions.  If security_msg_queue_msgsnd() is called without locks,
+   then there might be races.
+ - it makes the patch much simpler.
+
+Reported-and-tested-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ ipc/msg.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		goto out_unlock1;
+ 	}
+ 
++	ipc_lock_object(&msq->q_perm);
++
+ 	for (;;) {
+ 		struct msg_sender s;
+ 
+ 		err = -EACCES;
+ 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+-			goto out_unlock1;
++			goto out_unlock0;
+ 
+ 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
+ 		if (err)
+-			goto out_unlock1;
++			goto out_unlock0;
+ 
+ 		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
+ 				1 + msq->q_qnum <= msq->q_qbytes) {
+@@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, vo
+ 		/* queue full, wait: */
+ 		if (msgflg & IPC_NOWAIT) {
+ 			err = -EAGAIN;
+-			goto out_unlock1;
++			goto out_unlock0;
+ 		}
+ 
+-		ipc_lock_object(&msq->q_perm);
+ 		ss_add(msq, &s);
+ 
+ 		if (!ipc_rcu_getref(msq)) {
+@@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, vo
+ 			goto out_unlock0;
+ 		}
+ 
+-		ipc_unlock_object(&msq->q_perm);
+ 	}
+-
+-	ipc_lock_object(&msq->q_perm);
+ 	msq->q_lspid = task_tgid_vnr(current);
+ 	msq->q_stime = get_seconds();
+ 
+
+
