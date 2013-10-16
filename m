@@ -1,64 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab3JPPme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:42:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43906 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760776Ab3JPPjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:39:36 -0400
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V7 1/8] ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
-Date: Wed, 16 Oct 2013 10:39:01 -0500
-Message-ID: <1381937948-27057-2-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
-References: <1381937948-27057-1-git-send-email-nm@ti.com>
+	id S1759601Ab3JPPqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:46:36 -0400
+Received: from mailrelay.embarq.synacor.com ([208.47.184.3]:34382 "EHLO
+	mailrelay.embarq.synacor.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752089Ab3JPPqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:46:34 -0400
+X_CMAE_Category: 0,0 Undefined,Undefined
+X-CNFS-Analysis: v=2.1 cv=Fb0OmvO6 c=1 sm=0 tr=0 a=Hhc/OnKmOS1xKI2oHPQhqg==:117 a=K-v-2zaBAAAA:8 a=Ms2teR1aEwMA:10 a=FKkrIqjQGGEA:10 a=1poGYrevpj8A:10 a=IkcTkHD0fZMA:10 a=1oqGTYSLAAAA:8 a=NgBhJ-AMRHRBBAvgAtoA:9 a=QEXdDO2ut3YA:10 a=u2FfO3CPMH4A:10 a=VSNGPM3OFNMA:10
+X-CM-Score: 0
+Date: Wed, 16 Oct 2013 11:46:32 -0400 (EDT)
+From: JMW SOLICITORS <officebarrlee@embarqmail.com>
+Message-ID: <748920425.1843568.1381938392208.JavaMail.root@md43.embarq.synacor.com>
+Subject: WILL
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [198.203.29.185]
+X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (zclient/6.0.5_GA_2328.RHEL5_64)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP3+ supports both device tree and non-device tree boot.
-Device tree bindings for OMAP3+ is supposed to be added via dts following:
-Documentation/devicetree/bindings/power/opp.txt
 
-Since we now have device tree entries for OMAP3+ cpu OPPs,
-The current code wrongly adds duplicate OPPs. So, dont register OPPs
-when booting using device tree.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- arch/arm/mach-omap2/opp.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/opp.c b/arch/arm/mach-omap2/opp.c
-index bd41d59..82fd8c7 100644
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@ -17,6 +17,7 @@
-  * GNU General Public License for more details.
-  */
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/opp.h>
- #include <linux/cpu.h>
- 
-@@ -40,6 +41,9 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
- {
- 	int i, r;
- 
-+	if (of_have_populated_dt())
-+		return -EINVAL;
-+
- 	if (!opp_def || !opp_def_size) {
- 		pr_err("%s: invalid params!\n", __func__);
- 		return -EINVAL;
 -- 
-1.7.9.5
-
+THIS MAIL IS TO RE-INFORM YOU THAT MY LATE CLIENT MADE HIS WILL IN YOUR FAVOUR, I ADVISE YOU CONTACT ME NOW.&nbsp;
