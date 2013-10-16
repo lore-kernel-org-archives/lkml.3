@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934812Ab3JPOI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:08:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39673 "EHLO
+	id S934898Ab3JPOKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:10:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39655 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934639Ab3JPOF5 (ORCPT
+	with ESMTP id S934628Ab3JPOF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 10:05:57 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
@@ -13,265 +13,156 @@ Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V9 17/33] loop: use aio to perform io on the underlying file
-Date: Wed, 16 Oct 2013 09:04:30 -0500
-Message-Id: <1381932286-14978-18-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V9 18/33] fs: create file_readable() and file_writable() functions
+Date: Wed, 16 Oct 2013 09:04:31 -0500
+Message-Id: <1381932286-14978-19-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+Create functions to simplify if file_ops contain either a read
+or aio_read op, or likewise write or aio_write. We will be adding
+read_iter and write_iter and don't need to be complicating the code
+in multiple places.
 
-This uses the new kernel aio interface to process loopback IO by
-submitting concurrent direct aio.  Previously loop's IO was serialized
-by synchronous processing in a thread.
-
-The aio operations specify the memory for the IO with the bio_vec arrays
-directly instead of mappings of the pages.
-
-The use of aio operations is enabled when the backing file supports the
-read_iter, write_iter and direct_IO methods.
-
-Signed-off-by: Zach Brown <zab@zabbo.net>
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
- drivers/block/loop.c      | 158 ++++++++++++++++++++++++++++++++++------------
- include/uapi/linux/loop.h |   1 +
- 2 files changed, 119 insertions(+), 40 deletions(-)
+ drivers/mtd/nand/nandsim.c          |  4 ++--
+ drivers/usb/gadget/storage_common.c |  4 ++--
+ fs/read_write.c                     | 14 +++++++-------
+ include/linux/fs.h                  | 10 ++++++++++
+ 4 files changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 40e7155..3342e5e 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -75,6 +75,7 @@
- #include <linux/sysfs.h>
- #include <linux/miscdevice.h>
- #include <linux/falloc.h>
-+#include <linux/aio.h>
- #include "loop.h"
- 
- #include <asm/uaccess.h>
-@@ -218,6 +219,48 @@ lo_do_transfer(struct loop_device *lo, int cmd,
- 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
- }
- 
-+#ifdef CONFIG_AIO
-+static void lo_rw_aio_complete(u64 data, long res)
-+{
-+	struct bio *bio = (struct bio *)(uintptr_t)data;
-+
-+	if (res > 0)
-+		res = 0;
-+	else if (res < 0)
-+		res = -EIO;
-+
-+	bio_endio(bio, res);
-+}
-+
-+static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	struct kiocb *iocb;
-+	unsigned int op;
-+	struct iov_iter iter;
-+	struct bio_vec *bvec;
-+	size_t nr_segs;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+
-+	iocb = aio_kernel_alloc(GFP_NOIO);
-+	if (!iocb)
-+		return -ENOMEM;
-+
-+	if (bio_rw(bio) & WRITE)
-+		op = IOCB_CMD_WRITE_ITER;
-+	else
-+		op = IOCB_CMD_READ_ITER;
-+
-+	bvec = bio_iovec_idx(bio, bio->bi_idx);
-+	nr_segs = bio_segments(bio);
-+	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
-+	aio_kernel_init_rw(iocb, file, iov_iter_count(&iter), pos);
-+	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)(uintptr_t)bio);
-+
-+	return aio_kernel_submit(iocb, op, &iter);
-+}
-+#endif /* CONFIG_AIO */
-+
- /**
-  * __do_lo_send_write - helper for writing data to a loop device
-  *
-@@ -418,50 +461,33 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
- 	pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
- 
- 	if (bio_rw(bio) == WRITE) {
--		struct file *file = lo->lo_backing_file;
--
--		if (bio->bi_rw & REQ_FLUSH) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL)) {
--				ret = -EIO;
--				goto out;
--			}
--		}
-+		ret = lo_send(lo, bio, pos);
-+	} else
-+		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
- 
--		/*
--		 * We use punch hole to reclaim the free space used by the
--		 * image a.k.a. discard. However we do not support discard if
--		 * encryption is enabled, because it may give an attacker
--		 * useful information.
--		 */
--		if (bio->bi_rw & REQ_DISCARD) {
--			struct file *file = lo->lo_backing_file;
--			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	return ret;
-+}
- 
--			if ((!file->f_op->fallocate) ||
--			    lo->lo_encrypt_key_size) {
--				ret = -EOPNOTSUPP;
--				goto out;
--			}
--			ret = file->f_op->fallocate(file, mode, pos,
--						    bio->bi_size);
--			if (unlikely(ret && ret != -EINVAL &&
--				     ret != -EOPNOTSUPP))
--				ret = -EIO;
--			goto out;
--		}
-+static int lo_discard(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+	int ret;
- 
--		ret = lo_send(lo, bio, pos);
-+	/*
-+	 * We use punch hole to reclaim the free space used by the
-+	 * image a.k.a. discard. However we do not support discard if
-+	 * encryption is enabled, because it may give an attacker
-+	 * useful information.
-+	 */
- 
--		if ((bio->bi_rw & REQ_FUA) && !ret) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL))
--				ret = -EIO;
--		}
--	} else
--		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
-+	if ((!file->f_op->fallocate) || lo->lo_encrypt_key_size)
-+		return -EOPNOTSUPP;
- 
--out:
-+	ret = file->f_op->fallocate(file, mode, pos, bio->bi_size);
-+	if (unlikely(ret && ret != -EINVAL && ret != -EOPNOTSUPP))
-+		ret = -EIO;
- 	return ret;
- }
- 
-@@ -525,7 +551,35 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
- 		do_loop_switch(lo, bio->bi_private);
- 		bio_put(bio);
- 	} else {
--		int ret = do_bio_filebacked(lo, bio);
-+		int ret;
-+
-+		if (bio_rw(bio) == WRITE) {
-+			if (bio->bi_rw & REQ_FLUSH) {
-+				ret = vfs_fsync(lo->lo_backing_file, 1);
-+				if (unlikely(ret && ret != -EINVAL))
-+					goto out;
-+			}
-+			if (bio->bi_rw & REQ_DISCARD) {
-+				ret = lo_discard(lo, bio);
-+				goto out;
-+			}
-+		}
-+#ifdef CONFIG_AIO
-+		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
-+		    lo->transfer == transfer_none) {
-+			ret = lo_rw_aio(lo, bio);
-+			if (ret == 0)
-+				return;
-+		} else
-+#endif
-+			ret = do_bio_filebacked(lo, bio);
-+
-+		if ((bio_rw(bio) == WRITE) && bio->bi_rw & REQ_FUA && !ret) {
-+			ret = vfs_fsync(lo->lo_backing_file, 0);
-+			if (unlikely(ret && ret != -EINVAL))
-+				ret = -EIO;
-+		}
-+out:
- 		bio_endio(bio, ret);
+diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
+index bdc1d15..414f522 100644
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -575,12 +575,12 @@ static int alloc_device(struct nandsim *ns)
+ 		cfile = filp_open(cache_file, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+ 		if (IS_ERR(cfile))
+ 			return PTR_ERR(cfile);
+-		if (!cfile->f_op || (!cfile->f_op->read && !cfile->f_op->aio_read)) {
++		if (!file_readable(cfile)) {
+ 			NS_ERR("alloc_device: cache file not readable\n");
+ 			err = -EINVAL;
+ 			goto err_close;
+ 		}
+-		if (!cfile->f_op->write && !cfile->f_op->aio_write) {
++		if (!file_writable(cfile)) {
+ 			NS_ERR("alloc_device: cache file not writeable\n");
+ 			err = -EINVAL;
+ 			goto err_close;
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 08a1a32..cd1431d 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -450,11 +450,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	 * If we can't read the file, it's no good.
+ 	 * If we can't write the file, use it read-only.
+ 	 */
+-	if (!(filp->f_op->read || filp->f_op->aio_read)) {
++	if (!file_readable(filp)) {
+ 		LINFO(curlun, "file not readable: %s\n", filename);
+ 		goto out;
  	}
- }
-@@ -547,6 +601,12 @@ static int loop_thread(void *data)
- 	struct loop_device *lo = data;
- 	struct bio *bio;
+-	if (!(filp->f_op->write || filp->f_op->aio_write))
++	if (!file_writable(filp))
+ 		ro = 1;
  
-+	/*
-+	 * In cases where the underlying filesystem calls balance_dirty_pages()
-+	 * we want less throttling to avoid lock ups trying to write dirty
-+	 * pages through the loop device
-+	 */
-+	current->flags |= PF_LESS_THROTTLE;
- 	set_user_nice(current, -20);
+ 	size = i_size_read(inode->i_mapping->host);
+diff --git a/fs/read_write.c b/fs/read_write.c
+index e3cd280..f92f74f 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -384,7 +384,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
  
- 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
-@@ -869,6 +929,14 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	    !file->f_op->write)
- 		lo_flags |= LO_FLAGS_READ_ONLY;
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+-	if (!file->f_op || (!file->f_op->read && !file->f_op->aio_read))
++	if (!file_readable(file))
+ 		return -EINVAL;
+ 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
+ 		return -EFAULT;
+@@ -433,7 +433,7 @@ ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t
+ 	const char __user *p;
+ 	ssize_t ret;
  
-+#ifdef CONFIG_AIO
-+	if (file->f_op->write_iter && file->f_op->read_iter &&
-+	    mapping->a_ops->direct_IO) {
-+		file->f_flags |= O_DIRECT;
-+		lo_flags |= LO_FLAGS_USE_AIO;
-+	}
-+#endif
-+
- 	lo_blocksize = S_ISBLK(inode->i_mode) ?
- 		inode->i_bdev->bd_block_size : PAGE_SIZE;
+-	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
++	if (!file_writable(file))
+ 		return -EINVAL;
  
-@@ -912,6 +980,16 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	old_fs = get_fs();
+@@ -460,7 +460,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
  
- 	set_blocksize(bdev, lo_blocksize);
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+-	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
++	if (!file_writable(file))
+ 		return -EINVAL;
+ 	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+ 		return -EFAULT;
+@@ -778,7 +778,7 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+ {
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+-	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
++	if (!file_readable(file))
+ 		return -EINVAL;
  
-+#ifdef CONFIG_AIO
-+	/*
-+	 * We must not send too-small direct-io requests, so we reflect
-+	 * the minimum io size to the loop device's logical block size
-+	 */
-+	if ((lo_flags & LO_FLAGS_USE_AIO) && inode->i_sb->s_bdev)
-+		blk_queue_logical_block_size(lo->lo_queue,
-+					     bdev_io_min(inode->i_sb->s_bdev));
-+#endif
-+
- 	lo->lo_thread = kthread_create(loop_thread, lo, "loop%d",
- 						lo->lo_number);
- 	if (IS_ERR(lo->lo_thread)) {
-diff --git a/include/uapi/linux/loop.h b/include/uapi/linux/loop.h
-index e0cecd2..6edc6b6 100644
---- a/include/uapi/linux/loop.h
-+++ b/include/uapi/linux/loop.h
-@@ -21,6 +21,7 @@ enum {
- 	LO_FLAGS_READ_ONLY	= 1,
- 	LO_FLAGS_AUTOCLEAR	= 4,
- 	LO_FLAGS_PARTSCAN	= 8,
-+	LO_FLAGS_USE_AIO	= 16,
+ 	return do_readv_writev(READ, file, vec, vlen, pos);
+@@ -791,7 +791,7 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
+ {
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+-	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
++	if (!file_writable(file))
+ 		return -EINVAL;
+ 
+ 	return do_readv_writev(WRITE, file, vec, vlen, pos);
+@@ -965,7 +965,7 @@ static size_t compat_readv(struct file *file,
+ 		goto out;
+ 
+ 	ret = -EINVAL;
+-	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
++	if (!file_readable(file))
+ 		goto out;
+ 
+ 	ret = compat_do_readv_writev(READ, file, vec, vlen, pos);
+@@ -1032,7 +1032,7 @@ static size_t compat_writev(struct file *file,
+ 		goto out;
+ 
+ 	ret = -EINVAL;
+-	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
++	if (!file_writable(file))
+ 		goto out;
+ 
+ 	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ab43916..5ffec5e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1650,6 +1650,16 @@ struct file_operations {
+ 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
  };
  
- #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
++static inline int file_readable(struct file *filp)
++{
++	return filp && (filp->f_op->read || filp->f_op->aio_read);
++}
++
++static inline int file_writable(struct file *filp)
++{
++	return filp && (filp->f_op->write || filp->f_op->aio_write);
++}
++
+ struct inode_operations {
+ 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
+ 	void * (*follow_link) (struct dentry *, struct nameidata *);
 -- 
 1.8.4
 
