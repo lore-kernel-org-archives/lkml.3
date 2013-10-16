@@ -1,113 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934983Ab3JPSMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761459Ab3JPRpz (ORCPT
+	id S935329Ab3JPSMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:12:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51237 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935315Ab3JPSMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:55 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 50/69] ipc: drop ipcctl_pre_down
-Date: Wed, 16 Oct 2013 10:44:59 -0700
-Message-Id: <20131016174318.999979404@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 16 Oct 2013 14:12:38 -0400
+Date: Wed, 16 Oct 2013 11:12:34 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Jones <davej@redhat.com>,
+        xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: fs/attr.c:notify_change locking warning.
+Message-ID: <20131016181234.GA26646@infradead.org>
+References: <20131005005210.GA25773@redhat.com>
+ <20131005031918.GL4446@dastard>
+ <20131015201905.GA7509@infradead.org>
+ <20131015213618.GU4446@dastard>
+ <20131016070528.GB18721@infradead.org>
+ <20131016102651.GF4446@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016102651.GF4446@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 16, 2013 at 09:26:51PM +1100, Dave Chinner wrote:
+> The killpriv calls? I couldn't find anything that implemented those
+> security hooks nor any documentation about it, so I'm pretty much
+> clueless about it. FWIW, ocfs2 doesn't implement them, either....
 
-------------------
+The killpriv code ends up doing xattr calls for per-file capabilities
+(grep security/commoncap.c for killpriv).  Seems like ocfs2 is buggy in
+that regard.
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-
-commit 3b1c4ad37741e53804ffe0a30dd01e08b2ab6241 upstream.
-
-Now that sem, msgque and shm, through *_down(), all use the lockless
-variant of ipcctl_pre_down(), go ahead and delete it.
-
-[akpm@linux-foundation.org: fix function name in kerneldoc, cleanups]
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- ipc/util.c |   24 ++++--------------------
- ipc/util.h |    3 ---
- 2 files changed, 4 insertions(+), 23 deletions(-)
-
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -733,7 +733,7 @@ int ipc_update_perm(struct ipc64_perm *i
- }
- 
- /**
-- * ipcctl_pre_down - retrieve an ipc and check permissions for some IPC_XXX cmd
-+ * ipcctl_pre_down_nolock - retrieve an ipc and check permissions for some IPC_XXX cmd
-  * @ns:  the ipc namespace
-  * @ids:  the table of ids where to look for the ipc
-  * @id:   the id of the ipc to retrieve
-@@ -746,29 +746,13 @@ int ipc_update_perm(struct ipc64_perm *i
-  * It must be called without any lock held and
-  *  - retrieves the ipc with the given id in the given table.
-  *  - performs some audit and permission check, depending on the given cmd
-- *  - returns the ipc with the ipc lock held in case of success
-- *    or an err-code without any lock held otherwise.
-+ *  - returns a pointer to the ipc object or otherwise, the corresponding error.
-  *
-  * Call holding the both the rw_mutex and the rcu read lock.
-  */
--struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
--				      struct ipc_ids *ids, int id, int cmd,
--				      struct ipc64_perm *perm, int extra_perm)
--{
--	struct kern_ipc_perm *ipcp;
--
--	ipcp = ipcctl_pre_down_nolock(ns, ids, id, cmd, perm, extra_perm);
--	if (IS_ERR(ipcp))
--		goto out;
--
--	spin_lock(&ipcp->lock);
--out:
--	return ipcp;
--}
--
- struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
--					     struct ipc_ids *ids, int id, int cmd,
--					     struct ipc64_perm *perm, int extra_perm)
-+					struct ipc_ids *ids, int id, int cmd,
-+					struct ipc64_perm *perm, int extra_perm)
- {
- 	kuid_t euid;
- 	int err = -EPERM;
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -131,9 +131,6 @@ int ipc_update_perm(struct ipc64_perm *i
- struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
- 					     struct ipc_ids *ids, int id, int cmd,
- 					     struct ipc64_perm *perm, int extra_perm);
--struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
--				      struct ipc_ids *ids, int id, int cmd,
--				      struct ipc64_perm *perm, int extra_perm);
- 
- #ifndef CONFIG_ARCH_WANT_IPC_PARSE_VERSION
-   /* On IA-64, we always use the "64-bit version" of the IPC structures.  */ 
-
+I suspect the easiest way to solve it properly in XFS is to simply
+retake the iolock exclusive and get the i_mutex as part of it.  This
+means direct I/O writes to files with the suid bit won't scale, but I
+think we can live with that given that it avoids introducing special
+cases that impact more code.
 
