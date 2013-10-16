@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933984Ab3JPKBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 06:01:11 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57314 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760194Ab3JPKAl (ORCPT
+	id S933696Ab3JPKBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:01:10 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:45387 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760229Ab3JPKAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 06:00:41 -0400
 From: Johan Hovold <jhovold@gmail.com>
@@ -14,87 +14,59 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Alessandro Zummo <a.zummo@towertech.it>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v3 0/3] ARM: at91: fix hanged boot
-Date: Wed, 16 Oct 2013 11:56:13 +0200
-Message-Id: <1381917376-21107-1-git-send-email-jhovold@gmail.com>
+Subject: [PATCH v3 3/3] ARM: at91/rtc: disable interrupts at shutdown
+Date: Wed, 16 Oct 2013 11:56:16 +0200
+Message-Id: <1381917376-21107-4-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1381917376-21107-1-git-send-email-jhovold@gmail.com>
 References: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+ <1381917376-21107-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix a few severe issues affecting most AT91 SOCs where
-boot can hang after a non-general reset, and where the only way to get
-the system booting again is to do a general reset -- something which
-could require physically removing any backup battery.
+Make sure RTC-interrupts are disabled at shutdown.
 
-The problems stem from the fact that the RTC and RTT-peripherals are
-powered by backup power (VDDBU) and are not reset on wake-up, user,
-watchdog or software reset. Consequently, RTC and RTT-alarms and their
-interrupts may be enabled at boot, leading to a system lock-up when an
-interrupt arrives on the shared system-interrupt line before the
-appropriate handler (e.g. RTC-driver) has been installed.
+As the RTC is generally powered by backup power (VDDBU), its interrupts
+are not disabled on wake-up, user, watchdog or software reset. This
+could cause troubles on other systems (e.g. older kernels) if an
+interrupt occurs before a handler has been installed at next boot.
 
-The easiest way to trigger this is to simply wake up from an RTC-alarm
-on at91sam9g45. The RTC-driver currently does not disable interrupts at
-shutdown so even after a clean shut-down the system will always hang
-after waking up.
+Let us be well-behaved and disable them on clean shutdowns at least (as
+do the RTT-based rtc-at91sam9 driver).
 
-The more general problem can be triggered, for example, by doing a
-user-reset while updating the RTC-time or if an RTC or RTT-alarm goes
-off after a non-clean shutdown.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/rtc/rtc-at91rm9200.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-To fix this I add two helper functions to be called called by arch-code
-to mask the relevant interrupts before enabling the system interrupt at
-early boot.
-
-The patches have been tested on at91sam9g45 and compile-tested for the
-other SOCs.
-
-Johan
-
-
-v2:
- - add DT-support
- - make sys_irq_mask non-mandatory
-
-v3
- - rebase on v3.12-rc5
- - drop DT-support (interrupt masking is needed even if RTC or RTT nodes
-   are missing)
- - drop dedicated SOC-initialiser and call helpers directly from init
- - drop revert-patch of move of RTC-register definitions to drivers/ and
-   copy the two needed definitions instead
- - move helper functions from setup.c to a separate file
- - add fix for new sama5d3 SOC
- - add a register read back to make sure write has reached the devices
- - split fix in two patches for RTC and RTT, respectively
-
-
-Johan Hovold (3):
-  ARM: at91: fix hanged boot due to early rtc-interrupt
-  ARM: at91: fix hanged boot due to early rtt-interrupt
-  ARM: at91/rtc: disable interrupts at shutdown
-
- arch/arm/mach-at91/Makefile                   |  2 +-
- arch/arm/mach-at91/at91sam9260.c              |  2 +
- arch/arm/mach-at91/at91sam9261.c              |  2 +
- arch/arm/mach-at91/at91sam9263.c              |  3 ++
- arch/arm/mach-at91/at91sam9g45.c              |  3 ++
- arch/arm/mach-at91/at91sam9n12.c              |  6 +++
- arch/arm/mach-at91/at91sam9rl.c               |  3 ++
- arch/arm/mach-at91/at91sam9x5.c               |  6 +++
- arch/arm/mach-at91/generic.h                  |  2 +
- arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 ++
- arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 ++
- arch/arm/mach-at91/include/mach/sama5d3.h     |  5 ++
- arch/arm/mach-at91/sama5d3.c                  |  6 +++
- arch/arm/mach-at91/sysirq_mask.c              | 71 +++++++++++++++++++++++++++
- drivers/rtc/rtc-at91rm9200.c                  |  9 ++++
- 15 files changed, 129 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-at91/sysirq_mask.c
-
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 7418926..ea088e9 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -442,6 +442,14 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static void at91_rtc_shutdown(struct platform_device *pdev)
++{
++	/* Disable all interrupts */
++	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
++					AT91_RTC_SECEV | AT91_RTC_TIMEV |
++					AT91_RTC_CALEV);
++}
++
+ #ifdef CONFIG_PM_SLEEP
+ 
+ /* AT91RM9200 RTC Power management control */
+@@ -480,6 +488,7 @@ static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
+ 
+ static struct platform_driver at91_rtc_driver = {
+ 	.remove		= __exit_p(at91_rtc_remove),
++	.shutdown	= at91_rtc_shutdown,
+ 	.driver		= {
+ 		.name	= "at91_rtc",
+ 		.owner	= THIS_MODULE,
 -- 
 1.8.4
 
