@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab3JPCsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:48:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42260 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab3JPCsK (ORCPT
+	id S1757588Ab3JPC76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:59:58 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50040 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab3JPC75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:48:10 -0400
-X-AuditID: 9c930197-b7b88ae0000032c4-46-525dfe6744a6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/3] perf tools: Add data object to handle perf data file
-References: <1381847254-28809-1-git-send-email-jolsa@redhat.com>
-	<1381847254-28809-2-git-send-email-jolsa@redhat.com>
-Date: Wed, 16 Oct 2013 11:48:07 +0900
-In-Reply-To: <1381847254-28809-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Tue, 15 Oct 2013 16:27:32 +0200")
-Message-ID: <87a9ia9biw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 15 Oct 2013 22:59:57 -0400
+Message-ID: <525E011C.6010309@linux.vnet.ibm.com>
+Date: Wed, 16 Oct 2013 08:29:40 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Sander Eikelenboom <linux@eikelenboom.it>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Kconfig help entry for CONFIG_PARAVIRT_SPINLOCK
+References: <932951750.20131015234558@eikelenboom.it>
+In-Reply-To: <932951750.20131015234558@eikelenboom.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101602-8878-0000-0000-00000942440E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Tue, 15 Oct 2013 16:27:32 +0200, Jiri Olsa wrote:
-> This patch is adding 'struct perf_data_file' object as
-> a placeholder for all attributes regarding perf.data
-> file handling. Changing perf_session__new to take it
-> as an argument.
+On 10/16/2013 03:15 AM, Sander Eikelenboom wrote:
+> Hi Raghavendra,
 >
-> The rest of the functionality will be added later to keep
-> this change simple enough, because all the places using
-> perf_session are changed now.
+> Since the ticketlock series have landed in this mergewindow (thanks :-) ) the
+> help accompanying the Kconfig entry doesn't seem to reflect the current state well.
+>
+> - Wasn't the whole purpose of the ticketlock series to mitigate this 5% performance hit to something
+>    far less, so distro kernels could enable this for their normal kernels ?
+>    I don't have the exact performance figures though.
+>
+> - Perhaps the suggestion to enable this for supported hypervisors (Xen and KVM ?) could be added ?
 
-All three look good.
+You are right. Thanks. I 'll send the patch to change the config text
+soon.
 
-Btw, are you planning to support multiple per-cpu file record?  As you
-know I suggested perf.data.dir approach in my perf-ftrace patchset (I'll
-resend a new version soonish) something like below.  What do you think?
 
-  perf.data.dir/
-    |-- perf-cpu0.data
-    |-- perf-cpu1.data
-    |-- perf-cpu2.data
-    `-- perf-cpu3.data
-
-Maybe we could split sample data and other data (e.g. COMM, MMAP or some
-user data?) to another file(s).
-
-Thanks,
-Namhyung
