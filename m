@@ -1,199 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760850Ab3JPQdC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:33:02 -0400
-Received: from mail.tpi.com ([74.45.170.26]:47419 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759389Ab3JPQdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:33:01 -0400
-From: Tim Gardner <timg@tpi.com>
-To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Cc: Tim Gardner <timg@tpi.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@samba.org>
-Subject: [PATCH linux-next V2] cifs: Make big endian multiplex ID sequences monotonic on the wire
-Date: Wed, 16 Oct 2013 10:32:42 -0600
-Message-Id: <1381941162-72831-1-git-send-email-timg@tpi.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1760908Ab3JPQeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:34:06 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:46840 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab3JPQeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 12:34:05 -0400
+Message-ID: <525EBFE1.2060103@gmail.com>
+Date: Thu, 17 Oct 2013 00:33:37 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/7] arm64: move encode_insn_immediate() from module.c
+ to insn.c
+References: <1381893492-7135-1-git-send-email-liuj97@gmail.com> <1381893492-7135-4-git-send-email-liuj97@gmail.com> <20131016112222.GG5403@mudshark.cambridge.arm.com>
+In-Reply-To: <20131016112222.GG5403@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multiplex identifier (MID) in the SMB header is only
-ever used by the client, in conjunction with PID, to match responses
-from the server. As such, the endianess of the MID is not important.
-However, When tracing packet sequences on the wire, protocol analyzers
-such as wireshark display MID as little endian. It is much more informative
-for the on-the-wire MID sequences to match debug information emitted by the
-CIFS driver.  Therefore, one should write and read MID in the SMB header
-assuming it is always little endian.
+On 10/16/2013 07:22 PM, Will Deacon wrote:
+> On Wed, Oct 16, 2013 at 04:18:08AM +0100, Jiang Liu wrote:
+>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Function encode_insn_immediate() will be used by other instruction
+>> manipulate related functions, so move it into insn.c and rename it
+>> as aarch64_insn_encode_immediate().
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Jiang Liu <liuj97@gmail.com>
+>> ---
+>>  arch/arm64/include/asm/insn.h |  14 ++++
+>>  arch/arm64/kernel/insn.c      |  77 +++++++++++++++++++++
+>>  arch/arm64/kernel/module.c    | 151 +++++++++---------------------------------
+>>  3 files changed, 123 insertions(+), 119 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+>> index 2dfcdb4..8dc0a91 100644
+>> --- a/arch/arm64/include/asm/insn.h
+>> +++ b/arch/arm64/include/asm/insn.h
+>> @@ -28,6 +28,18 @@ enum aarch64_insn_class {
+>>                                          * system instructions */
+>>  };
+>>
+>> +enum aarch64_insn_imm_type {
+>> +       AARCH64_INSN_IMM_MOVNZ,
+>> +       AARCH64_INSN_IMM_MOVK,
+>> +       AARCH64_INSN_IMM_ADR,
+>> +       AARCH64_INSN_IMM_26,
+>> +       AARCH64_INSN_IMM_19,
+>> +       AARCH64_INSN_IMM_16,
+>> +       AARCH64_INSN_IMM_14,
+>> +       AARCH64_INSN_IMM_12,
+>> +       AARCH64_INSN_IMM_9,
+>> +};
+>> +
+>>  #define        __AARCH64_INSN_FUNCS(abbr, mask, val)   \
+>>  static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
+>>  { return (code & (mask)) == (val); }   \
+>> @@ -47,6 +59,8 @@ __AARCH64_INSN_FUNCS(nop,     0xFFFFFFFF, 0xD503201F)
+>>  #undef __AARCH64_INSN_FUNCS
+>>
+>>  enum aarch64_insn_class aarch64_get_insn_class(u32 insn);
+>> +u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>> +                                 u32 insn, u64 imm);
+>>  u32 aarch64_insn_read(void *addr);
+>>  void aarch64_insn_write(void *addr, u32 insn);
+>>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+>> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+>> index ad4185f..90cc312 100644
+>> --- a/arch/arm64/kernel/insn.c
+>> +++ b/arch/arm64/kernel/insn.c
+>> @@ -179,3 +179,80 @@ int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
+>>         else
+>>                 return aarch64_insn_patch_text_sync(addrs, insns, cnt);
+>>  }
+>> +
+>> +u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>> +                                 u32 insn, u64 imm)
+>> +{
+>> +       u32 immlo, immhi, lomask, himask, mask;
+>> +       int shift;
+>> +
+>> +       switch (type) {
+>> +       case AARCH64_INSN_IMM_MOVNZ:
+>> +               /*
+>> +                * For signed MOVW relocations, we have to manipulate the
+>> +                * instruction encoding depending on whether or not the
+>> +                * immediate is less than zero.
+>> +                */
+>> +               insn &= ~(3 << 29);
+>> +               if ((s64)imm >= 0) {
+>> +                       /* >=0: Set the instruction to MOVZ (opcode 10b). */
+>> +                       insn |= 2 << 29;
+>> +               } else {
+>> +                       /*
+>> +                        * <0: Set the instruction to MOVN (opcode 00b).
+>> +                        *     Since we've masked the opcode already, we
+>> +                        *     don't need to do anything other than
+>> +                        *     inverting the new immediate field.
+>> +                        */
+>> +                       imm = ~imm;
+>> +               }
+> 
+> I'm really not comfortable with this. This code is performing static
+> relocations and re-encoding instructions as required by the AArch64 ELF
+> spec. That's not really what you'd expect from a generic instruction
+> encoder!
+Thanks for reminder, will move above code back into module.c.
+Thanks!
+Gerry
 
-Observed from wireshark during the protocol negotiation
-and session setup:
-
-        Multiplex ID: 256
-        Multiplex ID: 256
-        Multiplex ID: 512
-        Multiplex ID: 512
-        Multiplex ID: 768
-        Multiplex ID: 768
-
-After this patch on-the-wire MID values begin at 1 and increase monotonically.
-
-Introduce get_next_mid64() for the internal consumers that use the full 64 bit
-multiplex identifier.
-
-Introduce the helpers get_mid() and compare_mid() to make the endian
-translation clear.
-
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Steve French <sfrench@samba.org>
-Signed-off-by: Tim Gardner <timg@tpi.com>
----
-
-V2 - get an endian appropriate copy of 'mid' for debug output in checkSMB().
-     Actually use the new helper get_mid() wherever smb->Mid is referenced.
-
- fs/cifs/cifsglob.h      |   25 ++++++++++++++++++++++++-
- fs/cifs/misc.c          |   10 ++++++----
- fs/cifs/smb1ops.c       |    4 ++--
- fs/cifs/smb2transport.c |    2 +-
- fs/cifs/transport.c     |    2 +-
- 5 files changed, 34 insertions(+), 9 deletions(-)
-
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 52b6f6c..535e324 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -620,11 +620,34 @@ set_credits(struct TCP_Server_Info *server, const int val)
- }
- 
- static inline __u64
--get_next_mid(struct TCP_Server_Info *server)
-+get_next_mid64(struct TCP_Server_Info *server)
- {
- 	return server->ops->get_next_mid(server);
- }
- 
-+static inline __u16
-+get_next_mid(struct TCP_Server_Info *server)
-+{
-+	__u16 mid = get_next_mid64(server);
-+	/*
-+	 * The value in the SMB header should be little endian for easy
-+	 * on-the-wire decoding.
-+	 */
-+	return cpu_to_le16(mid);
-+}
-+
-+static inline __u16
-+get_mid(const struct smb_hdr *smb)
-+{
-+	return le16_to_cpu(smb->Mid);
-+}
-+
-+static inline bool
-+compare_mid(__u16 mid, const struct smb_hdr *smb)
-+{
-+	return mid == le16_to_cpu(smb->Mid);
-+}
-+
- /*
-  * When the server supports very large reads and writes via POSIX extensions,
-  * we can allow up to 2^24-1, minus the size of a READ/WRITE_AND_X header, not
-diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
-index 298e31e..2f9f379 100644
---- a/fs/cifs/misc.c
-+++ b/fs/cifs/misc.c
-@@ -295,7 +295,8 @@ check_smb_hdr(struct smb_hdr *smb)
- 	if (smb->Command == SMB_COM_LOCKING_ANDX)
- 		return 0;
- 
--	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n", smb->Mid);
-+	cifs_dbg(VFS, "Server sent request, not response. mid=%u\n",
-+		 get_mid(smb));
- 	return 1;
- }
- 
-@@ -351,6 +352,7 @@ checkSMB(char *buf, unsigned int total_read)
- 	}
- 
- 	if (4 + rfclen != clc_len) {
-+		__u16 mid = get_mid(smb);
- 		/* check if bcc wrapped around for large read responses */
- 		if ((rfclen > 64 * 1024) && (rfclen > clc_len)) {
- 			/* check if lengths match mod 64K */
-@@ -358,11 +360,11 @@ checkSMB(char *buf, unsigned int total_read)
- 				return 0; /* bcc wrapped */
- 		}
- 		cifs_dbg(FYI, "Calculated size %u vs length %u mismatch for mid=%u\n",
--			 clc_len, 4 + rfclen, smb->Mid);
-+			 clc_len, 4 + rfclen, mid);
- 
- 		if (4 + rfclen < clc_len) {
- 			cifs_dbg(VFS, "RFC1001 size %u smaller than SMB for mid=%u\n",
--				 rfclen, smb->Mid);
-+				 rfclen, mid);
- 			return -EIO;
- 		} else if (rfclen > clc_len + 512) {
- 			/*
-@@ -375,7 +377,7 @@ checkSMB(char *buf, unsigned int total_read)
- 			 * data to 512 bytes.
- 			 */
- 			cifs_dbg(VFS, "RFC1001 size %u more than 512 bytes larger than SMB for mid=%u\n",
--				 rfclen, smb->Mid);
-+				 rfclen, mid);
- 			return -EIO;
- 		}
- 	}
-diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-index 8233b17..09ef8f3 100644
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -67,7 +67,7 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
- 	mutex_unlock(&server->srv_mutex);
- 
- 	cifs_dbg(FYI, "issued NT_CANCEL for mid %u, rc = %d\n",
--		 in_buf->Mid, rc);
-+		 get_mid(in_buf), rc);
- 
- 	return rc;
- }
-@@ -101,7 +101,7 @@ cifs_find_mid(struct TCP_Server_Info *server, char *buffer)
- 
- 	spin_lock(&GlobalMid_Lock);
- 	list_for_each_entry(mid, &server->pending_mid_q, qhead) {
--		if (mid->mid == buf->Mid &&
-+		if (compare_mid(mid->mid, buf) &&
- 		    mid->mid_state == MID_REQUEST_SUBMITTED &&
- 		    le16_to_cpu(mid->command) == buf->Command) {
- 			spin_unlock(&GlobalMid_Lock);
-diff --git a/fs/cifs/smb2transport.c b/fs/cifs/smb2transport.c
-index 340abca..c523617 100644
---- a/fs/cifs/smb2transport.c
-+++ b/fs/cifs/smb2transport.c
-@@ -466,7 +466,7 @@ smb2_verify_signature(struct smb_rqst *rqst, struct TCP_Server_Info *server)
- static inline void
- smb2_seq_num_into_buf(struct TCP_Server_Info *server, struct smb2_hdr *hdr)
- {
--	hdr->MessageId = get_next_mid(server);
-+	hdr->MessageId = get_next_mid64(server);
- }
- 
- static struct mid_q_entry *
-diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
-index 6fdcb1b..057b2c0 100644
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -58,7 +58,7 @@ AllocMidQEntry(const struct smb_hdr *smb_buffer, struct TCP_Server_Info *server)
- 		return temp;
- 	else {
- 		memset(temp, 0, sizeof(struct mid_q_entry));
--		temp->mid = smb_buffer->Mid;	/* always LE */
-+		temp->mid = get_mid(smb_buffer);
- 		temp->pid = current->pid;
- 		temp->command = cpu_to_le16(smb_buffer->Command);
- 		cifs_dbg(FYI, "For smb_command %d\n", smb_buffer->Command);
--- 
-1.7.9.5
+> 
+> Will
+> 
 
