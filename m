@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761502Ab3JPWjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:39:25 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:53519 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761394Ab3JPWjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 18:39:23 -0400
-Date: Wed, 16 Oct 2013 22:39:22 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: epoll oops.
-Message-ID: <20131016223922.GA18383@dcvr.yhbt.net>
-References: <20131014154627.GA9525@redhat.com>
- <CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com>
- <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
- <20131015154838.GA32271@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015154838.GA32271@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761690Ab3JPWjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:39:55 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47547 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760678Ab3JPWjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 18:39:53 -0400
+Date: Wed, 16 Oct 2013 15:39:49 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Randy Dunlap <rdunlap@infradead.org>, Vitaly Lavrov <lve@guap.ru>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 16 (net/sched/em_ipset.c)
+Message-ID: <20131016153949.5f2257b4@nehalam.linuxnetplumber.net>
+In-Reply-To: <525F09B0.4080802@infradead.org>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+	<525F09B0.4080802@infradead.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
-> Yes. Before that 971316f0503a hack epoll can't even know if the task
-> which did signalfd_poll() exits and frees the active signalfd_wqh.
-> If for example that task forked a child before exit.
+On Wed, 16 Oct 2013 14:48:32 -0700
+Randy Dunlap <rdunlap@infradead.org> wrote:
+
+> On 10/16/13 11:51, Thierry Reding wrote:
+> > Hi all,
+> > 
+> > I've uploaded today's linux-next tree to the master branch of the
+> > repository below:
+> > 
+> >         git://gitorious.org/thierryreding/linux-next.git
+> > 
+> > A next-20131016 tag is also provided for convenience.
+> > 
+> > Gained two new conflicts, but nothing too exciting. x86 and ARM default
+> > configurations as well as the x86 allmodconfig mostly build fine on the
+> > final tree. There was a failure for the ARM at91x40_defconfig, but the
+> > proper fix wasn't immediately obvious to me, so I've left it broken for
+> > now.
 > 
-> And the whole RCU logic is only needed if exit/ep_remove_wait_queue
-> actually race with each other.
+> on i386, when CONFIG_NET_NS is not enabled:
+> 
+> net/sched/em_ipset.c: In function 'em_ipset_change':
+> net/sched/em_ipset.c:27:36: error: 'struct net_device' has no member named 'nd_net'
+> net/sched/em_ipset.c: In function 'em_ipset_destroy':
+> net/sched/em_ipset.c:49:34: error: 'struct net_device' has no member named 'nd_net'
+> 
+> 
 
-Is there any chance this oops is caused by (or at least more easily
-exposed by) commit 91cf5ab60ff82ecf4550a596867787c1e360dd3f ?
-(epoll: add a reschedule point in ep_free())
+I think this should fix.
 
-I thought 91cf5ab would be benign, except...
 
-> Yes, ugly, agreed. d80e731ecab4 even tries to docunent that this all
-> is the hack.
 
-.. the following sentence from d80e731ecab4 caught my eye:
-
-    It also assumes that nobody can take tasklist_lock under epoll
-    locks, this seems to be true.
-
-I haven't been able to trace if cond_resched() can take tasklist_lock.
+--- a/net/sched/em_ipset.c	2013-10-06 14:48:25.030449222 -0700
++++ b/net/sched/em_ipset.c	2013-10-16 15:38:05.030278287 -0700
+@@ -24,7 +24,7 @@ static int em_ipset_change(struct tcf_pr
+ {
+ 	struct xt_set_info *set = data;
+ 	ip_set_id_t index;
+-	struct net *net = qdisc_dev(tp->q)->nd_net;
++	struct net *net = dev_net(qdisc_dev(tp->q));
+ 
+ 	if (data_len != sizeof(*set))
+ 		return -EINVAL;
+@@ -46,7 +46,7 @@ static void em_ipset_destroy(struct tcf_
+ {
+ 	const struct xt_set_info *set = (const void *) em->data;
+ 	if (set) {
+-		ip_set_nfnl_put(qdisc_dev(p->q)->nd_net, set->index);
++		ip_set_nfnl_put(dev_net(qdisc_dev(p->q)), set->index);
+ 		kfree((void *) em->data);
+ 	}
+ }
