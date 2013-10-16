@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab3JPGcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:32:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34723 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab3JPGcI (ORCPT
+	id S1754558Ab3JPGcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:32:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23367 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab3JPGcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:32:08 -0400
-Message-ID: <525E32FC.3010604@oracle.com>
-Date: Wed, 16 Oct 2013 14:32:28 +0800
+	Wed, 16 Oct 2013 02:32:43 -0400
+Message-ID: <525E3320.5080700@oracle.com>
+Date: Wed, 16 Oct 2013 14:33:04 +0800
 From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 Reply-To: zhenzhong.duan@oracle.com
 Organization: oracle
@@ -21,80 +21,156 @@ CC: Bjorn Helgaas <bhelgaas@google.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Feng Jin <joe.jin@oracle.com>,
         Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: [PATCH 1/3] PCI: Refactor restore_msi_irqs - code movement
+Subject: [PATCH 2/3] PCI: Refactor MSI/MSIX mask restore code to fix interrupt
+ lost issue
 Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move default_restore_msi_irqs down to reference msi_mask_irq and msix_mask_irq.
+Driver init call graph under baremetal:
+driver_init->
+    msix_capability_init->
+        msix_program_entries->
+            msix_mask_irq->
+                entry->masked = 1
+    request_irq->
+        __setup_irq->
+            irq_startup->
+                unmask_msi_irq->
+                    msix_mask_irq->
+                        entry->masked = 0;
 
-This patch lays the groundwork for patch titled:
-'PCI: Refactor MSI/MSIX mask restore code to fix interrupt lost issue'
+So entry->masked is always updated with newest value and its value could be used
+to restore to mask register in device.
+
+But in initial domain (aka priviliged guest), it's different.
+Driver init call graph under initial domain:
+driver_init->
+    msix_capability_init->
+        msix_program_entries->
+            msix_mask_irq->
+                entry->masked = 1
+    request_irq->
+        __setup_irq->
+            irq_startup->
+                __startup_pirq->
+                    EVTCHNOP_bind_pirq hypercall    (trap into Xen)
+[Xen:]
+pirq_guest_bind->
+    startup_msi_irq->
+        unmask_msi_irq->
+            msi_set_mask_bit->
+                entry->msi_attrib.masked = 0;
+
+So entry->msi_attrib.masked in xen side always has newest value. entry->masked
+in initial domain is untouched and is 1 after msix_capability_init.
+
+Based on above, it's Xen's duty to restore entry->msi_attrib.masked to device,
+but with current code, entry->masked is used and MSI-x interrupt is masked.
+
+Before patch, restore call graph under initial domain:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                xen_initdom_restore_msi_irqs->
+                    PHYSDEVOP_restore_msi hypercall (first mask restore)
+            msix_mask_irq(entry, entry->masked)     (second mask restore)
+
+So msix_mask_irq call in initial domain call graph needs to be removed.
+
+Based on this we can move the restore of the mask in default_restore_msi_irqs
+which would avoid restoring the invalid mask under Xen. Furthermore this
+simplifies the API by making everything related to restoring an MSI be in the
+platform specific APIs instead of just parts of it.
+
+After patch, restore call graph under initial domain:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                xen_initdom_restore_msi_irqs->
+                    PHYSDEVOP_restore_msi hypercall (first mask restore)
+
+Logic for baremetal is not changed.
+Before patch, restore call graph under baremetal:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                default_restore_msi_irqs->
+            msix_mask_irq(entry, entry->masked)     (first mask restore)
+
+After patch, restore call graph under baremetal:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                default_restore_msi_irqs->
+                    msix_mask_irq(entry, entry->masked) (first mask restore)
+
+The process for MSI code is similiar.
 
 Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
 Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/pci/msi.c |   36 ++++++++++++++++++------------------
- 1 files changed, 18 insertions(+), 18 deletions(-)
+ drivers/pci/msi.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index d5f90d6..ecd4cdf 100644
+index ecd4cdf..38237f4 100644
 --- a/drivers/pci/msi.c
 +++ b/drivers/pci/msi.c
-@@ -116,24 +116,6 @@ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
- 	return default_teardown_msi_irqs(dev);
- }
+@@ -236,6 +236,8 @@ void unmask_msi_irq(struct irq_data *data)
  
--void default_restore_msi_irqs(struct pci_dev *dev, int irq)
--{
--	struct msi_desc *entry;
--
--	entry = NULL;
--	if (dev->msix_enabled) {
--		list_for_each_entry(entry, &dev->msi_list, list) {
--			if (irq == entry->irq)
--				break;
--		}
--	} else if (dev->msi_enabled)  {
--		entry = irq_get_msi_desc(irq);
--	}
--
+ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ {
++	int pos;
++	u16 control;
+ 	struct msi_desc *entry;
+ 
+ 	entry = NULL;
+@@ -248,8 +250,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ 		entry = irq_get_msi_desc(irq);
+ 	}
+ 
 -	if (entry)
--		write_msi_msg(irq, &entry->msg);
--}
--
- void __weak arch_restore_msi_irqs(struct pci_dev *dev, int irq)
- {
- 	return default_restore_msi_irqs(dev, irq);
-@@ -252,6 +234,24 @@ void unmask_msi_irq(struct irq_data *data)
- 	msi_set_mask_bit(data, 0);
++	if (entry) {
+ 		write_msi_msg(irq, &entry->msg);
++		if (dev->msix_enabled) {
++			msix_mask_irq(entry, entry->masked);
++			readl(entry->mask_base);
++		} else {
++			pos = entry->msi_attrib.pos;
++			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
++					     &control);
++			msi_mask_irq(entry, msi_capable_mask(control),
++				     entry->masked);
++		}
++	}
  }
  
-+void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-+{
-+	struct msi_desc *entry;
-+
-+	entry = NULL;
-+	if (dev->msix_enabled) {
-+		list_for_each_entry(entry, &dev->msi_list, list) {
-+			if (irq == entry->irq)
-+				break;
-+		}
-+	} else if (dev->msi_enabled)  {
-+		entry = irq_get_msi_desc(irq);
-+	}
-+
-+	if (entry)
-+		write_msi_msg(irq, &entry->msg);
-+}
-+
  void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
- {
- 	BUG_ON(entry->dev->current_state != PCI_D0);
+@@ -423,7 +436,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+ 	arch_restore_msi_irqs(dev, dev->irq);
+ 
+ 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+-	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+ 	control &= ~PCI_MSI_FLAGS_QSIZE;
+ 	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+ 	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+@@ -447,7 +459,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+ 
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+ 		arch_restore_msi_irqs(dev, entry->irq);
+-		msix_mask_irq(entry, entry->masked);
+ 	}
+ 
+ 	control &= ~PCI_MSIX_FLAGS_MASKALL;
 -- 
 1.7.3
 
