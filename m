@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761841Ab3JPSsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:48:47 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:61393 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761360Ab3JPSsp convert rfc822-to-8bit (ORCPT
+	id S1761747Ab3JPSvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:51:53 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:50195 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761195Ab3JPSvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:48:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131016120951.B5012E0090@blue.fi.intel.com>
-References: <20131015001304.GH3432@hippobay.mtv.corp.google.com>
- <20131015110146.7E8BEE0090@blue.fi.intel.com> <CACz4_2fiF+vaAbFixgGF+Uxn0av4H8y-aMQdyi3yYs5pdS2WBA@mail.gmail.com>
- <20131016120951.B5012E0090@blue.fi.intel.com>
-From: Ning Qu <quning@google.com>
-Date: Wed, 16 Oct 2013 11:48:24 -0700
-Message-ID: <CACz4_2eAots8Xk3C8Vosqc24vs28OtsD4LecsH19MjWeQaw+2Q@mail.gmail.com>
-Subject: Re: [PATCH 07/12] mm, thp, tmpfs: handle huge page in
- shmem_undo_range for truncate
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Oct 2013 14:51:51 -0400
+From: Dhanunjaya <dhanunjaya.matrix@gmail.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, peterhuewe@gmx.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dhanunjaya <dhanunjaya.matrix@gmail.com>
+Subject: [PATCH 3/4] Staging: xgifb: fix braces {} are not necessary for single statement blocks
+Date: Thu, 17 Oct 2013 00:21:33 +0530
+Message-Id: <1381949494-19886-1-git-send-email-dhanunjaya.matrix@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Best wishes,
+This is a patch to the vb_setmode.c file that fixes braces {}
+are not necessary for single statement blocks warning found
+by the checkpatch.pl tool
+
+Signed-of-by: Dhanunjaya <dhanunjaya.matrix@gmail.com>
+---
+ drivers/staging/xgifb/vb_setmode.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index 46dea3f..400c726 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -845,11 +845,10 @@ static unsigned short XGI_GetVCLK2Ptr(unsigned short ModeIdIndex,
+ 			VCLKIndex = TVCLKBASE_315_25 + HiTVVCLK;
+ 
+ 		if (pVBInfo->SetFlag & TVSimuMode) {
+-			if (modeflag & Charx8Dot) {
++			if (modeflag & Charx8Dot)
+ 				VCLKIndex = TVCLKBASE_315_25 + HiTVSimuVCLK;
+-			} else {
++			else
+ 				VCLKIndex = TVCLKBASE_315_25 + HiTVTextVCLK;
+-			}
+ 		}
+ 
+ 		/* 301lv */
+@@ -5274,9 +5273,8 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ 
+ 	outb(0x00, pVBInfo->P3c8);
+ 
+-	for (i = 0; i < 256 * 3; i++) {
++	for (i = 0; i < 256 * 3; i++)
+ 		outb(0x0F, (pVBInfo->P3c8 + 1)); /* DAC_TEST_PARMS */
+-	}
+ 
+ 	mdelay(1);
+ 
+@@ -5291,9 +5289,8 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ 	/* avoid display something, set BLACK DAC if not restore DAC */
+ 	outb(0x00, pVBInfo->P3c8);
+ 
+-	for (i = 0; i < 256 * 3; i++) {
++	for (i = 0; i < 256 * 3; i++)
+ 		outb(0, (pVBInfo->P3c8 + 1));
+-	}
+ 
+ 	xgifb_reg_set(pVBInfo->P3c4, 0x01, SR01);
+ 	xgifb_reg_set(pVBInfo->P3d4, 0x63, CR63);
 -- 
-Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
+1.8.1.2
 
-
-On Wed, Oct 16, 2013 at 5:09 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Ning Qu wrote:
->> > Again. Here and below ifdef is redundant: PageTransHugeCache() is zero
->> > compile-time and  thp case will be optimize out.
->>
->> The problem is actually from HPAGE_CACHE_INDEX_MASK, it is marked as
->> build bug when CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is false. So we
->> either wrap some logic inside a inline function, or we have to be like
->> this .. Or we don't treat the HPAGE_CACHE_INDEX_MASK as a build bug?
->
-> HPAGE_CACHE_INDEX_MASK shouldn't be a problem.
-> If it's wrapped into 'if PageTransHugeCache(page)' or similar it will be
-> eliminated by compiler if thp-pc disabled and build bug will not be
-> triggered.
->
-Yes, you are totally right about this. I have remove all the ifdef for
-CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE now. Thanks!
-
->>
->> >
->> > And do we really need a copy of truncate logic here? Is there a way to
->> > share code?
->> >
->> The truncate between tmpfs and general one is similar but not exactly
->> the same (no readahead), so share the whole function might not be a
->> good choice from the perspective of tmpfs? Anyway, there are other
->> similar functions in tmpfs, e.g. the one you mentioned for
->> shmem_add_to_page_cache. It is possible to share the code, I am just
->> worried it will make the logic more complicated?
->
-> I think introducing thp-pc is good opportunity to refactor all these code.
->
-> --
->  Kirill A. Shutemov
