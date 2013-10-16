@@ -1,130 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761299Ab3JPVs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:48:29 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3072 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760758Ab3JPVsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:48:21 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Tim Kryger" <tim.kryger@linaro.org>
-To: "Christian Daudt" <bcm@fixthebug.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Daniel Lezcano" <daniel.lezcano@linaro.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, "Chris Ball" <cjb@laptop.org>
-cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [RESEND PATCH v2 6/6] mmc: sdhci-bcm-kona: Add basic use of
- clocks
-Date: Wed, 16 Oct 2013 14:47:10 -0700
-Message-ID: <1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	id S1761618Ab3JPVtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:49:07 -0400
+Received: from smtp105.biz.mail.ne1.yahoo.com ([98.138.207.12]:36070 "HELO
+	smtp105.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1761477Ab3JPVtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:49:03 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3oW17ZkVM1kdTrK8ihMBNzC9KoAV77ckS.9c7gD2iHBnATc
+ b3t0wejOAbSVWdWEIB_dtY8cC3ziVjyJZdqIKZhWpwUwWQprl0CX1z7rSKrR
+ a5n7S9SP0qFkYLoWVu4I7rmOxBpnfThu09TixPYNboS7d.1yBX5JUCFkHHvm
+ M1DLdNhSMvNsDQvCcUrsPeyUCT7Q343f2xvpaI_StNDQFJijTXsX84iq3Ot1
+ GluqsbdW3G_Mkxw1VyjtdtbdQZhYPQVATDouecSVVfh5VVlYWQK_hdbbQjGX
+ chFpW0Ik5IgtktEg0.HM4fb5XlGpp28SsOyHw1zDgJcI_Ql9NfzSV4Q__Ebr
+ UjvycQDnQZP6pnp3anE2dZoAWLy4jI2gy8qOzifRoYNpimaESAKWPzbHhwdt
+ gKqhxyY9p.2WSgDrzRM452w61ulEa0gAzGmkOj9alZ3azUaTF7mAEEWC_SPd
+ QFUPZyoPWRMc6QjSruMHKIacpiTycofss6GiLJ66E4rW42KadpNC8AhjuW76
+ Z7hp6N6Nb6TmPZKCNZn.OiIMkRlvjOrEJY9P3.pXAZF9G0m0N
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@50.168.21.102 with )
+        by smtp105.biz.mail.ne1.yahoo.com with SMTP; 16 Oct 2013 14:42:20 -0700 PDT
+Message-ID: <525F083D.8060502@schaufler-ca.com>
+Date: Wed, 16 Oct 2013 14:42:21 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-X-WSS-ID: 7E41D6114FK2359525-01-01
-Content-Type: text/plain
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
+        james.l.morris@oracle.com
+CC: jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, rusty@rustcorp.com.au,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
+References: <20130920203556.GA8726@www.outflux.net>	<alpine.LRH.2.02.1309241124420.3782@tundra.namei.org>	<alpine.LRH.2.02.1309241128430.3782@tundra.namei.org>	<CAGXu5jJ9t7tet4Bx=VUaVmjp1C18iK-nLpQBgmXqgukoAmmd4A@mail.gmail.com>	<20131016151831.GE5186@outflux.net> <201310170547.EHH26015.QOtHJOLFOFVMSF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201310170547.EHH26015.QOtHJOLFOFVMSF@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the external clock needed by the host controller during the
-probe and disable it during the remove.
+On 10/16/2013 1:47 PM, Tetsuo Handa wrote:
+> Kees Cook wrote:
+>> Any update on this? It'd be nice to have it in linux-next.
+> What was the conclusion at LSS about multiple concurrent LSM support?
+> If we agreed to merge multiple concurrent LSM support, there will be nothing to
+> prevent this module from merging.
+>
+Yeah.
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
----
- drivers/mmc/host/sdhci-bcm-kona.c | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
-index 85472d3..91db099 100644
---- a/drivers/mmc/host/sdhci-bcm-kona.c
-+++ b/drivers/mmc/host/sdhci-bcm-kona.c
-@@ -54,6 +54,7 @@
- 
- struct sdhci_bcm_kona_dev {
- 	struct mutex	write_lock; /* protect back to back writes */
-+	struct clk	*external_clk;
- };
- 
- 
-@@ -252,11 +253,29 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
- 	mmc_of_parse(host->mmc);
- 
- 	if (!host->mmc->f_max) {
--		dev_err(&pdev->dev, "Missing max-freq for SDHCI cfg\n");
-+		dev_err(dev, "Missing max-freq for SDHCI cfg\n");
- 		ret = -ENXIO;
- 		goto err_pltfm_free;
- 	}
- 
-+	/* Get and enable the external clock */
-+	kona_dev->external_clk = devm_clk_get(dev, NULL);
-+	if (IS_ERR(kona_dev->external_clk)) {
-+		dev_err(dev, "Failed to get external clock\n");
-+		ret = PTR_ERR(kona_dev->external_clk);
-+		goto err_pltfm_free;
-+	}
-+
-+	if (clk_set_rate(kona_dev->external_clk, host->mmc->f_max) != 0) {
-+		dev_err(dev, "Failed to set rate external clock\n");
-+		goto err_pltfm_free;
-+	}
-+
-+	if (clk_prepare_enable(kona_dev->external_clk) != 0) {
-+		dev_err(dev, "Failed to enable external clock\n");
-+		goto err_pltfm_free;
-+	}
-+
- 	dev_dbg(dev, "non-removable=%c\n",
- 		(host->mmc->caps & MMC_CAP_NONREMOVABLE) ? 'Y' : 'N');
- 	dev_dbg(dev, "cd_gpio %c, wp_gpio %c\n",
-@@ -271,7 +290,7 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
- 
- 	ret = sdhci_bcm_kona_sd_reset(host);
- 	if (ret)
--		goto err_pltfm_free;
-+		goto err_clk_disable;
- 
- 	sdhci_bcm_kona_sd_init(host);
- 
-@@ -307,6 +326,9 @@ err_remove_host:
- err_reset:
- 	sdhci_bcm_kona_sd_reset(host);
- 
-+err_clk_disable:
-+	clk_disable_unprepare(kona_dev->external_clk);
-+
- err_pltfm_free:
- 	sdhci_pltfm_free(pdev);
- 
-@@ -317,6 +339,8 @@ err_pltfm_free:
- static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
- {
- 	struct sdhci_host *host = platform_get_drvdata(pdev);
-+	struct sdhci_pltfm_host *pltfm_priv = sdhci_priv(host);
-+	struct sdhci_bcm_kona_dev *kona_dev = sdhci_pltfm_priv(pltfm_priv);
- 	int dead;
- 	u32 scratch;
- 
-@@ -326,6 +350,8 @@ static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
- 		dead = 1;
- 	sdhci_remove_host(host, dead);
- 
-+	clk_disable_unprepare(kona_dev->external_clk);
-+
- 	sdhci_free_host(host);
- 
- 	return 0;
--- 
-1.8.0.1
-
+The conclusion was that it needs to be staged because it's
+too much to swallow all at once. I can see that. It's going
+to be a lot of work to rearrange and rebase. That's a chunk
+of time I don't expect to have for a while. It looks good
+to happen, but don't hold supper for me.
 
