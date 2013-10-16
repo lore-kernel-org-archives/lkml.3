@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3JPO4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:56:41 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:37406 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751804Ab3JPO4i convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:56:38 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Maxime COQUELIN <maxime.coquelin@st.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Cc: Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Date: Wed, 16 Oct 2013 16:54:36 +0200
-Subject: Re: [PATCH v5 0/4] Add I2C support to ST SoCs
-Thread-Topic: [PATCH v5 0/4] Add I2C support to ST SoCs
-Thread-Index: Ac7Kf6JDBVE9cYw3S1OTamjP5G1eqQ==
-Message-ID: <525EA8AC.4010607@st.com>
-References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
-In-Reply-To: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756102Ab3JPO46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:56:58 -0400
+Received: from mail.us.es ([193.147.175.20]:39406 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755729Ab3JPO45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 10:56:57 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98/17964. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.8/7.5):. 
+ Processed in 2.125805 secs); 16 Oct 2013 14:57:14 -0000
+X-Spam-ASN: AS12715 188.78.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Wed, 16 Oct 2013 16:56:52 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Maxime Jayat <maxime@artisandeveloppeur.fr>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the trivial tree
+Message-ID: <20131016145652.GB16959@localhost>
+References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
+ <1381845763-10487-2-git-send-email-treding@nvidia.com>
+ <alpine.DEB.2.10.1310161057190.13374@blackhole.kfki.hu>
+ <alpine.LNX.2.00.1310161118070.12405@pobox.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1310161118070.12405@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Wed, Oct 16, 2013 at 11:20:04AM +0200, Jiri Kosina wrote:
+> On Wed, 16 Oct 2013, Jozsef Kadlecsik wrote:
+> 
+> > > Today's linux-next merge of the trivial tree got conflicts in
+> > > 
+> > > 	net/netfilter/xt_set.c
+> > > 
+> > > caused by commits 3f79410 (treewide: Fix common typo in "identify") and
+> > > bd3129f (netfilter: ipset: order matches and targets separatedly in
+> > > xt_set.c).
+> > > 
+> > > I fixed them up (see below). Please verify that the resolution looks
+> > > good.
+> > 
+> > I don't really get it: patch bd3129f was part of a patchset, which was 
+> > applied to net-next and there it was complete.
+> > 
+> > There's none of the patchset in question in linux-next, so what's the 
+> > trivial tree? Where's lost what?
 
-On 10/14/2013 02:46 PM, Maxime COQUELIN wrote:
-> The goal of this series is to add I2C support to ST SoCs.
-> The DT definition is added for STiH415 and STiH416 SoCs on
-> B2000 and B2020 boards.
->
-> The series has been tested working on STiH416-B2020 board.
-> It applies on top of v3.12-rc5.
->
-> Changes since v4:
->    - Fixed IRQ flags to level high triggering as reported by Stephen Gallimore
->    - Revert back to generic DT properties for Anti-glitch filtering. Their DT
->      binding documentation will be updated when i2c DT binding docuementation
->      will be created (In Wolfram's ToDo list)
-Do you agree with this approach?
+To Jozsef: David collects all the networking patches in net-next until
+Linus' merge window opens, that's why you don't see your patches in
+linux-next. It seems Jiri merges this trivial tree (which indeed
+contains your net-next patches already) to linux-next.
 
-Did you had time to review the driver?
+> > [The patch below doesn't look good, because it should contain the removed 
+> > part for the revision 1 match due to the reordering in the file.]
+> 
+> This is just a super-simple conflict between
+> 
+> 	https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bd3129f
+> 
+> and
+> 
+> 	https://git.kernel.org/cgit/linux/kernel/git/jikos/trivial.git/diff/net/netfilter/xt_set.c?h=for-next&id=3f79410c7c
+> 
+> I don't think it needs any special handling, do you? I can of course drop 
+> the respective hunk from my tree and let you handle it in net-next if you 
+> wish.
 
-Regards,
-Maxime
-
-> ...
->
-> Maxime Coquelin (4):
->    i2c: busses: i2c-st: Add ST I2C controller
->    ARM: STi: Supply I2C configuration to STiH416 SoC
->    ARM: STi: Supply I2C configuration to STiH415 SoC
->    ARM: STi: Add I2C config to B2000 and B2020 boards
->
->   Documentation/devicetree/bindings/i2c/i2c-st.txt |   38 +
->   arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 +
->   arch/arm/boot/dts/stih415.dtsi                   |   53 ++
->   arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 +
->   arch/arm/boot/dts/stih416.dtsi                   |   53 ++
->   arch/arm/boot/dts/stih41x-b2000.dtsi             |    9 +
->   arch/arm/boot/dts/stih41x-b2020.dtsi             |   22 +
->   drivers/i2c/busses/Kconfig                       |   10 +
->   drivers/i2c/busses/Makefile                      |    1 +
->   drivers/i2c/busses/i2c-st.c                      |  867 ++++++++++++++++++++++
->   10 files changed, 1124 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
->   create mode 100644 drivers/i2c/busses/i2c-st.c
->
+Please, don't drop it, I think Jozsef got confused by the handling of
+your trivial tree.
