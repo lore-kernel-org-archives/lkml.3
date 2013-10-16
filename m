@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760106Ab3JPHYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:24:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3JPHYl (ORCPT
+	id S1760120Ab3JPHZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:25:53 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57668 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab3JPHZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:24:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH v2] pwm: add ep93xx PWM support
-Date: Wed, 16 Oct 2013 09:24:36 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-pwm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <rmallon@gmail.com>, thierry.reding@gmail.com,
-        gregkh@linuxfoundation.org
-References: <201310151840.03569.hartleys@visionengravers.com>
-In-Reply-To: <201310151840.03569.hartleys@visionengravers.com>
+	Wed, 16 Oct 2013 03:25:52 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9G7Pcej022999, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <wei_wang@realtek.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH] mmc: rtsx: fix card poweroff bug
+Date: Wed, 16 Oct 2013 15:26:52 +0800
+Message-ID: <1381908412-6310-1-git-send-email-micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310160924.36639.arnd@arndb.de>
-X-Provags-ID: V02:K0:wRmDgAY3i0CjcVxJGwag8aX9804oVeNsnBplvviZCkc
- Tnt/6Gjxndk6TC8nOnhgtrWaTVi41tJz8eF/ISRiZg/v6kTszR
- wxG4BB27GAPwYBtdTEaBeDOdnMfaI03lYiafgFE5CJjcPohe5r
- 8ht0ktSCXkVufjkPRZ/JdIo+C/rFbuD+V3aZDl6VJUSvk+uSne
- 60vzClOAuKS9ykrLPYvQNcugLP7IHUHQDv60YJ7YNSTW+6kvHQ
- YVypVPNWmNyr1y2M/UUO+yaS9xGzm6ZyDf97egh7Bzh2aOk/56
- KBWy/FsMXBaa4NX7BBToChal6zeqIPiUwcrML/FHu2Tl0ngLlu
- Te3Zysb61iEfUIa+//Zg=
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 October 2013, H Hartley Sweeten wrote:
-> Remove the non-standard EP93xx PWM driver in drivers/misc and add
-> a new driver for the PWM controllers on the EP93xx platform based
-> on the PWM framework.
-> 
-> These PWM controllers each support 1 PWM channel with programmable
-> duty cycle, frequency, and polarity inversion.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> v2: address issues pointed out by Thierry Reding.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Looks all good from my side, thanks for taking up this work.
+If the host driver removed while card in the slot, the host will not
+power off card power correctly. This bug is produced because host
+eject flag set before the last mmc_set_ios callback, we should set the
+eject flag after power off.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 375a880e..c9a7328 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -1328,7 +1328,6 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
+ 	pcr->slots[RTSX_SD_CARD].p_dev = NULL;
+ 	pcr->slots[RTSX_SD_CARD].card_event = NULL;
+ 	mmc = host->mmc;
+-	host->eject = true;
+ 
+ 	mutex_lock(&host->host_mutex);
+ 	if (host->mrq) {
+@@ -1346,6 +1345,8 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
+ 	mutex_unlock(&host->host_mutex);
+ 
+ 	mmc_remove_host(mmc);
++	host->eject = true;
++
+ 	mmc_free_host(mmc);
+ 
+ 	dev_dbg(&(pdev->dev),
+-- 
+1.7.9.5
+
