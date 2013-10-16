@@ -1,67 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3JPG5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:57:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60437 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab3JPG5O (ORCPT
+	id S1760038Ab3JPG6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:58:11 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34638 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759025Ab3JPG6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:57:14 -0400
-Message-ID: <1381906601.5472.62.camel@marge.simpson.net>
-Subject: Re: sched/rt: Pick up the throttled rt tasks in case no other
- non-rt tasks
-From: Mike Galbraith <bitbucket@online.de>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Oct 2013 08:56:41 +0200
-In-Reply-To: <1381938216.26153.63.camel@cliu38-desktop-build>
-References: <1381938216.26153.63.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:77V5NIzWvrmrdeAquBKyEMaBBkE70toVj+cwyAix3dh
- ZrF2Ymunn1Y19CbkNdWu47Ovl6IZcoVu/89lOItchm+2QGj5+T
- HGMBgFovKl2WY+AmEsyUSjHcBzEPh95Z3h1CrJ7YikkViWn35S
- 7ni2WGUETIzcpUQeZkTL2GQdZ9dA+081bQhHB+peQPWg+koWQ6
- ysoZjeTH1ae8OFpB58ser2T2vYV3G2qAPnu3kEJtH7Y0zYoYh7
- RnTVG9VfsNcckBVnkJx6cMRCTfaUYdVmJUXLDqCvlJINGX2cCN
- Kl06NomJko3cX5T1TFKskciscuu08Z1lfhk81Jm3SfHirObaQm
- HQBDPH3LWyynZr5LMv9ZaOdvvcA3TuhTJCy2ljdz2TM+2KDTHr
- mvwz8Azv2X8qw==
+	Wed, 16 Oct 2013 02:58:03 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: eranian@google.com, michaele@au1.ibm.com, mikey@neuling.org,
+        sukadev@linux.vnet.ibm.com
+Subject: [V3 07/10] powerpc, lib: Add new branch instruction analysis support functions
+Date: Wed, 16 Oct 2013 12:26:54 +0530
+Message-Id: <1381906617-11392-8-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101606-8878-0000-0000-00000942F61E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-16 at 23:43 +0800, Chuansheng Liu wrote: 
-> Meet the case that on CPU2, there are just two tasks to be run,
-> one is one rt task A, another is idle task, but at this time,
-> and the rt_rq is throttled.
-> 
-> CPU1		                 CPU2
-> 				 staying in idle task;
-> waking up rt task A on
-> target CPU 2;
-> 
->                                  exiting from idle task;
->                                  DO schedule()
->                                    pick up RT next task
-> 					pick_next_task_rt()
-> 						_pick_next_task_rt()
-> 						rt_rq is throttled
-> 					return NULL rt task to be picked
-> 
-> 				 CPU2 then went into idle task AGAIN;
->                                  after 2s, CPU2 is waken up again;
->                                  rt task A is get running;
-> 
-> Here rt task A is delayed for some time, even when CPU2 is in idle state.
-> 
-> so in case there are just rt tasks running, we can pick up one of them
-> even rt_rq is throttled.
+Generic powerpc branch instruction analysis support added in the code
+patching library which will help the subsequent patch on SW based
+filtering of branch records in perf. This patch also converts and
+exports some of the existing local static functions through the header
+file to be used else where.
 
-And shortly thereafter, a SCHED_NORMAL task wakes.. only to find that
-its alleged bodyguard slit its throat while it slept.  Bad bodyguard.
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/code-patching.h | 30 ++++++++++++++++++
+ arch/powerpc/lib/code-patching.c         | 54 ++++++++++++++++++++++++++++++--
+ 2 files changed, 82 insertions(+), 2 deletions(-)
 
--Mike
+diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
+index a6f8c7a..8bab417 100644
+--- a/arch/powerpc/include/asm/code-patching.h
++++ b/arch/powerpc/include/asm/code-patching.h
+@@ -22,6 +22,36 @@
+ #define BRANCH_SET_LINK	0x1
+ #define BRANCH_ABSOLUTE	0x2
+ 
++#define XL_FORM_LR  0x4C000020
++#define XL_FORM_CTR 0x4C000420
++#define XL_FORM_TAR 0x4C000460
++
++#define BO_ALWAYS    0x02800000
++#define BO_CTR       0x02000000
++#define BO_CRBI_OFF  0x00800000
++#define BO_CRBI_ON   0x01800000
++#define BO_CRBI_HINT 0x00400000
++
++/* Forms of branch instruction */
++int instr_is_branch_iform(unsigned int instr);
++int instr_is_branch_bform(unsigned int instr);
++int instr_is_branch_xlform(unsigned int instr);
++
++/* Classification of XL-form instruction */
++int is_xlform_lr(unsigned int instr);
++int is_xlform_ctr(unsigned int instr);
++int is_xlform_tar(unsigned int instr);
++
++/* Branch instruction is a call */
++int is_branch_link_set(unsigned int instr);
++
++/* BO field analysis (B-form or XL-form) */
++int is_bo_always(unsigned int instr);
++int is_bo_ctr(unsigned int instr);
++int is_bo_crbi_off(unsigned int instr);
++int is_bo_crbi_on(unsigned int instr);
++int is_bo_crbi_hint(unsigned int instr);
++
+ unsigned int create_branch(const unsigned int *addr,
+ 			   unsigned long target, int flags);
+ unsigned int create_cond_branch(const unsigned int *addr,
+diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
+index 17e5b23..cb62bd8 100644
+--- a/arch/powerpc/lib/code-patching.c
++++ b/arch/powerpc/lib/code-patching.c
+@@ -77,16 +77,66 @@ static unsigned int branch_opcode(unsigned int instr)
+ 	return (instr >> 26) & 0x3F;
+ }
+ 
+-static int instr_is_branch_iform(unsigned int instr)
++int instr_is_branch_iform(unsigned int instr)
+ {
+ 	return branch_opcode(instr) == 18;
+ }
+ 
+-static int instr_is_branch_bform(unsigned int instr)
++int instr_is_branch_bform(unsigned int instr)
+ {
+ 	return branch_opcode(instr) == 16;
+ }
+ 
++int instr_is_branch_xlform(unsigned int instr)
++{
++	return branch_opcode(instr) == 19;
++}
++
++int is_xlform_lr(unsigned int instr)
++{
++	return (instr & XL_FORM_LR) == XL_FORM_LR;
++}
++
++int is_xlform_ctr(unsigned int instr)
++{
++	return (instr & XL_FORM_CTR) == XL_FORM_CTR;
++}
++
++int is_xlform_tar(unsigned int instr)
++{
++	return (instr & XL_FORM_TAR) == XL_FORM_TAR;
++}
++
++int is_branch_link_set(unsigned int instr)
++{
++	return (instr & BRANCH_SET_LINK) == BRANCH_SET_LINK;
++}
++
++int is_bo_always(unsigned int instr)
++{
++	return (instr & BO_ALWAYS) == BO_ALWAYS;
++}
++
++int is_bo_ctr(unsigned int instr)
++{
++	return (instr & BO_CTR) == BO_CTR;
++}
++
++int is_bo_crbi_off(unsigned int instr)
++{
++	return (instr & BO_CRBI_OFF) == BO_CRBI_OFF;
++}
++
++int is_bo_crbi_on(unsigned int instr)
++{
++	return (instr & BO_CRBI_ON) == BO_CRBI_ON;
++}
++
++int is_bo_crbi_hint(unsigned int instr)
++{
++	return (instr & BO_CRBI_HINT) == BO_CRBI_HINT;
++}
++
+ int instr_is_relative_branch(unsigned int instr)
+ {
+ 	if (instr & BRANCH_ABSOLUTE)
+-- 
+1.7.11.7
 
