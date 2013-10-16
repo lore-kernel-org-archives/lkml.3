@@ -1,130 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3JPGJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:09:44 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:35900 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3JPGJl (ORCPT
+	id S1754005Ab3JPGLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:11:23 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:51602 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab3JPGLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:09:41 -0400
+	Wed, 16 Oct 2013 02:11:21 -0400
+Date: Wed, 16 Oct 2013 08:11:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
+Message-ID: <20131016061118.GA21109@gmail.com>
+References: <20131015163906.342d8ffa@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20131015173252.GM31215@redhat.com>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
-	<1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
-	<20131015173252.GM31215@redhat.com>
-Date: Wed, 16 Oct 2013 14:09:40 +0800
-Message-ID: <CAA7+ByWjdYTi5uXT6apLYkON1RnrFEGjHU318OD1VMen2YHKOA@mail.gmail.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-From: Hong zhi guo <honkiko@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Hong Zhiguo <zhiguohong@tencent.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015163906.342d8ffa@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Vivek,
 
-Thanks for your careful review. I'll rename t_c to last_dispatch, it's
-much better.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-For the big burst issue, I've different opinion. Let's discuss it.
+> Since the NMI iretq nesting has been fixed, there's no reason that
+> an NMI handler can not take a page fault for vmalloc'd code. No locks
+> are taken in that code path, and the software now handles nested NMIs
+> when the fault re-enables NMIs on iretq.
+> 
+> Not only that, if the vmalloc_fault() WARN_ON_ONCE() is hit, and that
+> warn on triggers a vmalloc fault for some reason, then we can go into
+> an infinite loop (the WARN_ON_ONCE() does the WARN() before updating
+> the variable to make it happen "once").
+> 
+> Reported-by: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Any time a big IO means a big burst. Even if it's throttled at first
-time, queued in
-the service_queue, and then waited for a while, when it's delivered
-out, it IS still
-a big burst. So throttling the bio for another while makes no sense.
+Would be nice to see the warning quoted that triggered this.
 
-If a group has been idle for 5 minutes, then it owns the credit to
-deliver a big IO
-(within 300 * bps bytes). And the extra credit will be cut off after
-the delivery.
+Thanks,
 
-Waiting for your comments.
-
-Zhiguo
-
-
-On Wed, Oct 16, 2013 at 1:32 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
->
-> [..]
->
-> Hi Hong,
->
-> Thanks for the token based throttling implementation. In general it looks
-> good and it simplies the logic. Couple of comments/concerns below.
->
->> @@ -133,14 +135,13 @@ struct throtl_grp {
->>       /* IOPS limits */
->>       unsigned int iops[2];
->>
->> -     /* Number of bytes disptached in current slice */
->> -     uint64_t bytes_disp[2];
->> -     /* Number of bio's dispatched in current slice */
->> -     unsigned int io_disp[2];
->> +     /* Token for throttling by bps */
->> +     uint64_t bytes_token[2];
->> +     /* Token for throttling by iops */
->> +     unsigned int io_token[2];
->>
->> -     /* When did we start a new slice */
->> -     unsigned long slice_start[2];
->> -     unsigned long slice_end[2];
->> +     /* Time check-point */
->> +     unsigned long t_c[2];
->
-> Can we rename this variable to say last_dispatch[2].
->
-> [..]
->>
->> @@ -852,41 +708,26 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
->>                                unsigned long *wait)
->>  {
->>       bool rw = bio_data_dir(bio);
->> -     u64 bytes_allowed, extra_bytes, tmp;
->> -     unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
->> -
->> -     jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
->> -
->> -     /* Slice has just started. Consider one slice interval */
->> -     if (!jiffy_elapsed)
->> -             jiffy_elapsed_rnd = throtl_slice;
->> -
->> -     jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
->> +     u64 extra_bytes, token;
->> +     unsigned long jiffy_wait;
->>
->> -     tmp = tg->bps[rw] * jiffy_elapsed_rnd;
->> -     do_div(tmp, HZ);
->> -     bytes_allowed = tmp;
->> +     token = (u64)tg->bps[rw] * (jiffies - tg->t_c[rw]);
->
-> So here we seem to be calculating how many tokens a group is eligible
-> for. This is done based on since last time check. And last time check
-> was updated in last dispatch from the group.
->
-> What happens if no IO happens in a group for some time, say for 5 minutes,
-> and then one big IO comes in. IIUC, we will allow a big burst of IO for
-> the first IO (tokens worth of full 5 minutes will be given to this group).
-> I think we should have a mechanism where we don't allow too big a burst
-> for the first IO. (Possibly limit the burst to THROTL_BURST_IO and
-> THROTL_BURST_BYTES until and unless a bigger IO is already queued and
-> we are waiting for it).
->
-> In previous time slice logic, I took care of it by extend time slice
-> by 100ms and if no IO happens in the group for 100ms, time slice will
-> expire and next IO will get at max of 100ms of worth of credit (equivalent
-> of burst limits).
->
-> Thanks
-> Vivek
-
-
-
--- 
-best regards
-Hong Zhiguo
+	Ingo
