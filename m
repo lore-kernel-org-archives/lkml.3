@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab3JPOob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:44:31 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:53733 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752074Ab3JPOoa (ORCPT
+	id S1754983Ab3JPOqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:46:23 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3598 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab3JPOqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:44:30 -0400
-Date: Wed, 16 Oct 2013 14:44:28 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
+	Wed, 16 Oct 2013 10:46:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 16 Oct 2013 07:41:55 -0700
+Date: Wed, 16 Oct 2013 17:46:18 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd
-Message-ID: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 14/19] clk: tegra30: replace enum by binding header
+Message-ID: <20131016144618.GL5643@tbergstrom-lnx.Nvidia.com>
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
+ <1381848794-11761-15-git-send-email-pdeschrijver@nvidia.com>
+ <525D9A85.40102@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.16-54.240.9.70
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <525D9A85.40102@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a follow on patch related to the earlier
-discussion about restricting the
-spawning of kernel threads. See https://lkml.org/lkml/2013/9/5/426
+On Tue, Oct 15, 2013 at 09:41:57PM +0200, Stephen Warren wrote:
+> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> > As the clock IDs are now specified in a header file, we can use those
+> > definitions instead of maintaining an internal enum.
+> 
+> Nit: The patch subject should say "clk: tegra:" not "clk: tegra20:" so
+> that anyone looking at the tags in the subject has only one "tegra"
+> value to look at, not a whole bunch of them.
+> 
+> Would it make sense to squash patches 15, 16, 18 together (and similar
+> for Tegra30) to avoid some churn i.e. the fact that the entire body of
+> tegra_periph_clk_list[] gets replaced twice?
 
+You mean do all the changes for Tegra20 and Tegra30 in 1 patch per SoC?
 
+Cheers,
 
-
-usermodehelper() threads can currently run on all processors.
-This is an issue for low latency cores.
-
-Restrict usermodehelper() threads to the cores that kthreadd is
-restricted to.
-
-The default for kthreadd is to be allowed to run on an processors.
-If the user restricts kthreadd then threads spawned by
-usermodhelper() will similarly restricted.
-
-Before this patch there is no way to limit the cpus that usermodehelper
-can run on since the affinity is set when the thread is spawned to
-all processors.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/include/linux/kthread.h
-===================================================================
---- linux.orig/include/linux/kthread.h	2013-10-10 11:00:34.167771996 -0500
-+++ linux/include/linux/kthread.h	2013-10-15 13:57:52.859056676 -0500
-@@ -51,6 +51,7 @@ void kthread_parkme(void);
- int kthreadd(void *unused);
- extern struct task_struct *kthreadd_task;
- extern int tsk_fork_get_node(struct task_struct *tsk);
-+void set_kthreadd_affinity(void);
-
- /*
-  * Simple work processor based on kthread.
-Index: linux/kernel/kmod.c
-===================================================================
---- linux.orig/kernel/kmod.c	2013-10-10 11:00:39.091771917 -0500
-+++ linux/kernel/kmod.c	2013-10-15 14:02:01.904261324 -0500
-@@ -40,6 +40,7 @@
- #include <linux/ptrace.h>
- #include <linux/async.h>
- #include <asm/uaccess.h>
-+#include <linux/kthread.h>
-
- #include <trace/events/module.h>
-
-@@ -209,8 +210,8 @@ static int ____call_usermodehelper(void
- 	flush_signal_handlers(current, 1);
- 	spin_unlock_irq(&current->sighand->siglock);
-
--	/* We can run anywhere, unlike our parent keventd(). */
--	set_cpus_allowed_ptr(current, cpu_all_mask);
-+	/* We can run anywhere kthreadd can run */
-+	set_kthreadd_affinity();
-
- 	/*
- 	 * Our parent is keventd, which runs with elevated scheduling priority.
-Index: linux/kernel/kthread.c
-===================================================================
---- linux.orig/kernel/kthread.c	2013-10-10 11:00:39.139771916 -0500
-+++ linux/kernel/kthread.c	2013-10-15 14:04:36.636043744 -0500
-@@ -136,6 +136,15 @@ void *kthread_data(struct task_struct *t
- 	return to_kthread(task)->data;
- }
-
-+/*
-+ * Set the affinity of the calling task to be the same
-+ * as the kthreadd affinities.
-+ */
-+void set_kthreadd_affinity(void)
-+{
-+	set_cpus_allowed(current, kthreadd_task->cpus_allowed);
-+}
-+
- /**
-  * probe_kthread_data - speculative version of kthread_data()
-  * @task: possible kthread task in question
+Peter.
