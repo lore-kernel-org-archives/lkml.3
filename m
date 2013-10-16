@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759977Ab3JPHLZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:11:25 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:51142 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab3JPHLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:11:24 -0400
-Date: Wed, 16 Oct 2013 09:11:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record: mmap output file
-Message-ID: <20131016071119.GE22509@gmail.com>
-References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
- <1381289214-24885-4-git-send-email-dsahern@gmail.com>
- <20131009055957.GA7664@gmail.com>
- <525D4B5F.4090005@gmail.com>
- <20131015143245.GB9828@ghostprotocols.net>
- <20131015143819.GM10651@twins.programming.kicks-ass.net>
- <20131015152747.GA15979@gmail.com>
- <525D5FA1.7060404@gmail.com>
- <20131015160646.GC16003@gmail.com>
- <525D6A6C.3090208@gmail.com>
+	id S1760059Ab3JPHL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:11:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753722Ab3JPHLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 03:11:55 -0400
+Date: Wed, 16 Oct 2013 15:11:22 +0800
+From: Dave Young <dyoung@redhat.com>
+To: matt@console-pimps.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] x86 efi: efi reverve boot service fix
+Message-ID: <20131016071122.GB18241@dhcp-16-126.nay.redhat.com>
+References: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525D6A6C.3090208@gmail.com>
+In-Reply-To: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+typo, fix hpa's mail address..
 
-* David Ahern <dsahern@gmail.com> wrote:
-
-> On 10/15/13 10:06 AM, Ingo Molnar wrote:
-
-> > splice() is very fast and should be able to process a lot of pages in 
-> > one go, so the feedback loop should be pretty weak. mmap() triggers 
-> > kernel code as well, every time we run out of the 64 MB window we got 
-> > to remap it, right?
+On 10/16/13 at 03:03pm, Dave Young wrote:
 > 
+> Current code check boot service region with kernel text region by: 
+> start+size >= __pa_symbol(_text)
+> The end of the above region should be start + size - 1 instead.
 > 
-> Yes, 1 mmap, 1 munmap for every 64MB. Compare to the write() case which 
-> calls write() for each mmap each time through the mmap_read loop.
+> I see this problem in ovmf + Fedora 19 grub boot:
+> text start: 1000000 md start: 800000 md size: 800000
 > 
-> I am conjecturing that splice would follow the write model in the sense 
-> of a ring buffer has N bytes, call splice to copy the data from the ring 
-> buffer to the file. So, splice saves on the memcpy, but not the 
-> syscalls.
-
-Well, splice can be 64 MB granular as well - but it depends on how 
-buffered the pipes are (splice always uses pipes to shuffle around pages).
-
-It's possible to have pipes with larger buffering - see F_SETPIPE_SZ. The 
-current limit (for unprivileged users?) is:
-
-  fs/pipe.c:unsigned int pipe_max_size = 1048576;
-
-[But I haven't actually used this to increase splice() size yet.]
-
-Thanks,
-
-	Ingo
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/platform/efi/efi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-2.6.orig/arch/x86/platform/efi/efi.c
+> +++ linux-2.6/arch/x86/platform/efi/efi.c
+> @@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(vo
+>  		 * - Not within any part of the kernel
+>  		 * - Not the bios reserved area
+>  		*/
+> -		if ((start+size >= __pa_symbol(_text)
+> +		if ((start + size - 1 >= __pa_symbol(_text)
+>  				&& start <= __pa_symbol(_end)) ||
+>  			!e820_all_mapped(start, start+size, E820_RAM) ||
+>  			memblock_is_region_reserved(start, size)) {
