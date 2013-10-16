@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760279Ab3JPIie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:38:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48681 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab3JPIic (ORCPT
+	id S1760290Ab3JPIjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:39:11 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:38148 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab3JPIjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:38:32 -0400
-Date: Wed, 16 Oct 2013 10:38:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Alex Shi <alex.shi@intel.com>
-Subject: Re: [PATCH 3/6] mm: Use raw_cpu ops for determining current NUMA node
-Message-ID: <20131016083813.GQ10651@twins.programming.kicks-ass.net>
-References: <20131015174722.615394057@linux.com>
- <20131015174746.244538146@linux.com>
+	Wed, 16 Oct 2013 04:39:08 -0400
+Message-ID: <525E50A6.1070206@colorfullife.com>
+Date: Wed, 16 Oct 2013 10:39:02 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015174746.244538146@linux.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>
+CC: Libin <huawei.libin@huawei.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, guohanjun@huawei.com,
+        xiexiuqi@huawei.com
+Subject: Re: [PATCH] ipc/sem.c: fix small codingstyle
+References: <1381825183-49576-1-git-send-email-huawei.libin@huawei.com> <1381855484.2354.0.camel@buesod1.americas.hpqcorp.net> <1381862186.22110.33.camel@joe-AO722>
+In-Reply-To: <1381862186.22110.33.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 12:47:25PM -0500, Christoph Lameter wrote:
-> Index: linux/include/linux/topology.h
-> ===================================================================
-> --- linux.orig/include/linux/topology.h	2013-09-24 11:29:51.000000000 -0500
-> +++ linux/include/linux/topology.h	2013-09-24 11:30:18.893831971 -0500
-> @@ -182,7 +182,7 @@ DECLARE_PER_CPU(int, numa_node);
->  /* Returns the number of the current Node. */
->  static inline int numa_node_id(void)
->  {
-> -	return __this_cpu_read(numa_node);
-> +	return raw_cpu_read(numa_node);
->  }
->  #endif
->  
-> @@ -239,7 +239,7 @@ static inline void set_numa_mem(int node
->  /* Returns the number of the nearest Node with memory */
->  static inline int numa_mem_id(void)
->  {
-> -	return __this_cpu_read(_numa_mem_);
-> +	return raw_cpu_read(_numa_mem_);
->  }
->  #endif
+Hi Joe,
 
-NAK; smp_processor_id() has the preemption checks; for consistently
-numa_node_id() should have them too, for the very same reason. Who's to
-say the node id is still valid when you return from this function? If
-we're preemptable we could've just been migrated away to another node.
+On 10/15/2013 08:36 PM, Joe Perches wrote:
+> On Tue, 2013-10-15 at 09:44 -0700, Davidlohr Bueso wrote:
+>> On Tue, 2013-10-15 at 16:19 +0800, Libin wrote:
+>>> From: Li Bin <huawei.libin@huawei.com>
+>>>
+>>> small codingstyle fix: '*' should be adjacent to the data name.
+>> There are *tons* of these, go crazy.
+>>
+> Here are the whitespace changes proposed by
+> $ scripts/checkpatch -f --fix --types=pointer_location,spacing,space_before_tab ipc/*.[ch]
+/me hides, probably most of them are mine.
 
-So please introduce raw_numa_node_id() and use that; all fully analogous
-to smp_processor_id().
+Davidlohr: Do you have anything outstanding for ipc/*.c?
+I have nothing.
+
+My proposal would be that the checkpatch -f patch should be added for 
+3.14, i.e. let's give the code one more cycle to calm down.
+Grek just sent me 47 patches for the backport to 3.10-stable, I don't 
+want any whitespace noise right now.
+
+--
+     Manfred
