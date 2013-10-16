@@ -1,155 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760470Ab3JPIrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:47:46 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56697 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760274Ab3JPIoV (ORCPT
+	id S1760333Ab3JPItg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:49:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48912 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760268Ab3JPItc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:44:21 -0400
-X-AuditID: 9c930179-b7c78ae000003065-90-525e51de7cd3
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 10/15] slab: remove kmem_bufctl_t
-Date: Wed, 16 Oct 2013 17:44:07 +0900
-Message-Id: <1381913052-23875-11-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Oct 2013 04:49:32 -0400
+Date: Wed, 16 Oct 2013 10:49:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20131016084920.GT10651@twins.programming.kicks-ass.net>
+References: <20131015174722.615394057@linux.com>
+ <20131015174747.813545438@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015174747.813545438@linux.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we changed the management method of free objects of the slab and
-there is no need to use special value, BUFCTL_END, BUFCTL_FREE and
-BUFCTL_ACTIVE. So remove them.
+On Tue, Oct 15, 2013 at 12:47:28PM -0500, Christoph Lameter wrote:
+> V3->V4:
+> 	- Drop CONFIG_DEBUG_THIS_CPU_OPERATIONS
+> 	- Add support for logging the exact operation that caused the issue.
+> 
+> We define a check function in order to avoid trouble with the
+> include files. Then the higher level __this_cpu macros are
+> modified to invoke the check before __this_cpu operation
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/include/linux/percpu.h
+> ===================================================================
+> --- linux.orig/include/linux/percpu.h	2013-10-10 11:30:17.111743444 -0500
+> +++ linux/include/linux/percpu.h	2013-10-10 10:30:26.817316787 -0500
+> @@ -175,6 +175,12 @@ extern phys_addr_t per_cpu_ptr_to_phys(v
+>  
+>  extern void __bad_size_call_parameter(void);
+>  
+> +#ifdef CONFIG_DEBUG_PREEMPT
+> +extern void __this_cpu_preempt_check(const char *op);
+> +#else
+> +static inline void __this_cpu_preempt_check(const char *op) { }
+> +#endif
+> +
+>  #define __pcpu_size_call_return(stem, variable)				\
+>  ({	typeof(variable) pscr_ret__;					\
+>  	__verify_pcpu_ptr(&(variable));					\
+> @@ -538,7 +544,8 @@ do {									\
+>  # ifndef __this_cpu_read_8
+>  #  define __this_cpu_read_8(pcp)	(*__this_cpu_ptr(&(pcp)))
+>  # endif
+> -# define __this_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
+> +# define __this_cpu_read(pcp) \
+> +	(__this_cpu_preempt_check("read"),__pcpu_size_call_return(__this_cpu_read_, (pcp)))
+>  #endif
+>  
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+So I didn't understand what was wrong with:
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 05fe37e..6ced1cc 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -163,27 +163,7 @@
-  */
- static bool pfmemalloc_active __read_mostly;
- 
--/*
-- * kmem_bufctl_t:
-- *
-- * Bufctl's are used for linking objs within a slab
-- * linked offsets.
-- *
-- * This implementation relies on "struct page" for locating the cache &
-- * slab an object belongs to.
-- * This allows the bufctl structure to be small (one int), but limits
-- * the number of objects a slab (not a cache) can contain when off-slab
-- * bufctls are used. The limit is the size of the largest general cache
-- * that does not use off-slab slabs.
-- * For 32bit archs with 4 kB pages, is this 56.
-- * This is not serious, as it is only for large objects, when it is unwise
-- * to have too many per slab.
-- * Note: This limit can be raised by introducing a general cache whose size
-- * is less than 512 (PAGE_SIZE<<3), but greater than 256.
-- */
--
--typedef unsigned int kmem_bufctl_t;
--#define	SLAB_LIMIT	(((kmem_bufctl_t)(~0U))-3)
-+#define	SLAB_LIMIT	(((unsigned int)(~0U))-1)
- 
- /*
-  * struct slab
-@@ -197,7 +177,7 @@ struct slab {
- 		struct list_head list;
- 		void *s_mem;		/* including colour offset */
- 		unsigned int inuse;	/* num of objs active in slab */
--		kmem_bufctl_t free;
-+		unsigned int free;
- 	};
- };
- 
-@@ -613,7 +593,7 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
- 
- static size_t slab_mgmt_size(size_t nr_objs, size_t align)
- {
--	return ALIGN(sizeof(struct slab)+nr_objs*sizeof(kmem_bufctl_t), align);
-+	return ALIGN(sizeof(struct slab)+nr_objs*sizeof(unsigned int), align);
- }
- 
- /*
-@@ -633,7 +613,7 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
- 	 * slab is used for:
- 	 *
- 	 * - The struct slab
--	 * - One kmem_bufctl_t for each object
-+	 * - One unsigned int for each object
- 	 * - Padding to respect alignment of @align
- 	 * - @buffer_size bytes for each object
- 	 *
-@@ -658,7 +638,7 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
- 		 * into account.
- 		 */
- 		nr_objs = (slab_size - sizeof(struct slab)) /
--			  (buffer_size + sizeof(kmem_bufctl_t));
-+			  (buffer_size + sizeof(unsigned int));
- 
- 		/*
- 		 * This calculated number will be either the right
-@@ -2068,7 +2048,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
- 			 * looping condition in cache_grow().
- 			 */
- 			offslab_limit = size - sizeof(struct slab);
--			offslab_limit /= sizeof(kmem_bufctl_t);
-+			offslab_limit /= sizeof(unsigned int);
- 
-  			if (num > offslab_limit)
- 				break;
-@@ -2309,7 +2289,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (!cachep->num)
- 		return -E2BIG;
- 
--	slab_size = ALIGN(cachep->num * sizeof(kmem_bufctl_t)
-+	slab_size = ALIGN(cachep->num * sizeof(unsigned int)
- 			  + sizeof(struct slab), cachep->align);
- 
- 	/*
-@@ -2324,7 +2304,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (flags & CFLGS_OFF_SLAB) {
- 		/* really off slab. No need for manual alignment */
- 		slab_size =
--		    cachep->num * sizeof(kmem_bufctl_t) + sizeof(struct slab);
-+		    cachep->num * sizeof(unsigned int) + sizeof(struct slab);
- 
- #ifdef CONFIG_PAGE_POISONING
- 		/* If we're going to use the generic kernel_map_pages()
-@@ -2603,9 +2583,9 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep,
- 	return slabp;
- }
- 
--static inline kmem_bufctl_t *slab_bufctl(struct slab *slabp)
-+static inline unsigned int *slab_bufctl(struct slab *slabp)
- {
--	return (kmem_bufctl_t *) (slabp + 1);
-+	return (unsigned int *) (slabp + 1);
- }
- 
- static void cache_init_objs(struct kmem_cache *cachep,
-@@ -2684,7 +2664,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
- {
- 	unsigned int objnr = obj_to_index(cachep, slabp, objp);
- #if DEBUG
--	kmem_bufctl_t i;
-+	unsigned int i;
- 
- 	/* Verify that the slab belongs to the intended node */
- 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
--- 
-1.7.9.5
+#define __this_cpu_read(pcp) \
+	(__this_cpu_preempt_check("read"), raw_this_cpu_read(pcp))
 
+And idem for all others. This is 1) shorter to write; and 2) makes it
+blindingly obvious that the implementations are actually the same.
+
+> Index: linux/lib/smp_processor_id.c
+> ===================================================================
+> --- linux.orig/lib/smp_processor_id.c	2013-10-10 11:30:17.111743444 -0500
+> +++ linux/lib/smp_processor_id.c	2013-10-10 10:32:16.046357108 -0500
+> @@ -7,7 +7,7 @@
+>  #include <linux/kallsyms.h>
+>  #include <linux/sched.h>
+>  
+> -notrace unsigned int debug_smp_processor_id(void)
+> +notrace static unsigned int check_preemption_disabled(char *what)
+>  {
+>  	unsigned long preempt_count = preempt_count();
+>  	int this_cpu = raw_smp_processor_id();
+> @@ -39,9 +39,9 @@ notrace unsigned int debug_smp_processor
+>  	if (!printk_ratelimit())
+>  		goto out_enable;
+>  
+> -	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+> -			"code: %s/%d\n",
+> -			preempt_count() - 1, current->comm, current->pid);
+> +	printk(KERN_ERR "%s in preemptible [%08x] code: %s/%d\n",
+> +		what, preempt_count() - 1, current->comm, current->pid);
+> +
+
+Like already said; NAK until that "BUG" remains.
