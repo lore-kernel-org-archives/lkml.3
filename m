@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3JPOcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:32:55 -0400
-Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:41413 "EHLO
-	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094Ab3JPOcy (ORCPT
+	id S1754785Ab3JPOex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:34:53 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11141 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab3JPOev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:32:54 -0400
-Date: Wed, 16 Oct 2013 14:32:53 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: David Miller <davem@davemloft.net>, tj@kernel.org,
-        akpm@linuxfoundation.org, srostedt@redhat.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu
- operations V4
-In-Reply-To: <20131016103751.GA24897@gmail.com>
-Message-ID: <00000141c1af00d5-93f7c2d9-fdc4-4fec-a73d-0c3434bf5d56-000000@email.amazonses.com>
-References: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com> <20131011.140814.422793173894221852.davem@davemloft.net> <20131012165120.GA15116@gmail.com> <00000141b912103b-4bbb4dbd-747d-4a6d-8d1a-1a172eda4495-000000@email.amazonses.com>
- <20131016103751.GA24897@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 16 Oct 2013 10:34:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 16 Oct 2013 07:34:50 -0700
+Date: Wed, 16 Oct 2013 17:34:48 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 08/19] clk: tegra: add common infra for DT clocks
+Message-ID: <20131016143448.GK5643@tbergstrom-lnx.Nvidia.com>
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
+ <1381848794-11761-9-git-send-email-pdeschrijver@nvidia.com>
+ <525D9117.9050009@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.35
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <525D9117.9050009@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013, Ingo Molnar wrote:
+On Tue, Oct 15, 2013 at 09:01:43PM +0200, Stephen Warren wrote:
+> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> > Introduce a common infrastructure for sharing clock initialization between
+> > SoCs.
+> 
+> > diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+> 
+> > +struct clk ** __init tegra_lookup_dt_id(int clk_id,
+> > +					struct tegra_clk *tegra_clk)
+> > +{
+> > +	if (tegra_clk[clk_id].present)
+> > +		return &clks[tegra_clk[clk_id].dt_id];
+> > +	else
+> > +		return NULL;
+> 
+> Does this need range-checking? Or do we assume that since this is an
+> internal function, "clk_id" will never be out-of-range?
 
-> > I do not have any control over how my ISP sorts these emails. [...]
->
-> Your series from today has proper threading - so after all it _was_
-> possible for you to send a patch series correctly?
+That was my assumption indeed. I could add a range check if you think that's
+useful.
 
-Well yes with some effort I was able to get funnel this stuff through my
-home connection. Problem is that this is a hassle to do. I am going to
-have limited availability in the next couple of weeks due to conferences
-and vacation. Then I guess I need to see if I can relocate my development
-system elsewhere.
+Cheers,
 
+Peter.
