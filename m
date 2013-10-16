@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab3JPKAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 06:00:45 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45459 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760079Ab3JPKAl (ORCPT
+	id S1760528Ab3JPKAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:00:43 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:59541 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760044Ab3JPKAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 06:00:41 -0400
 From: Johan Hovold <jhovold@gmail.com>
@@ -14,9 +14,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Alessandro Zummo <a.zummo@towertech.it>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v3 2/3] ARM: at91: fix hanged boot due to early rtt-interrupt
-Date: Wed, 16 Oct 2013 11:56:15 +0200
-Message-Id: <1381917376-21107-3-git-send-email-jhovold@gmail.com>
+Subject: [PATCH v3 1/3] ARM: at91: fix hanged boot due to early rtc-interrupt
+Date: Wed, 16 Oct 2013 11:56:14 +0200
+Message-Id: <1381917376-21107-2-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381917376-21107-1-git-send-email-jhovold@gmail.com>
 References: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
@@ -25,12 +25,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure the RTT-interrupts are masked at boot by adding a new helper
+Make sure the RTC-interrupts are masked at boot by adding a new helper
 function to be used at SOC-init.
 
-This fixes hanged boot on all AT91 SOCs with an RTT, for example, if an
-RTT-alarm goes off after a non-clean shutdown (e.g. when using RTC
-wakeup).
+This fixes hanged boot on all AT91 SOCs with an RTC (but RM9200), for
+example, after a reset during an RTC-update or if an RTC-alarm goes off
+after shutdown (e.g. when using RTC wakeup).
 
 The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
 AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
@@ -51,126 +51,226 @@ particular, a user reset is not sufficient.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- arch/arm/mach-at91/at91sam9260.c |  2 ++
- arch/arm/mach-at91/at91sam9261.c |  2 ++
- arch/arm/mach-at91/at91sam9263.c |  3 +++
- arch/arm/mach-at91/at91sam9g45.c |  1 +
- arch/arm/mach-at91/at91sam9rl.c  |  1 +
- arch/arm/mach-at91/generic.h     |  1 +
- arch/arm/mach-at91/sysirq_mask.c | 24 ++++++++++++++++++++++++
- 7 files changed, 34 insertions(+)
+ arch/arm/mach-at91/Makefile                   |  2 +-
+ arch/arm/mach-at91/at91sam9g45.c              |  2 ++
+ arch/arm/mach-at91/at91sam9n12.c              |  6 ++++
+ arch/arm/mach-at91/at91sam9rl.c               |  2 ++
+ arch/arm/mach-at91/at91sam9x5.c               |  6 ++++
+ arch/arm/mach-at91/generic.h                  |  1 +
+ arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 +++
+ arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 +++
+ arch/arm/mach-at91/include/mach/sama5d3.h     |  5 +++
+ arch/arm/mach-at91/sama5d3.c                  |  6 ++++
+ arch/arm/mach-at91/sysirq_mask.c              | 47 +++++++++++++++++++++++++++
+ 11 files changed, 86 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/mach-at91/sysirq_mask.c
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index 5de6074..ae10d14 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -349,6 +349,8 @@ static void __init at91sam9260_initialize(void)
- 	arm_pm_idle = at91sam9_idle;
- 	arm_pm_restart = at91sam9_alt_restart;
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index aa33b0f..8879a41 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
  
-+	at91_sysirq_mask_rtt(AT91SAM9260_BASE_RTT);
-+
- 	/* Register GPIO subsystem */
- 	at91_gpio_init(at91sam9260_gpio, 3);
- }
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 0e07932..e761e74 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -291,6 +291,8 @@ static void __init at91sam9261_initialize(void)
- 	arm_pm_idle = at91sam9_idle;
- 	arm_pm_restart = at91sam9_alt_restart;
- 
-+	at91_sysirq_mask_rtt(AT91SAM9261_BASE_RTT);
-+
- 	/* Register GPIO subsystem */
- 	at91_gpio_init(at91sam9261_gpio, 3);
- }
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index 962768b..ad02281 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -330,6 +330,9 @@ static void __init at91sam9263_initialize(void)
- 	arm_pm_idle = at91sam9_idle;
- 	arm_pm_restart = at91sam9_alt_restart;
- 
-+	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT0);
-+	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT1);
-+
- 	/* Register GPIO subsystem */
- 	at91_gpio_init(at91sam9263_gpio, 5);
- }
+-obj-y		:= irq.o gpio.o setup.o
++obj-y		:= irq.o gpio.o setup.o sysirq_mask.o
+ obj-m		:=
+ obj-n		:=
+ obj-		:=
 diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 8d4da6d..88e6f7b 100644
+index b9fe138..8d4da6d 100644
 --- a/arch/arm/mach-at91/at91sam9g45.c
 +++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -380,6 +380,7 @@ static void __init at91sam9g45_initialize(void)
+@@ -379,6 +379,8 @@ static void __init at91sam9g45_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
  	arm_pm_restart = at91sam9g45_restart;
  
- 	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
-+	at91_sysirq_mask_rtt(AT91SAM9G45_BASE_RTT);
- 
++	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
++
  	/* Register GPIO subsystem */
  	at91_gpio_init(at91sam9g45_gpio, 5);
+ }
+diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+index c7d670d..4d6001c 100644
+--- a/arch/arm/mach-at91/at91sam9n12.c
++++ b/arch/arm/mach-at91/at91sam9n12.c
+@@ -223,7 +223,13 @@ static void __init at91sam9n12_map_io(void)
+ 	at91_init_sram(0, AT91SAM9N12_SRAM_BASE, AT91SAM9N12_SRAM_SIZE);
+ }
+ 
++static void __init at91sam9n12_initialize(void)
++{
++	at91_sysirq_mask_rtc(AT91SAM9N12_BASE_RTC);
++}
++
+ AT91_SOC_START(at91sam9n12)
+ 	.map_io = at91sam9n12_map_io,
+ 	.register_clocks = at91sam9n12_register_clocks,
++	.init = at91sam9n12_initialize,
+ AT91_SOC_END
 diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index b5a8c9d..301e172 100644
+index d4ec0d9..b5a8c9d 100644
 --- a/arch/arm/mach-at91/at91sam9rl.c
 +++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -295,6 +295,7 @@ static void __init at91sam9rl_initialize(void)
+@@ -294,6 +294,8 @@ static void __init at91sam9rl_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
  	arm_pm_restart = at91sam9_alt_restart;
  
- 	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
-+	at91_sysirq_mask_rtt(AT91SAM9RL_BASE_RTT);
- 
++	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
++
  	/* Register GPIO subsystem */
  	at91_gpio_init(at91sam9rl_gpio, 4);
+ }
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 916e5a1..e8a2e07 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -322,6 +322,11 @@ static void __init at91sam9x5_map_io(void)
+ 	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
+ }
+ 
++static void __init at91sam9x5_initialize(void)
++{
++	at91_sysirq_mask_rtc(AT91SAM9X5_BASE_RTC);
++}
++
+ /* --------------------------------------------------------------------
+  *  Interrupt initialization
+  * -------------------------------------------------------------------- */
+@@ -329,4 +334,5 @@ static void __init at91sam9x5_map_io(void)
+ AT91_SOC_START(at91sam9x5)
+ 	.map_io = at91sam9x5_map_io,
+ 	.register_clocks = at91sam9x5_register_clocks,
++	.init = at91sam9x5_initialize,
+ AT91_SOC_END
 diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 80269bd..26dee3c 100644
+index dc6e2f5..80269bd 100644
 --- a/arch/arm/mach-at91/generic.h
 +++ b/arch/arm/mach-at91/generic.h
-@@ -35,6 +35,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
+@@ -34,6 +34,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
+ 				    struct device_node *parent);
  extern int  __init at91_aic5_of_init(struct device_node *node,
  				    struct device_node *parent);
- extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
-+extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
++extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
  
  
   /* Timer */
-diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-index ee3e22c..2ba694f 100644
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -21,6 +21,7 @@
-  */
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9n12.h b/arch/arm/mach-at91/include/mach/at91sam9n12.h
+index d374b87..0151bcf 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9n12.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9n12.h
+@@ -49,6 +49,11 @@
+ #define AT91SAM9N12_BASE_USART3	0xf8028000
  
- #include <linux/io.h>
-+#include <mach/at91_rtt.h>
- 
- #include "generic.h"
- 
-@@ -45,3 +46,26 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
- 
- 	iounmap(base);
- }
+ /*
++ * System Peripherals
++ */
++#define AT91SAM9N12_BASE_RTC	0xfffffeb0
 +
-+void __init at91_sysirq_mask_rtt(u32 rtt_base)
++/*
+  * Internal Memory.
+  */
+ #define AT91SAM9N12_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9x5.h b/arch/arm/mach-at91/include/mach/at91sam9x5.h
+index c75ee19..2fc76c4 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
+@@ -55,6 +55,11 @@
+ #define AT91SAM9X5_BASE_USART2	0xf8024000
+ 
+ /*
++ * System Peripherals
++ */
++#define AT91SAM9X5_BASE_RTC	0xfffffeb0
++
++/*
+  * Internal Memory.
+  */
+ #define AT91SAM9X5_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+diff --git a/arch/arm/mach-at91/include/mach/sama5d3.h b/arch/arm/mach-at91/include/mach/sama5d3.h
+index 31096a8..25613d8 100644
+--- a/arch/arm/mach-at91/include/mach/sama5d3.h
++++ b/arch/arm/mach-at91/include/mach/sama5d3.h
+@@ -73,6 +73,11 @@
+ #define SAMA5D3_BASE_USART3	0xf8024000
+ 
+ /*
++ * System Peripherals
++ */
++#define SAMA5D3_BASE_RTC	0xfffffeb0
++
++/*
+  * Internal Memory
+  */
+ #define SAMA5D3_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 4012797..3ea8642 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -371,7 +371,13 @@ static void __init sama5d3_map_io(void)
+ 	at91_init_sram(0, SAMA5D3_SRAM_BASE, SAMA5D3_SRAM_SIZE);
+ }
+ 
++static void __init sama5d3_initialize(void)
++{
++	at91_sysirq_mask_rtc(SAMA5D3_BASE_RTC);
++}
++
+ AT91_SOC_START(sama5d3)
+ 	.map_io = sama5d3_map_io,
+ 	.register_clocks = sama5d3_register_clocks,
++	.init = sama5d3_initialize,
+ AT91_SOC_END
+diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+new file mode 100644
+index 0000000..ee3e22c
+--- /dev/null
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -0,0 +1,47 @@
++/*
++ * sysirq_mask.c - System-interrupt masking
++ *
++ * Copyright (C) 2013 Johan Hovold <jhovold@gmail.com>
++ *
++ * Functions to disable system interrupts from backup-powered peripherals.
++ *
++ * The RTC and RTT-peripherals are generally powered by backup power (VDDBU)
++ * and are not reset on wake-up, user, watchdog or software reset. This means
++ * that their interrupts may be enabled during early boot (e.g. after a user
++ * reset).
++ *
++ * As the RTC and RTT share the system-interrupt line with the PIT, an
++ * interrupt occurring before a handler has been installed would lead to the
++ * system interrupt being disabled and prevent the system from booting.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/io.h>
++
++#include "generic.h"
++
++#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
++#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
++
++void __init at91_sysirq_mask_rtc(u32 rtc_base)
 +{
 +	void __iomem *base;
-+	void __iomem *reg;
-+	u32 mode;
++	u32 mask;
 +
-+	base = ioremap(rtt_base, 16);
++	base = ioremap(rtc_base, 64);
 +	if (!base)
 +		return;
 +
-+	reg = base + AT91_RTT_MR;
-+
-+	mode = readl_relaxed(reg);
-+	if (mode & (AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN)) {
-+		pr_info("AT91: Disabling rtt irq\n");
-+		mode &= ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN);
-+		writel_relaxed(mode, reg);
-+		(void)readl_relaxed(reg);			/* flush */
++	mask = readl_relaxed(base + AT91_RTC_IMR);
++	if (mask) {
++		pr_info("AT91: Disabling rtc irq\n");
++		writel_relaxed(mask, base + AT91_RTC_IDR);
++		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
 +	}
 +
 +	iounmap(base);
