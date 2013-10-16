@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab3JPPLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:11:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47959 "EHLO mga02.intel.com"
+	id S1759740Ab3JPPL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:11:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14789 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab3JPPLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:11:13 -0400
+	id S1759569Ab3JPPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:11:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="420062744"
+   d="scan'208";a="308598811"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
         naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com
 Cc: arozansk@redhat.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [PATCH v2 2/9] ACPI, CPER: Update cper info
-Date: Wed, 16 Oct 2013 10:55:59 -0400
-Message-Id: <1381935366-11731-3-git-send-email-gong.chen@linux.intel.com>
+Subject: [PATCH v2 4/9] ACPI, x86: Extended error log driver for x86 platform
+Date: Wed, 16 Oct 2013 10:56:01 -0400
+Message-Id: <1381935366-11731-5-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
 References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
@@ -24,502 +24,479 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare for the following patches and make related
-definition more clear, update some definitions about CPER.
+This error log driver (a.k.a eMCA driver) is implemented based on
+http://www.intel.com/content/www/us/en/architecture-and-technology/enhanced-mca-logging-xeon-paper.htm l.
+After errors are captured, more valuable information can be
+got with this new enhanced error log driver.
 
-v2 -> v1: Update some more definitions suggested by Boris
+v2 -> v1: eliminate spin_lock & minor fixes suggested by Boris
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- drivers/acpi/apei/apei-internal.h | 12 ++++----
- drivers/acpi/apei/cper.c          | 58 +++++++++++++++++++--------------------
- drivers/acpi/apei/ghes.c          | 54 ++++++++++++++++++------------------
- include/acpi/actbl1.h             | 14 +++++-----
- include/acpi/ghes.h               |  2 +-
- include/linux/cper.h              |  2 +-
- 6 files changed, 71 insertions(+), 71 deletions(-)
+ arch/x86/include/asm/mce.h       |   5 +
+ arch/x86/kernel/cpu/mcheck/mce.c |  20 +++
+ drivers/acpi/Kconfig             |   9 ++
+ drivers/acpi/Makefile            |   2 +
+ drivers/acpi/acpi_extlog.c       | 319 +++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/bus.c               |   3 +-
+ include/linux/acpi.h             |   1 +
+ 7 files changed, 358 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/acpi/acpi_extlog.c
 
-diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
-index f220d64..21ba34a 100644
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -122,11 +122,11 @@ struct dentry;
- struct dentry *apei_get_debugfs_dir(void);
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index cbe6b9e..072b2f8 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -16,6 +16,7 @@
+ #define MCG_EXT_CNT_SHIFT	16
+ #define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
+ #define MCG_SER_P		(1ULL<<24)   /* MCA recovery/new status bits */
++#define MCG_ELOG_P		(1ULL<<26)   /* Extended error log supported */
  
- #define apei_estatus_for_each_section(estatus, section)			\
--	for (section = (struct acpi_hest_generic_data *)(estatus + 1);	\
-+	for (section = (struct acpi_generic_data *)(estatus + 1);	\
- 	     (void *)section - (void *)estatus < estatus->data_length;	\
- 	     section = (void *)(section+1) + section->error_data_length)
- 
--static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
-+static inline u32 cper_estatus_len(struct acpi_generic_status *estatus)
- {
- 	if (estatus->raw_data_length)
- 		return estatus->raw_data_offset + \
-@@ -135,10 +135,10 @@ static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
- 		return sizeof(*estatus) + estatus->data_length;
- }
- 
--void apei_estatus_print(const char *pfx,
--			const struct acpi_hest_generic_status *estatus);
--int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
--int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
-+void cper_estatus_print(const char *pfx,
-+			const struct acpi_generic_status *estatus);
-+int cper_estatus_check_header(const struct acpi_generic_status *estatus);
-+int cper_estatus_check(const struct acpi_generic_status *estatus);
- 
- int apei_osc_setup(void);
- #endif
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index f827f02..eb5f6d6 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -5,7 +5,7 @@
-  *	Author: Huang Ying <ying.huang@intel.com>
-  *
-  * CPER is the format used to describe platform hardware error by
-- * various APEI tables, such as ERST, BERT and HEST etc.
-+ * various tables, such as ERST, BERT and HEST etc.
-  *
-  * For more information about CPER, please refer to Appendix N of UEFI
-  * Specification version 2.3.
-@@ -73,7 +73,7 @@ static const char *cper_severity_str(unsigned int severity)
-  * printed, with @pfx is printed at the beginning of each line.
-  */
- void cper_print_bits(const char *pfx, unsigned int bits,
--		     const char *strs[], unsigned int strs_size)
-+		     const char * const strs[], unsigned int strs_size)
- {
- 	int i, len = 0;
- 	const char *str;
-@@ -98,32 +98,32 @@ void cper_print_bits(const char *pfx, unsigned int bits,
- 		printk("%s\n", buf);
- }
- 
--static const char *cper_proc_type_strs[] = {
-+static const char * const cper_proc_type_strs[] = {
- 	"IA32/X64",
- 	"IA64",
+ /* MCG_STATUS register defines */
+ #define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
+@@ -186,6 +187,10 @@ enum mcp_flags {
+ 	MCP_UC = (1 << 1),		/* log uncorrected errors */
+ 	MCP_DONTLOG = (1 << 2),		/* only clear, don't log */
  };
++
++void register_elog_handler(int (*f)(const char *, int, int));
++void unregister_elog_handler(int (*f)(const char *, int, int));
++
+ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b);
  
--static const char *cper_proc_isa_strs[] = {
-+static const char * const cper_proc_isa_strs[] = {
- 	"IA32",
- 	"IA64",
- 	"X64",
- };
+ int mce_notify_irq(void);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index b3218cd..c11a53f 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -48,6 +48,8 @@
  
--static const char *cper_proc_error_type_strs[] = {
-+static const char * const cper_proc_error_type_strs[] = {
- 	"cache error",
- 	"TLB error",
- 	"bus error",
- 	"micro-architectural error",
- };
+ #include "mce-internal.h"
  
--static const char *cper_proc_op_strs[] = {
-+static const char * const cper_proc_op_strs[] = {
- 	"unknown or generic",
- 	"data read",
- 	"data write",
- 	"instruction execution",
- };
++static int (*mce_ext_err_print)(const char *, int, int) = NULL;
++
+ static DEFINE_MUTEX(mce_chrdev_read_mutex);
  
--static const char *cper_proc_flag_strs[] = {
-+static const char * const cper_proc_flag_strs[] = {
- 	"restartable",
- 	"precise IP",
- 	"overflow",
-@@ -248,7 +248,7 @@ static const char *cper_pcie_port_type_strs[] = {
- };
+ #define rcu_dereference_check_mce(p) \
+@@ -576,6 +578,21 @@ static void mce_read_aux(struct mce *m, int i)
  
- static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
--			    const struct acpi_hest_generic_data *gdata)
-+			    const struct acpi_generic_data *gdata)
- {
- 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
- 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
-@@ -283,17 +283,17 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
- }
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
  
--static const char *apei_estatus_section_flag_strs[] = {
-+static const char * const cper_estatus_section_flag_strs[] = {
- 	"primary",
- 	"containment warning",
- 	"reset",
--	"threshold exceeded",
-+	"error threshold exceeded",
- 	"resource not accessible",
- 	"latent error",
- };
- 
--static void apei_estatus_print_section(
--	const char *pfx, const struct acpi_hest_generic_data *gdata, int sec_no)
-+static void cper_estatus_print_section(
-+	const char *pfx, const struct acpi_generic_data *gdata, int sec_no)
- {
- 	uuid_le *sec_type = (uuid_le *)gdata->section_type;
- 	__u16 severity;
-@@ -302,8 +302,8 @@ static void apei_estatus_print_section(
- 	printk("%s""section: %d, severity: %d, %s\n", pfx, sec_no, severity,
- 	       cper_severity_str(severity));
- 	printk("%s""flags: 0x%02x\n", pfx, gdata->flags);
--	cper_print_bits(pfx, gdata->flags, apei_estatus_section_flag_strs,
--			ARRAY_SIZE(apei_estatus_section_flag_strs));
-+	cper_print_bits(pfx, gdata->flags, cper_estatus_section_flag_strs,
-+			ARRAY_SIZE(cper_estatus_section_flag_strs));
- 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_ID)
- 		printk("%s""fru_id: %pUl\n", pfx, (uuid_le *)gdata->fru_id);
- 	if (gdata->validation_bits & CPER_SEC_VALID_FRU_TEXT)
-@@ -339,34 +339,34 @@ err_section_too_small:
- 	pr_err(FW_WARN "error section length is too small\n");
- }
- 
--void apei_estatus_print(const char *pfx,
--			const struct acpi_hest_generic_status *estatus)
-+void cper_estatus_print(const char *pfx,
-+			const struct acpi_generic_status *estatus)
- {
--	struct acpi_hest_generic_data *gdata;
-+	struct acpi_generic_data *gdata;
- 	unsigned int data_len, gedata_len;
- 	int sec_no = 0;
- 	__u16 severity;
- 
--	printk("%s""APEI generic hardware error status\n", pfx);
-+	printk("%s""Generic Hardware Error Status\n", pfx);
- 	severity = estatus->error_severity;
- 	printk("%s""severity: %d, %s\n", pfx, severity,
- 	       cper_severity_str(severity));
- 	data_len = estatus->data_length;
--	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
-+	gdata = (struct acpi_generic_data *)(estatus + 1);
- 	while (data_len >= sizeof(*gdata)) {
- 		gedata_len = gdata->error_data_length;
--		apei_estatus_print_section(pfx, gdata, sec_no);
-+		cper_estatus_print_section(pfx, gdata, sec_no);
- 		data_len -= gedata_len + sizeof(*gdata);
- 		gdata = (void *)(gdata + 1) + gedata_len;
- 		sec_no++;
- 	}
- }
--EXPORT_SYMBOL_GPL(apei_estatus_print);
-+EXPORT_SYMBOL_GPL(cper_estatus_print);
- 
--int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus)
-+int cper_estatus_check_header(const struct acpi_generic_status *estatus)
- {
- 	if (estatus->data_length &&
--	    estatus->data_length < sizeof(struct acpi_hest_generic_data))
-+	    estatus->data_length < sizeof(struct acpi_generic_data))
- 		return -EINVAL;
- 	if (estatus->raw_data_length &&
- 	    estatus->raw_data_offset < sizeof(*estatus) + estatus->data_length)
-@@ -374,19 +374,19 @@ int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus)
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(apei_estatus_check_header);
-+EXPORT_SYMBOL_GPL(cper_estatus_check_header);
- 
--int apei_estatus_check(const struct acpi_hest_generic_status *estatus)
-+int cper_estatus_check(const struct acpi_generic_status *estatus)
- {
--	struct acpi_hest_generic_data *gdata;
-+	struct acpi_generic_data *gdata;
- 	unsigned int data_len, gedata_len;
- 	int rc;
- 
--	rc = apei_estatus_check_header(estatus);
-+	rc = cper_estatus_check_header(estatus);
- 	if (rc)
- 		return rc;
- 	data_len = estatus->data_length;
--	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
-+	gdata = (struct acpi_generic_data *)(estatus + 1);
- 	while (data_len >= sizeof(*gdata)) {
- 		gedata_len = gdata->error_data_length;
- 		if (gedata_len > data_len - sizeof(*gdata))
-@@ -399,4 +399,4 @@ int apei_estatus_check(const struct acpi_hest_generic_status *estatus)
- 
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(apei_estatus_check);
-+EXPORT_SYMBOL_GPL(cper_estatus_check);
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 8ec37bb..0db6e4f 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -75,13 +75,13 @@
- #define GHES_ESTATUS_CACHE_LEN(estatus_len)			\
- 	(sizeof(struct ghes_estatus_cache) + (estatus_len))
- #define GHES_ESTATUS_FROM_CACHE(estatus_cache)			\
--	((struct acpi_hest_generic_status *)			\
-+	((struct acpi_generic_status *)				\
- 	 ((struct ghes_estatus_cache *)(estatus_cache) + 1))
- 
- #define GHES_ESTATUS_NODE_LEN(estatus_len)			\
- 	(sizeof(struct ghes_estatus_node) + (estatus_len))
--#define GHES_ESTATUS_FROM_NODE(estatus_node)				\
--	((struct acpi_hest_generic_status *)				\
-+#define GHES_ESTATUS_FROM_NODE(estatus_node)			\
-+	((struct acpi_generic_status *)				\
- 	 ((struct ghes_estatus_node *)(estatus_node) + 1))
- 
- bool ghes_disable;
-@@ -378,17 +378,17 @@ static int ghes_read_estatus(struct ghes *ghes, int silent)
- 	ghes->flags |= GHES_TO_CLEAR;
- 
- 	rc = -EIO;
--	len = apei_estatus_len(ghes->estatus);
-+	len = cper_estatus_len(ghes->estatus);
- 	if (len < sizeof(*ghes->estatus))
- 		goto err_read_block;
- 	if (len > ghes->generic->error_block_length)
- 		goto err_read_block;
--	if (apei_estatus_check_header(ghes->estatus))
-+	if (cper_estatus_check_header(ghes->estatus))
- 		goto err_read_block;
- 	ghes_copy_tofrom_phys(ghes->estatus + 1,
- 			      buf_paddr + sizeof(*ghes->estatus),
- 			      len - sizeof(*ghes->estatus), 1);
--	if (apei_estatus_check(ghes->estatus))
-+	if (cper_estatus_check(ghes->estatus))
- 		goto err_read_block;
- 	rc = 0;
- 
-@@ -409,7 +409,7 @@ static void ghes_clear_estatus(struct ghes *ghes)
- 	ghes->flags &= ~GHES_TO_CLEAR;
- }
- 
--static void ghes_handle_memory_failure(struct acpi_hest_generic_data *gdata, int sev)
-+static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
- {
- #ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
- 	unsigned long pfn;
-@@ -438,10 +438,10 @@ static void ghes_handle_memory_failure(struct acpi_hest_generic_data *gdata, int
- }
- 
- static void ghes_do_proc(struct ghes *ghes,
--			 const struct acpi_hest_generic_status *estatus)
-+			 const struct acpi_generic_status *estatus)
- {
- 	int sev, sec_sev;
--	struct acpi_hest_generic_data *gdata;
-+	struct acpi_generic_data *gdata;
- 
- 	sev = ghes_severity(estatus->error_severity);
- 	apei_estatus_for_each_section(estatus, gdata) {
-@@ -496,7 +496,7 @@ static void ghes_do_proc(struct ghes *ghes,
- 
- static void __ghes_print_estatus(const char *pfx,
- 				 const struct acpi_hest_generic *generic,
--				 const struct acpi_hest_generic_status *estatus)
-+				 const struct acpi_generic_status *estatus)
- {
- 	static atomic_t seqno;
- 	unsigned int curr_seqno;
-@@ -513,12 +513,12 @@ static void __ghes_print_estatus(const char *pfx,
- 	snprintf(pfx_seq, sizeof(pfx_seq), "%s{%u}" HW_ERR, pfx, curr_seqno);
- 	printk("%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
- 	       pfx_seq, generic->header.source_id);
--	apei_estatus_print(pfx_seq, estatus);
-+	cper_estatus_print(pfx_seq, estatus);
- }
- 
- static int ghes_print_estatus(const char *pfx,
- 			      const struct acpi_hest_generic *generic,
--			      const struct acpi_hest_generic_status *estatus)
-+			      const struct acpi_generic_status *estatus)
- {
- 	/* Not more than 2 messages every 5 seconds */
- 	static DEFINE_RATELIMIT_STATE(ratelimit_corrected, 5*HZ, 2);
-@@ -540,15 +540,15 @@ static int ghes_print_estatus(const char *pfx,
-  * GHES error status reporting throttle, to report more kinds of
-  * errors, instead of just most frequently occurred errors.
-  */
--static int ghes_estatus_cached(struct acpi_hest_generic_status *estatus)
-+static int ghes_estatus_cached(struct acpi_generic_status *estatus)
- {
- 	u32 len;
- 	int i, cached = 0;
- 	unsigned long long now;
- 	struct ghes_estatus_cache *cache;
--	struct acpi_hest_generic_status *cache_estatus;
-+	struct acpi_generic_status *cache_estatus;
- 
--	len = apei_estatus_len(estatus);
-+	len = cper_estatus_len(estatus);
- 	rcu_read_lock();
- 	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
- 		cache = rcu_dereference(ghes_estatus_caches[i]);
-@@ -571,19 +571,19 @@ static int ghes_estatus_cached(struct acpi_hest_generic_status *estatus)
- 
- static struct ghes_estatus_cache *ghes_estatus_cache_alloc(
- 	struct acpi_hest_generic *generic,
--	struct acpi_hest_generic_status *estatus)
-+	struct acpi_generic_status *estatus)
- {
- 	int alloced;
- 	u32 len, cache_len;
- 	struct ghes_estatus_cache *cache;
--	struct acpi_hest_generic_status *cache_estatus;
-+	struct acpi_generic_status *cache_estatus;
- 
- 	alloced = atomic_add_return(1, &ghes_estatus_cache_alloced);
- 	if (alloced > GHES_ESTATUS_CACHE_ALLOCED_MAX) {
- 		atomic_dec(&ghes_estatus_cache_alloced);
- 		return NULL;
- 	}
--	len = apei_estatus_len(estatus);
-+	len = cper_estatus_len(estatus);
- 	cache_len = GHES_ESTATUS_CACHE_LEN(len);
- 	cache = (void *)gen_pool_alloc(ghes_estatus_pool, cache_len);
- 	if (!cache) {
-@@ -603,7 +603,7 @@ static void ghes_estatus_cache_free(struct ghes_estatus_cache *cache)
- {
- 	u32 len;
- 
--	len = apei_estatus_len(GHES_ESTATUS_FROM_CACHE(cache));
-+	len = cper_estatus_len(GHES_ESTATUS_FROM_CACHE(cache));
- 	len = GHES_ESTATUS_CACHE_LEN(len);
- 	gen_pool_free(ghes_estatus_pool, (unsigned long)cache, len);
- 	atomic_dec(&ghes_estatus_cache_alloced);
-@@ -619,7 +619,7 @@ static void ghes_estatus_cache_rcu_free(struct rcu_head *head)
- 
- static void ghes_estatus_cache_add(
- 	struct acpi_hest_generic *generic,
--	struct acpi_hest_generic_status *estatus)
-+	struct acpi_generic_status *estatus)
- {
- 	int i, slot = -1, count;
- 	unsigned long long now, duration, period, max_period = 0;
-@@ -751,7 +751,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
- 	struct llist_node *llnode, *next;
- 	struct ghes_estatus_node *estatus_node;
- 	struct acpi_hest_generic *generic;
--	struct acpi_hest_generic_status *estatus;
-+	struct acpi_generic_status *estatus;
- 	u32 len, node_len;
- 
- 	llnode = llist_del_all(&ghes_estatus_llist);
-@@ -765,7 +765,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
- 		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
- 					   llnode);
- 		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
--		len = apei_estatus_len(estatus);
-+		len = cper_estatus_len(estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
- 		ghes_do_proc(estatus_node->ghes, estatus);
- 		if (!ghes_estatus_cached(estatus)) {
-@@ -784,7 +784,7 @@ static void ghes_print_queued_estatus(void)
- 	struct llist_node *llnode;
- 	struct ghes_estatus_node *estatus_node;
- 	struct acpi_hest_generic *generic;
--	struct acpi_hest_generic_status *estatus;
-+	struct acpi_generic_status *estatus;
- 	u32 len, node_len;
- 
- 	llnode = llist_del_all(&ghes_estatus_llist);
-@@ -797,7 +797,7 @@ static void ghes_print_queued_estatus(void)
- 		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
- 					   llnode);
- 		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
--		len = apei_estatus_len(estatus);
-+		len = cper_estatus_len(estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
- 		generic = estatus_node->generic;
- 		ghes_print_estatus(NULL, generic, estatus);
-@@ -843,7 +843,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
- #ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
- 		u32 len, node_len;
- 		struct ghes_estatus_node *estatus_node;
--		struct acpi_hest_generic_status *estatus;
-+		struct acpi_generic_status *estatus;
- #endif
- 		if (!(ghes->flags & GHES_TO_CLEAR))
++void register_elog_handler(int (*f)(const char *, int, int))
++{
++	mce_ext_err_print = f;
++}
++EXPORT_SYMBOL_GPL(register_elog_handler);
++
++void unregister_elog_handler(int (*f)(const char *, int, int))
++{
++	if (f) {
++		WARN_ON(mce_ext_err_print != f);
++		mce_ext_err_print = NULL;
++	}
++}
++EXPORT_SYMBOL_GPL(unregister_elog_handler);
++
+ /*
+  * Poll for corrected events or events that happened before reset.
+  * Those are just logged through /dev/mcelog.
+@@ -624,6 +641,9 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		    (m.status & (mca_cfg.ser ? MCI_STATUS_S : MCI_STATUS_UC)))
  			continue;
-@@ -851,7 +851,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
- 		if (ghes_estatus_cached(ghes->estatus))
- 			goto next;
- 		/* Save estatus for further processing in IRQ context */
--		len = apei_estatus_len(ghes->estatus);
-+		len = cper_estatus_len(ghes->estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
- 		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
- 						      node_len);
-@@ -923,7 +923,7 @@ static int ghes_probe(struct platform_device *ghes_dev)
  
- 	rc = -EIO;
- 	if (generic->error_block_length <
--	    sizeof(struct acpi_hest_generic_status)) {
-+	    sizeof(struct acpi_generic_status)) {
- 		pr_warning(FW_BUG GHES_PFX "Invalid error block length: %u for generic hardware error source: %d\n",
- 			   generic->error_block_length,
- 			   generic->header.source_id);
-diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-index 0bd750e..556c83ee 100644
---- a/include/acpi/actbl1.h
-+++ b/include/acpi/actbl1.h
-@@ -596,7 +596,7 @@ struct acpi_hest_generic {
++		if (mce_ext_err_print)
++			mce_ext_err_print(NULL, m.extcpu, i);
++
+ 		mce_read_aux(&m, i);
  
- /* Generic Error Status block */
+ 		if (!(flags & MCP_TIMESTAMP))
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 22327e6..819c06b 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -372,4 +372,13 @@ config ACPI_BGRT
  
--struct acpi_hest_generic_status {
-+struct acpi_generic_status {
- 	u32 block_status;
- 	u32 raw_data_offset;
- 	u32 raw_data_length;
-@@ -606,15 +606,15 @@ struct acpi_hest_generic_status {
+ source "drivers/acpi/apei/Kconfig"
  
- /* Values for block_status flags above */
++config ACPI_EXTLOG
++	tristate "Extended Error Log support"
++	depends on X86_MCE
++	default n
++	help
++	  Enhanced MCA Logging allows firmware to provide additional error
++	  information to system software, synchronous with MCE or CMCI. This
++	  driver adds support for that functionality.
++
+ endif	# ACPI
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index cdaf68b..bce34af 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -82,3 +82,5 @@ processor-$(CONFIG_CPU_FREQ)	+= processor_perflib.o
+ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
  
--#define ACPI_HEST_UNCORRECTABLE             (1)
--#define ACPI_HEST_CORRECTABLE               (1<<1)
--#define ACPI_HEST_MULTIPLE_UNCORRECTABLE    (1<<2)
--#define ACPI_HEST_MULTIPLE_CORRECTABLE      (1<<3)
--#define ACPI_HEST_ERROR_ENTRY_COUNT         (0xFF<<4)	/* 8 bits, error count */
-+#define ACPI_GEN_ERR_UC			BIT(0)
-+#define ACPI_GEN_ERR_CE			BIT(1)
-+#define ACPI_GEN_ERR_MULTI_UC		BIT(2)
-+#define ACPI_GEN_ERR_MULTI_CE		BIT(3)
-+#define ACPI_GEN_ERR_COUNT_SHIFT	(0xFF<<4) /* 8 bits, error count */
- 
- /* Generic Error Data entry */
- 
--struct acpi_hest_generic_data {
-+struct acpi_generic_data {
- 	u8 section_type[16];
- 	u32 error_severity;
- 	u16 revision;
-diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
-index 720446c..dfd60d0 100644
---- a/include/acpi/ghes.h
-+++ b/include/acpi/ghes.h
-@@ -14,7 +14,7 @@
- 
- struct ghes {
- 	struct acpi_hest_generic *generic;
--	struct acpi_hest_generic_status *estatus;
+ obj-$(CONFIG_ACPI_APEI)		+= apei/
++
++obj-$(CONFIG_ACPI_EXTLOG)	+= acpi_extlog.o
+diff --git a/drivers/acpi/acpi_extlog.c b/drivers/acpi/acpi_extlog.c
+new file mode 100644
+index 0000000..d55b072
+--- /dev/null
++++ b/drivers/acpi/acpi_extlog.c
+@@ -0,0 +1,319 @@
++/*
++ * Extended Error Log driver
++ *
++ * Copyright (C) 2013 Intel Corp.
++ * Author: Chen, Gong <gong.chen@intel.com>
++ *
++ * This file is licensed under GPLv2.
++ */
++
++#include <linux/module.h>
++#include <linux/acpi.h>
++#include <acpi/acpi_bus.h>
++#include <linux/cper.h>
++#include <linux/ratelimit.h>
++#include <asm/mce.h>
++
++#include "apei/apei-internal.h"
++
++#define EXT_ELOG_ENTRY_MASK	GENMASK_ULL(52, 0) /* elog entry address mask */
++
++#define EXTLOG_DSM_REV		0x0
++#define	EXTLOG_FN_QUERY		0x0
++#define	EXTLOG_FN_ADDR		0x1
++
++#define FLAG_OS_OPTIN		BIT(0)
++#define EXTLOG_QUERY_L1_EXIST	BIT(1)
++#define ELOG_ENTRY_VALID	(1ULL<<63)
++#define ELOG_ENTRY_LEN		0x1000
++
++#define EMCA_BUG \
++	"Can not request iomem region <0x%016llx-0x%016llx> - eMCA disabled\n"
++
++struct extlog_l1_head {
++	u32 ver;	/* Header Version */
++	u32 hdr_len;	/* Header Length */
++	u64 total_len;	/* entire L1 Directory length including this header */
++	u64 elog_base;	/* MCA Error Log Directory base address */
++	u64 elog_len;	/* MCA Error Log Directory length */
++	u32 flags;	/* bit 0 - OS/VMM Opt-in */
++	u8  rev0[12];
++	u32 entries;	/* Valid L1 Directory entries per logical processor */
++	u8  rev1[12];
++};
++
++static u8 extlog_dsm_uuid[] = "663E35AF-CC10-41A4-88EA-5470AF055295";
++
++/* L1 table related physical address */
++static u64 elog_base;
++static size_t elog_size;
++static u64 l1_dirbase;
++static size_t l1_size;
++
++/* L1 table related virtual address */
++static void __iomem *extlog_l1_addr;
++static void __iomem *elog_addr;
++
++static void *elog_buf;
++
++static u64 *l1_entry_base;
++static u32 l1_percpu_entry;
++
++#define ELOG_IDX(cpu, bank) \
++	(cpu_physical_id(cpu) * l1_percpu_entry + (bank))
++
++#define ELOG_ENTRY_DATA(idx) \
++	(*(l1_entry_base + (idx)))
++
++#define ELOG_ENTRY_ADDR(phyaddr) \
++	(phyaddr - elog_base + (u8 *)elog_addr)
++
++static struct acpi_generic_status *extlog_elog_entry_check(int cpu, int bank)
++{
++	int idx;
++	u64 data;
 +	struct acpi_generic_status *estatus;
- 	u64 buffer_paddr;
- 	unsigned long flags;
- 	union {
-diff --git a/include/linux/cper.h b/include/linux/cper.h
-index c230494..09ebe21 100644
---- a/include/linux/cper.h
-+++ b/include/linux/cper.h
-@@ -389,6 +389,6 @@ struct cper_sec_pcie {
++
++	WARN_ON(cpu < 0);
++	idx = ELOG_IDX(cpu, bank);
++	data = ELOG_ENTRY_DATA(idx);
++	if ((data & ELOG_ENTRY_VALID) == 0)
++		return NULL;
++
++	data &= EXT_ELOG_ENTRY_MASK;
++	estatus = (struct acpi_generic_status *)ELOG_ENTRY_ADDR(data);
++
++	/* if no valid data in elog entry, just return */
++	if (estatus->block_status == 0)
++		return NULL;
++
++	return estatus;
++}
++
++static void __print_extlog_rcd(const char *pfx,
++			       struct acpi_generic_status *estatus, int cpu)
++{
++	static atomic_t seqno;
++	unsigned int curr_seqno;
++	char pfx_seq[64];
++
++	if (!pfx) {
++		if (estatus->error_severity <= CPER_SEV_CORRECTED)
++			pfx = KERN_INFO;
++		else
++			pfx = KERN_ERR;
++	}
++	curr_seqno = atomic_inc_return(&seqno);
++	snprintf(pfx_seq, sizeof(pfx_seq), "%s{%u}", pfx, curr_seqno);
++	printk("%s""Hardware error detected on CPU%d\n", pfx_seq, cpu);
++	cper_estatus_print(pfx_seq, estatus);
++}
++
++static int print_extlog_rcd(const char *pfx,
++			    struct acpi_generic_status *estatus, int cpu)
++{
++	/* Not more than 2 messages every 5 seconds */
++	static DEFINE_RATELIMIT_STATE(ratelimit_corrected, 5*HZ, 2);
++	static DEFINE_RATELIMIT_STATE(ratelimit_uncorrected, 5*HZ, 2);
++	struct ratelimit_state *ratelimit;
++
++	if (estatus->error_severity == CPER_SEV_CORRECTED ||
++	   (estatus->error_severity == CPER_SEV_INFORMATIONAL))
++		ratelimit = &ratelimit_corrected;
++	else
++		ratelimit = &ratelimit_uncorrected;
++	if (__ratelimit(ratelimit)) {
++		__print_extlog_rcd(pfx, estatus, cpu);
++		return 0;
++	}
++
++	return 1;
++}
++
++static int extlog_print(const char *pfx, int cpu, int bank)
++{
++	struct acpi_generic_status *estatus;
++	int rc;
++
++	estatus = extlog_elog_entry_check(cpu, bank);
++	if (estatus == NULL)
++		return -EINVAL;
++
++	memcpy(elog_buf, (void *)estatus, ELOG_ENTRY_LEN);
++	/* clear record status to enable BIOS to update it again */
++	estatus->block_status = 0;
++
++	rc = print_extlog_rcd(pfx, (struct acpi_generic_status *)elog_buf, cpu);
++
++	return rc;
++}
++
++static int extlog_get_dsm(acpi_handle handle, int rev, int func, u64 *ret)
++{
++	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
++	struct acpi_object_list input;
++	union acpi_object params[4], *obj;
++	u8 uuid[16];
++	int i;
++
++	acpi_str_to_uuid(extlog_dsm_uuid, uuid);
++	input.count = 4;
++	input.pointer = params;
++	params[0].type = ACPI_TYPE_BUFFER;
++	params[0].buffer.length = 16;
++	params[0].buffer.pointer = uuid;
++	params[1].type = ACPI_TYPE_INTEGER;
++	params[1].integer.value = rev;
++	params[2].type = ACPI_TYPE_INTEGER;
++	params[2].integer.value = func;
++	params[3].type = ACPI_TYPE_PACKAGE;
++	params[3].package.count = 0;
++	params[3].package.elements = NULL;
++
++	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf)))
++		return -1;
++
++	*ret = 0;
++	obj = (union acpi_object *)buf.pointer;
++	if (obj->type == ACPI_TYPE_INTEGER)
++		*ret = obj->integer.value;
++	else if (obj->type == ACPI_TYPE_BUFFER) {
++		if (obj->buffer.length <= 8) {
++			for (i = 0; i < obj->buffer.length; i++)
++				*ret |= (obj->buffer.pointer[i] << (i * 8));
++		}
++	}
++	kfree(buf.pointer);
++
++	return 0;
++}
++
++static bool extlog_get_l1addr(void)
++{
++	acpi_handle handle;
++	u64 ret;
++
++	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
++		return false;
++
++	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_QUERY, &ret) ||
++			!(ret & EXTLOG_QUERY_L1_EXIST))
++		return false;
++
++	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_ADDR, &ret))
++		return false;
++
++	l1_dirbase = ret;
++	/* Spec says L1 directory must be 4K aligned, bail out if it isn't */
++	if (l1_dirbase & ((1 << 12) - 1)) {
++		pr_warn(FW_BUG "L1 Directory is invalid at physical %llx\n",
++			l1_dirbase);
++		return false;
++	}
++
++	return true;
++}
++
++static int __init extlog_init(void)
++{
++	struct extlog_l1_head *l1_head;
++	void __iomem *extlog_l1_hdr;
++	size_t l1_hdr_size;
++	struct resource *r;
++	u64 cap;
++	int rc;
++
++	rc = -ENODEV;
++
++	rdmsrl(MSR_IA32_MCG_CAP, cap);
++	if (!(cap & MCG_ELOG_P))
++		return rc;
++
++	if (!extlog_get_l1addr())
++		return rc;
++
++	rc = -EINVAL;
++	/* get L1 header to fetch necessary information */
++	l1_hdr_size = sizeof(struct extlog_l1_head);
++	r = request_mem_region(l1_dirbase, l1_hdr_size, "L1 DIR HDR");
++	if (!r) {
++		pr_warn(FW_BUG EMCA_BUG,
++			(unsigned long long)l1_dirbase,
++			(unsigned long long)l1_dirbase + l1_hdr_size);
++		goto err;
++	}
++
++	extlog_l1_hdr = acpi_os_map_memory(l1_dirbase, l1_hdr_size);
++	l1_head = (struct extlog_l1_head *)extlog_l1_hdr;
++	l1_size = l1_head->total_len;
++	l1_percpu_entry = l1_head->entries;
++	elog_base = l1_head->elog_base;
++	elog_size = l1_head->elog_len;
++	acpi_os_unmap_memory(extlog_l1_hdr, l1_hdr_size);
++	release_mem_region(l1_dirbase, l1_hdr_size);
++
++	/* remap L1 header again based on completed information */
++	r = request_mem_region(l1_dirbase, l1_size, "L1 Table");
++	if (!r) {
++		pr_warn(FW_BUG EMCA_BUG,
++			(unsigned long long)l1_dirbase,
++			(unsigned long long)l1_dirbase + l1_size);
++		goto err;
++	}
++	extlog_l1_addr = acpi_os_map_memory(l1_dirbase, l1_size);
++	l1_entry_base = (u64 *)((u8 *)extlog_l1_addr + l1_hdr_size);
++
++	/* remap elog table */
++	r = request_mem_region(elog_base, elog_size, "Elog Table");
++	if (!r) {
++		pr_warn(FW_BUG EMCA_BUG,
++			(unsigned long long)elog_base,
++			(unsigned long long)elog_base + elog_size);
++		goto err_release_l1_dir;
++	}
++	elog_addr = acpi_os_map_memory(elog_base, elog_size);
++
++	rc = -ENOMEM;
++	/* allocate buffer to save elog record */
++	elog_buf = kmalloc(ELOG_ENTRY_LEN, GFP_KERNEL);
++	if (elog_buf == NULL)
++		goto err_release_elog;
++
++	register_elog_handler(extlog_print);
++	/* enable OS to be involved to take over management from BIOS */
++	((struct extlog_l1_head *)extlog_l1_addr)->flags |= FLAG_OS_OPTIN;
++
++	return 0;
++
++err_release_elog:
++	if (elog_addr)
++		acpi_os_unmap_memory(elog_addr, elog_size);
++	release_mem_region(elog_base, elog_size);
++err_release_l1_dir:
++	if (extlog_l1_addr)
++		acpi_os_unmap_memory(extlog_l1_addr, l1_size);
++	release_mem_region(l1_dirbase, l1_size);
++err:
++	pr_warn(FW_BUG "Extended error log disabled because of problems parsing f/w tables\n");
++	return rc;
++}
++
++static void __exit extlog_exit(void)
++{
++	unregister_elog_handler(extlog_print);
++	((struct extlog_l1_head *)extlog_l1_addr)->flags &= ~FLAG_OS_OPTIN;
++	if (extlog_l1_addr)
++		acpi_os_unmap_memory(extlog_l1_addr, l1_size);
++	if (elog_addr)
++		acpi_os_unmap_memory(elog_addr, elog_size);
++	release_mem_region(elog_base, elog_size);
++	release_mem_region(l1_dirbase, l1_size);
++	kfree(elog_buf);
++}
++
++module_init(extlog_init);
++module_exit(extlog_exit);
++
++MODULE_AUTHOR("Chen, Gong <gong.chen@intel.com>");
++MODULE_DESCRIPTION("Extended Error Log Driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index b587ec8..e1bd9a1 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -174,7 +174,7 @@ static void acpi_print_osc_error(acpi_handle handle,
+ 	printk("\n");
+ }
  
- u64 cper_next_record_id(void);
- void cper_print_bits(const char *prefix, unsigned int bits,
--		     const char *strs[], unsigned int strs_size);
-+		     const char * const strs[], unsigned int strs_size);
+-static acpi_status acpi_str_to_uuid(char *str, u8 *uuid)
++acpi_status acpi_str_to_uuid(char *str, u8 *uuid)
+ {
+ 	int i;
+ 	static int opc_map_to_uuid[16] = {6, 4, 2, 0, 11, 9, 16, 14, 19, 21,
+@@ -195,6 +195,7 @@ static acpi_status acpi_str_to_uuid(char *str, u8 *uuid)
+ 	}
+ 	return AE_OK;
+ }
++EXPORT_SYMBOL_GPL(acpi_str_to_uuid);
  
- #endif
+ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context)
+ {
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index a5db4ae..c30bac8 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -311,6 +311,7 @@ struct acpi_osc_context {
+ #define OSC_INVALID_REVISION_ERROR	8
+ #define OSC_CAPABILITIES_MASK_ERROR	16
+ 
++acpi_status acpi_str_to_uuid(char *str, u8 *uuid);
+ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context);
+ 
+ /* platform-wide _OSC bits */
 -- 
 1.8.4.rc3
 
