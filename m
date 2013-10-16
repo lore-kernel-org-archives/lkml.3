@@ -1,43 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760898Ab3JPQCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:02:55 -0400
-Received: from nm44.bullet.mail.ne1.yahoo.com ([98.138.120.51]:26852 "EHLO
-	nm44.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757544Ab3JPQCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:02:52 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 12:02:52 EDT
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 92583.98156.bm@omp1024.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=y9KI+Iz3NoDJcxtjwYQPGsnstRTR7ESUIuIMhA9IoE8wJ4av/HXz8hOejckpG8ClygaMx22gdCsFYJTvSeRTTWkdIEzofzWxTK8vE7UR/Vs5TfWGvt8f0dCbeAPB4c09cZ+49c4386+OKFXE2UiopGHoPeYxDgbwJgFWzBkTeiI=;
-X-YMail-OSG: eW8V8_cVM1mDtmLgLG3t4Tw.Cn6B2Lw6rRo4GZyEYGRdS7y
- APf8CLI17tqxKSa6.vnz6TSvPD.yWDaabYh_tB34ybzw-
-X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZA0KDQpJIGFtIE1zIEtlaWIgQWwgSnV3YWxpIG9mIHRoZSB1bml0ZWQgbmF0aW9ucyBkZXBhcnRtZW50IG9mIHNhZmV0eQ0KYW5kIHNlY3VyaXR5IChVTkRTUykgQ29tbWFuZGVyLiBJIGludGVyY2VwdGVkIHNvbWUgbHVnZ2FnZSBjb21pbmcgZnJvbQ0KRGFtYXNjdXMgYW5kIGxhdGVyIGRpc2NvdmVyZWQgaXQgaXMgJDcuNU0uIENvbnRhY3QgbWUgZm9yICBtb3JlDQpkZXRhaWxzLiBJZiB5b3UgYXJlIHdpbGxpbmcgdG8gcGFydGFrZSBpbiB0aGUgcHJvY2VzcyBwbGVhc2Ugc2VuZCBtZQ0BMAEBAQE-
-X-RocketYMMF: maga_office
-X-Mailer: YahooMailClassic/353 YahooMailWebService/0.8.160.587
-Message-ID: <1381938986.10604.YahooMailBasic@web125505.mail.ne1.yahoo.com>
-Date: Wed, 16 Oct 2013 08:56:26 -0700 (PDT)
-From: kieb aljuwali <kiebaljuwali@gmail.com>
-Reply-To: keibaljuwali@yahoo.com
-Subject: Contact me for  more details.
-To: undisclosed recipients:;
+	id S1760700Ab3JPQGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:06:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47087 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757551Ab3JPQGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 12:06:07 -0400
+Date: Wed, 16 Oct 2013 18:05:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
+        arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
+Message-ID: <20131016160550.GG13608@pd.tnic>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 16, 2013 at 10:55:57AM -0400, Chen, Gong wrote:
+> [PATCH v2 1/9] ACPI, APEI, CPER: Fix status check during error printing
+> [PATCH v2 2/9] ACPI, CPER: Update cper info
+> [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
+> [PATCH v2 4/9] ACPI, x86: Extended error log driver for x86 platform
+> [PATCH v2 5/9] DMI: Parse memory device (type 17) in SMBIOS
+> [PATCH v2 6/9] ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
+> [PATCH v2 7/9] ACPI, APEI, CPER: Enhance memory reporting capability
+> [PATCH v2 8/9] ACPI, APEI, CPER: Cleanup CPER memory error output format
+> [PATCH v2 9/9] ACPI / trace: Add trace interface for eMCA driver
+> 
+> This patch series adds an enhanced MCA event logging driver provided by Intel.
+> Please refer to this link: htpp://www.intel.com/content/www/us/en/architecture-and-technology/enhanced-mca-logging-xeon-paper.html
+> 
+> Certain usages such as Predictive Failure Analysis (PFA) require more
+> information about the error than what can be described in processor
+> machine check banks. Most server processors log additional information
+> about the error in processor uncore registers. Since the addresses
+> and layout of these registers vary widely from one processor to another,
+> system software cannot readily make use of them. To complicate matters
+> further, some of the additionalerror information cannot be constructed
 
-Dear Friend
+space between "additional" and "error".
 
-I am Ms Keib Al Juwali of the united nations department of safety
-and security (UNDSS) Commander. I intercepted some luggage coming from
-Damascus and later discovered it is $7.5M. Contact me for  more
-details. If you are willing to partake in the process please send me
-Your informations.
-Thanks and best regards.
-Ms  Keib Al Juwali
+> without detailed knowledge about platform topology. This enhanced MCA
+> logging driver allows firmware to provide additional error information
+> to MCE/CMCI handler and thus addresses this gap.
+
+This paragraph sounds like a very good description of the feature and
+should actually be the Kconfig text in patch 4/9.
+
+> 
+> After applying this patch series, when a memory corrected error happens,
+> we can get following information:
+> 
+> dmesg output:
+> 
+> [  949.545817] {1}Hardware error detected on CPU15
+> [  949.549786] {1}event severity: corrected
+> [  949.549786] {1} Error 0, type: corrected
+> [  949.549786] {1}  section_type: memory error
+> [  949.549786] {1}  physical_address: 0x0000001057eb0000
+> [  949.549786] {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
+> [  949.549786] {1}Above error has been corrected by h/w and require no further action
+> [  949.549786] mce: [Hardware Error]: Machine check events logged
+> [ 1010.902124] {2}Hardware error detected on CPU15
+> [ 1010.906064] {2}event severity: corrected
+> [ 1010.906064] {2} Error 0, type: corrected
+> [ 1010.906064] {2}  section_type: memory error
+> [ 1010.906064] {2}  physical_address: 0x0000001057eb0000
+> [ 1010.906064] {2}  DIMM location: Memriser3 CHANNEL A DIMM 0
+> [ 1010.906064] {2}Above error has been corrected by h/w and require no further action
+> [ 1010.906064] mce: [Hardware Error]: Machine check events logged
+
+Yep, looks almost very good. One nit: can you raise the action line
+higher, like this:
+
+> [  949.545817] {1}Hardware error detected on CPU15
+> [  949.549786] {1}It has been corrected by h/w and requires no further action
+
+<here come the error details>
+
+I mean, this is only the printk output and with a userspace consumer of
+the tracepoint, none of this will go to dmesg but in cases when there's
+no userspace consumer, it is still readable and understandable.
+
+> For trace output format we still need further discussion. In the last
+> patch(support trace interface) I have to reserve previous Kconfig
+> format because I find once I put trace_event interface in the module,
+> it will not work. I will paste another trace patch(it only works when
+> acpi_extlog is builtin) for your answer.
+
+I think to be able to define TRACE_EVENTs in modules, you need
+https://lwn.net/Articles/383362/
+
+Steve, that still true?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
