@@ -1,46 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762157Ab3JPVHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:07:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761828Ab3JPVHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:07:38 -0400
-Date: Wed, 16 Oct 2013 18:02:51 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/2] generic kernel watchdog reset at pvclock read (v2)
-Message-ID: <20131016210251.GE479@amt.cnet>
-References: <20131008010515.516032211@amt.cnet>
- <20131012003924.092908362@amt.cnet>
- <20131016182500.GJ227855@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016182500.GJ227855@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762065Ab3JPVN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:13:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37424 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab3JPVN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:13:28 -0400
+Date: Wed, 16 Oct 2013 14:13:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd
+Message-Id: <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
+In-Reply-To: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 02:25:00PM -0400, Don Zickus wrote:
-> On Fri, Oct 11, 2013 at 09:39:24PM -0300, Marcelo Tosatti wrote:
-> > v2:
-> > - do not create hung_task.h, move defines to sched.h (Don Zickus)
-> > - switch patch order (Paolo)
-> 
-> As long as it solves kvm's problems, I am ok with it.
-> 
-> Marcelo,
-> 
-> Is there still corner cases out there that get bit with softlockups or
-> hung_task after this patchset?
+On Wed, 16 Oct 2013 14:44:28 +0000 Christoph Lameter <cl@linux.com> wrote:
 
-Not that i am aware of.
+> This is a follow on patch related to the earlier
+> discussion about restricting the
+> spawning of kernel threads. See https://lkml.org/lkml/2013/9/5/426
+> 
+> 
+> 
+> 
+> usermodehelper() threads can currently run on all processors.
+> This is an issue for low latency cores.
 
-> Acked-by: Don Zickus <dzickus@redhat.com>
+How much of an issue?  The severity of the problem is utterly unclear
+from this description.
 
-Thanks.
+> Restrict usermodehelper() threads to the cores that kthreadd is
+> restricted to.
+> 
+> The default for kthreadd is to be allowed to run on an processors.
+> If the user restricts kthreadd then threads spawned by
+> usermodhelper() will similarly restricted.
+> 
+> Before this patch there is no way to limit the cpus that usermodehelper
+> can run on since the affinity is set when the thread is spawned to
+> all processors.
+> 
+> ...
+>
+> --- linux.orig/include/linux/kthread.h	2013-10-10 11:00:34.167771996 -0500
+> +++ linux/include/linux/kthread.h	2013-10-15 13:57:52.859056676 -0500
+> @@ -51,6 +51,7 @@ void kthread_parkme(void);
+>  int kthreadd(void *unused);
+>  extern struct task_struct *kthreadd_task;
+>  extern int tsk_fork_get_node(struct task_struct *tsk);
+> +void set_kthreadd_affinity(void);
+> 
+>  /*
+>   * Simple work processor based on kthread.
+> Index: linux/kernel/kmod.c
+> ===================================================================
+> --- linux.orig/kernel/kmod.c	2013-10-10 11:00:39.091771917 -0500
+> +++ linux/kernel/kmod.c	2013-10-15 14:02:01.904261324 -0500
+> @@ -40,6 +40,7 @@
+>  #include <linux/ptrace.h>
+>  #include <linux/async.h>
+>  #include <asm/uaccess.h>
+> +#include <linux/kthread.h>
+> 
+>  #include <trace/events/module.h>
+> 
+> @@ -209,8 +210,8 @@ static int ____call_usermodehelper(void
+>  	flush_signal_handlers(current, 1);
+>  	spin_unlock_irq(&current->sighand->siglock);
+> 
+> -	/* We can run anywhere, unlike our parent keventd(). */
+> -	set_cpus_allowed_ptr(current, cpu_all_mask);
+> +	/* We can run anywhere kthreadd can run */
+
+This is a poor comment - it explains "what" (which was utterly obvious)
+but doesn't explain "why".  The reader will want to know *why*
+call_usermodehelper() only runs on kthreadd CPUs, but we didn't tell
+him.
+
+> +	set_kthreadd_affinity();
+> 
 
