@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935530Ab3JPSVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:21:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761253Ab3JPRpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Murphy <chris@cmurf.com>, Henrik Rydberg <rydberg@euromail.se>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 08/69] hwmon: (applesmc) Always read until end of data
-Date: Wed, 16 Oct 2013 10:44:17 -0700
-Message-Id: <20131016174313.875823639@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1761801Ab3JPSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:22:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761310Ab3JPSWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 14:22:13 -0400
+Date: Wed, 16 Oct 2013 14:22:09 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+Message-ID: <20131016182209.GI227855@redhat.com>
+References: <20131008010515.516032211@amt.cnet>
+ <20131008010552.779616517@amt.cnet>
+ <20131008133705.GR227855@redhat.com>
+ <20131008220811.GC16625@amt.cnet>
+ <20131009135519.GF227855@redhat.com>
+ <20131009212633.GB24695@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009212633.GB24695@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 09, 2013 at 06:26:33PM -0300, Marcelo Tosatti wrote:
+> From https://lkml.org/lkml/2013/7/3/675:
+> 
+> "Agree. However, can't see how there is a way around "having custom
+> kvm/paravirt splat all over", for watchdogs that do:
+> 
+> 1. check for watchdog resets
+> 2. read time via sched_clock or xtime.
+> 3. based on 2, decide whether there has been a longer delay than
+> acceptable.
+> 
+> This is the case for the softlockup timer interrupt. So the splat there
+> is necessary (otherwise any potential notification of vm-pause event 
+> noticed at 2 might be missed because its checked at 1).
+> 
+> For watchdogs that measure time based on interrupt event (such as hung
+> task, rcu_cpu_stall, checking for the notification at sched_clock or
+> lower is fine)."
+> 
 
-------------------
+Sorry for the delay, I was trying to spend time understanding the problem
+again.  Rik van Riel helped me (as I could just walk over to him).
 
-From: Henrik Rydberg <rydberg@euromail.se>
+I was trying to figure out if there was a way to convert the softlockup to
+something more virt-friendly mechanism.  I was toying with the idea of
+having the softlockup use schedule_timeout and then have the
+touch_softlockup routine keep rescheduling (delay) the timeout.  The idea
+was that if it actually timed out, it was guaranteed to be a lockup.  This
+removed the need for the duration calculation but more importantly, I
+believe the schedule_timeout routine was guest time aware.
 
-commit 25f2bd7f5add608c1d1405938f39c96927b275ca upstream.
+But I haven't had the chance to think through the whole thing to know if
+that was the right way to go or if there was pitfalls.  Just busy with
+other stuff.
 
-The crash reported and investigated in commit 5f4513 turned out to be
-caused by a change to the read interface on newer (2012) SMCs.
+Regardless, I think this patchset solves a particular problem and I am ok
+with it (even v2 I believe).
 
-Tests by Chris show that simply reading the data valid line is enough
-for the problem to go away. Additional tests show that the newer SMCs
-no longer wait for the number of requested bytes, but start sending
-data right away.  Apparently the number of bytes to read is no longer
-specified as before, but instead found out by reading until end of
-data. Failure to read until end of data confuses the state machine,
-which eventually causes the crash.
-
-As a remedy, assuming bit0 is the read valid line, make sure there is
-nothing more to read before leaving the read function.
-
-Tested to resolve the original problem, and runtested on MBA3,1,
-MBP4,1, MBP8,2, MBP10,1, MBP10,2. The patch seems to have no effect on
-machines before 2012.
-
-Tested-by: Chris Murphy <chris@cmurf.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/hwmon/applesmc.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -230,6 +230,7 @@ static int send_argument(const char *key
- 
- static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- {
-+	u8 status, data = 0;
- 	int i;
- 
- 	if (send_command(cmd) || send_argument(key)) {
-@@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *
- 		return -EIO;
- 	}
- 
-+	/* This has no effect on newer (2012) SMCs */
- 	if (send_byte(len, APPLESMC_DATA_PORT)) {
- 		pr_warn("%.4s: read len fail\n", key);
- 		return -EIO;
-@@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *
- 		buffer[i] = inb(APPLESMC_DATA_PORT);
- 	}
- 
-+	/* Read the data port until bit0 is cleared */
-+	for (i = 0; i < 16; i++) {
-+		udelay(APPLESMC_MIN_WAIT);
-+		status = inb(APPLESMC_CMD_PORT);
-+		if (!(status & 0x01))
-+			break;
-+		data = inb(APPLESMC_DATA_PORT);
-+	}
-+	if (i)
-+		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
-+
- 	return 0;
- }
- 
-
+Cheers,
+Don
 
