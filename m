@@ -1,125 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934918Ab3JPRq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42293 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934767Ab3JPRqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:52 -0400
-Date: Wed, 16 Oct 2013 19:39:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/5] uprobes: Teach uprobe_copy_process() to handle
-	CLONE_VFORK
-Message-ID: <20131016173937.GB31347@redhat.com>
-References: <20131013191815.GA32466@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131013191815.GA32466@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S934876Ab3JPRqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36014 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934715Ab3JPRqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:46:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 44/50] ipc: drop ipc_lock_by_ptr
+Date: Wed, 16 Oct 2013 10:45:30 -0700
+Message-Id: <20131016174403.741673202@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe_copy_process() does nothing if the child shares ->mm with
-the forking process, but there is a special case: CLONE_VFORK.
-In this case it would be more correct to do dup_utask() but avoid
-dup_xol(). This is not that important, the child should not unwind
-its stack too much, this can corrupt the parent's stack, but at
-least we need this to allow to ret-probe __vfork() itself.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Note: in theory, it would be better to check task_pt_regs(p)->sp
-instead of CLONE_VFORK, we need to dup_utask() if and only if the
-child can return from the function called by the parent. But this
-needs the arch-dependant helper, and I think that nobody actually
-does clone(same_stack, CLONE_VM).
+------------------
 
-Cc: stable@vger.kernel.org # 3.9+
-Reported-by: Martin Cermak <mcermak@redhat.com>
-Reported-by: David Smith <dsmith@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+
+commit 32a2750010981216fb788c5190fb0e646abfab30 upstream.
+
+After previous cleanups and optimizations, this function is no longer
+heavily used and we don't have a good reason to keep it.  Update the few
+remaining callers and get rid of it.
+
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/uprobes.h |    4 ++--
- kernel/events/uprobes.c |   10 ++++++++--
- kernel/fork.c           |    2 +-
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ ipc/namespace.c |    3 ++-
+ ipc/util.c      |    6 ++++--
+ ipc/util.h      |    6 ------
+ 3 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 06f28be..13a7f13 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -117,7 +117,7 @@ extern void uprobe_start_dup_mmap(void);
- extern void uprobe_end_dup_mmap(void);
- extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
- extern void uprobe_free_utask(struct task_struct *t);
--extern void uprobe_copy_process(struct task_struct *t);
-+extern void uprobe_copy_process(struct task_struct *t, unsigned long flags);
- extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
- extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
- extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
-@@ -174,7 +174,7 @@ static inline unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
- static inline void uprobe_free_utask(struct task_struct *t)
- {
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -89,7 +89,8 @@ void free_ipcs(struct ipc_namespace *ns,
+ 		perm = idr_find(&ids->ipcs_idr, next_id);
+ 		if (perm == NULL)
+ 			continue;
+-		ipc_lock_by_ptr(perm);
++		rcu_read_lock();
++		ipc_lock_object(perm);
+ 		free(ns, perm);
+ 		total++;
+ 	}
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -205,7 +205,8 @@ static struct kern_ipc_perm *ipc_findkey
+ 			continue;
+ 		}
+ 
+-		ipc_lock_by_ptr(ipc);
++		rcu_read_lock();
++		ipc_lock_object(ipc);
+ 		return ipc;
+ 	}
+ 
+@@ -830,7 +831,8 @@ static struct kern_ipc_perm *sysvipc_fin
+ 		ipc = idr_find(&ids->ipcs_idr, pos);
+ 		if (ipc != NULL) {
+ 			*new_pos = pos + 1;
+-			ipc_lock_by_ptr(ipc);
++			rcu_read_lock();
++			ipc_lock_object(ipc);
+ 			return ipc;
+ 		}
+ 	}
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -179,12 +179,6 @@ static inline void ipc_assert_locked_obj
+ 	assert_spin_locked(&perm->lock);
  }
--static inline void uprobe_copy_process(struct task_struct *t)
-+static inline void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ 
+-static inline void ipc_lock_by_ptr(struct kern_ipc_perm *perm)
+-{
+-	rcu_read_lock();
+-	ipc_lock_object(perm);
+-}
+-
+ static inline void ipc_unlock(struct kern_ipc_perm *perm)
  {
- }
- static inline void uprobe_clear_state(struct mm_struct *mm)
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 0c5d9d4..a18dcb6 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1415,7 +1415,7 @@ static void dup_xol_work(struct callback_head *work)
- /*
-  * Called in context of a new clone/fork from copy_process.
-  */
--void uprobe_copy_process(struct task_struct *t)
-+void uprobe_copy_process(struct task_struct *t, unsigned long flags)
- {
- 	struct uprobe_task *utask = current->utask;
- 	struct mm_struct *mm = current->mm;
-@@ -1423,12 +1423,18 @@ void uprobe_copy_process(struct task_struct *t)
- 
- 	t->utask = NULL;
- 
--	if (mm == t->mm || !utask || !utask->return_instances)
-+	if (!utask || !utask->return_instances)
-+		return;
-+
-+	if (mm == t->mm && !(flags & CLONE_VFORK))
- 		return;
- 
- 	if (dup_utask(t, utask))
- 		return uprobe_warn(t, "dup ret instances");
- 
-+	if (mm == t->mm)
-+		return;
-+
- 	/* TODO: move it into the union in uprobe_task */
- 	work = kmalloc(sizeof(*work), GFP_KERNEL);
- 	if (!work)
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d3603b8..8531609 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1489,7 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	perf_event_fork(p);
- 
- 	trace_task_newtask(p, clone_flags);
--	uprobe_copy_process(p);
-+	uprobe_copy_process(p, clone_flags);
- 
- 	return p;
- 
--- 
-1.5.5.1
+ 	ipc_unlock_object(perm);
 
 
