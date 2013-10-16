@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3JPHDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:03:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472Ab3JPHDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:03:31 -0400
-Date: Wed, 16 Oct 2013 15:03:01 +0800
-From: Dave Young <dyoung@redhat.com>
-To: matt@console-pimps.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.co,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        linux-efi@vger.kernel.org
-Subject: [PATCH] x86 efi: efi reverve boot service fix
-Message-ID: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
+	id S1759992Ab3JPHDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:03:50 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:43564 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab3JPHDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 03:03:48 -0400
+Date: Wed, 16 Oct 2013 09:03:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
+Message-ID: <20131016070343.GD22509@gmail.com>
+References: <20131014145131.GJ4722@htj.dyndns.org>
+ <525C0866.2010808@gmail.com>
+ <20131014151902.GL4722@htj.dyndns.org>
+ <525C0EFE.2010409@gmail.com>
+ <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
+ <20131014200437.GA5720@htj.dyndns.org>
+ <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com>
+ <525C5727.7000603@zytor.com>
+ <20131015065040.GB24584@gmail.com>
+ <525D7BDE.4070400@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <525D7BDE.4070400@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Current code check boot service region with kernel text region by: 
-start+size >= __pa_symbol(_text)
-The end of the above region should be start + size - 1 instead.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-I see this problem in ovmf + Fedora 19 grub boot:
-text start: 1000000 md start: 800000 md size: 800000
+> On 10/14/2013 11:50 PM, Ingo Molnar wrote:
+> > 
+> > So if anyone can implement it using huge pages, with a really fast 
+> > __va() and __pa() implementation, then it might be possible. But 
+> > that's a pretty major surgery on x86.
+> 
+> Well, we already *have* a way to deal with that for Xen (by inserting an 
+> otherwise nonexistent logical level.)  I'm wondering if those interfaces 
+> could be (ab)used for this as well, or if that is functionally 
+> equivalent to saying that this should be done in a hypervisor.
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/platform/efi/efi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It's not _that_ complex, and it does not need a separate security layer.
 
---- linux-2.6.orig/arch/x86/platform/efi/efi.c
-+++ linux-2.6/arch/x86/platform/efi/efi.c
-@@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(vo
- 		 * - Not within any part of the kernel
- 		 * - Not the bios reserved area
- 		*/
--		if ((start+size >= __pa_symbol(_text)
-+		if ((start + size - 1 >= __pa_symbol(_text)
- 				&& start <= __pa_symbol(_end)) ||
- 			!e820_all_mapped(start, start+size, E820_RAM) ||
- 			memblock_is_region_reserved(start, size)) {
+I have this distinct memory that I saw working patches that have paged all 
+of the kernel's data, more than a decade ago. It was all rather 
+disgusting, because those patches worked on the 4K level - but if a 2MB 
+granular solution can be found in an elegant fashion then I think we could 
+reconsider.
+
+It definitely wasn't hypervisor thick. It probably needs a good hash for 
+virtual address transformations, and all DMA has to be managed [these days 
+we do that via the IOMMU anyway] but that's pretty much all - kernel 
+virtual memory is reconfigured extremely rarely, so all that could be sped 
+up for reads and mirrored per node and kept lockless, etc. etc. [Plus a 
+metric ton of details.]
+
+Thanks,
+
+	Ingo
