@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab3JPEHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 00:07:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53885 "EHLO mga02.intel.com"
+	id S1752585Ab3JPEH7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 00:07:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18000 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab3JPEHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 00:07:48 -0400
+	id S1750860Ab3JPEHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 00:07:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,504,1378882800"; 
-   d="scan'208";a="419797688"
+   d="scan'208";a="419797685"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, sathyanarayanan.kuppuswamy@linux.intel.com,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v5 04/12] intel_mid: Renamed *mrst* to *intel_mid*
-Date: Tue, 15 Oct 2013 21:11:33 -0700
-Message-Id: <1381896701-23476-5-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v5 01/12] mrst: Fixed printk/pr_* related issues
+Date: Tue, 15 Oct 2013 21:11:30 -0700
+Message-Id: <1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381896701-23476-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1381896701-23476-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -25,363 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-Following files contains code that is common to all intel mid
-soc's. So renamed them as below.
-
-mrst/mrst.c              -> intel-mid/intel-mid.c
-mrst/vrtc.c              -> intel-mid/intel_mid_vrtc.c
-mrst/early_printk_mrst.c -> intel-mid/intel_mid_vrtc.c
-pci/mrst.c               -> pci/intel_mid_pci.c
-
-Also, renamed the corresponding header files and made changes
-to the driver files that included these header files.
-
-To ensure that there are no functional changes, I have compared
-the objdump of renamed files before and after rename and found
-that the only difference is file name change.
+Fixed printk and pr_* related issues in mrst related files.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- arch/x86/include/asm/{mrst.h => intel-mid.h}                  |  8 ++++----
- arch/x86/include/asm/{mrst-vrtc.h => intel_mid_vrtc.h}        |  4 ++--
- arch/x86/kernel/apb_timer.c                                   |  2 +-
- arch/x86/kernel/early_printk.c                                |  2 +-
- arch/x86/kernel/rtc.c                                         |  2 +-
- arch/x86/pci/Makefile                                         |  2 +-
- arch/x86/pci/{mrst.c => intel_mid_pci.c}                      |  2 +-
- arch/x86/platform/Makefile                                    |  2 +-
- arch/x86/platform/intel-mid/Makefile                          |  3 +++
- .../early_printk_intel_mid.c}                                 |  4 ++--
- arch/x86/platform/{mrst/mrst.c => intel-mid/intel-mid.c}      | 11 ++++++-----
- arch/x86/platform/{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c} |  6 +++---
- arch/x86/platform/mrst/Makefile                               |  3 ---
- drivers/gpu/drm/gma500/mdfld_dsi_output.h                     |  2 +-
- drivers/gpu/drm/gma500/oaktrail_device.c                      |  2 +-
- drivers/gpu/drm/gma500/oaktrail_lvds.c                        |  2 +-
- drivers/platform/x86/intel_scu_ipc.c                          |  2 +-
- drivers/rtc/rtc-mrst.c                                        |  4 ++--
- drivers/watchdog/intel_scu_watchdog.c                         |  2 +-
- 19 files changed, 33 insertions(+), 32 deletions(-)
- rename arch/x86/include/asm/{mrst.h => intel-mid.h} (93%)
- rename arch/x86/include/asm/{mrst-vrtc.h => intel_mid_vrtc.h} (81%)
- rename arch/x86/pci/{mrst.c => intel_mid_pci.c} (99%)
- create mode 100644 arch/x86/platform/intel-mid/Makefile
- rename arch/x86/platform/{mrst/early_printk_mrst.c => intel-mid/early_printk_intel_mid.c} (98%)
- rename arch/x86/platform/{mrst/mrst.c => intel-mid/intel-mid.c} (99%)
- rename arch/x86/platform/{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c} (97%)
- delete mode 100644 arch/x86/platform/mrst/Makefile
+ arch/x86/platform/mrst/early_printk_mrst.c | 2 +-
+ arch/x86/platform/mrst/mrst.c              | 2 +-
+ arch/x86/platform/mrst/vrtc.c              | 5 ++---
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/intel-mid.h
-similarity index 93%
-rename from arch/x86/include/asm/mrst.h
-rename to arch/x86/include/asm/intel-mid.h
-index fc18bf3..cc79a4f 100644
---- a/arch/x86/include/asm/mrst.h
-+++ b/arch/x86/include/asm/intel-mid.h
-@@ -1,5 +1,5 @@
- /*
-- * mrst.h: Intel Moorestown platform specific setup code
-+ * intel-mid.h: Intel MID specific setup code
-  *
-  * (C) Copyright 2009 Intel Corporation
-  *
-@@ -8,8 +8,8 @@
-  * as published by the Free Software Foundation; version 2
-  * of the License.
-  */
--#ifndef _ASM_X86_MRST_H
--#define _ASM_X86_MRST_H
-+#ifndef _ASM_X86_INTEL_MID_H
-+#define _ASM_X86_INTEL_MID_H
- 
- #include <linux/sfi.h>
- 
-@@ -78,4 +78,4 @@ extern void intel_scu_devices_destroy(void);
- 
- extern void mrst_rtc_init(void);
- 
--#endif /* _ASM_X86_MRST_H */
-+#endif /* _ASM_X86_INTEL_MID_H */
-diff --git a/arch/x86/include/asm/mrst-vrtc.h b/arch/x86/include/asm/intel_mid_vrtc.h
-similarity index 81%
-rename from arch/x86/include/asm/mrst-vrtc.h
-rename to arch/x86/include/asm/intel_mid_vrtc.h
-index 1e69a75..86ff468 100644
---- a/arch/x86/include/asm/mrst-vrtc.h
-+++ b/arch/x86/include/asm/intel_mid_vrtc.h
-@@ -1,5 +1,5 @@
--#ifndef _MRST_VRTC_H
--#define _MRST_VRTC_H
-+#ifndef _INTEL_MID_VRTC_H
-+#define _INTEL_MID_VRTC_H
- 
- extern unsigned char vrtc_cmos_read(unsigned char reg);
- extern void vrtc_cmos_write(unsigned char val, unsigned char reg);
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index c9876ef..9154836 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -40,7 +40,7 @@
- 
- #include <asm/fixmap.h>
- #include <asm/apb_timer.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- #include <asm/time.h>
- 
- #define APBT_CLOCKEVENT_RATING		110
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index d15f575..38ca398 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -14,7 +14,7 @@
- #include <xen/hvc-console.h>
- #include <asm/pci-direct.h>
- #include <asm/fixmap.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- #include <asm/pgtable.h>
- #include <linux/usb/ehci_def.h>
- 
-diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-index 0aa2939..a1b52fe 100644
---- a/arch/x86/kernel/rtc.c
-+++ b/arch/x86/kernel/rtc.c
-@@ -12,7 +12,7 @@
- #include <asm/vsyscall.h>
- #include <asm/x86_init.h>
- #include <asm/time.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- #include <asm/rtc.h>
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-index ee0af58..e063eed 100644
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -18,7 +18,7 @@ obj-$(CONFIG_X86_VISWS)		+= visws.o
- obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
- obj-$(CONFIG_X86_NUMACHIP)	+= numachip.o
- 
--obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
-+obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_pci.o
- 
- obj-y				+= common.o early.o
- obj-y				+= bus_numa.o
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/intel_mid_pci.c
-similarity index 99%
-rename from arch/x86/pci/mrst.c
-rename to arch/x86/pci/intel_mid_pci.c
-index 903fded..f8715f7 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/intel_mid_pci.c
-@@ -1,5 +1,5 @@
- /*
-- * Moorestown PCI support
-+ * Intel MID PCI support
-  *   Copyright (c) 2008 Intel Corporation
-  *     Jesse Barnes <jesse.barnes@intel.com>
-  *
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 01e0231..20342d4 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -4,7 +4,7 @@ obj-y	+= efi/
- obj-y	+= geode/
- obj-y	+= goldfish/
- obj-y	+= iris/
--obj-y	+= mrst/
-+obj-y	+= intel-mid/
- obj-y	+= olpc/
- obj-y	+= scx200/
- obj-y	+= sfi/
-diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
-new file mode 100644
-index 0000000..de29635
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
-+obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
-+obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
-diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-similarity index 98%
-rename from arch/x86/platform/mrst/early_printk_mrst.c
-rename to arch/x86/platform/intel-mid/early_printk_intel_mid.c
-index 39ecc27..7c56e70 100644
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+index 028454f..95880f7 100644
 --- a/arch/x86/platform/mrst/early_printk_mrst.c
-+++ b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-@@ -1,5 +1,5 @@
- /*
-- * early_printk_mrst.c - early consoles for Intel MID platforms
-+ * early_printk_intel_mid.c - early consoles for Intel MID platforms
-  *
-  * Copyright (c) 2008-2010, Intel Corporation
-  *
-@@ -27,7 +27,7 @@
++++ b/arch/x86/platform/mrst/early_printk_mrst.c
+@@ -213,7 +213,7 @@ static void early_mrst_spi_putc(char c)
+ 	}
  
- #include <asm/fixmap.h>
- #include <asm/pgtable.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- 
- #define MRST_SPI_TIMEOUT		0x200000
- #define MRST_REGBASE_SPI0		0xff128000
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/intel-mid/intel-mid.c
-similarity index 99%
-rename from arch/x86/platform/mrst/mrst.c
-rename to arch/x86/platform/intel-mid/intel-mid.c
-index 2a45eab..0f39c4b 100644
+ 	if (!timeout)
+-		pr_warning("MRST earlycon: timed out\n");
++		pr_warn("MRST earlycon: timed out\n");
+ 	else
+ 		max3110_write_data(c);
+ }
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 3ca5957..b9aeb54 100644
 --- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -1,8 +1,9 @@
- /*
-- * mrst.c: Intel Moorestown platform specific setup code
-+ * intel-mid.c: Intel MID platform setup code
-  *
-- * (C) Copyright 2008 Intel Corporation
-+ * (C) Copyright 2008, 2012 Intel Corporation
-  * Author: Jacob Pan (jacob.jun.pan@intel.com)
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -36,8 +37,8 @@
- #include <asm/hw_irq.h>
- #include <asm/apic.h>
- #include <asm/io_apic.h>
--#include <asm/mrst.h>
--#include <asm/mrst-vrtc.h>
-+#include <asm/intel-mid.h>
-+#include <asm/intel_mid_vrtc.h>
- #include <asm/io.h>
- #include <asm/i8259.h>
- #include <asm/intel_scu_ipc.h>
-@@ -219,7 +220,7 @@ static unsigned long __init mrst_calibrate_tsc(void)
- 	lapic_timer_frequency = fsb * 1000 / HZ;
- 	/* mark tsc clocksource as reliable */
- 	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
--	
-+
- 	if (fast_calibrate)
- 		return fast_calibrate;
- 
-diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-similarity index 97%
-rename from arch/x86/platform/mrst/vrtc.c
-rename to arch/x86/platform/intel-mid/intel_mid_vrtc.c
-index ca4f7d9..ded9fbd 100644
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -328,7 +328,7 @@ static inline int __init setup_x86_mrst_timer(char *arg)
+ 	else if (strcmp("lapic_and_apbt", arg) == 0)
+ 		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
+ 	else {
+-		pr_warning("X86 MRST timer option %s not recognised"
++		pr_warn("X86 MRST timer option %s not recognised"
+ 			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
+ 			   arg);
+ 		return -EINVAL;
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+index 5e355b1..ca4f7d9 100644
 --- a/arch/x86/platform/mrst/vrtc.c
-+++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-@@ -1,5 +1,5 @@
- /*
-- * vrtc.c: Driver for virtual RTC device on Intel MID platform
-+ * intel_mid_vrtc.c: Driver for virtual RTC device on Intel MID platform
-  *
-  * (C) Copyright 2009 Intel Corporation
-  *
-@@ -23,8 +23,8 @@
- #include <linux/sfi.h>
- #include <linux/platform_device.h>
++++ b/arch/x86/platform/mrst/vrtc.c
+@@ -79,7 +79,7 @@ void vrtc_get_time(struct timespec *now)
+ 	/* vRTC YEAR reg contains the offset to 1972 */
+ 	year += 1972;
  
--#include <asm/mrst.h>
--#include <asm/mrst-vrtc.h>
-+#include <asm/intel-mid.h>
-+#include <asm/intel_mid_vrtc.h>
- #include <asm/time.h>
- #include <asm/fixmap.h>
+-	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
++	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
+ 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
  
-diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
-deleted file mode 100644
-index af1da7e..0000000
---- a/arch/x86/platform/mrst/Makefile
-+++ /dev/null
-@@ -1,3 +0,0 @@
--obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
--obj-$(CONFIG_X86_INTEL_MID)	+= vrtc.o
--obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_mrst.o
-diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.h b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-index 45d5af0..5b646c1 100644
---- a/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-+++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
-@@ -39,7 +39,7 @@
- #include "psb_intel_reg.h"
- #include "mdfld_output.h"
- 
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- 
- #define FLD_MASK(start, end)	(((1 << ((start) - (end) + 1)) - 1) << (end))
- #define FLD_VAL(val, start, end) (((val) << (end)) & FLD_MASK(start, end))
-diff --git a/drivers/gpu/drm/gma500/oaktrail_device.c b/drivers/gpu/drm/gma500/oaktrail_device.c
-index 08747fd..7a9ce00 100644
---- a/drivers/gpu/drm/gma500/oaktrail_device.c
-+++ b/drivers/gpu/drm/gma500/oaktrail_device.c
-@@ -26,7 +26,7 @@
- #include "psb_drv.h"
- #include "psb_reg.h"
- #include "psb_intel_reg.h"
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- #include <asm/intel_scu_ipc.h>
- #include "mid_bios.h"
- #include "intel_bios.h"
-diff --git a/drivers/gpu/drm/gma500/oaktrail_lvds.c b/drivers/gpu/drm/gma500/oaktrail_lvds.c
-index e77d721..3ece553 100644
---- a/drivers/gpu/drm/gma500/oaktrail_lvds.c
-+++ b/drivers/gpu/drm/gma500/oaktrail_lvds.c
-@@ -22,7 +22,7 @@
- 
- #include <linux/i2c.h>
- #include <drm/drmP.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- 
- #include "intel_bios.h"
- #include "psb_drv.h"
-diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 9215ed7..5f8f6c9 100644
---- a/drivers/platform/x86/intel_scu_ipc.c
-+++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -25,7 +25,7 @@
- #include <linux/interrupt.h>
- #include <linux/sfi.h>
- #include <linux/module.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- #include <asm/intel_scu_ipc.h>
- 
- /* IPC defines the following message types */
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index 578baf9..315209d9 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -38,8 +38,8 @@
- 
- #include <asm-generic/rtc.h>
- #include <asm/intel_scu_ipc.h>
--#include <asm/mrst.h>
--#include <asm/mrst-vrtc.h>
-+#include <asm/intel-mid.h>
-+#include <asm/intel_mid_vrtc.h>
- 
- struct mrst_rtc {
- 	struct rtc_device	*rtc;
-diff --git a/drivers/watchdog/intel_scu_watchdog.c b/drivers/watchdog/intel_scu_watchdog.c
-index 9dda2d0..07964d8 100644
---- a/drivers/watchdog/intel_scu_watchdog.c
-+++ b/drivers/watchdog/intel_scu_watchdog.c
-@@ -48,7 +48,7 @@
- #include <linux/atomic.h>
- #include <asm/intel_scu_ipc.h>
- #include <asm/apb_timer.h>
--#include <asm/mrst.h>
-+#include <asm/intel-mid.h>
- 
- #include "intel_scu_watchdog.h"
- 
+ 	now->tv_sec = mktime(year, mon, mday, hour, min, sec);
+@@ -109,8 +109,7 @@ int vrtc_set_mmss(const struct timespec *now)
+ 		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
+ 		spin_unlock_irqrestore(&rtc_lock, flags);
+ 	} else {
+-		printk(KERN_ERR
+-		       "%s: Invalid vRTC value: write of %lx to vRTC failed\n",
++		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
+ 			__FUNCTION__, now->tv_sec);
+ 		retval = -EINVAL;
+ 	}
 -- 
 1.8.4.rc3
 
