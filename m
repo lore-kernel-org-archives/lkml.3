@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761672Ab3JPSIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:08:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35768 "EHLO
+	id S964836Ab3JPSIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:08:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761566Ab3JPRqE (ORCPT
+	with ESMTP id S1761553Ab3JPRqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:04 -0400
+	Wed, 16 Oct 2013 13:46:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>
-Subject: [ 61/69] ipc, shm: drop shm_lock_check
-Date: Wed, 16 Oct 2013 10:45:10 -0700
-Message-Id: <20131016174320.367596894@linuxfoundation.org>
+Subject: [ 59/69] ipc, shm: guard against non-existant vma in shmdt(2)
+Date: Wed, 16 Oct 2013 10:45:08 -0700
+Message-Id: <20131016174320.111880590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -33,10 +33,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit 7a25dd9e042b2b94202a67e5551112f4ac87285a upstream.
+commit 530fcd16d87cd2417c472a581ba5a1e501556c86 upstream.
 
-This function was replaced by a the lockless shm_obtain_object_check(),
-and no longer has any users.
+When !CONFIG_MMU there's a chance we can derefence a NULL pointer when the
+VM area isn't found - check the return value of find_vma().
+
+Also, remove the redundant -EINVAL return: retval is set to the proper
+return code and *only* changed to 0, when we actually unmap the segments.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Cc: Sedat Dilek <sedat.dilek@gmail.com>
@@ -48,28 +51,20 @@ Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |   11 -----------
- 1 file changed, 11 deletions(-)
+ ipc/shm.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 --- a/ipc/shm.c
 +++ b/ipc/shm.c
-@@ -167,17 +167,6 @@ static inline void shm_lock_by_ptr(struc
- 	ipc_lock_object(&ipcp->shm_perm);
- }
- 
--static inline struct shmid_kernel *shm_lock_check(struct ipc_namespace *ns,
--						int id)
--{
--	struct kern_ipc_perm *ipcp = ipc_lock_check(&shm_ids(ns), id);
--
--	if (IS_ERR(ipcp))
--		return (struct shmid_kernel *)ipcp;
--
--	return container_of(ipcp, struct shmid_kernel, shm_perm);
--}
--
- static inline void shm_rmid(struct ipc_namespace *ns, struct shmid_kernel *s)
- {
- 	ipc_rmid(&shm_ids(ns), &s->shm_perm);
+@@ -1288,8 +1288,7 @@ SYSCALL_DEFINE1(shmdt, char __user *, sh
+ #else /* CONFIG_MMU */
+ 	/* under NOMMU conditions, the exact address to be destroyed must be
+ 	 * given */
+-	retval = -EINVAL;
+-	if (vma->vm_start == addr && vma->vm_ops == &shm_vm_ops) {
++	if (vma && vma->vm_start == addr && vma->vm_ops == &shm_vm_ops) {
+ 		do_munmap(mm, vma->vm_start, vma->vm_end - vma->vm_start);
+ 		retval = 0;
+ 	}
 
 
