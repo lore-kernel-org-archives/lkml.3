@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935492Ab3JPSSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:18:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35650 "EHLO
+	id S935478Ab3JPSSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761383Ab3JPRpr (ORCPT
+	with ESMTP id S1761385Ab3JPRps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:47 -0400
+	Wed, 16 Oct 2013 13:45:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 28/69] drm/radeon: fix typo in CP DMA register headers
-Date: Wed, 16 Oct 2013 10:44:37 -0700
-Message-Id: <20131016174316.337807833@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 40/69] ipc: remove unused functions
+Date: Wed, 16 Oct 2013 10:44:49 -0700
+Message-Id: <20131016174317.802743227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -26,71 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-commit aa3e146d04b6ae37939daeebaec060562b3db559 upstream.
+commit 9ad66ae65fc8d3e7e3344310fb0aa835910264fe upstream.
 
-Wrong bit offset for SRC endian swapping.
+We can now drop the msg_lock and msg_lock_check functions along with a
+bogus comment introduced previously in semctl_down.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreend.h |    4 ++--
- drivers/gpu/drm/radeon/r600d.h      |    2 +-
- drivers/gpu/drm/radeon/sid.h        |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ ipc/msg.c |   25 -------------------------
+ ipc/sem.c |    1 -
+ 2 files changed, 26 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -1104,7 +1104,7 @@
-  * 6. COMMAND [29:22] | BYTE_COUNT [20:0]
-  */
- #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
--                /* 0 - SRC_ADDR
-+                /* 0 - DST_ADDR
- 		 * 1 - GDS
- 		 */
- #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
-@@ -1119,7 +1119,7 @@
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
- #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -1259,7 +1259,7 @@
-  */
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -928,7 +928,7 @@
-  * 6. COMMAND [30:21] | BYTE_COUNT [20:0]
-  */
- #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
--                /* 0 - SRC_ADDR
-+                /* 0 - DST_ADDR
- 		 * 1 - GDS
- 		 */
- #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
-@@ -943,7 +943,7 @@
- #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
- /* COMMAND */
- #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
--#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
-+#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
-                 /* 0 - none
- 		 * 1 - 8 in 16
- 		 * 2 - 8 in 32
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -141,31 +141,6 @@ void __init msg_init(void)
+ 				IPC_MSG_IDS, sysvipc_msg_proc_show);
+ }
+ 
+-/*
+- * msg_lock_(check_) routines are called in the paths where the rw_mutex
+- * is not held.
+- */
+-static inline struct msg_queue *msg_lock(struct ipc_namespace *ns, int id)
+-{
+-	struct kern_ipc_perm *ipcp = ipc_lock(&msg_ids(ns), id);
+-
+-	if (IS_ERR(ipcp))
+-		return (struct msg_queue *)ipcp;
+-
+-	return container_of(ipcp, struct msg_queue, q_perm);
+-}
+-
+-static inline struct msg_queue *msg_lock_check(struct ipc_namespace *ns,
+-						int id)
+-{
+-	struct kern_ipc_perm *ipcp = ipc_lock_check(&msg_ids(ns), id);
+-
+-	if (IS_ERR(ipcp))
+-		return (struct msg_queue *)ipcp;
+-
+-	return container_of(ipcp, struct msg_queue, q_perm);
+-}
+-
+ static inline struct msg_queue *msq_obtain_object(struct ipc_namespace *ns, int id)
+ {
+ 	struct kern_ipc_perm *ipcp = ipc_obtain_object(&msg_ids(ns), id);
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1296,7 +1296,6 @@ static int semctl_down(struct ipc_namesp
+ 				      &semid64.sem_perm, 0);
+ 	if (IS_ERR(ipcp)) {
+ 		err = PTR_ERR(ipcp);
+-		/* the ipc lock is not held upon failure */
+ 		goto out_unlock1;
+ 	}
+ 
 
 
