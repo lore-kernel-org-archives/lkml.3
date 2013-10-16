@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762039Ab3JPWlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:41:12 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:56550 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761959Ab3JPWlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 18:41:09 -0400
-Message-ID: <525F1601.8080906@interlog.com>
-Date: Wed, 16 Oct 2013 18:41:05 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1762045Ab3JPWmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:42:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55849 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758828Ab3JPWmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 18:42:53 -0400
+Date: Wed, 16 Oct 2013 23:42:48 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jim Lieb <jlieb@panasas.com>
+Cc: tytso@mit.edu, viro@zeniv.linux.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bfields@redhat.com, jlayton@redhat.com
+Subject: Re: [PATCH 1/3] switch_creds:  Syscall to switch creds for file
+ server ops
+Message-ID: <20131016224248.GQ13318@ZenIV.linux.org.uk>
+References: <1381960919-4542-1-git-send-email-jlieb@panasas.com>
+ <1381960919-4542-2-git-send-email-jlieb@panasas.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: vaughan <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        SCSI development list <linux-scsi@vger.kernel.org>
-Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
-References: <8761tilrl0.fsf@redhat.com> <874n8s2tjz.fsf@redhat.com>	 <5253A9E7.5030707@oracle.com> <52540C7F.8050207@interlog.com> <1381929897.1864.0.camel@dabdike>
-In-Reply-To: <1381929897.1864.0.camel@dabdike>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381960919-4542-2-git-send-email-jlieb@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-10-16 09:24 AM, James Bottomley wrote:
-> On Tue, 2013-10-08 at 09:45 -0400, Douglas Gilbert wrote:
->> On 13-10-08 02:44 AM, vaughan wrote:
->>> Hi Madper,
->>>
->>> CC to Douglas to get comments.
->>> I use the rw_semaphore o_sem to protect excl open, introduced in commit
->>> 15b06f9a02406e5460001db6d5af5c738cd3d4e7 since v3.12-rc1.
->>> Is it forbidden to do like that in kernel?...
->>
->> It appears you can not (allow sg_open() to hold a semaphore
->> then return to the user space). So you will need to do some
->> rework on that patch or revert it.
->
-> OK, there being no reply on this, I'll do the revert ... that's all four
-> patches, correct?
+On Wed, Oct 16, 2013 at 03:01:57PM -0700, Jim Lieb wrote:
+> File servers must do some operations with the credentials of
+> their client.  This syscall switches the key credentials similar
+> to nfsd_setuser() in fs/nfsd/auth.c  with the capability of retaining a
+> handle to the credentials by way of an fd for an open anonymous file.
+> This makes switching for subsequent operations for that client more efficient.
 
-That seems to be the case. Vaughan acknowledged the
-problem and forwarded it to me 8 days ago. Yes, it
-seems to be a "no-no" to hold a any kernel semaphore
-when returning to the user space; in this case from
-sg_open(). I was hoping a revised patch might
-appear from Vaughan but to date that has not been
-the case. So with only a few weeks to go before
-lk 3.12 is released, reverting the whole 4 patches
-in that series seems to be the safest course.
+	Yet Another Untyped Multiplexor.  Inna bun.  Onna stick.
+CMOT Dibbler special...
 
-Also without a new patch from Vaughan in the next few
-weeks he may also miss the opportunity of getting
-his improved O_EXCL logic into the lk 3.13 series.
+	Switching creds to those of opener of given file descriptor
+is fine, but in any realistic situation you'll get all the real win
+from that - you should cache those fds (which you seem to do), and
+then setuid/etc. is done once per cache miss.  Making the magical
+"set them all at once" mess (complete with non-trivial structure,
+32/64bit compat, etc.) pointless.  Moreover, you don't need any magic
+files at all - just set the creds and open /dev/null and there's your fd.
+With proper creds associated with it.  While we are at it, just _start_
+with opening /dev/null.  With your initial creds.  Voila - revert is
+simply switch to that fd's creds.
 
+	IOW, you really need only one syscall:
 
-Thinking about how to solve this problem: a field could
-be added to 'struct sg_device' with one of three states:
-no_opens, non_excl_opens and excl_open. It could be
-manipulated by sg_open() and sg_release() like a
-read-write semaphore. And the faulty 'struct
-rw_semaphore o_sem' in sg_device could be replaced by a
-normal semaphore to protect the manipulation of the new
-three-state field.
+SYSCALL_DEFINE1(switch_cred, int, fd)
+{
+	struct fd f = fdget(fd);
+	if (!f.file)
+		return -EBADF;
+	put_cred(override_creds(f.file->f_cred);
+	fdput(f);
+	return 0;
+}
 
-Doug Gilbert
-
-
+and that's all there is to it.
