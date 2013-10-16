@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab3JPGrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:47:06 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:53328 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab3JPGrE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:47:04 -0400
-Date: Wed, 16 Oct 2013 08:46:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Roel Kluin <roel.kluin@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jump_label: unlikely(x) > 0
-Message-ID: <20131016064659.GA22509@gmail.com>
-References: <alpine.DEB.2.02.1310112241220.11060@Z>
- <20131011135704.6fd455e2387a37f1972a4e0f@linux-foundation.org>
- <525D7315.8080005@linux.intel.com>
+	id S1753352Ab3JPGw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:52:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54245 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094Ab3JPGw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:52:56 -0400
+Message-ID: <525E3786.7030102@zytor.com>
+Date: Tue, 15 Oct 2013 23:51:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525D7315.8080005@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Michael Davidson <md@google.com>,
+        Cong Ding <dinggnu@gmail.com>
+Subject: Re: [PATCH] x86, relocs: add percpu fixup for GNU ld 2.23
+References: <20131016064314.GA2739@www.outflux.net>
+In-Reply-To: <20131016064314.GA2739@www.outflux.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
-
-> On 10/11/2013 01:57 PM, Andrew Morton wrote:
-> > 
-> > I'm sure this was intended instead ;) The patch doesn't seem to make
-> > any difference in code generation with my gcc.
-> > 
+On 10/15/2013 11:43 PM, Kees Cook wrote:
+> The GNU linker tries to put __per_cpu_load into the percpu area, resulting
+> in a lack of its relocation. Force this symbol to be relocated. Seen
+> starting with GNU ld 2.23 and later.
 > 
-> Which is odd, because doesn't unlikely() booleanize?
+> Reported-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/x86/tools/relocs.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+> index 1fa291f..7a85f29 100644
+> --- a/arch/x86/tools/relocs.c
+> +++ b/arch/x86/tools/relocs.c
+> @@ -729,6 +729,7 @@ static void percpu_init(void)
+>   *
+>   * The GNU linker incorrectly associates:
+>   *	__init_begin
+> + *	__per_cpu_load
+>   *
+>   * The "gold" linker incorrectly associates:
+>   *	init_per_cpu__irq_stack_union
+> @@ -738,6 +739,7 @@ static int is_percpu_sym(ElfW(Sym) *sym, const char *symname)
+>  {
+>  	return (sym->st_shndx == per_cpu_shndx) &&
+>  		strcmp(symname, "__init_begin") &&
+> +		strcmp(symname, "__per_cpu_load") &&
+>  		strncmp(symname, "init_per_cpu_", 13);
+>  }
+>  
+> 
 
-It's supposed to:
+Why isn't this list using a regex like other symbol classes?
 
- include/linux/compiler.h:#define unlikely_notrace(x)    __builtin_expect(!!(x), 0)
+	-hpa
 
-Thanks,
-
-	Ingo
