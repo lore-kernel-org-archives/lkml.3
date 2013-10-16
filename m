@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829Ab3JPRqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35965 "EHLO
+	id S934813Ab3JPRqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934644Ab3JPRqe (ORCPT
+	with ESMTP id S934506Ab3JPRqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:34 -0400
+	Wed, 16 Oct 2013 13:46:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 36/50] ipc,shm: make shmctl_nolock lockless
-Date: Wed, 16 Oct 2013 10:45:22 -0700
-Message-Id: <20131016174402.739583132@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 04/50] ALSA: hda - Fix microphone for Sony VAIO Pro 13 (Haswell model)
+Date: Wed, 16 Oct 2013 10:44:50 -0700
+Message-Id: <20131016174358.889361357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -31,86 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit c97cb9ccab8c85428ec21eff690642ad2ce1fa8a upstream.
+commit 88cfcf86aa3ada84d97195bcad74f4dadb4ae23b upstream.
 
-While the INFO cmd doesn't take the ipc lock, the STAT commands do acquire
-it unnecessarily.  We can do the permissions and security checks only
-holding the rcu lock.
+The external mic showed up with a precense detect of "always present",
+essentially disabling the internal mic. Therefore turn off presence
+detection for this pin.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
+Note: The external mic seems not yet working, but an internal mic is
+certainly better than no mic at all.
+
+BugLink: https://bugs.launchpad.net/bugs/1227093
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_realtek.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -889,27 +889,31 @@ static int shmctl_nolock(struct ipc_name
- 		struct shmid64_ds tbuf;
- 		int result;
- 
-+		rcu_read_lock();
- 		if (cmd == SHM_STAT) {
--			shp = shm_lock(ns, shmid);
-+			shp = shm_obtain_object(ns, shmid);
- 			if (IS_ERR(shp)) {
- 				err = PTR_ERR(shp);
--				goto out;
-+				goto out_unlock;
- 			}
- 			result = shp->shm_perm.id;
- 		} else {
--			shp = shm_lock_check(ns, shmid);
-+			shp = shm_obtain_object_check(ns, shmid);
- 			if (IS_ERR(shp)) {
- 				err = PTR_ERR(shp);
--				goto out;
-+				goto out_unlock;
- 			}
- 			result = 0;
- 		}
-+
- 		err = -EACCES;
- 		if (ipcperms(ns, &shp->shm_perm, S_IRUGO))
- 			goto out_unlock;
-+
- 		err = security_shm_shmctl(shp, cmd);
- 		if (err)
- 			goto out_unlock;
-+
- 		memset(&tbuf, 0, sizeof(tbuf));
- 		kernel_to_ipc64_perm(&shp->shm_perm, &tbuf.shm_perm);
- 		tbuf.shm_segsz	= shp->shm_segsz;
-@@ -919,8 +923,9 @@ static int shmctl_nolock(struct ipc_name
- 		tbuf.shm_cpid	= shp->shm_cprid;
- 		tbuf.shm_lpid	= shp->shm_lprid;
- 		tbuf.shm_nattch	= shp->shm_nattch;
--		shm_unlock(shp);
--		if(copy_shmid_to_user (buf, &tbuf, version))
-+		rcu_read_unlock();
-+
-+		if (copy_shmid_to_user(buf, &tbuf, version))
- 			err = -EFAULT;
- 		else
- 			err = result;
-@@ -931,7 +936,7 @@ static int shmctl_nolock(struct ipc_name
- 	}
- 
- out_unlock:
--	shm_unlock(shp);
-+	rcu_read_unlock();
- out:
- 	return err;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3331,6 +3331,7 @@ enum {
+ 	ALC269_FIXUP_HP_GPIO_LED,
+ 	ALC269_FIXUP_INV_DMIC,
+ 	ALC269_FIXUP_LENOVO_DOCK,
++	ALC286_FIXUP_SONY_MIC_NO_PRESENCE,
+ 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+ 	ALC269_FIXUP_DELL1_MIC_NO_PRESENCE,
+ 	ALC269_FIXUP_DELL2_MIC_NO_PRESENCE,
+@@ -3529,6 +3530,13 @@ static const struct hda_fixup alc269_fix
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_headset_mode_no_hp_mic,
+ 	},
++	[ALC286_FIXUP_SONY_MIC_NO_PRESENCE] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x18, 0x01a1913c }, /* use as headset mic, without its own jack detect */
++			{ }
++		},
++	},
+ 	[ALC269_FIXUP_ASUS_X101_FUNC] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_x101_headset_mic,
+@@ -3651,6 +3659,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x8516, "ASUS X101CH", ALC269_FIXUP_ASUS_X101),
++	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
+ 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+ 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 
 
