@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933887Ab3JPUwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:52:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56933 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761976Ab3JPUw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:52:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="394007860"
-Date: Wed, 16 Oct 2013 13:52:27 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, dave.hansen@linux.intel.com,
-        eranian@google.com, jmario@redhat.com, linux-kernel@vger.kernel.org,
-        acme@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131016205227.GJ7456@tassilo.jf.intel.com>
-References: <20131014203549.GY227855@redhat.com>
- <20131015101404.GD10651@twins.programming.kicks-ass.net>
- <20131015130226.GX26785@twins.programming.kicks-ass.net>
- <20131015143227.GY26785@twins.programming.kicks-ass.net>
- <20131015150736.GZ26785@twins.programming.kicks-ass.net>
- <20131015154104.GA227855@redhat.com>
- <20131016105755.GX10651@twins.programming.kicks-ass.net>
+	id S934236Ab3JPUxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:53:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62466 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760800Ab3JPUxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 16:53:13 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [Resend][PATCH] intel_pstate: Fix type mismatch warning
+Date: Wed, 16 Oct 2013 23:05:03 +0200
+Message-ID: <1581193.8IWGTM6KOa@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <525ECBDE.5000801@linux.intel.com>
+References: <9494730.EGV2mTSpNl@vostro.rjw.lan> <2582369.lNhAMrrx8s@vostro.rjw.lan> <525ECBDE.5000801@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016105755.GX10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So avoid having to call copy_from_user_nmi() for every instruction.
-> Since we already limit the max basic block size, we can easily
-> pre-allocate a piece of memory to copy the entire thing into in one
-> go.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-It would be better/more generic if you split copy_from_user_nmi() into
-init() copy() end() 
+The expression in line 398 of intel_pstate.c causes the following
+warning to be emitted:
 
-(and some state that checks if the underlying page changes)
+drivers/cpufreq/intel_pstate.c:398:3: warning: left shift count >= width of type
 
-Then first you don't need the buffer and it could be also
-be applied to the other cases, like the stack unwinding,
-where copying everything is likely too slow.
+which happens because unsigned long is 32-bit on some architectures.
 
--Andi
+Fix that by using a helper u64 variable and simplify the code
+slightly.
+
+Tested-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/cpufreq/intel_pstate.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+Index: linux-pm/drivers/cpufreq/intel_pstate.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/intel_pstate.c
++++ linux-pm/drivers/cpufreq/intel_pstate.c
+@@ -383,6 +383,7 @@ static void intel_pstate_get_min_max(str
+ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ {
+ 	int max_perf, min_perf;
++	u64 val;
+ 
+ 	intel_pstate_get_min_max(cpu, &min_perf, &max_perf);
+ 
+@@ -394,11 +395,11 @@ static void intel_pstate_set_pstate(stru
+ 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
+ 
+ 	cpu->pstate.current_pstate = pstate;
++	val = pstate << 8;
+ 	if (limits.no_turbo)
+-		wrmsrl(MSR_IA32_PERF_CTL, BIT(32) | (pstate << 8));
+-	else
+-		wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
++		val |= (u64)1 << 32;
+ 
++	wrmsrl(MSR_IA32_PERF_CTL, val);
+ }
+ 
+ static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
+
