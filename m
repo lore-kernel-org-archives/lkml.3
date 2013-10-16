@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761246Ab3JPRpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:45:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35480 "EHLO
+	id S935545Ab3JPSVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:21:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab3JPRpV (ORCPT
+	with ESMTP id S1761225Ab3JPRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:21 -0400
+	Wed, 16 Oct 2013 13:45:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dr Nicholas J Bailey <nicholas.bailey@glasgow.ac.uk>,
-        Takashi Iwai <tiwai@suse.de>, Daniel Mack <zonque@gmail.com>,
-        fzu@wemgehoertderstaat.de
-Subject: [ 01/69] ALSA: snd-usb-usx2y: remove bogus frame checks
-Date: Wed, 16 Oct 2013 10:44:10 -0700
-Message-Id: <20131016174313.040247731@linuxfoundation.org>
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 07/69] i2c: omap: Clear ARDY bit twice
+Date: Wed, 16 Oct 2013 10:44:16 -0700
+Message-Id: <20131016174313.765118314@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -28,84 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-commit a9d14bc0b188a822e42787d01e56c06fe9750162 upstream.
+commit 4cdbf7d346e7461c3b93a26707c852e2c9db3753 upstream.
 
-The frame check in i_usX2Y_urb_complete() and
-i_usX2Y_usbpcm_urb_complete() is bogus and produces false positives as
-described in this LAU thread:
+Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
+"i2c-omap: Double clear of ARDY status in IRQ handler"
+added a workaround for undocumented errata ProDB0017052.
+But then commit 1d7afc95946487945cc7f5019b41255b72224b70
+"i2c: omap: ack IRQ in parts" refactored code and missed
+one of ARDY clearings. So current code violates errata.
+It causes often i2c bus timeouts on my Pandaboard.
 
-  http://linuxaudio.org/mailarchive/lau/2013/5/20/200177
+This patch adds a second clearing in place.
 
-This patch removes the check code entirely.
-
-Cc: fzu@wemgehoertderstaat.de
-Reported-by: Dr Nicholas J Bailey <nicholas.bailey@glasgow.ac.uk>
-Suggested-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/usx2y/usbusx2yaudio.c |   22 +++-------------------
- sound/usb/usx2y/usx2yhwdeppcm.c |    7 +------
- 2 files changed, 4 insertions(+), 25 deletions(-)
+ drivers/i2c/busses/i2c-omap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -299,19 +299,6 @@ static void usX2Y_error_urb_status(struc
- 	usX2Y_clients_stop(usX2Y);
- }
- 
--static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
--				 struct snd_usX2Y_substream *subs, struct urb *urb)
--{
--	snd_printk(KERN_ERR
--"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
--"Most probably some urb of usb-frame %i is still missing.\n"
--"Cause could be too long delays in usb-hcd interrupt handling.\n",
--		   usb_get_current_frame_number(usX2Y->dev),
--		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
--		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
--	usX2Y_clients_stop(usX2Y);
--}
--
- static void i_usX2Y_urb_complete(struct urb *urb)
- {
- 	struct snd_usX2Y_substream *subs = urb->context;
-@@ -328,12 +315,9 @@ static void i_usX2Y_urb_complete(struct
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -941,6 +941,9 @@ omap_i2c_isr_thread(int this_irq, void *
+ 		/*
+ 		 * ProDB0017052: Clear ARDY bit twice
+ 		 */
++		if (stat & OMAP_I2C_STAT_ARDY)
++			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
 +
-+	subs->completed_urb = urb;
-+
- 	{
- 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
- 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
- 
-+	subs->completed_urb = urb;
- 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
- 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
- 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+ 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
+ 					OMAP_I2C_STAT_AL)) {
+ 			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
 
 
