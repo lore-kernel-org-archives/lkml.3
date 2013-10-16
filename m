@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760502Ab3JPJQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:16:56 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36951 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760180Ab3JPJQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:16:53 -0400
-Date: Wed, 16 Oct 2013 10:16:48 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH] x86/efi: Add EFI framebuffer earlyprintk support
-Message-ID: <20131016091648.GD10834@console-pimps.org>
-References: <1381423261-30566-1-git-send-email-matt@console-pimps.org>
- <20131010172844.GA26430@gmail.com>
- <20131011140039.GF12321@console-pimps.org>
- <20131012174934.GA18849@gmail.com>
- <525B06CB.6090602@zytor.com>
- <20131014075726.GB20435@gmail.com>
+	id S1760535Ab3JPJRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:17:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35413 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760266Ab3JPJQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 05:16:55 -0400
+Date: Wed, 16 Oct 2013 11:16:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+Message-ID: <20131016091640.GA13608@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+ <20131015165435.GA2777@naverao1-tp.ibm.com>
+ <20131015170039.GF7908@pd.tnic>
+ <525D7BCD.7080303@linux.vnet.ibm.com>
+ <20131015214346.68718bcd.m.chehab@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131014075726.GB20435@gmail.com>
+In-Reply-To: <20131015214346.68718bcd.m.chehab@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Oct, at 09:57:26AM, Ingo Molnar wrote:
-> 
-> * H. Peter Anvin <hpa@zytor.com> wrote:
-> 
-> > On 10/12/2013 10:49 AM, Ingo Molnar wrote:
-> > > 
-> > >>>> +static void early_efi_write_char(void *dst, char c, int h)
-> > >>>> +{
-> > >>>> +	const u8 *src;
-> > >>>> +	u32 fgcolor = 0xaaaaaa;
-> > >>>
-> > >>> That's RGB grey, right? Why not 0xffffff for a very visible white?
-> > >>  
-> > >> The VGA earlyprintk code uses the equivalent grey, AFAIK, which is why I 
-> > >> picked this value.
-> > > 
-> > > The VGA code should be changed to white too I suspect ;-)
-> > > 
-> > 
-> > For compatibility with the classical text console we use light grey as 
-> > the default color and a double-stroked font (which was necessary on the 
-> > CGA display since it didn't have enough bandwidth to handle 
-> > single-stroked fonts well).  The problem with changing that to white is 
-> > that you end up with a mismatch between the earlyprintk console and the 
-> > "real" console, *or* we change the behavior of everyone's consoles...
-> 
-> Btw., I have no problem at all with making the early console look separate 
-> and making it clear when we switch to the 'real' console.
-> 
-> earlyprintk is a debug method, and more information can only be good. 
+On Tue, Oct 15, 2013 at 09:43:46PM -0300, Mauro Carvalho Chehab wrote:
+> Using a custom typedef here seems problematic, as that can make userspace
+> interface more complicated.
 
-Have we reached a consensus here? I've no strong opinion either way on
-the colour of the text.
+It is defined in a userspace header: include/uapi/linux/uuid.h
+
+> > >>> +		char *fru_text,
+> > >>> +		u64 error_count,
+> > >>> +		u32 severity,
+> > >>> +		u64 phy_addr,
+> > >>> +		char *mem_loc),
+> 
+> By looking on the rest of the changes, the mem_loc can now contain the 
+> right location of the memory error, including on what DIMM the error
+> happened. It can also (optionally) contain the DIMM label.
+
+No, dimm_loc contains the label.
+
+> Also, userspace needs to know what's the granularity for the error
+> that an eMCA driver will give, in order to adjust its policies.
+
+u32 error_count
+
+> If you don't create the EDAC nodes, it means that userspace doesn't
+> have any glue about what error information will be provided.
+
+Of course it does - it is a tracepoint. There's no need for EDAC at all
+with eMCA present on the system.
+
+> In any case, this is provided by the EDAC core functions that describe
+> the memory in details. So, IMHO, get rid of EDAC is a big mistake.
+
+No one said we're getting rid of EDAC - we're basically disabling its
+services on machines with eMCA because we simply don't need it.
+
+> It is also nice to allow the user to choose his preferred mechanism,
+> when more than one is properly supported on a given system.
+
+We did this with firmware-first reporting so I don't see any need
+for user interaction. When you have eMCA on the system, you disable
+everything else reporting memory errors and go to sleep. So, similar to
+firmware first.
+
+If eMCA turns out to have f*cked BIOS implementations - which I don't
+doubt - then we can add a chicken bit similar to "acpi=nocmcff"
+
+It is that simple.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
