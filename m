@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934407Ab3JPM7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:59:31 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:63809 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934287Ab3JPM72 (ORCPT
+	id S934468Ab3JPM7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:59:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19080 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934389Ab3JPM7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:59:28 -0400
-Message-ID: <525E8DAD.60801@gmail.com>
-Date: Wed, 16 Oct 2013 07:59:25 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Neil Zhang <zhangwm@marvell.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yu Tang <ytang5@marvell.com>, Zhou Zhu <zzhu3@marvell.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [Question] Ask for arm arch timer
-References: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF280@SC-VEXCH4.marvell.com>
-In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF280@SC-VEXCH4.marvell.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Oct 2013 08:59:30 -0400
+Date: Wed, 16 Oct 2013 08:59:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Liu Chuansheng <chuansheng.liu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
+Message-ID: <20131016085928.5b8f9d95@gandalf.local.home>
+In-Reply-To: <20131016115354.GC12773@localhost.localdomain>
+References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
+	<1381870252-5430-3-git-send-email-fweisbec@gmail.com>
+	<1381870805.22110.37.camel@joe-AO722>
+	<20131015211251.GE3269@localhost.localdomain>
+	<1381872280.22110.41.camel@joe-AO722>
+	<20131016115354.GC12773@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Will and Catalin...]
+On Wed, 16 Oct 2013 13:53:56 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-On 10/16/2013 07:39 AM, Neil Zhang wrote:
-> Hi Rob,
-> I saw your following patch called clocksource_of_init() directly in time_init() for arm64.
-> My question is that what should we do if there are some Soc special work need to be done before arch timer can be used?
-> Thanks in advance.
-
-If the timer itself is different, then you should have a different DT
-compatible string which you can use to trigger additional initialization.
-
-Integration level initialization like enabling clocks would need
-something different as no machine descriptors exist for arm64.
-
-Another option would be do the setup in secure world or the bootloader.
-
-Can you be more specific what initialization is needed.
-
-Rob
-
-> commit 0583fe478a7d93be2c814b7e50d6e81c287edfe8
-> Author: Rob Herring <rob.herring@calxeda.com>
-> Date:   Wed Apr 10 18:27:51 2013 -0500
+ 
+> static int done;
 > 
->     ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+> if (!done) {
+>     trace_printk(something);
+>     trace_printk(something else);
+>     trace_dump_stack();
+>     done = 1;
+> }
 > 
+> Having a DO_ONCE() would help a lot I think.
 > 
-> Best Regards,
-> Neil Zhang
-> 
-> 
+> Now we can rename it to __DO_ONCE() and put a big fat comment to avoid it
+> to be misused.
 
+I wonder if we should make it just ONCE(), with no arguments that
+should go into an if statement.
+
+
+if (ONCE())
+	do_this_function_once();
+
+
+Where ONCE() is:
+
+({
+	static int __once;
+	int __old_once = __once;
+
+	__once = 1;
+	__old_once;
+})
+
+Or the xchg version:
+
+({
+	static int __once;
+
+	if (!__once)
+		xchg(&__once, 1);
+	else
+		1;
+})
+
+-- Steve
