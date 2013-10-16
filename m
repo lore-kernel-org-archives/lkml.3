@@ -1,165 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761657Ab3JPSL0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:11:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761489Ab3JPRp5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:57 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 53/69] ipc,shm: shorten critical region for shmctl
-Date: Wed, 16 Oct 2013 10:45:02 -0700
-Message-Id: <20131016174319.371003199@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1761712Ab3JPSLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:11:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52898 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761691Ab3JPSLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 14:11:32 -0400
+Date: Wed, 16 Oct 2013 20:11:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
+        arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
+Message-ID: <20131016181117.GP13608@pd.tnic>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <20131016160550.GG13608@pd.tnic>
+ <20131016125646.7141b580@gandalf.local.home>
+ <20131016180038.GO13608@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131016180038.GO13608@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 16, 2013 at 08:00:38PM +0200, Borislav Petkov wrote:
+> Right, the only difference I can see is that include/ras/ras_event.h
+> doesn't have those below:
+> 
+> #undef TRACE_INCLUDE_PATH
+> #undef TRACE_INCLUDE_FILE
+> #define TRACE_INCLUDE_PATH .
+> 
+> Perhaps that is the problem?
+> 
+> Gong, what is exactly the issue you're observing?
 
-------------------
+Ok, I think I know what the issue is:
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Gong has
 
-commit 2caacaa82a51b78fc0c800e206473874094287ed upstream.
-
-With the *_INFO, *_STAT, IPC_RMID and IPC_SET commands already optimized,
-deal with the remaining SHM_LOCK and SHM_UNLOCK commands.  Take the
-shm_perm lock after doing the initial auditing and security checks.  The
-rest of the logic remains unchanged.
-
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- ipc/shm.c |   49 +++++++++++++++++++++++++------------------------
- 1 file changed, 25 insertions(+), 24 deletions(-)
-
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -940,10 +940,8 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	int err, version;
- 	struct ipc_namespace *ns;
- 
--	if (cmd < 0 || shmid < 0) {
--		err = -EINVAL;
--		goto out;
--	}
-+	if (cmd < 0 || shmid < 0)
-+		return -EINVAL;
- 
- 	version = ipc_parse_version(&cmd);
- 	ns = current->nsproxy->ipc_ns;
-@@ -954,36 +952,40 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	case SHM_STAT:
- 	case IPC_STAT:
- 		return shmctl_nolock(ns, shmid, cmd, version, buf);
-+	case IPC_RMID:
-+	case IPC_SET:
-+		return shmctl_down(ns, shmid, cmd, buf, version);
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
- 	{
- 		struct file *shm_file;
- 
--		shp = shm_lock_check(ns, shmid);
-+		rcu_read_lock();
-+		shp = shm_obtain_object_check(ns, shmid);
- 		if (IS_ERR(shp)) {
- 			err = PTR_ERR(shp);
--			goto out;
-+			goto out_unlock1;
- 		}
- 
- 		audit_ipc_obj(&(shp->shm_perm));
-+		err = security_shm_shmctl(shp, cmd);
-+		if (err)
-+			goto out_unlock1;
- 
-+		ipc_lock_object(&shp->shm_perm);
- 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			kuid_t euid = current_euid();
- 			err = -EPERM;
- 			if (!uid_eq(euid, shp->shm_perm.uid) &&
- 			    !uid_eq(euid, shp->shm_perm.cuid))
--				goto out_unlock;
-+				goto out_unlock0;
- 			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
--				goto out_unlock;
-+				goto out_unlock0;
- 		}
- 
--		err = security_shm_shmctl(shp, cmd);
--		if (err)
--			goto out_unlock;
--
- 		shm_file = shp->shm_file;
- 		if (is_file_hugepages(shm_file))
--			goto out_unlock;
-+			goto out_unlock0;
- 
- 		if (cmd == SHM_LOCK) {
- 			struct user_struct *user = current_user();
-@@ -992,32 +994,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 				shp->shm_perm.mode |= SHM_LOCKED;
- 				shp->mlock_user = user;
- 			}
--			goto out_unlock;
-+			goto out_unlock0;
- 		}
- 
- 		/* SHM_UNLOCK */
- 		if (!(shp->shm_perm.mode & SHM_LOCKED))
--			goto out_unlock;
-+			goto out_unlock0;
- 		shmem_lock(shm_file, 0, shp->mlock_user);
- 		shp->shm_perm.mode &= ~SHM_LOCKED;
- 		shp->mlock_user = NULL;
- 		get_file(shm_file);
--		shm_unlock(shp);
-+		ipc_unlock_object(&shp->shm_perm);
-+		rcu_read_unlock();
- 		shmem_unlock_mapping(shm_file->f_mapping);
+diff --git a/drivers/acpi/extlog_trace.c b/drivers/acpi/extlog_trace.c
+new file mode 100644
+index 000000000000..28640807fb09
+--- /dev/null
++++ b/drivers/acpi/extlog_trace.c
+@@ -0,0 +1,107 @@
++#include <linux/export.h>
++#include <linux/dmi.h>
++#include "extlog_trace.h"
 +
- 		fput(shm_file);
--		goto out;
--	}
--	case IPC_RMID:
--	case IPC_SET:
--		err = shmctl_down(ns, shmid, cmd, buf, version);
- 		return err;
-+	}
- 	default:
- 		return -EINVAL;
- 	}
- 
--out_unlock:
--	shm_unlock(shp);
--out:
-+out_unlock0:
-+	ipc_unlock_object(&shp->shm_perm);
-+out_unlock1:
-+	rcu_read_unlock();
- 	return err;
- }
- 
++#define CREATE_TRACE_POINTS
++#define TRACE_INCLUDE_PATH ../../include/ras
++#include <ras/ras_event.h>
 
+for the ras tracepoint although this is done already in
+drivers/edac/edac_mc.c
 
+Gong, can you try moving the CREATE_TRACE_POINTS line to a new file -
+arch/x86/ras/ras.c and define it there and not anywhere else, i.e. move
+it away from edac_mc.c. Does that help?
+
+Also, see Documentation/trace/tracepoints.txt for more info.
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
