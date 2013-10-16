@@ -1,153 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760392Ab3JPJXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:23:16 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:49656 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760253Ab3JPJXO (ORCPT
+	id S1760364Ab3JPJ0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:26:08 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:39606 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760179Ab3JPJ0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:23:14 -0400
-Date: Wed, 16 Oct 2013 10:23:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mfd: tc3589x: detect the precise version
-Message-ID: <20131016092310.GD19112@lee--X1>
-References: <1381871640-22262-1-git-send-email-linus.walleij@linaro.org>
+	Wed, 16 Oct 2013 05:26:07 -0400
+Date: Wed, 16 Oct 2013 11:26:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
+        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
+ statistics update
+Message-ID: <20131016092601.GB23440@gmail.com>
+References: <20131015174722.615394057@linux.com>
+ <20131015174745.197380080@linux.com>
+ <20131016083545.GP10651@twins.programming.kicks-ass.net>
+ <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1381871640-22262-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1381914869.2045.112.camel@edumazet-glaptop.roam.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013, Linus Walleij wrote:
 
-> Instead of detecting the "tc3589x" and hard-coding the number of
-> GPIO pins to 24, encode all the possible subtypes and set the
-> number of GPIO pins from the type.
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> On Wed, 2013-10-16 at 10:35 +0200, Peter Zijlstra wrote:
+> > On Tue, Oct 15, 2013 at 12:47:23PM -0500, Christoph Lameter wrote:
+> > > ip4_datagram_connect is called with BH processing enabled. Therefore
+> > > we cannot use IP_INC_STATS_BH but must use IP_INC_STATS which disables
+> > > BH handling before incrementing the counter.
+> > > 
+> > > The following trace is triggered without this patch:
+> > > 
+> > > [ 9293.806634] __this_cpu_add operation in preemptible [00000000] code: ntpd/2150
+> > 
+> > You lost the BUG there; that really needs to be there:
+> > 
+> >  - BUG makes people pay attention
+> >  - This was an actual BUG wasn't it?
+> > 
+> > Sure there can be false positives, but in all cases people should 
+> > amend the code. Sometimes with a comment explaining why the raw 
+> > primitive should be used; sometimes to fix an actual bug, but a patch 
+> > needs to be written. Therefore BUG!
 > 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/mfd/tc3589x.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 47 insertions(+), 2 deletions(-)
+> Yep this is a real BUG for linux 2.6.36+ on 32bit arches,
 > 
-> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-> index 70f4909f..0eabbb0 100644
-> --- a/drivers/mfd/tc3589x.c
-> +++ b/drivers/mfd/tc3589x.c
-> @@ -16,6 +16,19 @@
->  #include <linux/mfd/core.h>
->  #include <linux/mfd/tc3589x.h>
->  
-> +/**
-> + * enum tc3589x_version - indicates the TC3589x version
-> + */
-> +enum tc3589x_version {
-> +	TC3589X_TC35890,
-> +	TC3589X_TC35892,
-> +	TC3589X_TC35893,
-> +	TC3589X_TC35894,
-> +	TC3589X_TC35895,
-> +	TC3589X_TC35896,
-> +	TC3589X_UNKNOWN,
-> +};
-> +
->  #define TC3589x_CLKMODE_MODCTL_SLEEP		0x0
->  #define TC3589x_CLKMODE_MODCTL_OPERATION	(1 << 0)
->  
-> @@ -361,7 +374,33 @@ static int tc3589x_probe(struct i2c_client *i2c,
->  	tc3589x->i2c = i2c;
->  	tc3589x->pdata = pdata;
->  	tc3589x->irq_base = pdata->irq_base;
-> -	tc3589x->num_gpio = id->driver_data;
-> +
-> +	switch (id->driver_data) {
-> +	case TC3589X_TC35890:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	case TC3589X_TC35892:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	case TC3589X_TC35893:
-> +		tc3589x->num_gpio = 20;
-> +		break;
-> +	case TC3589X_TC35894:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	case TC3589X_TC35895:
-> +		tc3589x->num_gpio = 20;
-> +		break;
-> +	case TC3589X_TC35896:
-> +		tc3589x->num_gpio = 20;
-> +		break;
-> +	case TC3589X_UNKNOWN:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	default:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	}
->  
->  	i2c_set_clientdata(i2c, tc3589x);
->  
-> @@ -432,7 +471,13 @@ static int tc3589x_resume(struct device *dev)
->  static SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend, tc3589x_resume);
->  
->  static const struct i2c_device_id tc3589x_id[] = {
-> -	{ "tc3589x", 24 },
-> +	{ "tc35890", TC3589X_TC35890 },
-> +	{ "tc35892", TC3589X_TC35892 },
-> +	{ "tc35893", TC3589X_TC35893 },
-> +	{ "tc35894", TC3589X_TC35894 },
-> +	{ "tc35895", TC3589X_TC35895 },
-> +	{ "tc35896", TC3589X_TC35896 },
-> +	{ "tc3589x", TC3589X_UNKNOWN },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(i2c, tc3589x_id);
+> The effect of this bug is that on 32bit arches, we might corrupt a 
+> seqcount : Later, we can spin forever on it.
 
-This is an awful lot of code for what we're trying to achieve. I
-propose two alternitives:
+Ouch, that's a pretty serious bug ...
 
-  1. I guess that other OSes will need to capture the same
-  information, so wouldn't it be prudant to do so via a DT property?
-  That way it's just a one or two liner.
+The patch title should reflect this fact.
 
-Or:
+> In linux 2.6.36 we converted IP mib from 32 to 64 bits, therefore this 
+> fix should be backported up to 2.6.36
+> 
+> Prior to 2.6.36, the bug was that some increments of SNMP stat could be 
+> lost, because two cpus could access the same location, hardly a 
+> problem...
 
-  2. As we're only using .driver_data for num_gpio at this time, just
-  place them in tc3589x_id as you have done for tc3589x.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-Or, my least favourate alternitive, but still an improvment with
-regards to saving code:
+Thanks,
 
-  3. Again, as all of this extra code is only used for pulling out
-  num_gpio, group the devices by num_gpio:
-
-> +	switch (id->driver_data) {
-> +	case TC3589X_TC35893:
-> +	case TC3589X_TC35895:
-> +	case TC3589X_TC35896:
-> +		tc3589x->num_gpio = 20;
-> +		break;
-> +	case TC3589X_TC35890:
-> +	case TC3589X_TC35892:
-> +	case TC3589X_TC35894:
-> +	case TC3589X_UNKNOWN:
-> +	default:
-> +		tc3589x->num_gpio = 24;
-> +		break;
-> +	}
-
-My personal preference is 1 and 2 in equal measure.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Ingo
