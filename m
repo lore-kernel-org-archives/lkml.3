@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3JPGH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:07:58 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57140 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750862Ab3JPGH5 (ORCPT
+	id S1752974Ab3JPGJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:09:38 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39796 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab3JPGJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:07:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApQVANcsXlJ5LFuj/2dsb2JhbABagwc4riUDjxuFRIEeF3SCJQEBBAE6HCMFCwgDDgoJJQ8FJQMhE4gABQ2+FxaMZoJVB4MfgQYDmAOSA4M4KA
-Date: Wed, 16 Oct 2013 17:07:50 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Akira Hayakawa <ruby.wktk@gmail.com>, dm-devel@redhat.com,
-        devel@driverdev.osuosl.org, thornber@redhat.com, snitzer@redhat.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com, joe@perches.com, akpm@linux-foundation.org,
-        m.chehab@samsung.com, ejt@redhat.com, agk@redhat.com,
-        cesarb@cesarb.net, tj@kernel.org, xfs@oss.sgi.com
-Subject: Re: A review of dm-writeboost
-Message-ID: <20131016060750.GE4446@dastard>
-References: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com>
- <52550841.5030001@gmail.com>
- <525BAB32.5050901@gmail.com>
- <alpine.LRH.2.02.1310151950530.4664@file01.intranet.prod.int.rdu2.redhat.com>
+	Wed, 16 Oct 2013 02:09:36 -0400
+Date: Wed, 16 Oct 2013 08:09:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 1/6] net: ip4_datagram_connect: Use correct form of
+ statistics update
+Message-ID: <20131016060932.GA21041@gmail.com>
+References: <20131015174722.615394057@linux.com>
+ <20131015174745.197380080@linux.com>
+ <1381862199.2045.51.camel@edumazet-glaptop.roam.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1310151950530.4664@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <1381862199.2045.51.camel@edumazet-glaptop.roam.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs@oss.sgi.com]
 
-On Tue, Oct 15, 2013 at 08:01:45PM -0400, Mikulas Patocka wrote:
-> On Mon, 14 Oct 2013, Akira Hayakawa wrote:
-> > But, XFS stalls ...
-> > -------------------
-> > For testing,
-> > I manually turns `blockup` to 1
-> > when compiling Ruby is in progress
-> > on XFS on a writeboost device.
-> > As soon as I do it,
-> > XFS starts to dump error message 
-> > like "metadata I/O error: ... ("xlog_iodone") error ..."
-> > and after few seconds it then starts to dump
-> > like "BUG: soft lockup -CPU#3 stuck for 22s!".
-> > The system stalls and doesn't accept the keyboard.
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> On Tue, 2013-10-15 at 12:47 -0500, Christoph Lameter wrote:
+> > plain text document attachment (fix_snmp)
+> > ip4_datagram_connect is called with BH processing enabled. Therefore
+> > we cannot use IP_INC_STATS_BH but must use IP_INC_STATS which disables
+> > BH handling before incrementing the counter.
 > > 
-> > I think this behavior is caused by
-> > the device always returning -EIO after turning 
-> > the variable to 1.
-> > But why XFS goes stalling on I/O error?
+> > The following trace is triggered without this patch:
 > 
-> Because it is bloated and buggy.
+> > Cc: Eric Dumazet <edumazet@google.com>
+> > Cc: netdev@vger.kernel.org
+> > Cc: David Miller <davem@davemloft.net>
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Strange, I thought I already Acked it...
+> 
+> Acked-by: Eric Dumazet <edumazet@google.com>
 
-How did I know you'd take that cheap shot, Mikulas? You are so
-predictable...
+Christoph, _please_ pick up people's Acked-by's in the future ... This is 
+basic courtesy towards reviewers.
 
-> We have bug 924301 for XFS crash on I/O 
-> error...
+Thanks,
 
-Which is a problem with memory corruption after filling a dm
-snapshot volume to 100% and shortly after XFS has shut down the
-kernel panics from memory corruption. Can't be reproduced without
-filling the dm-snapshot volume to 100%, can't be reproduced with any
-other filesystem. Crashes are also occurring randomly in printk and
-the worker thread infrastructure. Memory and list poisoning clearly
-indicates worker thread lists have freed objects on them. There are
-lockdep messages from the DM snapshot code, etc.
-
-There's actually very little to point at XFS problems other than the
-first hang that was reported where XFS was stuck in a tight loop due
-to memory corruption.  It reminds me of a very similar bug report
-and triage we went through last week:
-
-http://oss.sgi.com/pipermail/xfs/2013-October/030681.html
-
-Further analysis and bisects pointed to the zram driver being buggy,
-not XFS:
-
-http://oss.sgi.com/pipermail/xfs/2013-October/030707.html
-
-XFS has historically exposing bugs in block device drivers that no
-other filesystem exposes, and so when a new block device driver gets
-tested with XFS and we start seeing memory corruption symptoms, it's
-a fair bet that it's not XFS that is causing it....
-
-Just sayin'.
-
----
-
-Akira, can you please post the entire set of messages you are
-getting when XFS showing problems? That way I can try to confirm
-whether it's a regression in XFS or something else.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+	Ingo
