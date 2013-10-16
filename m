@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935172Ab3JPSFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:05:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35805 "EHLO
+	id S1761609Ab3JPRqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35553 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761300Ab3JPRqJ (ORCPT
+	with ESMTP id S1761300Ab3JPRpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:09 -0400
+	Wed, 16 Oct 2013 13:45:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linn Crosetto <linn@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 69/69] x86: avoid remapping data in parse_setup_data()
-Date: Wed, 16 Oct 2013 10:45:18 -0700
-Message-Id: <20131016174321.349642916@linuxfoundation.org>
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [ 20/69] ARC: Fix signal frame management for SA_SIGINFO
+Date: Wed, 16 Oct 2013 10:44:29 -0700
+Message-Id: <20131016174315.362128296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -29,109 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linn Crosetto <linn@hp.com>
+From: Christian Ruppert <christian.ruppert@abilis.com>
 
-commit 30e46b574a1db7d14404e52dca8e1aa5f5155fd2 upstream.
+commit 10469350e345599dfef3fa78a7c19fb230e674c1 upstream.
 
-Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
-larger than early_memremap() is able to handle, which is currently
-limited to 256kB. If this occurs it leads to a NULL dereference in
-parse_setup_data().
+Previously, when a signal was registered with SA_SIGINFO, parameters 2
+and 3 of the signal handler were written to registers r1 and r2 before
+the register set was saved. This led to corruption of these two
+registers after returning from the signal handler (the wrong values were
+restored).
+With this patch, registers are now saved before any parameters are
+passed, thus maintaining the processor state from before signal entry.
 
-To avoid this, remap the setup_data header and allow parsing functions
-for individual types to handle their own data remapping.
-
-Signed-off-by: Linn Crosetto <linn@hp.com>
-Link: http://lkml.kernel.org/r/1376430401-67445-1-git-send-email-linn@hp.com
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |    5 ++++-
- arch/x86/kernel/setup.c     |   19 ++++++++-----------
- 3 files changed, 13 insertions(+), 13 deletions(-)
+ arch/arc/kernel/signal.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -29,7 +29,7 @@ extern void e820_setup_gap(void);
- extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
- 			unsigned long start_addr, unsigned long long end_addr);
- struct setup_data;
--extern void parse_e820_ext(struct setup_data *data);
-+extern void parse_e820_ext(u64 phys_addr, u32 data_len);
- 
- #if defined(CONFIG_X86_64) || \
- 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -658,15 +658,18 @@ __init void e820_setup_gap(void)
-  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
-  * linked list of struct setup_data, which is parsed here.
-  */
--void __init parse_e820_ext(struct setup_data *sdata)
-+void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+--- a/arch/arc/kernel/signal.c
++++ b/arch/arc/kernel/signal.c
+@@ -101,7 +101,6 @@ SYSCALL_DEFINE0(rt_sigreturn)
  {
- 	int entries;
- 	struct e820entry *extmap;
-+	struct setup_data *sdata;
+ 	struct rt_sigframe __user *sf;
+ 	unsigned int magic;
+-	int err;
+ 	struct pt_regs *regs = current_pt_regs();
  
-+	sdata = early_memremap(phys_addr, data_len);
- 	entries = sdata->len / sizeof(struct e820entry);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	early_iounmap(sdata, data_len);
- 	printk(KERN_INFO "e820: extended physical RAM map:\n");
- 	e820_print_map("extended");
- }
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -426,25 +426,23 @@ static void __init reserve_initrd(void)
- static void __init parse_setup_data(void)
- {
- 	struct setup_data *data;
--	u64 pa_data;
-+	u64 pa_data, pa_next;
+ 	/* Always make any pending restarted system calls return -EINTR */
+@@ -119,15 +118,16 @@ SYSCALL_DEFINE0(rt_sigreturn)
+ 	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
+ 		goto badframe;
  
- 	pa_data = boot_params.hdr.setup_data;
- 	while (pa_data) {
--		u32 data_len, map_len;
-+		u32 data_len, map_len, data_type;
+-	err = restore_usr_regs(regs, sf);
+-	err |= __get_user(magic, &sf->sigret_magic);
+-	if (err)
++	if (__get_user(magic, &sf->sigret_magic))
+ 		goto badframe;
  
- 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
- 			      (u64)sizeof(struct setup_data));
- 		data = early_memremap(pa_data, map_len);
- 		data_len = data->len + sizeof(struct setup_data);
--		if (data_len > map_len) {
--			early_iounmap(data, map_len);
--			data = early_memremap(pa_data, data_len);
--			map_len = data_len;
--		}
-+		data_type = data->type;
-+		pa_next = data->next;
-+		early_iounmap(data, map_len);
+ 	if (unlikely(is_do_ss_needed(magic)))
+ 		if (restore_altstack(&sf->uc.uc_stack))
+ 			goto badframe;
  
--		switch (data->type) {
-+		switch (data_type) {
- 		case SETUP_E820_EXT:
--			parse_e820_ext(data);
-+			parse_e820_ext(pa_data, data_len);
- 			break;
- 		case SETUP_DTB:
- 			add_dtb(pa_data);
-@@ -452,8 +450,7 @@ static void __init parse_setup_data(void
- 		default:
- 			break;
- 		}
--		pa_data = data->next;
--		early_iounmap(data, map_len);
-+		pa_data = pa_next;
++	if (restore_usr_regs(regs, sf))
++		goto badframe;
++
+ 	/* Don't restart from sigreturn */
+ 	syscall_wont_restart(regs);
+ 
+@@ -191,6 +191,15 @@ setup_rt_frame(int signo, struct k_sigac
+ 		return 1;
+ 
+ 	/*
++	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
++	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
++	 * during signal handler execution. This works for SA_SIGINFO as well
++	 * although the semantics are now overloaded (the same reg state can be
++	 * inspected by userland: but are they allowed to fiddle with it ?
++	 */
++	err |= stash_usr_regs(sf, regs, set);
++
++	/*
+ 	 * SA_SIGINFO requires 3 args to signal handler:
+ 	 *  #1: sig-no (common to any handler)
+ 	 *  #2: struct siginfo
+@@ -213,14 +222,6 @@ setup_rt_frame(int signo, struct k_sigac
+ 		magic = MAGIC_SIGALTSTK;
  	}
- }
  
+-	/*
+-	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
+-	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
+-	 * during signal handler execution. This works for SA_SIGINFO as well
+-	 * although the semantics are now overloaded (the same reg state can be
+-	 * inspected by userland: but are they allowed to fiddle with it ?
+-	 */
+-	err |= stash_usr_regs(sf, regs, set);
+ 	err |= __put_user(magic, &sf->sigret_magic);
+ 	if (err)
+ 		return err;
 
 
