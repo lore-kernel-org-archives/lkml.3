@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091Ab3JPRqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35557 "EHLO
+	id S935092Ab3JPSDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:03:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761301Ab3JPRpf (ORCPT
+	with ESMTP id S933970Ab3JPRqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:35 -0400
+	Wed, 16 Oct 2013 13:46:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 21/69] ARC: Ignore ptrace SETREGSET request for synthetic register "stop_pc"
-Date: Wed, 16 Oct 2013 10:44:30 -0700
-Message-Id: <20131016174315.498894178@linuxfoundation.org>
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 07/50] i2c: omap: Clear ARDY bit twice
+Date: Wed, 16 Oct 2013 10:44:53 -0700
+Message-Id: <20131016174359.269344817@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
+In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
+References: <20131016174358.335646140@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-commit 5b24282846c064ee90d40fcb3a8f63b8e754fd28 upstream.
+commit 4cdbf7d346e7461c3b93a26707c852e2c9db3753 upstream.
 
-ARCompact TRAP_S insn used for breakpoints, commits before exception is
-taken (updating architectural PC). So ptregs->ret contains next-PC and
-not the breakpoint PC itself. This is different from other restartable
-exceptions such as TLB Miss where ptregs->ret has exact faulting PC.
-gdb needs to know exact-PC hence ARC ptrace GETREGSET provides for
-@stop_pc which returns ptregs->ret vs. EFA depending on the
-situation.
+Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
+"i2c-omap: Double clear of ARDY status in IRQ handler"
+added a workaround for undocumented errata ProDB0017052.
+But then commit 1d7afc95946487945cc7f5019b41255b72224b70
+"i2c: omap: ack IRQ in parts" refactored code and missed
+one of ARDY clearings. So current code violates errata.
+It causes often i2c bus timeouts on my Pandaboard.
 
-However, writing stop_pc (SETREGSET request), which updates ptregs->ret
-doesn't makes sense stop_pc doesn't always correspond to that reg as
-described above.
+This patch adds a second clearing in place.
 
-This was not an issue so far since user_regs->ret / user_regs->stop_pc
-had same value and both writing to ptregs->ret was OK, needless, but NOT
-broken, hence not observed.
-
-With gdb "jump", they diverge, and user_regs->ret updating ptregs is
-overwritten immediately with stop_pc, which this patch fixes.
-
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/ptrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-omap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arc/kernel/ptrace.c
-+++ b/arch/arc/kernel/ptrace.c
-@@ -92,7 +92,7 @@ static int genregs_set(struct task_struc
- 	REG_IN_CHUNK(scratch, callee, ptregs);	/* pt_regs[bta..orig_r8] */
- 	REG_IN_CHUNK(callee, efa, cregs);	/* callee_regs[r25..r13] */
- 	REG_IGNORE_ONE(efa);			/* efa update invalid */
--	REG_IN_ONE(stop_pc, &ptregs->ret);	/* stop_pc: PC update */
-+	REG_IGNORE_ONE(stop_pc);			/* PC updated via @ret */
- 
- 	return ret;
- }
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -944,6 +944,9 @@ omap_i2c_isr_thread(int this_irq, void *
+ 		/*
+ 		 * ProDB0017052: Clear ARDY bit twice
+ 		 */
++		if (stat & OMAP_I2C_STAT_ARDY)
++			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
++
+ 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
+ 					OMAP_I2C_STAT_AL)) {
+ 			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
 
 
