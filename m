@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759125Ab3JPCHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:07:16 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33118 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758585Ab3JPCHK (ORCPT
+	id S1759859Ab3JPCH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:07:26 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49229 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759133Ab3JPCHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:07:10 -0400
+	Tue, 15 Oct 2013 22:07:17 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
@@ -14,108 +14,181 @@ Cc: <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
         Michael Ellerman <michaele@au1.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 02/10][v6] powerpc/Power7: detect load/store instructions
-Date: Tue, 15 Oct 2013 19:06:34 -0700
-Message-Id: <1381889202-16826-3-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH 09/10][v6] powerpc/perf: Export Power8 memory hierarchy info to user space.
+Date: Tue, 15 Oct 2013 19:06:41 -0700
+Message-Id: <1381889202-16826-10-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101602-6688-0000-0000-00000293B355
+x-cbid: 13101602-7164-0000-0000-000002794C66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement instr_is_load_store_2_06() to detect whether a given instruction
-is one of the fixed-point or floating-point load/store instructions in the
-POWER Instruction Set Architecture v2.06.
+On Power8, the LDST field in SIER identifies the memory hierarchy level
+(eg: L1, L2 etc), from which a data-cache miss for a marked instruction
+was satisfied.
 
-This function will be used in a follow-on patch to save memory hierarchy
-information of the load/store on a Power7 system. (Power8 systems set some
-bits in the SIER to identify load/store operations and hence don't need a
-similar functionality).
+Use the 'perf_mem_data_src' object to export this hierarchy level to user
+space. Fortunately, the memory hierarchy levels in Power8 map fairly easily
+into the arch-neutral levels as described by the ldst_src_map[] table.
 
-Based on optimized code from Michael Ellerman and comments from Tom Musta.
+Usage:
 
+	perf record -d -e 'cpu/PM_MRK_GRP_CMPL/' <application>
+	perf report -n --mem-mode --sort=mem,sym,dso,symbol_daddr,dso_daddr"
+
+		For samples involving load/store instructions, the memory
+		hierarchy level is shown as "L1 hit", "Remote RAM hit" etc.
+	# or
+
+	perf record --data <application>
+	perf report -D
+
+		Sample records contain a 'data_src' field which encodes the
+		memory hierarchy level: Eg: data_src 0x442 indicates
+		MEM_OP_LOAD, MEM_LVL_HIT, MEM_LVL_L2 (i.e load hit L2).
+
+Note that the PMU event PM_MRK_GRP_CMPL tracks all marked group completions
+events. While some of these are loads and stores, others like 'add'
+instructions may also be sampled. One alternative of sampling on
+PM_MRK_GRP_CMPL and throwing away non-loads and non-store samples could
+yield an inconsistent profile of the application.
+
+As the precise semantics of 'perf mem -t load' or 'perf mem -t store' (which
+require sampling only loads or only stores) cannot be implemented on Power,
+we don't implement 'perf mem' on Power for now.
+
+Thanks to input from Stephane Eranian, Michael Ellerman and Michael Neuling.
+
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
-Changelog[v6]
-	- [Michael Ellerman, Tom Musta]: Optmize the implementation to
-	  avoid for loop.
+Changelog[v2]:
+	Drop support for 'perf mem' for Power (use perf-record and perf-report
+	directly)
 
- arch/powerpc/include/asm/code-patching.h |    1 +
- arch/powerpc/lib/code-patching.c         |   45 ++++++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
+ arch/powerpc/include/asm/perf_event_server.h |    2 +
+ arch/powerpc/perf/core-book3s.c              |   11 ++++++
+ arch/powerpc/perf/power8-pmu.c               |   53 ++++++++++++++++++++++++++
+ 3 files changed, 66 insertions(+)
 
-diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
-index a6f8c7a..9cc3ef1 100644
---- a/arch/powerpc/include/asm/code-patching.h
-+++ b/arch/powerpc/include/asm/code-patching.h
-@@ -34,6 +34,7 @@ int instr_is_branch_to_addr(const unsigned int *instr, unsigned long addr);
- unsigned long branch_target(const unsigned int *instr);
- unsigned int translate_branch(const unsigned int *dest,
- 			      const unsigned int *src);
-+int instr_is_load_store_2_06(const unsigned int *instr);
- 
- static inline unsigned long ppc_function_entry(void *func)
- {
-diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
-index 2bc9db3..49fb9d7 100644
---- a/arch/powerpc/lib/code-patching.c
-+++ b/arch/powerpc/lib/code-patching.c
-@@ -159,6 +159,51 @@ unsigned int translate_branch(const unsigned int *dest, const unsigned int *src)
- 	return 0;
+diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
+index d7b3419..5f2c449 100644
+--- a/arch/powerpc/include/asm/perf_event_server.h
++++ b/arch/powerpc/include/asm/perf_event_server.h
+@@ -38,6 +38,8 @@ struct power_pmu {
+ 	void            (*config_bhrb)(u64 pmu_bhrb_filter);
+ 	void		(*disable_pmc)(unsigned int pmc, unsigned long mmcr[]);
+ 	int		(*limited_pmc_event)(u64 event_id);
++	void		(*get_mem_data_src)(union perf_mem_data_src *dsrc,
++				struct pt_regs *regs);
+ 	u32		flags;
+ 	const struct attribute_group	**attr_groups;
+ 	int		n_generic;
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index eeae308..5221ba1 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1696,6 +1696,13 @@ ssize_t power_events_sysfs_show(struct device *dev,
+ 	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
  }
  
-+/*
-+ * Determine if the op code in the instruction corresponds to a load or
-+ * store instruction. Ignore the vector load instructions like evlddepx,
-+ * evstddepx for now.
-+ *
-+ * This function is valid for POWER ISA 2.06.
-+ *
-+ * Reference:	PowerISA_V2.06B_Public.pdf, Sections 3.3.2 through 3.3.6
-+ *		and 4.6.2 through 4.6.4, Appendix F (Opcode Maps).
-+ */
-+int instr_is_load_store_2_06(const unsigned int *instr)
++static inline void power_get_mem_data_src(union perf_mem_data_src *dsrc,
++				struct pt_regs *regs)
 +{
-+	unsigned int op, upper, lower;
-+
-+	op = instr_opcode(*instr);
-+
-+	if ((op >= 32 && op <= 58) || (op == 61 || op == 62))
-+		return true;
-+
-+	if (op != 31)
-+		return false;
-+
-+	upper = op >> 5;
-+	lower = op & 0x1f;
-+
-+	/* Short circuit as many misses as we can */
-+	if (lower < 3 || lower > 23)
-+		return false;
-+
-+	if (lower == 3) {
-+		if (upper >= 16)
-+			return true;
-+
-+		return false;
-+	}
-+
-+	if (lower == 7 || lower == 12)
-+		return true;
-+
-+	if (lower >= 20) /* && lower <= 23 (implicit) */
-+		return true;
-+
-+	return false;
++	if  (ppmu->get_mem_data_src)
++		ppmu->get_mem_data_src(dsrc, regs);
 +}
 +
+ struct pmu power_pmu = {
+ 	.pmu_enable	= power_pmu_enable,
+ 	.pmu_disable	= power_pmu_disable,
+@@ -1777,6 +1784,10 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 			data.br_stack = &cpuhw->bhrb_stack;
+ 		}
  
- #ifdef CONFIG_CODE_PATCHING_SELFTEST
++		if (event->attr.sample_type & PERF_SAMPLE_DATA_SRC &&
++						ppmu->get_mem_data_src)
++			ppmu->get_mem_data_src(&data.data_src, regs);
++
+ 		if (perf_event_overflow(event, &data, regs))
+ 			power_pmu_stop(event, 0);
+ 	}
+diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+index 5141d97..c25b5c3 100644
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -541,6 +541,58 @@ static struct attribute_group power8_pmu_events_group = {
+ 	.attrs = power8_events_attr,
+ };
  
++#define POWER8_SIER_TYPE_SHIFT	15
++#define POWER8_SIER_TYPE_MASK	(0x7LL << POWER8_SIER_TYPE_SHIFT)
++
++#define POWER8_SIER_LDST_SHIFT	1
++#define POWER8_SIER_LDST_MASK	(0x7LL << POWER8_SIER_LDST_SHIFT)
++
++#define P(a, b)			PERF_MEM_S(a, b)
++#define PLH(a, b)		(P(OP, LOAD) | P(LVL, HIT) | P(a, b))
++#define PSM(a, b)		(P(OP, STORE) | P(LVL, MISS) | P(a, b))
++
++/*
++ * Power8 interpretations:
++ * REM_CCE1: 1-hop indicates L2/L3 cache of a different core on same chip
++ * REM_CCE2: 2-hop indicates different chip or different node.
++ */
++static u64 ldst_src_map[] = {
++	/* 000 */	P(LVL, NA),
++
++	/* 001 */	PLH(LVL, L1),
++	/* 010 */	PLH(LVL, L2),
++	/* 011 */	PLH(LVL, L3),
++	/* 100 */	PLH(LVL, LOC_RAM),
++	/* 101 */	PLH(LVL, REM_CCE1),
++	/* 110 */	PLH(LVL, REM_CCE2),
++
++	/* 111 */	PSM(LVL, L1),
++};
++
++static inline bool is_load_store_inst(u64 sier)
++{
++	u64 val;
++	val = (sier & POWER8_SIER_TYPE_MASK) >> POWER8_SIER_TYPE_SHIFT;
++
++	/* 1 = load, 2 = store */
++	return val == 1 || val == 2;
++}
++
++static void power8_get_mem_data_src(union perf_mem_data_src *dsrc,
++			struct pt_regs *regs)
++{
++	u64 idx;
++	u64 sier;
++
++	sier = mfspr(SPRN_SIER);
++
++	if (is_load_store_inst(sier)) {
++		idx = (sier & POWER8_SIER_LDST_MASK) >> POWER8_SIER_LDST_SHIFT;
++
++		dsrc->val |= ldst_src_map[idx];
++	}
++}
++
+ PMU_FORMAT_ATTR(event,		"config:0-49");
+ PMU_FORMAT_ATTR(pmcxsel,	"config:0-7");
+ PMU_FORMAT_ATTR(mark,		"config:8");
+@@ -639,6 +691,7 @@ static struct power_pmu power8_pmu = {
+ 	.get_constraint		= power8_get_constraint,
+ 	.get_alternatives	= power8_get_alternatives,
+ 	.disable_pmc		= power8_disable_pmc,
++	.get_mem_data_src	= power8_get_mem_data_src,
+ 	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_BHRB | PPMU_EBB,
+ 	.n_generic		= ARRAY_SIZE(power8_generic_events),
+ 	.generic_events		= power8_generic_events,
 -- 
 1.7.9.5
 
