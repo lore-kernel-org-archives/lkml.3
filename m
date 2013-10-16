@@ -1,149 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934652Ab3JPOF7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:05:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39598 "EHLO
+	id S934754Ab3JPOGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:06:21 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39682 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934592Ab3JPOFx (ORCPT
+	with ESMTP id S934649Ab3JPOF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:05:53 -0400
+	Wed, 16 Oct 2013 10:05:58 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH V9 22/33] ext4: add support for read_iter and write_iter
-Date: Wed, 16 Oct 2013 09:04:35 -0500
-Message-Id: <1381932286-14978-23-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V9 12/33] dio: add bio_vec support to __blockdev_direct_IO()
+Date: Wed, 16 Oct 2013 09:04:25 -0500
+Message-Id: <1381932286-14978-13-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use the generic_file_read_iter(), create ext4_file_write_iter() based on
-ext4_file_write(), and make ext4_file_write() a wrapper around
-ext4_file_write_iter().
+The trick here is to initialize the dio state so that do_direct_IO()
+consumes the pages we provide and never tries to map user pages.  This
+is done by making sure that final_block_in_request covers the page that
+we set in the dio.  do_direct_IO() will return before running out of
+pages.
+
+The caller is responsible for dirtying these pages, if needed.  We add
+an option to the dio struct that makes sure we only dirty pages when
+we're operating on iovecs of user addresses.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
 ---
- fs/ext4/file.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ fs/direct-io.c | 206 +++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 148 insertions(+), 58 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 3da2194..2ab3dcb 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -74,12 +74,11 @@ void ext4_unwritten_wait(struct inode *inode)
-  * or one thread will zero the other's data, causing corruption.
-  */
- static int
--ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
--		   unsigned long nr_segs, loff_t pos)
-+ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
- {
- 	struct super_block *sb = inode->i_sb;
- 	int blockmask = sb->s_blocksize - 1;
--	size_t count = iov_length(iov, nr_segs);
-+	size_t count = iov_iter_count(iter);
- 	loff_t final_size = pos + count;
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 1cf8f17..a142314 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -127,6 +127,7 @@ struct dio {
+ 	spinlock_t bio_lock;		/* protects BIO fields below */
+ 	int page_errors;		/* errno from get_user_pages() */
+ 	int is_async;			/* is IO async ? */
++	int should_dirty;		/* should we mark read pages dirty? */
+ 	bool defer_completion;		/* defer AIO completion to workqueue? */
+ 	int io_error;			/* IO error in completion path */
+ 	unsigned long refcount;		/* direct_io_worker() and bios */
+@@ -403,7 +404,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
+ 	dio->refcount++;
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
  
- 	if (pos >= inode->i_size)
-@@ -92,8 +91,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
- }
+-	if (dio->is_async && dio->rw == READ)
++	if (dio->is_async && dio->rw == READ && dio->should_dirty)
+ 		bio_set_pages_dirty(bio);
  
- static ssize_t
--ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
--		    unsigned long nr_segs, loff_t pos)
-+ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
-+		    loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-@@ -101,11 +100,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 	int unaligned_aio = 0;
- 	ssize_t ret;
- 	int overwrite = 0;
--	size_t length = iov_length(iov, nr_segs);
-+	size_t length = iov_iter_count(iter);
+ 	if (sdio->submit_io)
+@@ -474,13 +475,14 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 	if (!uptodate)
+ 		dio->io_error = -EIO;
  
- 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
- 	    !is_sync_kiocb(iocb))
--		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
-+		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
+-	if (dio->is_async && dio->rw == READ) {
++	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+ 		bio_for_each_segment_all(bvec, bio, i) {
+ 			struct page *page = bvec->bv_page;
  
- 	/* Unaligned direct AIO must be serialized; see comment above */
- 	if (unaligned_aio) {
-@@ -146,7 +145,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 			overwrite = 1;
- 	}
- 
--	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
-+	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
- 	if (ret > 0) {
-@@ -165,8 +164,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- }
- 
- static ssize_t
--ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
--		unsigned long nr_segs, loff_t pos)
-+ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
- {
- 	struct inode *inode = file_inode(iocb->ki_filp);
- 	ssize_t ret;
-@@ -178,22 +176,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--		size_t length = iov_length(iov, nr_segs);
-+		size_t length = iov_iter_count(iter);
- 
- 		if ((pos > sbi->s_bitmap_maxbytes ||
- 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
- 			return -EFBIG;
- 
- 		if (pos + length > sbi->s_bitmap_maxbytes) {
--			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
--					      sbi->s_bitmap_maxbytes - pos);
-+			ret = iov_iter_shorten(iter,
-+					       sbi->s_bitmap_maxbytes - pos);
-+			if (ret)
-+				return ret;
+-			if (dio->rw == READ && !PageCompound(page))
++			if (dio->rw == READ && !PageCompound(page) &&
++			    dio->should_dirty)
+ 				set_page_dirty_lock(page);
+ 			page_cache_release(page);
  		}
+@@ -1081,6 +1083,101 @@ static inline int drop_refcount(struct dio *dio)
+ 	return ret2;
+ }
+ 
++static ssize_t direct_IO_iovec(const struct iovec *iov, unsigned long nr_segs,
++			       struct dio *dio, struct dio_submit *sdio,
++			       unsigned blkbits, struct buffer_head *map_bh)
++{
++	size_t bytes;
++	ssize_t retval = 0;
++	int seg;
++	unsigned long user_addr;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		user_addr = (unsigned long)iov[seg].iov_base;
++		sdio->pages_in_io +=
++			((user_addr + iov[seg].iov_len + PAGE_SIZE-1) /
++				PAGE_SIZE - user_addr / PAGE_SIZE);
++	}
++
++	dio->should_dirty = 1;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		user_addr = (unsigned long)iov[seg].iov_base;
++		sdio->size += bytes = iov[seg].iov_len;
++
++		/* Index into the first page of the first block */
++		sdio->first_block_in_page = (user_addr & ~PAGE_MASK) >> blkbits;
++		sdio->final_block_in_request = sdio->block_in_file +
++						(bytes >> blkbits);
++		/* Page fetching state */
++		sdio->head = 0;
++		sdio->tail = 0;
++		sdio->curr_page = 0;
++
++		sdio->total_pages = 0;
++		if (user_addr & (PAGE_SIZE-1)) {
++			sdio->total_pages++;
++			bytes -= PAGE_SIZE - (user_addr & (PAGE_SIZE - 1));
++		}
++		sdio->total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
++		sdio->curr_user_address = user_addr;
++
++		retval = do_direct_IO(dio, sdio, map_bh);
++
++		dio->result += iov[seg].iov_len -
++			((sdio->final_block_in_request - sdio->block_in_file) <<
++					blkbits);
++
++		if (retval) {
++			dio_cleanup(dio, sdio);
++			break;
++		}
++	} /* end iovec loop */
++
++	return retval;
++}
++
++static ssize_t direct_IO_bvec(struct bio_vec *bvec, unsigned long nr_segs,
++			      struct dio *dio, struct dio_submit *sdio,
++			      unsigned blkbits, struct buffer_head *map_bh)
++{
++	ssize_t retval = 0;
++	int seg;
++
++	sdio->pages_in_io += nr_segs;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		sdio->size += bvec[seg].bv_len;
++
++		/* Index into the first page of the first block */
++		sdio->first_block_in_page = bvec[seg].bv_offset >> blkbits;
++		sdio->final_block_in_request = sdio->block_in_file +
++						(bvec[seg].bv_len  >> blkbits);
++		/* Page fetching state */
++		sdio->curr_page = 0;
++		page_cache_get(bvec[seg].bv_page);
++		dio->pages[0] = bvec[seg].bv_page;
++		sdio->head = 0;
++		sdio->tail = 1;
++
++		sdio->total_pages = 1;
++		sdio->curr_user_address = 0;
++
++		retval = do_direct_IO(dio, sdio, map_bh);
++
++		dio->result += bvec[seg].bv_len -
++			((sdio->final_block_in_request - sdio->block_in_file) <<
++					blkbits);
++
++		if (retval) {
++			dio_cleanup(dio, sdio);
++			break;
++		}
++	}
++
++	return retval;
++}
++
+ /*
+  * This is a library function for use by filesystem drivers.
+  *
+@@ -1122,11 +1219,8 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	loff_t end = offset;
+ 	struct dio *dio;
+ 	struct dio_submit sdio = { 0, };
+-	unsigned long user_addr;
+-	size_t bytes;
+ 	struct buffer_head map_bh = { 0, };
+ 	struct blk_plug plug;
+-	const struct iovec *iov = iov_iter_iovec(iter);
+ 	unsigned long nr_segs = iter->nr_segs;
+ 
+ 	if (rw & WRITE)
+@@ -1146,20 +1240,49 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
  	}
  
- 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
--		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
-+		ret = ext4_file_dio_write(iocb, iter, pos);
- 	else
--		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
-+		ret = generic_file_write_iter(iocb, iter, pos);
+ 	/* Check the memory alignment.  Blocks cannot straddle pages */
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		addr = (unsigned long)iov[seg].iov_base;
+-		size = iov[seg].iov_len;
+-		end += size;
+-		if (unlikely((addr & blocksize_mask) ||
+-			     (size & blocksize_mask))) {
+-			if (bdev)
+-				blkbits = blksize_bits(
+-					 bdev_logical_block_size(bdev));
+-			blocksize_mask = (1 << blkbits) - 1;
+-			if ((addr & blocksize_mask) || (size & blocksize_mask))
+-				goto out;
++	if (iov_iter_has_iovec(iter)) {
++		const struct iovec *iov = iov_iter_iovec(iter);
++
++		for (seg = 0; seg < nr_segs; seg++) {
++			addr = (unsigned long)iov[seg].iov_base;
++			size = iov[seg].iov_len;
++			end += size;
++			if (unlikely((addr & blocksize_mask) ||
++				     (size & blocksize_mask))) {
++				if (bdev)
++					blkbits = blksize_bits(
++						 bdev_logical_block_size(bdev));
++				blocksize_mask = (1 << blkbits) - 1;
++				if ((addr & blocksize_mask) ||
++				    (size & blocksize_mask))
++					goto out;
++			}
+ 		}
+-	}
++	} else if (iov_iter_has_bvec(iter)) {
++		/*
++		 * Is this necessary, or can we trust the in-kernel
++		 * caller? Can we replace this with
++		 *	end += iov_iter_count(iter); ?
++		 */
++		struct bio_vec *bvec = iov_iter_bvec(iter);
++
++		for (seg = 0; seg < nr_segs; seg++) {
++			addr = bvec[seg].bv_offset;
++			size = bvec[seg].bv_len;
++			end += size;
++			if (unlikely((addr & blocksize_mask) ||
++				     (size & blocksize_mask))) {
++				if (bdev)
++					blkbits = blksize_bits(
++						 bdev_logical_block_size(bdev));
++				blocksize_mask = (1 << blkbits) - 1;
++				if ((addr & blocksize_mask) ||
++				    (size & blocksize_mask))
++					goto out;
++			}
++		}
++	} else
++		BUG();
  
- 	return ret;
- }
-@@ -594,8 +594,8 @@ const struct file_operations ext4_file_operations = {
- 	.llseek		= ext4_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read	= generic_file_aio_read,
--	.aio_write	= ext4_file_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= ext4_file_write_iter,
- 	.unlocked_ioctl = ext4_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext4_compat_ioctl,
+ 	/* watch out for a 0 len io from a tricksy fs */
+ 	if (rw == READ && end == offset)
+@@ -1253,47 +1376,14 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	if (unlikely(sdio.blkfactor))
+ 		sdio.pages_in_io = 2;
+ 
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		user_addr = (unsigned long)iov[seg].iov_base;
+-		sdio.pages_in_io +=
+-			((user_addr + iov[seg].iov_len + PAGE_SIZE-1) /
+-				PAGE_SIZE - user_addr / PAGE_SIZE);
+-	}
+-
+ 	blk_start_plug(&plug);
+ 
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		user_addr = (unsigned long)iov[seg].iov_base;
+-		sdio.size += bytes = iov[seg].iov_len;
+-
+-		/* Index into the first page of the first block */
+-		sdio.first_block_in_page = (user_addr & ~PAGE_MASK) >> blkbits;
+-		sdio.final_block_in_request = sdio.block_in_file +
+-						(bytes >> blkbits);
+-		/* Page fetching state */
+-		sdio.head = 0;
+-		sdio.tail = 0;
+-		sdio.curr_page = 0;
+-
+-		sdio.total_pages = 0;
+-		if (user_addr & (PAGE_SIZE-1)) {
+-			sdio.total_pages++;
+-			bytes -= PAGE_SIZE - (user_addr & (PAGE_SIZE - 1));
+-		}
+-		sdio.total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+-		sdio.curr_user_address = user_addr;
+-
+-		retval = do_direct_IO(dio, &sdio, &map_bh);
+-
+-		dio->result += iov[seg].iov_len -
+-			((sdio.final_block_in_request - sdio.block_in_file) <<
+-					blkbits);
+-
+-		if (retval) {
+-			dio_cleanup(dio, &sdio);
+-			break;
+-		}
+-	} /* end iovec loop */
++	if (iov_iter_has_iovec(iter))
++		retval = direct_IO_iovec(iov_iter_iovec(iter), nr_segs, dio,
++					 &sdio, blkbits, &map_bh);
++	else
++		retval = direct_IO_bvec(iov_iter_bvec(iter), nr_segs, dio,
++					&sdio, blkbits, &map_bh);
+ 
+ 	if (retval == -ENOTBLK) {
+ 		/*
 -- 
 1.8.4
 
