@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934898Ab3JPOKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:10:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39655 "EHLO
+	id S934883Ab3JPOKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:10:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39667 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934628Ab3JPOF5 (ORCPT
+	with ESMTP id S934633Ab3JPOF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 10:05:57 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
@@ -12,157 +12,225 @@ To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V9 18/33] fs: create file_readable() and file_writable() functions
-Date: Wed, 16 Oct 2013 09:04:31 -0500
-Message-Id: <1381932286-14978-19-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH V9 21/33] ocfs2: add support for read_iter and write_iter
+Date: Wed, 16 Oct 2013 09:04:34 -0500
+Message-Id: <1381932286-14978-22-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create functions to simplify if file_ops contain either a read
-or aio_read op, or likewise write or aio_write. We will be adding
-read_iter and write_iter and don't need to be complicating the code
-in multiple places.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: ocfs2-devel@oss.oracle.com
 ---
- drivers/mtd/nand/nandsim.c          |  4 ++--
- drivers/usb/gadget/storage_common.c |  4 ++--
- fs/read_write.c                     | 14 +++++++-------
- include/linux/fs.h                  | 10 ++++++++++
- 4 files changed, 21 insertions(+), 11 deletions(-)
+ fs/ocfs2/aops.h        |  2 +-
+ fs/ocfs2/file.c        | 55 ++++++++++++++++++++++----------------------------
+ fs/ocfs2/ocfs2_trace.h |  6 +++---
+ 3 files changed, 28 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index bdc1d15..414f522 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -575,12 +575,12 @@ static int alloc_device(struct nandsim *ns)
- 		cfile = filp_open(cache_file, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
- 		if (IS_ERR(cfile))
- 			return PTR_ERR(cfile);
--		if (!cfile->f_op || (!cfile->f_op->read && !cfile->f_op->aio_read)) {
-+		if (!file_readable(cfile)) {
- 			NS_ERR("alloc_device: cache file not readable\n");
- 			err = -EINVAL;
- 			goto err_close;
+diff --git a/fs/ocfs2/aops.h b/fs/ocfs2/aops.h
+index f671e49..573f41d 100644
+--- a/fs/ocfs2/aops.h
++++ b/fs/ocfs2/aops.h
+@@ -74,7 +74,7 @@ static inline void ocfs2_iocb_set_rw_locked(struct kiocb *iocb, int level)
+ /*
+  * Using a named enum representing lock types in terms of #N bit stored in
+  * iocb->private, which is going to be used for communication between
+- * ocfs2_dio_end_io() and ocfs2_file_aio_write/read().
++ * ocfs2_dio_end_io() and ocfs2_file_write/read_iter().
+  */
+ enum ocfs2_iocb_lock_bits {
+ 	OCFS2_IOCB_RW_LOCK = 0,
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index d71903c..1d85492 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2217,15 +2217,13 @@ out:
+ 	return ret;
+ }
+ 
+-static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs,
+-				    loff_t pos)
++static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter,
++				     loff_t pos)
+ {
+ 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
+ 	int can_do_direct, has_refcount = 0;
+ 	ssize_t written = 0;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	loff_t old_size, *ppos = &iocb->ki_pos;
+ 	u32 old_clusters;
+@@ -2236,11 +2234,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
+ 	int unaligned_dio = 0;
+ 
+-	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
++	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
+ 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 		file->f_path.dentry->d_name.len,
+ 		file->f_path.dentry->d_name.name,
+-		(unsigned int)nr_segs);
++		(unsigned long)pos);
+ 
+ 	if (iocb->ki_nbytes == 0)
+ 		return 0;
+@@ -2340,28 +2338,24 @@ relock:
+ 	/* communicate with ocfs2_dio_end_io */
+ 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
+ 
+-	ret = generic_segment_checks(iov, &nr_segs, &ocount,
+-				     VERIFY_READ);
+-	if (ret)
+-		goto out_dio;
+ 
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	ret = generic_write_checks(file, ppos, &count,
+ 				   S_ISBLK(inode->i_mode));
+ 	if (ret)
+ 		goto out_dio;
+ 
+ 	if (direct_io) {
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+-						    ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, *ppos,
++						    ppos, count);
+ 		if (written < 0) {
+ 			ret = written;
+ 			goto out_dio;
  		}
--		if (!cfile->f_op->write && !cfile->f_op->aio_write) {
-+		if (!file_writable(cfile)) {
- 			NS_ERR("alloc_device: cache file not writeable\n");
- 			err = -EINVAL;
- 			goto err_close;
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 08a1a32..cd1431d 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -450,11 +450,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 	 * If we can't read the file, it's no good.
- 	 * If we can't write the file, use it read-only.
- 	 */
--	if (!(filp->f_op->read || filp->f_op->aio_read)) {
-+	if (!file_readable(filp)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
+ 	} else {
+ 		current->backing_dev_info = file->f_mapping->backing_dev_info;
+-		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+-						      ppos, count, 0);
++		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
++							   ppos, count, 0);
+ 		current->backing_dev_info = NULL;
  	}
--	if (!(filp->f_op->write || filp->f_op->aio_write))
-+	if (!file_writable(filp))
- 		ro = 1;
  
- 	size = i_size_read(inode->i_mapping->host);
-diff --git a/fs/read_write.c b/fs/read_write.c
-index e3cd280..f92f74f 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -384,7 +384,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+@@ -2517,7 +2511,7 @@ static ssize_t ocfs2_file_splice_read(struct file *in,
+ 			in->f_path.dentry->d_name.name, len);
  
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->read && !file->f_op->aio_read))
-+	if (!file_readable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
- 		return -EFAULT;
-@@ -433,7 +433,7 @@ ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t
- 	const char __user *p;
- 	ssize_t ret;
+ 	/*
+-	 * See the comment in ocfs2_file_aio_read()
++	 * See the comment in ocfs2_file_read_iter()
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, in->f_path.mnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2532,19 +2526,18 @@ bail:
+ 	return ret;
+ }
  
--	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 
- 	old_fs = get_fs();
-@@ -460,7 +460,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
- 
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
- 		return -EFAULT;
-@@ -778,7 +778,7 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+-static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+-				   const struct iovec *iov,
+-				   unsigned long nr_segs,
+-				   loff_t pos)
++static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
++				    struct iov_iter *iter,
++				    loff_t pos)
  {
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		return -EINVAL;
+ 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
+ 	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = file_inode(filp);
  
- 	return do_readv_writev(READ, file, vec, vlen, pos);
-@@ -791,7 +791,7 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
- {
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		return -EINVAL;
+-	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
++	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
+ 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 			filp->f_path.dentry->d_name.len,
+-			filp->f_path.dentry->d_name.name, nr_segs);
++			filp->f_path.dentry->d_name.name, pos);
  
- 	return do_readv_writev(WRITE, file, vec, vlen, pos);
-@@ -965,7 +965,7 @@ static size_t compat_readv(struct file *file,
- 		goto out;
  
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		goto out;
+ 	if (!inode) {
+@@ -2580,7 +2573,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	 *
+ 	 * Take and drop the meta data lock to update inode fields
+ 	 * like i_size. This allows the checks down below
+-	 * generic_file_aio_read() a chance of actually working.
++	 * generic_file_read_iter() a chance of actually working.
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, filp->f_path.mnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2589,13 +2582,13 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	}
+ 	ocfs2_inode_unlock(inode, lock_level);
  
- 	ret = compat_do_readv_writev(READ, file, vec, vlen, pos);
-@@ -1032,7 +1032,7 @@ static size_t compat_writev(struct file *file,
- 		goto out;
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
+-	trace_generic_file_aio_read_ret(ret);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
++	trace_generic_file_read_iter_ret(ret);
  
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		goto out;
+ 	/* buffered aio wouldn't have proper lock coverage today */
+ 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
  
- 	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ab43916..5ffec5e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1650,6 +1650,16 @@ struct file_operations {
- 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
+-	/* see ocfs2_file_aio_write */
++	/* see ocfs2_file_write_iter */
+ 	if (ret == -EIOCBQUEUED || !ocfs2_iocb_is_rw_locked(iocb)) {
+ 		rw_level = -1;
+ 		have_alloc_sem = 0;
+@@ -2683,8 +2676,8 @@ const struct file_operations ocfs2_fops = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+@@ -2731,8 +2724,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
+index 1b60c62..67f08ba 100644
+--- a/fs/ocfs2/ocfs2_trace.h
++++ b/fs/ocfs2/ocfs2_trace.h
+@@ -1310,13 +1310,13 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_file_release);
  
-+static inline int file_readable(struct file *filp)
-+{
-+	return filp && (filp->f_op->read || filp->f_op->aio_read);
-+}
-+
-+static inline int file_writable(struct file *filp)
-+{
-+	return filp && (filp->f_op->write || filp->f_op->aio_write);
-+}
-+
- struct inode_operations {
- 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
- 	void * (*follow_link) (struct dentry *, struct nameidata *);
+ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
+ 
+ DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
+ 
+@@ -1474,7 +1474,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
+ 		  __entry->direct_io, __entry->has_refcount)
+ );
+ 
+-DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
++DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
+ 
+ /* End of trace events for fs/ocfs2/file.c. */
+ 
 -- 
 1.8.4
 
