@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3JPPkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:40:00 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53778 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760829Ab3JPPj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:39:57 -0400
-Date: Wed, 16 Oct 2013 08:39:29 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 02/10][v6] powerpc/Power7: detect load/store instructions
-Message-ID: <20131016153929.GC25073@us.ibm.com>
-References: <1381889202-16826-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1381889202-16826-3-git-send-email-sukadev@linux.vnet.ibm.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B738E@saturn3.aculab.com>
- <525E5E79.6010905@linux.vnet.ibm.com>
+	id S1760902Ab3JPPk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:40:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59329 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab3JPPk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 11:40:26 -0400
+Message-ID: <525EB320.2000607@zytor.com>
+Date: Wed, 16 Oct 2013 08:39:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525E5E79.6010905@linux.vnet.ibm.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101615-9332-0000-0000-000001CAFABA
+To: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
+CC: Linus Torvalds <torvalds@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data selectors
+References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
+In-Reply-To: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anshuman Khandual [khandual@linux.vnet.ibm.com] wrote:
-| On 10/16/2013 01:55 PM, David Laight wrote:
-| >> Implement instr_is_load_store_2_06() to detect whether a given instruction
-| >> is one of the fixed-point or floating-point load/store instructions in the
-| >> POWER Instruction Set Architecture v2.06.
-| > ...
-| 
-| The op code encoding is dependent on the ISA version ? Does the basic load
-| and store instructions change with newer ISA versions ?
+On 10/16/2013 05:00 AM, Jan Beulich wrote:
+> Having had reports of certain Windows versions, when put in some
+> special driver verification mode, blue-screening due to the FPU state
+> having changed across interrupt handler runs (resulting from a host/
+> hypervisor side context switch somewhere in the middle of the guest
+> interrupt handler execution) on Xen, and assuming that KVM would suffer
+> from the same problem, as well as having also noticed (long ago) that
+> 32-bit processes don't behave correctly in this regard when run on a
+> 64-bit kernel, this is the resulting attempt to port (and suitably
+> extend) the Xen side fix to Linux.
+> 
+> The basic idea here is to either use a priori information on the
+> intended state layout (in the case of 32-bit processes) or "sense" the
+> proper layout (in the case of KVM guests) by inspecting the already
+> saved FPU rip/rdp, and reading their actual values in a second save
+> operation.
+> 
+> This second save operation could be another [F]XSAVE, but on all
+> systems I measured this on using FNSTENV turned out to be the faster
+> alternative.
 
-TBH, I don't know whether the encoding is dependent on the ISA version.
+It is not at all clear to me from the description what the flow is that
+causes the problem, whatever the problem is.  Perhaps it should be if I
+wasn't horribly sleep-deprived, but the description should be clear
+enough that one should be able to tell the problem at a glance.
 
-We need this for a very narrow/specific purpose on Power7 _and_ did not
-want to set up expectations that it will work with all versions. Hence
-the horribly named function :-)
+Please describe the flow that causes trouble.
 
-| BTW we have got a
-| newer version for the ISA "PowerISA_V2.07_PUBLIC.pdf" here at power.org
-| 
-| https://www.power.org/documentation/power-isa-version-2-07/
+Is this basically a problem with the 32-bit version of FXSAVE versus the
+64-bit version?
 
-Yes, but on Power8 there is a bit in the SIER that tells us whether it
-is a load or store instruction. We use that and don't need to determine
-in software.
+Furthermore, you define X86_FEATURE_NO_FPU_SEL, but you don't set it
+anywhere.  At least that bit needs to be factored out into a separate patch.
 
-Power7 does not have such a bit and we need this only for Power7. We are
-not targetting this "memory hierarchy" feature for Power6 or older processors.
++	if (config_enabled(CONFIG_IA32_EMULATION) &&
++	    test_tsk_thread_flag(tsk, TIF_IA32))
 
-| 
-| Does not sound like a good idea to analyse the instructions with functions
-| names which specify ISA version number. Besides, this function does not
-| belong to specific processor or platform. It has to be bit generic.
-| 
-| >> +int instr_is_load_store_2_06(const unsigned int *instr)
-| >> +{
-| >> +	unsigned int op, upper, lower;
-| >> +
-| >> +	op = instr_opcode(*instr);
-| >> +
-| >> +	if ((op >= 32 && op <= 58) || (op == 61 || op == 62))
-| >> +		return true;
-| >> +
-| >> +	if (op != 31)
-| >> +		return false;
-| >> +
-| >> +	upper = op >> 5;
-| >> +	lower = op & 0x1f;
-| >> +
-| >> +	/* Short circuit as many misses as we can */
-| >> +	if (lower < 3 || lower > 23)
-| >> +		return false;
-| >> +
-| >> +	if (lower == 3) {
-| >> +		if (upper >= 16)
-| >> +			return true;
-| >> +
-| >> +		return false;
-| >> +	}
-| >> +
-| >> +	if (lower == 7 || lower == 12)
-| >> +		return true;
-| >> +
-| >> +	if (lower >= 20) /* && lower <= 23 (implicit) */
-| >> +		return true;
-| >> +
-| >> +	return false;
-| >> +}
-| > 
-| > I can't help feeling the code could do with some comments about
-| > which actual instructions are selected where.
-| 
-| Yeah, I agree. At least which category of load-store instructions are
-| getting selected in each case.
+is_ia32_task()?
 
-Like I mentioned in the other message, how about adding a couple
-of lines in the function header ?
+	-hpa
+
 
