@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab3JPQ4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:56:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:52749 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932796Ab3JPQ4t (ORCPT
+	id S1761035Ab3JPRC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:02:26 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51259 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab3JPRCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:56:49 -0400
-Date: Wed, 16 Oct 2013 12:56:46 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-        joe@perches.com, naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-Message-ID: <20131016125646.7141b580@gandalf.local.home>
-In-Reply-To: <20131016160550.GG13608@pd.tnic>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	<20131016160550.GG13608@pd.tnic>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 16 Oct 2013 13:02:24 -0400
+Message-ID: <525EC69C.5040004@wwwdotorg.org>
+Date: Wed, 16 Oct 2013 11:02:20 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 08/19] clk: tegra: add common infra for DT clocks
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com> <1381848794-11761-9-git-send-email-pdeschrijver@nvidia.com> <525D9117.9050009@wwwdotorg.org> <20131016143448.GK5643@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20131016143448.GK5643@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 18:05:50 +0200
-Borislav Petkov <bp@alien8.de> wrote:
-
- 
-> > For trace output format we still need further discussion. In the last
-> > patch(support trace interface) I have to reserve previous Kconfig
-> > format because I find once I put trace_event interface in the module,
-> > it will not work. I will paste another trace patch(it only works when
-
-What did not work?
-
-> > acpi_extlog is builtin) for your answer.
+On 10/16/2013 08:34 AM, Peter De Schrijver wrote:
+> On Tue, Oct 15, 2013 at 09:01:43PM +0200, Stephen Warren wrote:
+>> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+>>> Introduce a common infrastructure for sharing clock initialization between
+>>> SoCs.
+>>
+>>> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+>>
+>>> +struct clk ** __init tegra_lookup_dt_id(int clk_id,
+>>> +					struct tegra_clk *tegra_clk)
+>>> +{
+>>> +	if (tegra_clk[clk_id].present)
+>>> +		return &clks[tegra_clk[clk_id].dt_id];
+>>> +	else
+>>> +		return NULL;
+>>
+>> Does this need range-checking? Or do we assume that since this is an
+>> internal function, "clk_id" will never be out-of-range?
 > 
-> I think to be able to define TRACE_EVENTs in modules, you need
-> https://lwn.net/Articles/383362/
-> 
-> Steve, that still true?
-> 
+> That was my assumption indeed. I could add a range check if you think that's
+> useful.
 
-Take a look at samples/trace_events/
+It's probably OK if it's a purely internal function; I just wanted to
+double-check.
 
-That's a module that uses TRACE_EVENTs.
-
-What exactly is the problem here?
-
-
--- Steve
