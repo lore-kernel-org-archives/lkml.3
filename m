@@ -1,189 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760750Ab3JPLqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:46:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51860 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760680Ab3JPLqr (ORCPT
+	id S1760611Ab3JPLyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:54:05 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49958 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760301Ab3JPLyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:46:47 -0400
-Date: Wed, 16 Oct 2013 12:46:09 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 6/7] arm64, jump label: optimize jump label
- implementation
-Message-ID: <20131016114608.GH5403@mudshark.cambridge.arm.com>
-References: <1381893492-7135-1-git-send-email-liuj97@gmail.com>
- <1381893492-7135-7-git-send-email-liuj97@gmail.com>
+	Wed, 16 Oct 2013 07:54:03 -0400
+Date: Wed, 16 Oct 2013 13:53:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Liu Chuansheng <chuansheng.liu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
+Message-ID: <20131016115354.GC12773@localhost.localdomain>
+References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
+ <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
+ <1381870805.22110.37.camel@joe-AO722>
+ <20131015211251.GE3269@localhost.localdomain>
+ <1381872280.22110.41.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381893492-7135-7-git-send-email-liuj97@gmail.com>
+In-Reply-To: <1381872280.22110.41.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 04:18:11AM +0100, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
+On Tue, Oct 15, 2013 at 02:24:40PM -0700, Joe Perches wrote:
+> On Tue, 2013-10-15 at 23:12 +0200, Frederic Weisbecker wrote:
+> > On Tue, Oct 15, 2013 at 02:00:05PM -0700, Joe Perches wrote:
+> > > On Tue, 2013-10-15 at 22:50 +0200, Frederic Weisbecker wrote:
+> > > []
+> > > > diff --git a/include/linux/printk.h b/include/linux/printk.h
+> > > []
+> > > > @@ -252,14 +253,7 @@ extern asmlinkage void dump_stack(void) __cold;
+> > > >  
+> > > >  #ifdef CONFIG_PRINTK
+> > > >  #define printk_once(fmt, ...)			\
+> > > > -({						\
+> > > > -	static bool __print_once;		\
+> > > > -						\
+> > > > -	if (!__print_once) {			\
+> > > > -		__print_once = true;		\
+> > > > -		printk(fmt, ##__VA_ARGS__);	\
+> > > > -	}					\
+> > > > -})
+> > > > +	DO_ONCE(printk(fmt, ##__VA_ARGS__));
+> > > 
+> > > It's hard to believe the overhead is worth it.
+> > 
+> > Which overhead?
 > 
-> Optimize jump label implementation for ARM64 by dynamically patching
-> kernel text.
+> The one you were proposing with xchg
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/arm64/Kconfig                  |  1 +
->  arch/arm64/include/asm/jump_label.h | 52 ++++++++++++++++++++++++++++++++
->  arch/arm64/kernel/Makefile          |  1 +
->  arch/arm64/kernel/jump_label.c      | 60 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 114 insertions(+)
->  create mode 100644 arch/arm64/include/asm/jump_label.h
->  create mode 100644 arch/arm64/kernel/jump_label.c
+> Apparently the 1/3 series you submitted
+> didn't use it.
 > 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index c044548..da388e4 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -17,6 +17,7 @@ config ARM64
->  	select GENERIC_SMP_IDLE_THREAD
->  	select GENERIC_TIME_VSYSCALL
->  	select HARDIRQS_SW_RESEND
-> +	select HAVE_ARCH_JUMP_LABEL
->  	select HAVE_ARCH_TRACEHOOK
->  	select HAVE_DEBUG_BUGVERBOSE
->  	select HAVE_DEBUG_KMEMLEAK
-> diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
-> new file mode 100644
-> index 0000000..d268fab
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/jump_label.h
-> @@ -0,0 +1,52 @@
-> +/*
-> + * Copyright (C) 2013 Huawei Ltd.
-> + * Author: Jiang Liu <jiang.liu@huawei.com>
-> + *
-> + * Based on arch/arm/include/asm/jump_label.h
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef _ASM_ARM64_JUMP_LABEL_H
-> +#define _ASM_ARM64_JUMP_LABEL_H
-> +#include <linux/types.h>
-> +
-> +#ifdef __KERNEL__
-> +
-> +#define JUMP_LABEL_NOP_SIZE 4
-> +
-> +static __always_inline bool arch_static_branch(struct static_key *key)
-> +{
-> +	asm goto("1:\n\t"
-> +		 "nop\n\t"
-> +		 ".pushsection __jump_table,  \"aw\"\n\t"
-> +		 ".align 3\n\t"
-> +		 ".quad 1b, %l[l_yes], %c0\n\t"
-> +		 ".popsection\n\t"
-> +		 :  :  "i"(key) :  : l_yes);
-> +
-> +	return false;
-> +l_yes:
-> +	return true;
-> +}
-> +
-> +#endif /* __KERNEL__ */
-> +
-> +typedef u64 jump_label_t;
-> +
-> +struct jump_entry {
-> +	jump_label_t code;
-> +	jump_label_t target;
-> +	jump_label_t key;
-> +};
-> +
-> +#endif	/* _ASM_ARM64_JUMP_LABEL_H */
-> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-> index 9af6cb3..b7db65e 100644
-> --- a/arch/arm64/kernel/Makefile
-> +++ b/arch/arm64/kernel/Makefile
-> @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
->  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
->  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
->  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-> +arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
->  
->  obj-y					+= $(arm64-obj-y) vdso/
->  obj-m					+= $(arm64-obj-m)
-> diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
-> new file mode 100644
-> index 0000000..74cbc73
-> --- /dev/null
-> +++ b/arch/arm64/kernel/jump_label.c
-> @@ -0,0 +1,60 @@
-> +/*
-> + * Copyright (C) 2013 Huawei Ltd.
-> + * Author: Jiang Liu <jiang.liu@huawei.com>
-> + *
-> + * Based on arch/arm/kernel/jump_label.c
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/jump_label.h>
-> +#include <asm/jump_label.h>
-> +#include <asm/insn.h>
-> +
-> +#ifdef HAVE_JUMP_LABEL
-> +
-> +static void __arch_jump_label_transform(struct jump_entry *entry,
-> +					enum jump_label_type type,
-> +					bool is_static)
-> +{
-> +	void *addr = (void *)entry->code;
-> +	u32 insn;
-> +
-> +	if (type == JUMP_LABEL_ENABLE) {
-> +		/* no way out if instruction offset is out of range(+/-128M) */
-> +		insn = aarch64_insn_gen_branch_imm(entry->code,
-> +						   entry->target, 0);
-> +		BUG_ON(!insn);
+> Given that it didn't, does the indirection
+> to DO_ONCE really help?
 
-In this case, rather than BUG_ON, it would be better (somehow) to abort
-optimisation and instead patch in a branch to the actual condition check.
+Yes, the diffstat has more "-" than "+" :o)
+But we might get the xchg() in the end. Andrew proposed
+a nice tradeoff against the performance issue:
 
-> +	} else {
-> +		insn = aarch64_insn_gen_nop();
+if (!__warned)
+    return;
+__old_warned = xchg(__warned, 1);
+if (!__old_warned)
+    do_warning
 
-You could make the code more concise by limiting your patching ability to
-branch immediates. Then a nop is simply a branch to the next instruction (I
-doubt any modern CPUs will choke on this, whereas the architecture requires
-a NOP to take time).
+> 
+> btw:
+> 
+> https://lkml.org/lkml/2009/5/21/300
+> 
+> Perhaps Alan's comment still applies:
+> 
+> https://lkml.org/lkml/2009/5/21/305
 
-Will
+Alan was right having such a macro handy is tempting to use in a driver or so,
+and that would be most of the time for bad reasons. It's not an object synchronization.
+
+Now I don't entirely agree with him because it consolidates existing code. It's a
+good CPP library when something really needs a global state to execute something
+only once.
+
+It's especially useful for debugging. I mean I often miss such a macro. I use very
+often the following pattern for debugging:
+
+static int done;
+
+if (!done) {
+    trace_printk(something);
+    trace_printk(something else);
+    trace_dump_stack();
+    done = 1;
+}
+
+Having a DO_ONCE() would help a lot I think.
+
+Now we can rename it to __DO_ONCE() and put a big fat comment to avoid it
+to be misused.
+
+Hm?
