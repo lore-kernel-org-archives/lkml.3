@@ -1,196 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761056Ab3JPQn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:43:27 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:34997 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761004Ab3JPQnH (ORCPT
+	id S1761093Ab3JPQpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:45:51 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:64946 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab3JPQpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:43:07 -0400
-X-AuditID: cbfec373-b7f6d6d00000330d-ab-525ec21a02b6
-Date: Wed, 16 Oct 2013 13:43:00 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
-        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/9] ACPI, APEI,
- CPER: Add UEFI 2.4 support for memory error
-Message-id: <20131016134300.29ffe0f1@samsung.com>
-In-reply-to: <1381935366-11731-7-git-send-email-gong.chen@linux.intel.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
- <1381935366-11731-7-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/hIF2pQ3FBBjvOi1i0nfjNZvF5wz82
-	i1vvbC1m33/MYrF8Xz+jxeVdc9gs7rc8Zbd4c+EeiwOHx/fWPhaPxXteMnnMOxno8eDQZhaP
-	L6uuMXu833eVzePzJrkA9igum5TUnMyy1CJ9uwSujLlXF7MX7DWoWHk8pIFxp3oXIyeHhICJ
-	ROPnR0wQtpjEhXvr2UBsIYEljBKTu+wg7G4miRv/A0BsFgFVif3/m9hBbDYBI4lXjS2sILaI
-	gI7Eg02rGbsYuTiYBVYxSrx5sx0sISwQKtHRsZUZxOYVMJRYcvEQ0AIODk4BL4nlS2xA6oUE
-	OhklXv/qYwaJSwg4SWyd6gtRLijxY/I9FhCbWUBLYvO2JlYIW15i85q3zBMYBWYhKZuFpGwW
-	krIFjMyrGEVLi5MLipPSc430ihNzi0vz0vWS83M3MUJCv3gH44sNVocYBTgYlXh4ZyyPCxJi
-	TSwrrsw9xCjBwawkwvtpK1CINyWxsiq1KD++qDQntfgQIxMHp1QDo2sUQ/av+M2fAo5snnYt
-	dYVT+JFD2xYff18/Z7f7M4afZdVLVgnsOGmwWu9TIYt0zVP25JcS90V7s3yWrouOCw4980JP
-	127CwQsHsyP+2z9LFft/6/PsZ3f/pD2+8VPuBZeC9rnEg5Ofz6jRVpk967Klw/y3WdN0jv8y
-	t0ibxcih1Fp/Vnj9w4VKLMUZiYZazEXFiQDvE38wWwIAAA==
+	Wed, 16 Oct 2013 12:45:50 -0400
+Date: Wed, 16 Oct 2013 18:43:32 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: linux-next: Tree for Oct 15
+Message-ID: <20131016164331.GA12192@ulmo.nvidia.com>
+References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
+ <525E2257.7030604@roeck-us.net>
+ <20131016155055.GA20211@ulmo.nvidia.com>
+ <20131016163750.GA13416@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
+Content-Disposition: inline
+In-Reply-To: <20131016163750.GA13416@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 16 Oct 2013 10:56:03 -0400
-"Chen, Gong" <gong.chen@linux.intel.com> escreveu:
 
-> In latest UEFI spec(by now it is 2.4) memory error definition
-> for CPER (UEFI 2.4 Appendix N Common Platform Error Record)
-> adds some new fields. These fields help people to locate
-> memory error on actual DIMM location.
-> 
-> Original-author: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> Reviewed-by: Borislav Petkov <bp@suse.de>
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+On Wed, Oct 16, 2013 at 09:37:50AM -0700, Guenter Roeck wrote:
+> On Wed, Oct 16, 2013 at 05:50:56PM +0200, Thierry Reding wrote:
+> > On Tue, Oct 15, 2013 at 10:21:27PM -0700, Guenter Roeck wrote:
+> > > On 10/15/2013 07:02 AM, Thierry Reding wrote:
+> > > >Hi all,
+> > > >
+> > > >I've uploaded today's linux-next tree to the master branch of the
+> > > >repository below:
+> > > >
+> > > >         git://gitorious.org/thierryreding/linux-next.git
+> > > >
+> > > >A next-20131015 tag is also provided for convenience.
+> > > >
+> > > >Gained a new conflict, but nothing too exciting. x86 and ARM default
+> > > >configurations build fine. I've also used an x86 allmodconfig build =
+to
+> > > >check for build errors. Mark fixed most of those in the trees that he
+> > > >created last Thursday and Friday, so I've cherry-picked them on top =
+of
+> > > >the final merge. There was one new build failure in the staging tree
+> > > >that was trivial to fix so I added a patch to the tree as well.
+> > > >
+> > >=20
+> > > This build does look much better than the previous ones. I 'only' get=
+ 12 build failures
+> > > out of 106 configurations.
+> >=20
+> > Thanks for running these!
+> >=20
+> No problem - servers are up anyway. Only problem is that buildbot and git=
+orious
+> don't seem to get along, and the automatic tree update doesn't work. This=
+ means
+> I have to trigger tree updates manually, which I may forget once in a whi=
+le.
 
-> ---
->  arch/x86/kernel/cpu/mcheck/mce-apei.c |  3 +--
->  drivers/acpi/apei/cper.c              |  7 ++++---
->  drivers/acpi/apei/ghes.c              |  4 ++--
->  drivers/edac/ghes_edac.c              |  5 ++---
->  include/linux/cper.h                  | 11 +++++++++--
->  5 files changed, 18 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-apei.c b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-> index cd8b166..de8b60a 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-> @@ -42,8 +42,7 @@ void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
->  	struct mce m;
->  
->  	/* Only corrected MC is reported */
-> -	if (!corrected || !(mem_err->validation_bits &
-> -				CPER_MEM_VALID_PHYSICAL_ADDRESS))
-> +	if (!corrected || !(mem_err->validation_bits & CPER_MEM_VALID_PA))
->  		return;
->  
->  	mce_setup(&m);
-> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-> index eb5f6d6..946ef52 100644
-> --- a/drivers/acpi/apei/cper.c
-> +++ b/drivers/acpi/apei/cper.c
-> @@ -8,7 +8,7 @@
->   * various tables, such as ERST, BERT and HEST etc.
->   *
->   * For more information about CPER, please refer to Appendix N of UEFI
-> - * Specification version 2.3.
-> + * Specification version 2.4.
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License version
-> @@ -191,16 +191,17 @@ static const char *cper_mem_err_type_strs[] = {
->  	"memory sparing",
->  	"scrub corrected error",
->  	"scrub uncorrected error",
-> +	"physical memory map-out event",
->  };
->  
->  static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
->  {
->  	if (mem->validation_bits & CPER_MEM_VALID_ERROR_STATUS)
->  		printk("%s""error_status: 0x%016llx\n", pfx, mem->error_status);
-> -	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)
-> +	if (mem->validation_bits & CPER_MEM_VALID_PA)
->  		printk("%s""physical_address: 0x%016llx\n",
->  		       pfx, mem->physical_addr);
-> -	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK)
-> +	if (mem->validation_bits & CPER_MEM_VALID_PA_MASK)
->  		printk("%s""physical_address_mask: 0x%016llx\n",
->  		       pfx, mem->physical_addr_mask);
->  	if (mem->validation_bits & CPER_MEM_VALID_NODE)
-> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> index 0db6e4f..a30bc31 100644
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -419,7 +419,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
->  
->  	if (sec_sev == GHES_SEV_CORRECTED &&
->  	    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
-> -	    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
-> +	    (mem_err->validation_bits & CPER_MEM_VALID_PA)) {
->  		pfn = mem_err->physical_addr >> PAGE_SHIFT;
->  		if (pfn_valid(pfn))
->  			memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
-> @@ -430,7 +430,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
->  	}
->  	if (sev == GHES_SEV_RECOVERABLE &&
->  	    sec_sev == GHES_SEV_RECOVERABLE &&
-> -	    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
-> +	    mem_err->validation_bits & CPER_MEM_VALID_PA) {
->  		pfn = mem_err->physical_addr >> PAGE_SHIFT;
->  		memory_failure_queue(pfn, 0, 0);
->  	}
-> diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
-> index bb53467..0ad797b 100644
-> --- a/drivers/edac/ghes_edac.c
-> +++ b/drivers/edac/ghes_edac.c
-> @@ -297,15 +297,14 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
->  	}
->  
->  	/* Error address */
-> -	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
-> +	if (mem_err->validation_bits & CPER_MEM_VALID_PA) {
->  		e->page_frame_number = mem_err->physical_addr >> PAGE_SHIFT;
->  		e->offset_in_page = mem_err->physical_addr & ~PAGE_MASK;
->  	}
->  
->  	/* Error grain */
-> -	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK) {
-> +	if (mem_err->validation_bits & CPER_MEM_VALID_PA_MASK)
->  		e->grain = ~(mem_err->physical_addr_mask & ~PAGE_MASK);
-> -	}
->  
->  	/* Memory error location, mapped on e->location */
->  	p = e->location;
-> diff --git a/include/linux/cper.h b/include/linux/cper.h
-> index 09ebe21..2fc0ec3 100644
-> --- a/include/linux/cper.h
-> +++ b/include/linux/cper.h
-> @@ -218,8 +218,8 @@ enum {
->  #define CPER_PROC_VALID_IP			0x1000
->  
->  #define CPER_MEM_VALID_ERROR_STATUS		0x0001
-> -#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
-> -#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
-> +#define CPER_MEM_VALID_PA			0x0002
-> +#define CPER_MEM_VALID_PA_MASK			0x0004
->  #define CPER_MEM_VALID_NODE			0x0008
->  #define CPER_MEM_VALID_CARD			0x0010
->  #define CPER_MEM_VALID_MODULE			0x0020
-> @@ -232,6 +232,9 @@ enum {
->  #define CPER_MEM_VALID_RESPONDER_ID		0x1000
->  #define CPER_MEM_VALID_TARGET_ID		0x2000
->  #define CPER_MEM_VALID_ERROR_TYPE		0x4000
-> +#define CPER_MEM_VALID_RANK_NUMBER		0x8000
-> +#define CPER_MEM_VALID_CARD_HANDLE		0x10000
-> +#define CPER_MEM_VALID_MODULE_HANDLE		0x20000
->  
->  #define CPER_PCIE_VALID_PORT_TYPE		0x0001
->  #define CPER_PCIE_VALID_VERSION			0x0002
-> @@ -347,6 +350,10 @@ struct cper_sec_mem_err {
->  	__u64	responder_id;
->  	__u64	target_id;
->  	__u8	error_type;
-> +	__u8	reserved;
-> +	__u16	rank;
-> +	__u16	mem_array_handle;	/* card handle in UEFI 2.4 */
-> +	__u16	mem_dev_handle;		/* module handle in UEFI 2.4 */
->  };
->  
->  struct cper_sec_pcie {
+I do have a kernel.org account now, but I'd like to avoid switching the
+repository again. People are finally beginning to realize that there's a
+temporary location for linux-next on gitorious.
 
+> > > Worst are powerpc builds, with 7 out of 14 builds failed.
+> >=20
+> > Yes, I'm seeing those too. I used to carry a fix for many of these in
+> > earlier linux-next trees but since I haven't had the time to run the
+> > PowerPC builds in a while I haven't cherry-picked it to new trees.
+> >=20
+> Are those failures due to merge conflicts, or should the fix be applied
+> to a contributing repository ?
 
--- 
+I think they are cause by some changes being done to the OF headers and
+I mailed that patch to Rob Herring at some point, but I'm not sure what
+came of it. There were a few others too, but I think most of the patches
+I sent for them have been merged.
 
-Cheers,
-Mauro
+Thierry
+
+--HcAYCG3uE/tztfnV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSXsIzAAoJEN0jrNd/PrOhQ8EQAJu/UgT9CaDYjbgIWppOmKeU
+0Lr0CRWL+AHnc8w5bfx6oNHioZ6S5KutcxoXacejmbalNdUmJQMMukPKe9GtYcxO
+zcyeTXrSYZrQZgLRKJtLHBWD8ltc62H4DOmlOX9Xal04FITnltQQ023o3D3XGD4V
+WM7DLarHdh6YRpdHZSiSdiGcrwLbAbRgqQZ41Dmlb9tKnniPNVL3F0QbIAwxNTM5
+ryDRs5eLcwaOHQEKN8VxCewQjUH8Mvl/pTluNe79Ryz2LPf9sa23qtcHjcxIkIxU
+SQc+1kjzt9sdUcrHH/16ytMpBGPwrj+vJWWElCuEXTLRCWH73keEzEsAutJ1PGYQ
+IGqWnn/Giugp8qEMUKvCxntBhUFW0Lu/Nd9AWigoV1udNCrv9ZMp0ZWoq4ecfhR+
+Ax0N0zZFwSwdRSgcPlNvGt9voWGFFTEDCQqm8I+IN9m1wIPE71Nw/BS3YhWpgh5j
+/0EGkafxiJnJmTLtXL/LUgniqhNUUIQRSynLf3fsozb+QsT8WqDGMd++RNKq+2x3
+XbZ9SCPtIRCyR8+cRABTSq3RbIZuhK5Y1d74w7twtgJHUEVHUHL5aVpfxu9JhVfE
+j97gZP0ZUsfzYNVZK+Lua/AGww6rBMPdfarYhlSWbIUyTOt7/FTiIBYaF/+KD1VB
+nWxlcf85XvAQqaFK2JI0
+=Fmpw
+-----END PGP SIGNATURE-----
+
+--HcAYCG3uE/tztfnV--
