@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760993Ab3JPQnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:43:00 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:47756 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab3JPQm7 (ORCPT
+	id S1761026Ab3JPQnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:43:08 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:59827 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760996Ab3JPQnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:42:59 -0400
+	Wed, 16 Oct 2013 12:43:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <s5hd2n5uq33.wl%tiwai@suse.de>
-References: <1381940506-29855-1-git-send-email-geyslan@gmail.com>
-	<s5hd2n5uq33.wl%tiwai@suse.de>
-Date: Wed, 16 Oct 2013 13:42:58 -0300
-Message-ID: <CAGG-pUTOH8gd27VrzezDE+SO4wOSFe7kYzsZRK252rG+v3bfrg@mail.gmail.com>
-Subject: Re: [PATCH] sound: pci: emu10k1: Remove useless casting in emufx.c
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: kernel-br <kernel-br@googlegroups.com>, Jaroslav Kysela <perex@perex.cz>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        "moderated list:SOUND" <alsa-devel@alsa-project.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <525E611A.6070708@imgtec.com>
+References: <1381876762-10892-1-git-send-email-dianders@chromium.org>
+	<1381876762-10892-3-git-send-email-dianders@chromium.org>
+	<525E611A.6070708@imgtec.com>
+Date: Wed, 16 Oct 2013 09:43:01 -0700
+X-Google-Sender-Auth: mUrpO95mb04lRLEPJOG8Kwgeiz0
+Message-ID: <CAD=FV=V4OPOjs=4cvXOomt1UnzUdw5VApkNAX2ERKZ46DC6_gg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mmc: dw_mmc: Protect read-modify-write of INTMASK
+ with a lock
+From: Doug Anderson <dianders@chromium.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/16 Takashi Iwai <tiwai@suse.de>:
-> At Wed, 16 Oct 2013 13:21:45 -0300,
-> Geyslan G. Bem wrote:
->>
->> Casting (void *) value returned by kcalloc is useless
->> as mentioned in Documentation/CodingStyle, Chap 14.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->
-> You missed __user prefix.  You can't cast user and kernel pointers
-> implicitly.
->
->
-> Takashi
->
+James,
 
-Takashi,
+On Wed, Oct 16, 2013 at 2:49 AM, James Hogan <james.hogan@imgtec.com> wrote:
+>> We can't just use the standard host->lock since that lock is not irq
+>> safe and mmc_signal_sdio_irq() (called from interrupt context) calls
+>> dw_mci_enable_sdio_irq().  Add a new irq-safe lock to protect INTMASK.
+>>
+>> An alternate solution to this is to punt mmc_signal_sdio_irq() to the
+>> tasklet and then protect INTMASK modifications by the standard host
+>> lock.  This seemed like a bit more of a high-latency change.
+>
+> A probably lighter-weight alternative to that alternative is to just
+> make the existing lock irq safe. Has this been considered?
+>
+> I'm not entirely convinced it's worth having a separate lock rather than
+> changing the existing one, but the patch still appears to be correct, so:
+> Reviewed-by: James Hogan <james.hogan@imgtec.com>
 
-My mistake, I'll fix that later.
+I did look at that alternate solution and rejected it, but am happy to
+send that up if people think it's better.  Here's why I rejected it:
 
-Thank you.
+1. It looks like someone has gone through quite a bit of work to _not_
+grab the existing lock in the IRQ handler.  The IRQ handler always
+pushes all real work over to the tasklet.  I can only assume that they
+did this for some good reason and I'd hate to switch it without
+knowing for sure why.
 
->> ---
->>  sound/pci/emu10k1/emufx.c | 12 +++++-------
->>  1 file changed, 5 insertions(+), 7 deletions(-)
->>
->> diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
->> index 0275209..3f51dac 100644
->> --- a/sound/pci/emu10k1/emufx.c
->> +++ b/sound/pci/emu10k1/emufx.c
->> @@ -1183,9 +1183,8 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
->>       mm_segment_t seg;
->>
->>       if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
->> -         (icode->gpr_map = (u_int32_t __user *)
->> -          kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
->> -                  GFP_KERNEL)) == NULL ||
->> +         (icode->gpr_map = kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
->> +                                   GFP_KERNEL)) == NULL ||
->>           (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
->>                               sizeof(*controls), GFP_KERNEL)) == NULL) {
->>               err = -ENOMEM;
->> @@ -1815,10 +1814,9 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
->>
->>       if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL)
->>               return -ENOMEM;
->> -     if ((icode->gpr_map = (u_int32_t __user *)
->> -          kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
->> -                  GFP_KERNEL)) == NULL ||
->> -            (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
->> +     if ((icode->gpr_map = kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
->> +                                   GFP_KERNEL)) == NULL ||
->> +         (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
->>                               sizeof(struct snd_emu10k1_fx8010_control_gpr),
->>                               GFP_KERNEL)) == NULL ||
->>           (ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL)) == NULL) {
->> --
->> 1.8.4
->>
+2. We might have performance problems if we blindly changed the
+existing code to an IRQ-safe spinlock.  We hold the existing
+"host->lock" spinlock for the entire duration of
+dw_mci_tasklet_func().  That's a pretty intense chunk of code, full of
+nested loops (some with 500ms timeouts!), mdelay(20) calls to handle
+some errors, etc.  I say "might" because I think that the expected
+case is that code runs pretty quickly.  I ran some brief tests on one
+system and saw a worst case time of 170us and an common case time of
+~10us.  Are we OK with having interrupts disabled for that long?  Are
+we OK with having the dw_mci interrupt handler potentially spin on a
+spinlock for that long?
+
+
+I don't think it would be terrible to look at reworking the way that
+dw_mmc handles interrupts, but that seems pretty major.
+
+
+BTW: is the cost of an extra lock actually that high?  ...or are you
+talking the cost in terms of code complexity?
+
+
+-Doug
