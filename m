@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934390Ab3JPM6C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:58:02 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:45062 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934199Ab3JPM57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:57:59 -0400
-Date: Wed, 16 Oct 2013 20:57:34 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Matt Mackall <mpm@selenic.com>, Russell King <linux@arm.linux.org.uk>,
-        Joe Perches <joe@perches.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Juha Yrjola <juha.yrjola@solidboot.com>
-Subject: Re: [PATCH v2 2/3] hwrng: OMAP3 ROM Random Number Generator support
-Message-ID: <20131016125734.GA10906@gondor.apana.org.au>
-References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
- <1379683507-30793-1-git-send-email-pali.rohar@gmail.com>
- <1379683507-30793-3-git-send-email-pali.rohar@gmail.com>
- <20131008190408.GM8313@atomide.com>
+	id S934386Ab3JPM7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:59:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35861 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760550Ab3JPM7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:59:16 -0400
+Message-ID: <525E8D91.5090400@ti.com>
+Date: Wed, 16 Oct 2013 07:58:57 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131008190408.GM8313@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rajendra Nayak <rnayak@ti.com>
+CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: dts: OMAP5: Add i2c aliases
+References: <1381856405-30970-1-git-send-email-nm@ti.com> <525E7A86.4090507@ti.com>
+In-Reply-To: <525E7A86.4090507@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:04:09PM -0700, Tony Lindgren wrote:
-> * Pali Rohár <pali.rohar@gmail.com> [130920 06:33]:
-> > This driver provides kernel-side support for the Random Number
-> > Generator hardware found on OMAP34xx processors.
-> > 
-> > This driver comes from Maemo 2.6.28 kernel and was tested on Nokia RX-51.
-> > It is platform device because it needs board specific function for smc calls.
+On 10/16/2013 06:37 AM, Rajendra Nayak wrote:
+> On Tuesday 15 October 2013 10:30 PM, Nishanth Menon wrote:
+>> Currently, i2c1 and i2c5 defer probe due to pinctrl dependencies.
+>> This changes the i2c ID each bus is registered with in i2c-dev
+>> interface.
+>>
+>> As a result of this, many userspace tools break and there is no
+>> consistent manner to fix the same if the i2c dev interface have no
+>> consistent numbering. Provide alias to allow ordering the i2c devices
+>> correctly.
 > 
-> This one is should be merged via the hw_random patches seprately:
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> This looks good Nishanth. Shouldn't we just go ahead and fix these for
+> all OMAPs/AMxx devices which would have the same problem as OMAP5 ;)
 
-Patch applied.  Thanks!
+yes ofcourse. i can do a couple of patches:
+1 - for all OMAPs
+2 - for all AM platforms.
+
+> 
+> Acked-by: Rajendra Nayak <rnayak@ti.com> 
+>>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+>>
+>>  arch/arm/boot/dts/omap5.dtsi |    5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+>> index e18ee7e..8970deb 100644
+>> --- a/arch/arm/boot/dts/omap5.dtsi
+>> +++ b/arch/arm/boot/dts/omap5.dtsi
+>> @@ -21,6 +21,11 @@
+>>  	interrupt-parent = <&gic>;
+>>  
+>>  	aliases {
+>> +		i2c0 = &i2c1;
+>> +		i2c1 = &i2c2;
+>> +		i2c2 = &i2c3;
+>> +		i2c3 = &i2c4;
+>> +		i2c4 = &i2c5;
+>>  		serial0 = &uart1;
+>>  		serial1 = &uart2;
+>>  		serial2 = &uart3;
+>>
+> 
+
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Regards,
+Nishanth Menon
