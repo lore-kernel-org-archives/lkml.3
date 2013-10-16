@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761149Ab3JPVs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 17:48:27 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2090 "EHLO mms2.broadcom.com"
+	id S1761358Ab3JPVsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:48:31 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4182 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760635Ab3JPVsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 17:48:19 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+	id S1760814Ab3JPVsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 17:48:21 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
 From: "Tim Kryger" <tim.kryger@linaro.org>
 To: "Christian Daudt" <bcm@fixthebug.org>,
         "Rob Herring" <rob.herring@calxeda.com>,
@@ -19,65 +19,43 @@ To: "Christian Daudt" <bcm@fixthebug.org>,
 cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-mmc@vger.kernel.org, patches@linaro.org
-Subject: [RESEND PATCH v2 4/6] clocksource: kona: Add basic use of
- external clock
-Date: Wed, 16 Oct 2013 14:47:08 -0700
-Message-ID: <1381960030-1640-5-git-send-email-tim.kryger@linaro.org>
+Subject: [RESEND PATCH v2 5/6] ARM: dts: Specify clocks for timer on
+ bcm11351
+Date: Wed, 16 Oct 2013 14:47:09 -0700
+Message-ID: <1381960030-1640-6-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
 References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E41D61D1R0101263017-01-01
+X-WSS-ID: 7E41D61A2E42312505-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an clock handle is specified in the device tree, enable it and use
-it to determine the external clock frequency.
+Specify the external clock label in the timer node.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- drivers/clocksource/bcm_kona_timer.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/bcm11351.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
-index 0d7d8c3..fd11f96 100644
---- a/drivers/clocksource/bcm_kona_timer.c
-+++ b/drivers/clocksource/bcm_kona_timer.c
-@@ -17,6 +17,7 @@
- #include <linux/jiffies.h>
- #include <linux/clockchips.h>
- #include <linux/types.h>
-+#include <linux/clk.h>
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index 193659c..39c1395 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -95,7 +95,7 @@
+ 		compatible = "brcm,kona-timer";
+ 		reg = <0x35006000 0x1000>;
+ 		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+-		clock-frequency = <32768>;
++		clocks = <&hub_timer_clk>;
+ 	};
  
- #include <linux/io.h>
- #include <asm/mach/time.h>
-@@ -107,11 +108,18 @@ static const struct of_device_id bcm_timer_ids[] __initconst = {
- static void __init kona_timers_init(struct device_node *node)
- {
- 	u32 freq;
-+	struct clk *external_clk;
- 
--	if (!of_property_read_u32(node, "clock-frequency", &freq))
-+	external_clk = of_clk_get_by_name(node, NULL);
-+
-+	if (!IS_ERR(external_clk)) {
-+		arch_timer_rate = clk_get_rate(external_clk);
-+		clk_prepare_enable(external_clk);
-+	} else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
- 		arch_timer_rate = freq;
--	else
--		panic("clock-frequency not set in the .dts file");
-+	} else {
-+		panic("neither clock-frequency or clocks handle in .dts file");
-+	}
- 
- 	/* Setup IRQ numbers */
- 	timers.tmr_irq = irq_of_parse_and_map(node, 0);
+ 	sdio1: sdio@3f180000 {
 -- 
 1.8.0.1
 
