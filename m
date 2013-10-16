@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3JPOex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:34:53 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11141 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab3JPOev (ORCPT
+	id S1753536Ab3JPOgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:36:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59454 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750904Ab3JPOgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:34:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 16 Oct 2013 07:34:50 -0700
-Date: Wed, 16 Oct 2013 17:34:48 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 08/19] clk: tegra: add common infra for DT clocks
-Message-ID: <20131016143448.GK5643@tbergstrom-lnx.Nvidia.com>
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
- <1381848794-11761-9-git-send-email-pdeschrijver@nvidia.com>
- <525D9117.9050009@wwwdotorg.org>
+	Wed, 16 Oct 2013 10:36:46 -0400
+Date: Wed, 16 Oct 2013 10:36:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+cc: Olof Johansson <olof@lixom.net>, Ryan Mallon <rmallon@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] usb: ohci: remove ep93xx bus glue platform driver
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8817DADDF6@P3PWEX4MB008.ex4.secureserver.net>
+Message-ID: <Pine.LNX.4.44L0.1310161034500.1264-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <525D9117.9050009@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 09:01:43PM +0200, Stephen Warren wrote:
-> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> > Introduce a common infrastructure for sharing clock initialization between
-> > SoCs.
-> 
-> > diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> 
-> > +struct clk ** __init tegra_lookup_dt_id(int clk_id,
-> > +					struct tegra_clk *tegra_clk)
-> > +{
-> > +	if (tegra_clk[clk_id].present)
-> > +		return &clks[tegra_clk[clk_id].dt_id];
-> > +	else
-> > +		return NULL;
-> 
-> Does this need range-checking? Or do we assume that since this is an
-> internal function, "clk_id" will never be out-of-range?
+On Tue, 15 Oct 2013, Hartley Sweeten wrote:
 
-That was my assumption indeed. I could add a range check if you think that's
-useful.
+> > This is definitely not a show-stopper in any way, but since this is
+> > just standard clock management, could you even move these clock ops
+> > into the driver? Are any other platforms already doing similar things
+> > so you could remove code from their platform that way as well, per
+> > chance?
+> 
+> It does not appear any of the other users of the ohci-platform driver do
+> anything similar.
+> 
+> The clock ops could be moved into the driver but I will need to add a
+> flag or something to the usb_ohci_pdata so that the platform can
+> indicated that a clock is required and  the clock ops should be done.
 
-Cheers,
+Adding a new entry to usb_ohci_pdata would be acceptable.
 
-Peter.
+However, I'm doubtful about how generic such a change would be.  Some
+of the platform drivers don't use any clocks, and others use more than
+one.  For now, it seems best to keep such dependencies in the
+platform-specific code.
+
+Alan Stern
+
