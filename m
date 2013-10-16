@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935110Ab3JPSTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:19:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35634 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761350Ab3JPRpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [ 34/69] ipc,msg: shorten critical region in msgctl_down
-Date: Wed, 16 Oct 2013 10:44:43 -0700
-Message-Id: <20131016174317.053439413@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
-References: <20131016174312.844154919@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S935513Ab3JPSUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 14:20:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48651 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761285Ab3JPRpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:45:44 -0400
+Date: Wed, 16 Oct 2013 19:38:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Martin Cermak <mcermak@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] uprobes: fix fork() with the pending ret-probe(s)
+Message-ID: <20131016173828.GA31347@redhat.com>
+References: <20131013191815.GA32466@redhat.com> <20131014182903.GA14115@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014182903.GA14115@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 10/14, Oleg Nesterov wrote:
+>
+> On 10/13, Oleg Nesterov wrote:
+> >
+> > Please review, this series fixes the serious bug reported by
+> > Martin and David and cc's stable. See the changelog in 5/5.
 
-------------------
+OK, nobody seems to object, I am going to ask Ingo to pull this fix.
 
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+But,
 
-commit 15724ecb7e9bab35fc694c666ad563adba820cc3 upstream.
+> This probably needs another patch to handle the special case, vfork().
+> In this case it would be more correct to dup return_instances but
+> (obviously) avoid dup_xol_area.
+>
+> However I think this is not that important, the child should not "unwind"
+> the stack if it shares mm/stack with its parent, otherwise it can corrupt
+> the parent's stack.
 
-Instead of holding the ipc lock for the entire function, use the
-ipcctl_pre_down_nolock and only acquire the lock for specific commands:
-RMID and SET.
+Yes, but I forgot that at least the child should return from vfork()
+itself and it can be ret-probed.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So I am sending the additional 6/5 in reply to 0/5. This change can
+be joined with 1/5, but I'd prefer to do this in a separate patch for
+better documentation.
 
----
- ipc/msg.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -410,11 +410,10 @@ static int msgctl_down(struct ipc_namesp
- 	down_write(&msg_ids(ns).rw_mutex);
- 	rcu_read_lock();
- 
--	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
--			       &msqid64.msg_perm, msqid64.msg_qbytes);
-+	ipcp = ipcctl_pre_down_nolock(ns, &msg_ids(ns), msqid, cmd,
-+				      &msqid64.msg_perm, msqid64.msg_qbytes);
- 	if (IS_ERR(ipcp)) {
- 		err = PTR_ERR(ipcp);
--		/* the ipc lock is not held upon failure */
- 		goto out_unlock1;
- 	}
- 
-@@ -422,10 +421,11 @@ static int msgctl_down(struct ipc_namesp
- 
- 	err = security_msg_queue_msgctl(msq, cmd);
- 	if (err)
--		goto out_unlock0;
-+		goto out_unlock1;
- 
- 	switch (cmd) {
- 	case IPC_RMID:
-+		ipc_lock_object(&msq->q_perm);
- 		/* freeque unlocks the ipc object and rcu */
- 		freeque(ns, ipcp);
- 		goto out_up;
-@@ -433,9 +433,10 @@ static int msgctl_down(struct ipc_namesp
- 		if (msqid64.msg_qbytes > ns->msg_ctlmnb &&
- 		    !capable(CAP_SYS_RESOURCE)) {
- 			err = -EPERM;
--			goto out_unlock0;
-+			goto out_unlock1;
- 		}
- 
-+		ipc_lock_object(&msq->q_perm);
- 		err = ipc_update_perm(&msqid64.msg_perm, ipcp);
- 		if (err)
- 			goto out_unlock0;
-@@ -454,6 +455,7 @@ static int msgctl_down(struct ipc_namesp
- 		break;
- 	default:
- 		err = -EINVAL;
-+		goto out_unlock1;
- 	}
- 
- out_unlock0:
-
+Oleg.
 
