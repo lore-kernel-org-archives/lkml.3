@@ -1,84 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934590Ab3JPOFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:05:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26562 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934350Ab3JPOFs (ORCPT
+	id S934652Ab3JPOF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:05:59 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39598 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934592Ab3JPOFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:05:48 -0400
+	Wed, 16 Oct 2013 10:05:53 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V9 02/33] iov_iter: iov_iter_copy_from_user() should use non-atomic copy
-Date: Wed, 16 Oct 2013 09:04:15 -0500
-Message-Id: <1381932286-14978-3-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH V9 22/33] ext4: add support for read_iter and write_iter
+Date: Wed, 16 Oct 2013 09:04:35 -0500
+Message-Id: <1381932286-14978-23-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+use the generic_file_read_iter(), create ext4_file_write_iter() based on
+ext4_file_write(), and make ext4_file_write() a wrapper around
+ext4_file_write_iter().
+
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/iov-iter.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ fs/ext4/file.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index 52c23d9..563a6ba 100644
---- a/fs/iov-iter.c
-+++ b/fs/iov-iter.c
-@@ -6,8 +6,8 @@
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
- 
--static size_t __iovec_copy_from_user_inatomic(char *vaddr,
--			const struct iovec *iov, size_t base, size_t bytes)
-+static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
-+				     size_t base, size_t bytes, int atomic)
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 3da2194..2ab3dcb 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -74,12 +74,11 @@ void ext4_unwritten_wait(struct inode *inode)
+  * or one thread will zero the other's data, causing corruption.
+  */
+ static int
+-ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+-		   unsigned long nr_segs, loff_t pos)
++ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
  {
- 	size_t copied = 0, left = 0;
+ 	struct super_block *sb = inode->i_sb;
+ 	int blockmask = sb->s_blocksize - 1;
+-	size_t count = iov_length(iov, nr_segs);
++	size_t count = iov_iter_count(iter);
+ 	loff_t final_size = pos + count;
  
-@@ -16,7 +16,10 @@ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 		int copy = min(bytes, iov->iov_len - base);
+ 	if (pos >= inode->i_size)
+@@ -92,8 +91,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+ }
  
- 		base = 0;
--		left = __copy_from_user_inatomic(vaddr, buf, copy);
-+		if (atomic)
-+			left = __copy_from_user_inatomic(vaddr, buf, copy);
-+		else
-+			left = __copy_from_user(vaddr, buf, copy);
- 		copied += copy;
- 		bytes -= copy;
- 		vaddr += copy;
-@@ -47,8 +50,8 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
- 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
--						i->iov, i->iov_offset, bytes);
-+		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
-+						i->iov_offset, bytes, 1);
+ static ssize_t
+-ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+-		    unsigned long nr_segs, loff_t pos)
++ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
++		    loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+@@ -101,11 +100,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	int unaligned_aio = 0;
+ 	ssize_t ret;
+ 	int overwrite = 0;
+-	size_t length = iov_length(iov, nr_segs);
++	size_t length = iov_iter_count(iter);
+ 
+ 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
+ 	    !is_sync_kiocb(iocb))
+-		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
++		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
+ 
+ 	/* Unaligned direct AIO must be serialized; see comment above */
+ 	if (unaligned_aio) {
+@@ -146,7 +145,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			overwrite = 1;
  	}
- 	kunmap_atomic(kaddr);
  
-@@ -75,8 +78,8 @@ size_t iov_iter_copy_from_user(struct page *page,
- 		left = __copy_from_user(kaddr + offset, buf, bytes);
- 		copied = bytes - left;
- 	} else {
--		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
--						i->iov, i->iov_offset, bytes);
-+		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
-+						i->iov_offset, bytes, 0);
+-	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	if (ret > 0) {
+@@ -165,8 +164,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ }
+ 
+ static ssize_t
+-ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long nr_segs, loff_t pos)
++ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct inode *inode = file_inode(iocb->ki_filp);
+ 	ssize_t ret;
+@@ -178,22 +176,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
+ 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-		size_t length = iov_length(iov, nr_segs);
++		size_t length = iov_iter_count(iter);
+ 
+ 		if ((pos > sbi->s_bitmap_maxbytes ||
+ 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
+ 			return -EFBIG;
+ 
+ 		if (pos + length > sbi->s_bitmap_maxbytes) {
+-			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
+-					      sbi->s_bitmap_maxbytes - pos);
++			ret = iov_iter_shorten(iter,
++					       sbi->s_bitmap_maxbytes - pos);
++			if (ret)
++				return ret;
+ 		}
  	}
- 	kunmap(page);
- 	return copied;
+ 
+ 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
+-		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
++		ret = ext4_file_dio_write(iocb, iter, pos);
+ 	else
+-		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
++		ret = generic_file_write_iter(iocb, iter, pos);
+ 
+ 	return ret;
+ }
+@@ -594,8 +594,8 @@ const struct file_operations ext4_file_operations = {
+ 	.llseek		= ext4_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= generic_file_aio_read,
+-	.aio_write	= ext4_file_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= ext4_file_write_iter,
+ 	.unlocked_ioctl = ext4_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= ext4_compat_ioctl,
 -- 
 1.8.4
 
