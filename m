@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab3JPJGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:06:51 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10457 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547Ab3JPJGq (ORCPT
+	id S1760292Ab3JPJI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:08:26 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:34971 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759029Ab3JPJIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:06:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 16 Oct 2013 02:02:20 -0700
-Date: Wed, 16 Oct 2013 12:06:43 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 00/19] Introduce common infra for tegra clocks
-Message-ID: <20131016090643.GI5643@tbergstrom-lnx.Nvidia.com>
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
- <525D8009.5040907@wwwdotorg.org>
+	Wed, 16 Oct 2013 05:08:23 -0400
+Date: Wed, 16 Oct 2013 10:08:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] mfd: tc3589x: add device tree bindings
+Message-ID: <20131016090819.GC19112@lee--X1>
+References: <1381871475-21543-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <525D8009.5040907@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1381871475-21543-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 07:48:57PM +0200, Stephen Warren wrote:
-> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> > This patchset introduces common infrastructure for clocks which exist in                                                                                       
-> > several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
-> > this new infrastructure.
-> 
-> I took my local branch based on next-20131014, and applied the following:
-> 
-> * Joseph's "ARM: tegra: add clock properties for devices of Tegra124".
-> 
-> * The patches from your "pull request for tegra clocks" of today (I just
-> cherry-picked the commits rather than merging the pull request).
-> 
-> * Your patch series "Introduce common infra for tegra clocks" of today.
-> 
-> * Your patch series "Tegra124 clock support" of today.
-> 
-> The resultant branch is at:
-> git://github.com:swarren/linux-tegra.git linux-next_common
-> 
-> When building, I see a number of section mismatches:
-> 
-> > WARNING: drivers/clk/tegra/built-in.o(.text+0x534): Section mismatch in reference from the function _tegra_clk_register_periph() to the function .init.text:get_reg_bank()
-> > The function _tegra_clk_register_periph() references
-> > the function __init get_reg_bank().
-> > This is often because _tegra_clk_register_periph lacks a __init 
-> > annotation or the annotation of get_reg_bank is wrong.
-> > 
-> > WARNING: drivers/clk/tegra/built-in.o(.text+0x9ec): Section mismatch in reference from the function tegra_clk_register_periph_gate() to the function .init.text:get_reg_bank()
-> > The function tegra_clk_register_periph_gate() references
-> > the function __init get_reg_bank().
-> > This is often because tegra_clk_register_periph_gate lacks a __init 
-> > annotation or the annotation of get_reg_bank is wrong.
-> 
-> There are more, but they refer to references from the same two
-> functions. You may need to add CONFIG_DEBUG_SECTION_MISMATCH=y to
-> .config to see these; I can't remember if that's included in
-> tegra_defconfig.
-> 
-> Testing on Venice2 (Tegra124): I see the following WARN during boot,
-> which I think is new relative to the internal branch you gave me yesterday:
-> 
-> > [    0.295386] ------------[ cut here ]------------
-> > [    0.300450] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:187 tegra_init_from_table+0x78/0x158()
-> > [    0.310362] Modules linked in:
-> > [    0.313740] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131014-05418-g30b9d55 #48
-> > [    0.323397] [<c0016644>] (unwind_backtrace+0x0/0x138) from [<c001225c>] (show_stack+0x10/0x14)
-> > [    0.332753] [<c001225c>] (show_stack+0x10/0x14) from [<c0572274>] (dump_stack+0x80/0xc0)
-> > [    0.341559] [<c0572274>] (dump_stack+0x80/0xc0) from [<c0025d54>] (warn_slowpath_common+0x64/0x88)
-> > [    0.351283] [<c0025d54>] (warn_slowpath_common+0x64/0x88) from [<c0025d94>] (warn_slowpath_null+0x1c/0x24)
-> > [    0.361768] [<c0025d94>] (warn_slowpath_null+0x1c/0x24) from [<c07b4c1c>] (tegra_init_from_table+0x78/0x158)
-> > [    0.372440] [<c07b4c1c>] (tegra_init_from_table+0x78/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
-> > [    0.384138] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
-> > [    0.394903] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
-> > [    0.404535] [<c079a580>] (customize_machine+0x1c/0x40) from [<c00089e0>] (do_one_initcall+0xec/0x19c)
-> > [    0.414551] [<c00089e0>] (do_one_initcall+0xec/0x19c) from [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8)
-> > [    0.424944] [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8) from [<c056d5a8>] (kernel_init+0x8/0xe4)
-> > [    0.434764] [<c056d5a8>] (kernel_init+0x8/0xe4) from [<c000f0f8>] (ret_from_fork+0x14/0x3c)
-> > [    0.443850] ---[ end trace 98c2207379d4cf99 ]---
-> 
+I'll let the DT guys do the deep review.
 
-Did you see  'tegra_init_from_table: Failed to set parent pll_c2 of epp ' before? Tegra124 doesn't have EPP...
+Just a couple of small points from me though.
 
-Cheers,
+1. MFD patches have the following syntax:
+  mfd: <device>[-sub]: <Description> /* Note the uppercase 'D' */
 
-Peter.
+> This defines the device tree bindings for the Toshiba TC3589x
+> series of multi-purpose expanders. Only the stuff I can test
+> is defined: GPIO and keypad. Others may implement more
+> subdevices further down the road.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/tc3589x.txt | 61 +++++++++++++++++++++++
+>  1 file changed, 61 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/tc3589x.txt
+
+2. The binding document is normally attached to the patch which
+applies the bindings, unless we've stopped doing that now.
+
+> +
+> +Example:
+> +
+
+3. You left off the example?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
