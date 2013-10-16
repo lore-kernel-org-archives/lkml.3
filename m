@@ -1,76 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761865Ab3JPSWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 14:22:53 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:64590 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761847Ab3JPSWu (ORCPT
+	id S1761192Ab3JPRpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:45:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35477 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab3JPRpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 14:22:50 -0400
-X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 14:22:50 EDT
-Subject: [PATCH 3/5] sched: Fix hrtimer_cancel/rq->lock deadlock
-To: peterz@infradead.org, mingo@redhat.com
-From: Ben Segall <bsegall@google.com>
-Cc: pjt@google.com, linux-kernel@vger.kernel.org
-Date: Wed, 16 Oct 2013 11:16:22 -0700
-Message-ID: <20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com>
-In-Reply-To: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
-References: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Oct 2013 13:45:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/69] 3.10.17-stable review
+Date: Wed, 16 Oct 2013 10:44:09 -0700
+Message-Id: <20131016174312.844154919@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
-waiting for the hrtimer to finish. However, if sched_cfs_period_timer
-runs for another loop iteration, the hrtimer can attempt to take
-rq->lock, resulting in deadlock.
+This is the start of the stable review cycle for the 3.10.17 release.
+There are 69 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Fix this by ensuring that cfs_b->timer_active is cleared only if the
-_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
-__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
-that to succeed or timer_active == 1.
+You might notice a bunch of ipc patches in this series.  That is to
+resolve some reported ipc bugs / scalabity issues.  Additional testing
+of these code paths would be greatly appreciated.
 
-Signed-off-by: Ben Segall <bsegall@google.com>
----
- kernel/sched/fair.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+Responses should be made by Fri Oct 18 17:41:53 UTC 2013.
+Anything received after that time might be too late.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b0eba47..fc44cc3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3234,6 +3234,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- 	if (idle)
- 		goto out_unlock;
- 
-+	/*
-+	 * if we have relooped after returning idle once, we need to update our
-+	 * status as actually running, so that other cpus doing
-+	 * __start_cfs_bandwidth will stop trying to cancel us.
-+	 */
-+	cfs_b->timer_active = 1;
-+
- 	__refill_cfs_bandwidth_runtime(cfs_b);
- 
- 	if (!throttled) {
-@@ -3502,11 +3509,11 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	 * (timer_active==0 becomes visible before the hrtimer call-back
- 	 * terminates).  In either case we ensure that it's re-programmed
- 	 */
--	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
-+	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
-+	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
-+		/* bounce the lock to allow do_sched_cfs_period_timer to run */
- 		raw_spin_unlock(&cfs_b->lock);
--		/* ensure cfs_b->lock is available while we wait */
--		hrtimer_cancel(&cfs_b->period_timer);
--
-+		cpu_relax();
- 		raw_spin_lock(&cfs_b->lock);
- 		/* if someone else restarted the timer then we're done */
- 		if (cfs_b->timer_active)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.17-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.17-rc1
+
+Linn Crosetto <linn@hp.com>
+    x86: avoid remapping data in parse_setup_data()
+
+Davidlohr Bueso <davidlohr@hp.com>
+    ipc,msg: prevent race with rmid in msgsnd,msgrcv
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: update sem_otime for all operations
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: synchronize the proc interface
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: optimize sem_lock()
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: fix race in sem_lock()
+
+Davidlohr Bueso <davidlohr@hp.com>
+    ipc: fix race with LSMs
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: drop ipc_lock_check
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc, shm: drop shm_lock_check
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: drop ipc_lock_by_ptr
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc, shm: guard against non-existant vma in shmdt(2)
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: document general ipc locking scheme
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: drop msg_unlock
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: rename ids->rw_mutex
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: shorten critical region for shmat
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: cleanup do_shmat pasta
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: shorten critical region for shmctl
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: make shmctl_nolock lockless
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: introduce shmctl_nolock
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: drop ipcctl_pre_down
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: shorten critical region in shmctl_down
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,shm: introduce lockless functions to obtain the ipc object
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/msg.c: Fix lost wakeup in msgsnd().
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: rename try_atomic_semop() to perform_atomic_semop(), docu update
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: replace shared sem_otime with per-semaphore value
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: always use only one queue for alter operations
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem: separate wait-for-zero and alter tasks into seperate queues
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/sem.c: cacheline align the semaphore structures
+
+Manfred Spraul <manfred@colorfullife.com>
+    ipc/util.c, ipc_rcu_alloc: cacheline align allocation
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: remove unused functions
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: shorten critical region in msgrcv
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: shorten critical region in msgsnd
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: make msgctl_nolock lockless
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: introduce lockless functions to obtain the ipc object
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: introduce msgctl_nolock
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc,msg: shorten critical region in msgctl_down
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: move locking out of ipcctl_pre_down_nolock
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: close open coded spin lock calls
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: introduce ipc object locking helpers
+
+Davidlohr Bueso <davidlohr.bueso@hp.com>
+    ipc: move rcu lock out of ipc_addid
+
+wojciech kapuscinski <wojtask9@wp.pl>
+    drm/radeon: fix hw contexts for SUMO2 asics
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon: fix typo in CP DMA register headers
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    drm/radeon: forever loop on error in radeon_do_test_moves()
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Only apply DPMS to the encoder if enabled
+
+Al Viro <viro@zeniv.linux.org.uk>
+    cope with potentially long ->d_dname() output for shmem/hugetlb
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - Fix mono speakers and headset mic on Dell Vostro 5470
+
+Ingo Molnar <mingo@kernel.org>
+    compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    watchdog: ts72xx_wdt: locking bug in ioctl
+
+Vineet Gupta <vgupta@synopsys.com>
+    ARC: Ignore ptrace SETREGSET request for synthetic register "stop_pc"
+
+Christian Ruppert <christian.ruppert@abilis.com>
+    ARC: Fix signal frame management for SA_SIGINFO
+
+Vineet Gupta <vgupta@synopsys.com>
+    ARC: Workaround spinlock livelock in SMP SystemC simulation
+
+Vineet Gupta <vgupta@synopsys.com>
+    ARC: Fix 32-bit wrap around in access_ok()
+
+Mischa Jonker <mjonker@synopsys.com>
+    ARC: Handle zero-overhead-loop in unaligned access handler
+
+Mischa Jonker <mjonker@synopsys.com>
+    ARC: Fix __udelay calculation
+
+Noam Camus <noamc@ezchip.com>
+    ARC: SMP failed to boot due to missing IVT setup
+
+Vineet Gupta <vgupta@synopsys.com>
+    ARC: Setup Vector Table Base in early boot
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: Fix the world famous typo with is_gate_vma()
+
+Helge Deller <deller@gmx.de>
+    parisc: fix interruption handler to respect pagefault_disable()
+
+Paul Mackerras <paulus@samba.org>
+    KVM: PPC: Book3S HV: Fix typo in saving DSCR
+
+Dave Jones <davej@redhat.com>
+    ext4: fix memory leak in xattr
+
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: use right root when checking for hash collision
+
+Henrik Rydberg <rydberg@euromail.se>
+    hwmon: (applesmc) Always read until end of data
+
+Taras Kondratiuk <taras.kondratiuk@linaro.org>
+    i2c: omap: Clear ARDY bit twice
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vfs: allow O_PATH file descriptors for fstatfs()
+
+Theodore Ts'o <tytso@mit.edu>
+    random: run random_int_secret_init() run after all late_initcalls
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - Fix microphone for Sony VAIO Pro 13 (Haswell model)
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Add fixup for ASUS N56VZ
+
+Anssi Hannula <anssi.hannula@iki.fi>
+    ALSA: hda - hdmi: Fix channel map switch not taking effect
+
+Daniel Mack <zonque@gmail.com>
+    ALSA: snd-usb-usx2y: remove bogus frame checks
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                |   4 +-
+ arch/arc/include/asm/delay.h            |   5 +-
+ arch/arc/include/asm/sections.h         |   1 -
+ arch/arc/include/asm/spinlock.h         |   9 +-
+ arch/arc/include/asm/uaccess.h          |   4 +-
+ arch/arc/kernel/head.S                  |   7 +
+ arch/arc/kernel/irq.c                   |   3 -
+ arch/arc/kernel/ptrace.c                |   2 +-
+ arch/arc/kernel/setup.c                 |   3 -
+ arch/arc/kernel/signal.c                |  25 +-
+ arch/arc/kernel/unaligned.c             |   6 +
+ arch/arm/include/asm/jump_label.h       |   2 +-
+ arch/arm/kernel/process.c               |   2 +-
+ arch/mips/include/asm/jump_label.h      |   2 +-
+ arch/parisc/kernel/traps.c              |   6 +-
+ arch/powerpc/include/asm/jump_label.h   |   2 +-
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |   2 +-
+ arch/s390/include/asm/jump_label.h      |   2 +-
+ arch/sparc/include/asm/jump_label.h     |   2 +-
+ arch/x86/include/asm/cpufeature.h       |   2 +-
+ arch/x86/include/asm/e820.h             |   2 +-
+ arch/x86/include/asm/jump_label.h       |   2 +-
+ arch/x86/kernel/e820.c                  |   5 +-
+ arch/x86/kernel/setup.c                 |  19 +-
+ drivers/char/random.c                   |   3 +-
+ drivers/gpu/drm/i915/intel_display.c    |   8 +-
+ drivers/gpu/drm/radeon/evergreen.c      |   2 +-
+ drivers/gpu/drm/radeon/evergreend.h     |   4 +-
+ drivers/gpu/drm/radeon/r600d.h          |   2 +-
+ drivers/gpu/drm/radeon/radeon_test.c    |   4 +-
+ drivers/gpu/drm/radeon/sid.h            |   4 +-
+ drivers/hwmon/applesmc.c                |  13 +
+ drivers/i2c/busses/i2c-omap.c           |   3 +
+ drivers/watchdog/ts72xx_wdt.c           |   3 +-
+ fs/btrfs/inode.c                        |   2 +-
+ fs/dcache.c                             |  11 +
+ fs/ext4/xattr.c                         |   2 +
+ fs/hugetlbfs/inode.c                    |   8 +-
+ fs/statfs.c                             |   2 +-
+ include/linux/compiler-gcc4.h           |  15 +
+ include/linux/dcache.h                  |   1 +
+ include/linux/ipc_namespace.h           |   2 +-
+ include/linux/random.h                  |   1 +
+ include/linux/sem.h                     |   6 +-
+ init/main.c                             |   2 +
+ ipc/msg.c                               | 281 ++++++++------
+ ipc/namespace.c                         |   7 +-
+ ipc/sem.c                               | 660 ++++++++++++++++++++++----------
+ ipc/shm.c                               | 288 ++++++++------
+ ipc/util.c                              | 140 +++----
+ ipc/util.h                              |  34 +-
+ mm/shmem.c                              |   8 +-
+ sound/pci/hda/patch_hdmi.c              |  18 +-
+ sound/pci/hda/patch_realtek.c           |  37 ++
+ sound/usb/usx2y/usbusx2yaudio.c         |  22 +-
+ sound/usb/usx2y/usx2yhwdeppcm.c         |   7 +-
+ 56 files changed, 1062 insertions(+), 657 deletions(-)
+
 
