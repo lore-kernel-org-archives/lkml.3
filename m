@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761799Ab3JPRyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:54:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35938 "EHLO
+	id S1761852Ab3JPRzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:55:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761634Ab3JPRqb (ORCPT
+	with ESMTP id S1761303Ab3JPRqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:31 -0400
+	Wed, 16 Oct 2013 13:46:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 23/50] compiler/gcc4: Add quirk for asm goto miscompilation bug
-Date: Wed, 16 Oct 2013 10:45:09 -0700
-Message-Id: <20131016174401.199274049@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 30/50] drm/radeon: fix typo in CP DMA register headers
+Date: Wed, 16 Oct 2013 10:45:16 -0700
+Message-Id: <20131016174401.988595888@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -31,158 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
+commit aa3e146d04b6ae37939daeebaec060562b3db559 upstream.
 
-Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
-a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
-constructs, as outlined here:
+Wrong bit offset for SRC endian swapping.
 
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-
-Implement a workaround suggested by Jakub Jelinek.
-
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Suggested-by: Jakub Jelinek <jakub@redhat.com>
-Reviewed-by: Richard Henderson <rth@twiddle.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20131015062351.GA4666@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/jump_label.h     |    2 +-
- arch/mips/include/asm/jump_label.h    |    2 +-
- arch/powerpc/include/asm/jump_label.h |    2 +-
- arch/s390/include/asm/jump_label.h    |    2 +-
- arch/sparc/include/asm/jump_label.h   |    2 +-
- arch/x86/include/asm/cpufeature.h     |    6 +++---
- arch/x86/include/asm/jump_label.h     |    2 +-
- include/linux/compiler-gcc4.h         |   15 +++++++++++++++
- 8 files changed, 24 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/evergreend.h |    4 ++--
+ drivers/gpu/drm/radeon/r600d.h      |    2 +-
+ drivers/gpu/drm/radeon/sid.h        |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/arm/include/asm/jump_label.h
-+++ b/arch/arm/include/asm/jump_label.h
-@@ -16,7 +16,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_volatile_goto("1:\n\t"
- 		 JUMP_LABEL_NOP "\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 ".word 1b, %l[l_yes], %c0\n\t"
---- a/arch/mips/include/asm/jump_label.h
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -22,7 +22,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\tnop\n\t"
-+	asm_volatile_goto("1:\tnop\n\t"
- 		"nop\n\t"
- 		".pushsection __jump_table,  \"aw\"\n\t"
- 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
---- a/arch/powerpc/include/asm/jump_label.h
-+++ b/arch/powerpc/include/asm/jump_label.h
-@@ -19,7 +19,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_volatile_goto("1:\n\t"
- 		 "nop\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
---- a/arch/s390/include/asm/jump_label.h
-+++ b/arch/s390/include/asm/jump_label.h
-@@ -15,7 +15,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("0:	brcl 0,0\n"
-+	asm_volatile_goto("0:	brcl 0,0\n"
- 		".pushsection __jump_table, \"aw\"\n"
- 		ASM_ALIGN "\n"
- 		ASM_PTR " 0b, %l[label], %0\n"
---- a/arch/sparc/include/asm/jump_label.h
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -9,7 +9,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--		asm goto("1:\n\t"
-+		asm_volatile_goto("1:\n\t"
- 			 "nop\n\t"
- 			 "nop\n\t"
- 			 ".pushsection __jump_table,  \"aw\"\n\t"
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -373,7 +373,7 @@ static __always_inline __pure bool __sta
- 		 * Catch too early usage of this before alternatives
- 		 * have run.
- 		 */
--		asm goto("1: jmp %l[t_warn]\n"
-+		asm_volatile_goto("1: jmp %l[t_warn]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
-@@ -386,7 +386,7 @@ static __always_inline __pure bool __sta
- 			 : : "i" (X86_FEATURE_ALWAYS) : : t_warn);
- #endif
- 
--		asm goto("1: jmp %l[t_no]\n"
-+		asm_volatile_goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
-@@ -448,7 +448,7 @@ static __always_inline __pure bool _stat
-  * have. Thus, we force the jump to the widest, 4-byte, signed relative
-  * offset even though the last would often fit in less bytes.
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -1494,7 +1494,7 @@
+  * 6. COMMAND [29:22] | BYTE_COUNT [20:0]
   */
--		asm goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
-+		asm_volatile_goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"		/* src offset */
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -13,7 +13,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:"
-+	asm_volatile_goto("1:"
- 		STATIC_KEY_INITIAL_NOP
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -65,6 +65,21 @@
- #define __visible __attribute__((externally_visible))
- #endif
- 
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-+ * Fixed in GCC 4.8.2 and later versions.
-+ *
-+ * (asm goto is automatically volatile - the naming reflects this.)
-+ */
-+#if GCC_VERSION <= 40801
-+# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-+#else
-+# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
-+#endif
- 
- #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
- #if GCC_VERSION >= 40400
+ #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
+-                /* 0 - SRC_ADDR
++                /* 0 - DST_ADDR
+ 		 * 1 - GDS
+ 		 */
+ #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
+@@ -1509,7 +1509,7 @@
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+ #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -1487,7 +1487,7 @@
+  */
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -1490,7 +1490,7 @@
+  * 6. COMMAND [30:21] | BYTE_COUNT [20:0]
+  */
+ #              define PACKET3_CP_DMA_DST_SEL(x)    ((x) << 20)
+-                /* 0 - SRC_ADDR
++                /* 0 - DST_ADDR
+ 		 * 1 - GDS
+ 		 */
+ #              define PACKET3_CP_DMA_ENGINE(x)     ((x) << 27)
+@@ -1505,7 +1505,7 @@
+ #              define PACKET3_CP_DMA_CP_SYNC       (1 << 31)
+ /* COMMAND */
+ #              define PACKET3_CP_DMA_DIS_WC        (1 << 21)
+-#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 23)
++#              define PACKET3_CP_DMA_CMD_SRC_SWAP(x) ((x) << 22)
+                 /* 0 - none
+ 		 * 1 - 8 in 16
+ 		 * 2 - 8 in 32
 
 
