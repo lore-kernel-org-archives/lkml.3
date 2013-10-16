@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934468Ab3JPM7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:59:47 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19080 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934389Ab3JPM7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:59:30 -0400
-Date: Wed, 16 Oct 2013 08:59:28 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+	id S934358Ab3JPNCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 09:02:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56219 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934162Ab3JPNCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 09:02:06 -0400
+Date: Wed, 16 Oct 2013 15:01:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Liu Chuansheng <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
-Message-ID: <20131016085928.5b8f9d95@gandalf.local.home>
-In-Reply-To: <20131016115354.GC12773@localhost.localdomain>
-References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
-	<1381870252-5430-3-git-send-email-fweisbec@gmail.com>
-	<1381870805.22110.37.camel@joe-AO722>
-	<20131015211251.GE3269@localhost.localdomain>
-	<1381872280.22110.41.camel@joe-AO722>
-	<20131016115354.GC12773@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
+Message-ID: <20131016130151.GA14258@pd.tnic>
+References: <20131015163906.342d8ffa@gandalf.local.home>
+ <20131016061118.GA21109@gmail.com>
+ <20131016084219.53deac7a@gandalf.local.home>
+ <20131016125111.GB2611@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131016125111.GB2611@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 13:53:56 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
- 
-> static int done;
+On Wed, Oct 16, 2013 at 02:51:11PM +0200, Ingo Molnar wrote:
+> The one posted in the thread shows:
 > 
-> if (!done) {
->     trace_printk(something);
->     trace_printk(something else);
->     trace_dump_stack();
->     done = 1;
-> }
-> 
-> Having a DO_ONCE() would help a lot I think.
-> 
-> Now we can rename it to __DO_ONCE() and put a big fat comment to avoid it
-> to be misused.
+> [   17.148755]  [<c2825b08>] do_page_fault+0x8/0x10
+> [   17.153926]  [<c2823066>] error_code+0x5a/0x60
+> [   17.158905]  [<c2825b00>] ? __do_page_fault+0x4a0/0x4a0
+> [   17.164760]  [<c208d1a9>] ? module_address_lookup+0x29/0xb0
+> [   17.170999]  [<c208dddb>] kallsyms_lookup+0x9b/0xb0
+> [   17.186804]  [<c208def4>] sprint_symbol+0x14/0x20
+> [   17.192063]  [<c208df1e>] __print_symbol+0x1e/0x40
+> [   17.197430]  [<c25e00d7>] ? ashmem_shrink+0x77/0xf0
+> [   17.202895]  [<c25e13e0>] ? logger_aio_write+0x230/0x230
+> [   17.208845]  [<c205bdf5>] ? up+0x25/0x40
+> [   17.213242]  [<c2039cb7>] ? console_unlock+0x337/0x440
+> [   17.218998]  [<c2818236>] ? printk+0x38/0x3a
+> [   17.223782]  [<c20006d0>] __show_regs+0x70/0x190
+> [   17.228954]  [<c200353a>] show_regs+0x3a/0x1b0
+> [   17.233931]  [<c2818236>] ? printk+0x38/0x3a
+> [   17.238717]  [<c2824182>] arch_trigger_all_cpu_backtrace_handler+0x62/0x80
+> [   17.246413]  [<c2823919>] nmi_handle.isra.0+0x39/0x60
+> [   17.252071]  [<c2823a29>] do_nmi+0xe9/0x3f0
 
-I wonder if we should make it just ONCE(), with no arguments that
-should go into an if statement.
+Btw, you probably should drop all the numbers and leave only the
+function names in the stack trace.
 
+-- 
+Regards/Gruss,
+    Boris.
 
-if (ONCE())
-	do_this_function_once();
-
-
-Where ONCE() is:
-
-({
-	static int __once;
-	int __old_once = __once;
-
-	__once = 1;
-	__old_once;
-})
-
-Or the xchg version:
-
-({
-	static int __once;
-
-	if (!__once)
-		xchg(&__once, 1);
-	else
-		1;
-})
-
--- Steve
+Sent from a fat crate under my desk. Formatting is fine.
+--
