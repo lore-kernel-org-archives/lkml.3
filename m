@@ -1,100 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761749Ab3JPWDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 18:03:52 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2265 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760766Ab3JPWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 18:02:11 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Tim Kryger" <tim.kryger@linaro.org>
-To: "Christian Daudt" <bcm@fixthebug.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Rob Landley" <rob@landley.net>, "Wolfram Sang" <wsa@the-dreams.de>,
-        "Grant Likely" <grant.likely@linaro.org>
-cc: "Tim Kryger" <tim.kryger@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RESEND PATCH 3/4] ARM: dts: bcm281xx: Add i2c busses
-Date: Wed, 16 Oct 2013 15:01:48 -0700
-Message-ID: <1381960909-1735-4-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
-References: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
+	id S1761906Ab3JPWGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 18:06:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38885 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759149Ab3JPWGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 18:06:19 -0400
+Date: Thu, 17 Oct 2013 00:06:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ben Segall <bsegall@google.com>
+Cc: mingo@redhat.com, pjt@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] sched: Avoid throttle_cfs_rq racing with
+ period_timer stopping
+Message-ID: <20131016220609.GN10651@twins.programming.kicks-ass.net>
+References: <20131016181548.22647.17161.stgit@sword-of-the-dawn.mtv.corp.google.com>
+ <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
 MIME-Version: 1.0
-X-WSS-ID: 7E41D3402E42317528-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the DTS nodes for all the i2c busses in the SoC.
+On Wed, Oct 16, 2013 at 11:16:32AM -0700, Ben Segall wrote:
+> +#ifdef CONFIG_CFS_BANDWIDTH
+> +	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
+> +			cfs_rq->tg->cfs_bandwidth.timer_active);
+> +	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
+> +			cfs_rq->throttled);
+> +	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
+> +			cfs_rq->throttle_count);
+> +#endif
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Christian Daudt <csd@broadcom.com>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
----
- arch/arm/boot/dts/bcm11351.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+Not really your fault; but that function just cries for something like:
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 1246885..4bfd7e3 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -146,6 +146,46 @@
- 		status = "disabled";
- 	};
- 
-+	i2c@3e016000 {
-+		compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
-+		reg = <0x3e016000 0x80>;
-+		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clocks = <&bsc1_clk>;
-+		status = "disabled";
-+	};
-+
-+	i2c@3e017000 {
-+		compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
-+		reg = <0x3e017000 0x80>;
-+		interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clocks = <&bsc2_clk>;
-+		status = "disabled";
-+	};
-+
-+	i2c@3e018000 {
-+		compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
-+		reg = <0x3e018000 0x80>;
-+		interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clocks = <&bsc3_clk>;
-+		status = "disabled";
-+	};
-+
-+	i2c@3500d000 {
-+		compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
-+		reg = <0x3500d000 0x80>;
-+		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clocks = <&pmu_bsc_clk>;
-+		status = "disabled";
-+	};
-+
- 	clocks {
- 		bsc1_clk: bsc1 {
- 			compatible = "fixed-clock";
--- 
-1.8.0.1
-
+#define SEQ_cfs_rq(m, member)		\
+	SEQ_printf(m, "  .%-30s: %ld\n", #member, (long)cfs_rq->member)
 
