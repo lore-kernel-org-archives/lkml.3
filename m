@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934335Ab3JPMji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 08:39:38 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:48305 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932406Ab3JPMjh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 08:39:37 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yu Tang <ytang5@marvell.com>, Zhou Zhu <zzhu3@marvell.com>
-Date: Wed, 16 Oct 2013 05:39:32 -0700
-Subject: [Question] Ask for arm arch timer
-Thread-Topic: [Question] Ask for arm arch timer
-Thread-Index: Ac7KbMOfrjv78kxwSFCt4Rke2/2frw==
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF280@SC-VEXCH4.marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934278Ab3JPMlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 08:41:36 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43003 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932406Ab3JPMlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 08:41:35 -0400
+Date: Wed, 16 Oct 2013 18:11:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
+        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Martin Cermak <mcermak@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] uprobes: Introduce __create_xol_area()
+Message-ID: <20131016124125.GE19729@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131013191815.GA32466@redhat.com>
+ <20131013191835.GA32487@redhat.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-16_03:2013-10-16,2013-10-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310160034
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131013191835.GA32487@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101612-5806-0000-0000-00002316E039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-I saw your following patch called clocksource_of_init() directly in time_init() for arm64.
-My question is that what should we do if there are some Soc special work need to be done before arch timer can be used?
-Thanks in advance.
+* Oleg Nesterov <oleg@redhat.com> [2013-10-13 21:18:35]:
 
-commit 0583fe478a7d93be2c814b7e50d6e81c287edfe8
-Author: Rob Herring <rob.herring@calxeda.com>
-Date:   Wed Apr 10 18:27:51 2013 -0500
+> No functional changes, preparation.
+> 
+> Extract the code which actually allocates/installs the new area
+> into the new helper, __create_xol_area().
+> 
+> While at it remove the unnecessary "ret = ENOMEM" and "ret = 0"
+> in xol_add_vma(), they both have no effect.
+> 
+> Cc: stable@vger.kernel.org # 3.9+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-    ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+One nit below.
+
+> 
+>  /* Slot allocation for XOL */
+> -static int xol_add_vma(struct xol_area *area)
+> +static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
+>  {
+> -	struct mm_struct *mm = current->mm;
+>  	int ret = -EALREADY;
+> 
+>  	down_write(&mm->mmap_sem);
+>  	if (mm->uprobes_state.xol_area)
+>  		goto fail;
+> 
+> -	ret = -ENOMEM;
+> -	/* Try to map as high as possible, this is only a hint. */
+> +		/* Try to map as high as possible, this is only a hint. */
+
+Nit: This comment seems to be shifted unnecessarily.
 
 
-Best Regards,
-Neil Zhang
-
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
