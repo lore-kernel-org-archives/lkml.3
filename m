@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761552Ab3JPRqC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:46:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35534 "EHLO
+	id S934576Ab3JPRqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35574 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761289Ab3JPRpa (ORCPT
+	with ESMTP id S1761304Ab3JPRph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:45:30 -0400
+	Wed, 16 Oct 2013 13:45:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 15/69] ARC: SMP failed to boot due to missing IVT setup
-Date: Wed, 16 Oct 2013 10:44:24 -0700
-Message-Id: <20131016174314.748333574@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 24/69] ALSA: hda - Fix mono speakers and headset mic on Dell Vostro 5470
+Date: Wed, 16 Oct 2013 10:44:33 -0700
+Message-Id: <20131016174315.860088365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
 References: <20131016174312.844154919@linuxfoundation.org>
@@ -28,89 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Noam Camus <noamc@ezchip.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit c3567f8a359b7917dcffa442301f88ed0a75211f upstream.
+This is a backport for stable. The original commit SHA is
+338cae565c53755de9f87d6a801517940d2d56f7.
 
-Commit 05b016ecf5e7a "ARC: Setup Vector Table Base in early boot" moved
-the Interrupt vector Table setup out of arc_init_IRQ() which is called
-for all CPUs, to entry point of boot cpu only, breaking booting of others.
+On this machine, DAC on node 0x03 seems to give mono output.
 
-Fix by adding the same to entry point of non-boot CPUs too.
+Also, it needs additional patches for headset mic support.
+It supports CTIA style headsets only.
 
-read_arc_build_cfg_regs() printing IVT Base Register didn't help the
-casue since it prints a synthetic value if zero which is totally bogus,
-so fix that to print the exact Register.
+Alsa-info available at the bug link below.
 
-[vgupta: Remove the now stale comment from header of arc_init_IRQ and
-also added the commentary for halt-on-reset]
-
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Signed-off-by: Noam Camus <noamc@ezchip.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BugLink: https://bugs.launchpad.net/bugs/1236228
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arc/include/asm/sections.h |    1 -
- arch/arc/kernel/head.S          |    5 +++++
- arch/arc/kernel/irq.c           |    1 -
- arch/arc/kernel/setup.c         |    3 ---
- 4 files changed, 5 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_realtek.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
---- a/arch/arc/include/asm/sections.h
-+++ b/arch/arc/include/asm/sections.h
-@@ -11,7 +11,6 @@
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3200,6 +3200,15 @@ static void alc269_fixup_limit_int_mic_b
+ 	}
+ }
  
- #include <asm-generic/sections.h>
- 
--extern char _int_vec_base_lds[];
- extern char __arc_dccm_base[];
- extern char __dtb_start[];
- 
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -34,6 +34,9 @@ stext:
- 	;	IDENTITY Reg [ 3  2  1  0 ]
- 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
- 	;					=> #Core-ID if SMP (Master 0)
-+	; Note that non-boot CPUs might not land here if halt-on-reset and
-+	; instead breath life from @first_lines_of_secondary, but we still
-+	; need to make sure only boot cpu takes this path.
- 	GET_CPU_ID  r5
- 	cmp	r5, 0
- 	jnz	arc_platform_smp_wait_to_boot
-@@ -98,6 +101,8 @@ stext:
- 
- first_lines_of_secondary:
- 
-+	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
++static void alc290_fixup_mono_speakers(struct hda_codec *codec,
++				       const struct hda_fixup *fix, int action)
++{
++	if (action == HDA_FIXUP_ACT_PRE_PROBE)
++		/* Remove DAC node 0x03, as it seems to be
++		   giving mono output */
++		snd_hda_override_wcaps(codec, 0x03, 0);
++}
 +
- 	; setup per-cpu idle task as "current" on this CPU
- 	ld	r0, [@secondary_idle_tsk]
- 	SET_CURR_TASK_ON_CPU  r0, r1
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -24,7 +24,6 @@
-  * -Needed for each CPU (hence not foldable into init_IRQ)
-  *
-  * what it does ?
-- * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
-  * -Disable all IRQs (on CPU side)
-  * -Optionally, setup the High priority Interrupts as Level 2 IRQs
-  */
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -47,10 +47,7 @@ void __cpuinit read_arc_build_cfg_regs(v
- 	READ_BCR(AUX_IDENTITY, cpu->core);
+ enum {
+ 	ALC269_FIXUP_SONY_VAIO,
+ 	ALC275_FIXUP_SONY_VAIO_GPIO2,
+@@ -3227,6 +3236,8 @@ enum {
+ 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+ 	ALC269_FIXUP_DELL1_MIC_NO_PRESENCE,
+ 	ALC269_FIXUP_DELL2_MIC_NO_PRESENCE,
++	ALC269_FIXUP_DELL3_MIC_NO_PRESENCE,
++	ALC290_FIXUP_MONO_SPEAKERS,
+ 	ALC269_FIXUP_HEADSET_MODE,
+ 	ALC269_FIXUP_HEADSET_MODE_NO_HP_MIC,
+ 	ALC269_FIXUP_ASUS_X101_FUNC,
+@@ -3413,6 +3424,15 @@ static const struct hda_fixup alc269_fix
+ 		.chained = true,
+ 		.chain_id = ALC269_FIXUP_HEADSET_MODE_NO_HP_MIC
+ 	},
++	[ALC269_FIXUP_DELL3_MIC_NO_PRESENCE] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x1a, 0x01a1913c }, /* use as headset mic, without its own jack detect */
++			{ }
++		},
++		.chained = true,
++		.chain_id = ALC269_FIXUP_HEADSET_MODE_NO_HP_MIC
++	},
+ 	[ALC269_FIXUP_HEADSET_MODE] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_headset_mode,
+@@ -3485,6 +3505,12 @@ static const struct hda_fixup alc269_fix
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_limit_int_mic_boost,
+ 	},
++	[ALC290_FIXUP_MONO_SPEAKERS] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc290_fixup_mono_speakers,
++		.chained = true,
++		.chain_id = ALC269_FIXUP_DELL3_MIC_NO_PRESENCE,
++	},
+ };
  
- 	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
--
- 	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
--	if (cpu->vec_base == 0)
--		cpu->vec_base = (unsigned int)_int_vec_base_lds;
- 
- 	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
- 	cpu->uncached_base = uncached_space.start << 24;
+ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+@@ -3519,6 +3545,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+ 	SND_PCI_QUIRK(0x103c, 0x18e6, "HP", ALC269_FIXUP_HP_GPIO_LED),
+ 	SND_PCI_QUIRK(0x103c, 0x1973, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
 
 
