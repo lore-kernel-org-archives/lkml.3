@@ -1,74 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761022Ab3JPQtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:49:40 -0400
-Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:50851 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759389Ab3JPQti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:49:38 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:3138:3139:3140:3141:3142:3167:3308:3353:3622:3865:3868:3872:3873:4321:5007:7652:7903:9165:10004:10400:10848:11232:11658:11914:12219:12517:12519:12555:12679:12740:13069:13141:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crate31_19a2502c18c56
-X-Filterd-Recvd-Size: 2745
-Message-ID: <1381942175.22110.57.camel@joe-AO722>
-Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Chen, Gong" <gong.chen@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, tony.luck@intel.com,
-        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Oct 2013 09:49:35 -0700
-In-Reply-To: <20131016160550.GG13608@pd.tnic>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	 <20131016160550.GG13608@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761103Ab3JPQuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:50:11 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:31357
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761023Ab3JPQuI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 12:50:08 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6hbe9i1155h)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+Subject: RE: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
+ devices
+Thread-Topic: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe
+ devices
+Thread-Index: AQHOymPvVc07lznlt0aYYYFZf3eo7Zn3ijsA
+Date: Wed, 16 Oct 2013 16:50:02 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071C0835@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
+ <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1381922582-28724-3-git-send-email-Varun.Sethi@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [122.176.232.193]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-16 at 18:05 +0200, Borislav Petkov wrote:
-> On Wed, Oct 16, 2013 at 10:55:57AM -0400, Chen, Gong wrote:
-[]
-> > After applying this patch series, when a memory corrected error happens,
-> > we can get following information:
-> > 
-> > dmesg output:
-> > 
-> > [  949.545817] {1}Hardware error detected on CPU15
-> > [  949.549786] {1}event severity: corrected
-> > [  949.549786] {1} Error 0, type: corrected
-> > [  949.549786] {1}  section_type: memory error
-> > [  949.549786] {1}  physical_address: 0x0000001057eb0000
-> > [  949.549786] {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
-> > [  949.549786] {1}Above error has been corrected by h/w and require no further action
-> > [  949.549786] mce: [Hardware Error]: Machine check events logged
 
-> Yep, looks almost very good. One nit: can you raise the action line
-> higher, like this:
+
+> -----Original Message-----
+> From: Sethi Varun-B16395
+> Sent: Wednesday, October 16, 2013 4:53 PM
+> To: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Yoder Stuart-B08248; Wood
+> Scott-B07421; alex.williamson@redhat.com; Bhushan Bharat-R65777
+> Cc: Sethi Varun-B16395
+> Subject: [PATCH 2/3 v2] iommu/fsl: Enable default DMA window for PCIe devices
 > 
-> > [  949.545817] {1}Hardware error detected on CPU15
-> > [  949.549786] {1}It has been corrected by h/w and requires no further action
+> Once the PCIe device assigned to a guest VM (via VFIO) gets detached from the
+> iommu domain (when guest terminates), its PAMU table entry is disabled. So, this
+> would prevent the device from being used once it's assigned back to the host.
 > 
-> <here come the error details>
+> This patch allows for creation of a default DMA window corresponding to the
+> device and subsequently enabling the PAMU table entry. Before we enable the
+> entry, we ensure that the device's bus master capability is disabled (device
+> quiesced).
+> 
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+>  drivers/iommu/fsl_pamu.c        |   43 ++++++++++++++++++++++++++++--------
+>  drivers/iommu/fsl_pamu.h        |    1 +
+>  drivers/iommu/fsl_pamu_domain.c |   46 ++++++++++++++++++++++++++++++++++++---
+>  3 files changed, 78 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c index
+> cba0498..fb4a031 100644
+> --- a/drivers/iommu/fsl_pamu.c
+> +++ b/drivers/iommu/fsl_pamu.c
+> @@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace *paace,
+> u32 wnum)
+>  	return spaace;
+>  }
+> 
+> +/*
+> + * Defaul PPAACE settings for an LIODN.
+> + */
+> +static void setup_default_ppaace(struct paace *ppaace) {
+> +	pamu_init_ppaace(ppaace);
+> +	/* window size is 2^(WSE+1) bytes */
+> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
+> +	ppaace->wbah = 0;
+> +	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
+> +	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
+> +		PAACE_ATM_NO_XLATE);
+> +	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
+> +		PAACE_AP_PERMS_ALL);
+> +}
+>  /**
+>   * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
+>   *                                required for primary PAACE in the secondary
+> @@ -253,6 +268,24 @@ static unsigned long pamu_get_fspi_and_allocate(u32
+> subwin_cnt)
+>  	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));  }
+> 
+> +/* Reset the PAACE entry to the default state */ void
+> +enable_default_dma_window(int liodn) {
+> +	struct paace *ppaace;
+> +
+> +	ppaace = pamu_get_ppaace(liodn);
+> +	if (!ppaace) {
+> +		pr_debug("Invalid liodn entry\n");
+> +		return;
+> +	}
+> +
+> +	memset(ppaace, 0, sizeof(struct paace));
+> +
+> +	setup_default_ppaace(ppaace);
+> +	mb();
+> +	pamu_enable_liodn(liodn);
+> +}
+> +
+>  /* Release the subwindows reserved for a particular LIODN */  void
+> pamu_free_subwins(int liodn)  { @@ -752,15 +785,7 @@ static void __init
+> setup_liodns(void)
+>  				continue;
+>  			}
+>  			ppaace = pamu_get_ppaace(liodn);
+> -			pamu_init_ppaace(ppaace);
+> -			/* window size is 2^(WSE+1) bytes */
+> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
+> -			ppaace->wbah = 0;
+> -			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
+> -			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
+> -				PAACE_ATM_NO_XLATE);
+> -			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
+> -				PAACE_AP_PERMS_ALL);
+> +			setup_default_ppaace(ppaace);
+>  			if (of_device_is_compatible(node, "fsl,qman-portal"))
+>  				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
+>  			if (of_device_is_compatible(node, "fsl,qman")) diff --git
+> a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h index 8fc1a12..0edcbbbb
+> 100644
+> --- a/drivers/iommu/fsl_pamu.h
+> +++ b/drivers/iommu/fsl_pamu.h
+> @@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device *dev);  int
+> pamu_update_paace_stash(int liodn, u32 subwin, u32 value);  int
+> pamu_disable_spaace(int liodn, u32 subwin);
+>  u32 pamu_get_max_subwin_cnt(void);
+> +void enable_default_dma_window(int liodn);
+> 
+>  #endif  /* __FSL_PAMU_H */
+> diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+> index 966ae70..dd6cafc 100644
+> --- a/drivers/iommu/fsl_pamu_domain.c
+> +++ b/drivers/iommu/fsl_pamu_domain.c
+> @@ -340,17 +340,57 @@ static inline struct device_domain_info
+> *find_domain(struct device *dev)
+>  	return dev->archdata.iommu_domain;
+>  }
+> 
+> +/* Disable device DMA capability and enable default DMA window */
+> +static void disable_device_dma(struct device_domain_info *info,
+> +				int enable_dma_window)
+> +{
+> +#ifdef CONFIG_PCI
+> +	if (info->dev->bus == &pci_bus_type) {
+> +		struct pci_dev *pdev = NULL;
+> +		pdev = to_pci_dev(info->dev);
+> +		if (pci_is_enabled(pdev))
+> +			pci_disable_device(pdev);
+> +	}
+> +#endif
+> +
+> +	if (enable_dma_window)
+> +		enable_default_dma_window(info->liodn);
+> +}
+> +
+> +static int check_for_shared_liodn(struct device_domain_info *info) {
+> +	struct device_domain_info *tmp;
+> +
+> +	/*
+> +	 * Sanity check, to ensure that this is not a
+> +	 * shared LIODN. In case of a PCIe controller
+> +	 * it's possible that all PCIe devices share
+> +	 * the same LIODN.
+> +	 */
+> +	list_for_each_entry(tmp, &info->domain->devices, link) {
+> +		if (info->liodn == tmp->liodn)
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)  {
+>  	unsigned long flags;
+> +	int enable_dma_window = 0;
+> 
+>  	list_del(&info->link);
+>  	spin_lock_irqsave(&iommu_lock, flags);
+> -	if (win_cnt > 1)
+> -		pamu_free_subwins(info->liodn);
+> -	pamu_disable_liodn(info->liodn);
+> +	if (!check_for_shared_liodn(info)) {
 
-Perhaps this would be nicer still with the "mce:" prefix
-on all the log lines with the overall description emitted
-first.  It could help make grepping the log a bit easier.
+One query; Do we really need to check for this?
 
-[  xxx.xxxxxx] mce: [Hardware Error]: Machine check events logged
-[  xxx.xxxxxx] mce: {1}Hardware error detected on CPU15
-[  xxx.xxxxxx] mce: {1}Above error has been corrected by h/w and require no further action
-[  xxx.xxxxxx] mce: {1}event severity: corrected
-[  xxx.xxxxxx] mce: {1} Error 0, type: corrected
-[  xxx.xxxxxx] mce: {1}  section_type: memory error
-[  xxx.xxxxxx] mce: {1}  physical_address: 0x0000001057eb0000
-[  xxx.xxxxxx] mce: {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
+Otherwise this patch series looks good to me.
 
-grammar: s/require/requires or maybe required
+Thanks
+-Bharat
+
+> +		if (win_cnt > 1)
+> +			pamu_free_subwins(info->liodn);
+> +		pamu_disable_liodn(info->liodn);
+> +		enable_dma_window = 1;
+> +	}
+>  	spin_unlock_irqrestore(&iommu_lock, flags);
+>  	spin_lock_irqsave(&device_domain_lock, flags);
+> +	disable_device_dma(info, enable_dma_window);
+>  	info->dev->archdata.iommu_domain = NULL;
+>  	kmem_cache_free(iommu_devinfo_cache, info);
+>  	spin_unlock_irqrestore(&device_domain_lock, flags);
+> --
+> 1.7.9.5
 
 
