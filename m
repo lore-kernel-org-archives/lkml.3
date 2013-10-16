@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761877Ab3JPRzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:55:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35927 "EHLO
+	id S1761925Ab3JPRz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:55:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761301Ab3JPRq3 (ORCPT
+	with ESMTP id S934629Ab3JPRq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:29 -0400
+	Wed, 16 Oct 2013 13:46:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 29/50] drm/radeon: forever loop on error in radeon_do_test_moves()
-Date: Wed, 16 Oct 2013 10:45:15 -0700
-Message-Id: <20131016174401.868104051@linuxfoundation.org>
+        shui yangwei <yangweix.shui@intel.com>,
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 27/50] drm/i915: fix rps.vlv_work initialization
+Date: Wed, 16 Oct 2013 10:45:13 -0700
+Message-Id: <20131016174401.649102540@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -27,36 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 89cd67b326fa95872cc2b4524cd807128db6071d upstream.
+commit 671952a2a290a90017c64e75b7dd0343b0d005b4 upstream.
 
-The error path does this:
+During driver loading we are initializing rps.vlv_work in
+valleyview_enable_rps() via the rps.delayed_resume_work delayed work.
+This is too late since we are using vlv_work already via
+i915_driver_load()->intel_uncore_sanitize()->
+intel_disable_gt_powersave(). This at least leads to the following
+kernel warning:
 
-	for (--i; i >= 0; --i) {
+ INFO: trying to register non-static key.
+ the code is fine but needs lockdep annotation.
+ turning off the locking correctness validator.
 
-which is a forever loop because "i" is unsigned.
+Fix this by initialzing vlv_work before we call intel_uncore_sanitize().
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The regression was introduced in
+
+commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505
+Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date:   Wed Jul 17 10:22:58 2013 +0400
+
+    drm/i915: fix long-standing SNB regression in power consumption
+    after resume
+
+though there was no good reason to initialize the static vlv_work from
+another delayed work to begin with (especially since this will happen
+multiple times).
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69397
+Tested-by: shui yangwei <yangweix.shui@intel.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_test.c |    4 ++--
+ drivers/gpu/drm/i915/intel_pm.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_test.c
-+++ b/drivers/gpu/drm/radeon/radeon_test.c
-@@ -36,8 +36,8 @@ static void radeon_do_test_moves(struct
- 	struct radeon_bo *vram_obj = NULL;
- 	struct radeon_bo **gtt_obj = NULL;
- 	uint64_t gtt_addr, vram_addr;
--	unsigned i, n, size;
--	int r, ring;
-+	unsigned n, size;
-+	int i, r, ring;
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -3603,8 +3603,6 @@ static void valleyview_enable_rps(struct
+ 				      dev_priv->rps.rpe_delay),
+ 			 dev_priv->rps.rpe_delay);
  
- 	switch (flag) {
- 	case RADEON_TEST_COPY_DMA:
+-	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+-
+ 	valleyview_set_rps(dev_priv->dev, dev_priv->rps.rpe_delay);
+ 
+ 	/* requires MSI enabled */
+@@ -5567,6 +5565,8 @@ void intel_pm_init(struct drm_device *de
+ 
+ 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
+ 			  intel_gen6_powersave_work);
++
++	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
+ }
+ 
+ int sandybridge_pcode_read(struct drm_i915_private *dev_priv, u8 mbox, u32 *val)
 
 
