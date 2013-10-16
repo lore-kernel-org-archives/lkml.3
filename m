@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761925Ab3JPRz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:55:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35920 "EHLO
+	id S1761912Ab3JPRz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:55:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934629Ab3JPRq2 (ORCPT
+	with ESMTP id S1761114Ab3JPRq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:46:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        shui yangwei <yangweix.shui@intel.com>,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 27/50] drm/i915: fix rps.vlv_work initialization
-Date: Wed, 16 Oct 2013 10:45:13 -0700
-Message-Id: <20131016174401.649102540@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 28/50] drm/radeon/dpm: off by one in si_set_mc_special_registers()
+Date: Wed, 16 Oct 2013 10:45:14 -0700
+Message-Id: <20131016174401.750553420@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -28,65 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 671952a2a290a90017c64e75b7dd0343b0d005b4 upstream.
+commit 5fd9c581862a4874c0bdaf16231d8873832bbb99 upstream.
 
-During driver loading we are initializing rps.vlv_work in
-valleyview_enable_rps() via the rps.delayed_resume_work delayed work.
-This is too late since we are using vlv_work already via
-i915_driver_load()->intel_uncore_sanitize()->
-intel_disable_gt_powersave(). This at least leads to the following
-kernel warning:
+These checks should be ">=" instead of ">".  j is used as an offset into
+the table->mc_reg_address[] array and that has
+SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE (16) elements.
 
- INFO: trying to register non-static key.
- the code is fine but needs lockdep annotation.
- turning off the locking correctness validator.
-
-Fix this by initialzing vlv_work before we call intel_uncore_sanitize().
-
-The regression was introduced in
-
-commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505
-Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date:   Wed Jul 17 10:22:58 2013 +0400
-
-    drm/i915: fix long-standing SNB regression in power consumption
-    after resume
-
-though there was no good reason to initialize the static vlv_work from
-another delayed work to begin with (especially since this will happen
-multiple times).
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69397
-Tested-by: shui yangwei <yangweix.shui@intel.com>
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_pm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/si_dpm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3603,8 +3603,6 @@ static void valleyview_enable_rps(struct
- 				      dev_priv->rps.rpe_delay),
- 			 dev_priv->rps.rpe_delay);
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -5174,7 +5174,7 @@ static int si_set_mc_special_registers(s
+ 					table->mc_reg_table_entry[k].mc_data[j] |= 0x100;
+ 			}
+ 			j++;
+-			if (j > SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
++			if (j >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
+ 				return -EINVAL;
  
--	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
--
- 	valleyview_set_rps(dev_priv->dev, dev_priv->rps.rpe_delay);
- 
- 	/* requires MSI enabled */
-@@ -5567,6 +5565,8 @@ void intel_pm_init(struct drm_device *de
- 
- 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
- 			  intel_gen6_powersave_work);
-+
-+	INIT_DELAYED_WORK(&dev_priv->rps.vlv_work, vlv_rps_timer_work);
- }
- 
- int sandybridge_pcode_read(struct drm_i915_private *dev_priv, u8 mbox, u32 *val)
+ 			if (!pi->mem_gddr5) {
+@@ -5184,7 +5184,7 @@ static int si_set_mc_special_registers(s
+ 					table->mc_reg_table_entry[k].mc_data[j] =
+ 						(table->mc_reg_table_entry[k].mc_data[i] & 0xffff0000) >> 16;
+ 				j++;
+-				if (j > SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
++				if (j >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
+ 					return -EINVAL;
+ 			}
+ 			break;
+@@ -5197,7 +5197,7 @@ static int si_set_mc_special_registers(s
+ 					(temp_reg & 0xffff0000) |
+ 					(table->mc_reg_table_entry[k].mc_data[i] & 0x0000ffff);
+ 			j++;
+-			if (j > SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
++			if (j >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
+ 				return -EINVAL;
+ 			break;
+ 		default:
 
 
