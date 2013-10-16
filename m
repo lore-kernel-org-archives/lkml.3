@@ -1,84 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761026Ab3JPQnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:43:08 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:59827 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760996Ab3JPQnC (ORCPT
+	id S1761056Ab3JPQn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:43:27 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:34997 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761004Ab3JPQnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:43:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <525E611A.6070708@imgtec.com>
-References: <1381876762-10892-1-git-send-email-dianders@chromium.org>
-	<1381876762-10892-3-git-send-email-dianders@chromium.org>
-	<525E611A.6070708@imgtec.com>
-Date: Wed, 16 Oct 2013 09:43:01 -0700
-X-Google-Sender-Auth: mUrpO95mb04lRLEPJOG8Kwgeiz0
-Message-ID: <CAD=FV=V4OPOjs=4cvXOomt1UnzUdw5VApkNAX2ERKZ46DC6_gg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: dw_mmc: Protect read-modify-write of INTMASK
- with a lock
-From: Doug Anderson <dianders@chromium.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Oct 2013 12:43:07 -0400
+X-AuditID: cbfec373-b7f6d6d00000330d-ab-525ec21a02b6
+Date: Wed, 16 Oct 2013 13:43:00 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
+        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/9] ACPI, APEI,
+ CPER: Add UEFI 2.4 support for memory error
+Message-id: <20131016134300.29ffe0f1@samsung.com>
+In-reply-to: <1381935366-11731-7-git-send-email-gong.chen@linux.intel.com>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <1381935366-11731-7-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/hIF2pQ3FBBjvOi1i0nfjNZvF5wz82
+	i1vvbC1m33/MYrF8Xz+jxeVdc9gs7rc8Zbd4c+EeiwOHx/fWPhaPxXteMnnMOxno8eDQZhaP
+	L6uuMXu833eVzePzJrkA9igum5TUnMyy1CJ9uwSujLlXF7MX7DWoWHk8pIFxp3oXIyeHhICJ
+	ROPnR0wQtpjEhXvr2UBsIYEljBKTu+wg7G4miRv/A0BsFgFVif3/m9hBbDYBI4lXjS2sILaI
+	gI7Eg02rGbsYuTiYBVYxSrx5sx0sISwQKtHRsZUZxOYVMJRYcvEQ0AIODk4BL4nlS2xA6oUE
+	OhklXv/qYwaJSwg4SWyd6gtRLijxY/I9FhCbWUBLYvO2JlYIW15i85q3zBMYBWYhKZuFpGwW
+	krIFjMyrGEVLi5MLipPSc430ihNzi0vz0vWS83M3MUJCv3gH44sNVocYBTgYlXh4ZyyPCxJi
+	TSwrrsw9xCjBwawkwvtpK1CINyWxsiq1KD++qDQntfgQIxMHp1QDo2sUQ/av+M2fAo5snnYt
+	dYVT+JFD2xYff18/Z7f7M4afZdVLVgnsOGmwWu9TIYt0zVP25JcS90V7s3yWrouOCw4980JP
+	127CwQsHsyP+2z9LFft/6/PsZ3f/pD2+8VPuBZeC9rnEg5Ofz6jRVpk967Klw/y3WdN0jv8y
+	t0ibxcih1Fp/Vnj9w4VKLMUZiYZazEXFiQDvE38wWwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+Em Wed, 16 Oct 2013 10:56:03 -0400
+"Chen, Gong" <gong.chen@linux.intel.com> escreveu:
 
-On Wed, Oct 16, 2013 at 2:49 AM, James Hogan <james.hogan@imgtec.com> wrote:
->> We can't just use the standard host->lock since that lock is not irq
->> safe and mmc_signal_sdio_irq() (called from interrupt context) calls
->> dw_mci_enable_sdio_irq().  Add a new irq-safe lock to protect INTMASK.
->>
->> An alternate solution to this is to punt mmc_signal_sdio_irq() to the
->> tasklet and then protect INTMASK modifications by the standard host
->> lock.  This seemed like a bit more of a high-latency change.
->
-> A probably lighter-weight alternative to that alternative is to just
-> make the existing lock irq safe. Has this been considered?
->
-> I'm not entirely convinced it's worth having a separate lock rather than
-> changing the existing one, but the patch still appears to be correct, so:
-> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> In latest UEFI spec(by now it is 2.4) memory error definition
+> for CPER (UEFI 2.4 Appendix N Common Platform Error Record)
+> adds some new fields. These fields help people to locate
+> memory error on actual DIMM location.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> Reviewed-by: Borislav Petkov <bp@suse.de>
 
-I did look at that alternate solution and rejected it, but am happy to
-send that up if people think it's better.  Here's why I rejected it:
+Reviewed-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-1. It looks like someone has gone through quite a bit of work to _not_
-grab the existing lock in the IRQ handler.  The IRQ handler always
-pushes all real work over to the tasklet.  I can only assume that they
-did this for some good reason and I'd hate to switch it without
-knowing for sure why.
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce-apei.c |  3 +--
+>  drivers/acpi/apei/cper.c              |  7 ++++---
+>  drivers/acpi/apei/ghes.c              |  4 ++--
+>  drivers/edac/ghes_edac.c              |  5 ++---
+>  include/linux/cper.h                  | 11 +++++++++--
+>  5 files changed, 18 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce-apei.c b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+> index cd8b166..de8b60a 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+> @@ -42,8 +42,7 @@ void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
+>  	struct mce m;
+>  
+>  	/* Only corrected MC is reported */
+> -	if (!corrected || !(mem_err->validation_bits &
+> -				CPER_MEM_VALID_PHYSICAL_ADDRESS))
+> +	if (!corrected || !(mem_err->validation_bits & CPER_MEM_VALID_PA))
+>  		return;
+>  
+>  	mce_setup(&m);
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index eb5f6d6..946ef52 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -8,7 +8,7 @@
+>   * various tables, such as ERST, BERT and HEST etc.
+>   *
+>   * For more information about CPER, please refer to Appendix N of UEFI
+> - * Specification version 2.3.
+> + * Specification version 2.4.
+>   *
+>   * This program is free software; you can redistribute it and/or
+>   * modify it under the terms of the GNU General Public License version
+> @@ -191,16 +191,17 @@ static const char *cper_mem_err_type_strs[] = {
+>  	"memory sparing",
+>  	"scrub corrected error",
+>  	"scrub uncorrected error",
+> +	"physical memory map-out event",
+>  };
+>  
+>  static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  {
+>  	if (mem->validation_bits & CPER_MEM_VALID_ERROR_STATUS)
+>  		printk("%s""error_status: 0x%016llx\n", pfx, mem->error_status);
+> -	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)
+> +	if (mem->validation_bits & CPER_MEM_VALID_PA)
+>  		printk("%s""physical_address: 0x%016llx\n",
+>  		       pfx, mem->physical_addr);
+> -	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK)
+> +	if (mem->validation_bits & CPER_MEM_VALID_PA_MASK)
+>  		printk("%s""physical_address_mask: 0x%016llx\n",
+>  		       pfx, mem->physical_addr_mask);
+>  	if (mem->validation_bits & CPER_MEM_VALID_NODE)
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index 0db6e4f..a30bc31 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -419,7 +419,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
+>  
+>  	if (sec_sev == GHES_SEV_CORRECTED &&
+>  	    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
+> -	    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
+> +	    (mem_err->validation_bits & CPER_MEM_VALID_PA)) {
+>  		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+>  		if (pfn_valid(pfn))
+>  			memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
+> @@ -430,7 +430,7 @@ static void ghes_handle_memory_failure(struct acpi_generic_data *gdata, int sev)
+>  	}
+>  	if (sev == GHES_SEV_RECOVERABLE &&
+>  	    sec_sev == GHES_SEV_RECOVERABLE &&
+> -	    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
+> +	    mem_err->validation_bits & CPER_MEM_VALID_PA) {
+>  		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+>  		memory_failure_queue(pfn, 0, 0);
+>  	}
+> diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
+> index bb53467..0ad797b 100644
+> --- a/drivers/edac/ghes_edac.c
+> +++ b/drivers/edac/ghes_edac.c
+> @@ -297,15 +297,14 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+>  	}
+>  
+>  	/* Error address */
+> -	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
+> +	if (mem_err->validation_bits & CPER_MEM_VALID_PA) {
+>  		e->page_frame_number = mem_err->physical_addr >> PAGE_SHIFT;
+>  		e->offset_in_page = mem_err->physical_addr & ~PAGE_MASK;
+>  	}
+>  
+>  	/* Error grain */
+> -	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK) {
+> +	if (mem_err->validation_bits & CPER_MEM_VALID_PA_MASK)
+>  		e->grain = ~(mem_err->physical_addr_mask & ~PAGE_MASK);
+> -	}
+>  
+>  	/* Memory error location, mapped on e->location */
+>  	p = e->location;
+> diff --git a/include/linux/cper.h b/include/linux/cper.h
+> index 09ebe21..2fc0ec3 100644
+> --- a/include/linux/cper.h
+> +++ b/include/linux/cper.h
+> @@ -218,8 +218,8 @@ enum {
+>  #define CPER_PROC_VALID_IP			0x1000
+>  
+>  #define CPER_MEM_VALID_ERROR_STATUS		0x0001
+> -#define CPER_MEM_VALID_PHYSICAL_ADDRESS		0x0002
+> -#define CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK	0x0004
+> +#define CPER_MEM_VALID_PA			0x0002
+> +#define CPER_MEM_VALID_PA_MASK			0x0004
+>  #define CPER_MEM_VALID_NODE			0x0008
+>  #define CPER_MEM_VALID_CARD			0x0010
+>  #define CPER_MEM_VALID_MODULE			0x0020
+> @@ -232,6 +232,9 @@ enum {
+>  #define CPER_MEM_VALID_RESPONDER_ID		0x1000
+>  #define CPER_MEM_VALID_TARGET_ID		0x2000
+>  #define CPER_MEM_VALID_ERROR_TYPE		0x4000
+> +#define CPER_MEM_VALID_RANK_NUMBER		0x8000
+> +#define CPER_MEM_VALID_CARD_HANDLE		0x10000
+> +#define CPER_MEM_VALID_MODULE_HANDLE		0x20000
+>  
+>  #define CPER_PCIE_VALID_PORT_TYPE		0x0001
+>  #define CPER_PCIE_VALID_VERSION			0x0002
+> @@ -347,6 +350,10 @@ struct cper_sec_mem_err {
+>  	__u64	responder_id;
+>  	__u64	target_id;
+>  	__u8	error_type;
+> +	__u8	reserved;
+> +	__u16	rank;
+> +	__u16	mem_array_handle;	/* card handle in UEFI 2.4 */
+> +	__u16	mem_dev_handle;		/* module handle in UEFI 2.4 */
+>  };
+>  
+>  struct cper_sec_pcie {
 
-2. We might have performance problems if we blindly changed the
-existing code to an IRQ-safe spinlock.  We hold the existing
-"host->lock" spinlock for the entire duration of
-dw_mci_tasklet_func().  That's a pretty intense chunk of code, full of
-nested loops (some with 500ms timeouts!), mdelay(20) calls to handle
-some errors, etc.  I say "might" because I think that the expected
-case is that code runs pretty quickly.  I ran some brief tests on one
-system and saw a worst case time of 170us and an common case time of
-~10us.  Are we OK with having interrupts disabled for that long?  Are
-we OK with having the dw_mci interrupt handler potentially spin on a
-spinlock for that long?
 
+-- 
 
-I don't think it would be terrible to look at reworking the way that
-dw_mmc handles interrupts, but that seems pretty major.
-
-
-BTW: is the cost of an extra lock actually that high?  ...or are you
-talking the cost in terms of code complexity?
-
-
--Doug
+Cheers,
+Mauro
