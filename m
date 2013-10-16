@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab3JPFBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 01:01:22 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62800 "EHLO
+	id S1754756Ab3JPFBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 01:01:20 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65065 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab3JPFA3 (ORCPT
+	with ESMTP id S1752500Ab3JPFA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 01:00:29 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-3a-525e1d68955d
+X-AuditID: 9c93016f-b7c63ae00000696f-3b-525e1d68a452
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 14/18] perf ftrace: Add a signal handler for SIGSEGV
-Date: Wed, 16 Oct 2013 14:00:17 +0900
-Message-Id: <1381899621-14638-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 15/18] perf ftrace: Add --clock option
+Date: Wed, 16 Oct 2013 14:00:18 +0900
+Message-Id: <1381899621-14638-16-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
 References: <1381899621-14638-1-git-send-email-namhyung@kernel.org>
@@ -29,67 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's for debugging purpose.
+The --clock (-c) option is for controlling trace_clock.  Default to
+'perf' if exists, or 'local'.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ tools/perf/builtin-ftrace.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index fa7a9c59e228..8fec8d6df37d 100644
+index 8fec8d6df37d..2a7acdbd6985 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -41,6 +41,13 @@ struct perf_ftrace {
+@@ -35,6 +35,7 @@ struct perf_ftrace {
+ 	struct perf_target target;
+ 	const char *tracer;
+ 	const char *dirname;
++	const char *clock;
+ 	struct pevent *pevent;
+ 	bool show_full_info;
+ };
+@@ -114,6 +115,9 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
+ 	if (reset_tracing_cpu() < 0)
+ 		return -1;
  
- static bool done;
++	if (write_tracing_file("trace_clock", "local") < 0)
++		return -1;
++
+ 	return 0;
+ }
  
-+static void sig_exit(int sig)
+@@ -188,6 +192,24 @@ static int reset_tracing_cpu(void)
+ 	return 0;
+ }
+ 
++static int set_tracing_clock(struct perf_ftrace *ftrace)
 +{
-+	psignal(sig, "perf");
-+	signal(sig, SIG_DFL);
-+	raise(sig);
++	const char *tclock = ftrace->clock;
++
++	if (tclock == NULL)
++		tclock = "perf";
++
++	if (!write_tracing_file("trace_clock", tclock))
++		return 0;
++
++	/* exit if user specified an invalid clock */
++	if (ftrace->clock)
++		return -1;
++
++	pr_debug("'perf' clock is not supported.. falling back to 'local' clock\n");
++	return write_tracing_file("trace_clock", "local");
 +}
 +
- static void sig_handler(int sig __maybe_unused)
+ static int setup_tracing_files(struct perf_ftrace *ftrace)
  {
- 	done = true;
-@@ -228,6 +235,7 @@ static int do_ftrace_live(struct perf_ftrace *ftrace)
- 	signal(SIGUSR1, sig_handler);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGPIPE, sig_handler);
-+	signal(SIGSEGV, sig_exit);
+ 	int ret = -1;
+@@ -213,6 +235,11 @@ static int setup_tracing_files(struct perf_ftrace *ftrace)
+ 		goto out;
+ 	}
  
- 	if (setup_tracing_files(ftrace) < 0)
- 		goto out_reset;
-@@ -630,6 +638,7 @@ static int do_ftrace_record(struct perf_ftrace *ftrace)
- 	signal(SIGINT, sig_handler);
- 	signal(SIGUSR1, sig_handler);
- 	signal(SIGCHLD, sig_handler);
-+	signal(SIGSEGV, sig_exit);
- 
- 	if (setup_tracing_files(ftrace) < 0)
- 		goto out_reset;
-@@ -1139,6 +1148,8 @@ static int do_ftrace_show(struct perf_ftrace *ftrace)
- 		},
++	if (set_tracing_clock(ftrace) < 0) {
++		pr_err("failed to set trace clock\n");
++		goto out;
++	}
++
+ 	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
+ 		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
+ 		goto out;
+@@ -1495,6 +1522,8 @@ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 		    "system-wide collection from all CPUs"),
+ 	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
++	OPT_STRING('c', "clock", &ftrace->clock, "clock",
++		    "clock to be used for tracer"),
+ 	OPT_END()
  	};
  
-+	signal(SIGSEGV, sig_exit);
-+
- 	canonicalize_directory_name(ftrace->dirname);
+@@ -1537,6 +1566,8 @@ __cmd_ftrace_record(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 		    "list of cpus to monitor"),
+ 	OPT_STRING('o', "output", &ftrace->dirname, "dirname",
+ 		   "input directory name to use (default: perf.data)"),
++	OPT_STRING('c', "clock", &ftrace->clock, "clock",
++		    "clock to be used for tracer"),
+ 	OPT_END()
+ 	};
  
- 	scnprintf(buf, sizeof(buf), "%s.dir/perf.header", ftrace->dirname);
-@@ -1230,6 +1241,8 @@ static int do_ftrace_report(struct perf_ftrace *ftrace)
- 	struct machine *machine;
- 	struct dso *dso;
- 
-+	signal(SIGSEGV, sig_exit);
-+
- 	canonicalize_directory_name(ftrace->dirname);
- 
- 	scnprintf(buf, sizeof(buf), "%s.dir/perf.header", ftrace->dirname);
 -- 
 1.7.11.7
 
