@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760001Ab3JPG6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 02:58:09 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53892 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028Ab3JPG6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 02:58:02 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: eranian@google.com, michaele@au1.ibm.com, mikey@neuling.org,
-        sukadev@linux.vnet.ibm.com
-Subject: [V3 02/10] powerpc, perf: Enable conditional branch filter for POWER8
-Date: Wed, 16 Oct 2013 12:26:49 +0530
-Message-Id: <1381906617-11392-3-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1381906617-11392-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101606-4790-0000-0000-00000AD2FC7B
+	id S1760104Ab3JPG7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 02:59:00 -0400
+Received: from mailrelay-out1.netcologne.de ([81.173.193.131]:3187 "EHLO
+	mailrelay-out1.netcologne.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754149Ab3JPG65 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 02:58:57 -0400
+From: =?iso-8859-1?Q?Kelleter=2C_G=FCnther?= <GKelleter@datus.com>
+To: Joe Perches <joe@perches.com>
+CC: "andrew.hendry@gmail.com" <andrew.hendry@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-x25@vger.kernel.org" <linux-x25@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] X.25: Fix address field length calculation
+Thread-Topic: [PATCH] X.25: Fix address field length calculation
+Thread-Index: AQHOybLnty+s/FnB5kKUVGTJOhUv65n142AAgADiAoA=
+Date: Wed, 16 Oct 2013 06:58:46 +0000
+Message-ID: <525E3925.7070105@datus.com>
+References: <525D5131.9070007@datus.com>
+ <1381858190.22110.25.camel@joe-AO722>
+In-Reply-To: <1381858190.22110.25.camel@joe-AO722>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.52.21.9]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-ID: <65BC7EDC9053D742822A7DCB7E3BEB4F@datus.local>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-purgate-ID: 153929::1381906734-000005E4-3B01FEDE/0-0/0-0
+X-purgate: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables conditional branch filter support for POWER8
-utilizing MMCRA register based filter and also invalidates
-a BHRB branch filter combination involving conditional
-branches.
+Am 15.10.2013 19:29, schrieb Joe Perches:
+> On Tue, 2013-10-15 at 14:29 +0000, Kelleter, Günther wrote:
+>> Addresses are BCD encoded, not ASCII. x25_addr_ntoa got it right.
+> []
+>> Wrong length calculation leads to rejection of CALL ACCEPT packets.
+> []
+>> diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
+> []
+>> @@ -98,7 +98,7 @@ int x25_parse_address_block(struct sk_buff *skb,
+>>  	}
+>>   	len = *skb->data;
+>> -	needed = 1 + (len >> 4) + (len & 0x0f);
+>> +	needed = 1 + ((len >> 4) + (len & 0x0f) + 1) / 2;
+> This calculation looks odd.
+> Perhaps use bcd.h instead?
+>
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/power8-pmu.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index 2ee4a70..6e28587 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -580,11 +580,21 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		return -1;
- 
-+	/* Invalid branch filter combination - HW does not support */
-+	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
-+			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
-+		return -1;
-+
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
- 		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
- 		return pmu_bhrb_filter;
- 	}
- 
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
-+		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
-+		return pmu_bhrb_filter;
-+	}
-+
- 	/* Every thing else is unsupported */
- 	return -1;
- }
--- 
-1.7.11.7
-
+It's just the same calculation as in x25_add_ntoa (last line) and it's
+used this way by x.25.
+Two digits are encoded to one byte and the last byte is padded with 0 if
+the total number of digits is odd.
