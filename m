@@ -1,161 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab3JPHnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 03:43:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43978 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab3JPHkT (ORCPT
+	id S1760213Ab3JPHnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 03:43:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48432 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755152Ab3JPHnu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 03:40:19 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH v3 04/12] clk: Add regmap core helpers for enable/disable/is_enabled
-Date: Wed, 16 Oct 2013 00:40:06 -0700
-Message-Id: <1381909214-12693-5-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.1.503.g2b7ca91
-In-Reply-To: <1381909214-12693-1-git-send-email-sboyd@codeaurora.org>
-References: <1381909214-12693-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 16 Oct 2013 03:43:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,505,1378882800"; 
+   d="scan'208";a="308403702"
+From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
+To: NeilBrown <neilb@suse.de>
+CC: "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "Baldysiak, Pawel" <pawel.baldysiak@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] md: Fix skipping recovery for read-only arrays.
+Thread-Topic: [PATCH] md: Fix skipping recovery for read-only arrays.
+Thread-Index: AQHOyiLTBYMF63C3Rka310QD8JjSw5n28kLw
+Date: Wed, 16 Oct 2013 07:43:16 +0000
+Message-ID: <D9FFE20C522965449E182ACE73889AEB1A664D26@IRSMSX105.ger.corp.intel.com>
+References: <20131007142551.14867.36809.stgit@gklab-154-244.igk.intel.com>
+ <20131016144954.5eb8a689@notabene.brown>
+In-Reply-To: <20131016144954.5eb8a689@notabene.brown>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock framework already has support for simple gate clocks
-but if drivers want to use the gate clock functionality they need
-to wrap the gate clock in another struct and chain the ops by
-calling the gate ops from their own custom ops. Plus the gate
-clock implementation only supports MMIO accessors so other bus
-type clocks don't benefit from the potential code reuse. Add some
-simple regmap helpers for enable/disable/is_enabled that drivers
-can use as drop in replacements for their clock ops or as simple
-functions they call from their own custom ops.
+On Wednesday, October 16, 2013 5:50 AM NeilBrown <neilb@suse.de> wrote:
+> On Mon, 07 Oct 2013 16:25:51 +0200 Lukasz Dorau <lukasz.dorau@intel.com>
+> wrote:
+> 
+> > Since:
+> >         commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
+> >         md: Allow devices to be re-added to a read-only array.
+> >
+> > spares are activated on a read-only array. In case of raid1 and raid10
+> > personalities it causes that not-in-sync devices are marked in-sync
+> > without checking if recovery has been finished.
+> >
+> > If a read-only array is degraded and one of its devices is not in-sync
+> > (because the array has been only partially recovered) recovery will be skipped.
+> >
+> > This patch adds checking if recovery has been finished before marking
+> > a device in-sync for raid1 and raid10 personalities. In case of raid5
+> > personality such condition is already present (at raid5.c:6029).
+> >
+> > Bug was introduced in 3.10 and causes data corruption.
+> >
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+> > Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+> > ---
+> >  drivers/md/raid1.c  |    1 +
+> >  drivers/md/raid10.c |    1 +
+> >  2 files changed, 2 insertions(+)
+> >
+> > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c index
+> > d60412c..aacf6bf 100644
+> > --- a/drivers/md/raid1.c
+> > +++ b/drivers/md/raid1.c
+> > @@ -1479,6 +1479,7 @@ static int raid1_spare_active(struct mddev *mddev)
+> >  			}
+> >  		}
+> >  		if (rdev
+> > +		    && rdev->recovery_offset == MaxSector
+> >  		    && !test_bit(Faulty, &rdev->flags)
+> >  		    && !test_and_set_bit(In_sync, &rdev->flags)) {
+> >  			count++;
+> > diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c index
+> > df7b0a0..73dc8a3 100644
+> > --- a/drivers/md/raid10.c
+> > +++ b/drivers/md/raid10.c
+> > @@ -1782,6 +1782,7 @@ static int raid10_spare_active(struct mddev
+> *mddev)
+> >  			}
+> >  			sysfs_notify_dirent_safe(tmp->replacement-
+> >sysfs_state);
+> >  		} else if (tmp->rdev
+> > +			   && tmp->rdev->recovery_offset == MaxSector
+> >  			   && !test_bit(Faulty, &tmp->rdev->flags)
+> >  			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
+> >  			count++;
+> 
+> Applied - thanks.
+> 
+> I'll forward it to Linus and -stable shortly.
+> 
+> NeilBrown
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c            | 70 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h | 13 ++++++++
- 2 files changed, 83 insertions(+)
+Thanks!
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 8042c00..7cc8cb0 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -742,6 +742,76 @@ out:
- 	return best;
- }
- 
-+/**
-+ * clk_is_enabled_regmap - standard is_enabled() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their is_enabled operation, saving some code.
-+ */
-+int clk_is_enabled_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(hw->regmap, hw->enable_reg, &val);
-+	if (ret != 0)
-+		return ret;
-+
-+	if (hw->enable_is_inverted)
-+		return (val & hw->enable_mask) == 0;
-+	else
-+		return (val & hw->enable_mask) != 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_is_enabled_regmap);
-+
-+/**
-+ * clk_enable_regmap - standard enable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their enable() operation, saving some code.
-+ */
-+int clk_enable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = 0;
-+	else
-+		val = hw->enable_mask;
-+
-+	return regmap_update_bits(hw->regmap, hw->enable_reg,
-+				  hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_enable_regmap);
-+
-+/**
-+ * clk_disable_regmap - standard disable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their disable() operation, saving some code.
-+ */
-+void clk_disable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = hw->enable_mask;
-+	else
-+		val = 0;
-+
-+	regmap_update_bits(hw->regmap, hw->enable_reg, hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable_regmap);
-+
- /***        clk api        ***/
- 
- void __clk_unprepare(struct clk *clk)
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 6ed62f1..4087a9b 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -177,11 +177,21 @@ struct clk_init_data {
-  * with the common clock framework.
-  *
-  * @regmap: regmap to use for regmap helpers and/or by providers
-+ *
-+ * @enable_reg: register when using regmap enable/disable ops
-+ *
-+ * @enable_mask: mask when using regmap enable/disable ops
-+ *
-+ * @enable_is_inverted: flag to indicate set enable_mask bits to disable
-+ *                      when using clock_enable_regmap and friends APIs.
-  */
- struct clk_hw {
- 	struct clk *clk;
- 	const struct clk_init_data *init;
- 	struct regmap *regmap;
-+	unsigned int enable_reg;
-+	unsigned int enable_mask;
-+	bool enable_is_inverted;
- };
- 
- /*
-@@ -447,6 +457,9 @@ struct clk *__clk_lookup(const char *name);
- long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			      unsigned long *best_parent_rate,
- 			      struct clk **best_parent_p);
-+int clk_is_enabled_regmap(struct clk_hw *hw);
-+int clk_enable_regmap(struct clk_hw *hw);
-+void clk_disable_regmap(struct clk_hw *hw);
- 
- /*
-  * FIXME clock api without lock protection
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Lukasz
 
