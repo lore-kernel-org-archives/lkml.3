@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761945Ab3JPR4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:56:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35917 "EHLO
+	id S934605Ab3JPRq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:46:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934613Ab3JPRq1 (ORCPT
+	with ESMTP id S1761306Ab3JPRpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:46:27 -0400
+	Wed, 16 Oct 2013 13:45:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 26/50] drm/i915: Only apply DPMS to the encoder if enabled
-Date: Wed, 16 Oct 2013 10:45:12 -0700
-Message-Id: <20131016174401.523867780@linuxfoundation.org>
+Subject: [ 26/69] drm/i915: Only apply DPMS to the encoder if enabled
+Date: Wed, 16 Oct 2013 10:44:35 -0700
+Message-Id: <20131016174316.111559029@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
-References: <20131016174358.335646140@linuxfoundation.org>
+In-Reply-To: <20131016174312.844154919@linuxfoundation.org>
+References: <20131016174312.844154919@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -97,7 +97,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3890,8 +3890,6 @@ static void intel_connector_check_state(
+@@ -3946,8 +3946,6 @@ static void intel_connector_check_state(
   * consider. */
  void intel_connector_dpms(struct drm_connector *connector, int mode)
  {
@@ -106,7 +106,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	/* All the simple cases only support two dpms states. */
  	if (mode != DRM_MODE_DPMS_ON)
  		mode = DRM_MODE_DPMS_OFF;
-@@ -3902,10 +3900,8 @@ void intel_connector_dpms(struct drm_con
+@@ -3958,10 +3956,8 @@ void intel_connector_dpms(struct drm_con
  	connector->dpms = mode;
  
  	/* Only need to change hw state when actually enabled */
