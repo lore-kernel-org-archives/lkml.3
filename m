@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760569Ab3JPI7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:59:52 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53745 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760323Ab3JPI6C (ORCPT
+	id S1760578Ab3JPJAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 05:00:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49140 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760255Ab3JPJAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:58:02 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sachin.kamat@linaro.org, sameo@linux.intel.com
-Subject: [PATCH 6/9] mfd: tps6507x: Include linux/of.h header
-Date: Wed, 16 Oct 2013 14:26:53 +0530
-Message-Id: <1381913816-26730-6-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381913816-26730-1-git-send-email-sachin.kamat@linaro.org>
-References: <1381913816-26730-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 16 Oct 2013 05:00:06 -0400
+Date: Wed, 16 Oct 2013 10:59:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
+Message-ID: <20131016085936.GU10651@twins.programming.kicks-ass.net>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <1381747426-31334-13-git-send-email-juri.lelli@gmail.com>
+ <20131014140618.GA26604@gmail.com>
+ <525D1234.5060001@gmail.com>
+ <20131015102621.GE10651@twins.programming.kicks-ass.net>
+ <20131015122522.GB2402@gmail.com>
+ <20131015123527.GI10651@twins.programming.kicks-ass.net>
+ <20131015131133.GC2402@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015131133.GC2402@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'of_match_ptr' is defined in linux/of.h. Include it explicitly to
-avoid breakage in the future.
+On Tue, Oct 15, 2013 at 03:11:33PM +0200, Ingo Molnar wrote:
+> The scheduler has over 800 #ifdefs or similar preprocessor directives:
+> 
+>   comet:~/tip> git grep '^#' kernel/sched/ | grep -v include | wc -l
+>   855
+> 
+> I'd like to see this simplified a bit, _especially_ before we add new 
+> complexity ...
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/mfd/tps6507x.c |    1 +
- 1 file changed, 1 insertion(+)
+I agree; however I also think its unfair to pile this on Juri. Esp the
+avenue pushed here, which will increase UP text and (runtime) data
+sizes, to which I think some people will still object.
 
-diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
-index 5ad4b77..a081b92 100644
---- a/drivers/mfd/tps6507x.c
-+++ b/drivers/mfd/tps6507x.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
-+#include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/tps6507x.h>
--- 
-1.7.9.5
+There's this entire 'maker' community (aka. internet of things) now
+using very small Linux devices. Think Raspberry-Pi, Intel Quark (however much
+I hate Intel for shipping a new 32bit device) etc.
 
+These people are wanting to run Linux on these tiny devices, with tiny
+memories etc; we shouldn't make their life harder than it already is.
+
+Also; you didn't object about the 29 new #ifdefs currently in
+tip.
+
+How about we use some of the 'quality' conference time in EDI to do some
+big code shuffles to get rid of some of them. I'm sure we can reduce the
+number of ifdeffery by simply merging various similar blocks and maybe
+write a few extra helper functions.
+
+This is how kernel/sched/ got created in the first place; as a means to
+keep the fingers busy at a conference ;-)
