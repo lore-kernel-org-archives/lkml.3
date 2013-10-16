@@ -1,157 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934007Ab3JPLgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:36:11 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41861 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933654Ab3JPLgK convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 16 Oct 2013 07:36:10 -0400
-Message-Id: <525E964402000078000FB70C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 16 Oct 2013 12:36:04 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <arjan@linux.intel.com>, <linux@roeck-us.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: unify copy_from_user() checking
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S934177Ab3JPLgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:36:21 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:18780
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933654Ab3JPLgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 07:36:18 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzd2izz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <stuart.yoder@freescale.com>, <scottwood@freescale.com>,
+        <alex.williamson@redhat.com>, <r65777@freescale.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
+Date: Wed, 16 Oct 2013 16:52:59 +0530
+Message-ID: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits 4a3127693001c61a21d1ce680db6340623f52e93 ("x86: Turn the
-copy_from_user check into an (optional) compile time warning") and
-63312b6a6faae3f2e5577f2b001e3b504f10a2aa ("x86: Add a Kconfig option to
-turn the copy_from_user warnings into errors") touched only the 32-bit
-variant of copy_from_user(), whereas the original commit
-9f0cf4adb6aa0bfccf675c938124e68f7f06349d ("x86: Use
-__builtin_object_size() to validate the buffer size for
-copy_from_user()") also added the same code to the 64-bit one.
+The first patch fixes a build failure, when we try to build for a Freescale
+platform without PCI support.
 
-Further the earlier conversion from an inline WARN() to the call to
-copy_from_user_overflow() went a little too far: When the number of
-bytes to be copied is not a constant (e.g. [looking at 3.11] in
-drivers/net/tun.c:__tun_chr_ioctl() or
-drivers/pci/pcie/aer/aer_inject.c:aer_inject_write()), the compiler
-will always have to keep the funtion call, and hence there will always
-be a warning. By using __builtin_constant_p() we can avoid this.
+The second patch enables a default DMA window for the device, once it's
+detached from a domain. In case of vfio, once device is detached from a
+guest it can be again used by the host.
 
-Since the 32-bit variant (intentionally) didn't call might_fault(), the
-unification results in this being called twice now. Adding a suitable
-#ifdef would be the alternative if that's a problem.
+The last patch adds the maintainer entry for the Freescale PAMU driver.
 
-I'd like to point out though that with __compiletime_object_size()
-being restricted to gcc before 4.6, the whole construct is going to
-become more and more pointless going forward. I would question
-however that commit 2fb0815c9ee6b9ac50e15dd8360ec76d9fa46a2 ("gcc4:
-disable __compiletime_object_size for GCC 4.6+") was really necessary,
-and instead this should have been dealt with as is done here from the
-beginning.
+Varun Sethi (3):
+  iommu/fsl: Factor out PCI specific code.
+  iommu/fsl: Enable default DMA window for PCIe devices once detached
+  Add maintainers entry for the Freescale PAMU driver.
 
-It also puzzles me that similar checking isn't done for copy_to_user():
-While not resulting in (kernel) buffer overflows, size mistakes there
-would still lead to information leaks.
+ MAINTAINERS                     |    7 ++
+ drivers/iommu/fsl_pamu.c        |   43 ++++++++++---
+ drivers/iommu/fsl_pamu.h        |    1 +
+ drivers/iommu/fsl_pamu_domain.c |  134 +++++++++++++++++++++++++--------------
+ 4 files changed, 128 insertions(+), 57 deletions(-)
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
----
- arch/x86/include/asm/uaccess.h    |   25 +++++++++++++++++++++++++
- arch/x86/include/asm/uaccess_32.h |   23 -----------------------
- arch/x86/include/asm/uaccess_64.h |   16 ----------------
- 3 files changed, 25 insertions(+), 39 deletions(-)
-
---- 3.12-rc5/arch/x86/include/asm/uaccess.h
-+++ 3.12-rc5-x86-copy_from_user-overflow/arch/x86/include/asm/uaccess.h
-@@ -542,5 +542,30 @@ extern struct movsl_mask {
- # include <asm/uaccess_64.h>
- #endif
- 
-+extern void copy_from_user_overflow(void)
-+#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-+	__compiletime_error("copy_from_user() buffer size is not provably correct")
-+#else
-+	__compiletime_warning("copy_from_user() buffer size is not provably correct")
-+#endif
-+;
-+
-+static inline unsigned long __must_check copy_from_user(void *to,
-+					  const void __user *from,
-+					  unsigned long n)
-+{
-+	int sz = __compiletime_object_size(to);
-+
-+	might_fault();
-+	if (likely(sz == -1 || sz >= n))
-+		n = _copy_from_user(to, from, n);
-+	else if(__builtin_constant_p(n))
-+		copy_from_user_overflow();
-+	else
-+		WARN(1, "Buffer overflow detected (%d < %lu)!\n", sz, n);
-+
-+	return n;
-+}
-+
- #endif /* _ASM_X86_UACCESS_H */
- 
---- 3.12-rc5/arch/x86/include/asm/uaccess_32.h
-+++ 3.12-rc5-x86-copy_from_user-overflow/arch/x86/include/asm/uaccess_32.h
-@@ -190,27 +190,4 @@ unsigned long __must_check _copy_from_us
- 					  const void __user *from,
- 					  unsigned long n);
- 
--
--extern void copy_from_user_overflow(void)
--#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
--	__compiletime_error("copy_from_user() buffer size is not provably correct")
--#else
--	__compiletime_warning("copy_from_user() buffer size is not provably correct")
--#endif
--;
--
--static inline unsigned long __must_check copy_from_user(void *to,
--					  const void __user *from,
--					  unsigned long n)
--{
--	int sz = __compiletime_object_size(to);
--
--	if (likely(sz == -1 || sz >= n))
--		n = _copy_from_user(to, from, n);
--	else
--		copy_from_user_overflow();
--
--	return n;
--}
--
- #endif /* _ASM_X86_UACCESS_32_H */
---- 3.12-rc5/arch/x86/include/asm/uaccess_64.h
-+++ 3.12-rc5-x86-copy_from_user-overflow/arch/x86/include/asm/uaccess_64.h
-@@ -52,22 +52,6 @@ _copy_from_user(void *to, const void __u
- __must_check unsigned long
- copy_in_user(void __user *to, const void __user *from, unsigned len);
- 
--static inline unsigned long __must_check copy_from_user(void *to,
--					  const void __user *from,
--					  unsigned long n)
--{
--	int sz = __compiletime_object_size(to);
--
--	might_fault();
--	if (likely(sz == -1 || sz >= n))
--		n = _copy_from_user(to, from, n);
--#ifdef CONFIG_DEBUG_VM
--	else
--		WARN(1, "Buffer overflow detected!\n");
--#endif
--	return n;
--}
--
- static __always_inline __must_check
- int copy_to_user(void __user *dst, const void *src, unsigned size)
- {
+-- 
+1.7.9.5
 
 
