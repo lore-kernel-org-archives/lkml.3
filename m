@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761093Ab3JPQpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 12:45:51 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:64946 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab3JPQpu (ORCPT
+	id S1761022Ab3JPQtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 12:49:40 -0400
+Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:50851 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759389Ab3JPQti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 12:45:50 -0400
-Date: Wed, 16 Oct 2013 18:43:32 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: linux-next: Tree for Oct 15
-Message-ID: <20131016164331.GA12192@ulmo.nvidia.com>
-References: <1381845763-10487-1-git-send-email-treding@nvidia.com>
- <525E2257.7030604@roeck-us.net>
- <20131016155055.GA20211@ulmo.nvidia.com>
- <20131016163750.GA13416@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
-Content-Disposition: inline
-In-Reply-To: <20131016163750.GA13416@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Oct 2013 12:49:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:3138:3139:3140:3141:3142:3167:3308:3353:3622:3865:3868:3872:3873:4321:5007:7652:7903:9165:10004:10400:10848:11232:11658:11914:12219:12517:12519:12555:12679:12740:13069:13141:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crate31_19a2502c18c56
+X-Filterd-Recvd-Size: 2745
+Message-ID: <1381942175.22110.57.camel@joe-AO722>
+Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Chen, Gong" <gong.chen@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, tony.luck@intel.com,
+        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 Oct 2013 09:49:35 -0700
+In-Reply-To: <20131016160550.GG13608@pd.tnic>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+	 <20131016160550.GG13608@pd.tnic>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-10-16 at 18:05 +0200, Borislav Petkov wrote:
+> On Wed, Oct 16, 2013 at 10:55:57AM -0400, Chen, Gong wrote:
+[]
+> > After applying this patch series, when a memory corrected error happens,
+> > we can get following information:
+> > 
+> > dmesg output:
+> > 
+> > [  949.545817] {1}Hardware error detected on CPU15
+> > [  949.549786] {1}event severity: corrected
+> > [  949.549786] {1} Error 0, type: corrected
+> > [  949.549786] {1}  section_type: memory error
+> > [  949.549786] {1}  physical_address: 0x0000001057eb0000
+> > [  949.549786] {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
+> > [  949.549786] {1}Above error has been corrected by h/w and require no further action
+> > [  949.549786] mce: [Hardware Error]: Machine check events logged
 
---HcAYCG3uE/tztfnV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Yep, looks almost very good. One nit: can you raise the action line
+> higher, like this:
+> 
+> > [  949.545817] {1}Hardware error detected on CPU15
+> > [  949.549786] {1}It has been corrected by h/w and requires no further action
+> 
+> <here come the error details>
 
-On Wed, Oct 16, 2013 at 09:37:50AM -0700, Guenter Roeck wrote:
-> On Wed, Oct 16, 2013 at 05:50:56PM +0200, Thierry Reding wrote:
-> > On Tue, Oct 15, 2013 at 10:21:27PM -0700, Guenter Roeck wrote:
-> > > On 10/15/2013 07:02 AM, Thierry Reding wrote:
-> > > >Hi all,
-> > > >
-> > > >I've uploaded today's linux-next tree to the master branch of the
-> > > >repository below:
-> > > >
-> > > >         git://gitorious.org/thierryreding/linux-next.git
-> > > >
-> > > >A next-20131015 tag is also provided for convenience.
-> > > >
-> > > >Gained a new conflict, but nothing too exciting. x86 and ARM default
-> > > >configurations build fine. I've also used an x86 allmodconfig build =
-to
-> > > >check for build errors. Mark fixed most of those in the trees that he
-> > > >created last Thursday and Friday, so I've cherry-picked them on top =
-of
-> > > >the final merge. There was one new build failure in the staging tree
-> > > >that was trivial to fix so I added a patch to the tree as well.
-> > > >
-> > >=20
-> > > This build does look much better than the previous ones. I 'only' get=
- 12 build failures
-> > > out of 106 configurations.
-> >=20
-> > Thanks for running these!
-> >=20
-> No problem - servers are up anyway. Only problem is that buildbot and git=
-orious
-> don't seem to get along, and the automatic tree update doesn't work. This=
- means
-> I have to trigger tree updates manually, which I may forget once in a whi=
-le.
+Perhaps this would be nicer still with the "mce:" prefix
+on all the log lines with the overall description emitted
+first.  It could help make grepping the log a bit easier.
 
-I do have a kernel.org account now, but I'd like to avoid switching the
-repository again. People are finally beginning to realize that there's a
-temporary location for linux-next on gitorious.
+[  xxx.xxxxxx] mce: [Hardware Error]: Machine check events logged
+[  xxx.xxxxxx] mce: {1}Hardware error detected on CPU15
+[  xxx.xxxxxx] mce: {1}Above error has been corrected by h/w and require no further action
+[  xxx.xxxxxx] mce: {1}event severity: corrected
+[  xxx.xxxxxx] mce: {1} Error 0, type: corrected
+[  xxx.xxxxxx] mce: {1}  section_type: memory error
+[  xxx.xxxxxx] mce: {1}  physical_address: 0x0000001057eb0000
+[  xxx.xxxxxx] mce: {1}  DIMM location: Memriser3 CHANNEL A DIMM 0
 
-> > > Worst are powerpc builds, with 7 out of 14 builds failed.
-> >=20
-> > Yes, I'm seeing those too. I used to carry a fix for many of these in
-> > earlier linux-next trees but since I haven't had the time to run the
-> > PowerPC builds in a while I haven't cherry-picked it to new trees.
-> >=20
-> Are those failures due to merge conflicts, or should the fix be applied
-> to a contributing repository ?
+grammar: s/require/requires or maybe required
 
-I think they are cause by some changes being done to the OF headers and
-I mailed that patch to Rob Herring at some point, but I'm not sure what
-came of it. There were a few others too, but I think most of the patches
-I sent for them have been merged.
 
-Thierry
-
---HcAYCG3uE/tztfnV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXsIzAAoJEN0jrNd/PrOhQ8EQAJu/UgT9CaDYjbgIWppOmKeU
-0Lr0CRWL+AHnc8w5bfx6oNHioZ6S5KutcxoXacejmbalNdUmJQMMukPKe9GtYcxO
-zcyeTXrSYZrQZgLRKJtLHBWD8ltc62H4DOmlOX9Xal04FITnltQQ023o3D3XGD4V
-WM7DLarHdh6YRpdHZSiSdiGcrwLbAbRgqQZ41Dmlb9tKnniPNVL3F0QbIAwxNTM5
-ryDRs5eLcwaOHQEKN8VxCewQjUH8Mvl/pTluNe79Ryz2LPf9sa23qtcHjcxIkIxU
-SQc+1kjzt9sdUcrHH/16ytMpBGPwrj+vJWWElCuEXTLRCWH73keEzEsAutJ1PGYQ
-IGqWnn/Giugp8qEMUKvCxntBhUFW0Lu/Nd9AWigoV1udNCrv9ZMp0ZWoq4ecfhR+
-Ax0N0zZFwSwdRSgcPlNvGt9voWGFFTEDCQqm8I+IN9m1wIPE71Nw/BS3YhWpgh5j
-/0EGkafxiJnJmTLtXL/LUgniqhNUUIQRSynLf3fsozb+QsT8WqDGMd++RNKq+2x3
-XbZ9SCPtIRCyR8+cRABTSq3RbIZuhK5Y1d74w7twtgJHUEVHUHL5aVpfxu9JhVfE
-j97gZP0ZUsfzYNVZK+Lua/AGww6rBMPdfarYhlSWbIUyTOt7/FTiIBYaF/+KD1VB
-nWxlcf85XvAQqaFK2JI0
-=Fmpw
------END PGP SIGNATURE-----
-
---HcAYCG3uE/tztfnV--
