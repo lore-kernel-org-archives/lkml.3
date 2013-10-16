@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab3JPCCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:02:09 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23631 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab3JPCCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:02:06 -0400
-Message-ID: <1381888924.2371.5.camel@buesod1.americas.hpqcorp.net>
-Subject: still running into WARNING: CPU: at fs/ext4/inode.c:230
- ext4_evict_inode+0x4a6/0x4e0
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jan Kara <jack@suse.cz>
-Cc: tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Date: Tue, 15 Oct 2013 19:02:04 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1758189Ab3JPCGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:06:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752336Ab3JPCGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 22:06:32 -0400
+Message-ID: <525DF466.6030308@redhat.com>
+Date: Tue, 15 Oct 2013 22:05:26 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org> <20131011003930.GC4446@dastard> <20131014214250.GG856@cmpxchg.org> <20131015014123.GQ4446@dastard> <20131015174128.GH856@cmpxchg.org> <20131015234147.GA4446@dastard>
+In-Reply-To: <20131015234147.GA4446@dastard>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jan,
+On 10/15/2013 07:41 PM, Dave Chinner wrote:
+> On Tue, Oct 15, 2013 at 01:41:28PM -0400, Johannes Weiner wrote:
 
-Just wanted to let you know I hit this[1] again on Linus' latest. The
-setup/workload is *identical* to the reported one a few months ago.
+>> I'm not forgetting about them, I just track them very coarsely by
+>> linking up address spaces and then lazily enforce their upper limit
+>> when memory is tight by using the shrinker callback.  The assumption
+>> was that actually scanning them is such a rare event that we trade the
+>> rare computational costs for smaller memory consumption most of the
+>> time.
+> 
+> Sure, I understand the tradeoff that you made. But there's nothing
+> worse than a system that slows down unpredictably because of some
+> magic threshold in some subsystem has been crossed and
+> computationally expensive operations kick in.
 
-[1] https://lkml.org/lkml/2013/8/1/532
+The shadow shrinker should remove the radix nodes with
+the oldest shadow entries first, so true LRU should actually
+work for the radix tree nodes.
 
-Here's the complete output, I hope it helps...
+Actually, since we only care about the age of the youngest
+shadow entry in each radix tree node, FIFO will be the same
+as LRU for that list.
 
-------------[ cut here ]------------
-WARNING: CPU: 42 PID: 74607 at fs/ext4/inode.c:230 ext4_evict_inode+0x4a6/0x4e0 [ext4]()
-Modules linked in: fuse autofs4 sunrpc 8021q garp stp llc cpufreq_ondemand pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 uinput iTCO_wdt iTCO_vendor_support ipmi_si ipmi_msghandler microcode pcspkr serio_raw lpc_ich mfd_core sg hpilo hpwdt i7core_edac edac_core netxen_nic freq_table ext4 jbd2 mbcache sr_mod cdrom sd_mod crc_t10dif crct10dif_common qla2xxx scsi_transport_fc scsi_tgt pata_acpi ata_generic ata_piix hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core dm_mirror dm_region_hash dm_log dm_mod
-CPU: 42 PID: 74607 Comm: reaim Tainted: G        W    3.12.0-rc5 #40
-Hardware name: HP ProLiant DL980 G7, BIOS P66 08/31/2222
- 00000000000000e6 ffff8908c6c59d28 ffffffff81550dd8 00000000000000e6
- 0000000000000000 ffff8908c6c59d68 ffffffff8104e29c ffff8908c6c59d78
- ffff880afae83500 ffff880afae83608 ffff880afae83450 ffff880afae83500
-Call Trace:
- [<ffffffff81550dd8>] dump_stack+0x49/0x61
- [<ffffffff8104e29c>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff8104e2ea>] warn_slowpath_null+0x1a/0x20
- [<ffffffffa03afe16>] ext4_evict_inode+0x4a6/0x4e0 [ext4]
- [<ffffffff81197ab7>] evict+0xa7/0x1c0
- [<ffffffff81197cbf>] iput_final+0xef/0x190
- [<ffffffff81197d9e>] iput+0x3e/0x50
- [<ffffffff81195858>] d_kill+0xd8/0x110
- [<ffffffff81195a1b>] dput+0x18b/0x1c0
- [<ffffffff8117f588>] __fput+0x188/0x270
- [<ffffffff8117f73e>] ____fput+0xe/0x10
- [<ffffffff8106d0bf>] task_work_run+0x8f/0xf0
- [<ffffffff81003a84>] do_notify_resume+0x84/0x90
- [<ffffffff8155d9da>] int_signal+0x12/0x17
----[ end trace ea7184a5fb48e185 ]---
+That means the shrinker can always just take the radix tree
+nodes off the end.
 
+>> But it
+>> looks like tracking radix tree nodes with a list and backpointers to
+>> the mapping object for the lock etc. will be a major pain in the ass.
+> 
+> Perhaps so - it may not work out when we get down to the fine
+> details...
 
-Thanks,
-Davidlohr
+I suspect that a combination of lifetime rules (inode cannot
+disappear until all the radix tree nodes) and using RCU free
+for the radix tree nodes, and the inodes might do the trick.
 
+That would mean that, while holding the rcu read lock, the
+back pointer from a radix tree node to the inode will always
+point to valid memory.
+
+That allows the shrinker to lock the inode, and verify that
+the inode is still valid, before it attempts to rcu free the
+radix tree node with shadow entries.
+
+It also means that locking only needs to be in the inode,
+and on the LRU list for shadow radix tree nodes.
+
+Does that sound sane?
+
+Am I overlooking something?
+
+-- 
+All rights reversed
