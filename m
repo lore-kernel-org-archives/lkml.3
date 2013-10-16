@@ -1,186 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759857Ab3JPCNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 22:13:15 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:36105 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab3JPCNL (ORCPT
+	id S1757770Ab3JPC0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 22:26:36 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30159 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751285Ab3JPC0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 22:13:11 -0400
-Message-ID: <525DF632.1030507@gmail.com>
-Date: Tue, 15 Oct 2013 22:13:06 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 22:26:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AksXANr4XVJ5LFuj/2dsb2JhbABagXECAYETwz+BJxd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhE4gABb4oFo12gT4Hgx+BBgOYA5IDgzgogSw
+Date: Wed, 16 Oct 2013 13:26:06 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
+Message-ID: <20131016022606.GD4446@dastard>
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+ <20131011003930.GC4446@dastard>
+ <20131014214250.GG856@cmpxchg.org>
+ <20131015014123.GQ4446@dastard>
+ <20131015174128.GH856@cmpxchg.org>
+ <20131015234147.GA4446@dastard>
+ <525DF466.6030308@redhat.com>
 MIME-Version: 1.0
-To: Chang Xiangzhong <changxiangzhong@gmail.com>
-CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] For for each TSN t being newly acked (Not only cumulatively,
- but also SELECTIVELY) cacc_saw_newack should be set to 1.
-References: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
-In-Reply-To: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525DF466.6030308@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 02:13 PM, Chang Xiangzhong wrote:
-> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+On Tue, Oct 15, 2013 at 10:05:26PM -0400, Rik van Riel wrote:
+> On 10/15/2013 07:41 PM, Dave Chinner wrote:
+> > On Tue, Oct 15, 2013 at 01:41:28PM -0400, Johannes Weiner wrote:
+> 
+> >> I'm not forgetting about them, I just track them very coarsely by
+> >> linking up address spaces and then lazily enforce their upper limit
+> >> when memory is tight by using the shrinker callback.  The assumption
+> >> was that actually scanning them is such a rare event that we trade the
+> >> rare computational costs for smaller memory consumption most of the
+> >> time.
+> > 
+> > Sure, I understand the tradeoff that you made. But there's nothing
+> > worse than a system that slows down unpredictably because of some
+> > magic threshold in some subsystem has been crossed and
+> > computationally expensive operations kick in.
+> 
+> The shadow shrinker should remove the radix nodes with
+> the oldest shadow entries first, so true LRU should actually
+> work for the radix tree nodes.
+> 
+> Actually, since we only care about the age of the youngest
+> shadow entry in each radix tree node, FIFO will be the same
+> as LRU for that list.
+> 
+> That means the shrinker can always just take the radix tree
+> nodes off the end.
 
-Your proposed solution is very nice, but it does 2 things in one
-patch.
-  1) It fixes the bug
-  2) It refactors the code to improve the flow.
+Right, but it can't necessarily free the node as it may still have
+pointers to pages in it. In that case, it would have to simply
+rotate the page to the end of the LRU again.
 
-While (2) is very nice, it needs a much more careful review.
-Can you please split this into 2 patches?  First patch can
-make the code look like this:
+Unless, of course, we kept track of the number of exceptional
+entries in a node and didn't add it to the reclaim list until there
+were no non-expceptional entries in the node....
 
-	if (sctp_acked(sack, tsn)) {
-		...
-		if (!tchunk->tsn_gap_acked) {
-			tchunk->tsn_gap_acked = 1;
-			*highest_new_tsn_in_sack = tsn;
-			bytes_acked += sctp_data_size(tchunk);
-                         if (!tchunk->transport)
-				migrate_bytes += sctp_data_size(tchunk);
-			forward_progress = true;
+> >> But it
+> >> looks like tracking radix tree nodes with a list and backpointers to
+> >> the mapping object for the lock etc. will be a major pain in the ass.
+> > 
+> > Perhaps so - it may not work out when we get down to the fine
+> > details...
+> 
+> I suspect that a combination of lifetime rules (inode cannot
+> disappear until all the radix tree nodes) and using RCU free
+> for the radix tree nodes, and the inodes might do the trick.
+> 
+> That would mean that, while holding the rcu read lock, the
+> back pointer from a radix tree node to the inode will always
+> point to valid memory.
 
-			/*
-			 * SFR-CACC algorithm:
-			 * 2) If the SACK contains gap acks
-			 * and the flag CHANGEOVER_ACTIVE is
-			 * set the receiver of the SACK MUST
-			 * take the following action:
-			...
-		}
-	}
+Yes, that is what I was thinking...
 
-Then you can file a second patch to improve the flow/refactor the 
-function.  You have to be very careful here though and be sure to
-run through all the regression tests since you would be modifying
-a very critcal part of the code.
+> That allows the shrinker to lock the inode, and verify that
+> the inode is still valid, before it attempts to rcu free the
+> radix tree node with shadow entries.
 
-Thanks
--vlad
+Lock the mapping, not the inode. The radix tree is protected by the
+mapping_lock, not an inode lock. i.e. I'd hope that this can all b
+contained within the struct address_space and not require any
+knowledge of inodes or inode lifecycles at all.
 
-> ---
->   net/sctp/outqueue.c |   76 ++++++++++++++++++++++++---------------------------
->   1 file changed, 35 insertions(+), 41 deletions(-)
->
-> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> index 94df758..84ef3b8 100644
-> --- a/net/sctp/outqueue.c
-> +++ b/net/sctp/outqueue.c
-> @@ -1357,13 +1357,13 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->
->   		tsn = ntohl(tchunk->subh.data_hdr->tsn);
->   		if (sctp_acked(sack, tsn)) {
-> -			/* If this queue is the retransmit queue, the
-> -			 * retransmit timer has already reclaimed
-> -			 * the outstanding bytes for this chunk, so only
-> -			 * count bytes associated with a transport.
-> -			 */
-> -			if (transport) {
-> -				/* If this chunk is being used for RTT
-> +			if (!tchunk->tsn_gap_acked) {
-> +				/* If this queue is the retransmit queue, the
-> +				 * retransmit timer has already reclaimed
-> +				 * the outstanding bytes for this chunk, so only
-> +				 * count bytes associated with a transport.
-> +				 *
-> +				 * If this chunk is being used for RTT
->   				 * measurement, calculate the RTT and update
->   				 * the RTO using this value.
->   				 *
-> @@ -1374,28 +1374,44 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->   				 * first instance of the packet or a later
->   				 * instance).
->   				 */
-> -				if (!tchunk->tsn_gap_acked &&
-> -				    tchunk->rtt_in_progress) {
-> +				if (transport && tchunk->rtt_in_progress) {
->   					tchunk->rtt_in_progress = 0;
->   					rtt = jiffies - tchunk->sent_at;
->   					sctp_transport_update_rto(transport,
-> -								  rtt);
-> +						rtt);
->   				}
-> -			}
->
-> -			/* If the chunk hasn't been marked as ACKED,
-> -			 * mark it and account bytes_acked if the
-> -			 * chunk had a valid transport (it will not
-> -			 * have a transport if ASCONF had deleted it
-> -			 * while DATA was outstanding).
-> -			 */
-> -			if (!tchunk->tsn_gap_acked) {
-> +				/* If the chunk hasn't been marked as ACKED,
-> +				 * mark it and account bytes_acked if the
-> +				 * chunk had a valid transport (it will not
-> +				 * have a transport if ASCONF had deleted it
-> +				 * while DATA was outstanding).
-> +				 */
->   				tchunk->tsn_gap_acked = 1;
->   				*highest_new_tsn_in_sack = tsn;
->   				bytes_acked += sctp_data_size(tchunk);
->   				if (!tchunk->transport)
->   					migrate_bytes += sctp_data_size(tchunk);
->   				forward_progress = true;
-> +
-> +				/* SFR-CACC algorithm:
-> +				 * 2) If the SACK contains gap acks
-> +				 * and the flag CHANGEOVER_ACTIVE is
-> +				 * set the receiver of the SACK MUST
-> +				 * take the following action:
-> +				 *
-> +				 * B) For each TSN t being acked that
-> +				 * has not been acked in any SACK so
-> +				 * far, set cacc_saw_newack to 1 for
-> +				 * the destination that the TSN was
-> +				 * sent to.
-> +				 */
-> +				if (transport &&
-> +					sack->num_gap_ack_blocks &&
-> +					q->asoc->peer.primary_path->cacc.
-> +					changeover_active
-> +				   )
-> +					transport->cacc.cacc_saw_newack = 1;
->   			}
->
->   			if (TSN_lte(tsn, sack_ctsn)) {
-> @@ -1411,30 +1427,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->   				restart_timer = 1;
->   				forward_progress = true;
->
-> -				if (!tchunk->tsn_gap_acked) {
-> -					/*
-> -					 * SFR-CACC algorithm:
-> -					 * 2) If the SACK contains gap acks
-> -					 * and the flag CHANGEOVER_ACTIVE is
-> -					 * set the receiver of the SACK MUST
-> -					 * take the following action:
-> -					 *
-> -					 * B) For each TSN t being acked that
-> -					 * has not been acked in any SACK so
-> -					 * far, set cacc_saw_newack to 1 for
-> -					 * the destination that the TSN was
-> -					 * sent to.
-> -					 */
-> -					if (transport &&
-> -					    sack->num_gap_ack_blocks &&
-> -					    q->asoc->peer.primary_path->cacc.
-> -					    changeover_active)
-> -						transport->cacc.cacc_saw_newack
-> -							= 1;
-> -				}
-> -
->   				list_add_tail(&tchunk->transmitted_list,
-> -					      &q->sacked);
-> +					&q->sacked);
->   			} else {
->   				/* RFC2960 7.2.4, sctpimpguide-05 2.8.2
->   				 * M2) Each time a SACK arrives reporting
->
+> It also means that locking only needs to be in the inode,
+> and on the LRU list for shadow radix tree nodes.
+> 
+> Does that sound sane?
+> 
+> Am I overlooking something?
 
+It's pretty much along the same lines of what I was thinking, but
+lets see what Johannes thinks.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
