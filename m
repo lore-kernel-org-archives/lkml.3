@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761473Ab3JPRtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:49:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36039 "EHLO
+	id S1761660Ab3JPRtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:49:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933715Ab3JPRqm (ORCPT
+	with ESMTP id S934750Ab3JPRqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 13:46:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Mike Galbraith <efault@gmx.de>, Rik van Riel <riel@redhat.com>,
+        Mike Galbraith <bitbucket@online.de>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 48/50] ipc/sem.c: synchronize the proc interface
-Date: Wed, 16 Oct 2013 10:45:34 -0700
-Message-Id: <20131016174404.249606640@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [ 47/50] ipc/sem.c: optimize sem_lock()
+Date: Wed, 16 Oct 2013 10:45:33 -0700
+Message-Id: <20131016174404.122710496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131016174358.335646140@linuxfoundation.org>
 References: <20131016174358.335646140@linuxfoundation.org>
@@ -32,22 +33,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manfred Spraul <manfred@colorfullife.com>
 
-commit d8c633766ad88527f25d9f81a5c2f083d78a2b39 upstream.
+commit 6d07b68ce16ae9535955ba2059dedba5309c3ca1 upstream.
 
-The proc interface is not aware of sem_lock(), it instead calls
-ipc_lock_object() directly.  This means that simple semop() operations
-can run in parallel with the proc interface.  Right now, this is
-uncritical, because the implementation doesn't do anything that requires
-a proper synchronization.
+Operations that need access to the whole array must guarantee that there
+are no simple operations ongoing.  Right now this is achieved by
+spin_unlock_wait(sem->lock) on all semaphores.
 
-But it is dangerous and therefore should be fixed.
+If complex_count is nonzero, then this spin_unlock_wait() is not
+necessary, because it was already performed in the past by the thread
+that increased complex_count and even though sem_perm.lock was dropped
+inbetween, no simple operation could have started, because simple
+operations cannot start when complex_count is non-zero.
 
 Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Rik van Riel <riel@redhat.com>
+Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
@@ -56,20 +60,26 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/ipc/sem.c
 +++ b/ipc/sem.c
-@@ -2103,6 +2103,14 @@ static int sysvipc_sem_proc_show(struct
- 	struct sem_array *sma = it;
- 	time_t sem_otime;
+@@ -248,12 +248,20 @@ static void merge_queues(struct sem_arra
+  * Caller must own sem_perm.lock.
+  * New simple ops cannot start, because simple ops first check
+  * that sem_perm.lock is free.
++ * that a) sem_perm.lock is free and b) complex_count is 0.
+  */
+ static void sem_wait_array(struct sem_array *sma)
+ {
+ 	int i;
+ 	struct sem *sem;
  
-+	/*
-+	 * The proc interface isn't aware of sem_lock(), it calls
-+	 * ipc_lock_object() directly (in sysvipc_find_ipc).
-+	 * In order to stay compatible with sem_lock(), we must wait until
-+	 * all simple semop() calls have left their critical regions.
-+	 */
-+	sem_wait_array(sma);
++	if (sma->complex_count)  {
++		/* The thread that increased sma->complex_count waited on
++		 * all sem->lock locks. Thus we don't need to wait again.
++		 */
++		return;
++	}
 +
- 	sem_otime = get_semotime(sma);
- 
- 	return seq_printf(s,
+ 	for (i = 0; i < sma->sem_nsems; i++) {
+ 		sem = sma->sem_base + i;
+ 		spin_unlock_wait(&sem->lock);
 
 
