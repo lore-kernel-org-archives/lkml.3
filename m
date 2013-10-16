@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760913Ab3JPXzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 19:55:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42903 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760675Ab3JPXzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 19:55:44 -0400
-Date: Wed, 16 Oct 2013 17:55:41 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: tianyu.lan@intel.com
-Cc: tony.luck@intel.com, lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
- resource conversion
-Message-ID: <20131016235541.GD17866@google.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
- <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
+	id S1761216Ab3JPX5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 19:57:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34450 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab3JPX5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 19:57:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,509,1378882800"; 
+   d="scan'208";a="420302738"
+Date: Wed, 16 Oct 2013 16:57:30 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Subject: Re: [PATCH v2] usb: hub: Clear Port Reset Change during init/resume
+Message-ID: <20131016235730.GK7082@xanatos>
+References: <1381872227-24757-1-git-send-email-jwerner@chromium.org>
+ <525DB456.1040006@cogentembedded.com>
+ <CAODwPW-wKtN9JhoJCs+LoBx4Pj65+pozKv=ycLQJfsL1k28zEQ@mail.gmail.com>
+ <1381884300-403-1-git-send-email-jwerner@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1381884300-403-1-git-send-email-jwerner@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 08:19:01PM +0800, tianyu.lan@intel.com wrote:
-> From: Lan Tianyu <tianyu.lan@intel.com>
-> 
-> Using ACPI resource functions to convert ACPI resource to generic resource
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+On Tue, Oct 15, 2013 at 05:45:00PM -0700, Julius Werner wrote:
+> This patch adds the Port Reset Change flag to the set of bits that are
+> preemptively cleared on init/resume of a hub. In theory this bit should
+> never be set unexpectedly... in practice it can still happen if BIOS,
+> SMM or ACPI code plays around with USB devices without cleaning up
+> correctly. This is especially dangerous for XHCI root hubs, which don't
+> generate any more Port Status Change Events until all change bits are
+> cleared, so this is a good precaution to have (similar to how it's
+> already done for the Warm Port Reset Change flag).
+
+Did you run into an issue where port status change events weren't being
+generated because the Port Reset flag was set?  I'm trying to figure out
+if this addresses a real issue you hit (and thus should be queued for
+stable), or if this is just a precaution.
+
+I do agree this is a good fix.  ISTR that with some xHCI vendors, when
+the host is reset, the hardware will drive a port reset down all ports.
+That may cause the port reset and even warm port reset bits to be set.
+I have a vague recollection that some implementations might not even
+wait for the port reset to complete before saying the reset is done.  We
+can't tell which hosts will and won't drive a reset, so we rely on the
+USB core to clear those bits if they are set.
+
+So perhaps instead of the BIOS/SMM/ACPI code leaving the ports in an
+unclean state, the root cause of your issue is actually the call to
+xhci_reset?  You can check the port status before that call to find out.
+
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
 > ---
-> This patch just passes through compilation test due to no ia64 machine on hand.
+>  drivers/usb/core/hub.c | 5 +++++
+>  1 file changed, 5 insertions(+)
 > 
->  arch/ia64/pci/pci.c | 38 +++++++++++++++++++++-----------------
->  1 file changed, 21 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index 2326790..14fa175 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -232,8 +232,9 @@ out:
->  	return ~0;
->  }
->  
-> -static acpi_status resource_to_window(struct acpi_resource *resource,
-> -				      struct acpi_resource_address64 *addr)
-> +static acpi_status resource_to_window(struct acpi_resource *ares,
-> +				      struct acpi_resource_address64 *addr,
-> +				      struct resource *res)
->  {
->  	acpi_status status;
->  
-> @@ -244,7 +245,7 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
->  	 *	- producers, i.e., the address space is routed downstream,
->  	 *	  not consumed by the bridge itself
->  	 */
-> -	status = acpi_resource_to_address64(resource, addr);
-> +	status = acpi_dev_resource_address_space_full(ares, addr, res);
->  	if (ACPI_SUCCESS(status) &&
->  	    (addr->resource_type == ACPI_MEMORY_RANGE ||
->  	     addr->resource_type == ACPI_IO_RANGE) &&
-> @@ -255,51 +256,54 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
->  	return AE_ERROR;
->  }
->  
-> -static acpi_status count_window(struct acpi_resource *resource, void *data)
-> +static acpi_status count_window(struct acpi_resource *ares, void *data)
->  {
->  	unsigned int *windows = (unsigned int *) data;
->  	struct acpi_resource_address64 addr;
-> +	struct resource res;
->  	acpi_status status;
->  
-> -	status = resource_to_window(resource, &addr);
-> +	status = resource_to_window(ares, &addr, &res);
->  	if (ACPI_SUCCESS(status))
->  		(*windows)++;
->  
->  	return AE_OK;
->  }
->  
-> -static acpi_status add_window(struct acpi_resource *res, void *data)
-> +static acpi_status add_window(struct acpi_resource *ares, void *data)
->  {
->  	struct pci_root_info *info = data;
-> -	struct resource *resource;
-> +	struct resource *resource = &info->res[info->res_num];
->  	struct acpi_resource_address64 addr;
->  	acpi_status status;
-> -	unsigned long flags, offset = 0;
-> +	unsigned long offset = 0;
->  	struct resource *root;
->  
->  	/* Return AE_OK for non-window resources to keep scanning for more */
-> -	status = resource_to_window(res, &addr);
-> +	status = resource_to_window(ares, &addr, resource);
->  	if (!ACPI_SUCCESS(status))
->  		return AE_OK;
->  
-> -	if (addr.resource_type == ACPI_MEMORY_RANGE) {
-> -		flags = IORESOURCE_MEM;
-> +	if (resource->flags & IORESOURCE_MEM) {
->  		root = &iomem_resource;
->  		offset = addr.translation_offset;
-> -	} else if (addr.resource_type == ACPI_IO_RANGE) {
-> -		flags = IORESOURCE_IO;
-> +	} else if (resource->flags & IORESOURCE_IO) {
->  		root = &ioport_resource;
->  		offset = add_io_space(info, &addr);
->  		if (offset == ~0)
->  			return AE_OK;
-> +
-> +		/*
-> +		 * io space address translation offset depends
-> +		 * on the return value of add_io_space(). So
-> +		 * Repopulate resource->start and end here.
-
-"Repopulate" makes it sound like "resource->start" got clobbered
-somewhere.  But it didn't.  I think it's just that each bridge can
-support its own I/O port range, and the PCI port numbers reported
-in the acpi_resource may not be distinct, and add_io_space() adds
-an offset so all the I/O port ranges fit into one global I/O port
-space.
-
-For example, I think these two bridges have the same port numbers
-(0x0-0xfff) in their acpi_resource, but the second has an offset
-of 0x1000000 in the system I/O port space, and I think this offset
-is what add_io_space() returns:
-
-  HWP0002:00: host bridge window [io  0x0000-0x0fff]	   (PCI [0x0-0xfff])
-  HWP0002:09: host bridge window [io  0x1000000-0x1000fff] (PCI [0x0-0xfff])
-
-> +		 */
-> +		resource->start = addr.minimum + offset;
-> +		resource->end = resource->start + addr.address_length - 1;
-
-Can't we use this:
-
-		resource->start += offset;
-		resource->end += offset;
-
-to avoid breaking the encapsulation of struct acpi_resource_address64?
-
->  	} else
->  		return AE_OK;
->  
-> -	resource = &info->res[info->res_num];
->  	resource->name = info->name;
-> -	resource->flags = flags;
-> -	resource->start = addr.minimum + offset;
-> -	resource->end = resource->start + addr.address_length - 1;
->  	info->res_offset[info->res_num] = offset;
->  
->  	if (insert_resource(root, resource)) {
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index e6b682c..c3dd64c 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -1130,6 +1130,11 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+>  			usb_clear_port_feature(hub->hdev, port1,
+>  					USB_PORT_FEAT_C_ENABLE);
+>  		}
+> +		if (portchange & USB_PORT_STAT_C_RESET) {
+> +			need_debounce_delay = true;
+> +			usb_clear_port_feature(hub->hdev, port1,
+> +					USB_PORT_FEAT_C_RESET);
+> +		}
+>  		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
+>  				hub_is_superspeed(hub->hdev)) {
+>  			need_debounce_delay = true;
 > -- 
-> 1.8.2.1
+> 1.7.12.4
 > 
