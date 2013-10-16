@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761234Ab3JPRFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 13:05:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20935 "EHLO mga14.intel.com"
+	id S1761249Ab3JPRGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 13:06:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55922 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab3JPRFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 13:05:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,508,1378882800"; 
-   d="scan'208";a="375641098"
-Message-ID: <525EC73E.3060204@linux.intel.com>
-Date: Wed, 16 Oct 2013 10:05:02 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1761070Ab3JPRGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 13:06:10 -0400
+Date: Wed, 16 Oct 2013 19:05:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
+        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/9] DMI: Parse memory device (type 17) in SMBIOS
+Message-ID: <20131016170555.GK13608@pd.tnic>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <1381935366-11731-6-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux@roeck-us.net,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: unify copy_from_user() checking
-References: <525E964402000078000FB70C@nat28.tlf.novell.com> <525E9BF7.7020706@linux.intel.com> <525EC6C402000078000FB895@nat28.tlf.novell.com>
-In-Reply-To: <525EC6C402000078000FB895@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381935366-11731-6-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 16, 2013 at 10:56:02AM -0400, Chen, Gong wrote:
+> This patch adds a new interface to decode memory device (type 17)
+> to help error reporting on DIMMs.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 
->> if you have found cases where this matters... maybe you found a new security
->> issue...
->
-> Iirc I could convince myself that in the cited cases the warnings
-> were there for no reason.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-can you pick one on a source level ?
-(and the gcc 4.6 had a few false positives which is why it got disabled there)
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
