@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762136Ab3JPU6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:58:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37354 "EHLO
+	id S1762145Ab3JPVAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 17:00:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37382 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761601Ab3JPU6R (ORCPT
+	with ESMTP id S1755729Ab3JPVAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:58:17 -0400
-Date: Wed, 16 Oct 2013 22:58:07 +0200
+	Wed, 16 Oct 2013 17:00:23 -0400
+Date: Wed, 16 Oct 2013 23:00:11 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] (Was: perf_event_mmap(vma) && !vma->vm_mm)
-Message-ID: <20131016205807.GG10651@twins.programming.kicks-ass.net>
-References: <20131012192203.GA21738@redhat.com>
- <20131014102426.GX3081@twins.programming.kicks-ass.net>
- <20131016200924.GA23214@redhat.com>
- <20131016202822.GI2675@laptop.programming.kicks-ass.net>
- <20131016204348.GA25121@redhat.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: NeilBrown <neilb@suse.de>, Shaohua Li <shli@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131016210011.GH10651@twins.programming.kicks-ass.net>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+ <1381949500-501-2-git-send-email-treding@nvidia.com>
+ <20131016200645.GD10651@twins.programming.kicks-ass.net>
+ <20131016201410.GA26785@twins.programming.kicks-ass.net>
+ <20131017073100.2cab1ffa@notabene.brown>
+ <20131016203506.GJ2675@laptop.programming.kicks-ass.net>
+ <20131016205114.GD6579@mithrandir>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131016204348.GA25121@redhat.com>
+In-Reply-To: <20131016205114.GD6579@mithrandir>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:43:48PM +0200, Oleg Nesterov wrote:
-> Peter, just in case. I understand that this all is minor. Just I am
-> confused. And in any case I do think we do not need __GFP_ZERO when
-> it comes to PAGE_SIZE allocation.
+On Wed, Oct 16, 2013 at 10:51:15PM +0200, Thierry Reding wrote:
+> On Wed, Oct 16, 2013 at 10:35:06PM +0200, Peter Zijlstra wrote:
+> > On Thu, Oct 17, 2013 at 07:31:00AM +1100, NeilBrown wrote:
+> > > It seems to have moved to 
+> > >   git://gitorious.org/thierryreding/linux-next.git
+> > 
+> > Uhm.. what happened to sfr and why would we trust gitorious?
+> 
+> sfr is on vacation. Back at the time when Mark Brown and I volunteered
+> to continue doing the linux-next trees in Stephen's absence I didn't
+> have a kernel.org account. Also we decided rather late that we wanted to
+> do this so there was no time to set things up properly. We had to make
+> do with what we had.
+> 
+> Today's next-20131016 tag is signed with my GPG key that I use for my
+> kernel.org account as well, so that should make it about equally trust-
+> worthy as anything I'd be pushing to kernel.org.
 
-Yeah; we could probably avoid it; if only the strcpy functions would
-return how many bytes they copied :/ Then we could create a nice little
-helper to \0 the tail end for alignment.
-
-Anyway, as long as the resulting code is obvious and makes it hard to
-leak something I'm fine.
+Fair enough; and thanks for doing this.
