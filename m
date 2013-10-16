@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934365Ab3JPUkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:40:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37259 "EHLO
+	id S934268Ab3JPUks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:40:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933857Ab3JPUkq (ORCPT
+	with ESMTP id S934138Ab3JPUkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Oct 2013 16:40:46 -0400
 Date: Wed, 16 Oct 2013 13:40:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: <davem@davemloft.net>, <adobriyan@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix proc_reg_get_unmapped_area()
-Message-Id: <20131016134044.d1bd8004f4fb94df405a541d@linux-foundation.org>
-In-Reply-To: <525E957802000078000FB6FE@nat28.tlf.novell.com>
-References: <525E957802000078000FB6FE@nat28.tlf.novell.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matthias Beyer <mail@beyermatthias.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] drivers: usb: core: devio.c: Put arguments on new
+ line
+Message-ID: <20131016204044.GB6701@kroah.com>
+References: <20131014181214.GB6023@kroah.com>
+ <1381780000-23327-1-git-send-email-mail@beyermatthias.de>
+ <1381780000-23327-6-git-send-email-mail@beyermatthias.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381780000-23327-6-git-send-email-mail@beyermatthias.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013 12:32:40 +0100 "Jan Beulich" <JBeulich@suse.com> wrote:
-
-> Commit c4fe24485729fc2cbff324c111e67a1cc2f9adea ("sparc: fix PCI device
-> proc file mmap(2)"), while fixing one problem, introduced two new ones:
-> - the function truncates the return value from ->get_unmapped_area() on
->   64-bit architectures,
-> - _all_ descendants are now required to set .get_unmapped_area to non-
->   NULL, which wasn't necessary before (and shouldn't be).
+On Mon, Oct 14, 2013 at 09:46:40PM +0200, Matthias Beyer wrote:
+> To fit the 80-cols convention, this patch moves the arguments (the
+> second and third one) for driver->unlocked_ioctl() onto a new line.
 > 
-> Both - afaict - are a result from a too simplistic copy'n'paste from
-> proc_reg_mmap() done in that change.
+> Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
+> ---
+>  drivers/usb/core/devio.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> This likely also addresses reports like the one at
-> http://linux-kernel.2935.n7.nabble.com/mmap-for-proc-vmcore-broken-since-3-12-rc1-td729326.html.
-> 
-> ...
->
-> --- 3.12-rc5/fs/proc/inode.c
-> +++ 3.12-rc5-proc-get-unmapped-area/fs/proc/inode.c
-> @@ -288,12 +288,12 @@ static int proc_reg_mmap(struct file *fi
->  static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned long orig_addr, unsigned long len, unsigned long pgoff, unsigned long flags)
->  {
->  	struct proc_dir_entry *pde = PDE(file_inode(file));
-> -	int rv = -EIO;
-> -	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
-> +	unsigned long rv = -EIO;
-> +
->  	if (use_pde(pde)) {
-> -		get_unmapped_area = pde->proc_fops->get_unmapped_area;
-> -		if (get_unmapped_area)
-> -			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
-> +		rv = (pde->proc_fops->get_unmapped_area
-> +		      ?: current->mm->get_unmapped_area)(file, orig_addr, len,
-> +							 pgoff, flags);
->  		unuse_pde(pde);
->  	}
->  	return rv;
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index 9761a27..0387948 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -1870,7 +1870,8 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
+>  			if (driver == NULL || driver->unlocked_ioctl == NULL) {
+>  				retval = -ENOTTY;
+>  			} else {
+> -				retval = driver->unlocked_ioctl(intf, ctl->ioctl_code, buf);
+> +				retval = driver->unlocked_ioctl(intf,
+> +						ctl->ioctl_code, buf);
 
-I think these two patches will address the problems:
+Nah, it looks worse this way, just leave it alone.
 
-http://ozlabs.org/~akpm/mmots/broken-out/procfs-fix-unintended-truncation-of-returned-mapped-address.patch
-http://ozlabs.org/~akpm/mmots/broken-out/procfs-call-default-get_unmapped_area-on-mmu-present-architectures.patch
+thanks,
 
-I'll be sending those Linuswards today.  Please check them.  (I think
-your version would break the nommu build).
-
+greg k-h
