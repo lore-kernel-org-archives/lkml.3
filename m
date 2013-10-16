@@ -1,409 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934713Ab3JPOGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:06:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39700 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934592Ab3JPOGA (ORCPT
+	id S934695Ab3JPOGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:06:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26738 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934637Ab3JPOGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:06:00 -0400
+	Wed, 16 Oct 2013 10:06:04 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH V9 24/33] nfs: simplify swap
-Date: Wed, 16 Oct 2013 09:04:37 -0500
-Message-Id: <1381932286-14978-25-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH V9 27/33] xfs: add support for read_iter and write_iter
+Date: Wed, 16 Oct 2013 09:04:40 -0500
+Message-Id: <1381932286-14978-28-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swap_writepage can now call nfs's write_iter f_op, eliminating the need to
-implement for the special-case direct_IO a_op. There is no longer a need to
-pass the uio flag through the direct write path.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org
+Acked-by: Dave Chinner <dchinner@redhat.com>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
- fs/nfs/direct.c           | 93 ++++++++++++++++-------------------------------
- fs/nfs/file.c             |  4 +-
- include/linux/blk_types.h |  2 -
- include/linux/fs.h        |  2 -
- include/linux/nfs_fs.h    |  4 +-
- mm/page_io.c              | 13 +++----
- 6 files changed, 42 insertions(+), 76 deletions(-)
+ fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 7f5377b..239c2fe 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -118,28 +118,18 @@ static inline int put_dreq(struct nfs_direct_req *dreq)
-  * @nr_segs: size of iovec array
-  *
-  * The presence of this routine in the address space ops vector means
-- * the NFS client supports direct I/O. However, for most direct IO, we
-- * shunt off direct read and write requests before the VFS gets them,
-- * so this method is only ever called for swap.
-+ * the NFS client supports direct I/O. However, we shunt off direct
-+ * read and write requests before the VFS gets them, so this method
-+ * should never be called.
-  */
- ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
- 		      loff_t pos)
- {
--#ifndef CONFIG_NFS_SWAP
- 	dprintk("NFS: nfs_direct_IO (%s) off/no(%Ld/%lu) EINVAL\n",
- 			iocb->ki_filp->f_path.dentry->d_name.name,
- 			(long long) pos, iter->nr_segs);
- 
- 	return -EINVAL;
--#else
--	VM_BUG_ON(iocb->ki_nbytes != PAGE_SIZE);
--
--	if (rw == READ || rw == KERNEL_READ)
--		return nfs_file_direct_read(iocb, iter, pos,
--				rw == READ ? true : false);
--	return nfs_file_direct_write(iocb, iter, pos,
--				rw == WRITE ? true : false);
--#endif /* CONFIG_NFS_SWAP */
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 4c749ab..818c623 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -227,10 +227,9 @@ xfs_file_fsync(
  }
  
- static void nfs_direct_release_pages(struct page **pages, unsigned int npages)
-@@ -311,7 +301,7 @@ static const struct nfs_pgio_completion_ops nfs_direct_read_completion_ops = {
-  */
- static ssize_t nfs_direct_read_schedule_segment(struct nfs_pageio_descriptor *desc,
- 						const struct iovec *iov,
--						loff_t pos, bool uio)
-+						loff_t pos)
+ STATIC ssize_t
+-xfs_file_aio_read(
++xfs_file_read_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
  {
- 	struct nfs_direct_req *dreq = desc->pg_dreq;
- 	struct nfs_open_context *ctx = dreq->ctx;
-@@ -339,20 +329,12 @@ static ssize_t nfs_direct_read_schedule_segment(struct nfs_pageio_descriptor *de
- 					  GFP_KERNEL);
- 		if (!pagevec)
- 			break;
--		if (uio) {
--			down_read(&current->mm->mmap_sem);
--			result = get_user_pages(current, current->mm, user_addr,
-+		down_read(&current->mm->mmap_sem);
-+		result = get_user_pages(current, current->mm, user_addr,
- 					npages, 1, 0, pagevec, NULL);
--			up_read(&current->mm->mmap_sem);
--			if (result < 0)
--				break;
--		} else {
--			WARN_ON(npages != 1);
--			result = get_kernel_page(user_addr, 1, pagevec);
--			if (WARN_ON(result != 1))
--				break;
--		}
--
-+		up_read(&current->mm->mmap_sem);
-+		if (result < 0)
-+			break;
- 		if ((unsigned)result < npages) {
- 			bytes = result * PAGE_SIZE;
- 			if (bytes <= pgbase) {
-@@ -402,7 +384,7 @@ static ssize_t nfs_direct_read_schedule_segment(struct nfs_pageio_descriptor *de
+ 	struct file		*file = iocb->ki_filp;
+@@ -251,9 +250,7 @@ xfs_file_aio_read(
+ 	if (file->f_mode & FMODE_NOCMTIME)
+ 		ioflags |= IO_INVIS;
  
- static ssize_t nfs_direct_do_schedule_read_iovec(
- 		struct nfs_pageio_descriptor *desc, const struct iovec *iov,
--		unsigned long nr_segs, loff_t pos, bool uio)
-+		unsigned long nr_segs, loff_t pos)
+-	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
+-	if (ret < 0)
+-		return ret;
++	size = iov_iter_count(iter);
+ 
+ 	if (unlikely(ioflags & IO_ISDIRECT)) {
+ 		xfs_buftarg_t	*target =
+@@ -306,7 +303,7 @@ xfs_file_aio_read(
+ 
+ 	trace_xfs_file_read(ip, size, pos, ioflags);
+ 
+-	ret = generic_file_aio_read(iocb, iovp, nr_segs, pos);
++	ret = generic_file_read_iter(iocb, iter, pos);
+ 	if (ret > 0)
+ 		XFS_STATS_ADD(xs_read_bytes, ret);
+ 
+@@ -622,10 +619,9 @@ restart:
+ STATIC ssize_t
+ xfs_file_dio_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
  {
- 	ssize_t result = -EINVAL;
- 	size_t requested_bytes = 0;
-@@ -410,7 +392,7 @@ static ssize_t nfs_direct_do_schedule_read_iovec(
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -633,7 +629,6 @@ xfs_file_dio_aio_write(
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	ssize_t			ret = 0;
+-	size_t			count = ocount;
+ 	int			unaligned_io = 0;
+ 	int			iolock;
+ 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
+@@ -693,8 +688,8 @@ xfs_file_dio_aio_write(
+ 	}
  
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		const struct iovec *vec = &iov[seg];
--		result = nfs_direct_read_schedule_segment(desc, vec, pos, uio);
-+		result = nfs_direct_read_schedule_segment(desc, vec, pos);
- 		if (result < 0)
- 			break;
- 		requested_bytes += result;
-@@ -467,8 +449,7 @@ static ssize_t nfs_direct_do_schedule_read_bvec(
- #endif /* CONFIG_BLOCK */
+ 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_direct_write(iocb, iovp,
+-			&nr_segs, pos, &iocb->ki_pos, count, ocount);
++	ret = generic_file_direct_write_iter(iocb, iter,
++			pos, &iocb->ki_pos, count);
  
- static ssize_t nfs_direct_read_schedule(struct nfs_direct_req *dreq,
--					struct iov_iter *iter, loff_t pos,
--					bool uio)
-+					struct iov_iter *iter, loff_t pos)
+ out:
+ 	xfs_rw_iunlock(ip, iolock);
+@@ -707,10 +702,9 @@ out:
+ STATIC ssize_t
+ xfs_file_buffered_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
  {
- 	struct nfs_pageio_descriptor desc;
- 	ssize_t result;
-@@ -479,10 +460,8 @@ static ssize_t nfs_direct_read_schedule(struct nfs_direct_req *dreq,
- 	desc.pg_dreq = dreq;
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -719,7 +713,6 @@ xfs_file_buffered_aio_write(
+ 	ssize_t			ret;
+ 	int			enospc = 0;
+ 	int			iolock = XFS_IOLOCK_EXCL;
+-	size_t			count = ocount;
  
- 	if (iov_iter_has_iovec(iter)) {
--		if (uio)
--			dreq->flags = NFS_ODIRECT_MARK_DIRTY;
- 		result = nfs_direct_do_schedule_read_iovec(&desc,
--				iov_iter_iovec(iter), iter->nr_segs, pos, uio);
-+				iov_iter_iovec(iter), iter->nr_segs, pos);
- #ifdef CONFIG_BLOCK
- 	} else if (iov_iter_has_bvec(iter)) {
- 		result = nfs_direct_do_schedule_read_bvec(&desc,
-@@ -508,7 +487,7 @@ static ssize_t nfs_direct_read_schedule(struct nfs_direct_req *dreq,
+ 	xfs_rw_ilock(ip, iolock);
+ 
+@@ -732,7 +725,7 @@ xfs_file_buffered_aio_write(
+ 
+ write_retry:
+ 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
++	ret = generic_file_buffered_write_iter(iocb, iter,
+ 			pos, &iocb->ki_pos, count, 0);
+ 
+ 	/*
+@@ -753,10 +746,9 @@ out:
  }
  
- static ssize_t nfs_direct_read(struct kiocb *iocb, struct iov_iter *iter,
--			       loff_t pos, bool uio)
-+			       loff_t pos)
+ STATIC ssize_t
+-xfs_file_aio_write(
++xfs_file_write_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
  {
- 	ssize_t result = -ENOMEM;
- 	struct inode *inode = iocb->ki_filp->f_mapping->host;
-@@ -532,7 +511,7 @@ static ssize_t nfs_direct_read(struct kiocb *iocb, struct iov_iter *iter,
- 		dreq->iocb = iocb;
+ 	struct file		*file = iocb->ki_filp;
+@@ -764,17 +756,15 @@ xfs_file_aio_write(
+ 	struct inode		*inode = mapping->host;
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	ssize_t			ret;
+-	size_t			ocount = 0;
++	size_t			count = 0;
  
- 	NFS_I(inode)->read_io += iov_iter_count(iter);
--	result = nfs_direct_read_schedule(dreq, iter, pos, uio);
-+	result = nfs_direct_read_schedule(dreq, iter, pos);
- 	if (!result)
- 		result = nfs_direct_wait(dreq);
- out_release:
-@@ -697,7 +676,7 @@ static void nfs_direct_write_complete(struct nfs_direct_req *dreq, struct inode
-  */
- static ssize_t nfs_direct_write_schedule_segment(struct nfs_pageio_descriptor *desc,
- 						 const struct iovec *iov,
--						 loff_t pos, bool uio)
-+						 loff_t pos)
- {
- 	struct nfs_direct_req *dreq = desc->pg_dreq;
- 	struct nfs_open_context *ctx = dreq->ctx;
-@@ -725,19 +704,12 @@ static ssize_t nfs_direct_write_schedule_segment(struct nfs_pageio_descriptor *d
- 		if (!pagevec)
- 			break;
+ 	XFS_STATS_INC(xs_write_calls);
  
--		if (uio) {
--			down_read(&current->mm->mmap_sem);
--			result = get_user_pages(current, current->mm, user_addr,
--						npages, 0, 0, pagevec, NULL);
--			up_read(&current->mm->mmap_sem);
--			if (result < 0)
--				break;
--		} else {
--			WARN_ON(npages != 1);
--			result = get_kernel_page(user_addr, 0, pagevec);
--			if (WARN_ON(result != 1))
--				break;
--		}
-+		down_read(&current->mm->mmap_sem);
-+		result = get_user_pages(current, current->mm, user_addr,
-+					npages, 0, 0, pagevec, NULL);
-+		up_read(&current->mm->mmap_sem);
-+		if (result < 0)
-+			break;
+ 	BUG_ON(iocb->ki_pos != pos);
  
- 		if ((unsigned)result < npages) {
- 			bytes = result * PAGE_SIZE;
-@@ -868,7 +840,7 @@ static const struct nfs_pgio_completion_ops nfs_direct_write_completion_ops = {
+-	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
+-	if (ret)
+-		return ret;
++	count = iov_iter_count(iter);
  
- static ssize_t nfs_direct_do_schedule_write_iovec(
- 		struct nfs_pageio_descriptor *desc, const struct iovec *iov,
--		unsigned long nr_segs, loff_t pos, bool uio)
-+		unsigned long nr_segs, loff_t pos)
- {
- 	ssize_t result = -EINVAL;
- 	size_t requested_bytes = 0;
-@@ -877,7 +849,7 @@ static ssize_t nfs_direct_do_schedule_write_iovec(
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		const struct iovec *vec = &iov[seg];
- 		result = nfs_direct_write_schedule_segment(desc, vec,
--							   pos, uio);
-+							   pos);
- 		if (result < 0)
- 			break;
- 		requested_bytes += result;
-@@ -935,8 +907,7 @@ static ssize_t nfs_direct_do_schedule_write_bvec(
- #endif /* CONFIG_BLOCK */
+-	if (ocount == 0)
++	if (count == 0)
+ 		return 0;
  
- static ssize_t nfs_direct_write_schedule(struct nfs_direct_req *dreq,
--					 struct iov_iter *iter, loff_t pos,
--					 bool uio)
-+					 struct iov_iter *iter, loff_t pos)
- {
- 	struct nfs_pageio_descriptor desc;
- 	struct inode *inode = dreq->inode;
-@@ -952,7 +923,7 @@ static ssize_t nfs_direct_write_schedule(struct nfs_direct_req *dreq,
+ 	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
+@@ -783,10 +773,9 @@ xfs_file_aio_write(
+ 	}
  
- 	if (iov_iter_has_iovec(iter)) {
- 		result = nfs_direct_do_schedule_write_iovec(&desc,
--				iov_iter_iovec(iter), iter->nr_segs, pos, uio);
-+				iov_iter_iovec(iter), iter->nr_segs, pos);
- #ifdef CONFIG_BLOCK
- 	} else if (iov_iter_has_bvec(iter)) {
- 		result = nfs_direct_do_schedule_write_bvec(&desc,
-@@ -979,7 +950,7 @@ static ssize_t nfs_direct_write_schedule(struct nfs_direct_req *dreq,
- }
+ 	if (unlikely(file->f_flags & O_DIRECT))
+-		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
++		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
+ 	else
+-		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
+-						  ocount);
++		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
  
- static ssize_t nfs_direct_write(struct kiocb *iocb, struct iov_iter *iter,
--				loff_t pos, bool uio)
-+				loff_t pos)
- {
- 	ssize_t result = -ENOMEM;
- 	struct inode *inode = iocb->ki_filp->f_mapping->host;
-@@ -1002,7 +973,7 @@ static ssize_t nfs_direct_write(struct kiocb *iocb, struct iov_iter *iter,
- 	if (!is_sync_kiocb(iocb))
- 		dreq->iocb = iocb;
- 
--	result = nfs_direct_write_schedule(dreq, iter, pos, uio);
-+	result = nfs_direct_write_schedule(dreq, iter, pos);
- 	if (!result)
- 		result = nfs_direct_wait(dreq);
- out_release:
-@@ -1032,7 +1003,7 @@ out:
-  * cache.
-  */
- ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
--			     loff_t pos, bool uio)
-+			     loff_t pos)
- {
- 	ssize_t retval = -EINVAL;
- 	struct file *file = iocb->ki_filp;
-@@ -1057,7 +1028,7 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
- 
- 	task_io_account_read(count);
- 
--	retval = nfs_direct_read(iocb, iter, pos, uio);
-+	retval = nfs_direct_read(iocb, iter, pos);
- 	if (retval > 0)
- 		iocb->ki_pos = pos + retval;
- 
-@@ -1087,7 +1058,7 @@ out:
-  * is no atomic O_APPEND write facility in the NFS protocol.
-  */
- ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
--			      loff_t pos, bool uio)
-+			      loff_t pos)
- {
- 	ssize_t retval = -EINVAL;
- 	struct file *file = iocb->ki_filp;
-@@ -1119,7 +1090,7 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
- 
- 	task_io_account_write(count);
- 
--	retval = nfs_direct_write(iocb, iter, pos, uio);
-+	retval = nfs_direct_write(iocb, iter, pos);
- 	if (retval > 0) {
- 		struct inode *inode = mapping->host;
- 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index af9025b..19ac4fd 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -181,7 +181,7 @@ nfs_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
- 	ssize_t result;
- 
- 	if (iocb->ki_filp->f_flags & O_DIRECT)
--		return nfs_file_direct_read(iocb, iter, pos, true);
-+		return nfs_file_direct_read(iocb, iter, pos);
- 
- 	dprintk("NFS: read_iter(%s/%s, %lu@%lu)\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name,
-@@ -669,7 +669,7 @@ ssize_t nfs_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
- 		return result;
- 
- 	if (iocb->ki_filp->f_flags & O_DIRECT)
--		return nfs_file_direct_write(iocb, iter, pos, true);
-+		return nfs_file_direct_write(iocb, iter, pos);
- 
- 	dprintk("NFS: write_iter(%s/%s, %lu@%lld)\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name,
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index fa1abeb..1bea25f 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -176,7 +176,6 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
--	__REQ_KERNEL, 		/* direct IO to kernel pages */
- 	__REQ_PM,		/* runtime pm request */
- 	__REQ_NR_BITS,		/* stops here */
- };
-@@ -227,7 +226,6 @@ enum rq_flag_bits {
- #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
--#define REQ_KERNEL		(1 << __REQ_KERNEL)
- #define REQ_PM			(1 << __REQ_PM)
- 
- #endif /* __LINUX_BLK_TYPES_H */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 747755e..3f29da3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -182,8 +182,6 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- #define READ			0
- #define WRITE			RW_MASK
- #define READA			RWA_MASK
--#define KERNEL_READ		(READ|REQ_KERNEL)
--#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
- 
- #define READ_SYNC		(READ | REQ_SYNC)
- #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index a2f5b57..ad17f6e 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -459,9 +459,9 @@ extern int nfs3_removexattr (struct dentry *, const char *name);
-  */
- extern ssize_t nfs_direct_IO(int, struct kiocb *, struct iov_iter *, loff_t);
- extern ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
--			loff_t pos, bool uio);
-+			loff_t pos);
- extern ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
--			loff_t pos, bool uio);
-+			loff_t pos);
- 
- /*
-  * linux/fs/nfs/dir.c
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 4f7e599..e4e6a4f 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -258,14 +258,14 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
- 	if (sis->flags & SWP_FILE) {
- 		struct kiocb kiocb;
- 		struct file *swap_file = sis->swap_file;
--		struct address_space *mapping = swap_file->f_mapping;
--		struct iovec iov = {
--			.iov_base = kmap(page),
--			.iov_len  = PAGE_SIZE,
-+		struct bio_vec bvec = {
-+			.bv_page = kmap(page),
-+			.bv_len = PAGE_SIZE,
-+			.bv_offset = 0,
- 		};
- 		struct iov_iter iter;
- 
--		iov_iter_init(&iter, &iov, 1, PAGE_SIZE, 0);
-+		iov_iter_init_bvec(&iter, &bvec, 1, PAGE_SIZE, 0);
- 
- 		init_sync_kiocb(&kiocb, swap_file);
- 		kiocb.ki_pos = page_file_offset(page);
-@@ -273,8 +273,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
- 
- 		set_page_writeback(page);
- 		unlock_page(page);
--		ret = mapping->a_ops->direct_IO(KERNEL_WRITE, &kiocb, &iter,
--						kiocb.ki_pos);
-+		ret = swap_file->f_op->write_iter(&kiocb, &iter, kiocb.ki_pos);
- 		kunmap(page);
- 		if (ret == PAGE_SIZE) {
- 			count_vm_event(PSWPOUT);
+ 	if (ret > 0) {
+ 		ssize_t err;
+@@ -1411,8 +1400,8 @@ const struct file_operations xfs_file_operations = {
+ 	.llseek		= xfs_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= xfs_file_aio_read,
+-	.aio_write	= xfs_file_aio_write,
++	.read_iter	= xfs_file_read_iter,
++	.write_iter	= xfs_file_write_iter,
+ 	.splice_read	= xfs_file_splice_read,
+ 	.splice_write	= xfs_file_splice_write,
+ 	.unlocked_ioctl	= xfs_file_ioctl,
 -- 
 1.8.4
 
