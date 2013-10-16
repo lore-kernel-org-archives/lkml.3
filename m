@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760233Ab3JPI2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 04:28:48 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41776 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3JPI2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 04:28:45 -0400
+	id S1760159Ab3JPIfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 04:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758281Ab3JPIfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 04:35:46 -0400
+Date: Wed, 16 Oct 2013 16:35:13 +0800
+From: Dave Young <dyoung@redhat.com>
+To: matt@console-pimps.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com, maarten.lankhorst@canonical.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        linux-efi@vger.kernel.org, pjones@redhat.com
+Subject: [PATCH v2] x86 efi: efi reverve boot service fix
+Message-ID: <20131016083513.GC27678@dhcp-16-126.nay.redhat.com>
+References: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131016061502.GB21109@gmail.com>
-References: <20131015161843.GA17653@quad>
-	<20131016061502.GB21109@gmail.com>
-Date: Wed, 16 Oct 2013 10:28:45 +0200
-Message-ID: <CABPqkBS3WOKRb3i6d7E=vru7WKffp+PGzi8HYDfyTtGABYHiNw@mail.gmail.com>
-Subject: Re: [PATCH] perf: revert PERF_RECORD_MMAP2 support
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016070301.GA26752@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 8:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->>
->> This unified patch removes the following commits
->> for both kernel and perf tool:
->>
->> 6adb0b0 perf tools: Add default handler for mmap2 events
->> 384c671 perf trace: Add mmap2 handler
->> 5c5e854 perf tools: Add attr->mmap2 support
->> d008d52 perf: Fix up MMAP2 buffer space reservation
->> 13d7a24 perf: Add attr->mmap2 attribute to an event
->>
->> The MMAP2 record extension is not quite ready for prime time.
->> We have identified address space cases where mappings would
->> not be reported properly when apps fiddled directly with clone()
->> and VM_CLONE. We will revisit the patch series soon.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
->>  include/uapi/linux/perf_event.h |   24 +----------------
->>  kernel/events/core.c            |   47 +++-----------------------------
->>  tools/perf/builtin-annotate.c   |    1 -
->>  tools/perf/builtin-inject.c     |   15 -----------
->>  tools/perf/builtin-mem.c        |    1 -
->>  tools/perf/builtin-report.c     |    1 -
->>  tools/perf/builtin-script.c     |    1 -
->>  tools/perf/builtin-trace.c      |    1 -
->>  tools/perf/tests/perf-record.c  |   15 +++--------
->>  tools/perf/util/build-id.c      |    1 -
->>  tools/perf/util/event.c         |   56 +++++++++------------------------------
->>  tools/perf/util/event.h         |   19 -------------
->>  tools/perf/util/evsel.c         |   16 +++--------
->>  tools/perf/util/header.c        |    3 ---
->>  tools/perf/util/machine.c       |   53 +-----------------------------------
->>  tools/perf/util/machine.h       |    1 -
->>  tools/perf/util/map.c           |    8 +-----
->>  tools/perf/util/map.h           |    8 ++----
->>  tools/perf/util/session.c       |   27 +------------------
->>  tools/perf/util/tool.h          |    1 -
->>  20 files changed, 30 insertions(+), 269 deletions(-)
->
-> Ugh, that's way too large.
->
-> I thought the plan was to do a minimal revert. Is there really no way to
-> do this in a (much) shorter fashion?
->
-> For example by a simple patch that returns -EINVAL (or -ENOSYS) if the new
-> flag is used - i.e. behaves like the old kernel in that regard - but
-> leaves the rest in place. (the 'rest' will hopefully be fixed for v3.13)
->
-That's what I did in my initial revert patch. But it did not include the
-perf tool revert.
+Current code check boot service region with kernel text region by: 
+start+size >= __pa_symbol(_text)
+The end of the above region should be start + size - 1 instead.
 
-I believe in the end, we will still go with the extended MMAP record and
-not with the physical address (which adds a PERF_SAMPLE_*). So
-we can leave the attr->mmap2 bit defined and return -EINVAL for now.
+I see this problem in ovmf + Fedora 19 grub boot:
+text start: 1000000 md start: 800000 md size: 800000
 
-As for the perf tool, we can remove everything and add that later on
-because the layout of the MMAP2 record may change.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+v2: use > instead of >= per hpa
 
-> Tooling will then fall back as if it was an old kernel - i.e. no changes
-> needed there at all. Right?
->
-Yes.
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.orig/arch/x86/platform/efi/efi.c
++++ linux-2.6/arch/x86/platform/efi/efi.c
+@@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(vo
+ 		 * - Not within any part of the kernel
+ 		 * - Not the bios reserved area
+ 		*/
+-		if ((start+size >= __pa_symbol(_text)
++		if ((start + size > __pa_symbol(_text)
+ 				&& start <= __pa_symbol(_end)) ||
+ 			!e820_all_mapped(start, start+size, E820_RAM) ||
+ 			memblock_is_region_reserved(start, size)) {
