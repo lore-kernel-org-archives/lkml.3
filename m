@@ -1,148 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935046Ab3JPOOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 10:14:16 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26627 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934594Ab3JPOFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 10:05:53 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH V9 25/33] btrfs: add support for read_iter and write_iter
-Date: Wed, 16 Oct 2013 09:04:38 -0500
-Message-Id: <1381932286-14978-26-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1381932286-14978-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S935058Ab3JPOOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 10:14:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934648Ab3JPOO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 10:14:28 -0400
+Date: Wed, 16 Oct 2013 10:14:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Hong zhi guo <honkiko@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Hong Zhiguo <zhiguohong@tencent.com>
+Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
+Message-ID: <20131016141405.GE17611@redhat.com>
+References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
+ <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+ <20131015173252.GM31215@redhat.com>
+ <CAA7+ByWjdYTi5uXT6apLYkON1RnrFEGjHU318OD1VMen2YHKOA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA7+ByWjdYTi5uXT6apLYkON1RnrFEGjHU318OD1VMen2YHKOA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
-on btrfs_file_aio_write(), then have the latter call the former.
+On Wed, Oct 16, 2013 at 02:09:40PM +0800, Hong zhi guo wrote:
+> Hi, Vivek,
+> 
+> Thanks for your careful review. I'll rename t_c to last_dispatch, it's
+> much better.
+> 
+> For the big burst issue, I've different opinion. Let's discuss it.
+> 
+> Any time a big IO means a big burst. Even if it's throttled at first
+> time, queued in
+> the service_queue, and then waited for a while, when it's delivered
+> out, it IS still
+> a big burst. So throttling the bio for another while makes no sense.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org
----
- fs/btrfs/file.c | 42 ++++++++++++++----------------------------
- 1 file changed, 14 insertions(+), 28 deletions(-)
+If a malicious application is creating a big BIO and sending it out, then
+effective IO rate as seen by application will be much higher than
+throttling limit.
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 72da4df..5e70fc2 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -453,7 +453,7 @@ static noinline int btrfs_copy_from_user(loff_t pos, int num_pages,
- 		write_bytes -= copied;
- 		total_copied += copied;
+So yes, a burst is anyway going to happen when big IO is dispatched
+to disk, but the question is when should that burst be allowed. What's
+the effective IO rate application should see.
  
--		/* Return to btrfs_file_aio_write to fault page */
-+		/* Return to btrfs_file_write_iter to fault page */
- 		if (unlikely(copied == 0))
- 			break;
- 
-@@ -1557,27 +1557,23 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
- }
- 
- static ssize_t __btrfs_direct_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos,
--				    loff_t *ppos, size_t count, size_t ocount)
-+				     struct iov_iter *iter, loff_t pos,
-+				    loff_t *ppos, size_t count)
- {
- 	struct file *file = iocb->ki_filp;
--	struct iov_iter i;
- 	ssize_t written;
- 	ssize_t written_buffered;
- 	loff_t endbyte;
- 	int err;
- 
--	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
--					    count, ocount);
-+	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
- 
- 	if (written < 0 || written == count)
- 		return written;
- 
- 	pos += written;
- 	count -= written;
--	iov_iter_init(&i, iov, nr_segs, count, written);
--	written_buffered = __btrfs_buffered_write(file, &i, pos);
-+	written_buffered = __btrfs_buffered_write(file, iter, pos);
- 	if (written_buffered < 0) {
- 		err = written_buffered;
- 		goto out;
-@@ -1612,9 +1608,8 @@ static void update_time_for_write(struct inode *inode)
- 		inode_inc_iversion(inode);
- }
- 
--static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos)
-+static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter, loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file_inode(file);
-@@ -1623,17 +1618,12 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	u64 start_pos;
- 	ssize_t num_written = 0;
- 	ssize_t err = 0;
--	size_t count, ocount;
-+	size_t count;
- 	bool sync = (file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host);
- 
- 	mutex_lock(&inode->i_mutex);
- 
--	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
--	if (err) {
--		mutex_unlock(&inode->i_mutex);
--		goto out;
--	}
--	count = ocount;
-+	count = iov_iter_count(iter);
- 
- 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
- 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
-@@ -1686,14 +1676,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 		atomic_inc(&BTRFS_I(inode)->sync_writers);
- 
- 	if (unlikely(file->f_flags & O_DIRECT)) {
--		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
--						   pos, ppos, count, ocount);
-+		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
-+						   count);
- 	} else {
--		struct iov_iter i;
--
--		iov_iter_init(&i, iov, nr_segs, count, num_written);
--
--		num_written = __btrfs_buffered_write(file, &i, pos);
-+		num_written = __btrfs_buffered_write(file, iter, pos);
- 		if (num_written > 0)
- 			*ppos = pos + num_written;
- 	}
-@@ -2552,9 +2538,9 @@ const struct file_operations btrfs_file_operations = {
- 	.llseek		= btrfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read       = generic_file_aio_read,
- 	.splice_read	= generic_file_splice_read,
--	.aio_write	= btrfs_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= btrfs_file_write_iter,
- 	.mmap		= btrfs_file_mmap,
- 	.open		= generic_file_open,
- 	.release	= btrfs_release_file,
--- 
-1.8.4
+> 
+> If a group has been idle for 5 minutes, then it owns the credit to
+> deliver a big IO
+> (within 300 * bps bytes). And the extra credit will be cut off after
+> the delivery.
 
+I think there are couple of issues here.
+
+- First of all, if you think that a group is entitiled for tokens even
+  when it is not doing IO, then why are you truncating the tokens after
+  dispatch of a BIO.
+
+- Second in general it does not seem right that a group is entitiled to
+  tokens even when no IO is happening or group is not backlogged. That
+  would mean a group will not do IO for 10 hours and then be entitiled
+  to those tokens suddenly after 10 hours with a huge burst.
+
+So I think you also agree that a group should not be entitiled to
+tokens when group is not backlogged and that's why you seem to be
+truncating extra tokens after dispatch of a BIO. If that's the case,
+then even for first BIO, ideally a group should not be given tokens
+for idle time.
+
+Just think that an application has a huge BIO, say size 2MB. And group
+has limit of say 8KB per second. Now if group has been idling long enough,
+this BIO will be dispatched immediately. And effective rate a group
+will be is much higher than 8KB/s. Which is not right, IMO.
+
+If you argue that token entitilement for idle groups is not right and
+doing it for first BIO in a batch is exception for simplicity reasons,
+that still might be fine. But right now that does not seem to be the
+case.
+
+Thanks
+Vivek
