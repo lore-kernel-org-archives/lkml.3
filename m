@@ -1,127 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760414Ab3JPJ4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 05:56:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46289 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760162Ab3JPJ4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 05:56:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,506,1378882800"; 
-   d="scan'208";a="308449883"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Linux-Arch <linux-arch@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-In-Reply-To: <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1381428359-14843-20-git-send-email-kirill.shutemov@linux.intel.com>
- <CAMuHMdUqQVphjUbvPg+47ZjFmS8WUK_70VMb43w4jaBOcGfNxA@mail.gmail.com>
-Subject: Re: [PATCH 19/34] m68k: handle pgtable_page_ctor() fail
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131016095612.34707E0090@blue.fi.intel.com>
-Date: Wed, 16 Oct 2013 12:56:12 +0300 (EEST)
+	id S933143Ab3JPKAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 06:00:45 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45459 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760079Ab3JPKAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 06:00:41 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v3 2/3] ARM: at91: fix hanged boot due to early rtt-interrupt
+Date: Wed, 16 Oct 2013 11:56:15 +0200
+Message-Id: <1381917376-21107-3-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381917376-21107-1-git-send-email-jhovold@gmail.com>
+References: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+ <1381917376-21107-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven wrote:
-> On Thu, Oct 10, 2013 at 8:05 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> > ---
-> >  arch/m68k/include/asm/motorola_pgalloc.h | 5 ++++-
-> >  arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
-> >  2 files changed, 8 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
-> > index 2f02f264e6..dd254eeb03 100644
-> > --- a/arch/m68k/include/asm/motorola_pgalloc.h
-> > +++ b/arch/m68k/include/asm/motorola_pgalloc.h
-> > @@ -40,7 +40,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long addres
-> >         flush_tlb_kernel_page(pte);
-> >         nocache_page(pte);
->         ^^^^^^^^^^^^^^^^^^
-> >         kunmap(page);
-> > -       pgtable_page_ctor(page);
-> > +       if (!pgtable_page_ctor(page)) {
-> > +               __free_page(page);
-> 
-> Shouldn't you mark the page cacheable again, like is done in pte_free()?
+Make sure the RTT-interrupts are masked at boot by adding a new helper
+function to be used at SOC-init.
 
-Hm. You're right. Updated patch below.
+This fixes hanged boot on all AT91 SOCs with an RTT, for example, if an
+RTT-alarm goes off after a non-clean shutdown (e.g. when using RTC
+wakeup).
 
-BTW, what's the point of playing with kmap()/kunmap() there? Looks like
-m68k doesn't support highmem.
+The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
+AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
+software reset. This means that their interrupts may be enabled during
+early boot if, for example, they where not disabled during a previous
+shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
+user reset). Furthermore, an RTC or RTT-alarm may also be active.
 
-And even if it will support, code in pte_alloc_one() doesn't make any
-sense: kmap() creates temporary mapping for highmem page and it
-nocache_page() sets flags in pte which will be destroyed by kunmap().
+The RTC and RTT-interrupts use the shared system-interrupt line, which
+is also used by the PIT, and if an interrupt occurs before a handler
+(e.g. RTC-driver) has been installed this leads to the system interrupt
+being disabled and prevents the system from booting.
 
-It think kmap() should be replaced by page_address() and kunmap() should
-be dropped.
+Note that when boot hangs due to an early RTC or RTT-interrupt, the only
+way to get the system to start again is to remove the backup power (e.g.
+battery) or to disable the interrupt manually from the bootloader. In
+particular, a user reset is not sufficient.
 
->From 2f9dce7982e4459e91cd49e38256c24d69786f8b Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 9 Oct 2013 03:58:39 +0300
-Subject: [PATCHv2] m68k: handle pgtable_page_ctor() fail
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- arch/m68k/include/asm/motorola_pgalloc.h | 8 ++++++--
- arch/m68k/include/asm/sun3_pgalloc.h     | 5 ++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c |  2 ++
+ arch/arm/mach-at91/at91sam9261.c |  2 ++
+ arch/arm/mach-at91/at91sam9263.c |  3 +++
+ arch/arm/mach-at91/at91sam9g45.c |  1 +
+ arch/arm/mach-at91/at91sam9rl.c  |  1 +
+ arch/arm/mach-at91/generic.h     |  1 +
+ arch/arm/mach-at91/sysirq_mask.c | 24 ++++++++++++++++++++++++
+ 7 files changed, 34 insertions(+)
 
-diff --git a/arch/m68k/include/asm/motorola_pgalloc.h b/arch/m68k/include/asm/motorola_pgalloc.h
-index 2f02f264e6..24bcba496c 100644
---- a/arch/m68k/include/asm/motorola_pgalloc.h
-+++ b/arch/m68k/include/asm/motorola_pgalloc.h
-@@ -29,18 +29,22 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 5de6074..ae10d14 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -349,6 +349,8 @@ static void __init at91sam9260_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
  
- static inline pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address)
- {
--	struct page *page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
-+	struct page *page;
- 	pte_t *pte;
- 
-+	page = alloc_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO, 0);
- 	if(!page)
- 		return NULL;
-+	if (!pgtable_page_ctor(page)) {
-+		__free_page(page);
-+		return NULL;
-+	}
- 
- 	pte = kmap(page);
- 	__flush_page_to_ram(pte);
- 	flush_tlb_kernel_page(pte);
- 	nocache_page(pte);
- 	kunmap(page);
--	pgtable_page_ctor(page);
- 	return page;
++	at91_sysirq_mask_rtt(AT91SAM9260_BASE_RTT);
++
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9260_gpio, 3);
  }
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 0e07932..e761e74 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -291,6 +291,8 @@ static void __init at91sam9261_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
  
-diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
-index 48d80d5a66..f868506e33 100644
---- a/arch/m68k/include/asm/sun3_pgalloc.h
-+++ b/arch/m68k/include/asm/sun3_pgalloc.h
-@@ -59,7 +59,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
- 		return NULL;
- 
- 	clear_highpage(page);
--	pgtable_page_ctor(page);
-+	if (!pgtable_page_ctor(page)) {
-+		__free_page(page);
-+		return NULL;
-+	}
- 	return page;
- 
++	at91_sysirq_mask_rtt(AT91SAM9261_BASE_RTT);
++
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9261_gpio, 3);
  }
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 962768b..ad02281 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -330,6 +330,9 @@ static void __init at91sam9263_initialize(void)
+ 	arm_pm_idle = at91sam9_idle;
+ 	arm_pm_restart = at91sam9_alt_restart;
+ 
++	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT0);
++	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT1);
++
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9263_gpio, 5);
+ }
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 8d4da6d..88e6f7b 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -380,6 +380,7 @@ static void __init at91sam9g45_initialize(void)
+ 	arm_pm_restart = at91sam9g45_restart;
+ 
+ 	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
++	at91_sysirq_mask_rtt(AT91SAM9G45_BASE_RTT);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9g45_gpio, 5);
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index b5a8c9d..301e172 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -295,6 +295,7 @@ static void __init at91sam9rl_initialize(void)
+ 	arm_pm_restart = at91sam9_alt_restart;
+ 
+ 	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
++	at91_sysirq_mask_rtt(AT91SAM9RL_BASE_RTT);
+ 
+ 	/* Register GPIO subsystem */
+ 	at91_gpio_init(at91sam9rl_gpio, 4);
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 80269bd..26dee3c 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -35,6 +35,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
+ extern int  __init at91_aic5_of_init(struct device_node *node,
+ 				    struct device_node *parent);
+ extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
++extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
+ 
+ 
+  /* Timer */
+diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+index ee3e22c..2ba694f 100644
+--- a/arch/arm/mach-at91/sysirq_mask.c
++++ b/arch/arm/mach-at91/sysirq_mask.c
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include <linux/io.h>
++#include <mach/at91_rtt.h>
+ 
+ #include "generic.h"
+ 
+@@ -45,3 +46,26 @@ void __init at91_sysirq_mask_rtc(u32 rtc_base)
+ 
+ 	iounmap(base);
+ }
++
++void __init at91_sysirq_mask_rtt(u32 rtt_base)
++{
++	void __iomem *base;
++	void __iomem *reg;
++	u32 mode;
++
++	base = ioremap(rtt_base, 16);
++	if (!base)
++		return;
++
++	reg = base + AT91_RTT_MR;
++
++	mode = readl_relaxed(reg);
++	if (mode & (AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN)) {
++		pr_info("AT91: Disabling rtt irq\n");
++		mode &= ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN);
++		writel_relaxed(mode, reg);
++		(void)readl_relaxed(reg);			/* flush */
++	}
++
++	iounmap(base);
++}
 -- 
- Kirill A. Shutemov
+1.8.4
+
