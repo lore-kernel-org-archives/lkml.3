@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab3JPPew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 11:34:52 -0400
-Received: from a14-29.smtp-out.amazonses.com ([54.240.14.29]:44143 "EHLO
-	a14-29.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756534Ab3JPPev (ORCPT
+	id S1758817Ab3JPPgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 11:36:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56609 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab3JPPgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 11:34:51 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Oct 2013 11:34:51 EDT
-Date: Wed, 16 Oct 2013 15:27:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2 01/15] slab: correct pfmemalloc check
-In-Reply-To: <1381913052-23875-2-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <00000141c1e16001-26ccfd98-51ee-4ca6-8ddf-61abd491dea8-000000@email.amazonses.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1381913052-23875-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 16 Oct 2013 11:36:22 -0400
+Date: Wed, 16 Oct 2013 17:36:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
+Message-ID: <20131016153603.GZ10651@twins.programming.kicks-ass.net>
+References: <20131015174722.615394057@linux.com>
+ <20131015174747.813545438@linux.com>
+ <20131016084920.GT10651@twins.programming.kicks-ass.net>
+ <00000141c1d04300-e935e477-6669-4388-8109-c77064ee27e7-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.16-54.240.14.29
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000141c1d04300-e935e477-6669-4388-8109-c77064ee27e7-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013, Joonsoo Kim wrote:
+On Wed, Oct 16, 2013 at 03:09:13PM +0000, Christoph Lameter wrote:
+> On Wed, 16 Oct 2013, Peter Zijlstra wrote:
+> 
+> > So I didn't understand what was wrong with:
+> >
+> > #define __this_cpu_read(pcp) \
+> > 	(__this_cpu_preempt_check("read"), raw_this_cpu_read(pcp))
+> >
+> > And idem for all others. This is 1) shorter to write; and 2) makes it
+> > blindingly obvious that the implementations are actually the same.
+> 
+> Nothing wrong with that. It just increases the scope of this patch to
+> require modifications to arch code and I already have trouble enough
+> following through on all the issues that were raised so far.
+> 
 
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -930,7 +930,8 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
->  {
->  	if (unlikely(pfmemalloc_active)) {
->  		/* Some pfmemalloc slabs exist, check if this is one */
-> -		struct page *page = virt_to_head_page(objp);
-> +		struct slab *slabp = virt_to_slab(objp);
-> +		struct page *page = virt_to_head_page(slabp->s_mem);
->  		if (PageSlabPfmemalloc(page))
-
-I hope the compiler optimizes this code correctly because virt_to_slab
-already does one virt_to_head_page()?
-
-Otherwise this looks fine.
+But non of your raw ops touch arch code... /me confused.
