@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab3JPLDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 07:03:38 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:58771 "EHLO
+	id S934190Ab3JPLEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 07:04:39 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:58835 "EHLO
 	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933974Ab3JPLDf (ORCPT
+	with ESMTP id S934060Ab3JPLDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 07:03:35 -0400
+	Wed, 16 Oct 2013 07:03:37 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/8] zorro: Do not allocate zorro_autocon[] statically
-Date: Wed, 16 Oct 2013 13:03:19 +0200
-Message-Id: <1381921405-11206-3-git-send-email-geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH 7/8] zorro/UAPI: Disintegrate include/linux/zorro*.h
+Date: Wed, 16 Oct 2013 13:03:24 +0200
+Message-Id: <1381921405-11206-8-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381921405-11206-1-git-send-email-geert@linux-m68k.org>
 References: <1381921405-11206-1-git-send-email-geert@linux-m68k.org>
@@ -20,156 +21,298 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the array of Zorro devices is allocated statically, wasting
-up to 4.5 KiB when running an Amiga or multi-platform kernel on a machine
-with no or a handful of Zorro expansion cards. Convert it to conditional
-dynamic memory allocation to fix this.
+The Zorro definitions and device IDs are used by bootstraps, hence they
+should be exported through UAPI.
 
-amiga_parse_bootinfo() still needs to store some information about the
-detected Zorro devices, at a time even the bootmem allocator is not yet
-available.  This is now handled using a much smaller array (typically less
-than 0.5 KiB), which is __initdata and thus freed later.
+Unfortunately zorro.h was never marked for export when headers_install
+was introduced, so it was forgotten during the big UAPI disintegration.
+In addition, the removal of zorro_ids.h had been sneaked into commit
+7e7a43c32a8970ea2bfc3d1af353dcb1a9237769 ("PCI: don't export device IDs to
+userspace") before, so it was also forgotten.
+
+Split off and export the Zorro definitions used by bootstraps.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Howells <dhowells@redhat.com>
 ---
- arch/m68k/amiga/config.c   |    6 +++---
- arch/m68k/amiga/platform.c |    4 ++--
- drivers/zorro/zorro.c      |   19 ++++++++++++++++---
- include/linux/zorro.h      |   18 +++++++++++++++++-
- 4 files changed, 38 insertions(+), 9 deletions(-)
+ Documentation/zorro.txt              |    3 +-
+ include/linux/zorro.h                |  103 +------------------------------
+ include/uapi/linux/Kbuild            |    2 +
+ include/uapi/linux/zorro.h           |  113 ++++++++++++++++++++++++++++++++++
+ include/{ => uapi}/linux/zorro_ids.h |    0
+ 5 files changed, 119 insertions(+), 102 deletions(-)
+ create mode 100644 include/uapi/linux/zorro.h
+ rename include/{ => uapi}/linux/zorro_ids.h (100%)
 
-diff --git a/arch/m68k/amiga/config.c b/arch/m68k/amiga/config.c
-index 93ab423758da..d956ddbfebe1 100644
---- a/arch/m68k/amiga/config.c
-+++ b/arch/m68k/amiga/config.c
-@@ -174,12 +174,12 @@ int __init amiga_parse_bootinfo(const struct bi_record *record)
- #ifdef CONFIG_ZORRO
- 		if (zorro_num_autocon < ZORRO_NUM_AUTO) {
- 			const struct ConfigDev *cd = (struct ConfigDev *)data;
--			struct zorro_dev *dev = &zorro_autocon[zorro_num_autocon++];
-+			struct zorro_dev_init *dev = &zorro_autocon_init[zorro_num_autocon++];
- 			dev->rom = cd->cd_Rom;
- 			dev->slotaddr = cd->cd_SlotAddr;
- 			dev->slotsize = cd->cd_SlotSize;
--			dev->resource.start = (unsigned long)cd->cd_BoardAddr;
--			dev->resource.end = dev->resource.start + cd->cd_BoardSize - 1;
-+			dev->boardaddr = (u32)cd->cd_BoardAddr;
-+			dev->boardsize = cd->cd_BoardSize;
- 		} else
- 			printk("amiga_parse_bootinfo: too many AutoConfig devices\n");
- #endif /* CONFIG_ZORRO */
-diff --git a/arch/m68k/amiga/platform.c b/arch/m68k/amiga/platform.c
-index dacd9f911f71..7847b2b1b5b6 100644
---- a/arch/m68k/amiga/platform.c
-+++ b/arch/m68k/amiga/platform.c
-@@ -67,8 +67,8 @@ static int __init z_dev_present(zorro_id id)
- 	unsigned int i;
+diff --git a/Documentation/zorro.txt b/Documentation/zorro.txt
+index d17670400564..90a64d52bea2 100644
+--- a/Documentation/zorro.txt
++++ b/Documentation/zorro.txt
+@@ -95,8 +95,9 @@ The treatment of these regions depends on the type of Zorro space:
+ -------------
  
- 	for (i = 0; i < zorro_num_autocon; i++)
--		if (zorro_autocon[i].rom.er_Manufacturer == ZORRO_MANUF(id) &&
--		    zorro_autocon[i].rom.er_Product == ZORRO_PROD(id))
-+		if (zorro_autocon_init[i].rom.er_Manufacturer == ZORRO_MANUF(id) &&
-+		    zorro_autocon_init[i].rom.er_Product == ZORRO_PROD(id))
- 			return 1;
+ linux/include/linux/zorro.h
++linux/include/uapi/linux/zorro.h
++linux/include/uapi/linux/zorro_ids.h
+ linux/arch/m68k/include/asm/zorro.h
+-linux/include/linux/zorro_ids.h
+ linux/drivers/zorro
+ /proc/bus/zorro
  
- 	return 0;
-diff --git a/drivers/zorro/zorro.c b/drivers/zorro/zorro.c
-index 858c9714b2f3..10c7f77aec08 100644
---- a/drivers/zorro/zorro.c
-+++ b/drivers/zorro/zorro.c
-@@ -29,7 +29,8 @@
-      */
- 
- unsigned int zorro_num_autocon;
--struct zorro_dev zorro_autocon[ZORRO_NUM_AUTO];
-+struct zorro_dev_init zorro_autocon_init[ZORRO_NUM_AUTO] __initdata;
-+struct zorro_dev *zorro_autocon;
- 
- 
-     /*
-@@ -38,6 +39,7 @@ struct zorro_dev zorro_autocon[ZORRO_NUM_AUTO];
- 
- struct zorro_bus {
- 	struct device dev;
-+	struct zorro_dev devices[0];
- };
- 
- 
-@@ -125,16 +127,20 @@ static struct resource __init *zorro_find_parent_resource(
- static int __init amiga_zorro_probe(struct platform_device *pdev)
- {
- 	struct zorro_bus *bus;
-+	struct zorro_dev_init *zi;
- 	struct zorro_dev *z;
- 	struct resource *r;
- 	unsigned int i;
- 	int error;
- 
- 	/* Initialize the Zorro bus */
--	bus = kzalloc(sizeof(*bus), GFP_KERNEL);
-+	bus = kzalloc(sizeof(*bus) +
-+		      zorro_num_autocon * sizeof(bus->devices[0]),
-+		      GFP_KERNEL);
- 	if (!bus)
- 		return -ENOMEM;
- 
-+	zorro_autocon = bus->devices;
- 	bus->dev.parent = &pdev->dev;
- 	dev_set_name(&bus->dev, "zorro");
- 	error = device_register(&bus->dev);
-@@ -151,15 +157,22 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 
- 	/* First identify all devices ... */
- 	for (i = 0; i < zorro_num_autocon; i++) {
-+		zi = &zorro_autocon_init[i];
- 		z = &zorro_autocon[i];
-+
-+		z->rom = zi->rom;
- 		z->id = (z->rom.er_Manufacturer<<16) | (z->rom.er_Product<<8);
- 		if (z->id == ZORRO_PROD_GVP_EPC_BASE) {
- 			/* GVP quirk */
--			unsigned long magic = zorro_resource_start(z)+0x8000;
-+			unsigned long magic = zi->boardaddr + 0x8000;
- 			z->id |= *(u16 *)ZTWO_VADDR(magic) & GVP_PRODMASK;
- 		}
-+		z->slotaddr = zi->slotaddr;
-+		z->slotsize = zi->slotsize;
- 		sprintf(z->name, "Zorro device %08x", z->id);
- 		zorro_name_device(z);
-+		z->resource.start = zi->boardaddr;
-+		z->resource.end = zi->boardaddr + zi->boardsize - 1;
- 		z->resource.name = z->name;
- 		r = zorro_find_parent_resource(pdev, z);
- 		error = request_resource(r, &z->resource);
 diff --git a/include/linux/zorro.h b/include/linux/zorro.h
-index dff42025649b..661cbd2a86ee 100644
+index 661cbd2a86ee..63fbba0740c2 100644
 --- a/include/linux/zorro.h
 +++ b/include/linux/zorro.h
-@@ -175,7 +175,23 @@ static inline struct zorro_driver *zorro_dev_driver(const struct zorro_dev *z)
+@@ -11,107 +11,10 @@
+ #ifndef _LINUX_ZORRO_H
+ #define _LINUX_ZORRO_H
+ 
+-#include <linux/device.h>
+-
+-
+-    /*
+-     *  Each Zorro board has a 32-bit ID of the form
+-     *
+-     *      mmmmmmmmmmmmmmmmppppppppeeeeeeee
+-     *
+-     *  with
+-     *
+-     *      mmmmmmmmmmmmmmmm	16-bit Manufacturer ID (assigned by CBM (sigh))
+-     *      pppppppp		8-bit Product ID (assigned by manufacturer)
+-     *      eeeeeeee		8-bit Extended Product ID (currently only used
+-     *				for some GVP boards)
+-     */
+-
+-
+-#define ZORRO_MANUF(id)		((id) >> 16)
+-#define ZORRO_PROD(id)		(((id) >> 8) & 0xff)
+-#define ZORRO_EPC(id)		((id) & 0xff)
+-
+-#define ZORRO_ID(manuf, prod, epc) \
+-    ((ZORRO_MANUF_##manuf << 16) | ((prod) << 8) | (epc))
+-
+-typedef __u32 zorro_id;
+ 
++#include <uapi/linux/zorro.h>
+ 
+-/* Include the ID list */
+-#include <linux/zorro_ids.h>
+-
+-
+-    /*
+-     *  GVP identifies most of its products through the 'extended product code'
+-     *  (epc). The epc has to be ANDed with the GVP_PRODMASK before the
+-     *  identification.
+-     */
+-
+-#define GVP_PRODMASK			(0xf8)
+-#define GVP_SCSICLKMASK			(0x01)
+-
+-enum GVP_flags {
+-    GVP_IO		= 0x01,
+-    GVP_ACCEL		= 0x02,
+-    GVP_SCSI		= 0x04,
+-    GVP_24BITDMA	= 0x08,
+-    GVP_25BITDMA	= 0x10,
+-    GVP_NOBANK		= 0x20,
+-    GVP_14MHZ		= 0x40,
+-};
+-
+-
+-struct Node {
+-    struct  Node *ln_Succ;	/* Pointer to next (successor) */
+-    struct  Node *ln_Pred;	/* Pointer to previous (predecessor) */
+-    __u8    ln_Type;
+-    __s8    ln_Pri;		/* Priority, for sorting */
+-    __s8    *ln_Name;		/* ID string, null terminated */
+-} __attribute__ ((packed));
+-
+-struct ExpansionRom {
+-    /* -First 16 bytes of the expansion ROM */
+-    __u8  er_Type;		/* Board type, size and flags */
+-    __u8  er_Product;		/* Product number, assigned by manufacturer */
+-    __u8  er_Flags;		/* Flags */
+-    __u8  er_Reserved03;	/* Must be zero ($ff inverted) */
+-    __u16 er_Manufacturer;	/* Unique ID, ASSIGNED BY COMMODORE-AMIGA! */
+-    __u32 er_SerialNumber;	/* Available for use by manufacturer */
+-    __u16 er_InitDiagVec;	/* Offset to optional "DiagArea" structure */
+-    __u8  er_Reserved0c;
+-    __u8  er_Reserved0d;
+-    __u8  er_Reserved0e;
+-    __u8  er_Reserved0f;
+-} __attribute__ ((packed));
+-
+-/* er_Type board type bits */
+-#define ERT_TYPEMASK	0xc0
+-#define ERT_ZORROII	0xc0
+-#define ERT_ZORROIII	0x80
+-
+-/* other bits defined in er_Type */
+-#define ERTB_MEMLIST	5		/* Link RAM into free memory list */
+-#define ERTF_MEMLIST	(1<<5)
+-
+-struct ConfigDev {
+-    struct Node		cd_Node;
+-    __u8		cd_Flags;	/* (read/write) */
+-    __u8		cd_Pad;		/* reserved */
+-    struct ExpansionRom cd_Rom;		/* copy of board's expansion ROM */
+-    void		*cd_BoardAddr;	/* where in memory the board was placed */
+-    __u32		cd_BoardSize;	/* size of board in bytes */
+-    __u16		cd_SlotAddr;	/* which slot number (PRIVATE) */
+-    __u16		cd_SlotSize;	/* number of slots (PRIVATE) */
+-    void		*cd_Driver;	/* pointer to node of driver */
+-    struct ConfigDev	*cd_NextCD;	/* linked list of drivers to config */
+-    __u32		cd_Unused[4];	/* for whatever the driver wants */
+-} __attribute__ ((packed));
+-
+-#define ZORRO_NUM_AUTO		16
+-
+-#ifdef __KERNEL__
+-
++#include <linux/device.h>
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/mod_devicetable.h>
+@@ -245,6 +148,4 @@ extern DECLARE_BITMAP(zorro_unused_z2ram, 128);
+ #define Z2RAM_CHUNKSHIFT	(16)
  
  
- extern unsigned int zorro_num_autocon;	/* # of autoconfig devices found */
--extern struct zorro_dev zorro_autocon[ZORRO_NUM_AUTO];
-+extern struct zorro_dev *zorro_autocon;
+-#endif /* __KERNEL__ */
+-
+ #endif /* _LINUX_ZORRO_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 115add2515aa..5b973b187eeb 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -424,3 +424,5 @@ header-y += x25.h
+ header-y += xattr.h
+ header-y += xfrm.h
+ header-y += hw_breakpoint.h
++header-y += zorro.h
++header-y += zorro_ids.h
+diff --git a/include/uapi/linux/zorro.h b/include/uapi/linux/zorro.h
+new file mode 100644
+index 000000000000..36a033e23d31
+--- /dev/null
++++ b/include/uapi/linux/zorro.h
+@@ -0,0 +1,113 @@
++/*
++ *  linux/zorro.h -- Amiga AutoConfig (Zorro) Bus Definitions
++ *
++ *  Copyright (C) 1995--2003 Geert Uytterhoeven
++ *
++ *  This file is subject to the terms and conditions of the GNU General Public
++ *  License.  See the file COPYING in the main directory of this archive
++ *  for more details.
++ */
++
++#ifndef _UAPI_LINUX_ZORRO_H
++#define _UAPI_LINUX_ZORRO_H
++
++#include <linux/types.h>
 +
 +
 +    /*
-+     * Minimal information about a Zorro device, passed from bootinfo
-+     * Only available temporarily, i.e. until initmem has been freed!
++     *  Each Zorro board has a 32-bit ID of the form
++     *
++     *      mmmmmmmmmmmmmmmmppppppppeeeeeeee
++     *
++     *  with
++     *
++     *      mmmmmmmmmmmmmmmm	16-bit Manufacturer ID (assigned by CBM (sigh))
++     *      pppppppp		8-bit Product ID (assigned by manufacturer)
++     *      eeeeeeee		8-bit Extended Product ID (currently only used
++     *				for some GVP boards)
 +     */
 +
-+struct zorro_dev_init {
-+	struct ExpansionRom rom;
-+	u16 slotaddr;
-+	u16 slotsize;
-+	u32 boardaddr;
-+	u32 boardsize;
++
++#define ZORRO_MANUF(id)		((id) >> 16)
++#define ZORRO_PROD(id)		(((id) >> 8) & 0xff)
++#define ZORRO_EPC(id)		((id) & 0xff)
++
++#define ZORRO_ID(manuf, prod, epc) \
++	((ZORRO_MANUF_##manuf << 16) | ((prod) << 8) | (epc))
++
++typedef __u32 zorro_id;
++
++
++/* Include the ID list */
++#include <linux/zorro_ids.h>
++
++
++    /*
++     *  GVP identifies most of its products through the 'extended product code'
++     *  (epc). The epc has to be ANDed with the GVP_PRODMASK before the
++     *  identification.
++     */
++
++#define GVP_PRODMASK		(0xf8)
++#define GVP_SCSICLKMASK		(0x01)
++
++enum GVP_flags {
++	GVP_IO			= 0x01,
++	GVP_ACCEL		= 0x02,
++	GVP_SCSI		= 0x04,
++	GVP_24BITDMA		= 0x08,
++	GVP_25BITDMA		= 0x10,
++	GVP_NOBANK		= 0x20,
++	GVP_14MHZ		= 0x40,
 +};
 +
-+extern struct zorro_dev_init zorro_autocon_init[ZORRO_NUM_AUTO] __initdata;
- 
- 
-     /*
++
++struct Node {
++	struct  Node *ln_Succ;	/* Pointer to next (successor) */
++	struct  Node *ln_Pred;	/* Pointer to previous (predecessor) */
++	__u8    ln_Type;
++	__s8    ln_Pri;		/* Priority, for sorting */
++	__s8    *ln_Name;	/* ID string, null terminated */
++} __packed;
++
++struct ExpansionRom {
++	/* -First 16 bytes of the expansion ROM */
++	__u8  er_Type;		/* Board type, size and flags */
++	__u8  er_Product;	/* Product number, assigned by manufacturer */
++	__u8  er_Flags;		/* Flags */
++	__u8  er_Reserved03;	/* Must be zero ($ff inverted) */
++	__u16 er_Manufacturer;	/* Unique ID, ASSIGNED BY COMMODORE-AMIGA! */
++	__u32 er_SerialNumber;	/* Available for use by manufacturer */
++	__u16 er_InitDiagVec;	/* Offset to optional "DiagArea" structure */
++	__u8  er_Reserved0c;
++	__u8  er_Reserved0d;
++	__u8  er_Reserved0e;
++	__u8  er_Reserved0f;
++} __packed;
++
++/* er_Type board type bits */
++#define ERT_TYPEMASK	0xc0
++#define ERT_ZORROII	0xc0
++#define ERT_ZORROIII	0x80
++
++/* other bits defined in er_Type */
++#define ERTB_MEMLIST	5		/* Link RAM into free memory list */
++#define ERTF_MEMLIST	(1<<5)
++
++struct ConfigDev {
++	struct Node	cd_Node;
++	__u8		cd_Flags;	/* (read/write) */
++	__u8		cd_Pad;		/* reserved */
++	struct ExpansionRom cd_Rom;	/* copy of board's expansion ROM */
++	void		*cd_BoardAddr;	/* where in memory the board was placed */
++	__u32		cd_BoardSize;	/* size of board in bytes */
++	__u16		cd_SlotAddr;	/* which slot number (PRIVATE) */
++	__u16		cd_SlotSize;	/* number of slots (PRIVATE) */
++	void		*cd_Driver;	/* pointer to node of driver */
++	struct ConfigDev *cd_NextCD;	/* linked list of drivers to config */
++	__u32		cd_Unused[4];	/* for whatever the driver wants */
++} __packed;
++
++#define ZORRO_NUM_AUTO		16
++
++#endif /* _UAPI_LINUX_ZORRO_H */
+diff --git a/include/linux/zorro_ids.h b/include/uapi/linux/zorro_ids.h
+similarity index 100%
+rename from include/linux/zorro_ids.h
+rename to include/uapi/linux/zorro_ids.h
 -- 
 1.7.9.5
 
