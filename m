@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761938Ab3JPUab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 16:30:31 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:47947 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab3JPUa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 16:30:29 -0400
-Date: Wed, 16 Oct 2013 22:30:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: Re: [PATCH -next] misc: fix various misc/mic/host/ build errors
-Message-ID: <20131016203024.GA6579@mithrandir>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
- <525C481E.1010908@infradead.org>
- <20131016192648.GA19637@kroah.com>
- <525EEBD4.7070800@infradead.org>
- <20131016194440.GA14416@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <20131016194440.GA14416@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761990Ab3JPUbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 16:31:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55321 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754607Ab3JPUbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 16:31:15 -0400
+Date: Thu, 17 Oct 2013 07:31:00 +1100
+From: NeilBrown <neilb@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Shaohua Li <shli@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131017073100.2cab1ffa@notabene.brown>
+In-Reply-To: <20131016201410.GA26785@twins.programming.kicks-ass.net>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+	<1381949500-501-2-git-send-email-treding@nvidia.com>
+	<20131016200645.GD10651@twins.programming.kicks-ass.net>
+	<20131016201410.GA26785@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_//1dYiNymH3hnBzyIEuF_a6b"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_//1dYiNymH3hnBzyIEuF_a6b
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 16, 2013 at 12:44:40PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Oct 16, 2013 at 12:41:08PM -0700, Randy Dunlap wrote:
-> > On 10/16/13 12:26, Greg Kroah-Hartman wrote:
-> > > On Mon, Oct 14, 2013 at 12:38:06PM -0700, Randy Dunlap wrote:
-> > >> From: Randy Dunlap <rdunlap@infradead.org>
-> > >>
-> > >> Fix various build errors (on x86_64) for drivers/misc/mic/host/:
-> > >>
-> > >>   drivers/misc/mic/host/mic_main.c:378:3: error: too many arguments =
-to function 'sysfs_get_dirent'
-> > >>   drivers/misc/mic/host/mic_intr.h:134:58: warning: 'struct pci_dev'=
- declared inside parameter list [enabled by default]
-> > >>   drivers/misc/mic/host/mic_intr.h:134:58: warning: its scope is onl=
-y this definition or declaration, which is probably not what you want [enab=
-led by default]
-> > >>   drivers/misc/mic/host/mic_intr.h:135:58: warning: 'struct pci_dev'=
- declared inside parameter list [enabled by default]
-> > >>   drivers/misc/mic/host/mic_device.h:169:2: error: implicit declarat=
-ion of function 'ioread32' [-Werror=3Dimplicit-function-declaration]
-> > >>   drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_read':
-> > >>   drivers/misc/mic/host/mic_device.h:169:2: error: implicit declarat=
-ion of function 'ioread32' [-Werror=3Dimplicit-function-declaration]
-> > >>   drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_write':
-> > >>   drivers/misc/mic/host/mic_device.h:183:2: error: implicit declarat=
-ion of function 'iowrite32' [-Werror=3Dimplicit-function-declaration]
-> > >>
-> > >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> > >> Cc: Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>
-> > >> Cc: Ashutosh Dixit <ashutosh.dixit@intel.com>
-> > >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > >> Cc: Nikhil Rao <nikhil.rao@intel.com>
-> > >> Cc: Sudeep Dutt <sudeep.dutt@intel.com>
+On Wed, 16 Oct 2013 22:14:10 +0200 Peter Zijlstra <peterz@infradead.org>
+wrote:
+
+> On Wed, Oct 16, 2013 at 10:06:45PM +0200, Peter Zijlstra wrote:
+> > On Wed, Oct 16, 2013 at 08:51:39PM +0200, Thierry Reding wrote:
+> > > Today's linux-next merge of the tip tree got a conflict in
 > > >=20
-> > > This is a -next issue only at this point in time, I thought it was in
-> > > the -next tree as a "fixup" already?
+> > > 	include/linux/wait.h
+> > >=20
+> > > caused by commits 1ab2460 (wait: add wait_event_cmd()) and fb869b6
+> > > (sched/wait: Clean up wait.h details a bit).
 > >=20
-> > Are you asking the driver maintainers?
+> > Gargh, where did that come from?!
 >=20
-> No, the linux-next maintainers.
+> Also, wth does that live?
 >=20
-> The driver maintainers have nothing to do with this, it's a sysfs change
-> in my driver-core tree that causes this issue.
+>=20
+> # git show 1ab2460
+> fatal: ambiguous argument '1ab2460': unknown revision or path not in the =
+working tree.
+> Use '--' to separate paths from revisions, like this:
+> 'git <command> [<revision>...] -- [<file>...]'
+> # git remote show next
+> * remote next
+>   Fetch URL: git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-nex=
+t.git
+>=20
+> And I made sure to update the remote.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Well, we do carry a patch to fix this, but that generally doesn't get
-carried to Linus' tree automatically as far as I know. So I guess it's
-fine for now, but when the merge window opens you'll need to make sure
-that Linus merges the branches in the correct order so that the build
-doesn't break in between.
+It seems to have moved to=20
+  git://gitorious.org/thierryreding/linux-next.git
 
-I think the typical way to solve this kind of build dependencies between
-trees is for one tree to provide a stable branch that can be merged into
-the other. That ensures that each tree can still be built independently.
+NeilBrown
 
-Thierry
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature
+--Sig_//1dYiNymH3hnBzyIEuF_a6b
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSXvdgAAoJEN0jrNd/PrOh22MP/13nqqFWrUG0dIhc39pHa1Xm
-VeMs6pDP7BEE5I0hcmK1iTdl+mWXELDcxQjn7pwAwWrsmeVrekIvid6w4wt+0qGx
-/JXdo2WL9W7oW3Qjrxadt/DRPI9f9Nb+uKvCYdW7NTiGsa0IfZHz8Hoar+azn/RF
-8M1Z3ANYFs50IO4axpNvxv/MGzwkTqX6IdUCG/zrPYAn8pmVgLdcbNVaxiPWH8Ex
-jXmYgl166qwj8RR5B2u/CvOqyS9nG1Fb3Re2T0AjE6K64X/EyNV8JwzN667rkOP8
-T98qvZc9Oht1vQX6JNQ4apUAO2zlDnZl919Zjyt0IBORZa0tiV5GXo6MtZ+BAEye
-b3H6RLAAUf+4YJd50YxJYEyVIq8hubb+eQDQPohi5anA4vSzqC14g4lH1aAQNP4p
-a+uoViYbuQSq4WSoZS49jv+JZSaqJ7leYtdb3rwpY1LexXdnSfj78pOvCOYZt+u4
-QFifNQJiKHGiAYO5VqPQc5ayJ6cn8g7YiMrw5rSf9+OTc39zudCxZrqzyum80JTV
-WqPJTm8vp4L8A2pVRbp9UGU5UQ12yFGFNCa/nITe/RxnSoMYTjCSxzDAJQaVKnpN
-2vhruT6lHY5vjyXaNZ1wjXXFh8/uzQLqrZp32ZlFE/0UPrTyKp2ecTziuKF928el
-jamK0jbGeElFkrKdwgbe
-=67cF
+iQIVAwUBUl73hDnsnt1WYoG5AQK0MQ/+PRAYOK3MM+O4onDuXUtZz7x3//n+c0Bp
+Ck7NVqmw21DfzQOeu2UDVIRV5/wB8ua11oaG+9tBkHTjQe+3uQOF729u5KW46eRd
+Tq0YbXPpSDj83KVxRTqA/Gj17pHD9mPcmgq4mg5NIkYFd4WkI5UNzW3/afxVCj3m
+Th5Oy1rWvJVbuAU0JoIZ2ECcw04vcyZoXBgo0VkBVshqcV1utjl8YHLRow1N5Vvb
+LbA9ms4GJ33HInu3r/56YPXY7sidiwky2fmmKnnIZpQ6LGy9aEBWA8pgQD0Mpz9/
+Rc055MROykG8jsyyy9g2DWV4Db+pTcXYi6v0zk+ILLUaYH4IUStdUAdvD/nG+xYc
+FJeE567FAaocFfn4Eq9APTGKGosbLlkaHVzIhn5f0j7nJFjpXe79rMyiqnCauR81
+m0rZ4ULQNANQVpnlLD+AukFVzudtX9Fv+rDE9ShSr2YYIFa5pRUNdkb1TmeEueEc
+ZopXXhNlkYXoe/3S2f60DgFT88OPhuhLah9Bj52ndnBmpZkwxx13R1LNOyFuXsXv
+/xeJiC4bN2LBjd2jIJ0CfMgP0geWjX/IPP7GCbfP1IKnviJDrGvab5hbkYEYslfh
+CXRIP1us6ouPnAg6Vl+CPTQIS8ZIOt1hMD4A8UUeZjvQlIDpeEu31HRtnGm7IVWa
+j+toYMRy12w=
+=/G5W
 -----END PGP SIGNATURE-----
 
---d6Gm4EdcadzBjdND--
+--Sig_//1dYiNymH3hnBzyIEuF_a6b--
