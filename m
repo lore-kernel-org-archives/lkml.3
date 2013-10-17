@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3JQKnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 06:43:43 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50467 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab3JQKnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:43:42 -0400
-Message-ID: <525FBF5A.3040307@redhat.com>
-Date: Thu, 17 Oct 2013 12:43:38 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] static_key: fix timer bugs & change api (a bit)
-References: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754513Ab3JQKpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:45:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753405Ab3JQKpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 06:45:20 -0400
+Date: Thu, 17 Oct 2013 12:45:15 +0200
+From: David Disseldorp <ddiss@suse.de>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: cp --reflink and target file open flags
+Message-ID: <20131017124515.3566d7c1@plati.site>
+In-Reply-To: <CAH2r5muRfQ6y1vzu_1icz4BGTqEPfgaOsHExbQay_yZiCOZQ_A@mail.gmail.com>
+References: <CAH2r5muRfQ6y1vzu_1icz4BGTqEPfgaOsHExbQay_yZiCOZQ_A@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/10/2013 12:10, Radim Krčmář ha scritto:
-> While fixing a simple crash on kvm module unload
-> 
-> 1: rate_limit timer can fire after we free its key's module memory.
-> 
-> I noticed other deficiencies in jump_label/static_key code
-> (The most important is 4.)
-> 
-> 2: jump_label_rate_limit() uses an initializator and thus cannot be used
->    more than once, leaving no good way to change the timeout.
-> 
-> I have made the API easier on programmers: [1/7]
->  * timer is automatically flushed on rmmod
->  * jump_label_rate_limit() initializes only once
->     - pretty hacky, but we cannot automatically initialize on
->       kernel_init/insmod due to insufficient information and while I
->       would love getting it through another section, it is probably
->       better to do a useless check with this low-rate operation
->     * we could flush the timer on change
->     * 'init()' + 'set()' (+ 'exit()' ?) would be an alternative ...
-> 
-> 3: schedule_delayed_work() does not queue the work if one is already
->    pending, but atomic_inc(&key->enabled) is called anyway in
->    static_key_slow_dec_deferred(), with the false belief it will be
->    decreased when the timer fires.
-> 
-> Fixed in [2,3,4/7], by addition of static_key_slow_inc_deferred().
+On Wed, 16 Oct 2013 18:36:19 -0500
+Steve French <smfrench@gmail.com> wrote:
 
-I think you're doing a bit too much for one series.  Let's focus on the
-bugfix and perhaps the improvements to the deferred static key API, that
-is patches 1/2/3/4.
+> cp --reflink opens the target file for O_WRONLY before invoking the
+> (BTRFS) ioctl for clone file, but for copy offload over the network
+> the SMB2 specification requires that the target file be open O_RDWR.
+> 
+> I may be able to upgrade the target file handle on the fly by
+> reopening it in cifs.ko, and of course I can write an SMB2/SMB3
+> specific copy command, but it would be preferable to allow use of cp
+> --reflink since so many people are familiar with it.
+> 
+> There is quite a bit of flexibility in server side copy offload  -
+> more than cp an offer, especially when using SMB3 or later dialects
+> (e.g. in number of chunks sent at one time, chunk size, attributes
+> copied, and even whether to use T10 style offload), but still it would
+> be nice to support "cp --reflink" over the network.  Any ideas on
+> this?
+> 
+> After looking at copy.c in coreutils for cp - I couldn't think of any
+> trivial way to force cp to open the target RW.
+> 
+> Ideas?
 
-Paolo
+You should be able to avoid this by using FSCTL_SRV_COPYCHUNK_WRITE
+instead of FSCTL_SRV_COPYCHUNK on the wire. The former doesn't require
+read access on the target, while the latter does. See [MS-SMB2] 2.2.31
+and smbtorture's copy_chunk_bad_access test.
 
+Samba only supported FSCTL_SRV_COPYCHUNK until now, as that's what
+Windows Server 2k12 uses for copies initiated by Explorer. I've just
+sent out the trivial patches adding FSCTL_SRV_COPYCHUNK_WRITE support.
+
+Cheers, David
