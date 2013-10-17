@@ -1,320 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3JQG4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:56:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21335 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750863Ab3JQG4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:56:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,512,1378882800"; 
-   d="scan'208";a="394245405"
-Message-ID: <525F8A48.9020007@intel.com>
-Date: Thu, 17 Oct 2013 14:57:12 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-Organization: Intel, Shanghai, PRC
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Lan Tianyu <tianyu.lan@intel.com>
-Subject: Re: [PATCH] ACPI / power: Drop automaitc resume of power resource
- dependent devices
-References: <4814451.BPLed2xxbP@vostro.rjw.lan>
-In-Reply-To: <4814451.BPLed2xxbP@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+	id S1752385Ab3JQG7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:59:03 -0400
+Received: from smtprelay0243.hostedemail.com ([216.40.44.243]:49434 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866Ab3JQG7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 02:59:01 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1978:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4605:5007:6119:7652:9121:10004:10400:10848:11026:11232:11233:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache
+X-HE-Tag: floor66_1428c80551d41
+X-Filterd-Recvd-Size: 2279
+Message-ID: <1381993136.22110.95.camel@joe-AO722>
+Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
+From: Joe Perches <joe@perches.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
+        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thomas Winischhofer <thomas@winischhofer.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Date: Wed, 16 Oct 2013 23:58:56 -0700
+In-Reply-To: <20131017063059.GB14946@gchen.bj.intel.com>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+	 <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
+	 <1381978749.22110.76.camel@joe-AO722>
+	 <20131017063059.GB14946@gchen.bj.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 09:25 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The mechanism causing devices depending on a given power resource
-> (that is, devices that can be in D0 only if that power resource is
-> on) to be resumed automatically when the power resource is turned
-> on (and their "inferred" power state becomes D0 as a result) is
-> inherently racy and in fact unnecessary.
-> 
-> It is racy, because if the power resources is turned on and then
-> immediately off, the device resume triggered by the first transition
-> to "on" may still happen, causing the power resource to be turned
-> on again.  That again will trigger the "resume of dependent devices"
-> mechanism, but if the devices in question are not in use, they will
-> be suspended in the meantime causing the power resource to be turned
-> off.  However, the "resume of dependent devices" will next resume
-> them again and so on.  In some cases (USB port PM in particular) that
-> leads to an endless busy loop of flipping the resource on and off
-> continuously.
-> 
-> It is needless, because whoever turns a power resource on will most
-> likely turn it off at some point and the devices that go into "D0"
-> as a result of turning it on will then go back into D3cold.
-> Moreover, turning all power resources a device needs to go into
-> D0 is not sufficient for a full transition into D0 in general.
-> Namely, _PS0 may need to be executed in addition to that in some
-> cases.  This means that the whole rationale of the "resume of
-> dependent devices" mechanism was incorrect to begin with and it's
-> best to remove it entirely.
+On Thu, 2013-10-17 at 02:30 -0400, Chen Gong wrote:
+> On Wed, Oct 16, 2013 at 07:59:09PM -0700, Joe Perches wrote:
+[]
+> > Maybe add a
+> > 
+> > BUILD_BUG_ON(__builtin_constant_p(l) && __builtin_constant_p(h) && \
+> > 	     (h) < (l))
+> > 
+> No, if so, users can't use variables for this macro.
 
-With this patch, your previous patch could also be applied now:
-https://lkml.org/lkml/2013/6/14/173
-[PATCH 4/4] ACPI / PM: Drop two functions that are not used any more
+__builtin_constant_p checks for constants
 
-And the following ATA patch at the same time:
+Built-in Function: int __builtin_constant_p (exp)
+        You can use the built-in function __builtin_constant_p to
+        determine if a value is known to be constant at compile-time and
+        hence that GCC can perform constant-folding on expressions
+        involving that value. The argument of the function is the value
+        to test. The function returns the integer 1 if the argument is
+        known to be a compile-time constant and 0 if it is not known to
+        be a compile-time constant. A return of 0 does not indicate that
+        the value is not a constant, but merely that GCC cannot prove it
+        is a constant with the specified value of the -O option. 
+        
 
-From: Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH] ata: acpi: remove power dependent device handling
-
-Previously, we want the SCSI device corrsponding to ATA device gets
-runtime resumed when the power resource for that ATA device is turned
-on by some other device, so we added the SCSI device to the dependent
-device list of the ATA device's ACPI node. Since now we decided this
-behavior is troublesome and hard to avoid race, this behavior has been
-dropped. This patch cleans up the corresponding code in ATA ACPI layer.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
- drivers/ata/libata-acpi.c | 14 --------------
- drivers/ata/libata-scsi.c |  3 ---
- drivers/ata/libata.h      |  4 ----
- 3 files changed, 21 deletions(-)
-
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 4ba8b04..ab714d2 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -1035,17 +1035,3 @@ void ata_acpi_on_disable(struct ata_device *dev)
- {
- 	ata_acpi_clear_gtf(dev);
- }
--
--void ata_scsi_acpi_bind(struct ata_device *dev)
--{
--	acpi_handle handle = ata_dev_acpi_handle(dev);
--	if (handle)
--		acpi_dev_pm_add_dependent(handle, &dev->sdev->sdev_gendev);
--}
--
--void ata_scsi_acpi_unbind(struct ata_device *dev)
--{
--	acpi_handle handle = ata_dev_acpi_handle(dev);
--	if (handle)
--		acpi_dev_pm_remove_dependent(handle, &dev->sdev->sdev_gendev);
--}
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 97a0cef..db6dfcf 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3679,7 +3679,6 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
- 			if (!IS_ERR(sdev)) {
- 				dev->sdev = sdev;
- 				scsi_device_put(sdev);
--				ata_scsi_acpi_bind(dev);
- 			} else {
- 				dev->sdev = NULL;
- 			}
-@@ -3767,8 +3766,6 @@ static void ata_scsi_remove_dev(struct ata_device *dev)
- 	struct scsi_device *sdev;
- 	unsigned long flags;
- 
--	ata_scsi_acpi_unbind(dev);
--
- 	/* Alas, we need to grab scan_mutex to ensure SCSI device
- 	 * state doesn't change underneath us and thus
- 	 * scsi_device_get() always succeeds.  The mutex locking can
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index eeeb778..45b5ab3 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -121,8 +121,6 @@ extern void ata_acpi_set_state(struct ata_port *ap, pm_message_t state);
- extern void ata_acpi_bind_port(struct ata_port *ap);
- extern void ata_acpi_bind_dev(struct ata_device *dev);
- extern acpi_handle ata_dev_acpi_handle(struct ata_device *dev);
--extern void ata_scsi_acpi_bind(struct ata_device *dev);
--extern void ata_scsi_acpi_unbind(struct ata_device *dev);
- #else
- static inline void ata_acpi_dissociate(struct ata_host *host) { }
- static inline int ata_acpi_on_suspend(struct ata_port *ap) { return 0; }
-@@ -133,8 +131,6 @@ static inline void ata_acpi_set_state(struct ata_port *ap,
- 				      pm_message_t state) { }
- static inline void ata_acpi_bind_port(struct ata_port *ap) {}
- static inline void ata_acpi_bind_dev(struct ata_device *dev) {}
--static inline void ata_scsi_acpi_bind(struct ata_device *dev) {}
--static inline void ata_scsi_acpi_unbind(struct ata_device *dev) {}
- #endif
- 
- /* libata-scsi.c */
--- 
-1.8.4.39.ga0d3f10
-
-Thanks,
-Aaron
-
-> 
-> Reported-by: Lan Tianyu <tianyu.lan@intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/power.c |  100 ---------------------------------------------------
->  1 file changed, 1 insertion(+), 99 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/power.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/power.c
-> +++ linux-pm/drivers/acpi/power.c
-> @@ -59,16 +59,9 @@ ACPI_MODULE_NAME("power");
->  #define ACPI_POWER_RESOURCE_STATE_ON	0x01
->  #define ACPI_POWER_RESOURCE_STATE_UNKNOWN 0xFF
->  
-> -struct acpi_power_dependent_device {
-> -	struct list_head node;
-> -	struct acpi_device *adev;
-> -	struct work_struct work;
-> -};
-> -
->  struct acpi_power_resource {
->  	struct acpi_device device;
->  	struct list_head list_node;
-> -	struct list_head dependent;
->  	char *name;
->  	u32 system_level;
->  	u32 order;
-> @@ -233,32 +226,6 @@ static int acpi_power_get_list_state(str
->  	return 0;
->  }
->  
-> -static void acpi_power_resume_dependent(struct work_struct *work)
-> -{
-> -	struct acpi_power_dependent_device *dep;
-> -	struct acpi_device_physical_node *pn;
-> -	struct acpi_device *adev;
-> -	int state;
-> -
-> -	dep = container_of(work, struct acpi_power_dependent_device, work);
-> -	adev = dep->adev;
-> -	if (acpi_power_get_inferred_state(adev, &state))
-> -		return;
-> -
-> -	if (state > ACPI_STATE_D0)
-> -		return;
-> -
-> -	mutex_lock(&adev->physical_node_lock);
-> -
-> -	list_for_each_entry(pn, &adev->physical_node_list, node)
-> -		pm_request_resume(pn->dev);
-> -
-> -	list_for_each_entry(pn, &adev->power_dependent, node)
-> -		pm_request_resume(pn->dev);
-> -
-> -	mutex_unlock(&adev->physical_node_lock);
-> -}
-> -
->  static int __acpi_power_on(struct acpi_power_resource *resource)
->  {
->  	acpi_status status = AE_OK;
-> @@ -283,14 +250,8 @@ static int acpi_power_on_unlocked(struct
->  				  resource->name));
->  	} else {
->  		result = __acpi_power_on(resource);
-> -		if (result) {
-> +		if (result)
->  			resource->ref_count--;
-> -		} else {
-> -			struct acpi_power_dependent_device *dep;
-> -
-> -			list_for_each_entry(dep, &resource->dependent, node)
-> -				schedule_work(&dep->work);
-> -		}
->  	}
->  	return result;
->  }
-> @@ -390,52 +351,6 @@ static int acpi_power_on_list(struct lis
->  	return result;
->  }
->  
-> -static void acpi_power_add_dependent(struct acpi_power_resource *resource,
-> -				     struct acpi_device *adev)
-> -{
-> -	struct acpi_power_dependent_device *dep;
-> -
-> -	mutex_lock(&resource->resource_lock);
-> -
-> -	list_for_each_entry(dep, &resource->dependent, node)
-> -		if (dep->adev == adev)
-> -			goto out;
-> -
-> -	dep = kzalloc(sizeof(*dep), GFP_KERNEL);
-> -	if (!dep)
-> -		goto out;
-> -
-> -	dep->adev = adev;
-> -	INIT_WORK(&dep->work, acpi_power_resume_dependent);
-> -	list_add_tail(&dep->node, &resource->dependent);
-> -
-> - out:
-> -	mutex_unlock(&resource->resource_lock);
-> -}
-> -
-> -static void acpi_power_remove_dependent(struct acpi_power_resource *resource,
-> -					struct acpi_device *adev)
-> -{
-> -	struct acpi_power_dependent_device *dep;
-> -	struct work_struct *work = NULL;
-> -
-> -	mutex_lock(&resource->resource_lock);
-> -
-> -	list_for_each_entry(dep, &resource->dependent, node)
-> -		if (dep->adev == adev) {
-> -			list_del(&dep->node);
-> -			work = &dep->work;
-> -			break;
-> -		}
-> -
-> -	mutex_unlock(&resource->resource_lock);
-> -
-> -	if (work) {
-> -		cancel_work_sync(work);
-> -		kfree(dep);
-> -	}
-> -}
-> -
->  static struct attribute *attrs[] = {
->  	NULL,
->  };
-> @@ -524,8 +439,6 @@ static void acpi_power_expose_hide(struc
->  
->  void acpi_power_add_remove_device(struct acpi_device *adev, bool add)
->  {
-> -	struct acpi_device_power_state *ps;
-> -	struct acpi_power_resource_entry *entry;
->  	int state;
->  
->  	if (adev->wakeup.flags.valid)
-> @@ -535,16 +448,6 @@ void acpi_power_add_remove_device(struct
->  	if (!adev->power.flags.power_resources)
->  		return;
->  
-> -	ps = &adev->power.states[ACPI_STATE_D0];
-> -	list_for_each_entry(entry, &ps->resources, node) {
-> -		struct acpi_power_resource *resource = entry->resource;
-> -
-> -		if (add)
-> -			acpi_power_add_dependent(resource, adev);
-> -		else
-> -			acpi_power_remove_dependent(resource, adev);
-> -	}
-> -
->  	for (state = ACPI_STATE_D0; state <= ACPI_STATE_D3_HOT; state++)
->  		acpi_power_expose_hide(adev,
->  				       &adev->power.states[state].resources,
-> @@ -882,7 +785,6 @@ int acpi_add_power_resource(acpi_handle
->  	acpi_init_device_object(device, handle, ACPI_BUS_TYPE_POWER,
->  				ACPI_STA_DEFAULT);
->  	mutex_init(&resource->resource_lock);
-> -	INIT_LIST_HEAD(&resource->dependent);
->  	INIT_LIST_HEAD(&resource->list_node);
->  	resource->name = device->pnp.bus_id;
->  	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
-> 
 
