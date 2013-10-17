@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab3JQKla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 06:41:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44542 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752557Ab3JQKl3 (ORCPT
+	id S1754159Ab3JQKnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:43:43 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:50467 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab3JQKnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:41:29 -0400
-Date: Thu, 17 Oct 2013 11:41:24 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'linux-arm-msm-owner@vger.kernel.org'" 
-	<linux-arm-msm-owner@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
-        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>,
-        "Gu, Youcai 1 (EXT)" <Youcai1.Gu@sonymobile.com>,
-        "Alevoor, Raghavendra 2" <Raghavendra.Alevoor@sonymobile.com>
-Subject: Re: BUG report about ipt_do_table( )
-Message-ID: <20131017104123.GH18765@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
- <20131010094824.GF3817@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
- <20131010110309.GA6199@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B5@CNBJMBX05.corpusers.net>
- <20131010141841.GF6199@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B6@CNBJMBX05.corpusers.net>
- <20131011110247.GF14732@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971BB@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D101592A7054D3@CNBJMBX05.corpusers.net>
+	Thu, 17 Oct 2013 06:43:42 -0400
+Message-ID: <525FBF5A.3040307@redhat.com>
+Date: Thu, 17 Oct 2013 12:43:38 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D101592A7054D3@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] static_key: fix timer bugs & change api (a bit)
+References: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 02:51:34AM +0100, Wang, Yalin wrote:
-> Hi  Will, 
+Il 17/10/2013 12:10, Radim Krčmář ha scritto:
+> While fixing a simple crash on kvm module unload
+> 
+> 1: rate_limit timer can fire after we free its key's module memory.
+> 
+> I noticed other deficiencies in jump_label/static_key code
+> (The most important is 4.)
+> 
+> 2: jump_label_rate_limit() uses an initializator and thus cannot be used
+>    more than once, leaving no good way to change the timeout.
+> 
+> I have made the API easier on programmers: [1/7]
+>  * timer is automatically flushed on rmmod
+>  * jump_label_rate_limit() initializes only once
+>     - pretty hacky, but we cannot automatically initialize on
+>       kernel_init/insmod due to insufficient information and while I
+>       would love getting it through another section, it is probably
+>       better to do a useless check with this low-rate operation
+>     * we could flush the timer on change
+>     * 'init()' + 'set()' (+ 'exit()' ?) would be an alternative ...
+> 
+> 3: schedule_delayed_work() does not queue the work if one is already
+>    pending, but atomic_inc(&key->enabled) is called anyway in
+>    static_key_slow_dec_deferred(), with the false belief it will be
+>    decreased when the timer fires.
+> 
+> Fixed in [2,3,4/7], by addition of static_key_slow_inc_deferred().
 
-Hello,
+I think you're doing a bit too much for one series.  Let's focus on the
+bugfix and perhaps the improvements to the deferred static key API, that
+is patches 1/2/3/4.
 
-> I am happy to notify that our stability test has passed,
-> And this Crash don't happen again,
-> So seems this patch work now .
+Paolo
 
-Great!
-
-> We has merged it into our release SW .
-> Could I know if this patch will be delivered into kernel
-> Mainline by you ? 
-
-Sure, can I add your tested-by please?
-
-Will
