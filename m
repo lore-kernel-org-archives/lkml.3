@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3JQJLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:11:46 -0400
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:57990
+	id S1753847Ab3JQJLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:11:54 -0400
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:43160
 	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753712Ab3JQJLn (ORCPT
+	by vger.kernel.org with ESMTP id S1753450Ab3JQJLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:11:43 -0400
+	Thu, 17 Oct 2013 05:11:49 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
@@ -23,66 +23,106 @@ CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
         <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCHv1 4/8] Documentation: Add device tree bindings for Freescale SAI.
-Date: Thu, 17 Oct 2013 17:01:13 +0800
-Message-ID: <1382000477-17304-5-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv1 5/8] ASoC: sgtl5000: Revise the bugs about the sgt15000 codec.
+Date: Thu, 17 Oct 2013 17:01:14 +0800
+Message-ID: <1382000477-17304-6-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the Document for Freescale SAI driver under
-Documentation/devicetree/bindings/sound/.
+When the CONFIG_REGULATOR is disabled there will be some warnings
+printed out.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- .../devicetree/bindings/sound/fsl-sai.txt          | 32 ++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/fsl-sai.txt
+ sound/soc/codecs/sgtl5000.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-new file mode 100644
-index 0000000..267afbd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-@@ -0,0 +1,32 @@
-+Freescale Synchronous Audio Interface (SAI).
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 1f4093f..4e2e4c9 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -883,14 +883,19 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
+ 				struct regulator_init_data *init_data,
+ 				int voltage)
+ {
++#ifdef CONFIG_SND_SOC_FSL_SGTL5000
++	return 0;
++#else
+ 	dev_err(codec->dev, "this setup needs regulator support in the kernel\n");
+ 	return -EINVAL;
++#endif
+ }
+ 
+ static int ldo_regulator_remove(struct snd_soc_codec *codec)
+ {
+ 	return 0;
+ }
 +
-+The SAI is based on I2S module that used communicating with audio codecs,
-+which provides a synchronous audio interface that supports fullduplex
-+serial interfaces with frame synchronization such as I2S, AC97, TDM, and
-+codec/DSP interfaces.
+ #endif
+ 
+ /*
+@@ -1137,6 +1142,7 @@ static int sgtl5000_resume(struct snd_soc_codec *codec)
+ #define sgtl5000_resume  NULL
+ #endif	/* CONFIG_SUSPEND */
+ 
++#ifdef CONFIG_REGULATOR
+ /*
+  * sgtl5000 has 3 internal power supplies:
+  * 1. VAG, normally set to vdda/2
+@@ -1269,6 +1275,7 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static int sgtl5000_replace_vddd_with_ldo(struct snd_soc_codec *codec)
+ {
+@@ -1370,6 +1377,7 @@ err_regulator_free:
+ 				sgtl5000->supplies);
+ 	if (external_vddd)
+ 		ldo_regulator_remove(codec);
 +
+ 	return ret;
+ 
+ }
+@@ -1391,11 +1399,12 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
+ 	if (ret)
+ 		return ret;
+ 
++#ifdef CONFIG_REGULATOR
+ 	/* power up sgtl5000 */
+ 	ret = sgtl5000_set_power_regs(codec);
+ 	if (ret)
+ 		goto err;
+-
++#endif
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+ 				SGTL5000_SMALL_POP,
+@@ -1446,6 +1455,7 @@ err:
+ 						sgtl5000->supplies);
+ 	regulator_bulk_free(ARRAY_SIZE(sgtl5000->supplies),
+ 				sgtl5000->supplies);
 +
-+Required properties:
-+- compatible: Compatible list, contains "fsl,vf610-sai".
-+- reg: Offset and length of the register set for the device.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names : Must include the "sai" entry.
-+- dmas : Generic dma devicetree binding as described in
-+  Documentation/devicetree/bindings/dma/dma.txt.
-+- dma-names : Two dmas have to be defined, "tx" and "rx".
-+- pinctrl-names: Must contain a "default" entry.
-+- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
-+  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
+ 	ldo_regulator_remove(codec);
+ 
+ 	return ret;
+@@ -1461,6 +1471,7 @@ static int sgtl5000_remove(struct snd_soc_codec *codec)
+ 						sgtl5000->supplies);
+ 	regulator_bulk_free(ARRAY_SIZE(sgtl5000->supplies),
+ 				sgtl5000->supplies);
 +
-+Example:
-+sai2: sai@40031000 {
-+	      compatible = "fsl,vf610-sai";
-+	      reg = <0x40031000 0x1000>;
-+	      pinctrl-names = "default";
-+	      pinctrl-0 = <&pinctrl_sai2_1>;
-+	      clocks = <&clks VF610_CLK_SAI2>;
-+	      clock-names = "sai";
-+	      dma-names = "tx", "rx";
-+	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
-+		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
-+};
+ 	ldo_regulator_remove(codec);
+ 
+ 	return 0;
 -- 
 1.8.0
 
