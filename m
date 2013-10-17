@@ -1,66 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762191Ab3JQDgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 23:36:15 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:39089 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab3JQDgO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 23:36:14 -0400
-From: Jim Lieb <jlieb@panasas.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, <tytso@mit.edu>,
-        <viro@zeniv.linux.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <bfields@redhat.com>,
-        <jlayton@redhat.com>
-Subject: Re: Re: [PATCH 1/3] switch_creds:  Syscall to switch creds for file server ops
-Date: Wed, 16 Oct 2013 20:35:56 -0700
-Message-ID: <12126075.0PGVvhDUvN@jlieb-e6410>
-Organization: Panasas Inc.
-User-Agent: KMail/4.11.2 (Linux/3.11.4-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131017012050.GR13318@ZenIV.linux.org.uk>
-References: <1381960919-4542-1-git-send-email-jlieb@panasas.com> <87ppr4lmp3.fsf@xmission.com> <20131017012050.GR13318@ZenIV.linux.org.uk>
+	id S1762227Ab3JQDkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 23:40:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21796 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761650Ab3JQDkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 23:40:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
+   d="scan'208";a="394177918"
+Message-ID: <525F59A3.4000803@intel.com>
+Date: Thu, 17 Oct 2013 11:29:39 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Resend PATCH 3/5] ACPI: Add new acpi_dev_resource_address_space_full()
+ function
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com> <1381493941-4650-4-git-send-email-tianyu.lan@intel.com> <20131016231836.GC17866@google.com>
+In-Reply-To: <20131016231836.GC17866@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 17, 2013 02:20:50 Al Viro wrote:
-> On Wed, Oct 16, 2013 at 06:18:16PM -0700, Eric W. Biederman wrote:
-> > That doesn't look bad but it does need capable(CAP_SETUID) &&
-> > capable(CAP_SETGID) or possibly something a little more refined.
+On 2013年10月17日 07:18, Bjorn Helgaas wrote:
+> On Fri, Oct 11, 2013 at 08:18:59PM +0800, tianyu.lan@intel.com wrote:
+>> From: Lan Tianyu <tianyu.lan@intel.com>
+>>
+>> Make acpi_dev_resource_address_space() to accept struct
+>> acpi_resource_address64 as param and rename it to *_full.
+>>
+>> This is for some cases that acpi address info is also needed
+>> after convert from acpi resouce to generic resource.
 > 
-> D'oh
+> s/resouce/resource/
 > 
-> > I don't think we want file descriptor passing to all of a sudden become
-> > a grant of privilege, beyond what the passed fd can do.
+>> Add acpi_dev_resource_addres_space() again as a wrapper of new
 > 
-> Definitely.  And an extra ) to make it compile wouldn't hurt either...
+> acpi_dev_resource_address_space() (spelled wrong above).
+> 
+>> function for original users.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>>  drivers/acpi/resource.c | 53 ++++++++++++++++++++++++++++++++++---------------
+>>  include/linux/acpi.h    |  3 +++
+>>  2 files changed, 40 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+>> index 84bc3db..2e395ba 100644
+>> --- a/drivers/acpi/resource.c
+>> +++ b/drivers/acpi/resource.c
+>> @@ -162,19 +162,21 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
+>>  EXPORT_SYMBOL_GPL(acpi_dev_resource_io);
+>>  
+>>  /**
+>> - * acpi_dev_resource_address_space - Extract ACPI address space information.
+>> + * acpi_dev_resource_address_space_full - Extract ACPI address space information.
+>>   * @ares: Input ACPI resource object.
+>> + * @addr: Output ACPI resource address64 space object.
+>>   * @res: Output generic resource object.
+>>   *
+>>   * Check if the given ACPI resource object represents an address space resource
+>> - * and if that's the case, use the information in it to populate the generic
+>> - * resource object pointed to by @res.
+>> + * and if that's the case, convert it to ACPI resource address64 space object
+>> + * pointed to by @addr and use the information to populate the generic resource
+>> + * object pointed to by @re.
+> 
+> s/@re/@res/ or maybe even just use this:
+> 
+> "If @ares is an address space resource, convert it to an
+> acpi_resource_address64 and use that to populate the generic @res."
+> 
+>>   */
+>> -bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>> +bool acpi_dev_resource_address_space_full(struct acpi_resource *ares,
+>> +				     struct acpi_resource_address64 *addr,
+>>  				     struct resource *res)
+>>  {
+>>  	acpi_status status;
+>> -	struct acpi_resource_address64 addr;
+>>  	bool window;
+>>  	u64 len;
+>>  	u8 io_decode;
+>> @@ -188,29 +190,29 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>>  		return false;
+>>  	}
+>>  
+>> -	status = acpi_resource_to_address64(ares, &addr);
+>> +	status = acpi_resource_to_address64(ares, addr);
+>>  	if (ACPI_FAILURE(status))
+>>  		return true;
+> 
+> You didn't actually change this, but it looks wrong to return "true"
+> here, because we haven't filled in "res".  Returning "true" will cause
+> acpi_dev_process_resource() to call acpi_dev_new_resource_entry() with
+> a struct resource that's full of zeroes.
+> 
+> I think the best fix would be to remove this code just above:
+> 
+>         switch (ares->type) {
+>         case ACPI_RESOURCE_TYPE_ADDRESS16:
+>         case ACPI_RESOURCE_TYPE_ADDRESS32:
+>         case ACPI_RESOURCE_TYPE_ADDRESS64:
+>                 break;
+>         default:
+>                 return false;
+>         }
+> 
+> and return "false" if acpi_resource_to_address64() fails.
 
-Ok, I'll rework this, dropping the void arg etc.  How about this:
+Yes, Just check acpi_resource_to_address64() and it only processes
+ACPI_RESOURCE_TYPE_ADDRESS16, ACPI_RESOURCE_TYPE_ADDRESS32 and
+ACPI_RESOURCE_TYPE_ADDRESS64. If other type,  it will return false.
+I will change it.
 
-1. have one arg, the fd, i.e. SYSCALL_DEFINE1(switch_cred, int, fd)
+> 
+>>  
+>> -	res->start = addr.minimum + addr.translation_offset;
+>> -	res->end = addr.maximum + addr.translation_offset;
+>> -	window = addr.producer_consumer == ACPI_PRODUCER;
+>> +	res->start = addr->minimum + addr->translation_offset;
+>> +	res->end = addr->maximum + addr->translation_offset;
+>> +	window = addr->producer_consumer == ACPI_PRODUCER;
+>>  
+>> -	switch(addr.resource_type) {
+>> +	switch (addr->resource_type) {
+>>  	case ACPI_MEMORY_RANGE:
+>> -		len = addr.maximum - addr.minimum + 1;
+>> +		len = addr->maximum - addr->minimum + 1;
+>>  		res->flags = acpi_dev_memresource_flags(len,
+>> -						addr.info.mem.write_protect,
+>> +						addr->info.mem.write_protect,
+>>  						window);
+>>  
+>> -		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+>> +		if (addr->info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+>>  			res->flags |= IORESOURCE_PREFETCH;
+>>  		break;
+>>  	case ACPI_IO_RANGE:
+>> -		io_decode = addr.granularity == 0xfff ?
+>> +		io_decode = addr->granularity == 0xfff ?
+>>  				ACPI_DECODE_10 : ACPI_DECODE_16;
+>> -		res->flags = acpi_dev_ioresource_flags(addr.minimum,
+>> -						       addr.maximum,
+>> +		res->flags = acpi_dev_ioresource_flags(addr->minimum,
+>> +						       addr->maximum,
+>>  						       io_decode, window);
+>>  		break;
+>>  	case ACPI_BUS_NUMBER_RANGE:
+>> @@ -222,6 +224,25 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>>  
+>>  	return true;
+>>  }
+>> +EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space_full);
+>> +
+>> +/**
+>> + * acpi_dev_resource_address_space - Extract ACPI address space information.
+>> + * @ares: Input ACPI resource object.
+>> + * @res: Output generic resource object.
+>> + *
+>> + * Check if the given ACPI resource object represents an address space resource
+>> + * and if that's the case, use the information in it to populate the generic
+>> + * resource object pointed to by @res.
+> 
+> "If @ares is an address space resource, use it to populate the generic @res."
+> 
+>> + */
+>> +bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>> +				     struct resource *res)
+>> +{
+>> +	struct acpi_resource_address64 addr;
+>> +
+>> +	return acpi_dev_resource_address_space_full(ares, &addr,
+>> +							 res);
+>> +}
+>>  EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space);
+>>  
+>>  /**
+>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+>> index a5db4ae..1f6701e 100644
+>> --- a/include/linux/acpi.h
+>> +++ b/include/linux/acpi.h
+>> @@ -260,6 +260,9 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res);
+>>  bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res);
+>>  bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>>  				     struct resource *res);
+>> +bool acpi_dev_resource_address_space_full(struct acpi_resource *ares,
+>> +				struct acpi_resource_address64 *addr,
+>> +				struct resource *res);
+>>  bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
+>>  					 struct resource *res);
+>>  unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
+>> -- 
+>> 1.8.2.1
+>>
 
-2. if the fd >=0 do the override in my "use the fd" variation.  This would do 
-the capability check after the valid fd check.  This means that you must have
-privs to mess with privs.  Returns 0 or either EBADF or EPERM
 
-3. if the fd == -1 do the revert case.  The reason for this is there are 4 
-syscalls needed to change the creds and each has an error return.  We need
-a way to escape the damage and a revert to the real creds set is the best way 
-to return to a known state.  This does not require a capability check because
-all that can happen is to return to the immutable real set.  Also, I don't 
-need the initial open of /dev/null.
-
-Does this fit?
-
-Jim
 -- 
-Jim Lieb
-Linux Systems Engineer
-Panasas Inc.
-
-"If ease of use was the only requirement, we would all be riding tricycles"
-- Douglas Engelbart 1925–2013
+Best regards
+Tianyu Lan
