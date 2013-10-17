@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab3JQNPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:15:10 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16426 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab3JQNNc (ORCPT
+	id S1755529Ab3JQNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:13:26 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3930 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3JQNNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:13:32 -0400
+	Thu, 17 Oct 2013 09:13:25 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 17 Oct 2013 06:13:32 -0700
+	by hqnvupgp07.nvidia.com on Thu, 17 Oct 2013 06:13:25 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
@@ -17,9 +17,9 @@ CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 4/7] clk: tegra124: Add new peripheral clocks
-Date: Thu, 17 Oct 2013 16:13:17 +0300
-Message-ID: <1382015600-20178-5-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v3 1/7] clk: tegra: Add support for PLLSS
+Date: Thu, 17 Oct 2013 16:13:14 +0300
+Message-ID: <1382015600-20178-2-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1382015600-20178-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1382015600-20178-1-git-send-email-pdeschrijver@nvidia.com>
@@ -30,156 +30,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra124 introduces a number of new peripheral clocks. This patch adds those
-to the common peripheral clock code.
+Tegra124 introduces a new PLL type, PLLSS. Add support for it.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/clk-tegra-periph.c |   54 ++++++++++++++++++++++++++++++++++
- 1 files changed, 54 insertions(+), 0 deletions(-)
+ drivers/clk/tegra/clk-pll.c |  124 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk.h     |    5 ++
+ 2 files changed, 129 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
-index 1252778..9125d02 100644
---- a/drivers/clk/tegra/clk-tegra-periph.c
-+++ b/drivers/clk/tegra/clk-tegra-periph.c
-@@ -37,7 +37,9 @@
- #define CLK_SOURCE_SPDIF_IN 0x10c
- #define CLK_SOURCE_PWM 0x110
- #define CLK_SOURCE_ADX 0x638
-+#define CLK_SOURCE_ADX1 0x670
- #define CLK_SOURCE_AMX 0x63c
-+#define CLK_SOURCE_AMX1 0x674
- #define CLK_SOURCE_HDA 0x428
- #define CLK_SOURCE_HDA2CODEC_2X 0x3e4
- #define CLK_SOURCE_SBC1 0x134
-@@ -69,6 +71,7 @@
- #define CLK_SOURCE_I2C3 0x1b8
- #define CLK_SOURCE_I2C4 0x3c4
- #define CLK_SOURCE_I2C5 0x128
-+#define CLK_SOURCE_I2C6 0x65c
- #define CLK_SOURCE_UARTA 0x178
- #define CLK_SOURCE_UARTB 0x17c
- #define CLK_SOURCE_UARTC 0x1a0
-@@ -77,6 +80,7 @@
- #define CLK_SOURCE_3D 0x158
- #define CLK_SOURCE_2D 0x15c
- #define CLK_SOURCE_MPE 0x170
-+#define CLK_SOURCE_UARTE 0x1c4
- #define CLK_SOURCE_VI_SENSOR 0x1a8
- #define CLK_SOURCE_VI 0x148
- #define CLK_SOURCE_EPP 0x16c
-@@ -111,6 +115,16 @@
- #define CLK_SOURCE_XUSB_FS_SRC 0x608
- #define CLK_SOURCE_XUSB_SS_SRC 0x610
- #define CLK_SOURCE_XUSB_DEV_SRC 0x60c
-+#define CLK_SOURCE_ISP 0x144
-+#define CLK_SOURCE_SOR0 0x414
-+#define CLK_SOURCE_DPAUX 0x418
-+#define CLK_SOURCE_SATA_OOB 0x420
-+#define CLK_SOURCE_SATA 0x424
-+#define CLK_SOURCE_ENTROPY 0x628
-+#define CLK_SOURCE_VI_SENSOR2 0x658
-+#define CLK_SOURCE_HDMI_AUDIO 0x668
-+#define CLK_SOURCE_VIC03 0x678
-+#define CLK_SOURCE_CLK72MHZ 0x66c
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index c38c0df..2147e2e 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -137,6 +137,36 @@
+ #define PMC_SATA_PWRGT_PLLE_IDDQ_VALUE BIT(5)
+ #define PMC_SATA_PWRGT_PLLE_IDDQ_SWCTL BIT(4)
  
- #define MASK(x) (BIT(x) - 1)
- 
-@@ -197,12 +211,14 @@
- #define PLLP_MISC 0xac
- #define PLLP_OUTA 0xa4
- #define PLLP_OUTB 0xa8
-+#define PLLP_OUTC 0x67c
- 
- #define PLL_BASE_LOCK BIT(27)
- #define PLL_MISC_LOCK_ENABLE 18
- 
- static DEFINE_SPINLOCK(PLLP_OUTA_lock);
- static DEFINE_SPINLOCK(PLLP_OUTB_lock);
-+static DEFINE_SPINLOCK(PLLP_OUTC_lock);
- 
- #define MUX_I2S_SPDIF(_id)						\
- static const char *mux_pllaout0_##_id##_2x_pllp_clkm[] = { "pll_a_out0", \
-@@ -319,6 +335,29 @@ static const char *mux_pllp_plld_pllc_clkm[] = {
- 	"pll_p", "pll_d_out0", "pll_c", "clk_m"
- };
- #define mux_pllp_plld_pllc_clkm_idx NULL
-+static const char *mux_pllm_pllc_pllp_plla_clkm_pllc4[] = {
-+	"pll_m", "pll_c", "pll_p", "pll_a_out0", "clk_m", "pll_c4",
-+};
-+static u32 mux_pllm_pllc_pllp_plla_clkm_pllc4_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 3, [3] = 3, [4] = 6, [5] = 7,
++#define PLLSS_MISC_KCP		0
++#define PLLSS_MISC_KVCO		0
++#define PLLSS_MISC_SETUP	0
++#define PLLSS_EN_SDM		0
++#define PLLSS_EN_SSC		0
++#define PLLSS_EN_DITHER2	0
++#define PLLSS_EN_DITHER		1
++#define PLLSS_SDM_RESET		0
++#define PLLSS_CLAMP		0
++#define PLLSS_SDM_SSC_MAX	0
++#define PLLSS_SDM_SSC_MIN	0
++#define PLLSS_SDM_SSC_STEP	0
++#define PLLSS_SDM_DIN		0
++#define PLLSS_MISC_DEFAULT ((PLLSS_MISC_KCP << 25) | \
++			    (PLLSS_MISC_KVCO << 24) | \
++			    PLLSS_MISC_SETUP)
++#define PLLSS_CFG_DEFAULT ((PLLSS_EN_SDM << 31) | \
++			   (PLLSS_EN_SSC << 30) | \
++			   (PLLSS_EN_DITHER2 << 29) | \
++			   (PLLSS_EN_DITHER << 28) | \
++			   (PLLSS_SDM_RESET) << 27 | \
++			   (PLLSS_CLAMP << 22))
++#define PLLSS_CTRL1_DEFAULT \
++			((PLLSS_SDM_SSC_MAX << 16) | PLLSS_SDM_SSC_MIN)
++#define PLLSS_CTRL2_DEFAULT \
++			((PLLSS_SDM_SSC_STEP << 16) | PLLSS_SDM_DIN)
++#define PLLSS_LOCK_OVERRIDE	BIT(24)
++#define PLLSS_REF_SRC_SEL_SHIFT	25
++#define PLLSS_REF_SRC_SEL_MASK	(3 << PLLSS_REF_SRC_SEL_SHIFT)
++
+ #define pll_readl(offset, p) readl_relaxed(p->clk_base + offset)
+ #define pll_readl_base(p) pll_readl(p->params->base_reg, p)
+ #define pll_readl_misc(p) pll_readl(p->params->misc_reg, p)
+@@ -1698,3 +1728,97 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 	return clk;
+ }
+ #endif
++
++const struct clk_ops tegra_clk_pllss_ops = {
++	.is_enabled = clk_pll_is_enabled,
++	.enable = clk_pll_iddq_enable,
++	.disable = clk_pll_iddq_disable,
++	.recalc_rate = clk_pll_recalc_rate,
++	.round_rate = clk_pll_ramp_round_rate,
++	.set_rate = clk_pllxc_set_rate,
 +};
 +
-+static const char *mux_pllp_clkm1[] = {
-+	"pll_p", "clk_m",
-+};
-+#define mux_pllp_clkm1_idx NULL
++struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
++				void __iomem *clk_base, unsigned long flags,
++				struct tegra_clk_pll_params *pll_params,
++				spinlock_t *lock)
++{
++	struct tegra_clk_pll *pll;
++	struct clk *clk, *parent;
++	struct tegra_clk_pll_freq_table cfg;
++	unsigned long parent_rate;
++	u32 val;
++	int i;
 +
-+static const char *mux_pllp3_pllc_clkm[] = {
-+	"pll_p_out3", "pll_c", "pll_c2", "clk_m",
-+};
-+#define mux_pllp3_pllc_clkm_idx NULL
++	if (!pll_params->div_nmp)
++		return ERR_PTR(-EINVAL);
 +
-+static const char *mux_pllm_pllc_pllp_plla_pllc2_c3_clkm[] = {
-+	"pll_m", "pll_c", "pll_p", "pll_a", "pll_c2", "pll_c3", "clk_m"
-+};
-+static u32 mux_pllm_pllc_pllp_plla_pllc2_c3_clkm_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 2, [3] = 3, [4] = 4, [5] = 6,
-+};
++	parent = __clk_lookup(parent_name);
++	if (IS_ERR(parent)) {
++		WARN(1, "parent clk %s of %s must be registered first\n",
++			name, parent_name);
++		return ERR_PTR(-EINVAL);
++	}
++
++	pll_params->flags = TEGRA_PLL_HAS_LOCK_ENABLE | TEGRA_PLL_USE_LOCK;
++	pll = _tegra_init_pll(clk_base, NULL, pll_params, lock);
++	if (IS_ERR(pll))
++		return ERR_CAST(pll);
++
++	_get_pll_mnp(pll, &cfg);
++	if (cfg.n > 1) {
++		WARN(1, "%s should not be initialized\n", name);
++		kfree(pll);
++		return ERR_PTR(-EINVAL);
++	}
++
++	val = pll_readl_base(pll);
++	val &= ~PLLSS_REF_SRC_SEL_MASK;
++	pll_writel_base(val, pll);
++
++	parent_rate = __clk_get_rate(parent);
++
++	pll_params->vco_min = _clip_vco_min(pll_params->vco_min, parent_rate);
++
++	/* initialize PLL to minimum rate */
++
++	cfg.m = _pll_fixed_mdiv(pll_params, parent_rate);
++	cfg.n = cfg.m * pll_params->vco_min / parent_rate;
++
++	for (i = 0; pll_params->pdiv_tohw[i].pdiv; i++)
++		;
++	if (!i) {
++		kfree(pll);
++		return ERR_PTR(-EINVAL);
++	}
++
++	cfg.p = pll_params->pdiv_tohw[i-1].hw_val;
++
++	_update_pll_mnp(pll, &cfg);
++
++	pll_writel_misc(PLLSS_MISC_DEFAULT, pll);
++	pll_writel(PLLSS_CFG_DEFAULT, pll_params->ext_misc_reg[0], pll);
++	pll_writel(PLLSS_CTRL1_DEFAULT, pll_params->ext_misc_reg[1], pll);
++	pll_writel(PLLSS_CTRL1_DEFAULT, pll_params->ext_misc_reg[2], pll);
++
++	val = pll_readl_base(pll);
++	if (val & PLL_BASE_ENABLE) {
++		if (val & BIT(pll_params->iddq_bit_idx)) {
++			WARN(1, "%s is on but IDDQ set\n", name);
++			kfree(pll);
++			return ERR_PTR(-EINVAL);
++		}
++	} else
++		val |= BIT(pll_params->iddq_bit_idx);
++
++	val &= ~PLLSS_LOCK_OVERRIDE;
++	pll_writel_base(val, pll);
++
++	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
++					&tegra_clk_pllss_ops);
++
++	if (IS_ERR(clk))
++		kfree(pll);
++
++	return clk;
++}
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 05abfc5..7f110ac 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -298,6 +298,11 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 				struct tegra_clk_pll_params *pll_params,
+ 				spinlock_t *lock);
  
- static struct tegra_periph_init_data periph_clks[] = {
- 	AUDIO("d_audio", CLK_SOURCE_D_AUDIO, 106, TEGRA_PERIPH_ON_APB, tegra_clk_d_audio),
-@@ -346,6 +385,7 @@ static struct tegra_periph_init_data periph_clks[] = {
- 	INT8("se", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SE, 127, TEGRA_PERIPH_ON_APB, tegra_clk_se),
- 	INT8("2d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_2D, 21, 0, tegra_clk_gr2d_8),
- 	INT8("3d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_3D, 24, 0, tegra_clk_gr3d_8),
-+	INT8("vic03", mux_pllm_pllc_pllp_plla_pllc2_c3_clkm, CLK_SOURCE_VIC03, 178, 0, tegra_clk_vic03),
- 	INT_FLAGS("mselect", mux_pllp_clkm, CLK_SOURCE_MSELECT, 99, 0, tegra_clk_mselect, CLK_IGNORE_UNUSED),
- 	MUX("i2s0", mux_pllaout0_audio0_2x_pllp_clkm, CLK_SOURCE_I2S0, 30, TEGRA_PERIPH_ON_APB, tegra_clk_i2s0),
- 	MUX("i2s1", mux_pllaout0_audio1_2x_pllp_clkm, CLK_SOURCE_I2S1, 11, TEGRA_PERIPH_ON_APB, tegra_clk_i2s1),
-@@ -393,6 +433,9 @@ static struct tegra_periph_init_data periph_clks[] = {
- 	MUX("ndspeed", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_NDSPEED, 80, TEGRA_PERIPH_ON_APB, tegra_clk_ndspeed),
- 	MUX("sata_oob", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SATA_OOB, 123, TEGRA_PERIPH_ON_APB, tegra_clk_sata_oob),
- 	MUX("sata", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SATA, 124, TEGRA_PERIPH_ON_APB, tegra_clk_sata),
-+	MUX("adx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_ADX1, 180, TEGRA_PERIPH_ON_APB, tegra_clk_adx1),
-+	MUX("amx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_AMX1, 185, TEGRA_PERIPH_ON_APB, tegra_clk_amx1),
-+	MUX("vi_sensor2", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR2, 20, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor2),
- 	MUX8("sbc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, tegra_clk_sbc1_8),
- 	MUX8("sbc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, tegra_clk_sbc2_8),
- 	MUX8("sbc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, tegra_clk_sbc3_8),
-@@ -407,6 +450,11 @@ static struct tegra_periph_init_data periph_clks[] = {
- 	MUX8("extern3", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN3, 122, 0, tegra_clk_extern3),
- 	MUX8("soc_therm", mux_pllm_pllc_pllp_plla, CLK_SOURCE_SOC_THERM, 78, TEGRA_PERIPH_ON_APB, tegra_clk_soc_therm),
- 	MUX8("vi_sensor", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR, 20, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor_8),
-+	MUX8("isp", mux_pllm_pllc_pllp_plla_clkm_pllc4, CLK_SOURCE_ISP, 23, TEGRA_PERIPH_ON_APB, tegra_clk_isp_8),
-+	MUX8("entropy", mux_pllp_clkm1, CLK_SOURCE_ENTROPY, 149,  0, tegra_clk_entropy),
-+	MUX8("hdmi_audio", mux_pllp3_pllc_clkm, CLK_SOURCE_HDMI_AUDIO, 176, TEGRA_PERIPH_NO_RESET, tegra_clk_hdmi_audio),
-+	MUX8("clk72mhz", mux_pllp3_pllc_clkm, CLK_SOURCE_CLK72MHZ, 177, TEGRA_PERIPH_NO_RESET, tegra_clk_clk72Mhz),
-+	MUX8("sor0", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_SOR0, 182, 0, tegra_clk_sor0),
- 	MUX_FLAGS("csite", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_CSITE, 73, TEGRA_PERIPH_ON_APB, tegra_clk_csite, CLK_IGNORE_UNUSED),
- 	NODIV("disp1", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP1, 29, 7, 27, 0, tegra_clk_disp1),
- 	NODIV("disp2", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP2, 29, 7, 26, 0, tegra_clk_disp2),
-@@ -453,6 +501,11 @@ static struct tegra_periph_init_data gate_clks[] = {
- 	GATE("dsib", "dsib_mux", 82, 0, tegra_clk_dsib, 0),
- 	GATE("emc", "emc_mux", 57, 0, tegra_clk_emc, CLK_IGNORE_UNUSED),
- 	GATE("sata_cold", "clk_m", 129, TEGRA_PERIPH_ON_APB, tegra_clk_sata_cold, 0),
-+	GATE("ispb", "clk_m", 3, 0, tegra_clk_ispb, 0),
-+	GATE("vim2_clk", "clk_m", 11, 0, tegra_clk_vim2_clk, 0),
-+	GATE("pcie", "clk_m", 70, 0, tegra_clk_pcie, 0),
-+	GATE("dpaux", "clk_m", 181, 0, tegra_clk_dpaux, 0),
-+	GATE("gpu", "pll_ref", 184, 0, tegra_clk_gpu, 0),
- };
- 
- struct pll_out_data {
-@@ -485,6 +538,7 @@ static struct pll_out_data pllp_out_clks[] = {
- 	PLL_OUT(2, PLLP_OUTA, 24, TEGRA_DIVIDER_INT, 16, pll_p_out2_int),
- 	PLL_OUT(3, PLLP_OUTB, 8, 0, 0, pll_p_out3),
- 	PLL_OUT(4, PLLP_OUTB, 24, 0, 16, pll_p_out4),
-+	PLL_OUT(5, PLLP_OUTC, 24, 0, 16, pll_p_out5),
- };
- 
- static void __init periph_clk_init(void __iomem *clk_base,
++struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
++			   void __iomem *clk_base, unsigned long flags,
++			   struct tegra_clk_pll_params *pll_params,
++			   spinlock_t *lock);
++
+ /**
+  * struct tegra_clk_pll_out - PLL divider down clock
+  *
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
