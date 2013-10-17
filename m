@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab3JQNtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:49:17 -0400
-Received: from [216.32.180.188] ([216.32.180.188]:16108 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754624Ab3JQNtQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:49:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>
-Subject: RE: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
-Thread-Topic: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
-Thread-Index: AQHOymPo+73p9hhU20CjtA/9SyqCl5n46eng
-Date: Thu, 17 Oct 2013 13:47:38 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D0A5456C2@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
-In-Reply-To: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.136]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756174Ab3JQNt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:49:56 -0400
+Received: from smtp-out-233.synserver.de ([212.40.185.233]:1099 "EHLO
+	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab3JQNtz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:49:55 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3814
+Message-ID: <525FEB7A.5040406@metafoo.de>
+Date: Thu, 17 Oct 2013 15:51:54 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Timur Tabi <timur@tabi.org>
+CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+        lgirdwood@gmail.com, broonie@kernel.org, mark.rutland@arm.com,
+        alsa-devel@alsa-project.org, linux-doc@vger.kernel.org, tiwai@suse.de,
+        b18965@freescale.com, LW@KARO-electronics.de, linux@arm.linux.org.uk,
+        b42378@freescale.com, oskar@scara.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, ian.campbell@citrix.com,
+        pawel.moll@arm.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, fabio.estevam@freescale.com,
+        linux-kernel@vger.kernel.org, rob@landley.net, r64188@freescale.com,
+        shawn.guo@linaro.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [alsa-devel] [PATCHv1 1/8] ALSA: Add SAI SoC Digital Audio Interface
+ driver.
+References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com> <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com> <525FD4C7.3050806@tabi.org> <525FD65B.3040004@metafoo.de> <525FE48B.7020709@tabi.org> <525FE728.90403@metafoo.de> <525FE815.1040300@tabi.org>
+In-Reply-To: <525FE815.1040300@tabi.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-Please consider these patches for 3.12.
+On 10/17/2013 03:37 PM, Timur Tabi wrote:
+> Lars-Peter Clausen wrote:
+>>> >Maybe I've been out of the loop for too long, but why is that a particular
+>>> >problem with this driver?
+> 
+>> It is usually something you'd want to check in general to make sure that you
+>> don't have multiple device that access the same iomem region at the same
+>> time.
+> 
+> I understand that, but I'm trying to figure out why of_iomap() is okay for
+> hundreds of other drivers, but not this one.  I've used it dozens of times
+> myself, without ever worrying about overlapping regions.
 
-Regards
-Varun
+The driver would work fine with just of_iomap(). But the resource range
+check comes basically for free and it does help to catch errors, so I'd
+recommend on using it rather than not using it.
 
-> -----Original Message-----
-> From: Sethi Varun-B16395
-> Sent: Wednesday, October 16, 2013 4:53 PM
-> To: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Yoder Stuart-B08248;
-> Wood Scott-B07421; alex.williamson@redhat.com; Bhushan Bharat-R65777
-> Cc: Sethi Varun-B16395
-> Subject: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
-> 
-> The first patch fixes a build failure, when we try to build for a
-> Freescale platform without PCI support.
-> 
-> The second patch enables a default DMA window for the device, once it's
-> detached from a domain. In case of vfio, once device is detached from a
-> guest it can be again used by the host.
-> 
-> The last patch adds the maintainer entry for the Freescale PAMU driver.
-> 
-> Varun Sethi (3):
->   iommu/fsl: Factor out PCI specific code.
->   iommu/fsl: Enable default DMA window for PCIe devices once detached
->   Add maintainers entry for the Freescale PAMU driver.
-> 
->  MAINTAINERS                     |    7 ++
->  drivers/iommu/fsl_pamu.c        |   43 ++++++++++---
->  drivers/iommu/fsl_pamu.h        |    1 +
->  drivers/iommu/fsl_pamu_domain.c |  134 +++++++++++++++++++++++++--------
-> ------
->  4 files changed, 128 insertions(+), 57 deletions(-)
-> 
-> --
-> 1.7.9.5
-
-
+- Lars
