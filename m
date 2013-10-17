@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3JQKYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 06:24:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577Ab3JQKYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:24:09 -0400
-Date: Thu, 17 Oct 2013 13:23:54 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data selectors
-Message-ID: <20131017102354.GR15657@redhat.com>
-References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
- <CA+55aFwCe=t4dDbDhHTWhzA3zMEyyS2WSYBP2Sfe0eogGEBS1w@mail.gmail.com>
- <525ECEA102000078000FB906@nat28.tlf.novell.com>
- <CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
- <525ED75402000078000FB95B@nat28.tlf.novell.com>
- <20131017092727.GN15657@redhat.com>
- <525FCB0D02000078000FBBCF@nat28.tlf.novell.com>
- <20131017094146.GP15657@redhat.com>
- <525FCF5802000078000FBC04@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525FCF5802000078000FBC04@nat28.tlf.novell.com>
+	id S1754796Ab3JQKY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:24:27 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:36243 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab3JQKYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 06:24:24 -0400
+X-AuditID: cbfec373-b7f6d6d00000330d-72-525fbad7131a
+Date: Thu, 17 Oct 2013 07:24:17 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
+        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 7/9] ACPI, APEI,
+ CPER: Enhance memory reporting capability
+Message-id: <20131017072417.2f98d2ec@samsung.com>
+In-reply-to: <1381935366-11731-8-git-send-email-gong.chen@linux.intel.com>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <1381935366-11731-8-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/hEN3ru+KDDG4eEbZoO/GbzeLzhn9s
+	Frfe2VrMvv+YxWL5vn5Gi8u75rBZ3G95ym7x5sI9FgcOj++tfSwei/e8ZPKYdzLQ48GhzSwe
+	X1ZdY/Z4v+8qm8fnTXIB7FFcNimpOZllqUX6dglcGb+uz2YsWCJYsfjuItYGxh6+LkZODgkB
+	E4lNG6axQ9hiEhfurWfrYuTiEBJYwihxbvoNRginh0li+q1lrCBVLAKqEmfX3gbrYBMwknjV
+	2AIWFxHQkXiwaTVYA7PAKkaJN2+2gyWEBYIl7r2fD9bAK2AocaRpNlicU8BLYuvqmcwQGzoZ
+	Jf6t2gHkcADd4SSxdaovRL2gxI/J91hAbGYBLYnN25pYIWx5ic1r3jJPYBSYhaRsFpKyWUjK
+	FjAyr2IULS1OLihOSs810itOzC0uzUvXS87P3cQIiYHiHYwvNlgdYhTgYFTi4Z2xPC5IiDWx
+	rLgy9xCjBAezkgjvlu3xQUK8KYmVValF+fFFpTmpxYcYmTg4pRoYuXc95/pWFXht1UU9N9Uf
+	X2x2H+Aqr715We+df16XxP/1jg88p7+7MY/x+d2E9Mz/lVPV7/aJfHb/WWQcFZPzNfOejrV0
+	VeGq/1tqt+5IXcxidXLrNvGLnzyzinhm2Cova2N0nOukoLbMeKZ1ZdcfqcrD/f//Tz7LyDrp
+	SdC/9Vxr+prW/d8RpsRSnJFoqMVcVJwIAEPUr0BfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 10:51:52AM +0100, Jan Beulich wrote:
-> >>> On 17.10.13 at 11:41, Gleb Natapov <gleb@redhat.com> wrote:
-> > On Thu, Oct 17, 2013 at 10:33:33AM +0100, Jan Beulich wrote:
-> >> >>> On 17.10.13 at 11:27, Gleb Natapov <gleb@redhat.com> wrote:
-> >> > On Wed, Oct 16, 2013 at 05:13:40PM +0100, Jan Beulich wrote:
-> >> >> > It preserves *less* state, because the upper 32 bits of rip are now
-> >> >> > corrupted. Any 64-bit application that actually looks at the FP
-> >> >> > rip/rdp fields now get the WRONG VALUES.
-> >> >> 
-> >> >> But again - this isn't being done for ordinary 64-bit applications,
-> >> >> this is only happening for KVM guests. And there not being a
-> >> >> protocol for telling the caller whether a certain context hold
-> >> >> 64-bit offsets or selector/offset pairs shouldn't be a reason to
-> >> >> think of a solution to the problem.
-> >> >> 
-> >> > KVM knows what mode guest vcpu is in. is_long_mode(vcpu) will tell you
-> >> > if it is in long mode or not. No need to guess it.
-> >> 
-> >> So what if that 64-bit guest OS is running a 32-bit app? You can
-> >> only positively know the _current_ guest word size when the
-> >> guest is not in long mode.
-> >> 
-> > KVM obviously knows the complete state of virtual CPU. It can figure the
-> > situation above by looking at CS descriptor, not need to check
-> > is_long_mode() at all. Here is how emulator does it:
-> 
-> And again - no: The last floating point operation may have
-> happened in 32-bit user mode context, while the state saving
-> may happen when the guest is already back in 64-bit kernel
-> mode.
-> 
-Hmm, OK so the scenarios you are talking about is:
- 1. Guest's 32bit process uses FPU
- 2. Guest switch to 64bit kernel.
- 3. Before guest's kernel saves 32bit process's FPU state VMEXIT happens
- 4. KVM need to save FPU but it does not know what mode it is in
-Correct? 
+Em Wed, 16 Oct 2013 10:56:04 -0400
+"Chen, Gong" <gong.chen@linux.intel.com> escreveu:
 
-KVM gives FPU to a guest lazily, meaning that on a first FPU use #NM
-(intercepted by KVM) happens at which point FPU is granted to a guest.
-KVM can check what mode CPU was in at this point and use this info
-while saving FPU. But there is additional optimization that will prevent
-this from working for all cases: when FPU is granted to a guest KVM
-disabled CR0.TS/#NM intercepts, so guest is free to switch FPU from
-32bit to 64bit mode without KVM knowing. Disabling this optimization
-will make FP intensive workload slow in a guest.
+> After H/W error happens under FFM enabled mode, lots of information
+> are shown but some important parts like DIMM location missed. This
+> patch is used to show these extra fileds.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 
---
-			Gleb.
+Reviewed-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+
+> ---
+>  drivers/acpi/apei/cper.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index 946ef52..b1a8a55 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/module.h>
+>  #include <linux/time.h>
+>  #include <linux/cper.h>
+> +#include <linux/dmi.h>
+>  #include <linux/acpi.h>
+>  #include <linux/pci.h>
+>  #include <linux/aer.h>
+> @@ -210,6 +211,8 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  		printk("%s""card: %d\n", pfx, mem->card);
+>  	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
+>  		printk("%s""module: %d\n", pfx, mem->module);
+> +	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
+> +		printk("%s""rank: %d\n", pfx, mem->rank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_BANK)
+>  		printk("%s""bank: %d\n", pfx, mem->bank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
+> @@ -232,6 +235,15 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  		       etype < ARRAY_SIZE(cper_mem_err_type_strs) ?
+>  		       cper_mem_err_type_strs[etype] : "unknown");
+>  	}
+> +	if (mem->validation_bits & CPER_MEM_VALID_MODULE_HANDLE) {
+> +		const char *bank = NULL, *device = NULL;
+> +		dmi_memdev_name(mem->mem_dev_handle, &bank, &device);
+> +		if (bank != NULL && device != NULL)
+> +			printk("%s""DIMM location: %s %s", pfx, bank, device);
+> +		else
+> +			printk("%s""DIMM DMI handle: 0x%.4x",
+> +			       pfx, mem->mem_dev_handle);
+> +	}
+>  }
+>  
+>  static const char *cper_pcie_port_type_strs[] = {
+
+
+-- 
+
+Cheers,
+Mauro
