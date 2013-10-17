@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab3JQWO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 18:14:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60633 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab3JQWOy (ORCPT
+	id S1758206Ab3JQWPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 18:15:46 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:47456 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757974Ab3JQWPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 18:14:54 -0400
-Date: Thu, 17 Oct 2013 23:14:50 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: George Spelvin <linux@horizon.com>
-Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
-Message-ID: <20131017221450.GU13318@ZenIV.linux.org.uk>
-References: <20131009172336.GH13318@ZenIV.linux.org.uk>
- <20131017211143.1712.qmail@science.horizon.com>
+	Thu, 17 Oct 2013 18:15:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017211143.1712.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382013526-12800-3-git-send-email-pdeschrijver@nvidia.com>
+References: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+	<1382013526-12800-3-git-send-email-pdeschrijver@nvidia.com>
+Date: Thu, 17 Oct 2013 15:15:43 -0700
+X-Google-Sender-Auth: FOT3s8jAkevzlMudxYv6JvphYKE
+Message-ID: <CAL1qeaGg+XdCWSp4yjWTFxXjhj8a+_dFwpT+B_H+GQ_CWZ50-A@mail.gmail.com>
+Subject: Re: [PATCH v4 02/15] clk: tegra: simplify periph clock data
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-tegra@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 05:11:43PM -0400, George Spelvin wrote:
-> Al Viro wrote:
-> > Note that do_group_exit() is preceded by
-> >                spin_unlock_irq(&sighand->siglock);
-> > so no matter what happened in callers, irq is enabled.  I'd suggest sticking
-> > such BUG_ON() into __fput() and trying to reproduce that crap...
-> 
-> Well, it happened again (error appended).  Can you please clarify what you mean
-> by "such BUG_ON()"; I'm having a hard time following the RCU code and determining
-> all the situations under which __fput() might be called.
+Hi Peter,
 
-__fput() can be called via task_work_run() or via schedule_work().  That's
-all.  And it certainly should never be called with interrupts disabled.
-So stick BUG_ON(irqs_disabled()) in it (WARN_ON() might be better, but
-not by much).
+> @@ -2346,6 +2247,9 @@ static void __init tegra114_clock_init(struct device_node *np)
+>         if (tegra114_osc_clk_init(clk_base) < 0)
+>                 return;
+>
+> +       if (tegra_clk_set_periph_banks(5) < 0)
 
-There are two ways these traces could've happened:
-	* exit_task_work() called by do_exit() with irqs disabled.
-Definitely buggy (and would do really nasty things to several functions
-called by do_exit() before that one).  If such BUG_ON() triggers in
-__fput(), this is what happens and the next step will be sticking
-several BUG_ON(irqs_disabled()) in do_exit() - something like
-	BUG_ON(irqs_disabled());
-        exit_sem(tsk);
-	BUG_ON(irqs_disabled());
-        exit_shm(tsk);
-	BUG_ON(irqs_disabled());
-        exit_files(tsk);
-	BUG_ON(irqs_disabled());
-        exit_fs(tsk);
-	BUG_ON(irqs_disabled());
-        exit_task_namespaces(tsk);
-	BUG_ON(irqs_disabled());
-        exit_task_work(tsk);
-and checking which of those triggers; that'll tell us who has disabled it
-and forgot to enable.
-	* __fput() is called with irqs enabled, but somewhere on the
-way into ext4 (dput -> iput -> evict inode -> free blocks, now that
-unlinked file got closed -> ...) we manage to disable irqs and forget
-to enable them.
+Maybe it would be better to have a #define for this (e.g.
+TEGRAxxx_CLK_PERIPH_BANKS)?  Same goes for t20 and t30.
+
+>  /* Global data of Tegra CPU CAR ops */
+>  static struct tegra_cpu_car_ops dummy_car_ops;
+>  struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+>
+> +int *periph_clk_enb_refcnt;
+
+This changes seems unrelated.  Perhaps it should go in the one that
+makes the common periph_clk_enb_refcnt?
+
+Thanks,
+Andrew
