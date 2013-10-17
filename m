@@ -1,422 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab3JQPH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:07:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46152 "EHLO mx1.redhat.com"
+	id S1757034Ab3JQPJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:09:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34614 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756357Ab3JQPHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:07:24 -0400
-References: <52584373.3010202@hds.com> <878uxssarf.fsf@redhat.com> <A5ED84D3BB3A384992CBB9C77DEDA4D443F0BEB4@USINDEM103.corp.hds.com> <87fvs0as1p.fsf@redhat.com>
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Madper Xie <cxie@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "matt.fleming\@intel.com" <matt.fleming@intel.com>,
-        "tony.luck\@intel.com" <tony.luck@intel.com>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        "dle-develop\@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Subject: Re: [PATCH v3] efivars,efi-pstore: Hold off deletion of sysfs entry until, the scan is completed
-In-reply-to: <87fvs0as1p.fsf@redhat.com>
-Date: Thu, 17 Oct 2013 23:07:00 +0800
-Message-ID: <87eh7kaqcr.fsf@redhat.com>
+	id S1756506Ab3JQPJY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 11:09:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,514,1378882800"; 
+   d="scan'208";a="394455531"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "Lukasz Majewski" <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: RE: [PATCH v9 3/7] thermal:boost: Automatic enable/disable of BOOST
+ feature
+Thread-Topic: [PATCH v9 3/7] thermal:boost: Automatic enable/disable of
+ BOOST feature
+Thread-Index: AQHOyNeSqddtOCEJ9kmMaM1ZvZDUIJn0+z2AgABniACAA5czkA==
+Date: Thu, 17 Oct 2013 15:09:05 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926301192A50@SHSMSX101.ccr.corp.intel.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
+ <1381753070-2853-4-git-send-email-l.majewski@samsung.com>
+ <1381829571.2080.34.camel@rzhang1-mobl4>
+ <20131015174324.0abda071@amdc308.digital.local>
+In-Reply-To: <20131015174324.0abda071@amdc308.digital.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
-   I tested it on my DELL XPS desktop. And it won't show any warnings
-   when I mounting pstore and deleting pstore items after this patch
-   applied.
 
-   Tested-by: Madper Xie
-cxie@redhat.com writes:
 
-> Oops, It seems my mu4e(a email client for emacs)'s auto-indent breaks the
-> patch... I apologize for this... 
+> -----Original Message-----
+> From: Lukasz Majewski [mailto:l.majewski@samsung.com]
+> Sent: Tuesday, October 15, 2013 11:43 PM
+> To: Zhang, Rui
+> Cc: Viresh Kumar; Rafael J. Wysocki; Eduardo Valentin;
+> cpufreq@vger.kernel.org; Linux PM list; Jonghwa Lee; Lukasz Majewski;
+> linux-kernel; Bartlomiej Zolnierkiewicz; Myungjoo Ham; R, Durgadoss
+> Subject: Re: [PATCH v9 3/7] thermal:boost: Automatic enable/disable of
+> BOOST feature
+> Importance: High
+> 
+> Hi Zhang,
+> 
+> > Hi, Lukasz,
+> >
+> > thanks for the patch, sorry that I didn't look into this one earlier.
+> 
+> Yes, I would _really_ appreciate _earlier_ feedback from thermal
+> maintainers :-)
+> 
+> >
+> > On Mon, 2013-10-14 at 14:17 +0200, Lukasz Majewski wrote:
+> > > This patch provides auto disable/enable operation for boost. When
+> > > any defined trip point is passed, the boost is disabled.
+> >
+> > Do you mean boost is disabled if the system is in a overheating state?
+> 
+> In short - Yes.
+> 
+> 
+> To be more precise - the thermal here is a "safe" valve.
+> 
+> Its role is to provide hysteresis similar to the one available for
+> Intel processors.
+> 
+> Intel does it in HW. Here I'm trying to do the same with SW for ARM.
+> 
+> >
+> > > In that moment thermal monitor workqueue is woken up and it
+> monitors
+> > > if the device temperature drops below 75% of the smallest trip
+> > > point.
+> >
+> > Just FYI, the smallest trip point does not equal the trip point with
+> > lowest temperature value.
+> 
+> Thermal processors to which I've looked (exynos 4/5, ste-snowball) had
+> trip points defined monotonically with smallest value defined first.
+> 
+> This was the rationale for choosing thermal trip point 0.
+> 
+But this is not a hard rule for all thermal drivers, thus you can't make this assumption.
+ 
+> 
+> >
+> > Say, here is a platform with an active trip point at 40C, and an
+> > critical trip point at 100C, you want to enable boost only if the
+> > temperature is under 30C, right?
+> 
+> In short: no (please read below explanation).
+> 
+> 
+> The boost rough idea:
+> 1. I enable boost from cpufreq (no matter what is the state of thermal)
+> 2. If temperature is too high, then thermal interrupt would trigger and
+> disable boost 3. If device cools down - I enable the boost again
+> 
+> 
+> >
+> > > When device cools down, the boost is enabled again.
+> > >
+> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> > >
+> > > ---
+> > > Changes for v9:
+> > > - None
+> > >
+> > > Changes for v8:
+> > > - Move cpufreq_boost_* stub functions definition (needed when
+> > > cpufreq is not compiled in) to cpufreq.h at cpufreq core support
+> > > commit
+> > >
+> > > Changes for v7:
+> > > - None
+> > >
+> > > Changes for v6:
+> > > - Disable boost only when supported and enabled
+> > > - Protect boost related thermal_zone_device struct fields with
+> mutex
+> > > - Evaluate temperature trend during boost enable decision
+> > > - Create separate methods to handle boost enable/disable
+> > >   (thermal_boost_{enable|disable}) operations
+> > > - Boost is disabled at any trip point passage (not only the non
+> > > critical one)
+> > > - Add stub definitions for cpufreq boost functions used when
+> > >   CONFIG_CPU_FREQ is NOT defined.
+> > >
+> > > Changes for v5:
+> > > - Move boost disable code from cpu_cooling.c to thermal_core.c
+> > >   (to handle_non_critical_trips)
+> > > - Extent struct thermal_zone_device by adding overheated bool flag
+> > > - Implement auto enable of boost after device cools down
+> > > - Introduce boost_polling flag, which indicates if thermal uses
+> it's
+> > > predefined pool delay or has woken up thermal workqueue only to
+> wait
+> > > until device cools down.
+> > >
+> > > Changes for v4:
+> > > - New patch
+> > >
+> > >  drivers/thermal/thermal_core.c |   55
+> > > ++++++++++++++++++++++++++++++++++++++++
+> > > include/linux/thermal.h        |    2 ++ 2 files changed, 57
+> > > insertions(+)
+> > >
+> > > diff --git a/drivers/thermal/thermal_core.c
+> > > b/drivers/thermal/thermal_core.c index 4962a6a..a167ab9 100644
+> > > --- a/drivers/thermal/thermal_core.c
+> > > +++ b/drivers/thermal/thermal_core.c
+> > > @@ -34,6 +34,7 @@
+> > >  #include <linux/thermal.h>
+> > >  #include <linux/reboot.h>
+> > >  #include <linux/string.h>
+> > > +#include <linux/cpufreq.h>
+> >
+> > Actually, I do not like to see this as thermal_core.c.
+> > Because it is the platform thermal driver that owns the thermal
+> > policy, e.g. it tells the thermal core to take what action at what
+> > temperature.
+> > And this cpufreq boost support should be part of the thermal policy.
+> 
+> 
+> Boost is defined as policy independent at cpufreq.
+
+
+> So I believe that
+> it shall be also thermal policy independent.
+
+Boost mode support itself is policy independent, but when to use it is kind of a policy, right?
+Say, if you introduce boost support in cpufreq cooling code, either as a cooling device or as a special cooling state, it is thermal policy independent, but when to use this cooling device/state is surely part of thermal policy.
+
+> In the end thermal shall
+> help cpufreq to not burn the device.
+> 
+> 
+> >
+> > For example, here is a platform that supports boost. And it has a
+> > passive trip point at 40C, which means the platform driver wants to
+> > reduce the processor frequency when the temperature at 40C.
+> > And what you're trying to add in this patch is to turn on boost mode
+> > when the temperature is under 30C, right?
+> 
+> In short: yes.
+> 
+> I want to add code which would disable boost when detected temperature
+> is more than 40C.
+> 
+> First, boost must be enabled at cpufreq. Only then it can be disabled
+> (if temp > 40C) at thermal.
+> 
+> During boost disablement I also setup the thermal zone for
+> polling (if we already poll it - no settings are changed).
+> 
+> The boost is re-enabled only when temperature drops to 30C AND the
+> tz->overheated is set (which means that we are at overheated state
+> caused by boost).
+> 
+> 
+> > If yes, then I'd prefer to
+> > 1. introduce a separate cpu cooling device that just has two cooling
+> > state, 0 means boost mode enabled, and 1 means boost mode disabled.
+> > 2. For any platform thermal driver that wants this support, introduce
+> > a new trip point (30C) to the platform thermal driver,
+> > and bind the
+> > cpufreq boost cooling device to this trip point.
+> 
+> >
+> > And IMO, Step 1 can be an enhancement of cpufreq cooling feature. You
+> > just need to introduce two new APIs for registering/unregistering an
+> > cpu boost cooling device, without changing the current cpufreq
+> > cooling code.
+> >
+> > Further more, cpufreq_boost_trigger_state(1) just make it possible to
+> > enter boost mode, it does not mean the cpu will be put into boost
+> mode
+> > immediately, right?
+> 
+> Yes, correct.
+> 
+> > can we make it transparent to thermal core, say,
+> > always enable it when the cpu is in cooling state 0 (p0)?
+> 
+> Thanks for presenting possible solution.
 >
-> seiji.aguchi@hds.com writes:
->
->> Hi Madper,
->>
->> I tested this patch on 3.12-rc4.
->> Could you please send me the log when you failed to apply?
->>
->> Seiji
->>
->>> -----Original Message-----
->>> From: Madper Xie [mailto:cxie@redhat.com]
->>> Sent: Thursday, October 17, 2013 1:54 AM
->>> To: Seiji Aguchi
->>> Cc: linux-kernel@vger.kernel.org; linux-efi@vger.kernel.org; matt.fleming@intel.com; tony.luck@intel.com; Tomoki Sekiyama; dle-
->>> develop@lists.sourceforge.net
->>> Subject: Re: [PATCH v3] efivars,efi-pstore: Hold off deletion of sysfs entry until, the scan is completed
->>> 
->>> Howdy Seiji,
->>>   I failed appily this patch to both 3.12-rc2 and 3.12-rc4. Could you
->>>   please let me know which is the right tree for this patch?
->>> 
->>>   Thanks,
->>>   Madper.
->>> seiji.aguchi@hds.com writes:
->>> 
->>> > Change from v2:
->>> > - Move dynamic memory allocation to efi_pstore_read() before holding
->>> >   efivars->lock to protect entry->var.Data.
->>> > - Access to entry->scanning while holding efivars->lock.
->>> > - Move a comment about a returned value from efi_pstore_read_func() to
->>> >   efi_pstore_read() because "size < 0" case may happen in efi_pstore_read().
->>> >
->>> > Currently, when mounting pstore file system, a read callback of efi_pstore
->>> > driver runs mutiple times as below.
->>> >
->>> > - In the first read callback, scan efivar_sysfs_list from head and pass
->>> >   a kmsg buffer of a entry to an upper pstore layer.
->>> > - In the second read callback, rescan efivar_sysfs_list from the entry and pass
->>> >   another kmsg buffer to it.
->>> > - Repeat the scan and pass until the end of efivar_sysfs_list.
->>> >
->>> > In this process, an entry is read across the multiple read function calls.
->>> > To avoid race between the read and erasion, the whole process above is
->>> > protected by a spinlock, holding in open() and releasing in close().
->>> >
->>> > At the same time, kmemdup() is called to pass the buffer to pstore filesystem
->>> > during it.
->>> > And then, it causes a following lockdep warning.
->>> >
->>> > To make the dynamic memory allocation runnable without taking spinlock,
->>> > holding off a deletion of sysfs entry if it happens while scanning it
->>> > via efi_pstore, and deleting it after the scan is completed.
->>> >
->>> > To implement it, this patch introduces two flags, scanning and deleting,
->>> > to efivar_entry.
->>> >
->>> > [    1.143710] ------------[ cut here ]------------
->>> > [    1.144058] WARNING: CPU: 1 PID: 1 at kernel/lockdep.c:2740
->>> > lockdep_trace_alloc+0x104/0x110()
->>> > [    1.144058] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
->>> > [    1.144058] Modules linked in:
->>> >
->>> > [    1.144058] CPU: 1 PID: 1 Comm: systemd Not tainted 3.11.0-rc5 #2
->>> > [    1.144058]  0000000000000009 ffff8800797e9ae0 ffffffff816614a5
->>> > ffff8800797e9b28
->>> > [    1.144058]  ffff8800797e9b18 ffffffff8105510d 0000000000000080
->>> > 0000000000000046
->>> > [    1.144058]  00000000000000d0 00000000000003af ffffffff81ccd0c0
->>> > ffff8800797e9b78
->>> > [    1.144058] Call Trace:
->>> > [    1.144058]  [<ffffffff816614a5>] dump_stack+0x54/0x74
->>> > [    1.144058]  [<ffffffff8105510d>] warn_slowpath_common+0x7d/0xa0
->>> > [    1.144058]  [<ffffffff8105517c>] warn_slowpath_fmt+0x4c/0x50
->>> > [    1.144058]  [<ffffffff8131290f>] ? vsscanf+0x57f/0x7b0
->>> > [    1.144058]  [<ffffffff810bbd74>] lockdep_trace_alloc+0x104/0x110
->>> > [    1.144058]  [<ffffffff81192da0>] __kmalloc_track_caller+0x50/0x280
->>> > [    1.144058]  [<ffffffff815147bb>] ?
->>> > efi_pstore_read_func.part.1+0x12b/0x170
->>> > [    1.144058]  [<ffffffff8115b260>] kmemdup+0x20/0x50
->>> > [    1.144058]  [<ffffffff815147bb>] efi_pstore_read_func.part.1+0x12b/0x170
->>> > [    1.144058]  [<ffffffff81514800>] ?
->>> > efi_pstore_read_func.part.1+0x170/0x170
->>> > [    1.144058]  [<ffffffff815148b4>] efi_pstore_read_func+0xb4/0xe0
->>> > [    1.144058]  [<ffffffff81512b7b>] __efivar_entry_iter+0xfb/0x120
->>> > [    1.144058]  [<ffffffff8151428f>] efi_pstore_read+0x3f/0x50
->>> > [    1.144058]  [<ffffffff8128d7ba>] pstore_get_records+0x9a/0x150
->>> > [    1.158207]  [<ffffffff812af25c>] ? selinux_d_instantiate+0x1c/0x20
->>> > [    1.158207]  [<ffffffff8128ce30>] ? parse_options+0x80/0x80
->>> > [    1.158207]  [<ffffffff8128ced5>] pstore_fill_super+0xa5/0xc0
->>> > [    1.158207]  [<ffffffff811ae7d2>] mount_single+0xa2/0xd0
->>> > [    1.158207]  [<ffffffff8128ccf8>] pstore_mount+0x18/0x20
->>> > [    1.158207]  [<ffffffff811ae8b9>] mount_fs+0x39/0x1b0
->>> > [    1.158207]  [<ffffffff81160550>] ? __alloc_percpu+0x10/0x20
->>> > [    1.158207]  [<ffffffff811c9493>] vfs_kern_mount+0x63/0xf0
->>> > [    1.158207]  [<ffffffff811cbb0e>] do_mount+0x23e/0xa20
->>> > [    1.158207]  [<ffffffff8115b51b>] ? strndup_user+0x4b/0xf0
->>> > [    1.158207]  [<ffffffff811cc373>] SyS_mount+0x83/0xc0
->>> > [    1.158207]  [<ffffffff81673cc2>] system_call_fastpath+0x16/0x1b
->>> > [    1.158207] ---[ end trace 61981bc62de9f6f4 ]---
->>> >
->>> > Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
->>> > ---
->>> >  drivers/firmware/efi/efi-pstore.c | 143 +++++++++++++++++++++++++++++++++++---
->>> >  drivers/firmware/efi/efivars.c    |  12 ++--
->>> >  drivers/firmware/efi/vars.c       |  12 +++-
->>> >  include/linux/efi.h               |   2 +
->>> >  4 files changed, 153 insertions(+), 16 deletions(-)
->>> >
->>> > diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
->>> > index 5002d50..ebd5dbc 100644
->>> > --- a/drivers/firmware/efi/efi-pstore.c
->>> > +++ b/drivers/firmware/efi/efi-pstore.c
->>> > @@ -18,14 +18,12 @@ module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
->>> >
->>> >  static int efi_pstore_open(struct pstore_info *psi)
->>> >  {
->>> > -	efivar_entry_iter_begin();
->>> >  	psi->data = NULL;
->>> >  	return 0;
->>> >  }
->>> >
->>> >  static int efi_pstore_close(struct pstore_info *psi)
->>> >  {
->>> > -	efivar_entry_iter_end();
->>> >  	psi->data = NULL;
->>> >  	return 0;
->>> >  }
->>> > @@ -91,19 +89,125 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
->>> >  	__efivar_entry_get(entry, &entry->var.Attributes,
->>> >  			   &entry->var.DataSize, entry->var.Data);
->>> >  	size = entry->var.DataSize;
->>> > +	memcpy(*cb_data->buf, entry->var.Data, (size_t)min_t(unsigned long,
->>> > +							     1024, size));
->>> >
->>> > -	*cb_data->buf = kmemdup(entry->var.Data, size, GFP_KERNEL);
->>> > -	if (*cb_data->buf == NULL)
->>> > -		return -ENOMEM;
->>> >  	return size;
->>> >  }
->>> >
->>> > +/**
->>> > + * efi_pstore_scan_sysfs_enter
->>> > + * @entry: scanning entry
->>> > + * @next: next entry
->>> > + * @head: list head
->>> > + */
->>> > +static void efi_pstore_scan_sysfs_enter(struct efivar_entry *pos,
->>> > +					struct efivar_entry *next,
->>> > +					struct list_head *head)
->>> > +{
->>> > +	pos->scanning = true;
->>> > +	if (&next->list != head)
->>> > +		next->scanning = true;
->>> > +}
->>> > +
->>> > +/**
->>> > + * __efi_pstore_scan_sysfs_exit
->>> > + * @entry: deleting entry
->>> > + * @turn_off_scanning: Check if a scanning flag should be turned off
->>> > + */
->>> > +static inline void __efi_pstore_scan_sysfs_exit(struct efivar_entry *entry,
->>> > +						bool turn_off_scanning)
->>> > +{
->>> > +	if (entry->deleting) {
->>> > +		list_del(&entry->list);
->>> > +		efivar_entry_iter_end();
->>> > +		efivar_unregister(entry);
->>> > +		efivar_entry_iter_begin();
->>> > +	} else if (turn_off_scanning)
->>> > +		entry->scanning = false;
->>> > +}
->>> > +
->>> > +/**
->>> > + * efi_pstore_scan_sysfs_exit
->>> > + * @pos: scanning entry
->>> > + * @next: next entry
->>> > + * @head: list head
->>> > + * @stop: a flag checking if scanning will stop
->>> > + */
->>> > +static void efi_pstore_scan_sysfs_exit(struct efivar_entry *pos,
->>> > +				       struct efivar_entry *next,
->>> > +				       struct list_head *head, bool stop)
->>> > +{
->>> > +	__efi_pstore_scan_sysfs_exit(pos, true);
->>> > +	if (stop)
->>> > +		__efi_pstore_scan_sysfs_exit(next, &next->list != head);
->>> > +}
->>> > +
->>> > +/**
->>> > + * efi_pstore_sysfs_entry_iter
->>> > + *
->>> > + * @data: function-specific data to pass to callback
->>> > + * @pos: entry to begin iterating from
->>> > + *
->>> > + * You MUST call efivar_enter_iter_begin() before this function, and
->>> > + * efivar_entry_iter_end() afterwards.
->>> > + *
->>> > + * It is possible to begin iteration from an arbitrary entry within
->>> > + * the list by passing @pos. @pos is updated on return to point to
->>> > + * the next entry of the last one passed to efi_pstore_read_func().
->>> > + * To begin iterating from the beginning of the list @pos must be %NULL.
->>> > + */
->>> > +static int efi_pstore_sysfs_entry_iter(void *data, struct efivar_entry **pos)
->>> > +{
->>> > +	struct efivar_entry *entry, *n;
->>> > +	struct list_head *head = &efivar_sysfs_list;
->>> > +	int size = 0;
->>> > +
->>> > +	if (!*pos) {
->>> > +		list_for_each_entry_safe(entry, n, head, list) {
->>> > +			efi_pstore_scan_sysfs_enter(entry, n, head);
->>> > +
->>> > +			size = efi_pstore_read_func(entry, data);
->>> > +			efi_pstore_scan_sysfs_exit(entry, n, head, size < 0);
->>> > +			if (size)
->>> > +				break;
->>> > +		}
->>> > +		*pos = n;
->>> > +		return size;
->>> > +	}
->>> > +
->>> > +	list_for_each_entry_safe_from((*pos), n, head, list) {
->>> > +		efi_pstore_scan_sysfs_enter((*pos), n, head);
->>> > +
->>> > +		size = efi_pstore_read_func((*pos), data);
->>> > +		efi_pstore_scan_sysfs_exit((*pos), n, head, size < 0);
->>> > +		if (size)
->>> > +			break;
->>> > +	}
->>> > +	*pos = n;
->>> > +	return size;
->>> > +}
->>> > +
->>> > +/**
->>> > + * efi_pstore_read
->>> > + *
->>> > + * This function returns a size of NVRAM entry logged via efi_pstore_write().
->>> > + * The meaning and behavior of efi_pstore/pstore are as below.
->>> > + *
->>> > + * size > 0: Got data of an entry logged via efi_pstore_write() successfully,
->>> > + *           and pstore filesystem will continue reading subsequent entries.
->>> > + * size == 0: Entry was not logged via efi_pstore_write(),
->>> > + *            and efi_pstore driver will continue reading subsequent entries.
->>> > + * size < 0: Failed to get data of entry logging via efi_pstore_write(),
->>> > + *           and pstore will stop reading entry.
->>> > + */
->>> >  static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
->>> >  			       int *count, struct timespec *timespec,
->>> >  			       char **buf, bool *compressed,
->>> >  			       struct pstore_info *psi)
->>> >  {
->>> >  	struct pstore_read_data data;
->>> > +	ssize_t size;
->>> >
->>> >  	data.id = id;
->>> >  	data.type = type;
->>> > @@ -112,8 +216,17 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
->>> >  	data.compressed = compressed;
->>> >  	data.buf = buf;
->>> >
->>> > -	return __efivar_entry_iter(efi_pstore_read_func, &efivar_sysfs_list, &data,
->>> > -				   (struct efivar_entry **)&psi->data);
->>> > +	*data.buf = kzalloc(1024, GFP_KERNEL);
->>> > +	if (!*data.buf)
->>> > +		return -ENOMEM;
->>> > +
->>> > +	efivar_entry_iter_begin();
->>> > +	size = efi_pstore_sysfs_entry_iter(&data,
->>> > +					   (struct efivar_entry **)&psi->data);
->>> > +	efivar_entry_iter_end();
->>> > +	if (size <= 0)
->>> > +		kfree(*data.buf);
->>> > +	return size;
->>> >  }
->>> >
->>> >  static int efi_pstore_write(enum pstore_type_id type,
->>> > @@ -184,9 +297,17 @@ static int efi_pstore_erase_func(struct efivar_entry *entry, void *data)
->>> >  			return 0;
->>> >  	}
->>> >
->>> > +	if (entry->scanning) {
->>> > +		/*
->>> > +		 * Skip deletion because this entry will be deleted
->>> > +		 * after scanning is completed.
->>> > +		 */
->>> > +		entry->deleting = true;
->>> > +	} else
->>> > +		list_del(&entry->list);
->>> > +
->>> >  	/* found */
->>> >  	__efivar_entry_delete(entry);
->>> > -	list_del(&entry->list);
->>> >
->>> >  	return 1;
->>> >  }
->>> > @@ -214,10 +335,12 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
->>> >
->>> >  	efivar_entry_iter_begin();
->>> >  	found = __efivar_entry_iter(efi_pstore_erase_func, &efivar_sysfs_list, &edata, &entry);
->>> > -	efivar_entry_iter_end();
->>> >
->>> > -	if (found)
->>> > +	if (found && !entry->scanning) {
->>> > +		efivar_entry_iter_end();
->>> >  		efivar_unregister(entry);
->>> > +	} else
->>> > +		efivar_entry_iter_end();
->>> >
->>> >  	return 0;
->>> >  }
->>> > diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
->>> > index 8a7432a..8c5a61a 100644
->>> > --- a/drivers/firmware/efi/efivars.c
->>> > +++ b/drivers/firmware/efi/efivars.c
->>> > @@ -383,12 +383,16 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
->>> >  	else if (__efivar_entry_delete(entry))
->>> >  		err = -EIO;
->>> >
->>> > -	efivar_entry_iter_end();
->>> > -
->>> > -	if (err)
->>> > +	if (err) {
->>> > +		efivar_entry_iter_end();
->>> >  		return err;
->>> > +	}
->>> >
->>> > -	efivar_unregister(entry);
->>> > +	if (!entry->scanning) {
->>> > +		efivar_entry_iter_end();
->>> > +		efivar_unregister(entry);
->>> > +	} else
->>> > +		efivar_entry_iter_end();
->>> >
->>> >  	/* It's dead Jim.... */
->>> >  	return count;
->>> > diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
->>> > index 391c67b..b22659c 100644
->>> > --- a/drivers/firmware/efi/vars.c
->>> > +++ b/drivers/firmware/efi/vars.c
->>> > @@ -683,8 +683,16 @@ struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
->>> >  	if (!found)
->>> >  		return NULL;
->>> >
->>> > -	if (remove)
->>> > -		list_del(&entry->list);
->>> > +	if (remove) {
->>> > +		if (entry->scanning) {
->>> > +			/*
->>> > +			 * The entry will be deleted
->>> > +			 * after scanning is completed.
->>> > +			 */
->>> > +			entry->deleting = true;
->>> > +		} else
->>> > +			list_del(&entry->list);
->>> > +	}
->>> >
->>> >  	return entry;
->>> >  }
->>> > diff --git a/include/linux/efi.h b/include/linux/efi.h
->>> > index 5f8f176..04088fb 100644
->>> > --- a/include/linux/efi.h
->>> > +++ b/include/linux/efi.h
->>> > @@ -782,6 +782,8 @@ struct efivar_entry {
->>> >  	struct efi_variable var;
->>> >  	struct list_head list;
->>> >  	struct kobject kobj;
->>> > +	bool scanning;
->>> > +	bool deleting;
->>> >  };
->>> >
->>> >  extern struct list_head efivar_sysfs_list;
->>> 
->>> 
->>> --
->>> Best,
->>> Madper Xie.
+No problem. 
 
-
--- 
-Best,
-Madper Xie.
+Thanks,
+rui
+> I will investigate it for boost.
+> 
+Thanks,
+rui
+> >
+> > thanks,
+> > rui
+> > >  #include <net/netlink.h>
+> > >  #include <net/genetlink.h>
+> > >
+> > > @@ -366,9 +367,59 @@ static void handle_critical_trips(struct
+> > > thermal_zone_device *tz, }
+> > >  }
+> > >
+> > > +static int thermal_boost_enable(struct thermal_zone_device *tz)
+> > > +{
+> > > +	enum thermal_trend trend = get_tz_trend(tz, 0);
+> > > +	long trip_temp;
+> > > +
+> > > +	if (!tz->ops->get_trip_temp || !tz->overheated)
+> > > +		return -EPERM;
+> > > +	if (trend == THERMAL_TREND_RAISING || trend ==
+> > > THERMAL_TREND_RAISE_FULL)
+> > > +		return -EBUSY;
+> > > +
+> > > +	tz->ops->get_trip_temp(tz, 0, &trip_temp);
+> > > +	/*
+> > > +	 * Enable boost again only when current temperature is less
+> > > +	 * than 75% of trip_temp[0]
+> > > +	 */
+> > > +	if ((tz->temperature + (trip_temp >> 2)) < trip_temp) {
+> > > +		mutex_lock(&tz->lock);
+> > > +		tz->overheated = false;
+> > > +		if (tz->boost_polling) {
+> > > +			tz->boost_polling = false;
+> > > +			tz->polling_delay = 0;
+> > > +		}
+> > > +		mutex_unlock(&tz->lock);
+> > > +		cpufreq_boost_trigger_state(1);
+> > > +		return 0;
+> > > +	}
+> > > +	return -EBUSY;
+> > > +}
+> > > +
+> > > +static void thermal_boost_disable(struct thermal_zone_device *tz)
+> > > +{
+> > > +	cpufreq_boost_trigger_state(0);
+> > > +
+> > > +	/*
+> > > +	 * If no workqueue for monitoring is running - start one
+> > > with
+> > > +	 * 1000 ms monitoring period
+> > > +	 * If workqueue already running - do not change its period
+> > > and only
+> > > +	 * test if target CPU has cooled down
+> > > +	 */
+> > > +	mutex_lock(&tz->lock);
+> > > +	if (!tz->polling_delay) {
+> > > +		tz->boost_polling = true;
+> > > +		tz->polling_delay = 1000;
+> > > +	}
+> > > +	tz->overheated = true;
+> > > +	mutex_unlock(&tz->lock);
+> > > +}
+> > > +
+> > >  static void handle_thermal_trip(struct thermal_zone_device *tz,
+> > > int trip) {
+> > >  	enum thermal_trip_type type;
+> > > +	if (cpufreq_boost_supported() && cpufreq_boost_enabled())
+> > > +		thermal_boost_disable(tz);
+> > >
+> > >  	tz->ops->get_trip_type(tz, trip, &type);
+> > >
+> > > @@ -467,6 +518,10 @@ static void thermal_zone_device_check(struct
+> > > work_struct *work) struct thermal_zone_device *tz =
+> > > container_of(work, struct thermal_zone_device,
+> > >  						      poll_queue.work);
+> > > +	if (cpufreq_boost_supported())
+> > > +		if (!thermal_boost_enable(tz))
+> > > +			return;
+> > > +
+> > >  	thermal_zone_device_update(tz);
+> > >  }
+> > >
+> > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > > index b268d3c..b316bdf 100644
+> > > --- a/include/linux/thermal.h
+> > > +++ b/include/linux/thermal.h
+> > > @@ -172,6 +172,8 @@ struct thermal_zone_device {
+> > >  	int emul_temperature;
+> > >  	int passive;
+> > >  	unsigned int forced_passive;
+> > > +	bool overheated;
+> > > +	bool boost_polling;
+> > >  	const struct thermal_zone_device_ops *ops;
+> > >  	const struct thermal_zone_params *tzp;
+> > >  	struct thermal_governor *governor;
+> >
+> >
+> 
+> 
+> 
+> --
+> Best regards,
+> 
+> Lukasz Majewski
+> 
+> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
