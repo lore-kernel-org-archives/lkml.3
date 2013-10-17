@@ -1,318 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab3JQSki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:40:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51364 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758369Ab3JQSkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:40:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,516,1378882800"; 
-   d="scan'208";a="394551985"
-Date: Thu, 17 Oct 2013 11:40:26 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Gerd Hoffmann <kraxel@redhat.com>, Hans de Goede <hdegoede@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2] xhci: fix usb3 streams
-Message-ID: <20131017184026.GE6256@xanatos>
-References: <20131014183957.GM19604@quack.suse.cz>
- <20131015015424.GA5032@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015015424.GA5032@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761650Ab3JQSlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:41:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:40154 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758245Ab3JQSlU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 14:41:20 -0400
+Date: Thu, 17 Oct 2013 14:41:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: trace-cmd problem with FC19
+Message-ID: <20131017144116.044f3aaf@gandalf.local.home>
+In-Reply-To: <525FD328.1040204@broadcom.com>
+References: <525FD328.1040204@broadcom.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The more I look at this patch, the more I hate it for the failure cases
-it doesn't cover.
+On Thu, 17 Oct 2013 14:08:08 +0200
+"Arend van Spriel" <arend@broadcom.com> wrote:
 
-What happens if the radix_tree_insert fails in the middle of adding a
-set of ring segments?  We leave those segments that were inserted in the
-radix tree, which is a problem, since we could allocate those segments
-out of the DMA pool later for a different stream ID.
+> Hi Steven,
+> 
+> When tracing I get these error messages and no trace data is recorded. I 
+> also cloned the trace-cmd repo and tried that with the same result. I 
+> think the kernel configuration looks ok, but adding it.
+> 
+> I use it almost daily on Ubuntu system, but trying Fedora for a change. 
+> I do have a difference with kernel taint with my driver loaded:
+> 
+> Ubuntu	4096	(OOT module loaded, ie. my driver)
+> Fedora	4098	(OOT *and* forced module?)
+> 
+> 'forced module' probably caused by:
+> [10808.074823] Request for unknown module key 'Fedora kernel signing 
+> key: 8661dbf3061bfa70eb76d61691cec200318534b4' err -11
+> 
+> Would that explain my issue?
+> 
+> Regards,
+> Arend
+> 
+> ---8<----------------------------------------------------
+> $ sudo trace-cmd record -e brcmfmac:*
+> /sys/kernel/debug/tracing/events/brcmfmac/*/filter
+> Hit Ctrl^C to stop recording
+> ^Ctrace-cmd: Interrupted system call
+> trace-cmd: Interrupted system call
+>      recorder error in splice inputrecorder error in splice input
 
-That's OK for the initial stream ring allocation, since the xhci_ring
-itself will get freed.  It's not ok for ring expansion through, since
-the xhci_ring remains in tact, and we simply fail the URB submission.
+I haven't seen this before.
 
-I'm working on a patch to fix this, but may not get it done today.
+Was the brcmfmac module the one that was forced loaded?
 
-Sarah Sharp
+Does recording other traces work? Or is it only spicific to this module?
 
-On Mon, Oct 14, 2013 at 06:54:24PM -0700, Gerd Hoffmann wrote:
-> Gerd, Hans, any objections to this updated patch?  The warning is fixed
-> with it.
+-- Steve
+
 > 
-> The patch probably still needs to address the case where the ring
-> expansion fails because we can't insert the new segments into the radix
-> tree.  The patch should probably allocate the segments, attempt to add
-> them to the radix tree, and fail without modifying the link TRBs of the
-> ring.  I'd have to look more deeply into the code to see what exactly
-> should be done there.
+> trace-cmd: Interrupted system call
+>    recorder error in splice input
+> trace-cmd: Interrupted system call
+>    recorder error in splice input
+> Kernel buffer statistics:
+>    Note: "entries" are the entries left in the kernel ring buffer and 
+> are not
+>          recorded in the trace data. They should all be zero.
 > 
-> I would like that issue fixed before I merge these patches, so if you
-> want to take a stab at fixing it, please do.
-> 
-> Sarah Sharp
-> 
-> 8<---------------------------------------------------------------->8
-> 
-> xhci maintains a radix tree for each stream endpoint because it must
-> be able to map a trb address to the stream ring.  Each ring segment
-> must be added to the ring for this to work.  Currently xhci sticks
-> only the first segment of each stream ring into the radix tree.
-> 
-> Result is that things work initially, but as soon as the first segment
-> is full xhci can't map the trb address from the completion event to the
-> stream ring any more -> BOOM.  You'll find this message in the logs:
-> 
->   ERROR Transfer event for disabled endpoint or incorrect stream ring
-> 
-> This patch adds a helper function to update the radix tree, and a
-> function to remove ring segments from the tree.  Both functions loop
-> over the segment list and handles all segments instead of just the
-> first.
-> 
-> [Note: Sarah changed this patch to add radix_tree_maybe_preload() and
-> radix_tree_preload_end() calls around the radix tree insert, since we
-> can now insert entries in interrupt context.  There are now two helper
-> functions to make the code cleaner, and those functions are moved to
-> make them static.]
-> 
-> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-mem.c | 132 +++++++++++++++++++++++++++++---------------
->  drivers/usb/host/xhci.h     |   1 +
->  2 files changed, 90 insertions(+), 43 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-> index 83bcd13..8b1ba5b 100644
-> --- a/drivers/usb/host/xhci-mem.c
-> +++ b/drivers/usb/host/xhci-mem.c
-> @@ -149,14 +149,95 @@ static void xhci_link_rings(struct xhci_hcd *xhci, struct xhci_ring *ring,
->  	}
->  }
->  
-> +/*
-> + * We need a radix tree for mapping physical addresses of TRBs to which stream
-> + * ID they belong to.  We need to do this because the host controller won't tell
-> + * us which stream ring the TRB came from.  We could store the stream ID in an
-> + * event data TRB, but that doesn't help us for the cancellation case, since the
-> + * endpoint may stop before it reaches that event data TRB.
-> + *
-> + * The radix tree maps the upper portion of the TRB DMA address to a ring
-> + * segment that has the same upper portion of DMA addresses.  For example, say I
-> + * have segments of size 1KB, that are always 64-byte aligned.  A segment may
-> + * start at 0x10c91000 and end at 0x10c913f0.  If I use the upper 10 bits, the
-> + * key to the stream ID is 0x43244.  I can use the DMA address of the TRB to
-> + * pass the radix tree a key to get the right stream ID:
-> + *
-> + * 	0x10c90fff >> 10 = 0x43243
-> + * 	0x10c912c0 >> 10 = 0x43244
-> + * 	0x10c91400 >> 10 = 0x43245
-> + *
-> + * Obviously, only those TRBs with DMA addresses that are within the segment
-> + * will make the radix tree return the stream ID for that ring.
-> + *
-> + * Caveats for the radix tree:
-> + *
-> + * The radix tree uses an unsigned long as a key pair.  On 32-bit systems, an
-> + * unsigned long will be 32-bits; on a 64-bit system an unsigned long will be
-> + * 64-bits.  Since we only request 32-bit DMA addresses, we can use that as the
-> + * key on 32-bit or 64-bit systems (it would also be fine if we asked for 64-bit
-> + * PCI DMA addresses on a 64-bit system).  There might be a problem on 32-bit
-> + * extended systems (where the DMA address can be bigger than 32-bits),
-> + * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
-> + */
-> +static int xhci_update_stream_mapping(struct xhci_ring *ring, gfp_t mem_flags)
-> +{
-> +	struct xhci_segment *seg;
-> +	unsigned long key;
-> +	int ret;
-> +
-> +	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
-> +		return 0;
-> +
-> +	seg = ring->first_seg;
-> +	do {
-> +		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> +		/* Skip any segments that were already added. */
-> +		if (radix_tree_lookup(ring->trb_address_map, key))
-> +			continue;
-> +
-> +		ret = radix_tree_maybe_preload(mem_flags);
-> +		if (ret)
-> +			return ret;
-> +		ret = radix_tree_insert(ring->trb_address_map,
-> +				key, ring);
-> +		radix_tree_preload_end();
-> +		if (ret)
-> +			return ret;
-> +		seg = seg->next;
-> +	} while (seg != ring->first_seg);
-> +
-> +	return 0;
-> +}
-> +
-> +static void xhci_remove_stream_mapping(struct xhci_ring *ring)
-> +{
-> +	struct xhci_segment *seg;
-> +	unsigned long key;
-> +
-> +	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
-> +		return;
-> +
-> +	seg = ring->first_seg;
-> +	do {
-> +		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> +		if (radix_tree_lookup(ring->trb_address_map, key))
-> +			radix_tree_delete(ring->trb_address_map, key);
-> +		seg = seg->next;
-> +	} while (seg != ring->first_seg);
-> +}
-> +
->  /* XXX: Do we need the hcd structure in all these functions? */
->  void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
->  {
->  	if (!ring)
->  		return;
->  
-> -	if (ring->first_seg)
-> +	if (ring->first_seg) {
-> +		if (ring->type == TYPE_STREAM)
-> +			xhci_remove_stream_mapping(ring);
->  		xhci_free_segments_for_ring(xhci, ring->first_seg);
-> +	}
->  
->  	kfree(ring);
->  }
-> @@ -353,6 +434,11 @@ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
->  			"ring expansion succeed, now has %d segments",
->  			ring->num_segs);
->  
-> +	if (ring->type == TYPE_STREAM) {
-> +		ret = xhci_update_stream_mapping(ring, flags);
-> +		WARN_ON(ret); /* FIXME */
-> +	}
-> +
->  	return 0;
->  }
->  
-> @@ -509,36 +595,6 @@ struct xhci_ring *xhci_stream_id_to_ring(
->   * The number of stream contexts in the stream context array may be bigger than
->   * the number of streams the driver wants to use.  This is because the number of
->   * stream context array entries must be a power of two.
-> - *
-> - * We need a radix tree for mapping physical addresses of TRBs to which stream
-> - * ID they belong to.  We need to do this because the host controller won't tell
-> - * us which stream ring the TRB came from.  We could store the stream ID in an
-> - * event data TRB, but that doesn't help us for the cancellation case, since the
-> - * endpoint may stop before it reaches that event data TRB.
-> - *
-> - * The radix tree maps the upper portion of the TRB DMA address to a ring
-> - * segment that has the same upper portion of DMA addresses.  For example, say I
-> - * have segments of size 1KB, that are always 64-byte aligned.  A segment may
-> - * start at 0x10c91000 and end at 0x10c913f0.  If I use the upper 10 bits, the
-> - * key to the stream ID is 0x43244.  I can use the DMA address of the TRB to
-> - * pass the radix tree a key to get the right stream ID:
-> - *
-> - * 	0x10c90fff >> 10 = 0x43243
-> - * 	0x10c912c0 >> 10 = 0x43244
-> - * 	0x10c91400 >> 10 = 0x43245
-> - *
-> - * Obviously, only those TRBs with DMA addresses that are within the segment
-> - * will make the radix tree return the stream ID for that ring.
-> - *
-> - * Caveats for the radix tree:
-> - *
-> - * The radix tree uses an unsigned long as a key pair.  On 32-bit systems, an
-> - * unsigned long will be 32-bits; on a 64-bit system an unsigned long will be
-> - * 64-bits.  Since we only request 32-bit DMA addresses, we can use that as the
-> - * key on 32-bit or 64-bit systems (it would also be fine if we asked for 64-bit
-> - * PCI DMA addresses on a 64-bit system).  There might be a problem on 32-bit
-> - * extended systems (where the DMA address can be bigger than 32-bits),
-> - * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
->   */
->  struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
->  		unsigned int num_stream_ctxs,
-> @@ -547,7 +603,6 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
->  	struct xhci_stream_info *stream_info;
->  	u32 cur_stream;
->  	struct xhci_ring *cur_ring;
-> -	unsigned long key;
->  	u64 addr;
->  	int ret;
->  
-> @@ -602,6 +657,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
->  		if (!cur_ring)
->  			goto cleanup_rings;
->  		cur_ring->stream_id = cur_stream;
-> +		cur_ring->trb_address_map = &stream_info->trb_address_map;
->  		/* Set deq ptr, cycle bit, and stream context type */
->  		addr = cur_ring->first_seg->dma |
->  			SCT_FOR_CTX(SCT_PRI_TR) |
-> @@ -611,10 +667,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
->  		xhci_dbg(xhci, "Setting stream %d ring ptr to 0x%08llx\n",
->  				cur_stream, (unsigned long long) addr);
->  
-> -		key = (unsigned long)
-> -			(cur_ring->first_seg->dma >> TRB_SEGMENT_SHIFT);
-> -		ret = radix_tree_insert(&stream_info->trb_address_map,
-> -				key, cur_ring);
-> +		ret = xhci_update_stream_mapping(cur_ring, mem_flags);
->  		if (ret) {
->  			xhci_ring_free(xhci, cur_ring);
->  			stream_info->stream_rings[cur_stream] = NULL;
-> @@ -634,9 +687,6 @@ cleanup_rings:
->  	for (cur_stream = 1; cur_stream < num_streams; cur_stream++) {
->  		cur_ring = stream_info->stream_rings[cur_stream];
->  		if (cur_ring) {
-> -			addr = cur_ring->first_seg->dma;
-> -			radix_tree_delete(&stream_info->trb_address_map,
-> -					addr >> TRB_SEGMENT_SHIFT);
->  			xhci_ring_free(xhci, cur_ring);
->  			stream_info->stream_rings[cur_stream] = NULL;
->  		}
-> @@ -697,7 +747,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
->  {
->  	int cur_stream;
->  	struct xhci_ring *cur_ring;
-> -	dma_addr_t addr;
->  
->  	if (!stream_info)
->  		return;
-> @@ -706,9 +755,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
->  			cur_stream++) {
->  		cur_ring = stream_info->stream_rings[cur_stream];
->  		if (cur_ring) {
-> -			addr = cur_ring->first_seg->dma;
-> -			radix_tree_delete(&stream_info->trb_address_map,
-> -					addr >> TRB_SEGMENT_SHIFT);
->  			xhci_ring_free(xhci, cur_ring);
->  			stream_info->stream_rings[cur_stream] = NULL;
->  		}
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index 289fbfb..737dcc1 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1334,6 +1334,7 @@ struct xhci_ring {
->  	unsigned int		num_trbs_free_temp;
->  	enum xhci_ring_type	type;
->  	bool			last_td_was_short;
-> +	struct radix_tree_root	*trb_address_map;
->  };
->  
->  struct xhci_erst_entry {
-> -- 
-> 1.8.3.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
