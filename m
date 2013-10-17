@@ -1,95 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762194Ab3JQCt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 22:49:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43848 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761009Ab3JQCt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 22:49:28 -0400
-Message-ID: <525F50D3.6090708@oracle.com>
-Date: Thu, 17 Oct 2013 10:52:03 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1762211Ab3JQCu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 22:50:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47100 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761009Ab3JQCuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 22:50:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
+   d="scan'208";a="418096270"
+Message-ID: <525F4E03.2050606@intel.com>
+Date: Thu, 17 Oct 2013 10:40:03 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: dgilbert@interlog.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Madper Xie <cxie@redhat.com>, linux-kernel@vger.kernel.org,
-        SCSI development list <linux-scsi@vger.kernel.org>
-Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
-References: <8761tilrl0.fsf@redhat.com> <874n8s2tjz.fsf@redhat.com>	 <5253A9E7.5030707@oracle.com> <52540C7F.8050207@interlog.com> <1381929897.1864.0.camel@dabdike> <525F1601.8080906@interlog.com>
-In-Reply-To: <525F1601.8080906@interlog.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <lantianyu1986@gmail.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status
+ before requesting to resume it
+References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <16284735.7LFgSiThhv@vostro.rjw.lan> <525E5BBD.5030108@intel.com> <4608605.e0aa4PbnhL@vostro.rjw.lan> <525F372A.5070807@intel.com>
+In-Reply-To: <525F372A.5070807@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 06:41 AM, Douglas Gilbert wrote:
-> That seems to be the case. Vaughan acknowledged the
-> problem and forwarded it to me 8 days ago. Yes, it
-> seems to be a "no-no" to hold a any kernel semaphore
-> when returning to the user space; in this case from
-> sg_open(). I was hoping a revised patch might
-> appear from Vaughan but to date that has not been
-> the case. So with only a few weeks to go before
-> lk 3.12 is released, reverting the whole 4 patches
-> in that series seems to be the safest course.
->
-> Also without a new patch from Vaughan in the next few
-> weeks he may also miss the opportunity of getting
-> his improved O_EXCL logic into the lk 3.13 series.
->
->
-> Thinking about how to solve this problem: a field could
-> be added to 'struct sg_device' with one of three states:
-> no_opens, non_excl_opens and excl_open. It could be
-> manipulated by sg_open() and sg_release() like a
-> read-write semaphore. And the faulty 'struct
-> rw_semaphore o_sem' in sg_device could be replaced by a
-> normal semaphore to protect the manipulation of the new
-> three-state field.
-> And the new three-state field would replace (or expand)
-the 'char exclude' field in struct sg_device .
->
-> Doug Gilbert
-Hi Doug,
+On 2013年10月17日 09:02, Lan Tianyu wrote:
+> On 2013年10月16日 20:42, Rafael J. Wysocki wrote:
+>> On Wednesday, October 16, 2013 05:26:21 PM Lan Tianyu wrote:
+>>> This is a multi-part message in MIME format.
+>>> --------------090400010209000300030201
+>>> Content-Type: text/plain; charset=UTF-8
+>>> Content-Transfer-Encoding: 8bit
+>>>
+>>> On 10/16/2013 05:22 AM, Rafael J. Wysocki wrote:
+>>>> On Tuesday, October 15, 2013 04:58:28 PM Lan Tianyu wrote:
+>>>>> On 2013å¹´10æ11æ¥ 19:19, Rafael J. Wysocki wrote:
+>>>>>> On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com
+>>>>>> wrote:
+>>>>>>> From: Lan Tianyu <tianyu.lan@intel.com>
+>>>>>>>
+>>>>>>> Currently, when one power resource is turned on, devices owning
+>>>>>>> it will be requested to resume regardless of their runtime pm
+>>>>>>> status. ACPI power resource maybe turn on in some devices'
+>>>>>>> runtime pm resume callback(E.G, usb port) while turning on the
+>>>>>>> power resource will trigger one new resume request of the
+>>>>>>> device. It causes infinite loop between resume and suspend.
+>>>>>>> This has happened on clearing usb port's PM Qos NO_POWER_OFF
+>>>>>>> flag twice. This patch is to add check of physical device's
+>>>>>>> runtime pm status and request resume if the device is
+>>>>>>> suspended.
+>>>>>>>
+>>>>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com> ---
+>>>>>>> drivers/acpi/power.c | 6 ++++-- 1 file changed, 4
+>>>>>>> insertions(+), 2 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c index
+>>>>>>>  0dbe5cd..228c138 100644 --- a/drivers/acpi/power.c +++
+>>>>>>> b/drivers/acpi/power.c @@ -250,8 +250,10 @@ static void
+>>>>>>> acpi_power_resume_dependent(struct work_struct *work)
+>>>>>>>
+>>>>>>> mutex_lock(&adev->physical_node_lock);
+>>>>>>>
+>>>>>>> -	list_for_each_entry(pn, &adev->physical_node_list, node) -
+>>>>>>> pm_request_resume(pn->dev); +	list_for_each_entry(pn,
+>>>>>>> &adev->physical_node_list, node) { +		if
+>>>>>>> (pm_runtime_suspended(pn->dev)) + pm_request_resume(pn->dev);
+>>>>>>> + }
+>>>>>>
+>>>>>> This is racy, because the status may change right after you check
+>>>>>> it and before you call pm_request_resume().
+>>>>>
+>>>>> Yes, the runtime status may be changed just after the check.
+>>>>>
+>>>>>>
+>>>>>> Besides, pm_request_resume() checks the status of the device and
+>>>>>>  won't try to resume it if it is not suspended.
+>>>>>>
+>>>>>
+>>>>> For this issue, usb port is in the RPM_SUSPENDING state when
+>>>>> pm_request_resume() is called.
+>>>>
+>>>> Why exactly does that happen?
+>>>>
+>>>>> The deferred_resume will be set to true during this procedure and
+>>>>> trigger resume after finishing suspend. USB port runtime resume
+>>>>> callback will turn on its power resource again and the work of
+>>>>> acpi_power_resume_dependent() is scheduled. Because the usb port's
+>>>>>  usage count remains zero, it's to be suspended soon. When
+>>>>> pm_request_resume() of acpi_power_resume_dependent() is called, the
+>>>>> usb port is always in the PRM_SUSPENDING. Fall in the loop of
+>>>>> suspend and resume.
+>>>>>
+>>>>> How about running acpi_power_dependent when turning on power
+>>>>> resource rather than scheduling a work to run it?
+>>>>
+>>>> Is this actually going to help?  Even if
+>>>> acpi_power_resume_dependent() is run synchronously from within the
+>>>> resume callback, it will still see RPM_SUSPENDING as the device's
+>>>> status, won't it?
+>>>>
+>>>>> After this, pm_request_resume() can check device's right status
+>>>>> just after turning on power resource.
+>>>>
+>>>> The status doesn't change until the .runtime_suspend() callback
+>>>> returns and running pm_request_resume() syncrhonously from that
+>>>> callback for the device being suspended just plain doesn't make
+>>>> sense.
+>>>>
+>>>>
+>>>> Can you please explain to me how this is possible that the USB port's
+>>>> power resource is turned "on" while the port is RPM_SUSPENDING?
+>>>>
+>>> [This mail seems not to be sent to maillist. So resend. Try again
+>>> Sorry for noise]
+>>>
+>>>
+>>> Hi Rafael:
+>>>
+>>> No, I mean the acpi_power_resume_dependent() is running while the port's
+>>> status is RPM_SUSPENDING. It runs from a work item and turning on power
+>>> resource adds the work to workqueue. There is a timeslot between running
+>>> acpi_power_resume_dependent() and turning on power resource. In the
+>>> timeslot, the device runtime pm status maybe change.
+>>>
+>>> In this case, changing PM Qos flag will do pm_runtime_get_sync and
+>>> pm_runtime_put usb port. The usb port is without device attached and so
+>>> it will be resumed and suspended soon during changing PM Qos flag.
+>>>
+>>> Resume callback turns on power resource if NO_POWER_OFF flag has been
+>>> cleared and add the work of acpi_power_resume_dependent() to
+>>> workqueue. After resume, the usb port will be suspended while the
+>>> acpi_power_resume_dependent() is running. pm_request_resume() gets
+>>> RPM_SUSPENDING as the usb port's runtime status and set the
+>>> deferred_resume of usb port.
+>>>
+>>> After suspend, usb port will be resumed again and turn on power
+>>> resource. The work of acpi_power_resume_dependent() is also added to
+>>> workqueue. Because the usb port's usage count remains 0 during this
+>>> procedure. it will be suspended soon after resume. While suspending,
+>>> acpi_power_resume_dependent() is running and pm_request_resume()
+>>> sets deferred_resume again. The infinite look starts.
+>>
+>> So the problem is that the whole thing is racy.  There is no guarantee
+>> that the power resource will not be turned off after the
+>> acpi_power_get_inferred_state() check in acpi_power_resume_dependent()
+>> and before rpm_resume() queued by the pm_request_resume() called from
+>> there runs.  Playing with the time windows doesn't make that race go away.
+>>
+>> If we did what you suggested, the race still would be there, because the
+>> queued up resume may still run after the power resource has been turned off.
+> 
+> Yes, the queued up resume will run after the power resource has been
+> turned off but normally the resume should try to turn on the power
+> resource before doing some hardware related operations. If so, there
+> will not be problem, right?
+> 
 
-Thanks for providing advice on how to fix this.
-However, it seems be still awkward somehow. We have to
-1. hold a lock (maybe sg_index_lock or a new one)
-2. check
-   a) the new three-state field;
-   b) if sfp list is empty;
-   c) sdp->detached field;
-if either condition fails, we may link the open process into o_excl_wait
-queue and need wakeup.
-if satisfied, we go on.
-3. then we release at least sg_index_lock to malloc a new sfp and
-initialize.
-4. try to acquire sg_index_lock again and add this sfp into sfd_siblings
-list if possible.  <== We still have to check at least sdp->detached field
-5. update three-state field to reflect the result of Step 4, and wake up
-processes waiting in o_excl_wait.
+Sorry. I think I misunderstood your word. Please ignore the previous
+comment.
 
-This uncomfortable is introduced by releasing the sg_index_lock in the
-middle of check->malloc->add the new sfp struct.
+Yes, there is still a racy. I think of one case that there are multi
+devices that share one power resource. One device turns on power
+resource during resuming and queue resumes for other devices. The device
+enter into suspend and power resource turns off soon. When one other
+device do resume, the power resource will turn on again and queue resume
+for the previous device. Just like a Ping-pong.
 
-I wanna ask if it is possible to split the sg_add_sfp() into two
-functions, sg_init_sfp() and sg_add_sfp2(). We can do all initialize
-work in sg_init_sfp()
-without any lock and let sg_add_sfp2() only serve lock-check-add in one
-way. It seems more convenient for me to understand.
-But there is still some questions on this approach:
-1. memory consume can be very large if lots of sg_init_sfp in the same time;
-2. some field are initialized according to the fields of scsi device sdp
-points to, such as low_dma, sg_tablesize, max_sector, phys_segs.
-    I know scsi_device_get() would keep the underlying scsi_device
-alive, however would these fields change in the gap of our initialize
-and add?
-    The relationship of sg_device and scsi_device like above said
-confuse me somehow...
+>>
+>> Unfortunately, I don't see how we can fix this race in a satisfactory way
+>> and I'm starting to think that the whole resuming of dependent devices may
+>> be a bad idea.
+>>
+>> IIRC, the original concern was that devices may end up in D0-uninitialized
+>> if we don't do that, but then whoever turned the power resource on will
+>> probably turn if off at one point anyway, so they will be in that state
+>> temporarily.  In other words, in addition to the fact that this is racy,
+>> there even is no reason to do it.
+>>
+>> I'll send a patch to rip off that stuff later today.
 
-Thanks,
-Vaughan
+Currently, dropping it should be the better choice but I think we still
+need to resolve the D0-uninitialized problem, right? I will try to
+resolve it by other way.
+
+>>
+>> Thanks,
+>> Rafael
+>>
+> 
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
