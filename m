@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab3JQNfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:35:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63478 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755421Ab3JQNfK (ORCPT
+	id S1756069Ab3JQNfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:35:41 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:62700 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488Ab3JQNfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:35:10 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Lan Tianyu <tianyu.lan@intel.com>
-Subject: Re: [PATCH] ACPI / power: Drop automaitc resume of power resource dependent devices
-Date: Thu, 17 Oct 2013 15:47 +0200
-Message-ID: <2220996.Balj6KfZAP@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <3517410.N1Ot4TpM2j@vostro.rjw.lan>
-References: <4814451.BPLed2xxbP@vostro.rjw.lan> <525F8A48.9020007@intel.com> <3517410.N1Ot4TpM2j@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 17 Oct 2013 09:35:38 -0400
+From: Majunath Goudar <csmanjuvijay@gmail.com>
+To: csmanjuvijay@gmail.com
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH V3 3/6]  USB: OHCI: Properly handle ohci-s3c2410 suspend
+Date: Thu, 17 Oct 2013 19:05:10 +0530
+Message-Id: <1382016913-10872-4-git-send-email-csmanjuvijay@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1382016913-10872-1-git-send-email-csmanjuvijay@gmail.com>
+References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
+ <1382016913-10872-1-git-send-email-csmanjuvijay@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 17, 2013 01:56:23 PM Rafael J. Wysocki wrote:
-> On Thursday, October 17, 2013 02:57:12 PM Aaron Lu wrote:
-> > On 10/16/2013 09:25 PM, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > The mechanism causing devices depending on a given power resource
-> > > (that is, devices that can be in D0 only if that power resource is
-> > > on) to be resumed automatically when the power resource is turned
-> > > on (and their "inferred" power state becomes D0 as a result) is
-> > > inherently racy and in fact unnecessary.
-> > > 
-> > > It is racy, because if the power resources is turned on and then
-> > > immediately off, the device resume triggered by the first transition
-> > > to "on" may still happen, causing the power resource to be turned
-> > > on again.  That again will trigger the "resume of dependent devices"
-> > > mechanism, but if the devices in question are not in use, they will
-> > > be suspended in the meantime causing the power resource to be turned
-> > > off.  However, the "resume of dependent devices" will next resume
-> > > them again and so on.  In some cases (USB port PM in particular) that
-> > > leads to an endless busy loop of flipping the resource on and off
-> > > continuously.
-> > > 
-> > > It is needless, because whoever turns a power resource on will most
-> > > likely turn it off at some point and the devices that go into "D0"
-> > > as a result of turning it on will then go back into D3cold.
-> > > Moreover, turning all power resources a device needs to go into
-> > > D0 is not sufficient for a full transition into D0 in general.
-> > > Namely, _PS0 may need to be executed in addition to that in some
-> > > cases.  This means that the whole rationale of the "resume of
-> > > dependent devices" mechanism was incorrect to begin with and it's
-> > > best to remove it entirely.
-> > 
-> > With this patch, your previous patch could also be applied now:
-> > https://lkml.org/lkml/2013/6/14/173
-> > [PATCH 4/4] ACPI / PM: Drop two functions that are not used any more
-> 
-> Good catch and that code is dead anyway AFAICS, because power_dependent is only
-> used in device_pm.c (in those two functions) and in scan.c (where it is
-> initialized).
+Suspend scenario in case of ohci-s3c2410 glue was not
+properly handled as it was not suspending generic part
+of ohci controller. Alan Stern suggested, properly handle
+ohci-s3c2410 suspend scenario.
 
-That obviously is with the $subject patch applied.
+Calling explicitly the ohci_suspend()
+routine in ohci_hcd_s3c2410_drv_suspend() will ensure
+proper handling of suspend scenario.
 
-Thanks!
+V1->V2:
+      -No changes.
+       Due to the build failure on ep93xx reverted this patch.
+       This patch is needed as Alan Stern suggestion.
 
+V2->V3:
+      -No changes.
+      As a build failure on "ep93xx proper suspend patch" and Linaro 
+      id bounced. Rewrote this patch on top of latest Greg usb-next 
+      branch. This patch not gives any build error. Patch is required 
+      for ohci-s3c2410 proper suspending as Alan mentioned.
+
+      Initially when I wrote this patch I was working in Linaro, now 
+      I am not part of Linaro that is why Linaro id is bouncing. Sending 
+      this patch from personal mail id.
+
+Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/host/ohci-s3c2410.c |   21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/usb/host/ohci-s3c2410.c b/drivers/usb/host/ohci-s3c2410.c
+index be3429e..b5bf9b7 100644
+--- a/drivers/usb/host/ohci-s3c2410.c
++++ b/drivers/usb/host/ohci-s3c2410.c
+@@ -426,28 +426,15 @@ static int ohci_hcd_s3c2410_drv_remove(struct platform_device *pdev)
+ static int ohci_hcd_s3c2410_drv_suspend(struct device *dev)
+ {
+ 	struct usb_hcd *hcd = dev_get_drvdata(dev);
+-	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	unsigned long flags;
++	bool do_wakeup = device_may_wakeup(dev);
+ 	int rc = 0;
+ 
+-	/*
+-	 * Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
+-	 * the spinlock to properly synchronize with possible pending
+-	 * RH suspend or resume activity.
+-	 */
+-	spin_lock_irqsave(&ohci->lock, flags);
+-	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
+-
+-	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
++	rc = ohci_suspend(hcd, do_wakeup);
++	if (rc)
++		return rc;
+ 
+ 	s3c2410_stop_hc(pdev);
+-bail:
+-	spin_unlock_irqrestore(&ohci->lock, flags);
+ 
+ 	return rc;
+ }
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
