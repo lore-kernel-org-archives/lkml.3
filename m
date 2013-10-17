@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3JQMPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:15:10 -0400
-Received: from muin.pair.com ([209.68.1.55]:61419 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754638Ab3JQMPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:15:08 -0400
-Message-ID: <525FD4C7.3050806@tabi.org>
-Date: Thu, 17 Oct 2013 07:15:03 -0500
-From: Timur Tabi <timur@tabi.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Firefox/24.0 SeaMonkey/2.21
-MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
-        lgirdwood@gmail.com, broonie@kernel.org
-CC: r64188@freescale.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob@landley.net, linux@arm.linux.org.uk, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, fabio.estevam@freescale.com,
-        LW@KARO-electronics.de, oskar@scara.com, shawn.guo@linaro.org,
-        b42378@freescale.com, b18965@freescale.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCHv1 1/8] ALSA: Add SAI SoC Digital Audio Interface driver.
-References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com> <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754870Ab3JQMTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:19:22 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48759 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753574Ab3JQMTU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 08:19:20 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v3 0/2] EFI earlyprintk support
+Date: Thu, 17 Oct 2013 13:19:13 +0100
+Message-Id: <1382012355-8846-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xiubo Li wrote:
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	sai->base = devm_ioremap_resource(&pdev->dev, res);
+From: Matt Fleming <matt.fleming@intel.com>
 
-Why not use of_iomap()?
+These two patches cleanup the #include <linux/efi.h> duplication and get
+rid of the #ifdef CONFIG_X86 in efi.h, and add support for
+earlyprintk=efi, which is the only way users can debug early boot
+crashes without special hardware.
+
+Matt Fleming (2):
+  efi: Add asm-generic/efi.h for non-x86
+  x86/efi: Add EFI framebuffer earlyprintk support
+
+ Documentation/kernel-parameters.txt  |   8 +-
+ arch/ia64/include/asm/efi.h          |   6 ++
+ arch/x86/Kconfig.debug               |   9 ++
+ arch/x86/boot/compressed/eboot.c     |   1 -
+ arch/x86/include/asm/efi.h           |  12 +++
+ arch/x86/kernel/early_printk.c       |   6 ++
+ arch/x86/kernel/setup.c              |   1 -
+ arch/x86/platform/efi/Makefile       |   1 +
+ arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c          |   1 -
+ arch/x86/platform/efi/efi_32.c       |   1 -
+ arch/x86/platform/efi/efi_64.c       |   1 -
+ arch/x86/platform/uv/bios_uv.c       |   1 -
+ include/asm-generic/efi.h            |  17 ++++
+ include/linux/efi.h                  |  31 +-----
+ 15 files changed, 249 insertions(+), 38 deletions(-)
+ create mode 100644 arch/ia64/include/asm/efi.h
+ create mode 100644 arch/x86/platform/efi/early_printk.c
+ create mode 100644 include/asm-generic/efi.h
+
+-- 
+1.8.1.4
+
