@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab3JQIci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 04:32:38 -0400
-Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:48568 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752810Ab3JQIcf (ORCPT
+	id S1753354Ab3JQIe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 04:34:26 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:48282 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3JQIeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 04:32:35 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:1978:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3871:4250:4321:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none
-X-HE-Tag: can02_6d8c30f44155a
-X-Filterd-Recvd-Size: 1824
-Message-ID: <1381998750.22110.101.camel@joe-AO722>
-Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-From: Joe Perches <joe@perches.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
-        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Date: Thu, 17 Oct 2013 01:32:30 -0700
-In-Reply-To: <20131017073824.GC14946@gchen.bj.intel.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	 <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
-	 <1381978749.22110.76.camel@joe-AO722>
-	 <20131017063059.GB14946@gchen.bj.intel.com>
-	 <1381993136.22110.95.camel@joe-AO722>
-	 <20131017073824.GC14946@gchen.bj.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Oct 2013 04:34:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381961999-8187-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1381961999-8187-1-git-send-email-alexandre.belloni@free-electrons.com>
+Date: Thu, 17 Oct 2013 10:34:22 +0200
+Message-ID: <CAPDyKFpWq+cT5nrqifrt+bNR3acT1rpdyxgfjY-63MCfEC18DA@mail.gmail.com>
+Subject: Re: [PATCHv2] mmc: atmel-mci: add vmmc-supply support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-17 at 03:38 -0400, Chen Gong wrote:
-> the point is we can use GENMASK like GENMASK(end_bit, start_bit) but
-> we don't know the value of end_bit/start_bit at compile-time.
+On 17 October 2013 00:19, Alexandre Belloni
+<alexandre.belloni@free-electrons.com> wrote:
+> Other MMC hosts handle a regulator named vmmc-supply that allows to power the
+> MMC card or SDIO device before communicating on the bus.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>
+> Changes in v2:
+>  - use mmc_regulator_get_supply instead of devm_regulator_get
+>
+>  drivers/mmc/host/atmel-mci.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+> index 69e438e..4ea5333 100644
+> --- a/drivers/mmc/host/atmel-mci.c
+> +++ b/drivers/mmc/host/atmel-mci.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/of_device.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+>  #include <linux/scatterlist.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/slab.h>
+> @@ -2198,6 +2199,14 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+>         host->slot[id] = slot;
+>         mmc_add_host(mmc);
+>
+> +       mmc_regulator_get_supply(mmc);
+> +       if (!IS_ERR(mmc->supply.vmmc)) {
+> +               int ret = regulator_enable(mmc->supply.vmmc);
 
-True.
+You should not enable the regulator here, instead handle that from the
+.set_ios function. This complete code chunk must also be moved prior
+to mmc_add_host above.
 
-The BUILD_BUG_ON idea is just to avoid people using
-	GENMASK(1, 2)
-instead of
-	GENMASK(2, 1)
+When enabling/disabling the regulator from the .set_ios, I suppose you
+want to use mmc_regulator_set_ocr API instead.
 
-#define GENMASK(h, l)						\
-({								\
-	BUILD_BUG_ON(__builtin_constant_p(l) &&			\
-		     __builtin_constant_p(h) &&			\
-		     (l) > (h));				\
-	(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l));		\
-})
+Kind regards
+Ulf Hansson
 
-
+> +               if (ret)
+> +                       dev_err(&mmc->class_dev,
+> +                               "failed to enable regulator: %d\n", ret);
+> +       }
+> +
+>         if (gpio_is_valid(slot->detect_pin)) {
+>                 int ret;
+>
+> --
+> 1.8.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
