@@ -1,88 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3JQKev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 06:34:51 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:36342 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3JQKet (ORCPT
+	id S1754231Ab3JQKfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:35:36 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:63203 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab3JQKff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:34:49 -0400
-X-AuditID: cbfec373-b7f6d6d00000330d-15-525fbd4980fb
-Date: Thu, 17 Oct 2013 07:34:43 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Aristeu Rozanski Filho <arozansk@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-Message-id: <20131017073443.675e97f2@samsung.com>
-In-reply-to: <3908561D78D1C84285E8C5FCA982C28F31D31C65@ORSMSX106.amr.corp.intel.com>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
- <20131015165435.GA2777@naverao1-tp.ibm.com> <20131015170039.GF7908@pd.tnic>
- <525D7BCD.7080303@linux.vnet.ibm.com>
- <20131015214346.68718bcd.m.chehab@samsung.com>
- <20131016091640.GA13608@pd.tnic>
- <20131016073539.5a48f65e.m.chehab@samsung.com>
- <20131016104221.GC13608@pd.tnic> <20131016085558.19fe143a@samsung.com>
- <3908561D78D1C84285E8C5FCA982C28F31D31C65@ORSMSX106.amr.corp.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/hEF3PvfFBBosnsVm0nfjNZvF5wz82
-	i1vvbC2W7+tntLi8aw6bxf2Wp+wWZw4dYrR4c+EeiwOHx/fWPhaPxXteMnnMOxno8eDQZhaP
-	9/uusnl83iQXwBbFZZOSmpNZllqkb5fAlbH2XztTwTO+irkP3jE3MG7m7mLk5JAQMJF4fH0F
-	C4QtJnHh3nq2LkYuDiGBJYwS03ufMnUxcgA5PUwSU9NBalgEVCUmTGtnBbHZBIwkXjW2gNki
-	AmoSlxY/YAbpZRa4ySRx+vEdRpCEsICXxKmWO0wgNq+AocSvGzvZQWxOgTCJ9+tWMEIsm84i
-	8fHdWjaQZRICThJbp/pC1AtK/Jh8D+w4ZgEtic3bmlghbHmJzWveMk9gFJiFpGwWkrJZSMoW
-	MDKvYhQtLU4uKE5KzzXSK07MLS7NS9dLzs/dxAgJ+uIdjC82WB1iFOBgVOLhnbE8LkiINbGs
-	uDL3EKMEB7OSCO+W7fFBQrwpiZVVqUX58UWlOanFhxiZODilGhjVj6jxTv5hE/Mvzuaky5rT
-	EioaX3fMv9W0hudZp5umeeivi5NmJHw6o/j/NOsnNl++5czbpW5zurfeiVjyJvzT8Tcv/0W+
-	6y1eGSPlPL1E/nvA3nlaZWLRUxo2v6jYukJTksdiIfOV/XX/hbNWLnkTJhF07liv31KzFetl
-	7uxVy7ywittHYzq3EktxRqKhFnNRcSIAIIIb41gCAAA=
+	Thu, 17 Oct 2013 06:35:35 -0400
+Message-ID: <525FBD71.7000608@redhat.com>
+Date: Thu, 17 Oct 2013 12:35:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Jones <drjones@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/7] static_key: flush rate limit timer on rmmod
+References: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com> <1382004631-25895-2-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1382004631-25895-2-git-send-email-rkrcmar@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 16 Oct 2013 20:47:05 +0000
-"Luck, Tony" <tony.luck@intel.com> escreveu:
+Il 17/10/2013 12:10, Radim Krčmář ha scritto:
+> Fix a bug when we free module memory while timer is pending by marking
+> deferred static keys and flushing the timer on module unload.
+> 
+> Also make static_key_rate_limit() useable more than once.
+> 
+> Reproducer: (host crasher)
+>   modprobe kvm_intel
+>   (sleep 1; echo quit) \
+>     | qemu-kvm -kernel /dev/null -monitor stdio &
+>   sleep 0.5
+>   until modprobe -rv kvm_intel 2>/dev/null; do true; done
+>   modprobe -v kvm_intel
+> 
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+> Very hacky; I've already queued generalizing ratelimit and applying it
+> here, but there is still a lot to do on static keys ...
+> 
+>  include/linux/jump_label.h |  1 +
+>  kernel/jump_label.c        | 17 ++++++++++++++++-
+>  2 files changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index a507907..848bd15 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -58,6 +58,7 @@ struct static_key {
+>  #ifdef CONFIG_MODULES
+>  	struct static_key_mod *next;
+>  #endif
+> +	atomic_t deferred;
+>  };
+>  
+>  # include <asm/jump_label.h>
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index 297a924..7018042 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -116,8 +116,9 @@ EXPORT_SYMBOL_GPL(static_key_slow_dec_deferred);
+>  void jump_label_rate_limit(struct static_key_deferred *key,
+>  		unsigned long rl)
+>  {
+> +	if (!atomic_xchg(&key->key.deferred, 1))
+> +		INIT_DELAYED_WORK(&key->work, jump_label_update_timeout);
 
-> > Also, I suspect that, if an error happens to affect more than one DIMM
-> > (e. g. part of the location is not available for a given error),
-> > that the DIMM label will also not be properly shown.
-> 
-> There are a couple of cases here:
-> 
-> 1) There are a number of DIMMs behind some flaky h/w that introduces errors
-> that are apparently blamed onto each of those DIMMs.
-> 
->   All we can do here is statistical correlations ... each error is reported independently,
->   it is up to some entity to notice the higher level topology connection. There is enough
->   information in the UEFI error record to do that (assuming that BIOS filled out the
->   necessary fields).
-> 
-> 2) There is a single reported error that spans more than one DIMM.
-> 
->   This can happen with a UC error in a pair of lock-step DIMMs.  Since the error is UC
->   we know that two (or more) bits are bad.  But we have no way to tell whether the
->   bad bits came from the same DIMM, or one bit from each (because we don't know
->   which bits are bad - if we knew that, we could fix them :-)   The eMCA case should
->   log two subsections in this case - one for each of the lockstep DIMMs involved. A user
->   seeing this will should probably just replace both DIMMs to be safe.  If they wanted to
->   diagnose further they should swap DIMMs around so this pair are no longer lockstepped
->   and see if they start seeing correctable errors from each of the split pair - or if the UC
->   errors move with one or the other of the DIMMs
+Can it actually happen that jump_label_rate_limit is called multiple
+times?  If so, this hunk alone would be a separate bugfix.  I don't
+think all the concurrency that you're protecting against can actually
+happen, but in any case I'd just take the jump_label_lock() instead of
+using atomics.
 
-There's also a third case: mirrored memories.
+It's also not necessary to use a new field, since you can just check
+key->timeout.
 
-As a matter of coherency with hw-based reports, for cases (2) and (3),
-the error tracing should be displaying both memories that are affected
-by a UC error (or a CE error on a mirrored address space).
+All this gives something like this for static_key_rate_limit_flush:
 
-Regards,
-Mauro
+        if (key->timeout) {
+		jump_label_lock();
+		if (key->enabled) {
+			jump_label_unlock();
+			flush_delayed_work(&dkey->work);
+		} else
+			jump_label_unlock();
+	}
+
+Paolo
+
+>  	key->timeout = rl;
+> -	INIT_DELAYED_WORK(&key->work, jump_label_update_timeout);
+>  }
+>  EXPORT_SYMBOL_GPL(jump_label_rate_limit);
+>  
+> @@ -185,6 +186,14 @@ static enum jump_label_type jump_label_type(struct static_key *key)
+>  	return JUMP_LABEL_DISABLE;
+>  }
+>  
+> +static void static_key_rate_limit_flush(struct static_key *key)
+> +{
+> +	struct static_key_deferred *dkey =
+> +		container_of(key, struct static_key_deferred, key);
+> +	if (atomic_read(&key->deferred))
+> +		flush_delayed_work(&dkey->work);
+> +}
+> +
+>  void __init jump_label_init(void)
+>  {
+>  	struct jump_entry *iter_start = __start___jump_table;
+> @@ -334,6 +343,12 @@ static void jump_label_del_module(struct module *mod)
+>  
+>  		key = (struct static_key *)(unsigned long)iter->key;
+>  
+> +		/* We could also check if the static_key is used in its
+> +		 * defining module and skip this flush then.
+> +		 * (Rewrite of ratelimit in planned, so we don't care much)
+> +		 */
+> +		static_key_rate_limit_flush(key);
+> +
+>  		if (__module_address(iter->key) == mod)
+>  			continue;
+>  
+> 
+
