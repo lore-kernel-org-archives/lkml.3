@@ -1,44 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758308Ab3JQRu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:50:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44057 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab3JQRu2 (ORCPT
+	id S1758482Ab3JQRui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:50:38 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51518 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758329Ab3JQRuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:50:28 -0400
-Date: Thu, 17 Oct 2013 10:50:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd
-Message-Id: <20131017105026.451ce2782d573c0b7dfbbc5d@linux-foundation.org>
-In-Reply-To: <20131017160726.GJ28963@localhost.localdomain>
-References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
-	<20131017135509.GB28963@localhost.localdomain>
-	<00000141c704b634-d1e47864-686f-40a9-b42e-cd5416dec367-000000@email.amazonses.com>
-	<20131017160726.GJ28963@localhost.localdomain>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Oct 2013 13:50:35 -0400
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [PATCHv6] drivers: power: Detect device suspend/resume lockup and log event in pstore.
+Date: Thu, 17 Oct 2013 10:48:46 -0700
+Message-Id: <1382032126-28477-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013 18:07:28 +0200 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+From: Benoit Goby <benoit@android.com>
 
-> Couldn't we instead make kthread children (those created with kthread_create()) to inherit
-> kthread initial affinity? Currently kthread's children have cpu_all_mask. We could change
-> that behaviour. This way the initial kthread affinity could be inherited all along.
+Rather than hard-lock the kernel, dump the suspend/resume thread stack and
+panic() to capture a message in pstore when a driver takes too long to
+suspend/resume. Default suspend/resume watchdog timeout is set to 12
+seconds to be longer than the usbhid 10 second timeout, but could be
+changed at compile time.
 
-I'm wondering if it's clean/logical to tie usermodehelper affinity to
-kthreadd affinity at all.  It's certainly convenient, but they're
-distinct concepts.  What is the reason to not have a separate control
-for usermodehelper cpus-allowed?
+Exclude from the watchdog the time spent waiting for children that
+are resumed asynchronously and time every device, whether or not they
+resumed synchronously.
+
+This patch is targeted for mobile devices where a suspend/resume lockup
+could cause a system reboot. Information about failing device can be
+retrieved in subsequent boot session by mounting pstore and inspecting
+the log. Laptops with EFI-enabled pstore could also benefit from
+this feature.
+
+The hardware watchdog timer is likely suspended during this time and
+couldn't be relied upon. The soft-lockup detector would eventually tell
+that tasks are not scheduled, but would provide little context as to why.
+The patch hence uses system timer and assumes it is still active while the
+devices are suspended/resumed.
+
+This feature can be enabled/disabled during kernel configuration.
+
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Todd Poynor <toddpoynor@google.com>
+Cc: San Mehat <san@google.com>
+Cc: Benoit Goby <benoit@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Original-author: San Mehat <san@google.com>
+Signed-off-by: Benoit Goby <benoit@android.com>
+[zoran.markovic@linaro.org: Changed printk(KERN_EMERG,...) to pr_emerg(...),
+tweaked commit message. Moved call to dpm_wd_set() before device_lock() in
+device_resume(). Minor changes to add compile-time inclusion of the feature.
+Renamed 'dpm_wd...' to 'dpm_watchdog...'. Fixed compile errors/warnings for
+x86_64 and s390.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ drivers/base/power/main.c |   72 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/Kconfig      |   16 ++++++++++
+ 2 files changed, 88 insertions(+)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 9f098a8..f2633da 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -30,6 +30,8 @@
+ #include <linux/suspend.h>
+ #include <trace/events/power.h>
+ #include <linux/cpuidle.h>
++#include <linux/timer.h>
++
+ #include "../base.h"
+ #include "power.h"
+ 
+@@ -390,6 +392,70 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 	return error;
+ }
+ 
++#ifdef CONFIG_DPM_WATCHDOG
++struct dpm_watchdog {
++	struct device		*dev;
++	struct task_struct	*tsk;
++	struct timer_list	timer;
++};
++
++#define DECLARE_DPM_WATCHDOG_ON_STACK(wd) \
++	struct dpm_watchdog wd
++
++/**
++ * dpm_watchdog_handler - Driver suspend / resume watchdog handler.
++ *
++ * Called when a driver has timed out suspending or resuming.
++ * There's not much we can do here to recover so panic() to
++ * capture a crash-dump in pstore.
++ */
++static void dpm_watchdog_handler(unsigned long data)
++{
++	struct dpm_watchdog *wd = (void *)data;
++
++	dev_emerg(wd->dev, "**** DPM device timeout ****\n");
++	show_stack(wd->tsk, NULL);
++	panic("%s %s: unrecoverable failure\n",
++		dev_driver_string(wd->dev), dev_name(wd->dev));
++}
++
++/**
++ * dpm_watchdog_set - Enable pm watchdog for given device.
++ * @wd: Watchdog. Must be allocated on the stack.
++ * @dev: Device to handle.
++ */
++static void dpm_watchdog_set(struct dpm_watchdog *wd, struct device *dev)
++{
++	struct timer_list *timer = &wd->timer;
++
++	wd->dev = dev;
++	wd->tsk = current;
++
++	init_timer_on_stack(timer);
++	/* use same timeout value for both suspend and resume */
++	timer->expires = jiffies + HZ * CONFIG_DPM_WATCHDOG_TIMEOUT;
++	timer->function = dpm_watchdog_handler;
++	timer->data = (unsigned long)wd;
++	add_timer(timer);
++}
++
++/**
++ * dpm_watchdog_clear - Disable suspend/resume watchdog.
++ * @wd: Watchdog to disable.
++ */
++static void dpm_watchdog_clear(struct dpm_watchdog *wd)
++{
++	struct timer_list *timer = &wd->timer;
++
++	del_timer_sync(timer);
++	destroy_timer_on_stack(timer);
++}
++#else
++#define DECLARE_DPM_WATCHDOG_ON_STACK(wd)
++#define dpm_watchdog_set(x, y)
++#define dpm_watchdog_clear(x)
++#endif
++
+ /*------------------------- Resume routines -------------------------*/
+ 
+ /**
+@@ -576,6 +642,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
+ 	int error = 0;
++	DECLARE_DPM_WATCHDOG_ON_STACK(wd);
+ 
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+@@ -584,6 +651,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 		goto Complete;
+ 
+ 	dpm_wait(dev->parent, async);
++	dpm_watchdog_set(&wd, dev);
+ 	device_lock(dev);
+ 
+ 	/*
+@@ -642,6 +710,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 
+  Unlock:
+ 	device_unlock(dev);
++	dpm_watchdog_clear(&wd);
+ 
+  Complete:
+ 	complete_all(&dev->power.completion);
+@@ -1060,6 +1129,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
+ 	int error = 0;
++	DECLARE_DPM_WATCHDOG_ON_STACK(wd);
+ 
+ 	dpm_wait_for_children(dev, async);
+ 
+@@ -1083,6 +1153,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	if (dev->power.syscore)
+ 		goto Complete;
+ 
++	dpm_watchdog_set(&wd, dev);
+ 	device_lock(dev);
+ 
+ 	if (dev->pm_domain) {
+@@ -1139,6 +1210,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	}
+ 
+ 	device_unlock(dev);
++	dpm_watchdog_clear(&wd);
+ 
+  Complete:
+ 	complete_all(&dev->power.completion);
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index d444c4e..2fac9cc 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -178,6 +178,22 @@ config PM_SLEEP_DEBUG
+ 	def_bool y
+ 	depends on PM_DEBUG && PM_SLEEP
+ 
++config DPM_WATCHDOG
++	bool "Device suspend/resume watchdog"
++	depends on PM_DEBUG && PSTORE
++	---help---
++	  Sets up a watchdog timer to capture drivers that are
++	  locked up attempting to suspend/resume a device.
++	  A detected lockup causes system panic with message
++	  captured in pstore device for inspection in subsequent
++	  boot session.
++
++config DPM_WATCHDOG_TIMEOUT
++	int "Watchdog timeout in seconds"
++	range 1 120
++	default 12
++	depends on DPM_WATCHDOG
++
+ config PM_TRACE
+ 	bool
+ 	help
+-- 
+1.7.9.5
+
