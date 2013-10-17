@@ -1,206 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab3JQQiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:38:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40937 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab3JQQiu (ORCPT
+	id S1758020Ab3JQQjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:39:08 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:40077 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab3JQQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:38:50 -0400
-Date: Thu, 17 Oct 2013 11:38:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 1/7] usb: dwc3: get "usb_phy" only if the platform
- indicates the presence of PHY's
-Message-ID: <20131017163828.GH11611@gimli>
-Reply-To: <balbi@ti.com>
-References: <1381866857-3861-1-git-send-email-kishon@ti.com>
- <1381866857-3861-2-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pMCBjikF2xGw87uL"
-Content-Disposition: inline
-In-Reply-To: <1381866857-3861-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Oct 2013 12:39:04 -0400
+From: Fan Rong <cinifr@gmail.com>
+To: coosty@163.com, maxime.ripard@free-electrons.com,
+        daniel.lezcano@linaro.org, linux@arm.linux.org.uk, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-sunxi@googlegroups.com
+Cc: Fan Rong <cinifr@gmail.com>
+Subject: [Add SMP support for Allwinner A20: PATCH V5 1/3] Add smp support for Allwinner A20(sunxi 7i).
+Date: Fri, 18 Oct 2013 00:37:05 +0800
+Message-Id: <1382027827-10080-2-git-send-email-cinifr@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1382027827-10080-1-git-send-email-cinifr@gmail.com>
+References: <1382027827-10080-1-git-send-email-cinifr@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pMCBjikF2xGw87uL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds SMP support for the Allwinner A20 SoC. This SoC uses an IP to, among other things, handle the CPU-related configuration, like the power clamp, the boot address of the secondary CPUS, etc. We thus need to map this IP during the prepare_cpu SMP operation, before bringing up the secondary CPU in the secondary_startup operation.
 
-Hi,
+Signed-off-by: Fan Rong <cinifr@gmail.com>
+---
+ arch/arm/mach-sunxi/Makefile  |   2 +
+ arch/arm/mach-sunxi/headsmp.S |  18 +++++++
+ arch/arm/mach-sunxi/platsmp.c | 114 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-sunxi/sunxi.c   |   3 ++
+ 4 files changed, 137 insertions(+)
+ create mode 100644 arch/arm/mach-sunxi/headsmp.S
+ create mode 100644 arch/arm/mach-sunxi/platsmp.c
+ mode change 100644 => 100755 arch/arm/mach-sunxi/sunxi.c
 
-On Wed, Oct 16, 2013 at 01:24:11AM +0530, Kishon Vijay Abraham I wrote:
-> There can be systems which does not have a external usb_phy, so get
-> usb_phy only if dt data indicates the presence of PHY in the case of dt b=
-oot or
-> if platform_data indicates the presence of PHY. Also remove checking if
-> return value is -ENXIO since it's now changed to always enable usb_phy la=
-yer.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+diff --git a/arch/arm/mach-sunxi/Makefile b/arch/arm/mach-sunxi/Makefile
+index 93bebfc..d7f1ef4 100644
+--- a/arch/arm/mach-sunxi/Makefile
++++ b/arch/arm/mach-sunxi/Makefile
+@@ -1 +1,3 @@
+ obj-$(CONFIG_ARCH_SUNXI) += sunxi.o
++obj-$(CONFIG_ARCH_SUNXI) += platsmp.o
++obj-$(CONFIG_ARCH_SUNXI) += headsmp.o
+diff --git a/arch/arm/mach-sunxi/headsmp.S b/arch/arm/mach-sunxi/headsmp.S
+new file mode 100644
+index 0000000..48c9d33
+--- /dev/null
++++ b/arch/arm/mach-sunxi/headsmp.S
+@@ -0,0 +1,18 @@
++/*
++ * SMP support for A20
++ *
++ *  Copyright (C) 2013 Fan Rong <cinifr@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/linkage.h>
++#include <linux/init.h>
++
++.section ".text.head", "ax"
++ENTRY(sun7i_secondary_startup)
++	msr cpsr_fsxc,#0xd3
++	b secondary_startup
++ENDPROC(sun7i_secondary_startup)
+diff --git a/arch/arm/mach-sunxi/platsmp.c b/arch/arm/mach-sunxi/platsmp.c
+new file mode 100644
+index 0000000..fa5adde
+--- /dev/null
++++ b/arch/arm/mach-sunxi/platsmp.c
+@@ -0,0 +1,114 @@
++/*
++ *  linux/arch/arm/mach-sun7i/platsmp.c
++ *
++ *  Copyright (C) 2013 Fan Rong <cinifr@gmail.com>
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/smp.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/smp.h>
++
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++
++/*
++ * CPU Configure module support
++ * 1: Software reset for smp cpus
++ * 2: Configure for smp cpus including boot.
++ * 3: Three 64-bit idle counters and two 64-bit common counters
++ * it is needed for smp cpus
++ */
++void __iomem *sun7i_cc_base; /*CPU Configure Base*/
++extern void sun7i_secondary_startup(void);
++
++/*
++ * CPUCFG
++ */
++#define SUN7I_CPUCFG_BOOTADDR	0x01a4
++
++#define SUN7I_CPUCFG_GENCTL	0x0184
++#define SUN7I_CPUCFG_DBGCTL0	0x01e0
++#define SUN7I_CPUCFG_DBGCTL1	0x01e4
++
++#define SUN7I_CPU1_PWR_CLAMP	0x01b0
++#define SUN7I_CPU1_PWROFF_REG	0x01b4
++#define SUN7I_CPUX_RESET_CTL(x)	(0x40 + (x)*0x40)
++
++static struct of_device_id sun7i_cc_ids[] = {
++	{ .compatible = "allwinner,sun7i-a20-cpuconfig"},
++	{ /*sentinel*/ }
++};
++
++static int sun7i_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	long paddr;
++	uint32_t pwr_reg;
++	uint32_t j = 0xff << 1;
++	if (!sun7i_cc_base) {
++		pr_debug("error map cpu configure\n");
++		return -ENOSYS;
++	}
++	/* Set boot addr */
++	paddr = virt_to_phys(sun7i_secondary_startup);
++	writel(paddr, sun7i_cc_base + SUN7I_CPUCFG_BOOTADDR);
++
++	/* Assert cpu core reset */
++	writel(0, sun7i_cc_base + SUN7I_CPUX_RESET_CTL(cpu));
++
++	/* Ensure CPU reset also invalidates L1 caches */
++	pwr_reg = readl(sun7i_cc_base + SUN7I_CPUCFG_GENCTL);
++	pwr_reg &= ~BIT(cpu);
++	writel(pwr_reg, sun7i_cc_base + SUN7I_CPUCFG_GENCTL);
++
++	/* DBGPWRDUP hold low */
++	pwr_reg = readl(sun7i_cc_base + SUN7I_CPUCFG_DBGCTL1);
++	pwr_reg &= ~BIT(cpu);
++	writel(pwr_reg, sun7i_cc_base + SUN7I_CPUCFG_DBGCTL1);
++
++	/* Ramp up power to CPU1 */
++	do {
++		writel(j, sun7i_cc_base + SUN7I_CPU1_PWR_CLAMP);
++		j = j >> 1;
++	} while (j != 0);
++
++	mdelay(10);
++
++	pwr_reg = readl(sun7i_cc_base + SUN7I_CPU1_PWROFF_REG);
++	pwr_reg &= ~1;
++	writel(pwr_reg, sun7i_cc_base + SUN7I_CPU1_PWROFF_REG);
++	mdelay(1);
++
++	/* Release CPU reset */
++	writel(3, sun7i_cc_base + SUN7I_CPUX_RESET_CTL(cpu));
++
++	/* Unlock CPU */
++	pwr_reg = readl(sun7i_cc_base + SUN7I_CPUCFG_DBGCTL1);
++	pwr_reg |= BIT(cpu);
++	writel(pwr_reg, sun7i_cc_base + SUN7I_CPUCFG_DBGCTL1);
++
++	return 0;
++}
++
++static void __init sun7i_init_cpuconfig_map(unsigned int max_cpus)
++{
++	struct device_node *np;
++	np = of_find_matching_node(NULL, sun7i_cc_ids);
++	if (WARN(!np, "unable to setup cup configure"))
++		return;
++	sun7i_cc_base = of_iomap(np, 0);
++	if (WARN(!sun7i_cc_base, "failed to map cup configure base address"))
++		return;
++}
++
++struct smp_operations sun7i_smp_ops __initdata = {
++	.smp_boot_secondary = sun7i_boot_secondary,
++	.smp_prepare_cpus = sun7i_init_cpuconfig_map,
++};
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+old mode 100644
+new mode 100755
+index f184f6c..545269d
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -26,6 +26,8 @@
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ 
++extern struct smp_operations sun7i_smp_ops;
++
+ #define SUN4I_WATCHDOG_CTRL_REG		0x00
+ #define SUN4I_WATCHDOG_CTRL_RESTART		BIT(0)
+ #define SUN4I_WATCHDOG_MODE_REG		0x04
+@@ -155,6 +157,7 @@ static const char * const sun7i_board_dt_compat[] = {
+ };
+ 
+ DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
++	.smp	= smp_ops(sun7i_smp_ops),
+ 	.init_machine	= sunxi_dt_init,
+ 	.init_time	= sunxi_timer_init,
+ 	.dt_compat	= sun7i_board_dt_compat,
+-- 
+1.8.1.2
 
-I'm fine with this patch, but one comment below:
-
-> @@ -387,16 +388,49 @@ static int dwc3_probe(struct platform_device *pdev)
->  	if (node) {
->  		dwc->maximum_speed =3D of_usb_get_maximum_speed(node);
-> =20
-> -		dwc->usb2_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-> -		dwc->usb3_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
-> +		count =3D of_count_phandle_with_args(node, "usb-phy", NULL);
-> +		switch (count) {
-> +		case 2:
-> +			dwc->usb3_phy =3D devm_usb_get_phy_by_phandle(dev,
-> +				"usb-phy", 1);
-> +			if (IS_ERR(dwc->usb3_phy)) {
-> +				dev_err(dev, "usb3 phy not found\n");
-> +				return PTR_ERR(dwc->usb3_phy);
-> +			}
-> +		case 1:
-> +			dwc->usb2_phy =3D devm_usb_get_phy_by_phandle(dev,
-> +				"usb-phy", 0);
-> +			if (IS_ERR(dwc->usb2_phy)) {
-> +				dev_err(dev, "usb2 phy not found\n");
-> +				return PTR_ERR(dwc->usb2_phy);
-> +			}
-> +			break;
-> +		default:
-> +			dev_err(dev, "usb phy nodes not configured\n");
-> +		}
-> =20
->  		dwc->needs_fifo_resize =3D of_property_read_bool(node, "tx-fifo-resize=
-");
->  		dwc->dr_mode =3D of_usb_get_dr_mode(node);
->  	} else if (pdata) {
->  		dwc->maximum_speed =3D pdata->maximum_speed;
-> =20
-> -		dwc->usb2_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -		dwc->usb3_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
-> +		if (pdata->usb2_phy) {
-> +			dwc->usb2_phy =3D devm_usb_get_phy(dev,
-> +				USB_PHY_TYPE_USB2);
-> +			if (IS_ERR(dwc->usb2_phy)) {
-> +				dev_err(dev, "usb2 phy not found\n");
-> +				return PTR_ERR(dwc->usb2_phy);
-> +			}
-> +		}
-> +
-> +		if (pdata->usb3_phy) {
-> +			dwc->usb3_phy =3D devm_usb_get_phy(dev,
-> +				USB_PHY_TYPE_USB3);
-> +			if (IS_ERR(dwc->usb3_phy)) {
-> +				dev_err(dev, "usb3 phy not found\n");
-> +				return PTR_ERR(dwc->usb3_phy);
-> +			}
-> +		}
-> =20
->  		dwc->needs_fifo_resize =3D pdata->tx_fifo_resize;
->  		dwc->dr_mode =3D pdata->dr_mode;
-> @@ -409,36 +443,6 @@ static int dwc3_probe(struct platform_device *pdev)
->  	if (dwc->maximum_speed =3D=3D USB_SPEED_UNKNOWN)
->  		dwc->maximum_speed =3D USB_SPEED_SUPER;
-> =20
-> -	if (IS_ERR(dwc->usb2_phy)) {
-> -		ret =3D PTR_ERR(dwc->usb2_phy);
-> -
-> -		/*
-> -		 * if -ENXIO is returned, it means PHY layer wasn't
-> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> -		 * in that case, since no PHY driver will ever probe.
-> -		 */
-> -		if (ret =3D=3D -ENXIO)
-> -			return ret;
-> -
-> -		dev_err(dev, "no usb2 phy configured\n");
-> -		return -EPROBE_DEFER;
-> -	}
-> -
-> -	if (IS_ERR(dwc->usb3_phy)) {
-> -		ret =3D PTR_ERR(dwc->usb3_phy);
-> -
-> -		/*
-> -		 * if -ENXIO is returned, it means PHY layer wasn't
-> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> -		 * in that case, since no PHY driver will ever probe.
-> -		 */
-> -		if (ret =3D=3D -ENXIO)
-> -			return ret;
-> -
-> -		dev_err(dev, "no usb3 phy configured\n");
-> -		return -EPROBE_DEFER;
-> -	}
-
-the idea for doing the error checking here was actually to avoid
-duplicating it in all previous cases, as you did. Please keep the error
-checking here and you're good to go.
-
-> -
->  	dwc->xhci_resources[0].start =3D res->start;
->  	dwc->xhci_resources[0].end =3D dwc->xhci_resources[0].start +
->  					DWC3_XHCI_REGS_END;
-> diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform=
-_data.h
-> index 7db34f0..49ffa6d 100644
-> --- a/drivers/usb/dwc3/platform_data.h
-> +++ b/drivers/usb/dwc3/platform_data.h
-> @@ -24,4 +24,6 @@ struct dwc3_platform_data {
->  	enum usb_device_speed maximum_speed;
->  	enum usb_dr_mode dr_mode;
->  	bool tx_fifo_resize;
-> +	bool usb2_phy;
-> +	bool usb3_phy;
-
-This would look better as a quirks flag, then we could:
-
-unsigned long quirks;
-#define DWC3_QUIRK_NO_USB3_PHY	BIT(0)
-#define DWC3_QUIRK_NO_USB2_PHY	BIT(1)
-
-=2E..
-
-if (!test_bit(DWC3_QUIRK_NO_USB3_PHY), &dwc->quirks &&
-	dwc->has_usb3_phy) {
-	grab_usb3_phy();
-}
-
-cheers
-
---=20
-balbi
-
---pMCBjikF2xGw87uL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSYBKDAAoJEIaOsuA1yqREpSAQAK58qSjzBkKsgfkFlv8ryg1E
-39FEmmRPE0Md5D62NrdBZsG1Rxg6eNkw5rMOWa8V5/6WG2khKQSPXyFpxIcIZZrv
-yEDWNnUg80PSPqThorGPvxhLrf01aOSEs+fXBM1/oXG3Bkb4K59f7xWIMCITfdEu
-55ZF4/sTKA6QrHKTDhigrbpXiTunSqKUaOhoUVHYvHcl2pfbx9V46vXS3Gd2azh8
-elRr3QnKuDNGbpMCCco4G69+81uXFKCrHVbQ1GHrT0CtnEYWqpWqW1ryvknqlrgy
-IQdZPLWYffudNq1nohbADxwhjQLfsMdubfW5Ai292Z8bPiGW/MCLOlXIHIJ2yJWR
-CSf/PcttvHgIISABjzvRgBF0grS8U5+bDwCeZOysihWvbcUpcwYwFcx0ZPUo4GoY
-3AXcY21FD6k82V/U+1ojRWq1++Q75j3SqzneIMsDay/W25nqO3Zi9Xz+lImdLgNm
-F8snr0kVyYD8epH6oWKLP6uQH+V/vVCYqP2DGSzW6n6NIDfva1zj5gelFWsTgvgL
-McetN7YNlTgB/YiuqiXXpK8oq9uRaUq/FiqWXnNsxFEBqcCIysVbgWZDndrJ8OXx
-5pmFhEc8VOaxbH3+Lv7cbNk4Sg7mnHyBKPZcvr1FSxsYztJFE5W7YYcMkpkcU2+Y
-Hx5OfP23gsQqmBX/jzaW
-=286k
------END PGP SIGNATURE-----
-
---pMCBjikF2xGw87uL--
