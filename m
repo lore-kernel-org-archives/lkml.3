@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3JQN7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:59:55 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:47142 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756499Ab3JQN7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:59:53 -0400
-Date: Thu, 17 Oct 2013 15:59:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
-Message-ID: <20131017135941.GC28963@localhost.localdomain>
-References: <20131015163906.342d8ffa@gandalf.local.home>
- <20131016114036.GB12773@localhost.localdomain>
- <20131016084518.44eaf61a@gandalf.local.home>
- <20131016130856.GE12773@localhost.localdomain>
- <20131016193632.GH4553@linux.vnet.ibm.com>
+	id S1756569Ab3JQOAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:00:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478Ab3JQOAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 10:00:43 -0400
+Date: Thu, 17 Oct 2013 15:53:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: epoll oops.
+Message-ID: <20131017135339.GA29182@redhat.com>
+References: <20131014154627.GA9525@redhat.com> <CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com> <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com> <20131015154838.GA32271@redhat.com> <20131016223922.GA18383@dcvr.yhbt.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131016193632.GH4553@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131016223922.GA18383@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 12:36:32PM -0700, Paul E. McKenney wrote:
-> On Wed, Oct 16, 2013 at 03:08:57PM +0200, Frederic Weisbecker wrote:
-> > On Wed, Oct 16, 2013 at 08:45:18AM -0400, Steven Rostedt wrote:
-> > > On Wed, 16 Oct 2013 13:40:37 +0200
-> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > 
-> > > > On Tue, Oct 15, 2013 at 04:39:06PM -0400, Steven Rostedt wrote:
-> > > > > Since the NMI iretq nesting has been fixed, there's no reason that
-> > > > > an NMI handler can not take a page fault for vmalloc'd code. No locks
-> > > > > are taken in that code path, and the software now handles nested NMIs
-> > > > > when the fault re-enables NMIs on iretq.
-> > > > > 
-> > > > > Not only that, if the vmalloc_fault() WARN_ON_ONCE() is hit, and that
-> > > > > warn on triggers a vmalloc fault for some reason, then we can go into
-> > > > > an infinite loop (the WARN_ON_ONCE() does the WARN() before updating
-> > > > > the variable to make it happen "once").
-> > > > > 
-> > > > > Reported-by: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-> > > > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > > 
-> > > > Thanks! For now we probably indeed want this patch. But I hope it's only
-> > > > for the short term.
-> > > 
-> > > Why?
-> > > 
-> > > > 
-> > > > I still think that allowing faults in NMIs is very nasty, as we expect NMIs to never
-> > > > be disturbed.
-> > > 
-> > > We do faults (well, breakpoints really) in NMI to enable tracing.
-> > > 
-> > > > I'm not even sure if that interacts correctly with the rcu_nmi_enter()
-> > > > and preempt_count & NMI_MASK things. Not sure how perf is ready for that either (now
-> > > > hardware events can be interrupted by fault trace events).
-> > > 
-> > > I'm a bit confused. What doesn't interact correctly with
-> > > rcu_nmi_enter()?
-> > 
-> > Faults can call rcu_user_exit() / rcu_user_enter(). This is not supposed to happen
-> > between rcu_nmi_enter() and rcu_nmi_exit(). rdtp->dynticks would be incremented in the
-> > wrong way.
-> 
-> I can attest to this!  NMIs check for being nested within
-> process/irq-based non-idle sojourns, but not the other way around.
-> The result is that RCU will be ignoring you during that time, and not
-> even disabling interrupts will save you.  It will check rdtp->dynticks,
-> see that its value is even, and register a quiescent state on behalf of
-> the hapless CPU.
+On 10/16, Eric Wong wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+> > Yes. Before that 971316f0503a hack epoll can't even know if the task
+> > which did signalfd_poll() exits and frees the active signalfd_wqh.
+> > If for example that task forked a child before exit.
+> >
+> > And the whole RCU logic is only needed if exit/ep_remove_wait_queue
+> > actually race with each other.
+>
+> Is there any chance this oops is caused by (or at least more easily
+> exposed by) commit 91cf5ab60ff82ecf4550a596867787c1e360dd3f ?
+> (epoll: add a reschedule point in ep_free())
+>
+> I thought 91cf5ab would be benign, except...
+>
+> > Yes, ugly, agreed. d80e731ecab4 even tries to docunent that this all
+> > is the hack.
+>
+> .. the following sentence from d80e731ecab4 caught my eye:
+>
+>     It also assumes that nobody can take tasklist_lock under epoll
+>     locks, this seems to be true.
 
-Fortunately, we are avoiding this with the in_interrupt() check on user_enter()
-and user_exit(). Their goal is precisely to deal with traps/faults happening on
-interrupts :)
+This just reminds that with this patch __wake_up/ep_poll_callback can
+be called under write_lock(tasklist).
 
-> 
-> > Ah but we have an in_interrupt() check in context_tracking_user_enter() that protects
-> > us against that.
-> 
-> Here you are relying on the exception being treated as an interrupt,
-> correct?
+> I haven't been able to trace if cond_resched() can take tasklist_lock.
 
->From an RCU point of view yeah. In these cases the exception is either protected under
-rcu_irq_* and rcu_nmi* APIs, depending on where it happened.
+No, it can't hold the non-sleepable rwlock_t. And the sentence above
+doesn't mean the locks like epmutex, it is mostlt about ep->lock.
+
+Oleg.
+
