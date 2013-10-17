@@ -1,302 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab3JQP77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:59:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:4529 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757755Ab3JQP74 (ORCPT
+	id S1757852Ab3JQQAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:00:13 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42889 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757828Ab3JQQAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:59:56 -0400
-Message-ID: <52600976.9000201@atmel.com>
-Date: Thu, 17 Oct 2013 17:59:50 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
+	Thu, 17 Oct 2013 12:00:08 -0400
+Message-ID: <5260097B.8060306@gmail.com>
+Date: Thu, 17 Oct 2013 23:59:55 +0800
+From: Jiang Liu <liuj97@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Mike Turquette" <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v4 08/17] clk: at91: add PMC system clocks
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com> <1381484501-13420-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1381484501-13420-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Will Deacon <will.deacon@arm.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 2/7] arm64: introduce interfaces to hotpatch kernel
+ and module code
+References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>	 <1381990781-27814-3-git-send-email-liuj97@gmail.com>	 <20131017113826.GJ18765@mudshark.cambridge.arm.com> <1382023441.19506.66.camel@linaro1.home>
+In-Reply-To: <1382023441.19506.66.camel@linaro1.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2013 11:41, Boris BREZILLON :
-> This patch adds new at91 system clock implementation using common clk
-> framework.
->
-> Some peripherals need to enable a "system" clock in order to work properly.
-> Each system clock is given an id based on the bit position in SCER/SCDR
-> registers.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+On 10/17/2013 11:24 PM, Jon Medhurst (Tixy) wrote:
+> On Thu, 2013-10-17 at 12:38 +0100, Will Deacon wrote:
+>> [adding Tixy for stop_machine() question below]
+>>
+>> On Thu, Oct 17, 2013 at 07:19:35AM +0100, Jiang Liu wrote:
+> [...]
+>>> +int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
+>>> +{
+>>> +	struct aarch64_insn_patch patch = {
+>>> +		.text_addrs = addrs,
+>>> +		.new_insns = insns,
+>>> +		.insn_cnt = cnt,
+>>> +	};
+>>> +
+>>> +	if (cnt <= 0)
+>>> +		return -EINVAL;
+>>> +
+>>> +	/*
+>>> +	 * Execute __aarch64_insn_patch_text() on every online CPU,
+>>> +	 * which ensure serialization among all online CPUs.
+>>> +	 */
+>>> +	return stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
+>>> +}
+>>
+>> Whoa, whoa, whoa! The comment here is wrong -- we only run the patching on
+>> *one* CPU, which is the right thing to do. However, the arch/arm/ call to
+>> stop_machine in kprobes does actually run the patching code on *all* the
+>> online cores (including the cache flushing!). I think this is to work around
+>> cores without hardware cache maintenance broadcasting, but that could easily
+>> be called out specially (like we do in patch.c) and the flushing could be
+>> separated from the patching too.
+> [...]
+> 
+> For code modifications done in 32bit ARM kprobes (and ftrace) I'm not
+> sure we ever actually resolved the possible cache flushing issues. If
+> there was specific reasons for flushing on all cores I can't remember
+> them, sorry. I have a suspicion that doing so was a case of sticking
+> with what the code was already doing, and flushing on all cores seemed
+> safest to guard against problems we hadn't thought about.
+> 
+> Some of the issues discussed were that we couldn't have one core
+> potentially executing instructions being modified by another CPU,
+> because that's architecturally unpredictable except for a few
+> instructions [1], and we also have the case where a 32-bit Thumb
+> instruction can straddle two different cache-lines. But these may not be
+> reasons to flush on all cores if stop machine is synchronising all CPU's
+> in a kind of holding pen and the cache operations done on one core are
+> broadcast to others. (Are there correct barriers involved in
+> stop-machine so that when the other cores resume they are guaranteed to
+> only see the new version of the modified code, or do we only get that
+> guarantee because we happen to execute the cache flushing on all cores?)
+I think it's cache flushing instead of stop_machine() because cache
+flusing includes an ISB.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+The idea flow should be:
+1) master acquire a lock to serialize text patching
+2) all CPU barrier
+3) master updates memory and flush cache
+4) master set a flag to let all other CPU continue
+5) all other CPU executes ISB.
 
-> ---
->   drivers/clk/at91/Makefile     |    1 +
->   drivers/clk/at91/clk-system.c |  193 +++++++++++++++++++++++++++++++++++++++++
->   drivers/clk/at91/pmc.c        |    5 ++
->   drivers/clk/at91/pmc.h        |    3 +
->   4 files changed, 202 insertions(+)
->   create mode 100644 drivers/clk/at91/clk-system.c
->
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index e28fb2b..c2b7068 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -4,3 +4,4 @@
->
->   obj-y += pmc.o
->   obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
-> +obj-y += clk-system.o
-> diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
-> new file mode 100644
-> index 0000000..603b4b1
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-system.c
-> @@ -0,0 +1,193 @@
-> +/*
-> + * drivers/clk/at91/clk-system.c
-> + *
-> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91_pmc.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +
-> +#include "pmc.h"
-> +
-> +#define SYSTEM_MAX_ID		31
-> +
-> +#define to_clk_system(hw) container_of(hw, struct clk_system, hw)
-> +struct clk_system {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +	u8 id;
-> +};
-> +
-> +static int clk_system_enable(struct clk_hw *hw)
-> +{
-> +	struct clk_system *sys = to_clk_system(hw);
-> +	struct at91_pmc *pmc = sys->pmc;
-> +
-> +	pmc_write(pmc, AT91_PMC_SCER, 1 << sys->id);
-> +	return 0;
-> +}
-> +
-> +static void clk_system_disable(struct clk_hw *hw)
-> +{
-> +	struct clk_system *sys = to_clk_system(hw);
-> +	struct at91_pmc *pmc = sys->pmc;
-> +
-> +	pmc_write(pmc, AT91_PMC_SCDR, 1 << sys->id);
-> +}
-> +
-> +static int clk_system_is_enabled(struct clk_hw *hw)
-> +{
-> +	struct clk_system *sys = to_clk_system(hw);
-> +	struct at91_pmc *pmc = sys->pmc;
-> +
-> +	return !!(pmc_read(pmc, AT91_PMC_SCSR) & (1 << sys->id));
-> +}
-> +
-> +static const struct clk_ops system_ops = {
-> +	.enable = clk_system_enable,
-> +	.disable = clk_system_disable,
-> +	.is_enabled = clk_system_is_enabled,
-> +};
-> +
-> +static struct clk * __init
-> +at91_clk_register_system(struct at91_pmc *pmc, const char *name,
-> +			 const char *parent_name, u8 id)
-> +{
-> +	struct clk_system *sys;
-> +	struct clk *clk = NULL;
-> +	struct clk_init_data init;
-> +
-> +	if (!parent_name || id > SYSTEM_MAX_ID)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	sys = kzalloc(sizeof(*sys), GFP_KERNEL);
-> +	if (!sys)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &system_ops;
-> +	init.parent_names = &parent_name;
-> +	init.num_parents = 1;
-> +	/*
-> +	 * CLK_IGNORE_UNUSED is used to avoid ddrck switch off.
-> +	 * TODO : we should implement a driver supporting at91 ddr controller
-> +	 * (see drivers/memory) which would request and enable the ddrck clock.
-> +	 * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
-> +	 */
-> +	init.flags = CLK_IGNORE_UNUSED;
-> +
-> +	sys->id = id;
-> +	sys->hw.init = &init;
-> +	sys->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &sys->hw);
-> +	if (IS_ERR(clk))
-> +		kfree(sys);
-> +
-> +	return clk;
-> +}
-> +
-> +struct clk_system_data {
-> +	struct clk **clks;
-> +	u8 *ids;
-> +	unsigned int clk_num;
-> +};
-> +
-> +static struct clk * __init
-> +of_clk_src_system_get(struct of_phandle_args *clkspec, void *data)
-> +{
-> +	struct clk_system_data *clk_data = data;
-> +	unsigned int id = clkspec->args[0];
-> +	int i;
-> +
-> +	if (id > SYSTEM_MAX_ID)
-> +		goto err;
-> +
-> +	for (i = 0; i < clk_data->clk_num; i++) {
-> +		if (clk_data->ids[i] == id)
-> +			return clk_data->clks[i];
-> +	}
-> +
-> +err:
-> +	pr_err("%s: invalid clock id %d\n", __func__, id);
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static void __init
-> +of_at91_clk_sys_setup(struct device_node *np, struct at91_pmc *pmc)
-> +{
-> +	int i;
-> +	int num;
-> +	u32 id;
-> +	struct clk *clk;
-> +	u8 *ids;
-> +	struct clk **clks;
-> +	struct clk_system_data *clktab;
-> +	const char *name;
-> +	struct device_node *sysclknp;
-> +	const char *parent_name;
-> +
-> +	num = of_get_child_count(np);
-> +	if (num > (SYSTEM_MAX_ID + 1))
-> +		return;
-> +
-> +	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-> +	if (!clktab)
-> +		return;
-> +
-> +	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-> +	if (!ids)
-> +		goto out_free_clktab;
-> +
-> +	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-> +	if (!clks)
-> +		goto out_free_ids;
-> +
-> +	i = 0;
-> +	for_each_child_of_node(np, sysclknp) {
-> +		name = sysclknp->name;
-> +
-> +		if (of_property_read_u32(sysclknp, "atmel,clk-id", &id))
-> +			goto out_free_clks;
-> +
-> +		parent_name = of_clk_get_parent_name(sysclknp, 0);
-> +
-> +		clk = at91_clk_register_system(pmc, name, parent_name, id);
-> +		if (IS_ERR(clk))
-> +			goto out_free_clks;
-> +
-> +		clks[i] = clk;
-> +		ids[i] = id;
-> +
-> +		i++;
-> +	}
-> +
-> +	clktab->clk_num = num;
-> +	clktab->clks = clks;
-> +	clktab->ids = ids;
-> +	of_clk_add_provider(np, of_clk_src_system_get, clktab);
-> +	return;
-> +
-> +out_free_clks:
-> +	kfree(clks);
-> +out_free_ids:
-> +	kfree(ids);
-> +out_free_clktab:
-> +	kfree(clktab);
-> +}
-> +
-> +void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
-> +					struct at91_pmc *pmc)
-> +{
-> +	of_at91_clk_sys_setup(np, pmc);
-> +}
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index 6f08879..ce76ba6 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -243,6 +243,11 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
->   		.compatible = "atmel,at91sam9x5-clk-master",
->   		.data = of_at91sam9x5_clk_master_setup,
->   	},
-> +	/* System clocks */
-> +	{
-> +		.compatible = "atmel,at91rm9200-clk-system",
-> +		.data = of_at91rm9200_clk_sys_setup,
-> +	},
->   	{ /*sentinel*/ }
->   };
->
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index 2e1dcb8..f88ef41 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -74,4 +74,7 @@ extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
->   extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
->   						  struct at91_pmc *pmc);
->
-> +extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
-> +					       struct at91_pmc *pmc);
-> +
->   #endif /* __PMC_H_ */
->
+Updating memory and flushing cache on every CPU with stop_machine()
+achieves the same effect with simple implementation, but the
+implementation really seems a little strange.
 
+If desired, I will implement the standard flow.
 
--- 
-Nicolas Ferre
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/136441.html
+> 
+> Another of the issues I hit was big.LITTLE related whereby the cache
+> line size is different on different cores [2].
+> 
+> [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149794.html
+> 
+> I don't think anything I've said above actually gives a solid reason why
+> we _must_ execute cache flushing on all cores for kprobes and can't just
+> use the relatively new patch_text function (which checks for the one
+> case we do need to flush on all cores using cache_ops_need_broadcast).
+> 
+> Sorry, I don't think I've added much light on things here have I?
+> 
+
