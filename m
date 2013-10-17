@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab3JQGYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:24:46 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:60306 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3JQGYp (ORCPT
+	id S1751865Ab3JQG2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:28:24 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48052 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab3JQG2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:24:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <87haci9ivu.fsf@rustcorp.com.au>
-References: <1381833790-18687-1-git-send-email-artagnon@gmail.com> <87haci9ivu.fsf@rustcorp.com.au>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Thu, 17 Oct 2013 11:54:04 +0530
-Message-ID: <CALkWK0k95+sW5jM5AOgkwo_qHfEdy=A4ctAbRxMd7DtVTE+cCg@mail.gmail.com>
-Subject: Re: [PATCH] virtio tools: use ansi versions of asm and volatile
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Oct 2013 02:28:23 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/7] Optimize jump label implementation for ARM64
+Date: Thu, 17 Oct 2013 14:19:33 +0800
+Message-Id: <1381990781-27814-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell wrote:
-> Ramkumar Ramachandra <artagnon@gmail.com> writes:
->> asm and volatile are provided for backward compatibility; use the ansi
->> versions __asm__ and __volatile__.
->
-> Really?  I don't see that in the gcc documentation.  In fact, I didn't
-> know __volatile__ at all:
+From: Jiang Liu <jiang.liu@huawei.com>
 
-Try compiling the program with `gcc -ansi`, and you'll see that "asm"
-and "volatile" are undeclared. The motivation for my patch comes from
-barrier() being declared differently in compiler-gcc.h.
+This patchset tries to optimize arch specfic jump label implementation
+for ARM64 by dynamic kernel text patching.
 
-However, the tree is polluted with the non-ansi versions anyway;
-compilers will continue to support them for decades. So, I'd request
-you to drop the patch.
+To enable this feature, your toolchain must support "asm goto" extension
+and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
+"%c", so you need a GCC patch similiar to this:
+http://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/arm/arm.c?view=patch&r1=175293&r2=175565&pathrev=175565
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
 
-Thanks.
+It has been tested on ARM Fast mode and a real hardware platform.
+
+Any comments are welcomed!
+
+V3->V4:
+1) resolve a race condition in kernel text patching
+2) address other review comments
+
+V2->V3:
+1) fix a bug in comparing signed and unsigned values
+2) detect big endian by checking __AARCH64EB__
+
+V1->V2: address review comments of V1
+1) refine comments
+2) add a new interface to always synchronize with stop_machine()
+   when patching code
+3) handle endian issue when patching code
+
+
+Jiang Liu (7):
+  arm64: introduce basic aarch64 instruction decoding helpers
+  arm64: introduce interfaces to hotpatch kernel and module code
+  arm64: move encode_insn_immediate() from module.c to insn.c
+  arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
+  arm64, jump label: detect %c support for ARM64
+  arm64, jump label: optimize jump label implementation
+  jump_label: use defined macros instead of hard-coding for better
+    readability
+
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/insn.h       | 110 +++++++++++++++++
+ arch/arm64/include/asm/jump_label.h |  52 ++++++++
+ arch/arm64/kernel/Makefile          |   3 +-
+ arch/arm64/kernel/insn.c            | 235 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/jump_label.c      |  58 +++++++++
+ arch/arm64/kernel/module.c          | 152 +++++++----------------
+ include/linux/jump_label.h          |  15 ++-
+ scripts/gcc-goto.sh                 |   2 +-
+ 9 files changed, 514 insertions(+), 114 deletions(-)
+ create mode 100644 arch/arm64/include/asm/insn.h
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/insn.c
+ create mode 100644 arch/arm64/kernel/jump_label.c
+
+-- 
+1.8.1.2
+
