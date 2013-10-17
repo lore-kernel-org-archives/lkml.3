@@ -1,185 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab3JQN5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:57:20 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59186 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab3JQN5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:57:18 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-a0-525fecbcef0f
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tj@kernel.org, sergei.shtylyov@cogentembedded.com, kishon@ti.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Balaji T K <balajitk@ti.com>
-Subject: Re: [PATCH v2 1/2] ata: ahci_platform: Manage SATA PHY
-Date: Thu, 17 Oct 2013 15:57:12 +0200
-Message-id: <1896416.QtZRH9T0D7@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1381923773-10596-2-git-send-email-rogerq@ti.com>
-References: <1381923773-10596-1-git-send-email-rogerq@ti.com>
- <1381923773-10596-2-git-send-email-rogerq@ti.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQd09b+KDDBZPULKYOnk7m8WFpz1s
-	Fsd2PGKyuLxrDptFzyMtizOrbrFb/Fp+lNGB3ePB1P9MHptWdbJ5HL+xncnj8ya5AJYoLpuU
-	1JzMstQifbsErox7v14wFdxVqeh4toOpgfGJTBcjJ4eEgInEyU87GCFsMYkL99azdTFycQgJ
-	TGeU2LHsHwuE08Ikcf3+XGaQKjYBK4mJ7avAOkQEFCXurYToYBaYzyixad0uFpCEsIC9xKPP
-	M4ESHBwsAqoSpy7zgoR5BTQlbnavZAOxRQU8JXZsh7A5BewkGq7PYwKxhQQKJVpndLBC1AtK
-	/Jh8D2wks4C8xL79U1khbB2J/a3T2CYwCsxCUjYLSdksJGULGJlXMYqmFiQXFCel5xrqFSfm
-	Fpfmpesl5+duYgSH9jOpHYwrGywOMQpwMCrx8M5cHhckxJpYVlyZe4hRgoNZSYTX5X58kBBv
-	SmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbGhWaCdypL/JVs
-	13F+zv8nqN17+dgMTudlJiW6Ip0sS7ewH/lySGPLPZ31EzZ9bU2tOrfWMr7wKKPM6fln5+9f
-	nfs479Z07l/S7guPy0X+VYpWm+30f+Kc7Uo/tL2PJdf3OqrbdR40STj5jWupyNRjDxkfOdYu
-	YThdV9N/NOFKtJKz8aWKBYw6SizFGYmGWsxFxYkAMHsi1GkCAAA=
+	id S1756454Ab3JQN5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:57:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40789 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755327Ab3JQN5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:57:38 -0400
+Message-ID: <525FECB8.20600@ti.com>
+Date: Thu, 17 Oct 2013 09:57:12 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: OMAP4460: cpuidle: WA for ROM bug because of
+ CA9 r2pX gic control register change
+References: <1382000776-15897-3-git-send-email-grygorii.strashko@ti.com> <525FACB1.3030101@ti.com>
+In-Reply-To: <525FACB1.3030101@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 17 October 2013 05:24 AM, Grygorii Strashko wrote:
+> On OMAP4+ devices, GIC register context is lost when MPUSS hits the
+> OSWR. On the CPU wakeup path, ROM code gets executed and one of the
+> steps in it is to restore the saved context of the GIC.
+> 
+> The ROM code uses GICD != 1 condition to decide how the GIC registers
+> are handled in wakeup path from OSWR. But, GICD  register has changed
+> between CortexA9 r1pX and r2pX and it contains 2 bits now. Secure view
+> which ROM code sees:
+>       bit 1 == Enable Non-secure
+>       bit 0 == Enable secure
+> Non-secure view which HLOS sees:
+>       bit 0 == Enable Non-secure
+> 
+> As result, on OMAP4460(r2pX) devices, when the ROM code is executed
+> during CPU1 wakeup, GICD == 3 and it fails to understand the real wakeup
+> power state and reconfigures GIC distributor to boot values and, as
+> result, the entire interrupt controller context will loose in a live
+> system.
+> 
+> Hence, implement a workaround on OMAP4460 devices in case if MPUSS has
+> hit OSWR - as long as CPU1 sees GICD == 1 in it's wakeup path from OSWR,
+> the issue won't happen:
+>      1.1) CPU0 must disable the GIC distributor, before doing the CPU1
+> wakeup,
+>      1.2) CPU0 should wait until CPU1 will re-enable the GIC distributor
+>        2) CPU1 must re-enable the GIC distributor on it's wakeup path.
+> 
+> The workaround for CPUIdle has been implemented in the same way as
+> for boot-up & hot-plug path in:
+>  - http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;
+> a=commitdiff;h=ff999b8a0983ee15668394ed49e38d3568fc6859
+> 
+> For more information see:
+> - https://patchwork.kernel.org/patch/1609011/
+> - http://www.spinics.net/lists/arm-kernel/msg201402.html
+> 
+> The ROM code bug is applicable to only OMAP4460(r2pX) devices.
+> OMAP4470 (also r2pX) is not affected by this bug because ROM code has been
+> fixed.
+> 
+Just give reference to the commit which has best description about
+the bug and just say applying the fix for idle case.
 
-Hi,
+ff999b8a {ARM: OMAP4460: Workaround for ROM...}
 
-On Wednesday, October 16, 2013 02:42:52 PM Roger Quadros wrote:
-> From: Balaji T K <balajitk@ti.com>
-> 
-> Some platforms have a PHY hooked up to the
-> SATA controller. The PHY needs to be initialized
-> and powered up for SATA to work. We do that
-> using the PHY framework.
-> 
-> [Roger Q] Cleaned up.
-> 
-> CC: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Balaji T K <balajitk@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Reported-and-Tested-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 > ---
->  .../devicetree/bindings/ata/ahci-platform.txt      |    3 +-
->  drivers/ata/ahci.h                                 |    2 ++
->  drivers/ata/ahci_platform.c                        |   29 +++++++++++++++++++-
->  3 files changed, 32 insertions(+), 2 deletions(-)
+>  arch/arm/mach-omap2/common.h       |    1 +
+>  arch/arm/mach-omap2/cpuidle44xx.c  |   34 +++++++++++++++++++++++++++++++++-
+>  arch/arm/mach-omap2/omap4-common.c |    6 ++++++
+>  3 files changed, 40 insertions(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> index 89de156..c8a6cea 100644
-> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> @@ -4,7 +4,8 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
->  Each SATA controller should have its own node.
->  
->  Required properties:
-> -- compatible        : compatible list, contains "snps,spear-ahci"
-> +- compatible        : compatible list, contains "snps,spear-ahci",
-> +			snps,exynos5440-ahci or "snps,dwc-ahci"
-
-minor nit:
-s/snps,exynos5440-ahci/"snps,exynos5440-ahci"/
-
->  - interrupts        : <interrupt mapping for SATA IRQ>
->  - reg               : <registers mapping>
->  
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index 1145637..94484cb 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-> @@ -37,6 +37,7 @@
->  
->  #include <linux/clk.h>
->  #include <linux/libata.h>
-> +#include <linux/phy/phy.h>
->  
->  /* Enclosure Management Control */
->  #define EM_CTRL_MSG_TYPE              0x000f0000
-> @@ -322,6 +323,7 @@ struct ahci_host_priv {
->  	u32			em_buf_sz;	/* EM buffer size in byte */
->  	u32			em_msg_type;	/* EM message type */
->  	struct clk		*clk;		/* Only for platforms supporting clk */
-> +	struct phy		*phy;		/* If platforms use phy */
-
-minor nit:
-s/If platforms use phy/If platform uses PHY/
-
->  	void			*plat_data;	/* Other platform data */
->  };
->  
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index 2daaee0..5a0f1418 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -141,6 +141,21 @@ static int ahci_probe(struct platform_device *pdev)
->  		}
->  	}
->  
-> +	hpriv->phy = devm_phy_get(dev, "sata-phy");
-> +	if (IS_ERR(hpriv->phy)) {
-> +		dev_dbg(dev, "can't get sata-phy\n");
-> +		/* return only if -EPROBE_DEFER */
-> +		if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
-> +			rc = -EPROBE_DEFER;
-> +			goto disable_unprepare_clk;
-> +		}
-> +	}
+> diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+> index b875a4a..7957110 100644
+> --- a/arch/arm/mach-omap2/common.h
+> +++ b/arch/arm/mach-omap2/common.h
+> @@ -232,6 +232,7 @@ static inline void __iomem *omap4_get_scu_base(void)
+> 
+>  extern void __init gic_init_irq(void);
+>  extern void gic_dist_disable(void);
+> +extern void gic_dist_enable(void);
+>  extern bool gic_dist_disabled(void);
+>  extern void gic_timer_retrigger(void);
+>  extern void omap_smc1(u32 fn, u32 arg);
+> diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
+> index 384aa1c..528638b 100644
+> --- a/arch/arm/mach-omap2/cpuidle44xx.c
+> +++ b/arch/arm/mach-omap2/cpuidle44xx.c
+> @@ -80,6 +80,7 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+>              int index)
+>  {
+>      struct idle_statedata *cx = state_ptr + index;
+> +    u32 mpuss_context_lost = 0;
+> 
+>      /*
+>       * CPU0 has to wait and stay ON until CPU1 is OFF state.
+> @@ -126,13 +127,44 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+>      omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+>      cpu_done[dev->cpu] = true;
+> 
+> +    mpuss_context_lost = omap4_mpuss_read_prev_context_state();
 > +
-> +	if (!IS_ERR(hpriv->phy)) {
-> +		phy_init(hpriv->phy);
-> +		phy_power_on(hpriv->phy);
-> +	}
+Just use the targeted state since couple idle almost grantees
+the low power entry. Even in failed case, applying errata sequence
+is harmless.
+
+>      /* Wakeup CPU1 only if it is not offlined */
+>      if (dev->cpu == 0 && cpumask_test_cpu(1, cpu_online_mask)) {
+> +        /*
+> +         * GIC distributor control register has changed between
+> +         * CortexA9 r1pX and r2pX. The Control Register secure
+> +         * banked version is now composed of 2 bits:
+> +         * bit 0 == Secure Enable
+> +         * bit 1 == Non-Secure Enable
+> +         * The Non-Secure banked register has not changed
+> +         * Because the ROM Code is based on the r1pX GIC, the CPU1
+> +         * GIC restoration will cause a problem to CPU0 Non-Secure SW.
+> +         * The workaround must be:
+> +         * 1) Before doing the CPU1 wakeup, CPU0 must disable
+> +         * the GIC distributor and wait until it will be enabled by CPU1
+> +         * 2) CPU1 must re-enable the GIC distributor on
+> +         * it's wakeup path.
+> +         */
+> +        if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) &&
+> +            mpuss_context_lost)
+Use target state here..
+
+> +            gic_dist_disable();
 > +
->  	/*
->  	 * Some platforms might need to prepare for mmio region access,
->  	 * which could be done in the following init call. So, the mmio
-> @@ -150,7 +165,7 @@ static int ahci_probe(struct platform_device *pdev)
->  	if (pdata && pdata->init) {
->  		rc = pdata->init(dev, hpriv->mmio);
->  		if (rc)
-> -			goto disable_unprepare_clk;
-> +			goto disable_phy;
->  	}
->  
->  	ahci_save_initial_config(dev, hpriv,
-> @@ -220,6 +235,12 @@ static int ahci_probe(struct platform_device *pdev)
->  pdata_exit:
->  	if (pdata && pdata->exit)
->  		pdata->exit(dev);
-> +disable_phy:
-> +	if (!IS_ERR(hpriv->phy)) {
-> +		phy_power_off(hpriv->phy);
-> +		phy_exit(hpriv->phy);
-> +	}
+>          clkdm_wakeup(cpu_clkdm[1]);
+>          omap_set_pwrdm_state(cpu_pd[1], PWRDM_POWER_ON);
+>          clkdm_allow_idle(cpu_clkdm[1]);
 > +
->  disable_unprepare_clk:
->  	if (!IS_ERR(hpriv->clk))
->  		clk_disable_unprepare(hpriv->clk);
-> @@ -238,6 +259,11 @@ static void ahci_host_stop(struct ata_host *host)
->  	if (pdata && pdata->exit)
->  		pdata->exit(dev);
->  
-> +	if (!IS_ERR(hpriv->phy)) {
-> +		phy_power_off(hpriv->phy);
-> +		phy_exit(hpriv->phy);
-> +	}
+> +        if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) &&
+> +            mpuss_context_lost)
+> +            while (gic_dist_disabled()) {
+> +                udelay(1);
+> +                cpu_relax();
+> +            }
+Am surprised you didn't live lock here. CPUs can wait here infinitely
+because the distributor isn't turned on in idle case. Suspend case,
+CPU1 on its boot-up will enable distributor and hence everything works
+with above check. 
+
+>      }
+> 
+> +    if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) && dev->cpu)
+> +        gic_dist_enable();
 > +
->  	if (!IS_ERR(hpriv->clk)) {
->  		clk_disable_unprepare(hpriv->clk);
->  		clk_put(hpriv->clk);
-> @@ -328,6 +354,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+Just move this code under omap-mpuss-lowpower.c and then things should work
+properly. It won't affect suspend code since suspend path is different.
 
-Shouldn't phy_power_off/on also be used in ahci_suspend() and ahci_resume()?
+Thanks for the fix though...
 
->  static const struct of_device_id ahci_of_match[] = {
->  	{ .compatible = "snps,spear-ahci", },
->  	{ .compatible = "snps,exynos5440-ahci", },
-> +	{ .compatible = "snps,dwc-ahci", },
-
-This change together with ahci-platform.txt one should be in a separate patch.
-
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, ahci_of_match);
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+Regards,
+Santosh
