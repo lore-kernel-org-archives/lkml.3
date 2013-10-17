@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3JQJX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:23:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47021 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab3JQJX5 (ORCPT
+	id S1753472Ab3JQJYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:24:18 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54146 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab3JQJYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:23:57 -0400
-Date: Thu, 17 Oct 2013 11:23:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131017092349.GL2675@laptop.programming.kicks-ass.net>
-References: <1381949500-501-1-git-send-email-treding@nvidia.com>
- <1381949500-501-2-git-send-email-treding@nvidia.com>
- <20131016200645.GD10651@twins.programming.kicks-ass.net>
- <20131016201410.GA26785@twins.programming.kicks-ass.net>
- <20131017073100.2cab1ffa@notabene.brown>
- <20131016205207.GE10651@twins.programming.kicks-ass.net>
- <20131017122859.67432627@notabene.brown>
+	Thu, 17 Oct 2013 05:24:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017122859.67432627@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACmBeS1NoyHWhS5ydONf3x_z8SQu5-vh_XzMazuY9-uYXdg_wQ@mail.gmail.com>
+References: <1375103161-12460-1-git-send-email-jonas.jensen@gmail.com>
+	<1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
+	<CACRpkda23nUF8i03RWePj+dGa9Wj6E1L8vfPMfxvnGkazfKS5w@mail.gmail.com>
+	<CACmBeS1NoyHWhS5ydONf3x_z8SQu5-vh_XzMazuY9-uYXdg_wQ@mail.gmail.com>
+Date: Thu, 17 Oct 2013 11:24:12 +0200
+Message-ID: <CACRpkdasrZ-rhbL1RMo1ZGA=kwmA==hQ-2-iP9zW+EvW_JZaWg@mail.gmail.com>
+Subject: Re: [PATCH v5] gpio: Add MOXA ART GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 12:28:59PM +1100, NeilBrown wrote:
-> I always run with lockdep enabled, and I have done at least basic testing
+On Mon, Oct 14, 2013 at 1:15 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
+> On 11 October 2013 17:44, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-Very good!
+>>>     The register responsible for doing enable/disable is located
+>>>     at <0x98100100 0x4>, the clock register is very close at
+>>>     <0x98100000 0x34>.
+(...)
+> Arnd made a similar comment suggesting syscon back when MMC mapped the
+> same register:
+> https://groups.google.com/d/msg/linux.kernel/eeS7vhMWMAc/zNYhzyKilh8J
+>
+> I think I prefer to have this in the clock driver opposed to using syscon.
 
-> > 
-> > Stuff like:
-> > 
-> > +	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
-> > +		spin_lock_init(conf->hash_locks + i);
-> > 
-> > And:
-> > 
-> > +static void __lock_all_hash_locks(struct r5conf *conf)
-> > +{
-> > +	int i;
-> > +	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
-> > +		spin_lock(conf->hash_locks + i);
-> > +}
-> > 
-> > Tends to complain real loud.
-> 
-> Why is that?
-> Because "conf->hash_locks + i" gets used as the "name" of the lockdep map for
-> each one, and when they are all locked it looks like nested locking??
+OK I can live with this. I've seen both approaches in practice.
 
-Exactly so; they all share the same class (and name) because they have
-the same init site; so indeed the multiple lock will look like a nested
-lock.
+> The one downside I can see, individual control of the pins would be
+> lost? Does it make sense to enable all pins once? this is acceptable
+> for at least UC-7112-LX, it doesn't need to disable/enable pins beyond
+> the initial clk_enable().
+>
+> I say the above because I currently have nothing that requires
+> individual pin control. However, I removed one line from MMC that
+> turned out to be unnecessary. That line directly access the "PMU"
+> register disabling pins 10-17 with the following comment:
+>
+> "
+> /* change I/O multiplexing to SD, so the GPIO 17-10 will be fail */
+> moxart_gpio_mp_clear(0xff << 10);
+> "
+> http://code.google.com/p/linux-2-6-9-moxart/source/browse/drivers/mmc/host/moxasd.c#619
 
-> Do you have a suggestion for how to make this work?
-> Would
->     spin_lock_nested(conf->hash_locks + i, i)
-> do the trick?
+Sorry I don't fully follow this. But don't poke into pin control registers
+from other drivers, for separation of concerns. Request and handle
+pins through the pin control API.
 
-	spin_lock_nest_lock(conf->hash_locks + i, &conf->device_lock);
+What you mean is likely that power-on states and boot loaders
+have set up the pins for your immediate use cases and everything
+seems to work, that is of course nice.
 
-Would be the better option; your suggestion might just work because
-NR_STRIP_HASH_LOCKS is 8 and we have exactly 8 subclasses available, but
-any increase to NR_STRIPE_HASH_LOCKS will make things explode again.
+However as development and requirements progress people start
+to come in with complex usecases where devices need pins set
+to states that differ from the power-on defaults, for example for
+power management. And then you run into this.
 
-The spin_lock_nest_lock() annotation tells that the lock order is
-irrelevant because all such multiple acquisitions are serialized under
-the other lock.
+When/if you need pin control you can wither implement that as
+a separate driver which is used by this GPIO driver as a "back-end"
+or you can move this driver over to drivers/pinctrl and extend it
+with a pin control API there, making it a combined pin control
+and GPIO driver.
 
-Also, if in future you feel the need to increase NR_STRIP_HASH_LOCKS,
-please keep it <= 64 or so; if you have a need to go above that, please
-yell and we'll see if we can do something smarter.
+>>>     I don't think gpio_poweroff driver is right for this hardware
+>>>     because the pin is not connected to anything that can do reset.
+>>>     The old 2.6.9 kernel driver uses timer poll with eventual call
+>>>     to userspace.
+>>>
+>>>     To test that it works, I added gpio_poweroff anyway, modified
+>>>     with gpio_export() the pin can then be seen switching between
+>>>     0 and 1 (on "cat /sys/class/gpio/gpio25/value").
+>>
+>> Hmmmm not quite following this...
+>
+> I'll try to elaborate. What happens in gpio_poweroff driver does not
+> look like something that can reset the hardware. Reset on UC-7112-LX
+> is implemented using the same register as the watchdog, in platform
+> code hooked up to arm_pm_restart.
+>
+> The old sources "solved" this by polling the reset pin with eventual
+> call_usermodehelper (/sbin/reboot):
+> http://code.google.com/p/linux-2-6-9-moxart/source/browse/drivers/char/moxa_watchdog.c#174
+>
+> What was previously in a kernel driver, would now be solved in userspace?
+>
+> gpio_export() allowed me to verify the pin number, pressing reset
+> toggles the value.
+>
+> Adding the gpio-leds driver, that pin was automatically exported to
+> sysfs, that got me thinking:
+>
+> How do I export the reset button to sysfs? Should gpio_export() be
+> added to platform code?
 
-This is because of:
- - each spin_lock() increases preempt_count and that's 8 bits; we
-   wouldn't want to overflow that
- - each consecutive nested spin_lock() increases the total acquisition
-   wait-time for all locks. Note that the worst case acquisition time
-   for even a single hash lock is gated by the complete acquisition time
-   of all of them in this scenario.
+Aha argh what a mess. No the GPIO poweroff driver is not
+intended to fix this. I *think* you should do this:
+
+- Register the gpio pin as a polled input device using
+  drivers/input/keyboard/gpio_keys_polled.c
+
+- Have it emit KEY_POWER (from include/uapi/linux/input.h)
+
+- Have your userspace input event (whatever issues select()
+  on the /dev/input/* stuff) react to this input by calling
+  /sbin/reboot or issueing the same thing that does, i.e.
+  call reboot() with magic 0x01234567 I think.
+
+Yours,
+Linus Walleij
