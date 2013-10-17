@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3JQJMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:12:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41638 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab3JQJMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:12:16 -0400
-Date: Thu, 17 Oct 2013 11:12:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131017091200.GE5036@pd.tnic>
-References: <1381416608-2741-1-git-send-email-eranian@google.com>
- <20131010180049.GD9929@pd.tnic>
- <20131016124627.GA2611@gmail.com>
- <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
- <20131016175302.GB4100@infradead.org>
- <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
- <20131017081420.GB22705@gmail.com>
- <20131017090730.GK2675@laptop.programming.kicks-ass.net>
+	id S1753598Ab3JQJLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:11:36 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:26735
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753556Ab3JQJLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 05:11:33 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>
+CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
+        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
+        <oskar@scara.com>, <shawn.guo@linaro.org>, <b42378@freescale.com>,
+        <b18965@freescale.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCHv1 3/8] ARM: dts: Enables SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
+Date: Thu, 17 Oct 2013 17:01:12 +0800
+Message-ID: <1382000477-17304-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131017090730.GK2675@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 11:07:30AM +0200, Peter Zijlstra wrote:
-> The downside to such a sysfs entry will be the scope. It would either
-> be pmu wide (unwieldy for many PMUs) or be only per listed event; and
-> we really don't want exhaustive event lists in the kernel.
+This patch add and enable SAI device.
 
-So why not teach perf tool to recognize the PMU instead of adding
-anything to the kernel?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-It seems much easier to me...
-
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index 1a58678..e4106dd 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -57,6 +57,12 @@
+ 	status = "okay";
+ };
+ 
++&sai2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai2_1>;
++	status = "okay";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1_1>;
 -- 
-Regards/Gruss,
-    Boris.
+1.8.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
