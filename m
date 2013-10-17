@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762302Ab3JQRrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:47:07 -0400
+	id S1762330Ab3JQRrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:47:32 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:38545 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758975Ab3JQRol (ORCPT
+	with ESMTP id S1758862Ab3JQRok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:44:41 -0400
+	Thu, 17 Oct 2013 13:44:40 -0400
 X-IronPort-AV: E=Sophos;i="4.93,515,1378857600"; 
-   d="scan'208";a="61976357"
+   d="scan'208";a="61976355"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>
-Subject: [PATCH v8 09/19] arm64/xen: get_dma_ops: return xen_dma_ops if we are running as xen_initial_domain
-Date: Thu, 17 Oct 2013 18:43:24 +0100
-Message-ID: <1382031814-8782-9-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 05/19] xen: make xen_create_contiguous_region return the dma address
+Date: Thu, 17 Oct 2013 18:43:20 +0100
+Message-ID: <1382031814-8782-5-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
@@ -29,58 +28,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't simply override arm_dma_ops with xen_dma_ops because devices
-are allowed to have their own dma_ops and they take precedence over
-arm_dma_ops. When running on Xen as initial domain, we always want
-xen_dma_ops to be the one in use.
+Modify xen_create_contiguous_region to return the dma address of the
+newly contiguous buffer.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: will.deacon@arm.com
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-Changes in v7:
-- return xen_dma_ops only if we are the initial domain;
-- rename __get_dma_ops to __generic_dma_ops.
+
+Changes in v4:
+- use virt_to_machine instead of virt_to_bus.
 ---
- arch/arm64/include/asm/dma-mapping.h |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ arch/x86/xen/mmu.c        |    4 +++-
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ include/xen/xen-ops.h     |    3 ++-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-index 59206b1..fd0c0c0 100644
---- a/arch/arm64/include/asm/dma-mapping.h
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -23,12 +23,15 @@
- 
- #include <asm-generic/dma-coherent.h>
- 
-+#include <xen/xen.h>
-+#include <asm/xen/hypervisor.h>
-+
- #define ARCH_HAS_DMA_GET_REQUIRED_MASK
- 
- #define DMA_ERROR_CODE	(~(dma_addr_t)0)
- extern struct dma_map_ops *dma_ops;
- 
--static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
- {
- 	if (unlikely(!dev) || !dev->archdata.dma_ops)
- 		return dma_ops;
-@@ -36,6 +39,14 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
- 		return dev->archdata.dma_ops;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index fdc3ba2..6c34d7c 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2329,7 +2329,8 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
  }
  
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	if (xen_initial_domain())
-+		return xen_dma_ops;
-+	else
-+		return __generic_dma_ops(dev);
-+}
-+
- #include <asm-generic/dma-mapping-common.h>
+ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
+-				 unsigned int address_bits)
++				 unsigned int address_bits,
++				 dma_addr_t *dma_handle)
+ {
+ 	unsigned long *in_frames = discontig_frames, out_frame;
+ 	unsigned long  flags;
+@@ -2368,6 +2369,7 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
  
- static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+ 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
+ 
++	*dma_handle = virt_to_machine(vstart).maddr;
+ 	return success ? 0 : -ENOMEM;
+ }
+ EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 1b2277c..b72f31c 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -126,6 +126,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ {
+ 	int i, rc;
+ 	int dma_bits;
++	dma_addr_t dma_handle;
+ 
+ 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
+ 
+@@ -137,7 +138,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ 			rc = xen_create_contiguous_region(
+ 				(unsigned long)buf + (i << IO_TLB_SHIFT),
+ 				get_order(slabs << IO_TLB_SHIFT),
+-				dma_bits);
++				dma_bits, &dma_handle);
+ 		} while (rc && dma_bits++ < max_dma_bits);
+ 		if (rc)
+ 			return rc;
+@@ -294,11 +295,10 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		*dma_handle = dev_addr;
+ 	else {
+ 		if (xen_create_contiguous_region(vstart, order,
+-						 fls64(dma_mask)) != 0) {
++						 fls64(dma_mask), dma_handle) != 0) {
+ 			free_pages(vstart, order);
+ 			return NULL;
+ 		}
+-		*dma_handle = virt_to_machine(ret).maddr;
+ 	}
+ 	memset(ret, 0, size);
+ 	return ret;
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index d6fe062..9ef704d 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -20,7 +20,8 @@ int xen_setup_shutdown_event(void);
+ 
+ extern unsigned long *xen_contiguous_bitmap;
+ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
+-				unsigned int address_bits);
++				unsigned int address_bits,
++				dma_addr_t *dma_handle);
+ 
+ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
+ 
 -- 
 1.7.2.5
 
