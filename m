@@ -1,57 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab3JQXAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 19:00:10 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:42869 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3JQXAI convert rfc822-to-8bit (ORCPT
+	id S1752314Ab3JQXBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 19:01:46 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:57525 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3JQXBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 19:00:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK5ve-Ljxqw2QGG2hS+x7J99_HJgezo94YxOkhvGiPh_1qZ-_A@mail.gmail.com>
-References: <525d89e8.CwG1bICTvwrMEEOp%fengguang.wu@intel.com>
-	<CAK5ve-K41dCLhQnbicqobU889WKe2dGUCJ4Tqy4f_w-F4p27eQ@mail.gmail.com>
-	<CAK5ve-+tr5GWg7JSOVF3BB17f+i2Eg57dtm4+Gp9ZzRE+L0Vuw@mail.gmail.com>
-	<1381972157-14563-1-git-send-email-maximilian.guentner@gmail.com>
-	<CAK5ve-Ljxqw2QGG2hS+x7J99_HJgezo94YxOkhvGiPh_1qZ-_A@mail.gmail.com>
-Date: Fri, 18 Oct 2013 01:00:06 +0200
-Message-ID: <CAKSnaaf05mA_TKVpH6iESdRU_4cxNwBs-qW_Prmfrfj+KyK6HQ@mail.gmail.com>
-Subject: Re: [PATCH v3] leds: Added driver for the NXP PCA9685 I2C chip
-From: =?ISO-8859-1?Q?Maximilian_G=FCntner?= 
-	<maximilian.guentner@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>, kbuild-all@01.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Oct 2013 19:01:44 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        alsa-devel@alsa-project.org (moderated list:SOUND),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v3] sound: pci: emu10k1: code refactoring
+Date: Thu, 17 Oct 2013 19:57:12 -0300
+Message-Id: <1382050633-21120-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bryan,
+Partially restructures _snd_emu10k1_audigy_init_efx() and
+_snd_emu10k1_init_efx() functions.
 
-thank you for applying the patch so quickly.
+Be noted that the cast is demanded to use '__user'. So, in these cases,
+avoid patches based on the coccinelle 'drop_kmalloc_cast' semantic patch.
 
-Maximilian
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ sound/pci/emu10k1/emufx.c | 76 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 45 insertions(+), 31 deletions(-)
 
-2013/10/18 Bryan Wu <cooloney@gmail.com>:
-> On Wed, Oct 16, 2013 at 6:09 PM, Maximilian Güntner
-> <maximilian.guentner@gmail.com> wrote:
->> The NXP PCA9685 supports 16 channels/leds using a 12-bit PWM (4095
->> levels of brightness)
->> This driver supports configuration using platform_data.
->>
->> Signed-off-by: Maximilian Güntner <maximilian.guentner@gmail.com>
->> ---
->>  v3:
->>    fixed warnings when running make C=1 CF=-D__CHECK_ENDIAN__:
->>     * replaced u16* by __le16*
->>
->
-> OK, replaced the old one in my tree.
->
-> Thanks,
-> -Bryan
->
+diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
+index 0275209..1f9c7c4 100644
+--- a/sound/pci/emu10k1/emufx.c
++++ b/sound/pci/emu10k1/emufx.c
+@@ -1182,15 +1182,20 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
+ 	u32 *gpr_map;
+ 	mm_segment_t seg;
+ 
+-	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
+-	    (icode->gpr_map = (u_int32_t __user *)
+-	     kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
+-		     GFP_KERNEL)) == NULL ||
+-	    (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+-				sizeof(*controls), GFP_KERNEL)) == NULL) {
+-		err = -ENOMEM;
+-		goto __err;
+-	}
++	err = -ENOMEM;
++	icode = kzalloc(sizeof(*icode), GFP_KERNEL);
++	if (!icode)
++		return err;
++
++	icode->gpr_map = (u_int32_t __user *) kcalloc(512 + 256 + 256 + 2 * 1024,
++						      sizeof(u_int32_t), GFP_KERNEL);
++	if (!icode->gpr_map)
++		goto __err_gpr;
++	controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
++			   sizeof(*controls), GFP_KERNEL);
++	if (!controls)
++		goto __err_ctrls;
++
+ 	gpr_map = (u32 __force *)icode->gpr_map;
+ 
+ 	icode->tram_data_map = icode->gpr_map + 512;
+@@ -1741,12 +1746,12 @@ A_OP(icode, &ptr, iMAC0, A_GPR(var), A_GPR(var), A_GPR(vol), A_EXTIN(input))
+ 	emu->support_tlv = 0; /* clear again */
+ 	snd_leave_user(seg);
+ 
+- __err:
++__err:
+ 	kfree(controls);
+-	if (icode != NULL) {
+-		kfree((void __force *)icode->gpr_map);
+-		kfree(icode);
+-	}
++__err_ctrls:
++	kfree((void __force *)icode->gpr_map);
++__err_gpr:
++	kfree(icode);
+ 	return err;
+ }
+ 
+@@ -1813,18 +1818,26 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
+ 	u32 *gpr_map;
+ 	mm_segment_t seg;
+ 
+-	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL)
+-		return -ENOMEM;
+-	if ((icode->gpr_map = (u_int32_t __user *)
+-	     kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
+-		     GFP_KERNEL)) == NULL ||
+-            (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+-				sizeof(struct snd_emu10k1_fx8010_control_gpr),
+-				GFP_KERNEL)) == NULL ||
+-	    (ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL)) == NULL) {
+-		err = -ENOMEM;
+-		goto __err;
+-	}
++	err = -ENOMEM;
++	icode = kzalloc(sizeof(*icode), GFP_KERNEL);
++	if (!icode)
++		return err;
++
++	icode->gpr_map = (u_int32_t __user *) kcalloc(256 + 160 + 160 + 2 * 512,
++						      sizeof(u_int32_t), GFP_KERNEL);
++	if (!icode->gpr_map)
++		goto __err_gpr;
++
++	controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
++			   sizeof(struct snd_emu10k1_fx8010_control_gpr),
++			   GFP_KERNEL);
++	if (!controls)
++		goto __err_ctrls;
++
++	ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL);
++	if (!ipcm)
++		goto __err_ipcm;
++
+ 	gpr_map = (u32 __force *)icode->gpr_map;
+ 
+ 	icode->tram_data_map = icode->gpr_map + 256;
+@@ -2363,13 +2376,14 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
+ 	snd_leave_user(seg);
+ 	if (err >= 0)
+ 		err = snd_emu10k1_ipcm_poke(emu, ipcm);
+-      __err:
++__err:
+ 	kfree(ipcm);
++__err_ipcm:
+ 	kfree(controls);
+-	if (icode != NULL) {
+-		kfree((void __force *)icode->gpr_map);
+-		kfree(icode);
+-	}
++__err_ctrls:
++	kfree((void __force *)icode->gpr_map);
++__err_gpr:
++	kfree(icode);
+ 	return err;
+ }
+ 
+-- 
+1.8.4
+
