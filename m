@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762527Ab3JQS2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:28:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48668 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758204Ab3JQS2d convert rfc822-to-8bit (ORCPT
+	id S1762424Ab3JQS3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:29:33 -0400
+Received: from a14-29.smtp-out.amazonses.com ([54.240.14.29]:58855 "EHLO
+	a14-29.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758216Ab3JQS3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:28:33 -0400
-Subject: Re: [PATCHv6 2/4] ARM: msm: Add support for APQ8074 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
-Date: Thu, 17 Oct 2013 13:28:29 -0500
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <86B14DE9-F72B-4B4F-AD7F-AA53792435AE@codeaurora.org>
-References: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Thu, 17 Oct 2013 14:29:32 -0400
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Oct 2013 14:29:32 EDT
+Date: Thu, 17 Oct 2013 18:23:01 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd
+In-Reply-To: <20131017160726.GJ28963@localhost.localdomain>
+Message-ID: <00000141c7a80d07-b74ad917-06d0-419a-aac6-ec643e2ccbe2-000000@email.amazonses.com>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com> <20131017135509.GB28963@localhost.localdomain> <00000141c704b634-d1e47864-686f-40a9-b42e-cd5416dec367-000000@email.amazonses.com>
+ <20131017160726.GJ28963@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.17-54.240.14.29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Oct 2013, Frederic Weisbecker wrote:
 
-On Oct 17, 2013, at 1:25 PM, Rohit Vaswani wrote:
+> > The invocation is coming from keventd so the affinity seems to be set to
+> > a different cpu before we get the thread moved.
+>
+> Looking at alloc_singlethread_workqueue(), it seems to create a kthread by using
+> kthread_create(). So I guess the resulting works have the affinity of that kthread.
+> And thus call_usermodehelper() initially has that affinity, until it spreads it explicitly
+> to all CPUs.
+>
+> Couldn't we instead make kthread children (those created with kthread_create()) to inherit
+> kthread initial affinity? Currently kthread's children have cpu_all_mask. We could change
+> that behaviour. This way the initial kthread affinity could be inherited all along.
 
-> This patch adds basic board support for APQ8074 Dragonboard
-> which belongs to the Snapdragon 800 family.
-> For now, just support a basic machine with device tree.
-> 
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
-> arch/arm/boot/dts/Makefile                     |  3 ++-
-> arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
-> arch/arm/boot/dts/qcom-msm8974.dtsi            | 33 ++++++++++++++++++++++++++
-> arch/arm/mach-msm/Kconfig                      | 11 ++++++++-
-> arch/arm/mach-msm/board-dt.c                   |  9 +++++++
-> 5 files changed, 60 insertions(+), 2 deletions(-)
-> create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-> create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
-
-Acked-by: Kumar Gala <galak@codeaurora.org>
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Some of the code relies on being able to set the affinities separately.
