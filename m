@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab3JQOzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:55:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47727 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab3JQOzC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:55:02 -0400
-Message-ID: <525FFA40.9050901@wwwdotorg.org>
-Date: Thu, 17 Oct 2013 08:54:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757351Ab3JQOzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:55:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757133Ab3JQOzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 10:55:35 -0400
+Date: Thu, 17 Oct 2013 17:55:22 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: linux-next: manual merge of the kvm-arm tree
+Message-ID: <20131017145522.GH30802@redhat.com>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+ <1381949500-501-3-git-send-email-treding@nvidia.com>
+ <525EE1BC.3050605@arm.com>
+ <CAMJs5B85FwnXN3YE5-KagSjYDH0aSeVYgcwvSXy8=LGfw=STaw@mail.gmail.com>
 MIME-Version: 1.0
-To: Christian Daudt <bcm@fixthebug.org>, Sherman Yin <syin@broadcom.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>	<1380846199-12829-4-git-send-email-syin@broadcom.com> <CAEPRUYqfpdp1GqxBgx-q=hyvQDe4uyi6okzHPW2QmfmPG_Z3NQ@mail.gmail.com>
-In-Reply-To: <CAEPRUYqfpdp1GqxBgx-q=hyvQDe4uyi6okzHPW2QmfmPG_Z3NQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMJs5B85FwnXN3YE5-KagSjYDH0aSeVYgcwvSXy8=LGfw=STaw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 12:03 AM, Christian Daudt wrote:
-> On Thu, Oct 3, 2013 at 5:23 PM, Sherman Yin <syin@broadcom.com> wrote:
->> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
->>
->> Signed-off-by: Sherman Yin <syin@broadcom.com>
->> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> ---
->>  arch/arm/mach-bcm/Kconfig       |    2 +
->>  drivers/pinctrl/Kconfig         |   10 +
->>  drivers/pinctrl/Makefile        |    1 +
->>  drivers/pinctrl/pinctrl-capri.c | 1727 +++++++++++++++++++++++++++++++++++++++
->>  4 files changed, 1740 insertions(+)
->>  create mode 100644 drivers/pinctrl/pinctrl-capri.c
->>
->> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
->> index 69d67f7..2546365 100644
->> --- a/arch/arm/mach-bcm/Kconfig
->> +++ b/arch/arm/mach-bcm/Kconfig
->> @@ -10,6 +10,8 @@ config ARCH_BCM
->>         select GENERIC_CLOCKEVENTS
->>         select GENERIC_TIME
->>         select GPIO_BCM
->> +       select PINCTRL
->> +       select PINCTRL_CAPRI
->>         select SPARSE_IRQ
->>         select TICK_ONESHOT
->>         select CACHE_L2X0
+On Wed, Oct 16, 2013 at 12:02:08PM -0700, Christoffer Dall wrote:
+> On 16 October 2013 11:58, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> > On 16/10/13 19:51, Thierry Reding wrote:
+> >> Today's linux-next merge of the kvm-arm tree got conflicts in
+> >>
+> >>       arch/arm/kvm/reset.c
+> >>
+> >> caused by commits e8c2d99 (KVM: ARM: Add support for Cortex-A7) and ac570e0
+> >> (ARM: kvm: rename cpu_reset to avoid name clash).
+> >>
+> >> I've fixed them up (see below). Please verify that the resolution looks
+> >> good.
+> >
+> > Looks good to me (I have the same resolution in my own tree).
+> >
+> Yes, fix is good.
 > 
-> On your subsequent patchset pls move this from Kconfig to
-> arm/configs/bcm_defconfig, and break that modification into a separate
-> patch from the drivers/* modification.
+> This will stay a conflict until kvm/next and kvm/fixes merge, which
+> doesn't happen before after the merge window, usually.  If that's
+So in this case it happened today because part of powerpc patches where
+based on commit after -rc4 and I had to merge to be able to pull them.
+Christoffer can you look at queue branch of kvm.git and see that the
+resolution is correct?
 
-The other SoCs I'm familiar with all select this from their ARCH_xxx
-config symbol.
-
+--
+			Gleb.
