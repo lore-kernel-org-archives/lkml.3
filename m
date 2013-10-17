@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3JQNbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:31:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab3JQNbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:31:42 -0400
-Date: Thu, 17 Oct 2013 15:31:34 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: pair trace_ext4_writepages &
- trace_ext4_writepages_result
-In-Reply-To: <1382012926-398-1-git-send-email-ming.lei@canonical.com>
-Message-ID: <alpine.LFD.2.00.1310171531040.3212@localhost.localdomain>
-References: <1382012926-398-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755794Ab3JQNbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:31:51 -0400
+Received: from smtp-out-233.synserver.de ([212.40.185.233]:1082 "EHLO
+	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab3JQNbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:31:47 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 8998
+Message-ID: <525FE728.90403@metafoo.de>
+Date: Thu, 17 Oct 2013 15:33:28 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Timur Tabi <timur@tabi.org>
+CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+        lgirdwood@gmail.com, broonie@kernel.org, mark.rutland@arm.com,
+        alsa-devel@alsa-project.org, linux-doc@vger.kernel.org, tiwai@suse.de,
+        b18965@freescale.com, LW@KARO-electronics.de, linux@arm.linux.org.uk,
+        b42378@freescale.com, oskar@scara.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, ian.campbell@citrix.com,
+        pawel.moll@arm.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, fabio.estevam@freescale.com,
+        linux-kernel@vger.kernel.org, rob@landley.net, r64188@freescale.com,
+        shawn.guo@linaro.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [alsa-devel] [PATCHv1 1/8] ALSA: Add SAI SoC Digital Audio Interface
+ driver.
+References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com> <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com> <525FD4C7.3050806@tabi.org> <525FD65B.3040004@metafoo.de> <525FE48B.7020709@tabi.org>
+In-Reply-To: <525FE48B.7020709@tabi.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013, Ming Lei wrote:
-
-> Date: Thu, 17 Oct 2013 20:28:46 +0800
-> From: Ming Lei <ming.lei@canonical.com>
-> To: linux-kernel@vger.kernel.org
-> Cc: Jan Kara <jack@suse.cz>, Ming Lei <ming.lei@canonical.com>,
->     Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
->     "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-> Subject: [PATCH] ext4: pair trace_ext4_writepages &
->     trace_ext4_writepages_result
+On 10/17/2013 03:22 PM, Timur Tabi wrote:
+> Lars-Peter Clausen wrote:
+>>>> >>+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>> >>+    sai->base = devm_ioremap_resource(&pdev->dev, res);
+>>> >
+>>> >Why not use of_iomap()?
+>> Because it won't check for conflicting resource regions.
 > 
-> Pair the two trace events to make troubeshooting writepages
-> easier, and it should be more convinient to write a simple script
-> to parse the traces.
-> 
-> Cc: Ted Tso <tytso@mit.edu>
-> Cc: linux-ext4@vger.kernel.org
-> Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> Maybe I've been out of the loop for too long, but why is that a particular
+> problem with this driver?
 
-It looks good.
+It is usually something you'd want to check in general to make sure that you
+don't have multiple device that access the same iomem region at the same time.
 
-Thanks!
-
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-
-> ---
->  fs/ext4/inode.c |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 32beaa4..0ad73d4 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -2420,16 +2420,15 @@ static int ext4_writepages(struct address_space *mapping,
->  	 * because that could violate lock ordering on umount
->  	 */
->  	if (!mapping->nrpages || !mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-> -		return 0;
-> +		goto out_writepages;
->  
->  	if (ext4_should_journal_data(inode)) {
->  		struct blk_plug plug;
-> -		int ret;
->  
->  		blk_start_plug(&plug);
->  		ret = write_cache_pages(mapping, wbc, __writepage, mapping);
->  		blk_finish_plug(&plug);
-> -		return ret;
-> +		goto out_writepages;
->  	}
->  
->  	/*
-> @@ -2442,8 +2441,10 @@ static int ext4_writepages(struct address_space *mapping,
->  	 * *never* be called, so if that ever happens, we would want
->  	 * the stack trace.
->  	 */
-> -	if (unlikely(sbi->s_mount_flags & EXT4_MF_FS_ABORTED))
-> -		return -EROFS;
-> +	if (unlikely(sbi->s_mount_flags & EXT4_MF_FS_ABORTED)) {
-> +		ret = -EROFS;
-> +		goto out_writepages;
-> +	}
->  
->  	if (ext4_should_dioread_nolock(inode)) {
->  		/*
-> 
+- Lars
