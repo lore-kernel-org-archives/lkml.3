@@ -1,241 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab3JQFcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 01:32:52 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:40083 "EHLO
+	id S1751266Ab3JQFcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 01:32:14 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:40052 "EHLO
 	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3JQFcP (ORCPT
+	with ESMTP id S1750889Ab3JQFcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 01:32:15 -0400
+	Thu, 17 Oct 2013 01:32:12 -0400
 From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH net-next v3 7/9] inet: convert inet_ehash_secret and ipv6_hash_secret to net_get_random_once
-Date: Thu, 17 Oct 2013 07:32:01 +0200
-Message-Id: <1381987923-1524-8-git-send-email-hannes@stressinduktion.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH net-next v3 0/9] Introduce support to lazy initialize mostly static keys
+Date: Thu, 17 Oct 2013 07:31:54 +0200
+Message-Id: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
-References: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the ehash and ipv6_hash_secrets with net_get_random_once.
+Hi!
 
-Each compilation unit gets its own secret now:
-  ipv4/inet_hashtables.o
-  ipv4/udp.o
-  ipv6/inet6_hashtables.o
-  ipv6/udp.o
-  rds/connection.o
+This series implements support for delaying the initialization of secret
+keys, e.g. used for hashing, for as long as possible. This functionality
+is implemented by a new macro, net_get_random_bytes.
 
-The functions still get inlined into the hashing functions. In the fast
-path we have at most two (needed in ipv6) if (unlikely(...)).
+I already used it to protect the socket hashes, the syncookie secret
+(most important) and the tcp_fastopen secrets.
 
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
----
- include/net/inet_sock.h     |  4 ----
- net/ipv4/af_inet.c          | 27 ---------------------------
- net/ipv4/inet_hashtables.c  |  4 ++++
- net/ipv4/udp.c              |  6 +++++-
- net/ipv6/af_inet6.c         |  5 -----
- net/ipv6/inet6_hashtables.c | 15 ++++++++++++---
- net/ipv6/udp.c              | 17 ++++++++++++++---
- net/rds/connection.c        | 12 +++++++++---
- 8 files changed, 44 insertions(+), 46 deletions(-)
+Changelog:
+v2) Use static_keys in net_get_random_once to have as minimal impact to
+    the fast-path as possible.
+v3) added patch "static_key: WARN on usage before jump_label_init was called":
+    Patch "x86/jump_label: expect default_nop if static_key gets enabled
+    on boot-up" relaxes the checks for using static_key primitives before
+    jump_label_init. So tighten them first.
 
-diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
-index 7a6c7f8..1833c3f 100644
---- a/include/net/inet_sock.h
-+++ b/include/net/inet_sock.h
-@@ -204,10 +204,6 @@ static inline void inet_sk_copy_descendant(struct sock *sk_to,
- 
- int inet_sk_rebuild_header(struct sock *sk);
- 
--extern u32 inet_ehash_secret;
--extern u32 ipv6_hash_secret;
--void build_ehash_secret(void);
--
- static inline unsigned int __inet_ehashfn(const __be32 laddr,
- 					  const __u16 lport,
- 					  const __be32 faddr,
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 35913fb..b6bdd82 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -245,29 +245,6 @@ out:
- }
- EXPORT_SYMBOL(inet_listen);
- 
--u32 inet_ehash_secret __read_mostly;
--EXPORT_SYMBOL(inet_ehash_secret);
--
--u32 ipv6_hash_secret __read_mostly;
--EXPORT_SYMBOL(ipv6_hash_secret);
--
--/*
-- * inet_ehash_secret must be set exactly once, and to a non nul value
-- * ipv6_hash_secret must be set exactly once.
-- */
--void build_ehash_secret(void)
--{
--	u32 rnd;
--
--	do {
--		get_random_bytes(&rnd, sizeof(rnd));
--	} while (rnd == 0);
--
--	if (cmpxchg(&inet_ehash_secret, 0, rnd) == 0)
--		get_random_bytes(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
--}
--EXPORT_SYMBOL(build_ehash_secret);
--
- /*
-  *	Create an inet socket.
-  */
-@@ -284,10 +261,6 @@ static int inet_create(struct net *net, struct socket *sock, int protocol,
- 	int try_loading_module = 0;
- 	int err;
- 
--	if (unlikely(!inet_ehash_secret))
--		if (sock->type != SOCK_RAW && sock->type != SOCK_DGRAM)
--			build_ehash_secret();
--
- 	sock->state = SS_UNCONNECTED;
- 
- 	/* Look for the requested type/protocol pair. */
-diff --git a/net/ipv4/inet_hashtables.c b/net/ipv4/inet_hashtables.c
-index 18aa668..8b9cf27 100644
---- a/net/ipv4/inet_hashtables.c
-+++ b/net/ipv4/inet_hashtables.c
-@@ -28,6 +28,10 @@ static unsigned int inet_ehashfn(struct net *net, const __be32 laddr,
- 				 const __u16 lport, const __be32 faddr,
- 				 const __be16 fport)
- {
-+	static u32 inet_ehash_secret __read_mostly;
-+
-+	net_get_random_once(&inet_ehash_secret, sizeof(inet_ehash_secret));
-+
- 	return __inet_ehashfn(laddr, lport, faddr, fport,
- 			      inet_ehash_secret + net_hash_mix(net));
- }
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index b4437c7..89909dd 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -411,8 +411,12 @@ static unsigned int udp_ehashfn(struct net *net, const __be32 laddr,
- 				 const __u16 lport, const __be32 faddr,
- 				 const __be16 fport)
- {
-+	static u32 udp_ehash_secret __read_mostly;
-+
-+	net_get_random_once(&udp_ehash_secret, sizeof(udp_ehash_secret));
-+
- 	return __inet_ehashfn(laddr, lport, faddr, fport,
--			      inet_ehash_secret + net_hash_mix(net));
-+			      udp_ehash_secret + net_hash_mix(net));
- }
- 
- 
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index a2cb07c..20af1fb 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -110,11 +110,6 @@ static int inet6_create(struct net *net, struct socket *sock, int protocol,
- 	int try_loading_module = 0;
- 	int err;
- 
--	if (sock->type != SOCK_RAW &&
--	    sock->type != SOCK_DGRAM &&
--	    !inet_ehash_secret)
--		build_ehash_secret();
--
- 	/* Look for the requested type/protocol pair. */
- lookup_protocol:
- 	err = -ESOCKTNOSUPPORT;
-diff --git a/net/ipv6/inet6_hashtables.c b/net/ipv6/inet6_hashtables.c
-index fa7dd38..262e13c 100644
---- a/net/ipv6/inet6_hashtables.c
-+++ b/net/ipv6/inet6_hashtables.c
-@@ -29,10 +29,19 @@ static unsigned int inet6_ehashfn(struct net *net,
- 				  const struct in6_addr *faddr,
- 				  const __be16 fport)
- {
--	const u32 lhash = (__force u32)laddr->s6_addr32[3];
--	const u32 fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
-+	static u32 inet6_ehash_secret __read_mostly;
-+	static u32 ipv6_hash_secret __read_mostly;
-+
-+	u32 lhash, fhash;
-+
-+	net_get_random_once(&inet6_ehash_secret, sizeof(inet6_ehash_secret));
-+	net_get_random_once(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
-+
-+	lhash = (__force u32)laddr->s6_addr32[3];
-+	fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
-+
- 	return __inet6_ehashfn(lhash, lport, fhash, fport,
--			       inet_ehash_secret + net_hash_mix(net));
-+			       inet6_ehash_secret + net_hash_mix(net));
- }
- 
- static int inet6_sk_ehashfn(const struct sock *sk)
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 324bd36..44fc4e3 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -59,10 +59,21 @@ static unsigned int udp6_ehashfn(struct net *net,
- 				  const struct in6_addr *faddr,
- 				  const __be16 fport)
- {
--	const u32 lhash = (__force u32)laddr->s6_addr32[3];
--	const u32 fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
-+	static u32 udp6_ehash_secret __read_mostly;
-+	static u32 udp_ipv6_hash_secret __read_mostly;
-+
-+	u32 lhash, fhash;
-+
-+	net_get_random_once(&udp6_ehash_secret,
-+			    sizeof(udp6_ehash_secret));
-+	net_get_random_once(&udp_ipv6_hash_secret,
-+			    sizeof(udp_ipv6_hash_secret));
-+
-+	lhash = (__force u32)laddr->s6_addr32[3];
-+	fhash = __ipv6_addr_jhash(faddr, udp_ipv6_hash_secret);
-+
- 	return __inet6_ehashfn(lhash, lport, fhash, fport,
--			       inet_ehash_secret + net_hash_mix(net));
-+			       udp_ipv6_hash_secret + net_hash_mix(net));
- }
- 
- int ipv6_rcv_saddr_equal(const struct sock *sk, const struct sock *sk2)
-diff --git a/net/rds/connection.c b/net/rds/connection.c
-index 45e2366..378c3a6 100644
---- a/net/rds/connection.c
-+++ b/net/rds/connection.c
-@@ -51,10 +51,16 @@ static struct kmem_cache *rds_conn_slab;
- 
- static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
- {
-+	static u32 rds_hash_secret __read_mostly;
-+
-+	unsigned long hash;
-+
-+	net_get_random_once(&rds_hash_secret, sizeof(rds_hash_secret));
-+
- 	/* Pass NULL, don't need struct net for hash */
--	unsigned long hash = __inet_ehashfn(be32_to_cpu(laddr), 0,
--					    be32_to_cpu(faddr), 0,
--					    inet_ehash_secret);
-+	hash = __inet_ehashfn(be32_to_cpu(laddr), 0,
-+			      be32_to_cpu(faddr), 0,
-+			      rds_hash_secret);
- 	return &rds_conn_hash[hash & RDS_CONNECTION_HASH_MASK];
- }
- 
--- 
-1.8.3.1
+Included patches:
+ ipv4: split inet_ehashfn to hash functions per compilation unit
+ ipv6: split inet6_ehashfn to hash functions per compilation unit
+ static_key: WARN on usage before jump_label_init was called
+ x86/jump_label: expect default_nop if static_key gets enabled on boot-up
+ net: introduce new macro net_get_random_once
+ inet: split syncookie keys for ipv4 and ipv6 and initialize with net_get_random_once
+ inet: convert inet_ehash_secret and ipv6_hash_secret to net_get_random_once
+ tcp: switch tcp_fastopen key generation to net_get_random_once
+ net: switch net_secret key generation to net_get_random_once
+
+Diffstat:
+ arch/x86/kernel/jump_label.c         | 25 ++++++++++++++++++-------
+ include/linux/jump_label.h           | 10 ++++++++++
+ include/linux/jump_label_ratelimit.h |  2 ++
+ include/linux/net.h                  | 25 +++++++++++++++++++++++++
+ include/net/inet6_hashtables.h       | 28 +++++++---------------------
+ include/net/inet_sock.h              | 26 ++++++--------------------
+ include/net/ipv6.h                   |  4 ++--
+ include/net/tcp.h                    |  3 +--
+ init/main.c                          |  7 +++++++
+ kernel/jump_label.c                  |  5 +++++
+ net/core/secure_seq.c                | 14 ++------------
+ net/core/utils.c                     | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ net/ipv4/af_inet.c                   | 27 ---------------------------
+ net/ipv4/inet_hashtables.c           | 25 +++++++++++++++++++++++++
+ net/ipv4/syncookies.c                | 15 +++++----------
+ net/ipv4/sysctl_net_ipv4.c           |  5 +++++
+ net/ipv4/tcp_fastopen.c              | 27 ++++++++++++++++-----------
+ net/ipv4/udp.c                       | 20 ++++++++++++++++----
+ net/ipv6/af_inet6.c                  |  5 -----
+ net/ipv6/inet6_hashtables.c          | 33 +++++++++++++++++++++++++++++++++
+ net/ipv6/syncookies.c                | 12 +++++++++---
+ net/ipv6/udp.c                       | 31 +++++++++++++++++++++++++++----
+ net/rds/connection.c                 | 12 +++++++++---
+ 23 files changed, 278 insertions(+), 131 deletions(-)
+
+Greetings,
+
+  Hannes
 
