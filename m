@@ -1,135 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762405Ab3JQS0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:26:17 -0400
-Received: from dukecmmtar04.coxmail.com ([68.99.120.47]:32832 "EHLO
-	dukecmmtar04.coxmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762278Ab3JQS0P (ORCPT
+	id S1762490Ab3JQS03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:26:29 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:53901 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762426Ab3JQS0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:26:15 -0400
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: linux-usb@vger.kernel.org
-Subject: [PATCH 1/2 v3] ARM: ep93xx_defconfig: cleanup ep93xx_defconfig
-Date: Thu, 17 Oct 2013 11:25:36 -0700
-User-Agent: KMail/1.9.9
-Cc: ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <rmallon@gmail.com>, stern@rowland.harvard.edu,
-        Lennert Buytenhek <buytenh@wantstofly.org>, gregkh@linuxfoundation.org,
-        olof@lixom.net, Russell King <linux@arm.linux.org.uk>
+	Thu, 17 Oct 2013 14:26:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201310171125.37004.hartleys@visionengravers.com>
+In-Reply-To: <20131017163039.GR10651@twins.programming.kicks-ass.net>
+References: <20131015143227.GY26785@twins.programming.kicks-ass.net>
+	<20131015150736.GZ26785@twins.programming.kicks-ass.net>
+	<20131015154104.GA227855@redhat.com>
+	<20131016105755.GX10651@twins.programming.kicks-ass.net>
+	<20131016205227.GJ7456@tassilo.jf.intel.com>
+	<20131016210319.GI10651@twins.programming.kicks-ass.net>
+	<20131016230712.GC26785@twins.programming.kicks-ass.net>
+	<20131017094145.GE3364@laptop.programming.kicks-ass.net>
+	<20131017160034.GO227855@redhat.com>
+	<20131017160439.GP227855@redhat.com>
+	<20131017163039.GR10651@twins.programming.kicks-ass.net>
+Date: Thu, 17 Oct 2013 11:26:23 -0700
+X-Google-Sender-Auth: Y8c76XWaNlQCbPijJci5-ut01qQ
+Message-ID: <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        dave.hansen@linux.intel.com, Stephane Eranian <eranian@google.com>,
+        jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generate ep93xx_defconfig by doing:
+On Thu, Oct 17, 2013 at 9:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> So avoid having to call copy_from_user_nmi() for every instruction.
+> Since we already limit the max basic block size, we can easily
+> pre-allocate a piece of memory to copy the entire thing into in one
+> go.
 
-make ep93xx_defconfig
-make savedefconfig
-mv defconfig arch/arm/configs/ep93xx_defconfig
+copy_from_user_nmi() itself is all kinds of nasty.
 
-No functional change. This just refreshes the ep93xx_defconfig to make it
-easier and cleaner when adding new entries.
+Using __get_user_pages_fast() for a single page is quite expensive,
+and mucks around with the page counts etc.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/configs/ep93xx_defconfig | 16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+If copy_from_user_nmi() just did the (simple) page table walk by hand,
+it could avoid *all* of that. No page count stuff - just have
+interrupts disabled over not just the page walk, but the copy too - to
+guarantee that no cross-CPU TLB flush can come in.
 
-diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
-index 806005a..8eccbcb 100644
---- a/arch/arm/configs/ep93xx_defconfig
-+++ b/arch/arm/configs/ep93xx_defconfig
-@@ -1,15 +1,14 @@
--CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
- CONFIG_LOG_BUF_SHIFT=14
--CONFIG_SYSFS_DEPRECATED_V2=y
- CONFIG_EXPERT=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- CONFIG_MODULE_FORCE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
-+CONFIG_PARTITION_ADVANCED=y
- # CONFIG_IOSCHED_CFQ is not set
- CONFIG_ARCH_EP93XX=y
- CONFIG_CRUNCH=y
-@@ -47,11 +46,8 @@ CONFIG_IPV6=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_CONCAT=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_REDBOOT_PARTS=y
- CONFIG_MTD_CMDLINE_PARTS=y
--CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_CFI=y
- CONFIG_MTD_CFI_ADV_OPTIONS=y
-@@ -67,15 +63,14 @@ CONFIG_SCSI=y
- # CONFIG_SCSI_PROC_FS is not set
- CONFIG_BLK_DEV_SD=y
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
- CONFIG_EP93XX_ETH=y
- CONFIG_USB_RTL8150=y
- # CONFIG_INPUT is not set
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
-+# CONFIG_LEGACY_PTYS is not set
- CONFIG_SERIAL_AMBA_PL010=y
- CONFIG_SERIAL_AMBA_PL010_CONSOLE=y
--# CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
-@@ -86,7 +81,6 @@ CONFIG_WATCHDOG=y
- CONFIG_EP93XX_WATCHDOG=y
- CONFIG_USB=y
- CONFIG_USB_DEBUG=y
--CONFIG_USB_DEVICEFS=y
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_OHCI_HCD=y
- CONFIG_USB_STORAGE=y
-@@ -100,24 +94,18 @@ CONFIG_RTC_DRV_EP93XX=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_FS_XATTR is not set
--CONFIG_INOTIFY=y
- CONFIG_VFAT_FS=y
- CONFIG_TMPFS=y
- CONFIG_JFFS2_FS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_ROOT_NFS=y
--CONFIG_PARTITION_ADVANCED=y
- CONFIG_NLS_CODEPAGE_437=y
- CONFIG_NLS_ISO8859_1=y
- CONFIG_MAGIC_SYSRQ=y
--CONFIG_DEBUG_KERNEL=y
- CONFIG_DEBUG_SLAB=y
- CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_MUTEXES=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_DEBUG_USER=y
--CONFIG_DEBUG_ERRORS=y
- CONFIG_DEBUG_LL=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
- CONFIG_LIBCRC32C=y
--- 
-1.8.3.2
+So instead of trying to improve __get_user_pages_fast() - which is
+impossible because the interface fundamentally means that it has to
+iterate over things and check page counts - you could simplify the
+caller instead.
 
+That is, if we really care any more. Maybe this "do the
+copy_from_user_nmi() just once" is already good enough that nobody
+much cares.
+
+                 Linus
