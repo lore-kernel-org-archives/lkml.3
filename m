@@ -1,357 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3JQH5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 03:57:34 -0400
-Received: from tundra.namei.org ([65.99.196.166]:41464 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab3JQH5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 03:57:30 -0400
-Date: Thu, 17 Oct 2013 19:02:17 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-In-Reply-To: <20130920203556.GA8726@www.outflux.net>
-Message-ID: <alpine.LRH.2.02.1310171858170.32257@tundra.namei.org>
-References: <20130920203556.GA8726@www.outflux.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752912Ab3JQH5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 03:57:48 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3144 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab3JQH5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 03:57:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 17 Oct 2013 00:57:46 -0700
+Date: Thu, 17 Oct 2013 10:57:43 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] clk: tegra: Add support for PLLSS
+Message-ID: <20131017075743.GQ5643@tbergstrom-lnx.Nvidia.com>
+References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
+ <1381850098-12357-2-git-send-email-pdeschrijver@nvidia.com>
+ <525DA373.6040805@wwwdotorg.org>
+ <20131016074829.GD5643@tbergstrom-lnx.Nvidia.com>
+ <525ECB08.4020201@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <525ECB08.4020201@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This seems like a regression in terms of separating mechanism and policy.  
-
-We have several access control systems available (SELinux, at least) which 
-can implement this functionality with existing mechanisms using dynamic 
-policy.
-
-I'm concerned about the long term architectural impact of a proliferation 
-of arbitrary hard-coded security policies in the kernel.  I don't 
-understand the push in this direction, frankly.
-
-
-
-On Fri, 20 Sep 2013, Kees Cook wrote:
-
-> This LSM enforces that modules must all come from the same filesystem,
-> with the expectation that such a filesystem is backed by a read-only
-> device such as dm-verity or CDROM. This allows systems that have a
-> verified or unchanging filesystem to enforce module loading restrictions
-> without needing to sign the modules individually.
+On Wed, Oct 16, 2013 at 07:21:12PM +0200, Stephen Warren wrote:
+> On 10/16/2013 01:48 AM, Peter De Schrijver wrote:
+> > On Tue, Oct 15, 2013 at 10:20:03PM +0200, Stephen Warren wrote:
+> >> On 10/15/2013 09:14 AM, Peter De Schrijver wrote:
+> >>> Tegra124 introduces a new PLL type, PLLSS. Add support for it.
+> >>
+> >>> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+> >>
+> >>
+> >>> +static int clk_pllss_set_rate(struct clk_hw *hw, unsigned long rate,
+> >>> +				unsigned long parent_rate)
+> >>
+> >> This function seems pretty generic. Is it possible to share a bit more
+> >> code with any of the other pllXXX_set_rate() functions?
+> >>
+> >>> +struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
+> >>> +				void __iomem *clk_base, unsigned long flags,
+> >>> +				struct tegra_clk_pll_params *pll_params,
+> >>> +				spinlock_t *lock)
+> >>
+> >>> +	val = pll_readl_base(pll);
+> >>> +	if (val & PLLSS_REF_SRC_SEL_MASK) {
+> >>> +		WARN(1, "Unknown parent selected for %s: %d\n", name,
+> >>> +			(val & PLLSS_REF_SRC_SEL_MASK) >>
+> >>> +			PLLSS_REF_SRC_SEL_SHIFT);
+> >>> +		kfree(pll);
+> >>> +		return ERR_PTR(-EINVAL);
+> >>> +	}
+> >>
+> >> If there's a field in HW that muxes the clock input between n clocks,
+> >> why does this function assume there's a single parent for this PLL, by
+> >> taking a "const char *parent_name" parameter?
+> >>
+> >> What happens if the bootloader changed this field in HW; is the kernel
+> >> simply not able to boot?
+> >>
+> > 
+> > This logic comes from downstream. I guess it means we're running in an
+> > unvalidated configuration. Do you think we should expose all parents 
+> > anyway? Even if not all configurations have been validated?
+> > (which is quite likely)
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  security/Kconfig         |    6 ++
->  security/Makefile        |    2 +
->  security/modpin/Kconfig  |    9 +++
->  security/modpin/Makefile |    1 +
->  security/modpin/modpin.c |  197 ++++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 215 insertions(+)
->  create mode 100644 security/modpin/Kconfig
->  create mode 100644 security/modpin/Makefile
->  create mode 100644 security/modpin/modpin.c
-> 
-> diff --git a/security/Kconfig b/security/Kconfig
-> index e9c6ac7..80172fd 100644
-> --- a/security/Kconfig
-> +++ b/security/Kconfig
-> @@ -121,6 +121,7 @@ source security/selinux/Kconfig
->  source security/smack/Kconfig
->  source security/tomoyo/Kconfig
->  source security/apparmor/Kconfig
-> +source security/modpin/Kconfig
->  source security/yama/Kconfig
->  
->  source security/integrity/Kconfig
-> @@ -131,6 +132,7 @@ choice
->  	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
->  	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
->  	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
-> +	default DEFAULT_SECURITY_MODPIN if SECURITY_MODPIN
->  	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
->  	default DEFAULT_SECURITY_DAC
->  
-> @@ -150,6 +152,9 @@ choice
->  	config DEFAULT_SECURITY_APPARMOR
->  		bool "AppArmor" if SECURITY_APPARMOR=y
->  
-> +	config DEFAULT_SECURITY_MODPIN
-> +		bool "ModPin" if SECURITY_MODPIN=y
-> +
->  	config DEFAULT_SECURITY_YAMA
->  		bool "Yama" if SECURITY_YAMA=y
->  
-> @@ -164,6 +169,7 @@ config DEFAULT_SECURITY
->  	default "smack" if DEFAULT_SECURITY_SMACK
->  	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
->  	default "apparmor" if DEFAULT_SECURITY_APPARMOR
-> +	default "modpin" if DEFAULT_SECURITY_MODPIN
->  	default "yama" if DEFAULT_SECURITY_YAMA
->  	default "" if DEFAULT_SECURITY_DAC
->  
-> diff --git a/security/Makefile b/security/Makefile
-> index c26c81e..73d0a05 100644
-> --- a/security/Makefile
-> +++ b/security/Makefile
-> @@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
->  subdir-$(CONFIG_SECURITY_SMACK)		+= smack
->  subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
->  subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
-> +subdir-$(CONFIG_SECURITY_MODPIN)	+= modpin
->  subdir-$(CONFIG_SECURITY_YAMA)		+= yama
->  
->  # always enable default capabilities
-> @@ -22,6 +23,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
->  obj-$(CONFIG_AUDIT)			+= lsm_audit.o
->  obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
->  obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
-> +obj-$(CONFIG_SECURITY_MODPIN)		+= modpin/built-in.o
->  obj-$(CONFIG_SECURITY_YAMA)		+= yama/built-in.o
->  obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
->  
-> diff --git a/security/modpin/Kconfig b/security/modpin/Kconfig
-> new file mode 100644
-> index 0000000..5be9dd5
-> --- /dev/null
-> +++ b/security/modpin/Kconfig
-> @@ -0,0 +1,9 @@
-> +config SECURITY_MODPIN
-> +	bool "Module filesystem origin pinning"
-> +	depends on SECURITY
-> +	help
-> +	  Module loading will be pinned to the first filesystem used for
-> +	  loading. Any modules that come from other filesystems will be
-> +	  rejected. This is best used on systems without an initrd that
-> +	  have a root filesystem backed by a read-only device such as
-> +	  dm-verity or a CDROM.
-> diff --git a/security/modpin/Makefile b/security/modpin/Makefile
-> new file mode 100644
-> index 0000000..9080b29
-> --- /dev/null
-> +++ b/security/modpin/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_SECURITY_MODPIN) += modpin.o
-> diff --git a/security/modpin/modpin.c b/security/modpin/modpin.c
-> new file mode 100644
-> index 0000000..107b4d8
-> --- /dev/null
-> +++ b/security/modpin/modpin.c
-> @@ -0,0 +1,197 @@
-> +/*
-> + * Module Pinning Security Module
-> + *
-> + * Copyright 2011-2013 Google Inc.
-> + *
-> + * Authors:
-> + *      Kees Cook       <keescook@chromium.org>
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#define pr_fmt(fmt) "ModPin LSM: " fmt
-> +
-> +#include <linux/module.h>
-> +#include <linux/security.h>
-> +#include <linux/sched.h>
-> +#include <linux/fs.h>
-> +#include <linux/fs_struct.h>
-> +#include <linux/mount.h>
-> +#include <linux/path.h>
-> +#include <linux/root_dev.h>
-> +
-> +static void report_load_module(struct path *path, char *operation)
-> +{
-> +	char *alloced = NULL;
-> +	char *pathname; /* Pointer to either static string or "alloced". */
-> +
-> +	if (!path)
-> +		pathname = "<unknown>";
-> +	else {
-> +		/* We will allow 11 spaces for ' (deleted)' to be appended */
-> +		alloced = pathname = kmalloc(PATH_MAX+11, GFP_KERNEL);
-> +		if (!pathname)
-> +			pathname = "<no_memory>";
-> +		else {
-> +			pathname = d_path(path, pathname, PATH_MAX+11);
-> +			if (IS_ERR(pathname))
-> +				pathname = "<too_long>";
-> +		}
-> +	}
-> +
-> +	pr_notice("init_module %s module=%s pid=%d\n",
-> +		  operation, pathname, task_pid_nr(current));
-> +
-> +	kfree(alloced);
-> +}
-> +
-> +static int modpin_enforced = 1;
-> +static struct dentry *pinned_root;
-> +static DEFINE_SPINLOCK(pinned_root_spinlock);
-> +
-> +#ifdef CONFIG_SYSCTL
-> +static int zero;
-> +static int one = 1;
-> +
-> +static struct ctl_path modpin_sysctl_path[] = {
-> +	{ .procname = "kernel", },
-> +	{ .procname = "modpin", },
-> +	{ }
-> +};
-> +
-> +static struct ctl_table modpin_sysctl_table[] = {
-> +	{
-> +		.procname       = "enforced",
-> +		.data           = &modpin_enforced,
-> +		.maxlen         = sizeof(int),
-> +		.mode           = 0644,
-> +		.proc_handler   = proc_dointvec_minmax,
-> +		.extra1         = &zero,
-> +		.extra2         = &one,
-> +	},
-> +	{ }
-> +};
-> +
-> +/*
-> + * Check if the root device is read-only (e.g. dm-verity is enabled).
-> + * This must be called after early kernel init, since only then is the
-> + * rootdev available.
-> + */
-> +static bool rootdev_readonly(void)
-> +{
-> +	bool rc;
-> +	struct block_device *bdev;
-> +	const fmode_t mode = FMODE_WRITE;
-> +
-> +	bdev = blkdev_get_by_dev(ROOT_DEV, mode, NULL);
-> +	if (IS_ERR(bdev)) {
-> +		/* In this weird case, assume it is read-only. */
-> +		pr_info("dev(%u,%u): FMODE_WRITE disallowed?!\n",
-> +			MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
-> +		return true;
-> +	}
-> +
-> +	rc = bdev_read_only(bdev);
-> +	blkdev_put(bdev, mode);
-> +
-> +	pr_info("dev(%u,%u): %s\n", MAJOR(ROOT_DEV), MINOR(ROOT_DEV),
-> +		rc ? "read-only" : "writable");
-> +
-> +	return rc;
-> +}
-> +
-> +static void check_pinning_enforcement(void)
-> +{
-> +	/*
-> +	 * If module pinning is not being enforced, allow sysctl to change
-> +	 * modes for testing.
-> +	 */
-> +	if (!rootdev_readonly()) {
-> +		if (!register_sysctl_paths(modpin_sysctl_path,
-> +					   modpin_sysctl_table))
-> +			pr_notice("sysctl registration failed!\n");
-> +		else
-> +			pr_info("module pinning can be disabled.\n");
-> +	} else
-> +		pr_info("module pinning engaged.\n");
-> +}
-> +#else
-> +static void check_pinning_enforcement(void) { }
-> +#endif
-> +
-> +
-> +static int modpin_load_module(struct file *file)
-> +{
-> +	struct dentry *module_root;
-> +
-> +	if (!file) {
-> +		if (!modpin_enforced) {
-> +			report_load_module(NULL, "old-api-pinning-ignored");
-> +			return 0;
-> +		}
-> +
-> +		report_load_module(NULL, "old-api-denied");
-> +		return -EPERM;
-> +	}
-> +
-> +	module_root = file->f_path.mnt->mnt_root;
-> +
-> +	/* First loaded module defines the root for all others. */
-> +	spin_lock(&pinned_root_spinlock);
-> +	if (!pinned_root) {
-> +		pinned_root = dget(module_root);
-> +		/*
-> +		 * Unlock now since it's only pinned_root we care about.
-> +		 * In the worst case, we will (correctly) report pinning
-> +		 * failures before we have announced that pinning is
-> +		 * enabled. This would be purely cosmetic.
-> +		 */
-> +		spin_unlock(&pinned_root_spinlock);
-> +		check_pinning_enforcement();
-> +		report_load_module(&file->f_path, "pinned");
-> +		return 0;
-> +	}
-> +	spin_unlock(&pinned_root_spinlock);
-> +
-> +	if (module_root != pinned_root) {
-> +		if (unlikely(!modpin_enforced)) {
-> +			report_load_module(&file->f_path, "pinning-ignored");
-> +			return 0;
-> +		}
-> +
-> +		report_load_module(&file->f_path, "denied");
-> +		return -EPERM;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct security_operations modpin_ops = {
-> +	.name	= "modpin",
-> +	.kernel_module_from_file = modpin_load_module,
-> +};
-> +
-> +static int __init modpin_init(void)
-> +{
-> +	int error;
-> +
-> +	error = register_security(&modpin_ops);
-> +
-> +	if (error)
-> +		panic("Could not register ModPin security module");
-> +
-> +	pr_info("ready to pin.\n");
-> +
-> +	return error;
-> +}
-> +security_initcall(modpin_init);
-> +
-> +module_param(modpin_enforced, int, S_IRUSR);
-> +MODULE_PARM_DESC(modpin_enforced, "Module pinning enforced (default: true)");
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> If we only support one particular parent, why not force the register
+> field to the desired value, rather than failing?
 
--- 
-James Morris
-<jmorris@namei.org>
+Sounds reasonable indeed. I will do that in the next version.
+
+Cheers,
+
+Peter.
