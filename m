@@ -1,148 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab3JQPkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:40:42 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:60204 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab3JQPkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:40:41 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
-        alsa-devel@alsa-project.org (moderated list:SOUND),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3] sound: pci: emu10k1: code refactoring and casting removal
-Date: Thu, 17 Oct 2013 12:35:31 -0300
-Message-Id: <1382024137-27716-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
-To: unlisted-recipients:; (no To-header on input)
+	id S1756611Ab3JQPpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:45:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16033 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab3JQPph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 11:45:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,514,1378882800"; 
+   d="scan'208";a="376183015"
+Message-ID: <52600608.2010704@linux.intel.com>
+Date: Thu, 17 Oct 2013 08:45:12 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, tglx@linutronix.de, linux@roeck-us.net,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86: unify copy_from_user() checking
+References: <525E964402000078000FB70C@nat28.tlf.novell.com> <525E9BF7.7020706@linux.intel.com> <525EC6C402000078000FB895@nat28.tlf.novell.com> <525EC73E.3060204@linux.intel.com> <525FCDD702000078000FBBF5@nat28.tlf.novell.com>
+In-Reply-To: <525FCDD702000078000FBBF5@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Partially restructures _snd_emu10k1_audigy_init_efx() and
-_snd_emu10k1_init_efx() functions.
+On 10/17/2013 2:45 AM, Jan Beulich wrote:
+> Sure: Let's take __tun_chr_ioctl(): While a static function, it gets
+> called with two different values for ifreq_len, both of which are
+> provably (for a human) correct. I don't think, however, that the
+> compiler can be expected to do so on its own in all cases - I would
+> expect it to be able to when it decides to inline the function in
+> both callers, but the larger that function grows, the more likely
+> it'll become that the compiler chooses to keep it separate (and it
+> surely would when CONFIG_CC_OPTIMIZE_FOR_SIZE).
 
-Removes useless casting (void *) from value returned by kcalloc;
-see Documentation/CodingStyle, Chap 14.
+with multiple callers.... I would feel safer if there was a check inside the function.
+but this is a fair point (the function is large so indeed it is unlikely to get inlined)
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- sound/pci/emu10k1/emufx.c | 76 ++++++++++++++++++++++++++++-------------------
- 1 file changed, 45 insertions(+), 31 deletions(-)
 
-diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
-index 0275209..6c45714 100644
---- a/sound/pci/emu10k1/emufx.c
-+++ b/sound/pci/emu10k1/emufx.c
-@@ -1182,15 +1182,20 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
- 	u32 *gpr_map;
- 	mm_segment_t seg;
- 
--	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
--	    (icode->gpr_map = (u_int32_t __user *)
--	     kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
--		     GFP_KERNEL)) == NULL ||
--	    (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
--				sizeof(*controls), GFP_KERNEL)) == NULL) {
--		err = -ENOMEM;
--		goto __err;
--	}
-+	err = -ENOMEM;
-+	icode = kzalloc(sizeof(*icode), GFP_KERNEL);
-+	if (!icode)
-+		return err;
-+
-+	icode->gpr_map = (__user) kcalloc(512 + 256 + 256 + 2 * 1024,
-+					  sizeof(u_int32_t), GFP_KERNEL);
-+	if (!icode->gpr_map)
-+		goto __err_gpr;
-+	controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
-+			   sizeof(*controls), GFP_KERNEL);
-+	if (!controls)
-+		goto __err_ctrls;
-+
- 	gpr_map = (u32 __force *)icode->gpr_map;
- 
- 	icode->tram_data_map = icode->gpr_map + 512;
-@@ -1741,12 +1746,12 @@ A_OP(icode, &ptr, iMAC0, A_GPR(var), A_GPR(var), A_GPR(vol), A_EXTIN(input))
- 	emu->support_tlv = 0; /* clear again */
- 	snd_leave_user(seg);
- 
-- __err:
-+__err:
- 	kfree(controls);
--	if (icode != NULL) {
--		kfree((void __force *)icode->gpr_map);
--		kfree(icode);
--	}
-+__err_ctrls:
-+	kfree((void __force *)icode->gpr_map);
-+__err_gpr:
-+	kfree(icode);
- 	return err;
- }
- 
-@@ -1813,18 +1818,26 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
- 	u32 *gpr_map;
- 	mm_segment_t seg;
- 
--	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL)
--		return -ENOMEM;
--	if ((icode->gpr_map = (u_int32_t __user *)
--	     kcalloc(256 + 160 + 160 + 2 * 512, sizeof(u_int32_t),
--		     GFP_KERNEL)) == NULL ||
--            (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
--				sizeof(struct snd_emu10k1_fx8010_control_gpr),
--				GFP_KERNEL)) == NULL ||
--	    (ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL)) == NULL) {
--		err = -ENOMEM;
--		goto __err;
--	}
-+	err = -ENOMEM;
-+	icode = kzalloc(sizeof(*icode), GFP_KERNEL);
-+	if (!icode)
-+		return err;
-+
-+	icode->gpr_map = (__user) kcalloc(256 + 160 + 160 + 2 * 512,
-+					  sizeof(u_int32_t), GFP_KERNEL);
-+	if (!icode->gpr_map)
-+		goto __err_gpr;
-+
-+	controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
-+			   sizeof(struct snd_emu10k1_fx8010_control_gpr),
-+			   GFP_KERNEL);
-+	if (!controls)
-+		goto __err_ctrls;
-+
-+	ipcm = kzalloc(sizeof(*ipcm), GFP_KERNEL);
-+	if (!ipcm)
-+		goto __err_ipcm;
-+
- 	gpr_map = (u32 __force *)icode->gpr_map;
- 
- 	icode->tram_data_map = icode->gpr_map + 256;
-@@ -2363,13 +2376,14 @@ static int _snd_emu10k1_init_efx(struct snd_emu10k1 *emu)
- 	snd_leave_user(seg);
- 	if (err >= 0)
- 		err = snd_emu10k1_ipcm_poke(emu, ipcm);
--      __err:
-+__err:
- 	kfree(ipcm);
-+__err_ipcm:
- 	kfree(controls);
--	if (icode != NULL) {
--		kfree((void __force *)icode->gpr_map);
--		kfree(icode);
--	}
-+__err_ctrls:
-+	kfree((void __force *)icode->gpr_map);
-+__err_gpr:
-+	kfree(icode);
- 	return err;
- }
- 
--- 
-1.8.4
+
+
+> Otoh one would expect a modern compiler to be able to do the
+> checking in the case of aer_inject_write(). Yet not everyone is
+> using most recent compiler versions, but I personally expect a
+> warning free compilation in that case too (at least outside the
+> staging sub-tree, which I avoid to build as much as possible). And
+> I know that I had seen the warning there (or else it wouldn't have
+> caught my attention, and I wouldn't have quoted it in the patch
+> description).
+
+if gcc doesn't find this one then arguably that's a gcc bug.
+(which is the thing that has been plaguing this feature unfortunately. in theory gcc
+should be able to cope with many of these.... in practice...)
+
+
+for me, the value of the feature overall is this range checking, not the fixed size part.
+for fixed size... the chance of the programmer getting it wrong is near zero.
+the chance of getting one of the checks wrong is much higher
+(we've had cases of wrong sign in the checks, off by ones in the checks etc)
+and that is what it was supposed to find.
+If that's not possible due practical issues (like the inline case above but more
+the compiler practicalities).... removing the warning part entirely is likely just better.
+
+Having a runtime check for the case where the argument is not constant but we know the buffer
+size... is likely still clear value... cheap (perfect branch prediction unless disaster hits!)
+and the failure case is obviously the disaster case.
+
 
