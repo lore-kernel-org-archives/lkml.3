@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763006Ab3JQWFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 18:05:53 -0400
-Received: from mo4.mail-out.ovh.net ([178.32.228.4]:41505 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762535Ab3JQWFw (ORCPT
+	id S932156Ab3JQWLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 18:11:45 -0400
+Received: from s15283307.onlinehome-server.info ([87.106.208.187]:38335 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762378Ab3JQWLo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 18:05:52 -0400
-Date: Thu, 17 Oct 2013 18:09:46 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: srinivas kandagatla <srinivas.kandagatla@st.com>,
-        Maxime COQUELIN <maxime.coquelin@st.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stuart MENEFY <stuart.menefy@st.com>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
-Message-ID: <20131017160946.GF14104@ns203013.ovh.net>
-References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
- <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>
- <20131016151419.GA14104@ns203013.ovh.net>
- <525F915D.9020501@st.com>
- <525FAEED.7030207@st.com>
- <20131017141957.GE14104@ns203013.ovh.net>
- <20131017155308.GQ19112@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131017155308.GQ19112@lee--X1>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 816840383210499071
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 17 Oct 2013 18:11:44 -0400
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: [PATCH] Bluetooth: Add hci_h4p driver
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <201310172225.33343@pali>
+Date: Fri, 18 Oct 2013 00:11:44 +0200
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3B0F039C-4680-46FF-A654-48D6A28B9B5E@holtmann.org>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com> <201310172225.33343@pali>
+To: =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:53 Thu 17 Oct     , Lee Jones wrote:
-> On Thu, 17 Oct 2013, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> 
-> > On 10:33 Thu 17 Oct     , srinivas kandagatla wrote:
-> > > On 17/10/13 08:27, Maxime COQUELIN wrote:
-> > > > ...
-> > > >>> >> +
-> > > >>> >> +static struct of_device_id st_i2c_match[] = {
-> > > >>> >> +     { .compatible = "st,comms-ssc-i2c", },
-> > > >> > the rules is to put the first soc that use the ip in the compatible
-> > > >> > as st,sti7100-scc-i2c
-> > > > Ok. There are no plans to upstream the SH4 platforms, it will only 
-> > > > remains in stlinux.com.
-> > > > Maybe I can set the first ARM platform (STiH415)?
-> > > > That would give st,stih415-ssc-i2c.
-> > > NAK, for st,stih415-ssc-i2c naming.
-> > > 
-> > > IMO, this makes sense when the same IP integration done on different SOC
-> > > changes slightly/very differently.
-> > > 
-> > > But in this case the "comms" IP remains unchanged across all the SOCs.
-> > > 
-> > > I would still prefer "st,comms-ssc-i2c", allowing a single device driver
-> > > to match against several SoCs. ST "comms" IP it is integrated across all
-> > > the STi series of SoCs, so we don't want to add new entry in compatible
-> > > for every new SOC.
-> > 
-> > you never need this you always the first SoC that's all
-> > 
-> > see other bindings on at91 as example sorry NACK
-> 
-> I'm guessing that using the first SoC is an I2C'isum.
-> 
-> Guys, if you don't want to be too specific, just make it as generic as
-> possible whilest still using the SoC as a POR: st,stih41x-ssc-i2c will
-> do for now, as it covers all current bases.
+Hi Pali,
 
-except this is wrong the IP is used on much older SoC than the recent ARM ones
-
-and the DT so please respect the rule first SoC used on
-
-Best Regards,
-J.
+>> This driver adding support for Nokia N900 bluetooth hardware
+>> 
+>> Signed-off-by: Ville Tervo <ville.tervo@nokia.com>
+>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>> ---
+>> drivers/bluetooth/Kconfig             |   10 +
+>> drivers/bluetooth/Makefile            |    2 +
+>> drivers/bluetooth/hci_h4p/Makefile    |    7 +
+>> drivers/bluetooth/hci_h4p/core.c      | 1085
+>> +++++++++++++++++++++++++++++++++
+>> drivers/bluetooth/hci_h4p/fw-bcm.c    |  149 +++++
+>> drivers/bluetooth/hci_h4p/fw-csr.c    |  152 +++++
+>> drivers/bluetooth/hci_h4p/fw-ti1273.c |  113 ++++
+>> drivers/bluetooth/hci_h4p/fw.c        |  166 +++++
+>> drivers/bluetooth/hci_h4p/hci_h4p.h   |  238 ++++++++
+>> drivers/bluetooth/hci_h4p/uart.c      |  203 ++++++
+>> include/linux/bluetooth/hci_h4p.h     |   41 ++
+>> 11 files changed, 2166 insertions(+)
+>> create mode 100644 drivers/bluetooth/hci_h4p/Makefile
+>> create mode 100644 drivers/bluetooth/hci_h4p/core.c
+>> create mode 100644 drivers/bluetooth/hci_h4p/fw-bcm.c
+>> create mode 100644 drivers/bluetooth/hci_h4p/fw-csr.c
+>> create mode 100644 drivers/bluetooth/hci_h4p/fw-ti1273.c
+>> create mode 100644 drivers/bluetooth/hci_h4p/fw.c
+>> create mode 100644 drivers/bluetooth/hci_h4p/hci_h4p.h
+>> create mode 100644 drivers/bluetooth/hci_h4p/uart.c
+>> create mode 100644 include/linux/bluetooth/hci_h4p.h
+>> 
 > 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> Can somebody look & comment this patch? What is needed to be part 
+> of upstream kernel?
+
+you need to rebase against bluetooth-next at least.
+
+Regards
+
+Marcel
+
