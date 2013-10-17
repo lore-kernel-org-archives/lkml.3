@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab3JQQG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:06:59 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:45787 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757404Ab3JQQG5 (ORCPT
+	id S1757963Ab3JQQHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:07:32 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:51072 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757848Ab3JQQHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:06:57 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-fb-52600b1f4341
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] spi/s3c64xx: Add missing pm_runtime_set_active() call in
- probe()
-Date: Thu, 17 Oct 2013 18:06:46 +0200
-Message-id: <1382026006-15544-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t/xq7ry3AlBBu179S0mrTvAZDH14RM2
-	i9cvDC16F1xlszjb9IbdYtPja6wWl3fNYbOYcX4fk0Xjx5vsFofftLM6cHn8XfWC2WPTqk42
-	j81L6j36tqxi9Pi8SS6ANYrLJiU1J7MstUjfLoErY/6ONsaCWewVEyZ9ZWlgbGHrYuTkkBAw
-	kdjY0sECYYtJXLi3HijOxSEksJRR4u6ORewQTh+TRMP1I4wgVWwCxhKbly8B6xYRyJK4/W8L
-	M0gRs8BkJonTL3eCFQkLBEu8e9zHCmKzCKhKfJh+jR3E5hVwl+g/2AMU5wBapyAxZ5LNBEbu
-	BYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCAujLDsbFx6wOMQpwMCrx8B74Fh8kxJpY
-	VlyZe4hRgoNZSYQ3jishSIg3JbGyKrUoP76oNCe1+BAjEwenVAOj91KnQ9xf1NImfljdJbI0
-	a7mL0NeX+guZIxdWLwiaIuqiL/NmrbexdMv/uxc6H3nrav43VfnC4KYxx68kIL4vzzKVcaKU
-	uVFy03XOnWEL5e39bdidwmp/Jd77FaB1rUhkd+g28fXiFZyHraZo9l198uHjsvxXmnN8cu6H
-	NsafUVbUaOnqjlJiKc5INNRiLipOBAB40Ua+/gEAAA==
+	Thu, 17 Oct 2013 12:07:31 -0400
+Date: Thu, 17 Oct 2013 18:07:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd
+Message-ID: <20131017160726.GJ28963@localhost.localdomain>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+ <20131017135509.GB28963@localhost.localdomain>
+ <00000141c704b634-d1e47864-686f-40a9-b42e-cd5416dec367-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000141c704b634-d1e47864-686f-40a9-b42e-cd5416dec367-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark device as PM runtime active during initialization to reflect
-actual device power/clocks state. This reduces the enable count for SPI
-bus controller gate clock so it can be disabled when the bus controller
-is not used.
+On Thu, Oct 17, 2013 at 03:24:36PM +0000, Christoph Lameter wrote:
+> On Thu, 17 Oct 2013, Frederic Weisbecker wrote:
+> 
+> > > -	/* We can run anywhere, unlike our parent keventd(). */
+> > > -	set_cpus_allowed_ptr(current, cpu_all_mask);
+> > > +	/* We can run anywhere kthreadd can run */
+> > > +	set_kthreadd_affinity();
+> >
+> > If you really want your isolated CPUs to be undisturbed, you need this affinity to
+> > be set before the creation of this usermode helper. Otherwise it's going to run to any random
+> > place before you call the above function.
+> >
+> > Is there now way to control the kworker affinity which create this usermode helpers threads
+> > instead?
+> 
+> The invocation is coming from keventd so the affinity seems to be set to
+> a different cpu before we get the thread moved.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/spi/spi-s3c64xx.c |    1 +
- 1 file changed, 1 insertion(+)
+Looking at alloc_singlethread_workqueue(), it seems to create a kthread by using
+kthread_create(). So I guess the resulting works have the affinity of that kthread.
+And thus call_usermodehelper() initially has that affinity, until it spreads it explicitly
+to all CPUs.
 
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 0ddaff2..ae07c3a 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -1429,6 +1429,7 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
- 	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
- 	       sdd->regs + S3C64XX_SPI_INT_EN);
- 
-+	pm_runtime_set_active(&pdev->dev);
- 	pm_runtime_enable(&pdev->dev);
- 
- 	if (spi_register_master(master)) {
--- 
-1.7.9.5
+Couldn't we instead make kthread children (those created with kthread_create()) to inherit
+kthread initial affinity? Currently kthread's children have cpu_all_mask. We could change
+that behaviour. This way the initial kthread affinity could be inherited all along.
 
+> 
+> A tsc loop is running on the processor that gets hit by the usermodehelper spawns.
+> 
+> We see spawning by the tty notifier (when typing on a vt) as well as by a
+> mellanox driver (periodically).> 
