@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3JQJaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:30:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51223 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab3JQJaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:30:15 -0400
-Message-ID: <525FADC3.4090505@ti.com>
-Date: Thu, 17 Oct 2013 12:28:35 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-CC: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/2] OMAP4460: cpuidle: Workaround for ROM bug because
- of CA9 r2pX GIC control register change
-References: <1382000776-15897-1-git-send-email-grygorii.strashko@ti.com> <525FACA9.3060405@ti.com>
-In-Reply-To: <525FACA9.3060405@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.172]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+	id S1753564Ab3JQJdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:33:38 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:35138 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3JQJdg convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Thu, 17 Oct 2013 05:33:36 -0400
+Message-Id: <525FCB0D02000078000FBBCF@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 17 Oct 2013 10:33:33 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Gleb Natapov" <gleb@redhat.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "KVM list" <kvm@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH, RFC] x86-64: properly handle FPU code/data
+ selectors
+References: <525E9BFF02000078000FB74E@nat28.tlf.novell.com>
+ <CA+55aFwCe=t4dDbDhHTWhzA3zMEyyS2WSYBP2Sfe0eogGEBS1w@mail.gmail.com>
+ <525ECEA102000078000FB906@nat28.tlf.novell.com>
+ <CA+55aFybvU39HVUF4sON=Euieqy+Kqsby-DUU=8Gnpggm2fzjw@mail.gmail.com>
+ <525ED75402000078000FB95B@nat28.tlf.novell.com>
+ <20131017092727.GN15657@redhat.com>
+In-Reply-To: <20131017092727.GN15657@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, forgot to mention that patches are based on 4a10c2a Linux 3.12-rc2
+>>> On 17.10.13 at 11:27, Gleb Natapov <gleb@redhat.com> wrote:
+> On Wed, Oct 16, 2013 at 05:13:40PM +0100, Jan Beulich wrote:
+>> > It preserves *less* state, because the upper 32 bits of rip are now
+>> > corrupted. Any 64-bit application that actually looks at the FP
+>> > rip/rdp fields now get the WRONG VALUES.
+>> 
+>> But again - this isn't being done for ordinary 64-bit applications,
+>> this is only happening for KVM guests. And there not being a
+>> protocol for telling the caller whether a certain context hold
+>> 64-bit offsets or selector/offset pairs shouldn't be a reason to
+>> think of a solution to the problem.
+>> 
+> KVM knows what mode guest vcpu is in. is_long_mode(vcpu) will tell you
+> if it is in long mode or not. No need to guess it.
 
-On 10/17/2013 12:23 PM, Grygorii Strashko wrote:
-> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
-> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC control register change."
-> need to be applied not only when system is booting, but when
-> MPU hits OSWR state through CPUIdle too.
->
-> Now the same issue is reproduced on boards PandaES and Tablet/Blaze with
-> SOM OMAP4460 ES1.0 when CONFIG_CPU_IDLE is enabled.
-> - GIC distributor is disabled
-> - scheduling is not performed any more
->
-> Grygorii Strashko (2):
->    Revert "ARM: OMAP4+: CPUidle: Deprecate use of omap4_mpuss_read_prev_context_state()"
->    ARM: OMAP4460: cpuidle: WA for ROM bug because of CA9 r2pX gic control register change
->
->   arch/arm/mach-omap2/common.h              |    6 +++++
->   arch/arm/mach-omap2/cpuidle44xx.c         |   35 +++++++++++++++++++++++++++--
->   arch/arm/mach-omap2/omap-mpuss-lowpower.c |   14 ++++++++++++
->   arch/arm/mach-omap2/omap4-common.c        |    6 +++++
->   4 files changed, 59 insertions(+), 2 deletions(-)
->
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
->
-> Regards,
-> -grygorii
->
+So what if that 64-bit guest OS is running a 32-bit app? You can
+only positively know the _current_ guest word size when the
+guest is not in long mode.
+
+Jan
 
