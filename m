@@ -1,125 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3JQOiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:38:15 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:49131 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756782Ab3JQOiC (ORCPT
+	id S1756752Ab3JQOkE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:40:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56855 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab3JQOkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:38:02 -0400
-Message-ID: <525FF498.3060202@st.com>
-Date: Thu, 17 Oct 2013 15:30:48 +0100
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Maxime COQUELIN <maxime.coquelin@st.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Thu, 17 Oct 2013 10:40:02 -0400
+Date: Thu, 17 Oct 2013 16:39:57 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
-References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com> <1381754813-4679-2-git-send-email-maxime.coquelin@st.com> <20131016151419.GA14104@ns203013.ovh.net> <525F915D.9020501@st.com> <525FAEED.7030207@st.com> <20131017141957.GE14104@ns203013.ovh.net>
-In-Reply-To: <20131017141957.GE14104@ns203013.ovh.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.65.51.59]
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
+ status
+In-Reply-To: <20131017142755.GA4477@breakpoint.cc>
+Message-ID: <Pine.LNX.4.64.1310171638030.27369@axis700.grange>
+References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
+ <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
+ <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+ <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+ <20131017020745.GA14013@intel.com> <20131017142755.GA4477@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:d+hHtXo3+I8TBwVcao8uGrU41zg7U0y7DgNpyWCad4X
+ KhsBNLX5Mgefd0A7z6jgMyvAnS+bvr73meeSCFUwJGXsYu3GxA
+ kBAaHPwc1DPV0U1YJr56Du77/ue57MQQxV2NCenWG1MW/+Dhcb
+ qnQT69ak+ZL/h5GRm+2e5JRui60IjQSI0Zm7B/kK7NutLboHni
+ cOAcpAOh1m4idRkEAnCVlM5r7Y+5yVUSiDmQ9/Jo8zBJRzQojR
+ /XbxAiLyNBotFzWFqun9jSw5dHpX4DmdLkftE2T46V+bfQ+cmS
+ R4ohyWYKYMwL34hY0pKrPPiR3JfTAQM3kkm2Y3zk3F5fhkhlSd
+ ReyVxx8fXpTTAeDhTFi8D1E2j3BxOAQvKv76aWHSS+rcCuVPG/
+ dR7dL3lcI6+OA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/13 15:19, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 10:33 Thu 17 Oct     , srinivas kandagatla wrote:
->> On 17/10/13 08:27, Maxime COQUELIN wrote:
->>> ...
->>>>>>> +
->>>>>>> +static struct of_device_id st_i2c_match[] = {
->>>>>>> +     { .compatible = "st,comms-ssc-i2c", },
->>>>> the rules is to put the first soc that use the ip in the compatible
->>>>> as st,sti7100-scc-i2c
->>> Ok. There are no plans to upstream the SH4 platforms, it will only 
->>> remains in stlinux.com.
->>> Maybe I can set the first ARM platform (STiH415)?
->>> That would give st,stih415-ssc-i2c.
->> NAK, for st,stih415-ssc-i2c naming.
->>
->> IMO, this makes sense when the same IP integration done on different SOC
->> changes slightly/very differently.
->>
->> But in this case the "comms" IP remains unchanged across all the SOCs.
->>
->> I would still prefer "st,comms-ssc-i2c", allowing a single device driver
->> to match against several SoCs. ST "comms" IP it is integrated across all
->> the STi series of SoCs, so we don't want to add new entry in compatible
->> for every new SOC.
+Hi Sebastian
+
+On Thu, 17 Oct 2013, Sebastian Andrzej Siewior wrote:
+
+> On Thu, Oct 17, 2013 at 07:37:45AM +0530, Vinod Koul wrote:
+> > index 0bc7275..683c380 100644
+> > --- a/include/linux/dmaengine.h
+> > +++ b/include/linux/dmaengine.h
+> > @@ -45,16 +45,17 @@ static inline int dma_submit_error(dma_cookie_t cookie)
+> >  
+> >  /**
+> >   * enum dma_status - DMA transaction status
+> > - * @DMA_SUCCESS: transaction completed successfully
+> > + * @DMA_COMPLETE: transaction completed
+> >   * @DMA_IN_PROGRESS: transaction not yet processed
+> >   * @DMA_PAUSED: transaction is paused
+> >   * @DMA_ERROR: transaction failed
+> >   */
+> >  enum dma_status {
+> > -	DMA_SUCCESS,
+> > +	DMA_COMPLETE,
+> >  	DMA_IN_PROGRESS,
+> >  	DMA_PAUSED,
+> >  	DMA_ERROR,
+> > +	DMA_SUCCESS,
+> >  };
 > 
-> you never need this you always the first SoC that's all
-
-Sorry to ask this but, Where is this requirement coming from?
-I have not spotted any thing as such in ePAPR specs.
-
-
-All the spec says is.
-===
-The compatible property value consists of one or more strings that
-define the specific programming model for the device. This list of
-strings should be used by a client program for device driver selection.
-The property value consists of a concatenated list of null terminated
-strings, *from most specific to most general.* They allow a device to
-express its compatibility with a family of similar devices, potentially
-allowing a single device driver to match against several devices.
-The recommended format is “manufacturer,model”, where manufacturer is a
-string describing the name of the manufacturer (such as an OUI), and
-model specifies the model number.
-
-Example:
-compatible = “fsl,mpc8641-uart”, “ns16550";
-In this example, an operating system would first try to locate a device
-driver that supported fsl,mpc8641-uart. If a driver was not found, it
-would then try to locate a driver that supported the more general
-ns16550 device type.
-===
-
-The more general compatible string in this case is "st,comms-ssc-i2c",
-rather than the first soc name.
-How can a first SOC name be more general?
-
-As this driver is not very specific to StiH415, it is generic driver for
-ST comms-ssc-i2c block.
-
-Thanks,
-srini
-
-
-
-
+> There are some drivers which compare against == or != DMA_SUCCESS. Shouldn't this
+> become
+>   enum dma_status {
+>  -	DMA_SUCCESS,
+>  +	DMA_COMPLETE = 0, DMA_SUCCESS = 0,
+>   	DMA_IN_PROGRESS,
+>   	DMA_PAUSED,
+>   	DMA_ERROR,
+>   };
 > 
-> see other bindings on at91 as example sorry NACK
-> 
-> Best Regards,
-> J.
->>
->>
->> Thanks,
->> srini
->>
->>>
->>> Thanks for the review,
->>> Maxime
->>>
->>>>>
->>
-> 
-> 
+> so nothing breaks during the transition?
 
+Good catch. I would do
+
+ enum dma_status {
+-	DMA_SUCCESS,
++	DMA_COMPLETE,
+ 	DMA_IN_PROGRESS,
+ 	DMA_PAUSED,
+ 	DMA_ERROR,
+ };
+ 
++ #define DMA_SUCCESS DMA_COMPLETE
+
+and then just remove the last line again
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
