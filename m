@@ -1,105 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762169Ab3JQBcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 21:32:09 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:61236 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761403Ab3JQBcH (ORCPT
+	id S1761834Ab3JQBmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 21:42:17 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58351 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760887Ab3JQBmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 21:32:07 -0400
-Date: Wed, 16 Oct 2013 18:32:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@sr71.net>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, cl@gentwo.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC][PATCH 1/8] mm: pcp: rename percpu pageset functions
-In-Reply-To: <20131015203538.35606A47@viggo.jf.intel.com>
-Message-ID: <alpine.DEB.2.02.1310161831090.15575@chino.kir.corp.google.com>
-References: <20131015203536.1475C2BE@viggo.jf.intel.com> <20131015203538.35606A47@viggo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 16 Oct 2013 21:42:16 -0400
+Message-ID: <1381974128.2045.144.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Date: Wed, 16 Oct 2013 18:42:08 -0700
+In-Reply-To: <20131017003421.GA31470@hmsreliant.think-freely.org>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+	 <20131012172124.GA18241@gmail.com>
+	 <20131014202854.GH26880@hmsreliant.think-freely.org>
+	 <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
+	 <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
+	 <20131017003421.GA31470@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013, Dave Hansen wrote:
+On Wed, 2013-10-16 at 20:34 -0400, Neil Horman wrote:
 
-> diff -puN mm/page_alloc.c~rename-pageset-functions mm/page_alloc.c
-> --- linux.git/mm/page_alloc.c~rename-pageset-functions	2013-10-15 09:57:05.870612107 -0700
-> +++ linux.git-davehans/mm/page_alloc.c	2013-10-15 09:57:05.875612329 -0700
-> @@ -4136,10 +4136,18 @@ static void pageset_update(struct per_cp
->  	pcp->batch = batch;
->  }
->  
-> -/* a companion to pageset_set_high() */
-> -static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
-> +/*
-> + * Set the batch size for hot per_cpu_pagelist, and derive
-> + * the high water mark from the batch size.
-> + */
-> +static void pageset_setup_from_batch_size(struct per_cpu_pageset *p,
-> +					unsigned long batch)
->  {
-> -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
-> +	unsigned long high;
-> +	high = 6 * batch;
-> +	if (!batch)
-> +		batch = 1;
+> > 
+> 
+> So I went to reproduce these results, but was unable to (due to the fact that I
+> only have a pretty jittery network to do testing accross at the moment with
+> these devices).  So instead I figured that I would go back to just doing
+> measurements with the module that I cobbled together (operating under the
+> assumption that it would give me accurate, relatively jitter free results (I've
+> attached the module code for reference below).  My results show slightly
+> different behavior:
+> 
+> Base results runs:
+> 89417240
+> 85170397
+> 85208407
+> 89422794
+> 91645494
+> 103655144
+> 86063791
+> 75647774
+> 83502921
+> 85847372
+> AVG = 875 ns
+> 
+> Prefetch only runs:
+> 70962849
+> 77555099
+> 81898170
+> 68249290
+> 72636538
+> 83039294
+> 78561494
+> 83393369
+> 85317556
+> 79570951
+> AVG = 781 ns
+> 
+> Parallel addition only runs:
+> 42024233
+> 44313064
+> 48304416
+> 64762297
+> 42994259
+> 41811628
+> 55654282
+> 64892958
+> 55125582
+> 42456403
+> AVG = 510 ns
+> 
+> 
+> Both prefetch and parallel addition:
+> 41329930
+> 40689195
+> 61106622
+> 46332422
+> 49398117
+> 52525171
+> 49517101
+> 61311153
+> 43691814
+> 49043084
+> AVG = 494 ns
+> 
+> 
+> For reference, each of the above large numbers is the number of nanoseconds
+> taken to compute the checksum of a 4kb buffer 100000 times.  To get my average
+> results, I ran the test in a loop 10 times, averaged them, and divided by
+> 100000.
+> 
+> 
+> Based on these, prefetching is obviously a a good improvement, but not as good
+> as parallel execution, and the winner by far is doing both.
+> 
+> Thoughts?
+> 
+> Neil
+> 
 
-high = 6 * batch should be here?
 
-> +	pageset_update(&p->pcp, high, batch);
->  }
->  
->  static void pageset_init(struct per_cpu_pageset *p)
-> @@ -4158,15 +4166,15 @@ static void pageset_init(struct per_cpu_
->  static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
->  {
->  	pageset_init(p);
-> -	pageset_set_batch(p, batch);
-> +	pageset_setup_from_batch_size(p, batch);
->  }
->  
->  /*
-> - * pageset_set_high() sets the high water mark for hot per_cpu_pagelist
-> - * to the value high for the pageset p.
-> + * Set the high water mark for the per_cpu_pagelist, and derive
-> + * the batch size from this high mark.
->   */
-> -static void pageset_set_high(struct per_cpu_pageset *p,
-> -				unsigned long high)
-> +static void pageset_setup_from_high_mark(struct per_cpu_pageset *p,
-> +					unsigned long high)
->  {
->  	unsigned long batch = max(1UL, high / 4);
->  	if ((high / 4) > (PAGE_SHIFT * 8))
-> @@ -4179,11 +4187,11 @@ static void __meminit pageset_set_high_a
->  		struct per_cpu_pageset *pcp)
->  {
->  	if (percpu_pagelist_fraction)
-> -		pageset_set_high(pcp,
-> +		pageset_setup_from_high_mark(pcp,
->  			(zone->managed_pages /
->  				percpu_pagelist_fraction));
->  	else
-> -		pageset_set_batch(pcp, zone_batchsize(zone));
-> +		pageset_setup_from_batch_size(pcp, zone_batchsize(zone));
->  }
->  
->  static void __meminit zone_pageset_init(struct zone *zone, int cpu)
-> @@ -5781,8 +5789,9 @@ int percpu_pagelist_fraction_sysctl_hand
->  		unsigned long  high;
->  		high = zone->managed_pages / percpu_pagelist_fraction;
->  		for_each_possible_cpu(cpu)
-> -			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
-> -					 high);
-> +			pageset_setup_from_high_mark(
-> +					per_cpu_ptr(zone->pageset, cpu),
-> +					high);
->  	}
->  	mutex_unlock(&pcp_batch_high_lock);
->  	return 0;
+Your benchmark uses a single 4K page, so data is _super_ hot in cpu
+caches.
+( prefetch should give no speedups, I am surprised it makes any
+difference)
+
+Try now with 32 huges pages, to get 64 MBytes of working set.
+
+Because in reality we never csum_partial() data in cpu cache.
+(Unless the NIC preloaded the data into cpu cache before sending the
+interrupt)
+
+Really, if Sebastien got a speed up, it means that something fishy was
+going on, like :
+
+- A copy of data into some area of memory, prefilling cpu caches
+- csum_partial() done while data is hot in cache.
+
+This is exactly a "should not happen" scenario, because the csum in this
+case should happen _while_ doing the copy, for 0 ns.
+
+
+
