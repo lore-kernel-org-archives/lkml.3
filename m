@@ -1,138 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab3JQQuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:50:44 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53375 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757960Ab3JQQuk (ORCPT
+	id S1758298Ab3JQQuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:50:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45166 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab3JQQur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:50:40 -0400
-Date: Thu, 17 Oct 2013 17:49:33 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-doc@vger.kernel.org,
-        Naour Romain <romain.naour@openwide.fr>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-Message-ID: <20131017164933.GG2442@localhost.localdomain>
+	Thu, 17 Oct 2013 12:50:47 -0400
+Date: Thu, 17 Oct 2013 09:49:57 -0700
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-c2d816443ef305aba8eaf0bf368f4d3d87494f06@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, oleg@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20131007161824.GA29757@redhat.com>
+References: <20131007161824.GA29757@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/wait: Introduce prepare_to_wait_event()
+Git-Commit-ID: c2d816443ef305aba8eaf0bf368f4d3d87494f06
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:50:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 06:04:13PM +0200, Daniel Lezcano wrote:
-> On 10/17/2013 04:32 PM, Dave Martin wrote:
-> > On Thu, Oct 17, 2013 at 12:45:29PM +0200, Daniel Lezcano wrote:
-> >> On 10/14/2013 05:08 PM, Vyacheslav Tyrtov wrote:
-> >>> From: Tarek Dakhran <t.dakhran@samsung.com>
-> >>> 
-> >>> Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-> >>> This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
-> > 
-> > [...]
-> > 
-> >>> +	__mcpm_cpu_down(cpu, cluster);
-> >>> +
-> >>> +	if (!skip_wfi) {
-> >>> +		exynos_core_power_down(cpu, cluster);
-> >>> +		wfi();
-> >>> +	}
-> >>> +}
-> >> 
-> >> I did not looked line by line but these functions looks very similar
-> >> than the tc2_pm.c's function. no ?
-> > 
-> > This is true.
-> > 
-> >> May be some code consolidation could be considered here.
-> >> 
-> >> Added Nico and Lorenzo in Cc.
-> >> 
-> >> Thanks
-> >>    -- Daniel
-> > 
-> > Nico can commnent further, but I think the main concern here was that
-> > this code shouldn't be factored prematurely.
-> 
-> I do not share this opinion.
-> 
-> > There are many low-level platform specifics involved here, so it's
-> > hard to be certain that all platforms could fit into a more abstracted
-> > framework until we have some evidence to look at.
-> > 
-> > This could be revisited when we have a few diverse MCPM ports to
-> > compare.
-> 
-> I am worried about seeing more and more duplicated code around the ARM
-> arch (eg. arm[64]/kernel/smp.c arm64/kernel/smp.c).
-> 
-> The cpuidle drivers have been duplicated and it took a while before
-> refactoring them, and it is not finished. The hotplug code have been
-> duplicated and now it is very difficult to factor it out.
-> 
-> A lot of work have been done to consolidate the code across the
-> different SoC since the last 2 years.
-> 
-> If we let duplicate code populate the different files, they will
-> belong to different maintainers, thus different trees. Each SoC
-> contributors will tend to add their small changes making the code to
-> diverge more and more and making difficult to re-factor it later.
+Commit-ID:  c2d816443ef305aba8eaf0bf368f4d3d87494f06
+Gitweb:     http://git.kernel.org/tip/c2d816443ef305aba8eaf0bf368f4d3d87494f06
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Mon, 7 Oct 2013 18:18:24 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 16 Oct 2013 14:22:18 +0200
 
-I think this is Nico's call, since he has more experience than I do
-of how these things tend to play out in practice.
+sched/wait: Introduce prepare_to_wait_event()
 
-Cheers
----Dave
+Add the new helper, prepare_to_wait_event() which should only be used
+by ___wait_event().
 
-> I am in favor of preventing duplicate code entering in the kernel and
-> force the contributors to improve the kernel in general, not just the
-> small part they are supposed to work on. Otherwise, we are letting the
-> kernel to fork itself, internally...
-> 
-> > The low-level A15/A7 cacheflush sequence is already being factored
-> > by Nico [1].
-> 
-> Hopefully he did it :)
-> 
-> Thanks
->   -- Daniel
-> 
-> > [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205085.html
-> > [PATCH] ARM: cacheflush: consolidate single-CPU ARMv7 cache disabling code
-> > 
-> > [...]
-> > 
-> 
-> 
-> -- 
->  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-> 
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
+is true, otherwise it does prepare_to_wait/exclusive.  This allows to
+uninline the signal-pending checks in wait_event*() macros.
+
+Also, it can initialize wait->private/func. We do not care if they were
+already initialized, the values are the same. This also shaves a couple
+of insns from the inlined code.
+
+This obviously makes prepare_*() path a little bit slower, but we are
+likely going to sleep anyway, so I think it makes sense to shrink .text:
+
+               text    data      bss      dec     hex  filename
+            ===================================================
+   before:  5126092 2959248 10117120 18202460 115bf5c   vmlinux
+    after:  5124618 2955152 10117120 18196890 115a99a   vmlinux
+
+on my build.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131007161824.GA29757@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/wait.h | 24 ++++++++++++++----------
+ kernel/wait.c        | 24 ++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 04c0260..ec099b0 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -187,27 +187,30 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ 	__cond || !__ret;						\
+ })
+ 
+-#define ___wait_signal_pending(state)					\
+-	((state == TASK_INTERRUPTIBLE && signal_pending(current)) ||	\
+-	 (state == TASK_KILLABLE && fatal_signal_pending(current)))
++#define ___wait_is_interruptible(state)					\
++	(!__builtin_constant_p(state) ||				\
++		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
+ 
+ #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
+ ({									\
+ 	__label__ __out;						\
+-	DEFINE_WAIT(__wait);						\
++	wait_queue_t __wait;						\
+ 	long __ret = ret;						\
+ 									\
++	INIT_LIST_HEAD(&__wait.task_list);				\
++	if (exclusive)							\
++		__wait.flags = WQ_FLAG_EXCLUSIVE;			\
++	else								\
++		__wait.flags = 0;					\
++									\
+ 	for (;;) {							\
+-		if (exclusive)						\
+-			prepare_to_wait_exclusive(&wq, &__wait, state); \
+-		else							\
+-			prepare_to_wait(&wq, &__wait, state);		\
++		long __int = prepare_to_wait_event(&wq, &__wait, state);\
+ 									\
+ 		if (condition)						\
+ 			break;						\
+ 									\
+-		if (___wait_signal_pending(state)) {			\
+-			__ret = -ERESTARTSYS;				\
++		if (___wait_is_interruptible(state) && __int) {		\
++			__ret = __int;					\
+ 			if (exclusive) {				\
+ 				abort_exclusive_wait(&wq, &__wait,	\
+ 						     state, NULL);	\
+@@ -791,6 +794,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, signed long tim
+  */
+ void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
+ void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
++long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
+ void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
+ void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait, unsigned int mode, void *key);
+ int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
+diff --git a/kernel/wait.c b/kernel/wait.c
+index d550920..de21c63 100644
+--- a/kernel/wait.c
++++ b/kernel/wait.c
+@@ -92,6 +92,30 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
+ }
+ EXPORT_SYMBOL(prepare_to_wait_exclusive);
+ 
++long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
++{
++	unsigned long flags;
++
++	if (signal_pending_state(state, current))
++		return -ERESTARTSYS;
++
++	wait->private = current;
++	wait->func = autoremove_wake_function;
++
++	spin_lock_irqsave(&q->lock, flags);
++	if (list_empty(&wait->task_list)) {
++		if (wait->flags & WQ_FLAG_EXCLUSIVE)
++			__add_wait_queue_tail(q, wait);
++		else
++			__add_wait_queue(q, wait);
++	}
++	set_current_state(state);
++	spin_unlock_irqrestore(&q->lock, flags);
++
++	return 0;
++}
++EXPORT_SYMBOL(prepare_to_wait_event);
++
+ /**
+  * finish_wait - clean up after waiting in a queue
+  * @q: waitqueue waited on
