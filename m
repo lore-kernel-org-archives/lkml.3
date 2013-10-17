@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab3JQF5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 01:57:06 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:22204 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750873Ab3JQF5E (ORCPT
+	id S1751788Ab3JQGBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:01:33 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54504 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3JQGBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 01:57:04 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
-Message-ID: <525F7C18.3010409@freescale.com>
-Date: Thu, 17 Oct 2013 13:56:40 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 17 Oct 2013 02:01:32 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-5d-525f7d3a6733
+Date: Thu, 17 Oct 2013 15:01:53 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 00/15] slab: overload struct slab over struct page to
+ reduce memory usage
+Message-ID: <20131017060153.GB26617@lge.com>
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
 MIME-Version: 1.0
-To: <hongbo.zhang@freescale.com>, <vinod.koul@intel.com>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>, <djbw@fb.com>,
-        <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel
- DMA engine
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com>
-In-Reply-To: <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
-I have gotten ACK from Mark for both the 1/3 and 2/3 patches.
+On Wed, Oct 16, 2013 at 01:34:57PM -0700, Andrew Morton wrote:
+> On Wed, 16 Oct 2013 17:43:57 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> 
+> > There is two main topics in this patchset. One is to reduce memory usage
+> > and the other is to change a management method of free objects of a slab.
+> > 
+> > The SLAB allocate a struct slab for each slab. The size of this structure
+> > except bufctl array is 40 bytes on 64 bits machine. We can reduce memory
+> > waste and cache footprint if we overload struct slab over struct page.
+> 
+> Seems a good idea from a quick look.
+
+Thanks :)
+
+> 
+> A thought: when we do things like this - adding additional
+> interpretations to `struct page', we need to bear in mind that other
+> unrelated code can inspect that pageframe.  It is not correct to assume
+> that because slab "owns" this page, no other code will be looking at it
+> and interpreting its contents.
+> 
+> One example is mm/memory-failure.c:memory_failure().  It starts with a
+> raw pfn, uses that to get at the `struct page', then starts playing
+> around with it.  Will that code still work correctly when some of the
+> page's fields have been overlayed with slab-specific contents?
+
+Yes, it would work correctly since the SLUB already overload many fields
+of struct page with slab-specific contents. One exception is mapping field
+which isn't overloaded by the SLUB. But I guess there is no problem,
+because the code inspecting random struct page may be already check
+PageSlab() or PageLRU() and then skip it if so.
+
+> 
+> And memory_failure() is just one example - another is compact_zone()
+> and there may well be others.
+> 
+> This issue hasn't been well thought through.  Given a random struct
+> page, there isn't any protocol to determine what it actually *is*. 
+> It's a plain old variant record, but it lacks the agreed-upon tag field
+> which tells users which variant is currently in use.
+
+With PageSlab(), we can determine that this page is the slab page.
+Do we need more? Is there another user who overload struct page?
+
 Thanks.
 
-
-On 09/26/2013 05:33 PM, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->
-> This patch adds support to 8-channel DMA engine, thus the driver works for both
-> the new 8-channel and the legacy 4-channel DMA engines.
->
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> ---
->   drivers/dma/Kconfig  |    9 +++++----
->   drivers/dma/fsldma.c |    9 ++++++---
->   drivers/dma/fsldma.h |    2 +-
->   3 files changed, 12 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 6825957..3979c65 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -89,14 +89,15 @@ config AT_HDMAC
->   	  Support the Atmel AHB DMA controller.
->   
->   config FSL_DMA
-> -	tristate "Freescale Elo and Elo Plus DMA support"
-> +	tristate "Freescale Elo series DMA support"
->   	depends on FSL_SOC
->   	select DMA_ENGINE
->   	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
->   	---help---
-> -	  Enable support for the Freescale Elo and Elo Plus DMA controllers.
-> -	  The Elo is the DMA controller on some 82xx and 83xx parts, and the
-> -	  Elo Plus is the DMA controller on 85xx and 86xx parts.
-> +	  Enable support for the Freescale Elo series DMA controllers.
-> +	  The Elo is the DMA controller on some mpc82xx and mpc83xx parts, the
-> +	  EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is on
-> +	  some Txxx and Bxxx parts.
->   
->   config MPC512X_DMA
->   	tristate "Freescale MPC512x built-in DMA engine support"
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index 49e8fbd..16a9a48 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
->   	WARN_ON(fdev->feature != chan->feature);
->   
->   	chan->dev = fdev->dev;
-> -	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
-> +	chan->id = (res.start & 0xfff) < 0x300 ?
-> +		   ((res.start - 0x100) & 0xfff) >> 7 :
-> +		   ((res.start - 0x200) & 0xfff) >> 7;
->   	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
->   		dev_err(fdev->dev, "too many channels for device\n");
->   		err = -EINVAL;
-> @@ -1434,6 +1436,7 @@ static int fsldma_of_remove(struct platform_device *op)
->   }
->   
->   static const struct of_device_id fsldma_of_ids[] = {
-> +	{ .compatible = "fsl,elo3-dma", },
->   	{ .compatible = "fsl,eloplus-dma", },
->   	{ .compatible = "fsl,elo-dma", },
->   	{}
-> @@ -1455,7 +1458,7 @@ static struct platform_driver fsldma_of_driver = {
->   
->   static __init int fsldma_init(void)
->   {
-> -	pr_info("Freescale Elo / Elo Plus DMA driver\n");
-> +	pr_info("Freescale Elo series DMA driver\n");
->   	return platform_driver_register(&fsldma_of_driver);
->   }
->   
-> @@ -1467,5 +1470,5 @@ static void __exit fsldma_exit(void)
->   subsys_initcall(fsldma_init);
->   module_exit(fsldma_exit);
->   
-> -MODULE_DESCRIPTION("Freescale Elo / Elo Plus DMA driver");
-> +MODULE_DESCRIPTION("Freescale Elo series DMA driver");
->   MODULE_LICENSE("GPL");
-> diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-> index f5c3879..1ffc244 100644
-> --- a/drivers/dma/fsldma.h
-> +++ b/drivers/dma/fsldma.h
-> @@ -112,7 +112,7 @@ struct fsldma_chan_regs {
->   };
->   
->   struct fsldma_chan;
-> -#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
-> +#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
->   
->   struct fsldma_device {
->   	void __iomem *regs;	/* DGSR register base */
-
-
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
