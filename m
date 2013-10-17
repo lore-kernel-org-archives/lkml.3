@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab3JQJQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:16:32 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:54298 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab3JQJQa convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 17 Oct 2013 05:16:30 -0400
-Message-Id: <525FC70A02000078000FBB8B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 17 Oct 2013 10:16:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "HATAYAMA Daisuke" <d.hatayama@jp.fujitsu.com>
-Cc: <davem@davemloft.net>, <adobriyan@gmail.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix proc_reg_get_unmapped_area()
-References: <525E957802000078000FB6FE@nat28.tlf.novell.com>
- <20131016134044.d1bd8004f4fb94df405a541d@linux-foundation.org>
- <525FAC8B02000078000FBAE8@nat28.tlf.novell.com>
- <525FA177.1030506@jp.fujitsu.com>
-In-Reply-To: <525FA177.1030506@jp.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753281Ab3JQJX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:23:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47021 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3JQJX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 05:23:57 -0400
+Date: Thu, 17 Oct 2013 11:23:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Shaohua Li <shli@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131017092349.GL2675@laptop.programming.kicks-ass.net>
+References: <1381949500-501-1-git-send-email-treding@nvidia.com>
+ <1381949500-501-2-git-send-email-treding@nvidia.com>
+ <20131016200645.GD10651@twins.programming.kicks-ass.net>
+ <20131016201410.GA26785@twins.programming.kicks-ass.net>
+ <20131017073100.2cab1ffa@notabene.brown>
+ <20131016205207.GE10651@twins.programming.kicks-ass.net>
+ <20131017122859.67432627@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131017122859.67432627@notabene.brown>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.10.13 at 10:36, HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> (2013/10/17 16:23), Jan Beulich wrote:
->>>>> On 16.10.13 at 22:40, Andrew Morton <akpm@linux-foundation.org> wrote:
->>> On Wed, 16 Oct 2013 12:32:40 +0100 "Jan Beulich" <JBeulich@suse.com> wrote:
->>>
->>>> Commit c4fe24485729fc2cbff324c111e67a1cc2f9adea ("sparc: fix PCI device
->>>> proc file mmap(2)"), while fixing one problem, introduced two new ones:
->>>> - the function truncates the return value from ->get_unmapped_area() on
->>>>    64-bit architectures,
->>>> - _all_ descendants are now required to set .get_unmapped_area to non-
->>>>    NULL, which wasn't necessary before (and shouldn't be).
->>>>
->>>> Both - afaict - are a result from a too simplistic copy'n'paste from
->>>> proc_reg_mmap() done in that change.
->>>>
->>>> This likely also addresses reports like the one at
->>>>
->>> 
-> http://linux-kernel.2935.n7.nabble.com/mmap-for-proc-vmcore-broken-since-3-12-rc1-td729 
+On Thu, Oct 17, 2013 at 12:28:59PM +1100, NeilBrown wrote:
+> I always run with lockdep enabled, and I have done at least basic testing
+
+Very good!
+
+> > 
+> > Stuff like:
+> > 
+> > +	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
+> > +		spin_lock_init(conf->hash_locks + i);
+> > 
+> > And:
+> > 
+> > +static void __lock_all_hash_locks(struct r5conf *conf)
+> > +{
+> > +	int i;
+> > +	for (i = 0; i < NR_STRIPE_HASH_LOCKS; i++)
+> > +		spin_lock(conf->hash_locks + i);
+> > +}
+> > 
+> > Tends to complain real loud.
 > 
->>> 326.html.
->>>>
->>>> ...
->>>>
->>>> --- 3.12-rc5/fs/proc/inode.c
->>>> +++ 3.12-rc5-proc-get-unmapped-area/fs/proc/inode.c
->>>> @@ -288,12 +288,12 @@ static int proc_reg_mmap(struct file *fi
->>>>   static unsigned long proc_reg_get_unmapped_area(struct file *file, 
-> unsigned
->>> long orig_addr, unsigned long len, unsigned long pgoff, unsigned long flags)
->>>>   {
->>>>   	struct proc_dir_entry *pde = PDE(file_inode(file));
->>>> -	int rv = -EIO;
->>>> -	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned
->>> long, unsigned long, unsigned long);
->>>> +	unsigned long rv = -EIO;
->>>> +
->>>>   	if (use_pde(pde)) {
->>>> -		get_unmapped_area = pde->proc_fops->get_unmapped_area;
->>>> -		if (get_unmapped_area)
->>>> -			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
->>>> +		rv = (pde->proc_fops->get_unmapped_area
->>>> +		      ?: current->mm->get_unmapped_area)(file, orig_addr, len,
->>>> +							 pgoff, flags);
->>>>   		unuse_pde(pde);
->>>>   	}
->>>>   	return rv;
->>>
->>> I think these two patches will address the problems:
->>>
->>> http://ozlabs.org/~akpm/mmots/broken-out/procfs-fix-unintended-truncation-of-retur 
->>> ned-mapped-address.patch
->>> http://ozlabs.org/~akpm/mmots/broken-out/procfs-call-default-get_unmapped_area-on- 
->>> mmu-present-architectures.patch
->>>
->>> I'll be sending those Linuswards today.  Please check them.  (I think
->>> your version would break the nommu build).
->>
->> Yes indeed - I did search for existing patches, but didn't find them.
->> I see Linus merged them already, so there's no point anymore
->> sending Reviewed-by tags.
->>
->> I think though that in the !MMU case the second of them leaves an
->> issue unfixed nevertheless: If the specific procfs handler has no
->> .get_unmapped_area, the operation would still fail in that case
->> rather than succeed as it did before that wrapper got added.)
->>
->> Jan
->>
-> 
-> Yes, there remains difference on no-mmu that if mmap is not defined, mmap() 
-> now returns
-> EIO, it should return ENODEV.
+> Why is that?
+> Because "conf->hash_locks + i" gets used as the "name" of the lockdep map for
+> each one, and when they are all locked it looks like nested locking??
 
-No, afaict it should succeed (and simply use the address that came in).
+Exactly so; they all share the same class (and name) because they have
+the same init site; so indeed the multiple lock will look like a nested
+lock.
 
-Jan
+> Do you have a suggestion for how to make this work?
+> Would
+>     spin_lock_nested(conf->hash_locks + i, i)
+> do the trick?
 
+	spin_lock_nest_lock(conf->hash_locks + i, &conf->device_lock);
+
+Would be the better option; your suggestion might just work because
+NR_STRIP_HASH_LOCKS is 8 and we have exactly 8 subclasses available, but
+any increase to NR_STRIPE_HASH_LOCKS will make things explode again.
+
+The spin_lock_nest_lock() annotation tells that the lock order is
+irrelevant because all such multiple acquisitions are serialized under
+the other lock.
+
+Also, if in future you feel the need to increase NR_STRIP_HASH_LOCKS,
+please keep it <= 64 or so; if you have a need to go above that, please
+yell and we'll see if we can do something smarter.
+
+This is because of:
+ - each spin_lock() increases preempt_count and that's 8 bits; we
+   wouldn't want to overflow that
+ - each consecutive nested spin_lock() increases the total acquisition
+   wait-time for all locks. Note that the worst case acquisition time
+   for even a single hash lock is gated by the complete acquisition time
+   of all of them in this scenario.
