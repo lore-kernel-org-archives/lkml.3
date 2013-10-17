@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab3JQGDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:03:54 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:63691 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3JQGDu (ORCPT
+	id S1752708Ab3JQGEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:04:23 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:43238 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab3JQGC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:03:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1380846199-12829-4-git-send-email-syin@broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<1380846199-12829-4-git-send-email-syin@broadcom.com>
-Date: Wed, 16 Oct 2013 23:03:49 -0700
-Message-ID: <CAEPRUYqfpdp1GqxBgx-q=hyvQDe4uyi6okzHPW2QmfmPG_Z3NQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-From: Christian Daudt <bcm@fixthebug.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Oct 2013 02:02:58 -0400
+X-AuditID: 9c93017d-b7b2eae000005519-36-525f7d8fad4e
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 2/5] slab: introduce helper functions to get/set free object
+Date: Thu, 17 Oct 2013 15:03:14 +0900
+Message-Id: <1381989797-29269-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 3, 2013 at 5:23 PM, Sherman Yin <syin@broadcom.com> wrote:
-> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
->  arch/arm/mach-bcm/Kconfig       |    2 +
->  drivers/pinctrl/Kconfig         |   10 +
->  drivers/pinctrl/Makefile        |    1 +
->  drivers/pinctrl/pinctrl-capri.c | 1727 +++++++++++++++++++++++++++++++++++++++
->  4 files changed, 1740 insertions(+)
->  create mode 100644 drivers/pinctrl/pinctrl-capri.c
->
-> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-> index 69d67f7..2546365 100644
-> --- a/arch/arm/mach-bcm/Kconfig
-> +++ b/arch/arm/mach-bcm/Kconfig
-> @@ -10,6 +10,8 @@ config ARCH_BCM
->         select GENERIC_CLOCKEVENTS
->         select GENERIC_TIME
->         select GPIO_BCM
-> +       select PINCTRL
-> +       select PINCTRL_CAPRI
->         select SPARSE_IRQ
->         select TICK_ONESHOT
->         select CACHE_L2X0
+In the following patches, to get/set free objects from the freelist
+is changed so that simple casting doesn't work for it. Therefore,
+introduce helper functions.
 
-On your subsequent patchset pls move this from Kconfig to
-arm/configs/bcm_defconfig, and break that modification into a separate
-patch from the drivers/* modification.
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
- thanks,
-   csd
+diff --git a/mm/slab.c b/mm/slab.c
+index cb0a734..ec197b9 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2556,9 +2556,15 @@ static struct freelist *alloc_slabmgmt(struct kmem_cache *cachep,
+ 	return freelist;
+ }
+ 
+-static inline unsigned int *slab_freelist(struct page *page)
++static inline unsigned int get_free_obj(struct page *page, unsigned int idx)
+ {
+-	return (unsigned int *)(page->freelist);
++	return ((unsigned int *)page->freelist)[idx];
++}
++
++static inline void set_free_obj(struct page *page,
++					unsigned int idx, unsigned int val)
++{
++	((unsigned int *)(page->freelist))[idx] = val;
+ }
+ 
+ static void cache_init_objs(struct kmem_cache *cachep,
+@@ -2603,7 +2609,7 @@ static void cache_init_objs(struct kmem_cache *cachep,
+ 		if (cachep->ctor)
+ 			cachep->ctor(objp);
+ #endif
+-		slab_freelist(page)[i] = i;
++		set_free_obj(page, i, i);
+ 	}
+ }
+ 
+@@ -2622,7 +2628,7 @@ static void *slab_get_obj(struct kmem_cache *cachep, struct page *page,
+ {
+ 	void *objp;
+ 
+-	objp = index_to_obj(cachep, page, slab_freelist(page)[page->active]);
++	objp = index_to_obj(cachep, page, get_free_obj(page, page->active));
+ 	page->active++;
+ #if DEBUG
+ 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
+@@ -2643,7 +2649,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
+ 
+ 	/* Verify double free bug */
+ 	for (i = page->active; i < cachep->num; i++) {
+-		if (slab_freelist(page)[i] == objnr) {
++		if (get_free_obj(page, i) == objnr) {
+ 			printk(KERN_ERR "slab: double free detected in cache "
+ 					"'%s', objp %p\n", cachep->name, objp);
+ 			BUG();
+@@ -2651,7 +2657,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
+ 	}
+ #endif
+ 	page->active--;
+-	slab_freelist(page)[page->active] = objnr;
++	set_free_obj(page, page->active, objnr);
+ }
+ 
+ /*
+@@ -4224,7 +4230,7 @@ static void handle_slab(unsigned long *n, struct kmem_cache *c,
+ 
+ 		for (j = page->active; j < c->num; j++) {
+ 			/* Skip freed item */
+-			if (slab_freelist(page)[j] == i) {
++			if (get_free_obj(page, j) == i) {
+ 				active = false;
+ 				break;
+ 			}
+-- 
+1.7.9.5
+
