@@ -1,144 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3JQMkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:40:46 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:62563 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab3JQMkn (ORCPT
+	id S1755995Ab3JQMlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:41:14 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:2406 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab3JQMjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:40:43 -0400
-Date: Thu, 17 Oct 2013 08:40:37 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+	Thu, 17 Oct 2013 08:39:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 17 Oct 2013 05:39:47 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/5] usb: gadget: s3c-hsotg: support configurable UTMI
- PHY width
-Message-ID: <20131017124037.GA2721@beef>
-References: <1381140752-312-1-git-send-email-matt.porter@linaro.org>
- <1381140752-312-3-git-send-email-matt.porter@linaro.org>
- <20131010152922.GF28375@radagast>
- <5256DBD0.8030008@linaro.org>
- <20131010174620.GC19802@radagast>
- <A2CA0424C0A6F04399FB9E1CD98E030458E16893@US01WEMBX2.internal.synopsys.com>
- <5256FAFA.1020509@linaro.org>
- <52576EBA.9000502@linaro.org>
- <20131011133731.GD25706@radagast>
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v4 13/15] clk: tegra: introduce common gen4 super clock
+Date: Thu, 17 Oct 2013 15:38:44 +0300
+Message-ID: <1382013526-12800-14-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011133731.GD25706@radagast>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 08:37:31AM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Oct 10, 2013 at 11:21:30PM -0400, Matt Porter wrote:
-> > On 10/10/2013 03:07 PM, Matt Porter wrote:
-> > >On 10/10/2013 01:57 PM, Paul Zimmerman wrote:
-> > >>>From: Felipe Balbi [mailto:balbi@ti.com]
-> > >>>Sent: Thursday, October 10, 2013 10:46 AM
-> > >>>
-> > >>>On Thu, Oct 10, 2013 at 12:54:40PM -0400, Matt Porter wrote:
-> > >>>>On 10/10/2013 11:29 AM, Felipe Balbi wrote:
-> > >>>>>On Mon, Oct 07, 2013 at 06:12:29AM -0400, Matt Porter wrote:
-> > >>>>>>Extend dwc2 binding with an optional utmi phy width property.
-> > >>>>>>Enable the s3c-hsotg.c driver to use standard dwc2 binding
-> > >>>>>>and enable configuration of the UTMI phy width based on the
-> > >>>>>>property.
-> > >>>>>>
-> > >>>>>>Signed-off-by: Matt Porter <matt.porter@linaro.org>
-> > >>>>>>Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> > >>>>>>Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> > >>>>>>---
-> > >>>>>>  Documentation/devicetree/bindings/staging/dwc2.txt |  4 ++++
-> > >>>>>>  drivers/usb/gadget/s3c-hsotg.c                     | 18
-> > >>>>>>+++++++++++++++++-
-> > >>>>>>  drivers/usb/gadget/s3c-hsotg.h                     |  1 +
-> > >>>>>>  3 files changed, 22 insertions(+), 1 deletion(-)
-> > >>>>>>
-> > >>>>>>diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt
-> > >>>b/Documentation/devicetree/bindings/staging/dwc2.txt
-> > >>>>>>index 1a1b7cf..fb6b8ee 100644
-> > >>>>>>--- a/Documentation/devicetree/bindings/staging/dwc2.txt
-> > >>>>>>+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
-> > >>>>>>@@ -6,10 +6,14 @@ Required properties:
-> > >>>>>>  - reg : Should contain 1 register range (address and length)
-> > >>>>>>  - interrupts : Should contain 1 interrupt
-> > >>>>>>
-> > >>>>>>+Optional properties:
-> > >>>>>>+- snps,phy-utmi-width: Must contain the UTMI data width (either 8
-> > >>>>>>or 16)
-> > >>>>>
-> > >>>>>isn't this available in any of the configuration registers ?
-> > >>>>
-> > >>>>Yes and no. HWCFG4 has a UTMI data width field. However, it has 3
-> > >>>>valid states, "8", "16", or "8 or 16". The BCM281xx implementation is
-> > >>>>set to the latter and the attached phy is 8-bit.
-> > >>>>
-> > >>>>Looking at dwc2 prior to Matthijs Kooijman's patch [1] which starts
-> > >>>>validating the value of phy_utmi_width in that driver, the pci.c
-> > >>>>dwc2_module_params .phy_utmi_width field there even had the comment,
-> > >>>>"/* 16 bits - NOT DETECTABLE */". The autodetect code in
-> > >>>>dwc2_set_param_phy_utmi_width() will fail if HWCFG4 has the "8 or 16"
-> > >>>>option as it just decides to default to a phy width of 16 if nothing
-> > >>>>is configured by the platform glue. This property would also allow
-> > >>>>this issue to be addressed in that driver.
-> > >>>
-> > >>>fair enough, but I'd really like to hear from DT folks if your suggested
-> > >>>binding is acceptable. It seems like we can equally argue that it's a SW
-> > >>>configuration or HW description.
-> > >>
-> > >>It's definitely a HW description - the width of the UTMI data connection.
-> > >>
-> > >>But, which PHY is this? Does it have a register that could tell what
-> > >>the data width is? The dwc2 core has an (optional) PHY Vendor Control
-> > >>Register that allows reading the PHY registers.
-> > >
-> > >This is the integrated PHY on the bcm28155 part (the entire
-> > >bcm281xx/11351 family shares it). My register doc doesn't show the
-> > >optional PHY vendor control register as being present in this dwc2
-> > >implementation. I'll track down with the design team if this is
-> > >accurate...but it appears we can't go that route.
-> > 
-> > The design team confirmed that we do not have any registers that can
-> > be accessed via the PHY Vendor Control Register. All PHY control
-> > registers are implemented in the MMIO control block which is
-> > supported in the PHY control driver later in this series.They also
-> > confirmed there's no other way to detect that it's an 8-bit data
-> > path.
-> 
-> then we need the DT binding, let's see what DT maintainers say.
+Introduce a common function which performs super clock initialization for
+Tegra114 and beyond.
 
-I've reworked all of this against the generic phy layer. Things are
-simplified, of course, but this needs to be clarified to move forward
-on either the phy driver or the s3c-hsotg support.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/Makefile               |    1 +
+ drivers/clk/tegra/clk-tegra-super-gen4.c |  151 ++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk-tegra114.c         |   76 +---------------
+ drivers/clk/tegra/clk.h                  |    3 +
+ 4 files changed, 157 insertions(+), 74 deletions(-)
+ create mode 100644 drivers/clk/tegra/clk-tegra-super-gen4.c
 
-DT maintainers: can you weigh in here please?
+diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+index a02e9a9..2d83741 100644
+--- a/drivers/clk/tegra/Makefile
++++ b/drivers/clk/tegra/Makefile
+@@ -10,6 +10,7 @@ obj-y					+= clk-tegra-audio.o
+ obj-y					+= clk-tegra-periph.o
+ obj-y					+= clk-tegra-pmc.o
+ obj-y					+= clk-tegra-fixed.o
++obj-y					+= clk-tegra-super-gen4.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
+ obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
+diff --git a/drivers/clk/tegra/clk-tegra-super-gen4.c b/drivers/clk/tegra/clk-tegra-super-gen4.c
+new file mode 100644
+index 0000000..161e00a
+--- /dev/null
++++ b/drivers/clk/tegra/clk-tegra-super-gen4.c
+@@ -0,0 +1,151 @@
++/*
++ * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/clk/tegra.h>
++
++#include "clk.h"
++#include "clk-id.h"
++
++#define PLLX_BASE 0xe0
++#define PLLX_MISC 0xe4
++#define PLLX_MISC2 0x514
++#define PLLX_MISC3 0x518
++
++#define PLL_BASE_LOCK BIT(27)
++#define PLL_MISC_LOCK_ENABLE 18
++
++#define CCLKG_BURST_POLICY 0x368
++#define CCLKLP_BURST_POLICY 0x370
++#define SCLK_BURST_POLICY 0x028
++#define SYSTEM_CLK_RATE 0x030
++
++static DEFINE_SPINLOCK(sysrate_lock);
++
++static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
++			       "pll_p", "pll_p_out2", "unused",
++			       "clk_32k", "pll_m_out1" };
++
++static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
++					"pll_p", "pll_p_out4", "unused",
++					"unused", "pll_x" };
++
++static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
++					 "pll_p", "pll_p_out4", "unused",
++					 "unused", "pll_x", "pll_x_out0" };
++static void __init tegra_sclk_init(void __iomem *clk_base,
++				struct tegra_clk *tegra_clks)
++{
++	struct clk *clk;
++	struct clk **dt_clk;
++
++	/* SCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_sclk, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("sclk", sclk_parents,
++						ARRAY_SIZE(sclk_parents),
++						CLK_SET_RATE_PARENT,
++						clk_base + SCLK_BURST_POLICY,
++						0, 4, 0, 0, NULL);
++		*dt_clk = clk;
++	}
++
++	/* HCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_hclk, tegra_clks);
++	if (dt_clk) {
++		clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
++				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0,
++				   &sysrate_lock);
++		clk = clk_register_gate(NULL, "hclk", "hclk_div",
++				CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
++				clk_base + SYSTEM_CLK_RATE,
++				7, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
++		*dt_clk = clk;
++	}
++
++	/* PCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pclk, tegra_clks);
++	if (!dt_clk)
++		return;
++
++	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
++				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0,
++				   &sysrate_lock);
++	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT |
++				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
++				3, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
++	*dt_clk = clk;
++}
++
++void __init tegra_super_clk_gen4_init(void __iomem *clk_base,
++				void __iomem *pmc_base,
++				struct tegra_clk *tegra_clks,
++				struct tegra_clk_pll_params *params)
++{
++	struct clk *clk;
++	struct clk **dt_clk;
++
++	/* CCLKG */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_cclk_g, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("cclk_g", cclk_g_parents,
++					ARRAY_SIZE(cclk_g_parents),
++					CLK_SET_RATE_PARENT,
++					clk_base + CCLKG_BURST_POLICY,
++					0, 4, 0, 0, NULL);
++		*dt_clk = clk;
++	}
++
++	/* CCLKLP */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_cclk_lp, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("cclk_lp", cclk_lp_parents,
++					ARRAY_SIZE(cclk_lp_parents),
++					CLK_SET_RATE_PARENT,
++					clk_base + CCLKLP_BURST_POLICY,
++					0, 4, 8, 9, NULL);
++		*dt_clk = clk;
++	}
++
++	tegra_sclk_init(clk_base, tegra_clks);
++
++	/* PLLX */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_x, tegra_clks);
++	if (!dt_clk)
++		return;
++
++	clk = tegra_clk_register_pllxc("pll_x", "pll_ref", clk_base,
++			pmc_base, CLK_IGNORE_UNUSED, params, NULL);
++	*dt_clk = clk;
++
++	/* PLLX_OUT0 */
++
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_x_out0, tegra_clks);
++	if (!dt_clk)
++		return;
++	clk = clk_register_fixed_factor(NULL, "pll_x_out0", "pll_x",
++					CLK_SET_RATE_PARENT, 1, 2);
++	*dt_clk = clk;
++
++}
++
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index 87a2162..b17feea 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -119,9 +119,6 @@
+ #define PLLXC_SW_MAX_P			6
+ 
+ #define CCLKG_BURST_POLICY 0x368
+-#define CCLKLP_BURST_POLICY 0x370
+-#define SCLK_BURST_POLICY 0x028
+-#define SYSTEM_CLK_RATE 0x030
+ 
+ #define UTMIP_PLL_CFG2 0x488
+ #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
+@@ -175,7 +172,6 @@ static DEFINE_SPINLOCK(pll_d_lock);
+ static DEFINE_SPINLOCK(pll_d2_lock);
+ static DEFINE_SPINLOCK(pll_u_lock);
+ static DEFINE_SPINLOCK(pll_re_lock);
+-static DEFINE_SPINLOCK(sysrate_lock);
+ 
+ static struct div_nmp pllxc_nmp = {
+ 	.divm_shift = 0,
+@@ -1117,16 +1113,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	clk = clk_register_fixed_factor(NULL, "pll_m_ud", "pll_m",
+ 					CLK_SET_RATE_PARENT, 1, 1);
+ 
+-	/* PLLX */
+-	clk = tegra_clk_register_pllxc("pll_x", "pll_ref", clk_base,
+-			pmc, CLK_IGNORE_UNUSED, &pll_x_params, NULL);
+-	clks[TEGRA114_CLK_PLL_X] = clk;
+-
+-	/* PLLX_OUT0 */
+-	clk = clk_register_fixed_factor(NULL, "pll_x_out0", "pll_x",
+-					CLK_SET_RATE_PARENT, 1, 2);
+-	clks[TEGRA114_CLK_PLL_X_OUT0] = clk;
+-
+ 	/* PLLU */
+ 	val = readl(clk_base + pll_u_params.base_reg);
+ 	val &= ~BIT(24); /* disable PLLU_OVERRIDE */
+@@ -1195,65 +1181,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	clks[TEGRA114_CLK_PLL_E_OUT0] = clk;
+ }
+ 
+-static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
+-			       "pll_p", "pll_p_out2", "unused",
+-			       "clk_32k", "pll_m_out1" };
+-
+-static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+-					"pll_p", "pll_p_out4", "unused",
+-					"unused", "pll_x" };
+-
+-static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+-					 "pll_p", "pll_p_out4", "unused",
+-					 "unused", "pll_x", "pll_x_out0" };
+-
+-static void __init tegra114_super_clk_init(void __iomem *clk_base)
+-{
+-	struct clk *clk;
+-
+-	/* CCLKG */
+-	clk = tegra_clk_register_super_mux("cclk_g", cclk_g_parents,
+-					ARRAY_SIZE(cclk_g_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + CCLKG_BURST_POLICY,
+-					0, 4, 0, 0, NULL);
+-	clks[TEGRA114_CLK_CCLK_G] = clk;
+-
+-	/* CCLKLP */
+-	clk = tegra_clk_register_super_mux("cclk_lp", cclk_lp_parents,
+-					ARRAY_SIZE(cclk_lp_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + CCLKLP_BURST_POLICY,
+-					0, 4, 8, 9, NULL);
+-	clks[TEGRA114_CLK_CCLK_LP] = clk;
+-
+-	/* SCLK */
+-	clk = tegra_clk_register_super_mux("sclk", sclk_parents,
+-					ARRAY_SIZE(sclk_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + SCLK_BURST_POLICY,
+-					0, 4, 0, 0, NULL);
+-	clks[TEGRA114_CLK_SCLK] = clk;
+-
+-	/* HCLK */
+-	clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0,
+-				   &sysrate_lock);
+-	clk = clk_register_gate(NULL, "hclk", "hclk_div", CLK_SET_RATE_PARENT |
+-				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
+-				7, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+-	clks[TEGRA114_CLK_HCLK] = clk;
+-
+-	/* PCLK */
+-	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0,
+-				   &sysrate_lock);
+-	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT |
+-				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
+-				3, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+-	clks[TEGRA114_CLK_PCLK] = clk;
+-}
+-
+ static __init void tegra114_periph_clk_init(void __iomem *clk_base,
+ 					    void __iomem *pmc_base)
+ {
+@@ -1544,7 +1471,8 @@ static void __init tegra114_clock_init(struct device_node *np)
+ 	tegra114_periph_clk_init(clk_base, pmc_base);
+ 	tegra_audio_clk_init(clk_base, pmc_base, tegra114_clks, &pll_a_params);
+ 	tegra_pmc_clk_init(pmc_base, tegra114_clks);
+-	tegra114_super_clk_init(clk_base);
++	tegra_super_clk_gen4_init(clk_base, pmc_base, tegra114_clks,
++					&pll_x_params);
+ 
+ 	tegra_add_of_provider(np);
+ 	tegra_register_devclks(devclks, ARRAY_SIZE(devclks));
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 2d48817..05abfc5 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -610,6 +610,9 @@ int tegra_osc_clk_init(void __iomem *clk_base, struct tegra_clk *tegra_clks,
+ 				unsigned long *input_freqs, int num,
+ 				unsigned long *osc_freq,
+ 				unsigned long *pll_ref_freq);
++void tegra_super_clk_gen4_init(void __iomem *clk_base,
++			void __iomem *pmc_base, struct tegra_clk *tegra_clks,
++			struct tegra_clk_pll_params *pll_params);
+ 
+ void tegra114_clock_tune_cpu_trimmers_high(void);
+ void tegra114_clock_tune_cpu_trimmers_low(void);
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-Summary is that we have a 8-bit data path UTMI phy attached to a dwc2.
-The width is undetectable and a fixed h/w configuration. I would
-actually view this as a property of the phy itself. It's 8-bit only and
-thus puts the constraint on the controller it's attached to (internally)
-to operate in 8-bit UTMI mode. However, I see no way with the generic
-phy binding to provide this information to the controller h/w.
-
-The original approach above adds a phy-utmi-width property to the dwc2
-binding which is simple, but in retrospect may not reflect where that
-constraint actually comes into play.
-
--Matt
