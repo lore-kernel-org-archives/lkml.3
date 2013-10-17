@@ -1,58 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183Ab3JQRal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:30:41 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18747 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756787Ab3JQRaj (ORCPT
+	id S1758282Ab3JQRcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:32:14 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60219 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab3JQRcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:30:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+g/9Gs3ByIUhrTtC3oJxVI
-Date: Thu, 17 Oct 2013 10:30:37 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/9] of: refactor IRQ parsing and add interrupts-extended
- implementation
-Message-ID: <20131017173037.GB15154@atomide.com>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+	Thu, 17 Oct 2013 13:32:13 -0400
+Date: Thu, 17 Oct 2013 19:32:15 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, acme@redhat.com, dsahern@gmail.com,
+        jolsa@redhat.com, ak@linux.intel.com
+Subject: [PATCH v3] perf: disable PERF_RECORD_MMAP2 support
+Message-ID: <20131017173215.GA8820@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely <grant.likely@linaro.org> [131015 13:43]:
-> Hi everyone.
-> 
-> This series is mostly a set of cleanup to the interrupt parsing code.
-> Some of it merely clarification, like the renames of of_irq_map_*, some
-> to tighten up the API by using of_phandle_args, and some to prepare for
-> the last patch in the series.
-> 
-> Of all these patches, the last one is probably the only one likely to be
-> controversial. It adds a new way of specifying interrupts. If a device
-> gets wired up to multiple interrupt controllers, the interrupts-extended
-> property allows the device to specify multiple connections without
-> redirecting through an interrupt-map node which can be rather difficult
-> to understand. In a lot of cases, an interrupts-extended property is a
-> whole lot easier to use.
 
-Oh that's too diplomatic :) How about something like this instead:
+For now, we disable the extended MMAP record support (MMAP2).
+We have identified cases where it would not report the correct
+mapping information, clone(VM_CLONE) but with separate pids.
+We will revisit the support once we find a solution for this case.
 
-"Device tree is currently badly broken where in order to support
- interrupts from multiple interrupt controllers the device needs
- to do the opposite of describing hardware, and lie about itself
- being an interrupt controller to use the interrupt-map property."
+The patch changes the kernel to return EINVAL if attr->mmap2
+is set. The patch also modifies the perf tool to use regular PERF_RECORD_MMAP
+for synthetic events and it also prevents the tool from requesting attr->mmap2
+mode because the kernel would reject it.
 
-Anyways, gave this series a try, and the interrupts-extended binding
-works for me for the multiple interrupt controllers issue :)
+The support will be revisited once the kenrel interface is updated.
 
-Tony
+In V2, we reduce the patch to the strict minimum.
+In V3, we avoid calling perf_event_open() with mmap2 set because we
+know it will fail and require fallback retry.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ kernel/events/core.c    |    4 ++++
+ tools/perf/util/event.c |   30 +++++++++++++-----------------
+ tools/perf/util/evsel.c |    1 -
+ 3 files changed, 17 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c716385..5bd7fe4 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6773,6 +6773,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (ret)
+ 		return -EFAULT;
+ 
++	/* disabled for now */
++	if (attr->mmap2)
++		return -EINVAL;
++
+ 	if (attr->__reserved_1)
+ 		return -EINVAL;
+ 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 9b393e7..63df031 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -187,7 +187,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	event->header.type = PERF_RECORD_MMAP2;
++	event->header.type = PERF_RECORD_MMAP;
+ 	/*
+ 	 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+ 	 */
+@@ -198,7 +198,6 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		char prot[5];
+ 		char execname[PATH_MAX];
+ 		char anonstr[] = "//anon";
+-		unsigned int ino;
+ 		size_t size;
+ 		ssize_t n;
+ 
+@@ -209,13 +208,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		strcpy(execname, "");
+ 
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
+-		       &event->mmap2.start, &event->mmap2.len, prot,
+-		       &event->mmap2.pgoff, &event->mmap2.maj,
+-		       &event->mmap2.min,
+-		       &ino, execname);
+-
+-		event->mmap2.ino = (u64)ino;
++		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
++		       &event->mmap.start, &event->mmap.len, prot,
++		       &event->mmap.pgoff,
++		       execname);
+ 
+ 		if (n != 8)
+ 			continue;
+@@ -227,15 +223,15 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			strcpy(execname, anonstr);
+ 
+ 		size = strlen(execname) + 1;
+-		memcpy(event->mmap2.filename, execname, size);
++		memcpy(event->mmap.filename, execname, size);
+ 		size = PERF_ALIGN(size, sizeof(u64));
+-		event->mmap2.len -= event->mmap.start;
+-		event->mmap2.header.size = (sizeof(event->mmap2) -
+-					(sizeof(event->mmap2.filename) - size));
+-		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
+-		event->mmap2.header.size += machine->id_hdr_size;
+-		event->mmap2.pid = tgid;
+-		event->mmap2.tid = pid;
++		event->mmap.len -= event->mmap.start;
++		event->mmap.header.size = (sizeof(event->mmap) -
++					(sizeof(event->mmap.filename) - size));
++		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
++		event->mmap.header.size += machine->id_hdr_size;
++		event->mmap.pid = tgid;
++		event->mmap.tid = pid;
+ 
+ 		if (process(tool, event, &synth_sample, machine) != 0) {
+ 			rc = -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index bfebc1e..bab6775 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -678,7 +678,6 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+ 
+ 	attr->mmap  = track;
+-	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
+ 
+ 	if (opts->sample_transaction)
+-- 
+1.7.9.5
 
