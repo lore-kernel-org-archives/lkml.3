@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3JQNrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:47:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48795 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755421Ab3JQNrQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:47:16 -0400
-Date: Thu, 17 Oct 2013 14:47:01 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Christian Daudt <bcm@fixthebug.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1755853Ab3JQNtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:49:17 -0400
+Received: from [216.32.180.188] ([216.32.180.188]:16108 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754624Ab3JQNtQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:49:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [RESEND PATCH v2 0/6] Update Kona drivers to use clocks
-Message-ID: <20131017134701.GC24056@e106331-lin.cambridge.arm.com>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>
+Subject: RE: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
+Thread-Topic: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
+Thread-Index: AQHOymPo+73p9hhU20CjtA/9SyqCl5n46eng
+Date: Thu, 17 Oct 2013 13:47:38 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D0A5456C2@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1381922582-28724-1-git-send-email-Varun.Sethi@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.136]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:47:04PM +0100, Tim Kryger wrote:
-> This series declares the clocks present on bcm11351 (aka bcm281xx) SoCs
-> to be fixed at the rates configured by development bootloaders and then
-> updates the Kona drivers to make use of clock calls where appropriate.
-> 
-> This patch series depends on the following three commits being present:
-> 
-> https://lkml.org/lkml/2013/9/18/409
-> https://lkml.org/lkml/2013/9/20/305
-> http://www.spinics.net/lists/arm-kernel/msg274973.html
-> 
-> Changes in v2:
->   - Renamed bsc4_clk to pmu_bsc_clk
-> 
-> Tim Kryger (6):
->   ARM: dts: Declare clocks as fixed on bcm11351
->   ARM: dts: Specify clocks for UARTs on bcm11351
->   ARM: dts: Specify clocks for SDHCIs on bcm11351
->   clocksource: kona: Add basic use of external clock
->   ARM: dts: Specify clocks for timer on bcm11351
->   mmc: sdhci-bcm-kona: Add basic use of clocks
-> 
->  arch/arm/boot/dts/bcm11351.dtsi      | 111 +++++++++++++++++++++++++++++++++--
->  drivers/clocksource/bcm_kona_timer.c |  14 ++++-
->  drivers/mmc/host/sdhci-bcm-kona.c    |  30 +++++++++-
+Hi Joerg,
+Please consider these patches for 3.12.
 
-This requires a description in the binding documents, so we can figure
-out which clocks we need to describe, and how to describe them.
+Regards
+Varun
 
-Thanks,
-Mark.
+> -----Original Message-----
+> From: Sethi Varun-B16395
+> Sent: Wednesday, October 16, 2013 4:53 PM
+> To: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Yoder Stuart-B08248;
+> Wood Scott-B07421; alex.williamson@redhat.com; Bhushan Bharat-R65777
+> Cc: Sethi Varun-B16395
+> Subject: [PATCH 0/3 v2] iommu/fsl: PAMU driver fixes.
+> 
+> The first patch fixes a build failure, when we try to build for a
+> Freescale platform without PCI support.
+> 
+> The second patch enables a default DMA window for the device, once it's
+> detached from a domain. In case of vfio, once device is detached from a
+> guest it can be again used by the host.
+> 
+> The last patch adds the maintainer entry for the Freescale PAMU driver.
+> 
+> Varun Sethi (3):
+>   iommu/fsl: Factor out PCI specific code.
+>   iommu/fsl: Enable default DMA window for PCIe devices once detached
+>   Add maintainers entry for the Freescale PAMU driver.
+> 
+>  MAINTAINERS                     |    7 ++
+>  drivers/iommu/fsl_pamu.c        |   43 ++++++++++---
+>  drivers/iommu/fsl_pamu.h        |    1 +
+>  drivers/iommu/fsl_pamu_domain.c |  134 +++++++++++++++++++++++++--------
+> ------
+>  4 files changed, 128 insertions(+), 57 deletions(-)
+> 
+> --
+> 1.7.9.5
+
+
