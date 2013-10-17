@@ -1,88 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab3JQH5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 03:57:48 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3144 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab3JQH5q (ORCPT
+	id S1753077Ab3JQH6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 03:58:17 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:46377 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3JQH6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 03:57:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 17 Oct 2013 00:57:46 -0700
-Date: Thu, 17 Oct 2013 10:57:43 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 1/7] clk: tegra: Add support for PLLSS
-Message-ID: <20131017075743.GQ5643@tbergstrom-lnx.Nvidia.com>
-References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
- <1381850098-12357-2-git-send-email-pdeschrijver@nvidia.com>
- <525DA373.6040805@wwwdotorg.org>
- <20131016074829.GD5643@tbergstrom-lnx.Nvidia.com>
- <525ECB08.4020201@wwwdotorg.org>
+	Thu, 17 Oct 2013 03:58:15 -0400
+Message-ID: <525F9892.7000608@linaro.org>
+Date: Thu, 17 Oct 2013 09:58:10 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <525ECB08.4020201@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        shaojie.sun@linaro.org
+Subject: Re: [PATCH V2] ARM: trace: Add tracepoint for the Inter Processor
+ Interrupt
+References: <1381839042-3533-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1381839042-3533-1-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 07:21:12PM +0200, Stephen Warren wrote:
-> On 10/16/2013 01:48 AM, Peter De Schrijver wrote:
-> > On Tue, Oct 15, 2013 at 10:20:03PM +0200, Stephen Warren wrote:
-> >> On 10/15/2013 09:14 AM, Peter De Schrijver wrote:
-> >>> Tegra124 introduces a new PLL type, PLLSS. Add support for it.
-> >>
-> >>> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-> >>
-> >>
-> >>> +static int clk_pllss_set_rate(struct clk_hw *hw, unsigned long rate,
-> >>> +				unsigned long parent_rate)
-> >>
-> >> This function seems pretty generic. Is it possible to share a bit more
-> >> code with any of the other pllXXX_set_rate() functions?
-> >>
-> >>> +struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
-> >>> +				void __iomem *clk_base, unsigned long flags,
-> >>> +				struct tegra_clk_pll_params *pll_params,
-> >>> +				spinlock_t *lock)
-> >>
-> >>> +	val = pll_readl_base(pll);
-> >>> +	if (val & PLLSS_REF_SRC_SEL_MASK) {
-> >>> +		WARN(1, "Unknown parent selected for %s: %d\n", name,
-> >>> +			(val & PLLSS_REF_SRC_SEL_MASK) >>
-> >>> +			PLLSS_REF_SRC_SEL_SHIFT);
-> >>> +		kfree(pll);
-> >>> +		return ERR_PTR(-EINVAL);
-> >>> +	}
-> >>
-> >> If there's a field in HW that muxes the clock input between n clocks,
-> >> why does this function assume there's a single parent for this PLL, by
-> >> taking a "const char *parent_name" parameter?
-> >>
-> >> What happens if the bootloader changed this field in HW; is the kernel
-> >> simply not able to boot?
-> >>
-> > 
-> > This logic comes from downstream. I guess it means we're running in an
-> > unvalidated configuration. Do you think we should expose all parents 
-> > anyway? Even if not all configurations have been validated?
-> > (which is quite likely)
-> 
-> If we only support one particular parent, why not force the register
-> field to the desired value, rather than failing?
+On 10/15/2013 02:10 PM, Daniel Lezcano wrote:
+> The Inter Processor Interrupt is used on ARM to tell another processor to do
+> a specific action. This is mainly used to emulate a timer interrupt on an idle
+> cpu, force a cpu to reschedule or run a function on another processor context.
+>
+> Add a tracepoint when raising an IPI and in the entry/exit handler functions.
+>
+> When a cpu raises an IPI, the targeted cpus is an interesting information, the
+> cpumask conversion in hexa is added in the trace using the cpumask_scnprintf
+> function.
+>
+> Tested-on Vexpress TC2 (5 processors).
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
 
-Sounds reasonable indeed. I will do that in the next version.
+Hi Steven,
 
-Cheers,
+does this V2 patch sound good for you ?
 
-Peter.
+Thanks
+   -- Daniel
+
+>   arch/arm/include/asm/smp.h   |    9 ++++
+>   arch/arm/kernel/smp.c        |   34 ++++++++------
+>   arch/arm64/include/asm/smp.h |    7 +++
+>   arch/arm64/kernel/smp.c      |   21 +++++++--
+>   include/trace/events/ipi.h   |  104 ++++++++++++++++++++++++++++++++++++++++++
+>   5 files changed, 156 insertions(+), 19 deletions(-)
+>   create mode 100644 include/trace/events/ipi.h
+>
+> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+> index a8cae71c..788706c 100644
+> --- a/arch/arm/include/asm/smp.h
+> +++ b/arch/arm/include/asm/smp.h
+> @@ -18,6 +18,15 @@
+>   # error "<asm/smp.h> included in non-SMP build"
+>   #endif
+>
+> +enum ipi_msg_type {
+> +	IPI_WAKEUP,
+> +	IPI_TIMER,
+> +	IPI_RESCHEDULE,
+> +	IPI_CALL_FUNC,
+> +	IPI_CALL_FUNC_SINGLE,
+> +	IPI_CPU_STOP,
+> +};
+> +
+>   #define raw_smp_processor_id() (current_thread_info()->cpu)
+>
+>   struct seq_file;
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 72024ea..9ca8ce8 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -46,6 +46,9 @@
+>   #include <asm/mach/arch.h>
+>   #include <asm/mpu.h>
+>
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/ipi.h>
+> +
+>   /*
+>    * as from 2.5, kernels no longer have an init_tasks structure
+>    * so we need some other way of telling a new secondary core
+> @@ -59,15 +62,6 @@ struct secondary_data secondary_data;
+>    */
+>   volatile int pen_release = -1;
+>
+> -enum ipi_msg_type {
+> -	IPI_WAKEUP,
+> -	IPI_TIMER,
+> -	IPI_RESCHEDULE,
+> -	IPI_CALL_FUNC,
+> -	IPI_CALL_FUNC_SINGLE,
+> -	IPI_CPU_STOP,
+> -};
+> -
+>   static DECLARE_COMPLETION(cpu_running);
+>
+>   static struct smp_operations smp_ops;
+> @@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>   		smp_cross_call = fn;
+>   }
+>
+> +static void ipi_raise(const struct cpumask *mask, int ipinr)
+> +{
+> +	trace_ipi_raise(mask, ipinr);
+> +	smp_cross_call(mask, ipinr);
+> +}
+> +
+>   void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>   {
+> -	smp_cross_call(mask, IPI_CALL_FUNC);
+> +	ipi_raise(mask, IPI_CALL_FUNC);
+>   }
+>
+>   void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+>   {
+> -	smp_cross_call(mask, IPI_WAKEUP);
+> +	ipi_raise(mask, IPI_WAKEUP);
+>   }
+>
+>   void arch_send_call_function_single_ipi(int cpu)
+>   {
+> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>   }
+>
+>   static const char *ipi_types[NR_IPI] = {
+> @@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+>   #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+>   void tick_broadcast(const struct cpumask *mask)
+>   {
+> -	smp_cross_call(mask, IPI_TIMER);
+> +	ipi_raise(mask, IPI_TIMER);
+>   }
+>   #endif
+>
+> @@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>   	unsigned int cpu = smp_processor_id();
+>   	struct pt_regs *old_regs = set_irq_regs(regs);
+>
+> +	trace_ipi_handler_entry(ipinr);
+> +
+>   	if (ipinr < NR_IPI)
+>   		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+>
+> @@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>   		break;
+>   	}
+>   	set_irq_regs(old_regs);
+> +
+> +	trace_ipi_handler_exit(ipinr);
+>   }
+>
+>   void smp_send_reschedule(int cpu)
+>   {
+> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
+>   }
+>
+>   void smp_send_stop(void)
+> @@ -586,7 +590,7 @@ void smp_send_stop(void)
+>   	cpumask_copy(&mask, cpu_online_mask);
+>   	cpumask_clear_cpu(smp_processor_id(), &mask);
+>   	if (!cpumask_empty(&mask))
+> -		smp_cross_call(&mask, IPI_CPU_STOP);
+> +		ipi_raise(&mask, IPI_CPU_STOP);
+>
+>   	/* Wait up to one second for other CPUs to stop */
+>   	timeout = USEC_PER_SEC;
+> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+> index 4b8023c..7ebaa3a 100644
+> --- a/arch/arm64/include/asm/smp.h
+> +++ b/arch/arm64/include/asm/smp.h
+> @@ -24,6 +24,13 @@
+>   # error "<asm/smp.h> included in non-SMP build"
+>   #endif
+>
+> +enum ipi_msg_type {
+> +	IPI_RESCHEDULE,
+> +	IPI_CALL_FUNC,
+> +	IPI_CALL_FUNC_SINGLE,
+> +	IPI_CPU_STOP,
+> +};
+> +
+>   #define raw_smp_processor_id() (current_thread_info()->cpu)
+>
+>   struct seq_file;
+> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+> index 78db90d..c987b9f 100644
+> --- a/arch/arm64/kernel/smp.c
+> +++ b/arch/arm64/kernel/smp.c
+> @@ -48,6 +48,9 @@
+>   #include <asm/tlbflush.h>
+>   #include <asm/ptrace.h>
+>
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/ipi.h>
+> +
+>   /*
+>    * as from 2.5, kernels no longer have an init_tasks structure
+>    * so we need some other way of telling a new secondary core
+> @@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>   	smp_cross_call = fn;
+>   }
+>
+> +static void ipi_raise(const struct cpumask *mask, int ipinr)
+> +{
+> +	trace_ipi_raise(mask, ipinr);
+> +	smp_cross_call(mask, ipinr);
+> +}
+> +
+>   void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>   {
+> -	smp_cross_call(mask, IPI_CALL_FUNC);
+> +	ipi_raise(mask, IPI_CALL_FUNC);
+>   }
+>
+>   void arch_send_call_function_single_ipi(int cpu)
+>   {
+> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>   }
+>
+>   static const char *ipi_types[NR_IPI] = {
+> @@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>   	unsigned int cpu = smp_processor_id();
+>   	struct pt_regs *old_regs = set_irq_regs(regs);
+>
+> +	trace_ipi_handler_entry(ipinr);
+> +
+>   	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
+>   		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
+>
+> @@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>   		break;
+>   	}
+>   	set_irq_regs(old_regs);
+> +
+> +	trace_ipi_handler_exit(ipinr);
+>   }
+>
+>   void smp_send_reschedule(int cpu)
+>   {
+> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
+>   }
+>
+>   void smp_send_stop(void)
+> @@ -549,7 +562,7 @@ void smp_send_stop(void)
+>   		cpumask_copy(&mask, cpu_online_mask);
+>   		cpu_clear(smp_processor_id(), mask);
+>
+> -		smp_cross_call(&mask, IPI_CPU_STOP);
+> +		ipi_raise(&mask, IPI_CPU_STOP);
+>   	}
+>
+>   	/* Wait up to one second for other CPUs to stop */
+> diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
+> new file mode 100644
+> index 0000000..80b734b
+> --- /dev/null
+> +++ b/include/trace/events/ipi.h
+> @@ -0,0 +1,104 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM ipi
+> +
+> +#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_IPI_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
+> +#define show_ipi_name(val)				\
+> +	__print_symbolic(val,				\
+> +			 ipi_name(WAKEUP),		\
+> +			 ipi_name(TIMER),		\
+> +			 ipi_name(RESCHEDULE),		\
+> +			 ipi_name(CALL_FUNC),		\
+> +			 ipi_name(CALL_FUNC_SINGLE),	\
+> +			 ipi_name(CPU_STOP))
+> +
+> +DECLARE_EVENT_CLASS(ipi,
+> +
+> +    TP_PROTO(int ipinr),
+> +
+> +    TP_ARGS(ipinr),
+> +
+> +    TP_STRUCT__entry(
+> +	    __field(int, ipinr)
+> +    ),
+> +
+> +    TP_fast_assign(
+> +	    __entry->ipinr = ipinr;
+> +    ),
+> +
+> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
+> +	      show_ipi_name(__entry->ipinr))
+> +);
+> +
+> +/**
+> + * ipi_handle_entry - called right before the IPI handler
+> + * @ipinr: the IPI number
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace.
+> + */
+> +DEFINE_EVENT_CONDITION(ipi, ipi_handler_entry,
+> +
+> +    TP_PROTO(int ipinr),
+> +
+> +    TP_ARGS(ipinr),
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
+> +);
+> +
+> +/**
+> + * ipi_handle_exit - called right after the IPI handler
+> + * @ipinr: the IPI number
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace.
+> + */
+> +DEFINE_EVENT_CONDITION(ipi, ipi_handler_exit,
+> +
+> +    TP_PROTO(int ipinr),
+> +
+> +    TP_ARGS(ipinr),
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
+> +);
+> +
+> +/**
+> + * ipi_raise - called when a smp cross call is made
+> + * @ipinr: the IPI number
+> + * @cpumask: the recipients for the IPI
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace as well as the cpumask of the
+> + * targeted cpus.
+> + */
+> +TRACE_EVENT_CONDITION(ipi_raise,
+> +
+> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
+> +
+> +    TP_ARGS(cpumask, ipinr),
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+> +
+> +    TP_STRUCT__entry(
+> +	    __field(int, ipinr)
+> +	    __array(char, cpumask, NR_CPUS)
+> +    ),
+> +
+> +    TP_fast_assign(
+> +	    __entry->ipinr = ipinr;
+> +	    cpumask_scnprintf(__entry->cpumask,
+> +			      ARRAY_SIZE(__entry->cpumask), cpumask);
+> +    ),
+> +
+> +    TP_printk("ipi=%d, cpumask=0x%s, name=%s", __entry->ipinr, __entry->cpumask,
+> +	      show_ipi_name(__entry->ipinr))
+> +);
+> +
+> +#endif /* _TRACE_IPI_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
