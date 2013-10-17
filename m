@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762523Ab3JQS14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:27:56 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:57181 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758770Ab3JQS1y (ORCPT
+	id S1762527Ab3JQS2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:28:35 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48668 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758204Ab3JQS2d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:27:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131017124515.3566d7c1@plati.site>
-References: <CAH2r5muRfQ6y1vzu_1icz4BGTqEPfgaOsHExbQay_yZiCOZQ_A@mail.gmail.com>
-	<20131017124515.3566d7c1@plati.site>
-Date: Thu, 17 Oct 2013 13:27:52 -0500
-Message-ID: <CADT32eJHi--oChq5TJLjv5GsVYAOGdnpY_=nxTBE10dKasr8Hg@mail.gmail.com>
-Subject: Re: cp --reflink and target file open flags
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-To: David Disseldorp <ddiss@suse.de>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Oct 2013 14:28:33 -0400
+Subject: Re: [PATCHv6 2/4] ARM: msm: Add support for APQ8074 Dragonboard
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
+Date: Thu, 17 Oct 2013 13:28:29 -0500
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <86B14DE9-F72B-4B4F-AD7F-AA53792435AE@codeaurora.org>
+References: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think it would not matter which ioctl is used if the target file is
-not opened with flag O_RDWR.
 
-Perhaps cifs.ko can make the decision to change O_WRONLY
-to O_RDWR based on the flag and location of the source and
-destination files.
+On Oct 17, 2013, at 1:25 PM, Rohit Vaswani wrote:
 
+> This patch adds basic board support for APQ8074 Dragonboard
+> which belongs to the Snapdragon 800 family.
+> For now, just support a basic machine with device tree.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+> arch/arm/boot/dts/Makefile                     |  3 ++-
+> arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
+> arch/arm/boot/dts/qcom-msm8974.dtsi            | 33 ++++++++++++++++++++++++++
+> arch/arm/mach-msm/Kconfig                      | 11 ++++++++-
+> arch/arm/mach-msm/board-dt.c                   |  9 +++++++
+> 5 files changed, 60 insertions(+), 2 deletions(-)
+> create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+> create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
 
-On Thu, Oct 17, 2013 at 5:45 AM, David Disseldorp <ddiss@suse.de> wrote:
-> On Wed, 16 Oct 2013 18:36:19 -0500
-> Steve French <smfrench@gmail.com> wrote:
->
->> cp --reflink opens the target file for O_WRONLY before invoking the
->> (BTRFS) ioctl for clone file, but for copy offload over the network
->> the SMB2 specification requires that the target file be open O_RDWR.
->>
->> I may be able to upgrade the target file handle on the fly by
->> reopening it in cifs.ko, and of course I can write an SMB2/SMB3
->> specific copy command, but it would be preferable to allow use of cp
->> --reflink since so many people are familiar with it.
->>
->> There is quite a bit of flexibility in server side copy offload  -
->> more than cp an offer, especially when using SMB3 or later dialects
->> (e.g. in number of chunks sent at one time, chunk size, attributes
->> copied, and even whether to use T10 style offload), but still it would
->> be nice to support "cp --reflink" over the network.  Any ideas on
->> this?
->>
->> After looking at copy.c in coreutils for cp - I couldn't think of any
->> trivial way to force cp to open the target RW.
->>
->> Ideas?
->
-> You should be able to avoid this by using FSCTL_SRV_COPYCHUNK_WRITE
-> instead of FSCTL_SRV_COPYCHUNK on the wire. The former doesn't require
-> read access on the target, while the latter does. See [MS-SMB2] 2.2.31
-> and smbtorture's copy_chunk_bad_access test.
->
-> Samba only supported FSCTL_SRV_COPYCHUNK until now, as that's what
-> Windows Server 2k12 uses for copies initiated by Explorer. I've just
-> sent out the trivial patches adding FSCTL_SRV_COPYCHUNK_WRITE support.
->
-> Cheers, David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Kumar Gala <galak@codeaurora.org>
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
