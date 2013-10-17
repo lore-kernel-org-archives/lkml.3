@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036Ab3JQQKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:10:47 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40104 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757579Ab3JQQKn (ORCPT
+	id S1758064Ab3JQQLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:11:06 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29048 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757569Ab3JQQLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:10:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1382000112.22110.103.camel@joe-AO722>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	<1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
-	<1381978749.22110.76.camel@joe-AO722>
-	<20131017063059.GB14946@gchen.bj.intel.com>
-	<1381993136.22110.95.camel@joe-AO722>
-	<20131017073824.GC14946@gchen.bj.intel.com>
-	<1381998750.22110.101.camel@joe-AO722>
-	<20131017084014.GD5036@pd.tnic>
-	<1382000112.22110.103.camel@joe-AO722>
-Date: Thu, 17 Oct 2013 09:10:40 -0700
-Message-ID: <CA+8MBbLDVJgY9WWTY6vPeY7+L04-xDPofJ9eLwh7dJipBBh51w@mail.gmail.com>
-Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-From: Tony Luck <tony.luck@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Borislav Petkov <bp@alien8.de>, Chen Gong <gong.chen@linux.intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        m.chehab@samsung.com, arozansk@redhat.com,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Oct 2013 12:11:03 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-5a-52600c1541ee
+Message-id: <52600C12.3000606@samsung.com>
+Date: Thu, 17 Oct 2013 18:10:58 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] spi/s3c64xx: Add missing pm_runtime_set_active() call in
+ probe()
+References: <1382026006-15544-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1382026006-15544-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xq7qiPAlBBq9/8FpMWneAyWLqwyds
+	Fq9fGFr0LrjKZnG26Q27xabH11gtLu+aw2Yx4/w+JovGjzfZHTg9/q56weyxaVUnm8fmJfUe
+	fVtWMXp83iQXwBrFZZOSmpNZllqkb5fAlTHx1H72gmvMFR++tbI0MPYwdzFyckgImEj8vt3D
+	DmGLSVy4t54NxBYSWMooce6lVhcjF5D9iVFi16KDrCAJXgEtibMvu5lAbBYBVYlvk7eB2WwC
+	hhK9R/sYQWxRgTCJo00/oeoFJX5MvscCMkhEYDajxNQ/axhBHGaBzYwSE06dAlsnLBAu0dp2
+	hAVitbvEo4PTwCZxCnhIXL//Huw8ZgEdif2t09ggbHmJzWveMk9gFJiFZMksJGWzkJQtYGRe
+	xSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRES+F92MC4+ZnWIUYCDUYmH98C3+CAh1sSy4src
+	Q4wSHMxKIrxxXAlBQrwpiZVVqUX58UWlOanFhxiZODilGhgZi2Ma+Z6+PxIc6rtq9YxjZd/V
+	jKbdMa47ZtPUOfE13+ua1Ynnl1nYfC/+en3jtD2b36+73WDGVCm0+v7Z/zLTE6Z/YZ4feF7h
+	KHMow7Lyibs6mNJm5r1M26RwY0qU3KMzpqZyrLO6nu/yninJ7+2imPd96rQtT1x/scifCO9a
+	s29r8X5h4T26SizFGYmGWsxFxYkAyDGiHVoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 1:55 AM, Joe Perches <joe@perches.com> wrote:
-> It's cost free to add the BUILD_BUG_ON
-> and perhaps you underestimate the runtime
-> bug checking effort,
+On 17/10/13 18:06, Krzysztof Kozlowski wrote:
+> Mark device as PM runtime active during initialization to reflect
+> actual device power/clocks state. This reduces the enable count for SPI
+> bus controller gate clock so it can be disabled when the bus controller
+> is not used.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-This looks OK to me.  Gong: This doesn't stop people from using variables
-as arguments ... they just won't get a check for (h) < (l).
-
--Tony
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
