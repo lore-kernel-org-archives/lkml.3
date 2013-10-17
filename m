@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab3JQRCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:02:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38993 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756803Ab3JQRCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:02:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,515,1378882800"; 
-   d="scan'208";a="309174880"
-Message-ID: <5260191E.4060603@linux.intel.com>
-Date: Thu, 17 Oct 2013 10:06:38 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+	id S1757882Ab3JQRFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:05:17 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:45814 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab3JQRFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 13:05:15 -0400
+Message-ID: <526018C6.5070604@linaro.org>
+Date: Thu, 17 Oct 2013 10:05:10 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-gpio@vger.kernel.org,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] gpiolib: append SFI helpers for GPIO API
-References: <1381979015-28980-1-git-send-email-david.a.cohen@linux.intel.com> <1382013695.29062.141.camel@smile>
-In-Reply-To: <1382013695.29062.141.camel@smile>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev
+ doesn't exist
+References: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 05:41 AM, Andy Shevchenko wrote:
-> On Wed, 2013-10-16 at 20:03 -0700, David Cohen wrote:
->> From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->>
->> To support some (legacy) firmwares and platforms let's make life easier for
->> their customers.
->>
+On 10/14/2013 02:33 PM, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >
+> Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
+> on ARM. (http://bugs.ruby-lang.org/issues/9008)
 >
->> +int sfi_get_gpio_by_name(const char *name)
->> +{
->> +	struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
->> +	int i;
->> +
->> +	if (!pentry)
->> +		return -1;
+> Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+> RTC device is present) intruduced to return ENOTSUPP when
+> clock_get{time,res} can't find a RTC device. However it is incorrect.
 >
-> ^^^^ It seems an old version.
+> Posix and Linux man pages agree that clock_gettime and clock_getres
+> should return EINVAL if clk_id argument is invalid. This is significant
+> different from timer_create API.
 >
-> New version was published while ago and even has an ACK from Linus:
->
-> http://www.spinics.net/lists/kernel/msg1545960.html
+> This patch fixes it.
 
-Interesting :)
-I got this patch cooking in our internal tree for quite some time.
-Didn't realize about the new version. I'm waiting it to be merged to
-send an Intel Mid patch that depends on that.
+Hrm... So I feel like there is a difference here. The clockid for
+CLOCK_BOOTTIME_ALARM and CLOCK_REALTIME_ALARM are both valid.
 
-Please, ignore this version and consider the one pointed out by Andy.
+Its just that they're not supported on this specific hardware because it
+apparently lacks a RTC that has told the system it can be used as a
+wakeup device (Its actually quite likely on the hardware that the RTC
+can be a wakeup device, but that the driver is probably setting the
+wakeup flag after the RTC registered - so there is probably a driver bug
+here too).
 
-Br, David Cohen
+So I feel like in this case EINVAL isn't quite right.  I'll admit it is
+somewhat new behavior, because we haven't had any clockids before that
+were dependent on the particular hardware, they either existed in a
+kernel verison or didn't.
 
->
->
+Would updating the manpage be a better route?
+
+thanks
+-john
+
 
