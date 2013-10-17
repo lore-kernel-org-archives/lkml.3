@@ -1,115 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab3JQQAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:00:13 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:42889 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757828Ab3JQQAI (ORCPT
+	id S1757589Ab3JQP7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:59:21 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:33448 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986Ab3JQP7T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:00:08 -0400
-Message-ID: <5260097B.8060306@gmail.com>
-Date: Thu, 17 Oct 2013 23:59:55 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 17 Oct 2013 11:59:19 -0400
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Will Deacon <will.deacon@arm.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>	 <1381990781-27814-3-git-send-email-liuj97@gmail.com>	 <20131017113826.GJ18765@mudshark.cambridge.arm.com> <1382023441.19506.66.camel@linaro1.home>
-In-Reply-To: <1382023441.19506.66.camel@linaro1.home>
+In-Reply-To: <CAL1ERfN8M0BP5kAtX+tvirY6hKXWrn_FeVE_tCr23z+2GtTjnA@mail.gmail.com>
+References: <1381759136-8616-1-git-send-email-k.kozlowski@samsung.com>
+	<alpine.LNX.2.00.1310150257030.6194@eggly.anvils>
+	<1381836170.18389.13.camel@AMDC1943>
+	<alpine.LNX.2.00.1310150950100.12358@eggly.anvils>
+	<CAL1ERfN8M0BP5kAtX+tvirY6hKXWrn_FeVE_tCr23z+2GtTjnA@mail.gmail.com>
+Date: Thu, 17 Oct 2013 23:59:18 +0800
+Message-ID: <CAL1ERfMXsmyL5q4SueyVPHycD8MG-hpOpNcTi1jFKEqupbtq7Q@mail.gmail.com>
+Subject: Re: [PATCH] swap: fix setting PAGE_SIZE blocksize during
+ swapoff/swapon race
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Shaohua Li <shli@fusionio.com>, Minchan Kim <minchan@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 11:24 PM, Jon Medhurst (Tixy) wrote:
-> On Thu, 2013-10-17 at 12:38 +0100, Will Deacon wrote:
->> [adding Tixy for stop_machine() question below]
+On Thu, Oct 17, 2013 at 11:48 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+> On Wed, Oct 16, 2013 at 1:19 AM, Hugh Dickins <hughd@google.com> wrote:
+>> On Tue, 15 Oct 2013, Krzysztof Kozlowski wrote:
+>>> On Tue, 2013-10-15 at 02:59 -0700, Hugh Dickins wrote:
+>>> > On Mon, 14 Oct 2013, Krzysztof Kozlowski wrote:
+>>> >
+>>> > > Fix race between swapoff and swapon resulting in setting blocksize of
+>>> > > PAGE_SIZE for block devices during swapoff.
+>>> > >
+>>> > > The swapon modifies swap_info->old_block_size before acquiring
+>>> > > swapon_mutex. It reads block_size of bdev, stores it under
+>>> > > swap_info->old_block_size and sets new block_size to PAGE_SIZE.
+>>> > >
+>>> > > On the other hand the swapoff sets the device's block_size to
+>>> > > old_block_size after releasing swapon_mutex.
+>>> > >
+>>> > > This patch locks the swapon_mutex much earlier during swapon. It also
+>>> > > releases the swapon_mutex later during swapoff.
+>>> > >
+>>> > > The effect of race can be triggered by following scenario:
+>>> > >  - One block swap device with block size of 512
+>>> > >  - thread 1: Swapon is called, swap is activated,
+>>> > >    p->old_block_size = block_size(p->bdev); /512/
+>>> > >    block_size(p->bdev) = PAGE_SIZE;
+>>> > >    Thread ends.
+>>> > >
+>>> > >  - thread 2: Swapoff is called and it goes just after releasing the
+>>> > >    swapon_mutex. The swap is now fully disabled except of setting the
+>>> > >    block size to old value. The p->bdev->block_size is still equal to
+>>> > >    PAGE_SIZE.
+>>> > >
+>>> > >  - thread 3: New swapon is called. This swap is disabled so without
+>>> > >    acquiring the swapon_mutex:
+>>> > >    - p->old_block_size = block_size(p->bdev); /PAGE_SIZE (!!!)/
+>>> > >    - block_size(p->bdev) = PAGE_SIZE;
+>>> > >    Swap is activated and thread ends.
+>>> > >
+>>> > >  - thread 2: resumes work and sets blocksize to old value:
+>>> > >    - set_blocksize(bdev, p->old_block_size)
+>>> > >    But now the p->old_block_size is equal to PAGE_SIZE.
+>>> > >
+>>> > > The patch swap-fix-set_blocksize-race-during-swapon-swapoff does not fix
+>>> > > this particular issue. It reduces the possibility of races as the swapon
+>>> > > must overwrite p->old_block_size before acquiring swapon_mutex in
+>>> > > swapoff.
+>>> > >
+>>> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>>> >
+>>> > Sorry you're being blown back and forth on this, but I say Nack to
+>>> > this version.  I've not spent the time to check whether it ends up
+>>> > correct or not; but your original patch was appropriate to the bug,
+>>> > and this one is just unnecessary churn in my view.
+>>>
+>>> Hi,
+>>>
+>>> I still think my previous patch does not solve the issue entirely.
+>>> The call set_blocksize() in swapoff quite often sets PAGE_SIZE instead
+>>> of valid block size (e.g. 512). I trigger this with:
 >>
->> On Thu, Oct 17, 2013 at 07:19:35AM +0100, Jiang Liu wrote:
-> [...]
->>> +int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
->>> +{
->>> +	struct aarch64_insn_patch patch = {
->>> +		.text_addrs = addrs,
->>> +		.new_insns = insns,
->>> +		.insn_cnt = cnt,
->>> +	};
->>> +
->>> +	if (cnt <= 0)
->>> +		return -EINVAL;
->>> +
->>> +	/*
->>> +	 * Execute __aarch64_insn_patch_text() on every online CPU,
->>> +	 * which ensure serialization among all online CPUs.
->>> +	 */
->>> +	return stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
->>> +}
+>> PAGE_SIZE and 512 are equally valid block sizes,
+>> it's just hard to support both consistently at the same instant.
 >>
->> Whoa, whoa, whoa! The comment here is wrong -- we only run the patching on
->> *one* CPU, which is the right thing to do. However, the arch/arm/ call to
->> stop_machine in kprobes does actually run the patching code on *all* the
->> online cores (including the cache flushing!). I think this is to work around
->> cores without hardware cache maintenance broadcasting, but that could easily
->> be called out specially (like we do in patch.c) and the flushing could be
->> separated from the patching too.
-> [...]
-> 
-> For code modifications done in 32bit ARM kprobes (and ftrace) I'm not
-> sure we ever actually resolved the possible cache flushing issues. If
-> there was specific reasons for flushing on all cores I can't remember
-> them, sorry. I have a suspicion that doing so was a case of sticking
-> with what the code was already doing, and flushing on all cores seemed
-> safest to guard against problems we hadn't thought about.
-> 
-> Some of the issues discussed were that we couldn't have one core
-> potentially executing instructions being modified by another CPU,
-> because that's architecturally unpredictable except for a few
-> instructions [1], and we also have the case where a 32-bit Thumb
-> instruction can straddle two different cache-lines. But these may not be
-> reasons to flush on all cores if stop machine is synchronising all CPU's
-> in a kind of holding pen and the cache operations done on one core are
-> broadcast to others. (Are there correct barriers involved in
-> stop-machine so that when the other cores resume they are guaranteed to
-> only see the new version of the modified code, or do we only get that
-> guarantee because we happen to execute the cache flushing on all cores?)
-I think it's cache flushing instead of stop_machine() because cache
-flusing includes an ISB.
+>>> ------
+>>> for i in `seq 1000`
+>>> do
+>>>       swapoff /dev/sdc1 &
+>>>       swapon /dev/sdc1 &
+>>>       swapon /dev/sdc1 &
+>>> done
+>>> ------
+>>> 10 seconds run of this script resulted in 50% of set_blocksize(PAGE_SIZE).
+>>> Although effect can only be observed after adding printks (block device is
+>>> released).
+>>
+>> But despite PAGE_SIZE being a valid block size,
+>> I agree that it's odd if you see variation there.
+>>
+>> Here's my guess: it looks as if the p->bdev test is inadequate, in the
+>> decision whether bad_swap should set_blocksize() or not: p->bdev is not
+>> usually reset when a swap_info_struct is released for reuse.
+>>
+>> Please try correcting that, either by resetting p->bdev where necessary,
+>> or by putting a better test in bad_swap: see if that fixes this oddity.
+>>
+>> I still much prefer your original little patch,
+>> to this extension of the use of swapon_mutex.
+>>
+>> However, a bigger question would be, why does swapoff have to set block
+>> size back to old_block_size anyway?  That was introduced in 2.5.13 by
+>>
+>> <viro@math.psu.edu> (02/05/01 1.447.69.1)
+>>         [PATCH] (1/6) blksize_size[] removal
+>>
+>>          - preliminary cleanups: make sure that swapoff restores original block
+>>            size, kill set_blocksize() (and use of __bread()) in multipath.c,
+>>            reorder opening device and finding its block size in mtdblock.c.
+>>
+>> Al, not an urgent question, but is this swapoff old_block_size stuff
+>> still necessary?  And can't swapon just use whatever bd_block_size is
+>> already in force?  IIUC, it plays no part beyond the initial readpage
+>> of swap header.
+>>
+>> Thanks,
+>> Hugh
+>
+> Let me try to explain(and guess):
+> we have to set_block in swapon. the swap_header is PAGE_SIZE, if device's
+> blocksize is more than PAGE_SIZE, then the swap entry address on swapfile
+> would be not PAGE_SIZE aligned. or one swap page can not fill a block.
+> There maybe a problem for some device.
+> The set_blocksize() do the judgement work for swapon.
+> And may be some userland tools assume swap device blocksize is PAGE_SIZE？
+>
+> issues here are more than this one:
+> After swap_info_struct is released for reuse in swapoff.
+> Its corresponding resources are released later, such as:
+> - swap_cgroup_swapoff(type);
+> - blkdev_put
+> - inode->i_flags &= ~S_SWAPFILE;
+>
 
-The idea flow should be:
-1) master acquire a lock to serialize text patching
-2) all CPU barrier
-3) master updates memory and flush cache
-4) master set a flag to let all other CPU continue
-5) all other CPU executes ISB.
+my code is 3.11 version. And in 3.12-rc5,
+free_percpu(p->percpu_cluster);
+is another issue that released later.
 
-Updating memory and flushing cache on every CPU with stop_machine()
-achieves the same effect with simple implementation, but the
-implementation really seems a little strange.
-
-If desired, I will implement the standard flow.
-
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/136441.html
-> 
-> Another of the issues I hit was big.LITTLE related whereby the cache
-> line size is different on different cores [2].
-> 
-> [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149794.html
-> 
-> I don't think anything I've said above actually gives a solid reason why
-> we _must_ execute cache flushing on all cores for kprobes and can't just
-> use the relatively new patch_text function (which checks for the one
-> case we do need to flush on all cores using cache_ops_need_broadcast).
-> 
-> Sorry, I don't think I've added much light on things here have I?
-> 
-
+> we need release(or clean) these resources before release swap_info_struct.
+>
+> to Krzysztof: I think it is better to add this handle to your patch
+>
+> regards
