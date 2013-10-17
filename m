@@ -1,407 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3JQPr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:47:56 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52096 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756860Ab3JQPrx (ORCPT
+	id S1757538Ab3JQPs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:48:27 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:49501 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528Ab3JQPsZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:47:53 -0400
-Date: Thu, 17 Oct 2013 16:46:40 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Naour Romain <romain.naour@openwide.fr>,
-        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-Message-ID: <20131017154640.GF2442@localhost.localdomain>
+	Thu, 17 Oct 2013 11:48:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1310150950100.12358@eggly.anvils>
+References: <1381759136-8616-1-git-send-email-k.kozlowski@samsung.com>
+	<alpine.LNX.2.00.1310150257030.6194@eggly.anvils>
+	<1381836170.18389.13.camel@AMDC1943>
+	<alpine.LNX.2.00.1310150950100.12358@eggly.anvils>
+Date: Thu, 17 Oct 2013 23:48:24 +0800
+Message-ID: <CAL1ERfN8M0BP5kAtX+tvirY6hKXWrn_FeVE_tCr23z+2GtTjnA@mail.gmail.com>
+Subject: Re: [PATCH] swap: fix setting PAGE_SIZE blocksize during
+ swapoff/swapon race
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Shaohua Li <shli@fusionio.com>, Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 07:08:24PM +0400, Vyacheslav Tyrtov wrote:
-> From: Tarek Dakhran <t.dakhran@samsung.com>
-> 
-> Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-> This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
-> 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> ---
->  arch/arm/mach-exynos/Makefile |   2 +
->  arch/arm/mach-exynos/edcs.c   | 270 ++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 272 insertions(+)
->  create mode 100644 arch/arm/mach-exynos/edcs.c
-> 
-> diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-> index 5369615..ba6efdb 100644
-> --- a/arch/arm/mach-exynos/Makefile
-> +++ b/arch/arm/mach-exynos/Makefile
-> @@ -34,3 +34,5 @@ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
->  
->  obj-$(CONFIG_MACH_EXYNOS4_DT)		+= mach-exynos4-dt.o
->  obj-$(CONFIG_MACH_EXYNOS5_DT)		+= mach-exynos5-dt.o
-> +
-> +obj-$(CONFIG_SOC_EXYNOS5410)		+= edcs.o
-> diff --git a/arch/arm/mach-exynos/edcs.c b/arch/arm/mach-exynos/edcs.c
-> new file mode 100644
-> index 0000000..e304bd9
-> --- /dev/null
-> +++ b/arch/arm/mach-exynos/edcs.c
-> @@ -0,0 +1,270 @@
-> +/*
-> + * arch/arm/mach-exynos/edcs.c - exynos dual cluster power management support
-> + *
-> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-> + * Author: Tarek Dakhran <t.dakhran@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * EDCS(exynos dual cluster support) for Exynos5410 SoC.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/errno.h>
-> +
-> +#include <asm/mcpm.h>
-> +#include <asm/proc-fns.h>
-> +#include <asm/cacheflush.h>
-> +#include <asm/cputype.h>
-> +#include <asm/cp15.h>
-> +
-> +#include <linux/arm-cci.h>
-> +#include <mach/regs-pmu.h>
-> +
-> +#define EDCS_CPUS_PER_CLUSTER	4
-> +#define EDCS_CLUSTERS		2
-> +
-> +/* Exynos5410 power management registers */
-> +#define EDCS_CORE_CONFIGURATION(_nr)	(S5P_ARM_CORE0_CONFIGURATION	\
-> +						+ ((_nr) * 0x80))
-> +#define EDCS_CORE_STATUS(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x4)
-> +#define EDCS_CORE_OPTION(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x8)
-> +
-> +#define REG_CPU_STATE_ADDR0		(S5P_VA_SYSRAM_NS + 0x28)
+On Wed, Oct 16, 2013 at 1:19 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Tue, 15 Oct 2013, Krzysztof Kozlowski wrote:
+>> On Tue, 2013-10-15 at 02:59 -0700, Hugh Dickins wrote:
+>> > On Mon, 14 Oct 2013, Krzysztof Kozlowski wrote:
+>> >
+>> > > Fix race between swapoff and swapon resulting in setting blocksize of
+>> > > PAGE_SIZE for block devices during swapoff.
+>> > >
+>> > > The swapon modifies swap_info->old_block_size before acquiring
+>> > > swapon_mutex. It reads block_size of bdev, stores it under
+>> > > swap_info->old_block_size and sets new block_size to PAGE_SIZE.
+>> > >
+>> > > On the other hand the swapoff sets the device's block_size to
+>> > > old_block_size after releasing swapon_mutex.
+>> > >
+>> > > This patch locks the swapon_mutex much earlier during swapon. It also
+>> > > releases the swapon_mutex later during swapoff.
+>> > >
+>> > > The effect of race can be triggered by following scenario:
+>> > >  - One block swap device with block size of 512
+>> > >  - thread 1: Swapon is called, swap is activated,
+>> > >    p->old_block_size = block_size(p->bdev); /512/
+>> > >    block_size(p->bdev) = PAGE_SIZE;
+>> > >    Thread ends.
+>> > >
+>> > >  - thread 2: Swapoff is called and it goes just after releasing the
+>> > >    swapon_mutex. The swap is now fully disabled except of setting the
+>> > >    block size to old value. The p->bdev->block_size is still equal to
+>> > >    PAGE_SIZE.
+>> > >
+>> > >  - thread 3: New swapon is called. This swap is disabled so without
+>> > >    acquiring the swapon_mutex:
+>> > >    - p->old_block_size = block_size(p->bdev); /PAGE_SIZE (!!!)/
+>> > >    - block_size(p->bdev) = PAGE_SIZE;
+>> > >    Swap is activated and thread ends.
+>> > >
+>> > >  - thread 2: resumes work and sets blocksize to old value:
+>> > >    - set_blocksize(bdev, p->old_block_size)
+>> > >    But now the p->old_block_size is equal to PAGE_SIZE.
+>> > >
+>> > > The patch swap-fix-set_blocksize-race-during-swapon-swapoff does not fix
+>> > > this particular issue. It reduces the possibility of races as the swapon
+>> > > must overwrite p->old_block_size before acquiring swapon_mutex in
+>> > > swapoff.
+>> > >
+>> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> >
+>> > Sorry you're being blown back and forth on this, but I say Nack to
+>> > this version.  I've not spent the time to check whether it ends up
+>> > correct or not; but your original patch was appropriate to the bug,
+>> > and this one is just unnecessary churn in my view.
+>>
+>> Hi,
+>>
+>> I still think my previous patch does not solve the issue entirely.
+>> The call set_blocksize() in swapoff quite often sets PAGE_SIZE instead
+>> of valid block size (e.g. 512). I trigger this with:
+>
+> PAGE_SIZE and 512 are equally valid block sizes,
+> it's just hard to support both consistently at the same instant.
+>
+>> ------
+>> for i in `seq 1000`
+>> do
+>>       swapoff /dev/sdc1 &
+>>       swapon /dev/sdc1 &
+>>       swapon /dev/sdc1 &
+>> done
+>> ------
+>> 10 seconds run of this script resulted in 50% of set_blocksize(PAGE_SIZE).
+>> Although effect can only be observed after adding printks (block device is
+>> released).
+>
+> But despite PAGE_SIZE being a valid block size,
+> I agree that it's odd if you see variation there.
+>
+> Here's my guess: it looks as if the p->bdev test is inadequate, in the
+> decision whether bad_swap should set_blocksize() or not: p->bdev is not
+> usually reset when a swap_info_struct is released for reuse.
+>
+> Please try correcting that, either by resetting p->bdev where necessary,
+> or by putting a better test in bad_swap: see if that fixes this oddity.
+>
+> I still much prefer your original little patch,
+> to this extension of the use of swapon_mutex.
+>
+> However, a bigger question would be, why does swapoff have to set block
+> size back to old_block_size anyway?  That was introduced in 2.5.13 by
+>
+> <viro@math.psu.edu> (02/05/01 1.447.69.1)
+>         [PATCH] (1/6) blksize_size[] removal
+>
+>          - preliminary cleanups: make sure that swapoff restores original block
+>            size, kill set_blocksize() (and use of __bread()) in multipath.c,
+>            reorder opening device and finding its block size in mtdblock.c.
+>
+> Al, not an urgent question, but is this swapoff old_block_size stuff
+> still necessary?  And can't swapon just use whatever bd_block_size is
+> already in force?  IIUC, it plays no part beyond the initial readpage
+> of swap header.
+>
+> Thanks,
+> Hugh
 
-Is there any reason why S5P_VA_SYSRAM_NS needs to be a static mapping?
+Let me try to explain(and guess):
+we have to set_block in swapon. the swap_header is PAGE_SIZE, if device's
+blocksize is more than PAGE_SIZE, then the swap entry address on swapfile
+would be not PAGE_SIZE aligned. or one swap page can not fill a block.
+There maybe a problem for some device.
+The set_blocksize() do the judgement work for swapon.
+And may be some userland tools assume swap device blocksize is PAGE_SIZE？
 
-> +#define REG_CPU_STATE_ADDR(_nr)		(REG_CPU_STATE_ADDR0 +	\
-> +						 _nr * EDCS_CPUS_PER_CLUSTER)
-> +
-> +static arch_spinlock_t edcs_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> +
-> +static int edcs_use_count[EDCS_CPUS_PER_CLUSTER][EDCS_CLUSTERS];
-> +static int core_count[EDCS_CLUSTERS];
-> +
-> +static void exynos_core_power_control(unsigned int cpu, unsigned int cluster,
-> +				bool enable)
-> +{
-> +	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
-> +	int value = enable ? S5P_CORE_LOCAL_PWR_EN : 0;
-> +
-> +	if ((__raw_readl(EDCS_CORE_STATUS(offset)) & 0x3) != value)
-> +		__raw_writel(value, EDCS_CORE_CONFIGURATION(offset));
+issues here are more than this one:
+After swap_info_struct is released for reuse in swapoff.
+Its corresponding resources are released later, such as:
+- swap_cgroup_swapoff(type);
+- blkdev_put
+- inode->i_flags &= ~S_SWAPFILE;
 
-I think you need to replace all the __raw_readl() / __raw_writel() calls
-in this file with readl_relaxed() / writel_relaxed().
+we need release(or clean) these resources before release swap_info_struct.
 
-This ensures little-endian byte order, so that BE8 kernels will work.
+to Krzysztof: I think it is better to add this handle to your patch
 
-> +}
-> +
-> +static void exynos_core_power_up(unsigned int cpu, unsigned int cluster)
-> +{
-> +	exynos_core_power_control(cpu, cluster, true);
-> +}
-> +
-> +static void exynos_core_power_down(unsigned int cpu, unsigned int cluster)
-> +{
-> +	exynos_core_power_control(cpu, cluster, false);
-> +}
-> +
-> +void set_boot_flag(unsigned int cpu, unsigned int mode)
-> +{
-> +	__raw_writel(mode, REG_CPU_STATE_ADDR(cpu));
-> +}
-> +
-> +static int exynos_power_up(unsigned int cpu, unsigned int cluster)
-> +{
-> +	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-> +	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER || cluster >= EDCS_CLUSTERS);
-> +
-> +	local_irq_disable();
-> +	arch_spin_lock(&edcs_lock);
-> +
-> +	edcs_use_count[cpu][cluster]++;
-> +	if (edcs_use_count[cpu][cluster] == 1) {
-> +		++core_count[cluster];
-> +		set_boot_flag(cpu, 0x2);
-
-0x2 looks like a magic number.  Can we have a #define for that?
-
-
-If the boot flag is read by the inbound CPU or by a peripheral then
-there are memory ordering issues to take into account.  Otherwise, can't
-the inbound CPU come online and race with the write to the boot flag?
-
-What is the memory type of REG_STATE_ADDR()?
-
-> +		exynos_core_power_up(cpu, cluster);
-> +	} else if (edcs_use_count[cpu][cluster] != 2) {
-> +		/*
-> +		 * The only possible values are:
-> +		 * 0 = CPU down
-> +		 * 1 = CPU (still) up
-> +		 * 2 = CPU requested to be up before it had a chance
-> +		 *     to actually make itself down.
-> +		 * Any other value is a bug.
-> +		 */
-> +		BUG();
-> +	}
-> +
-> +	arch_spin_unlock(&edcs_lock);
-> +	local_irq_enable();
-> +
-> +	return 0;
-> +}
-> +static void exynos_power_down(void)
-> +{
-> +	unsigned int mpidr, cpu, cluster;
-> +	bool last_man = false, skip_wfi = false;
-> +
-> +	mpidr = read_cpuid_mpidr();
-> +	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> +	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-> +
-> +	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-> +	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-> +
-> +	__mcpm_cpu_going_down(cpu, cluster);
-> +
-> +	arch_spin_lock(&edcs_lock);
-> +	BUG_ON(__mcpm_cluster_state(cluster) != CLUSTER_UP);
-> +	edcs_use_count[cpu][cluster]--;
-> +	if (edcs_use_count[cpu][cluster] == 0) {
-> +		--core_count[cluster];
-> +		if (core_count[cluster] == 0)
-> +			last_man = true;
-> +	} else if (edcs_use_count[cpu][cluster] == 1) {
-> +		/*
-> +		 * A power_up request went ahead of us.
-> +		 * Even if we do not want to shut this CPU down,
-> +		 * the caller expects a certain state as if the WFI
-> +		 * was aborted.  So let's continue with cache cleaning.
-> +		 */
-> +		skip_wfi = true;
-> +	} else
-> +		BUG();
-
-For TC2, Lorenzo discovered need to disable the GIC CPU interface, so
-that no suprious wakeups can happen once the power controller is
-configured to power the CPU down.
-
-The problem is that a spurious wakeup can trigger a race in the power
-controller when the last man powers down, where the power controller
-continues to wait for the cluster to power down, but it never happens.
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/200917.html
-([PATCH v2] arm: vexpress: tc2: fix hotplug/idle/kexec race on cluster power down)
-
-
-This might not be a problem for Exynos5410 -- it depends on the way the
-power control logic works.
-
-On the other hand, disabling the GIC CPU interface here is cheap to do,
-even if it's not really needed.
-
-> +
-> +	if (last_man && __mcpm_outbound_enter_critical(cpu, cluster)) {
-> +		arch_spin_unlock(&edcs_lock);
-> +
-> +		if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A15) {
-> +			/*
-> +			 * On the Cortex-A15 we need to disable
-> +			 * L2 prefetching before flushing the cache.
-> +			 */
-> +			asm volatile(
-> +			"mcr	p15, 1, %0, c15, c0, 3\n\t"
-> +			"isb\n\t"
-> +			"dsb"
-> +			: : "r" (0x400));
-> +		}
-> +
-> +		/*
-> +		 * We need to disable and flush the whole (L1 and L2) cache.
-> +		 * Let's do it in the safest possible way i.e. with
-> +		 * no memory access within the following sequence
-> +		 * including the stack.
-> +		 *
-> +		 * Note: fp is preserved to the stack explicitly prior doing
-> +		 * this since adding it to the clobber list is incompatible
-> +		 * with having CONFIG_FRAME_POINTER=y.
-> +		 */
-> +		asm volatile(
-> +		"str	fp, [sp, #-4]!\n\t"
-> +		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
-> +		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
-> +		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
-> +		"isb\n\t"
-> +		"bl	v7_flush_dcache_all\n\t"
-> +		"clrex\n\t"
-> +		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
-> +		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
-> +		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
-> +		"isb\n\t"
-> +		"dsb\n\t"
-> +		"ldr	fp, [sp], #4"
-> +		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-> +			"r9", "r10", "lr", "memory");
-
-For these code sequences, please take a look at
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205085.html
-[PATCH] ARM: cacheflush: consolidate single-CPU ARMv7 cache disabling code
-
-The aim is to consolidate on a macro that can be shared between
-backends.
-
-> +
-> +		cci_disable_port_by_cpu(mpidr);
-> +
-> +		__mcpm_outbound_leave_critical(cluster, CLUSTER_DOWN);
-> +
-> +	} else {
-> +		arch_spin_unlock(&edcs_lock);
-> +		/*
-> +			* We need to disable and flush only the L1 cache.
-> +			* Let's do it in the safest possible way as above.
-> +		*/
-> +		asm volatile(
-> +		"str	fp, [sp, #-4]!\n\t"
-> +		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
-> +		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
-> +		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
-> +		"isb\n\t"
-> +		"bl	v7_flush_dcache_louis\n\t"
-> +		"clrex\n\t"
-> +		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
-> +		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
-> +		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
-> +		"isb\n\t"
-> +		"dsb\n\t"
-> +		"ldr	fp, [sp], #4"
-> +		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-> +		      "r9", "r10", "lr", "memory");
-> +
-> +	}
-> +	__mcpm_cpu_down(cpu, cluster);
-> +
-> +	if (!skip_wfi) {
-> +		exynos_core_power_down(cpu, cluster);
-> +		wfi();
-> +	}
-> +}
-> +
-> +static const struct mcpm_platform_ops exynos_power_ops = {
-> +	.power_up	= exynos_power_up,
-> +	.power_down	= exynos_power_down,
-> +};
-> +
-> +static void __init edcs_data_init(void)
-> +{
-> +	unsigned int mpidr, cpu, cluster;
-> +
-> +	mpidr = read_cpuid_mpidr();
-> +	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> +	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-> +
-> +	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-> +	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-> +	edcs_use_count[cpu][cluster] = 1;
-> +	++core_count[cluster];
-> +}
-> +
-> +/*
-> + * Enable cluster-level coherency, in preparation for turning on the MMU.
-> + */
-> +static void __naked edcs_power_up_setup(unsigned int affinity_level)
-> +{
-> +	asm volatile ("\n"
-> +	"b	cci_enable_port_for_self");
-> +}
-> +
-> +static int __init edcs_init(void)
-> +{
-> +	int ret;
-> +	struct device_node *node;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
-> +	if (!node)
-> +		return -ENODEV;
-> +
-> +	if (!cci_probed())
-> +		return -ENODEV;
-> +
-> +	/*
-> +	 * Future entries into the kernel can now go
-> +	 * through the cluster entry vectors.
-> +	 */
-> +	__raw_writel(virt_to_phys(mcpm_entry_point),
-> +				S5P_VA_SYSRAM_NS + 0x1c);
-
-It would me more readable to have a #define to describe what
-S5P_VA_SYSRAM_NS + 0x1c is.
-
-
-Also, what is the memory type of S5P_VA_SYSRAM_NS?  How is the entry
-point address value read?  Does the inbound CPU's boot ROM or firmware
-read it?
-
-If it is read via some non-coherent side-channel, or if S5P_VA_SYSRAM_NS
-is mapped as normal memory then we would need some explicit
-synchronisation, but I suspect this is not the case (?)
-
-Cheers
----Dave
-
-> +
-> +	edcs_data_init();
-> +	mcpm_smp_set_ops();
-> +
-> +	ret = mcpm_platform_register(&exynos_power_ops);
-> +	if (!ret) {
-> +		mcpm_sync_init(edcs_power_up_setup);
-> +		pr_info("EDCS power management initialized\n");
-> +	}
-> +	return ret;
-> +}
-> +
-> +early_initcall(edcs_init);
-> -- 
-> 1.8.1.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+regards
