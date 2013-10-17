@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab3JQQj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:39:57 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50654 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab3JQQj4 (ORCPT
+	id S1758131Ab3JQQkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:40:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:52517 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab3JQQkc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:39:56 -0400
-From: Fan Rong <cinifr@gmail.com>
-To: coosty@163.com, maxime.ripard@free-electrons.com,
-        daniel.lezcano@linaro.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-sunxi@googlegroups.com
-Cc: Fan Rong <cinifr@gmail.com>
-Subject: [Add SMP support for Allwinner A20: PATCH V5 3/3] Add arch count timer node in dts for Allwinner A20(sunxi 7i).
-Date: Fri, 18 Oct 2013 00:37:07 +0800
-Message-Id: <1382027827-10080-4-git-send-email-cinifr@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382027827-10080-1-git-send-email-cinifr@gmail.com>
-References: <1382027827-10080-1-git-send-email-cinifr@gmail.com>
+	Thu, 17 Oct 2013 12:40:32 -0400
+Date: Thu, 17 Oct 2013 17:40:38 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
+ kworker threads
+Message-ID: <20131017164038.GV31039@e103034-lin>
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
+ <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com>
+ <20131014133356.GN3081@twins.programming.kicks-ass.net>
+ <525C0A51.2080407@linux.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <525C0A51.2080407@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 17 Oct 2013 16:40:28.0576 (UTC) FILETIME=[965F8A00:01CECB57]
+X-MC-Unique: 113101717402903701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux kernel usually use virtual arch timer for smp cpu tick. But the arch timer register VCTOFF normally is very different between the two cpus in A20 afer hardware reset, so SMP Cpus will see different time tick. It will cause kernel crash currently. You have two choices to fix it: 1 Simpley use physical arch timer, 2 Set VCTOFF to same value for each cpu in bootloader. The first choice will cause some other problem for kernel, especially for KVM, guest OS want to use virtual arch timer. So the second choice is perfect. So if you want to use arch timer for smp cpu tick, you must ensure you bootload have set same VCTOFF for all cpus.
+On Mon, Oct 14, 2013 at 04:14:25PM +0100, Arjan van de Ven wrote:
+> On 10/14/2013 6:33 AM, Peter Zijlstra wrote:
+> > On Fri, Oct 11, 2013 at 06:19:14PM +0100, Morten Rasmussen wrote:
+> >> Removing power hints for kworker threads enables easier use of
+> >> workqueues in the power driver late callback. That would otherwise
+> >> lead to an endless loop unless it is prevented in the power driver.
+> >
+> > There's many kworker users; some of them actually consume lots of
+> > cputime. Therefore how did you come to the conclusion that excepting all
+> > users was the better choice of a little added complexity in the one
+> > place where it actually matters?
+> 
+> .. and likely only for a very few architectures
+> 
+> x86, and I suspect modern ARM, can change frequency synchronously.
+> (using an instruction or maybe two or three for ARM)
 
-Signed-off-by: Fan Rong <cinifr@gmail.com>
----
- arch/arm/boot/dts/sun7i-a20.dtsi | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+It should be possible to implement synchronous frequency changes on most
+modern ARM platforms. It is a bit more than a few instructions to change
+frequency though particularly for the current cpufreq drivers.
 
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index 6543b3f..dc01d5a 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -410,5 +410,15 @@
- 			#interrupt-cells = <3>;
- 			interrupts = <1 9 0xf04>;
- 		};
-+
-+		timer {
-+			compatible ="arm,armv7-timer";
-+			interrupts = <1 13 0x308>,
-+				     <1 14 0x308>,
-+				     <1 11 0x308>,
-+				     <1 10 0x308>;
-+			clock-frequency = <24000000>;
-+		};
-+
- 	};
- };
--- 
-1.8.1.2
+cpufreq drivers, like the one for ARM TC2, uses the clock framework to
+manage clocks. clk_set_rate() is allowed to sleep which won't work if we
+call it from scheduler context. The clock framework will need a look if
+it doesn't provide a very fast synchronous alternative to clk_set_rate()
+to change frequency and we want to use it for scheduler driven frequency
+scaling.
+
+cpufreq has pre- and post-change notifiers so the current TC2 clock driver
+waits (yields) in its clk_set_rate() implementation until the change has
+happened to ensure that the post-change notifier happens at the right
+time. Since clk_set_rate() is allowed to sleep other tasks may be
+running while waiting for the change to complete. This may be true for
+other clock drivers as well.
+
+AFAICT, there is no way to reuse the existing cpufreq drivers in a
+sensible way for scheduler driven frequency scaling. It should be
+possible to have very fast frequency changes on ARM but it is not the
+way it is currently done.
 
