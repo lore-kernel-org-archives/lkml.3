@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab3JQJLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:11:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34967 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3JQJL2 (ORCPT
+	id S1753780Ab3JQJLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:11:46 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:57990
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753712Ab3JQJLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:11:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <525FA980.4090102@jp.fujitsu.com>
-Date: Thu, 17 Oct 2013 18:10:24 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 17 Oct 2013 05:11:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>
+CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
+        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
+        <oskar@scara.com>, <shawn.guo@linaro.org>, <b42378@freescale.com>,
+        <b18965@freescale.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCHv1 4/8] Documentation: Add device tree bindings for Freescale SAI.
+Date: Thu, 17 Oct 2013 17:01:13 +0800
+Message-ID: <1382000477-17304-5-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: "kexec@lists.infradead.org" <kexec@lists.infradead.org>
-CC: ahonig@google.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, Dave Anderson <anderson@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, keescook@google.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: kexec cannot find text map area if kaslr is enabled
-References: <525FA702.5070805@jp.fujitsu.com>
-In-Reply-To: <525FA702.5070805@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/17 17:59), HATAYAMA Daisuke wrote:
-> Hello,
->
-> I tried to use x86/kaslr branch to check if how it works with kdump framework.
->
+This adds the Document for Freescale SAI driver under
+Documentation/devicetree/bindings/sound/.
 
-Sorry, it's a branch of tip repository here:
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ .../devicetree/bindings/sound/fsl-sai.txt          | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/fsl-sai.txt
 
-http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/log/?h=x86/kaslr
-
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+new file mode 100644
+index 0000000..267afbd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -0,0 +1,32 @@
++Freescale Synchronous Audio Interface (SAI).
++
++The SAI is based on I2S module that used communicating with audio codecs,
++which provides a synchronous audio interface that supports fullduplex
++serial interfaces with frame synchronization such as I2S, AC97, TDM, and
++codec/DSP interfaces.
++
++
++Required properties:
++- compatible: Compatible list, contains "fsl,vf610-sai".
++- reg: Offset and length of the register set for the device.
++- clocks: Must contain an entry for each entry in clock-names.
++- clock-names : Must include the "sai" entry.
++- dmas : Generic dma devicetree binding as described in
++  Documentation/devicetree/bindings/dma/dma.txt.
++- dma-names : Two dmas have to be defined, "tx" and "rx".
++- pinctrl-names: Must contain a "default" entry.
++- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
++  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
++
++Example:
++sai2: sai@40031000 {
++	      compatible = "fsl,vf610-sai";
++	      reg = <0x40031000 0x1000>;
++	      pinctrl-names = "default";
++	      pinctrl-0 = <&pinctrl_sai2_1>;
++	      clocks = <&clks VF610_CLK_SAI2>;
++	      clock-names = "sai";
++	      dma-names = "tx", "rx";
++	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
++		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
++};
 -- 
-Thanks.
-HATAYAMA, Daisuke
+1.8.0
+
 
