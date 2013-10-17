@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab3JQQvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:51:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45167 "EHLO
+	id S1758412Ab3JQQvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:51:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45172 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab3JQQu6 (ORCPT
+	with ESMTP id S1758368Ab3JQQvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:50:58 -0400
-Date: Thu, 17 Oct 2013 09:50:06 -0700
+	Thu, 17 Oct 2013 12:51:12 -0400
+Date: Thu, 17 Oct 2013 09:49:39 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-9536c8d2da8059b00775bd9c5a84816b608cf6f4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <20131016105755.GX10651@twins.programming.kicks-ass.net>
-References: <20131016105755.GX10651@twins.programming.kicks-ass.net>
+Message-ID: <tip-6acce3ef84520537f8a09a12c9ddbe814a584dd2@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        riel@redhat.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        aarcange@redhat.com, oleg@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        srikar@linux.vnet.ibm.com, mgorman@suse.de
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, riel@redhat.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, tglx@linutronix.de,
+        oleg@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, srikar@linux.vnet.ibm.com, mgorman@suse.de
+In-Reply-To: <20131011123820.GV3081@twins.programming.kicks-ass.net>
+References: <20131011123820.GV3081@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Optimize intel_pmu_pebs_fixup_ip()
-Git-Commit-ID: 9536c8d2da8059b00775bd9c5a84816b608cf6f4
+Subject: [tip:sched/core] sched: Remove get_online_cpus() usage
+Git-Commit-ID: 6acce3ef84520537f8a09a12c9ddbe814a584dd2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,190 +35,238 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:50:13 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:49:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9536c8d2da8059b00775bd9c5a84816b608cf6f4
-Gitweb:     http://git.kernel.org/tip/9536c8d2da8059b00775bd9c5a84816b608cf6f4
+Commit-ID:  6acce3ef84520537f8a09a12c9ddbe814a584dd2
+Gitweb:     http://git.kernel.org/tip/6acce3ef84520537f8a09a12c9ddbe814a584dd2
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 15 Oct 2013 12:14:04 +0200
+AuthorDate: Fri, 11 Oct 2013 14:38:20 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Oct 2013 15:44:00 +0200
+CommitDate: Wed, 16 Oct 2013 14:22:16 +0200
 
-perf/x86: Optimize intel_pmu_pebs_fixup_ip()
+sched: Remove get_online_cpus() usage
 
-There's been reports of high NMI handler overhead, highlighted by
-such kernel messages:
+Remove get_online_cpus() usage from the scheduler; there's 4 sites that
+use it:
 
-  [ 3697.380195] perf samples too long (10009 > 10000), lowering kernel.perf_event_max_sample_rate to 13000
-  [ 3697.389509] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 9.331 msecs
+ - sched_init_smp(); where its completely superfluous since we're in
+   'early' boot and there simply cannot be any hotplugging.
 
-Don Zickus analyzed the source of the overhead and reported:
+ - sched_getaffinity(); we already take a raw spinlock to protect the
+   task cpus_allowed mask, this disables preemption and therefore
+   also stabilizes cpu_online_mask as that's modified using
+   stop_machine. However switch to active mask for symmetry with
+   sched_setaffinity()/set_cpus_allowed_ptr(). We guarantee active
+   mask stability by inserting sync_rcu/sched() into _cpu_down.
 
- > While there are a few places that are causing latencies, for now I focused on
- > the longest one first.  It seems to be 'copy_user_from_nmi'
- >
- > intel_pmu_handle_irq ->
- >	intel_pmu_drain_pebs_nhm ->
- >		__intel_pmu_drain_pebs_nhm ->
- >			__intel_pmu_pebs_event ->
- >				intel_pmu_pebs_fixup_ip ->
- >					copy_from_user_nmi
- >
- > In intel_pmu_pebs_fixup_ip(), if the while-loop goes over 50, the sum of
- > all the copy_from_user_nmi latencies seems to go over 1,000,000 cycles
- > (there are some cases where only 10 iterations are needed to go that high
- > too, but in generall over 50 or so).  At this point copy_user_from_nmi
- > seems to account for over 90% of the nmi latency.
+ - sched_setaffinity(); we don't appear to need get_online_cpus()
+   either, there's two sites where hotplug appears relevant:
+    * cpuset_cpus_allowed(); for the !cpuset case we use possible_mask,
+      for the cpuset case we hold task_lock, which is a spinlock and
+      thus for mainline disables preemption (might cause pain on RT).
+    * set_cpus_allowed_ptr(); Holds all scheduler locks and thus has
+      preemption properly disabled; also it already deals with hotplug
+      races explicitly where it releases them.
 
-The solution to that is to avoid having to call copy_from_user_nmi() for
-every instruction.
+ - migrate_swap(); we can make stop_two_cpus() do the heavy lifting for
+   us with a little trickery. By adding a sync_sched/rcu() after the
+   CPU_DOWN_PREPARE notifier we can provide preempt/rcu guarantees for
+   cpu_active_mask. Use these to validate that both our cpus are active
+   when queueing the stop work before we queue the stop_machine works
+   for take_cpu_down().
 
-Since we already limit the max basic block size, we can easily
-pre-allocate a piece of memory to copy the entire thing into in one
-go.
-
-Don reported this test result:
-
- > Your patch made a huge difference in improvement.  The
- > copy_from_user_nmi() no longer hits the million of cycles.  I still
- > have a batch of 100,000-300,000 cycles.  My longest NMI paths used
- > to be dominated by copy_from_user_nmi, now it is not (I have to dig
- > up the new hot path).
-
-Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
-Cc: jmario@redhat.com
-Cc: acme@infradead.org
-Cc: dave.hansen@linux.intel.com
-Cc: eranian@google.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131016105755.GX10651@twins.programming.kicks-ass.net
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20131011123820.GV3081@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 52 ++++++++++++++++++++++---------
- 1 file changed, 38 insertions(+), 14 deletions(-)
+ kernel/cpu.c          | 17 +++++++++++++++++
+ kernel/sched/core.c   | 20 ++++++++++----------
+ kernel/stop_machine.c | 26 +++++++++++++++++++++-----
+ 3 files changed, 48 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 32e9ed8..c1760ff 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -12,6 +12,7 @@
- 
- #define BTS_BUFFER_SIZE		(PAGE_SIZE << 4)
- #define PEBS_BUFFER_SIZE	PAGE_SIZE
-+#define PEBS_FIXUP_SIZE		PAGE_SIZE
- 
- /*
-  * pebs_record_32 for p4 and core not supported
-@@ -228,12 +229,14 @@ void fini_debug_store_on_cpu(int cpu)
- 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
- }
- 
-+static DEFINE_PER_CPU(void *, insn_buffer);
-+
- static int alloc_pebs_buffer(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
- 	int node = cpu_to_node(cpu);
- 	int max, thresh = 1; /* always use a single PEBS record */
--	void *buffer;
-+	void *buffer, *ibuffer;
- 
- 	if (!x86_pmu.pebs)
- 		return 0;
-@@ -242,6 +245,19 @@ static int alloc_pebs_buffer(int cpu)
- 	if (unlikely(!buffer))
- 		return -ENOMEM;
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index d7f07a2..63aa50d 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -308,6 +308,23 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	}
+ 	smpboot_park_threads(cpu);
  
 +	/*
-+	 * HSW+ already provides us the eventing ip; no need to allocate this
-+	 * buffer then.
++	 * By now we've cleared cpu_active_mask, wait for all preempt-disabled
++	 * and RCU users of this state to go away such that all new such users
++	 * will observe it.
++	 *
++	 * For CONFIG_PREEMPT we have preemptible RCU and its sync_rcu() might
++	 * not imply sync_sched(), so explicitly call both.
 +	 */
-+	if (x86_pmu.intel_cap.pebs_format < 2) {
-+		ibuffer = kzalloc_node(PEBS_FIXUP_SIZE, GFP_KERNEL, node);
-+		if (!ibuffer) {
-+			kfree(buffer);
-+			return -ENOMEM;
-+		}
-+		per_cpu(insn_buffer, cpu) = ibuffer;
-+	}
++#ifdef CONFIG_PREEMPT
++	synchronize_sched();
++#endif
++	synchronize_rcu();
 +
- 	max = PEBS_BUFFER_SIZE / x86_pmu.pebs_record_size;
- 
- 	ds->pebs_buffer_base = (u64)(unsigned long)buffer;
-@@ -262,6 +278,9 @@ static void release_pebs_buffer(int cpu)
- 	if (!ds || !x86_pmu.pebs)
- 		return;
- 
-+	kfree(per_cpu(insn_buffer, cpu));
-+	per_cpu(insn_buffer, cpu) = NULL;
++	/*
++	 * So now all preempt/rcu users must observe !cpu_active().
++	 */
 +
- 	kfree((void *)(unsigned long)ds->pebs_buffer_base);
- 	ds->pebs_buffer_base = 0;
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a972acd..c06b8d3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1085,8 +1085,6 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+ 	struct migration_swap_arg arg;
+ 	int ret = -EINVAL;
+ 
+-	get_online_cpus();
+-
+ 	arg = (struct migration_swap_arg){
+ 		.src_task = cur,
+ 		.src_cpu = task_cpu(cur),
+@@ -1097,6 +1095,10 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+ 	if (arg.src_cpu == arg.dst_cpu)
+ 		goto out;
+ 
++	/*
++	 * These three tests are all lockless; this is OK since all of them
++	 * will be re-checked with proper locks held further down the line.
++	 */
+ 	if (!cpu_active(arg.src_cpu) || !cpu_active(arg.dst_cpu))
+ 		goto out;
+ 
+@@ -1109,7 +1111,6 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+ 	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
+ 
+ out:
+-	put_online_cpus();
+ 	return ret;
  }
-@@ -729,6 +748,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
- 	unsigned long ip = regs->ip;
- 	int is_64bit = 0;
-+	void *kaddr;
+ 
+@@ -3710,7 +3711,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 	struct task_struct *p;
+ 	int retval;
+ 
+-	get_online_cpus();
+ 	rcu_read_lock();
+ 
+ 	p = find_process_by_pid(pid);
+@@ -3773,7 +3773,6 @@ out_free_cpus_allowed:
+ 	free_cpumask_var(cpus_allowed);
+ out_put_task:
+ 	put_task_struct(p);
+-	put_online_cpus();
+ 	return retval;
+ }
+ 
+@@ -3818,7 +3817,6 @@ long sched_getaffinity(pid_t pid, struct cpumask *mask)
+ 	unsigned long flags;
+ 	int retval;
+ 
+-	get_online_cpus();
+ 	rcu_read_lock();
+ 
+ 	retval = -ESRCH;
+@@ -3831,12 +3829,11 @@ long sched_getaffinity(pid_t pid, struct cpumask *mask)
+ 		goto out_unlock;
+ 
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	cpumask_and(mask, &p->cpus_allowed, cpu_online_mask);
++	cpumask_and(mask, &p->cpus_allowed, cpu_active_mask);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+ out_unlock:
+ 	rcu_read_unlock();
+-	put_online_cpus();
+ 
+ 	return retval;
+ }
+@@ -6494,14 +6491,17 @@ void __init sched_init_smp(void)
+ 
+ 	sched_init_numa();
+ 
+-	get_online_cpus();
++	/*
++	 * There's no userspace yet to cause hotplug operations; hence all the
++	 * cpu masks are stable and all blatant races in the below code cannot
++	 * happen.
++	 */
+ 	mutex_lock(&sched_domains_mutex);
+ 	init_sched_domains(cpu_active_mask);
+ 	cpumask_andnot(non_isolated_cpus, cpu_possible_mask, cpu_isolated_map);
+ 	if (cpumask_empty(non_isolated_cpus))
+ 		cpumask_set_cpu(smp_processor_id(), non_isolated_cpus);
+ 	mutex_unlock(&sched_domains_mutex);
+-	put_online_cpus();
+ 
+ 	hotcpu_notifier(sched_domains_numa_masks_update, CPU_PRI_SCHED_ACTIVE);
+ 	hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 32a6c44..c530bc5 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -234,11 +234,13 @@ static void irq_cpu_stop_queue_work(void *arg)
+  */
+ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
+ {
+-	int call_cpu;
+ 	struct cpu_stop_done done;
+ 	struct cpu_stop_work work1, work2;
+ 	struct irq_cpu_stop_queue_work_info call_args;
+-	struct multi_stop_data msdata = {
++	struct multi_stop_data msdata;
++
++	preempt_disable();
++	msdata = (struct multi_stop_data){
+ 		.fn = fn,
+ 		.data = arg,
+ 		.num_threads = 2,
+@@ -262,16 +264,30 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
+ 	set_state(&msdata, MULTI_STOP_PREPARE);
  
  	/*
- 	 * We don't need to fixup if the PEBS assist is fault like
-@@ -752,7 +772,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 	 * unsigned math, either ip is before the start (impossible) or
- 	 * the basic block is larger than 1 page (sanity)
- 	 */
--	if ((ip - to) > PAGE_SIZE)
-+	if ((ip - to) > PEBS_FIXUP_SIZE)
- 		return 0;
- 
- 	/*
-@@ -763,29 +783,33 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 		return 1;
- 	}
- 
-+	if (!kernel_ip(ip)) {
-+		int size, bytes;
-+		u8 *buf = this_cpu_read(insn_buffer);
-+
-+		size = ip - to; /* Must fit our buffer, see above */
-+		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
-+		if (bytes != size)
-+			return 0;
-+
-+		kaddr = buf;
-+	} else {
-+		kaddr = (void *)to;
++	 * If we observe both CPUs active we know _cpu_down() cannot yet have
++	 * queued its stop_machine works and therefore ours will get executed
++	 * first. Or its not either one of our CPUs that's getting unplugged,
++	 * in which case we don't care.
++	 *
++	 * This relies on the stopper workqueues to be FIFO.
++	 */
++	if (!cpu_active(cpu1) || !cpu_active(cpu2)) {
++		preempt_enable();
++		return -ENOENT;
 +	}
 +
- 	do {
- 		struct insn insn;
--		u8 buf[MAX_INSN_SIZE];
--		void *kaddr;
- 
- 		old_to = to;
--		if (!kernel_ip(ip)) {
--			int bytes, size = MAX_INSN_SIZE;
++	/*
+ 	 * Queuing needs to be done by the lowest numbered CPU, to ensure
+ 	 * that works are always queued in the same order on every CPU.
+ 	 * This prevents deadlocks.
+ 	 */
+-	call_cpu = min(cpu1, cpu2);
 -
--			bytes = copy_from_user_nmi(buf, (void __user *)to, size);
--			if (bytes != size)
--				return 0;
--
--			kaddr = buf;
--		} else
--			kaddr = (void *)to;
+-	smp_call_function_single(call_cpu, &irq_cpu_stop_queue_work,
++	smp_call_function_single(min(cpu1, cpu2),
++				 &irq_cpu_stop_queue_work,
+ 				 &call_args, 0);
++	preempt_enable();
  
- #ifdef CONFIG_X86_64
- 		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
- #endif
- 		insn_init(&insn, kaddr, is_64bit);
- 		insn_get_length(&insn);
+ 	wait_for_completion(&done.completion);
 +
- 		to += insn.length;
-+		kaddr += insn.length;
- 	} while (to < ip);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
  
- 	if (to == ip) {
