@@ -1,108 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3JQNzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:55:17 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:42239 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3JQNzQ (ORCPT
+	id S1756301Ab3JQN4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:56:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48982 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755281Ab3JQN4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:55:16 -0400
-Date: Thu, 17 Oct 2013 15:55:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
+	Thu, 17 Oct 2013 09:56:07 -0400
+Date: Thu, 17 Oct 2013 14:56:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd
-Message-ID: <20131017135509.GB28963@localhost.localdomain>
-References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [RESEND PATCH v2 2/6] ARM: dts: Specify clocks for UARTs on
+ bcm11351
+Message-ID: <20131017135602.GD24056@e106331-lin.cambridge.arm.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+ <1381960030-1640-3-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381960030-1640-3-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 02:44:28PM +0000, Christoph Lameter wrote:
-> This is a follow on patch related to the earlier
-> discussion about restricting the
-> spawning of kernel threads. See https://lkml.org/lkml/2013/9/5/426
-> 
-> 
-> 
-> 
-> usermodehelper() threads can currently run on all processors.
-> This is an issue for low latency cores.
+On Wed, Oct 16, 2013 at 10:47:06PM +0100, Tim Kryger wrote:
+> Rather than declaring the frequency of the external clock, specify the
+> label of the clock such that the driver may determine the frequency on
+> its own.
 
-This might be redundant with akpm's reply but here we go:
+Nit: we're not specifying the label of the clock. Clocks are represented
+py a phand+args pair, and the important part is that we're specifying
+the clock itself.
 
-low latency is a very confusing term nowadays. It's used by real time
-to describe the time it takes for a high prio task to take the CPU,
-and it's used by you for extreme HPC mode for deterministic undisturbed
-throughput.
+How about something like:
 
-The changelog needs to be expanded to describe what's needed, or people
-will be confused when they will stare at that git blame line in one year from now :)
+---->8----
+Currently the rate of the external clock input to "snps,dw-apb-uart"
+devices is described by a clock-frequency property rather than by
+reference to the clock itself.
+
+This patch changes the "snps,dw-apb-uart" entries in bcm11351.dtsi to
+refer to the parent clock directly, following the common clock bindings.
+---->8----
+
+Also, this should probably be moved after the driver change, so as to
+not be unbootable temporarily.
+
+Thanks,
+Mark.
 
 > 
-> Restrict usermodehelper() threads to the cores that kthreadd is
-> restricted to.
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  arch/arm/boot/dts/bcm11351.dtsi | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> The default for kthreadd is to be allowed to run on an processors.
-
-s/an/all ?
-
-> If the user restricts kthreadd then threads spawned by
-> usermodhelper() will similarly restricted.
+> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+> index c6464fb..ce65367 100644
+> --- a/arch/arm/boot/dts/bcm11351.dtsi
+> +++ b/arch/arm/boot/dts/bcm11351.dtsi
+> @@ -43,7 +43,7 @@
+>  		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+>  		status = "disabled";
+>  		reg = <0x3e000000 0x1000>;
+> -		clock-frequency = <13000000>;
+> +		clocks = <&uartb_clk>;
+>  		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+>  		reg-shift = <2>;
+>  		reg-io-width = <4>;
+> @@ -53,7 +53,7 @@
+>  		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+>  		status = "disabled";
+>  		reg = <0x3e001000 0x1000>;
+> -		clock-frequency = <13000000>;
+> +		clocks = <&uartb2_clk>;
+>  		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
+>  		reg-shift = <2>;
+>  		reg-io-width = <4>;
+> @@ -63,7 +63,7 @@
+>  		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+>  		status = "disabled";
+>  		reg = <0x3e002000 0x1000>;
+> -		clock-frequency = <13000000>;
+> +		clocks = <&uartb3_clk>;
+>  		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+>  		reg-shift = <2>;
+>  		reg-io-width = <4>;
+> @@ -73,7 +73,7 @@
+>  		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+>  		status = "disabled";
+>  		reg = <0x3e003000 0x1000>;
+> -		clock-frequency = <13000000>;
+> +		clocks = <&uartb4_clk>;
+>  		interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
+>  		reg-shift = <2>;
+>  		reg-io-width = <4>;
+> -- 
+> 1.8.0.1
 > 
-> Before this patch there is no way to limit the cpus that usermodehelper
-> can run on since the affinity is set when the thread is spawned to
-> all processors.
 > 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
 > 
-> Index: linux/include/linux/kthread.h
-> ===================================================================
-> --- linux.orig/include/linux/kthread.h	2013-10-10 11:00:34.167771996 -0500
-> +++ linux/include/linux/kthread.h	2013-10-15 13:57:52.859056676 -0500
-> @@ -51,6 +51,7 @@ void kthread_parkme(void);
->  int kthreadd(void *unused);
->  extern struct task_struct *kthreadd_task;
->  extern int tsk_fork_get_node(struct task_struct *tsk);
-> +void set_kthreadd_affinity(void);
-> 
->  /*
->   * Simple work processor based on kthread.
-> Index: linux/kernel/kmod.c
-> ===================================================================
-> --- linux.orig/kernel/kmod.c	2013-10-10 11:00:39.091771917 -0500
-> +++ linux/kernel/kmod.c	2013-10-15 14:02:01.904261324 -0500
-> @@ -40,6 +40,7 @@
->  #include <linux/ptrace.h>
->  #include <linux/async.h>
->  #include <asm/uaccess.h>
-> +#include <linux/kthread.h>
-> 
->  #include <trace/events/module.h>
-> 
-> @@ -209,8 +210,8 @@ static int ____call_usermodehelper(void
->  	flush_signal_handlers(current, 1);
->  	spin_unlock_irq(&current->sighand->siglock);
-> 
-> -	/* We can run anywhere, unlike our parent keventd(). */
-> -	set_cpus_allowed_ptr(current, cpu_all_mask);
-> +	/* We can run anywhere kthreadd can run */
-> +	set_kthreadd_affinity();
-
-If you really want your isolated CPUs to be undisturbed, you need this affinity to
-be set before the creation of this usermode helper. Otherwise it's going to run to any random
-place before you call the above function.
-
-Is there now way to control the kworker affinity which create this usermode helpers threads
-instead?
