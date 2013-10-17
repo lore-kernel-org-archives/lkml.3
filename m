@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab3JQLT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 07:19:28 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55539 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab3JQLTZ (ORCPT
+	id S1753865Ab3JQLTF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 07:19:05 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54487 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab3JQLSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 07:19:25 -0400
+	Thu, 17 Oct 2013 07:18:51 -0400
 From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
         masami.hiramatsu.pt@hitachi.com, dsaxena@linaro.org,
         jiang.liu@huawei.com, Vijaya.Kumar@caviumnetworks.com,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Subject: [PATCH RFC 6/6] kprobes: Add cases for arm and arm64 in sample module
-Date: Thu, 17 Oct 2013 16:47:51 +0530
-Message-Id: <1382008671-4515-7-git-send-email-sandeepa.prabhu@linaro.org>
+Subject: [PATCH RFC v4 1/6] arm64: support single-step and breakpoint handler hooks
+Date: Thu, 17 Oct 2013 16:47:46 +0530
+Message-Id: <1382008671-4515-2-git-send-email-sandeepa.prabhu@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
 References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
@@ -26,48 +26,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add info prints in sample kprobe handlers for ARM and ARM64
-architecture.
+AArch64 Single Steping and Breakpoint debug exceptions will be
+used by multiple debug framworks like kprobes & kgdb.
+
+This patch implements the hooks for those frameworks to register
+their own handlers for handling breakpoint and single step events.
+
+Reworked the debug exception handler in entry.S: do_dbg to route
+software breakpoint (BRK64) exception to do_debug_exception()
 
 Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
 ---
- samples/kprobes/kprobe_example.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/arm64/include/asm/debug-monitors.h | 21 ++++++++
+ arch/arm64/kernel/debug-monitors.c      | 86 ++++++++++++++++++++++++++++++++-
+ arch/arm64/kernel/entry.S               |  2 +
+ 3 files changed, 108 insertions(+), 1 deletion(-)
 
-diff --git a/samples/kprobes/kprobe_example.c b/samples/kprobes/kprobe_example.c
-index 366db1a..0521246 100644
---- a/samples/kprobes/kprobe_example.c
-+++ b/samples/kprobes/kprobe_example.c
-@@ -42,6 +42,14 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
- 			" ex1 = 0x%lx\n",
- 		p->addr, regs->pc, regs->ex1);
- #endif
-+#ifdef CONFIG_ARM
-+	printk(KERN_INFO "pre_handler: p->addr = 0x%p, pc = 0x%lx\n",
-+			p->addr, regs->ARM_pc);
-+#endif
-+#ifdef CONFIG_ARM64
-+	printk(KERN_INFO "pre_handler: p->addr = 0x%p, pc = 0x%lx\n",
-+		p->addr, (long)regs->pc);
-+#endif
+diff --git a/arch/arm64/include/asm/debug-monitors.h b/arch/arm64/include/asm/debug-monitors.h
+index a2232d0..6231479 100644
+--- a/arch/arm64/include/asm/debug-monitors.h
++++ b/arch/arm64/include/asm/debug-monitors.h
+@@ -62,6 +62,27 @@ struct task_struct;
  
- 	/* A dump_stack() here will give a stack backtrace */
- 	return 0;
-@@ -67,6 +75,14 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
- 	printk(KERN_INFO "post_handler: p->addr = 0x%p, ex1 = 0x%lx\n",
- 		p->addr, regs->ex1);
- #endif
-+#ifdef CONFIG_ARM
-+	printk(KERN_INFO "post_handler: p->addr = 0x%p, pc = 0x%lx\n",
-+			p->addr, regs->ARM_pc);
-+#endif
-+#ifdef CONFIG_ARM64
-+	printk(KERN_INFO "post_handler: p->addr = 0x%p, pc = 0x%lx\n",
-+		p->addr, (long)regs->pc);
-+#endif
+ #define DBG_ARCH_ID_RESERVED	0	/* In case of ptrace ABI updates. */
+ 
++#define DBG_HOOK_HANDLED	0
++#define DBG_HOOK_ERROR		1
++
++struct step_hook {
++	struct list_head node;
++	int (*fn)(struct pt_regs *regs, unsigned int esr);
++};
++
++void register_step_hook(struct step_hook *hook);
++void unregister_step_hook(struct step_hook *hook);
++
++struct break_hook {
++	struct list_head node;
++	u32 esr_val;
++	u32 esr_mask;
++	int (*fn)(struct pt_regs *regs, unsigned int esr);
++};
++
++void register_break_hook(struct break_hook *hook);
++void unregister_break_hook(struct break_hook *hook);
++
+ u8 debug_monitors_arch(void);
+ 
+ void enable_debug_monitors(enum debug_el el);
+diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
+index cbfacf7..e42ad5f 100644
+--- a/arch/arm64/kernel/debug-monitors.c
++++ b/arch/arm64/kernel/debug-monitors.c
+@@ -188,6 +188,48 @@ static void clear_regs_spsr_ss(struct pt_regs *regs)
+ 	regs->pstate = spsr;
  }
  
- /*
++/* EL1 Single Step Handler hooks */
++static LIST_HEAD(step_hook);
++DEFINE_RWLOCK(step_hook_lock);
++
++void register_step_hook(struct step_hook *hook)
++{
++	write_lock(&step_hook_lock);
++	list_add(&hook->node, &step_hook);
++	write_unlock(&step_hook_lock);
++}
++
++void unregister_step_hook(struct step_hook *hook)
++{
++	write_lock(&step_hook_lock);
++	list_del(&hook->node);
++	write_unlock(&step_hook_lock);
++}
++
++/*
++ * Call registered single step handers
++ * There is no Syndrome info to check for determining the handler.
++ * So we call all the registered handlers, until the right handler is
++ * found which returns zero.
++ */
++static int call_step_hook(struct pt_regs *regs, unsigned int esr)
++{
++	struct step_hook *hook;
++	int retval = DBG_HOOK_ERROR;
++
++	read_lock(&step_hook_lock);
++
++	list_for_each_entry(hook, &step_hook, node)	{
++		retval = hook->fn(regs, esr);
++		if (retval == DBG_HOOK_HANDLED)
++			break;
++	}
++
++	read_unlock(&step_hook_lock);
++
++	return retval;
++}
++
+ static int single_step_handler(unsigned long addr, unsigned int esr,
+ 			       struct pt_regs *regs)
+ {
+@@ -215,7 +257,10 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+ 		 */
+ 		user_rewind_single_step(current);
+ 	} else {
+-		/* TODO: route to KGDB */
++		/* call registered single step handlers */
++		if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
++			return 0;
++
+ 		pr_warning("Unexpected kernel single-step exception at EL1\n");
+ 		/*
+ 		 * Re-enable stepping since we know that we will be
+@@ -227,11 +272,50 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+ 	return 0;
+ }
+ 
++
++static LIST_HEAD(break_hook);
++DEFINE_RWLOCK(break_hook_lock);
++
++void register_break_hook(struct break_hook *hook)
++{
++	write_lock(&break_hook_lock);
++	list_add(&hook->node, &break_hook);
++	write_unlock(&break_hook_lock);
++}
++
++void unregister_break_hook(struct break_hook *hook)
++{
++	write_lock(&break_hook_lock);
++	list_del(&hook->node);
++	write_unlock(&break_hook_lock);
++}
++
++static int call_break_hook(struct pt_regs *regs, unsigned int esr)
++{
++	struct break_hook *hook;
++	int (*fn)(struct pt_regs *regs, unsigned int esr) = NULL;
++
++	read_lock(&break_hook_lock);
++	list_for_each_entry(hook, &break_hook, node)
++		if ((esr & hook->esr_mask) == hook->esr_val)
++			fn = hook->fn;
++	read_unlock(&break_hook_lock);
++
++	return fn ? fn(regs, esr) : DBG_HOOK_ERROR;
++}
++
+ static int brk_handler(unsigned long addr, unsigned int esr,
+ 		       struct pt_regs *regs)
+ {
+ 	siginfo_t info;
+ 
++	/* call the registered breakpoint handler */
++	if (call_break_hook(regs, esr) == DBG_HOOK_HANDLED)
++		return 0;
++
++	pr_warn("unexpected brk exception at %lx, esr=0x%x\n",
++			(long)instruction_pointer(regs), esr);
++
+ 	if (!user_mode(regs))
+ 		return -EFAULT;
+ 
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 3881fd1..7fbc510 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -288,6 +288,8 @@ el1_dbg:
+ 	/*
+ 	 * Debug exception handling
+ 	 */
++	cmp	x24, #ESR_EL1_EC_BRK64		// if BRK64
++	cinc	x24, x24, eq			// set bit '0'
+ 	tbz	x24, #0, el1_inv		// EL1 only
+ 	mrs	x0, far_el1
+ 	mov	x2, sp				// struct pt_regs
 -- 
 1.8.1.2
 
