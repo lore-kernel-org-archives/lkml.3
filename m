@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3JQH2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 03:28:46 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:48418 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750892Ab3JQH2n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 03:28:43 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+	id S1752597Ab3JQHwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 03:52:39 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9532 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab3JQHwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 03:52:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 17 Oct 2013 00:48:09 -0700
+Date: Thu, 17 Oct 2013 10:52:34 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
         Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
-        Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Date: Thu, 17 Oct 2013 09:27:25 +0200
-Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
-Thread-Topic: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
-Thread-Index: Ac7LClSqleas+eOoTgimFBRbgRDrDQ==
-Message-ID: <525F915D.9020501@st.com>
-References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
- <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>
- <20131016151419.GA14104@ns203013.ovh.net>
-In-Reply-To: <20131016151419.GA14104@ns203013.ovh.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 00/19] Introduce common infra for tegra clocks
+Message-ID: <20131017075233.GP5643@tbergstrom-lnx.Nvidia.com>
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
+ <525D8009.5040907@wwwdotorg.org>
+ <20131016090643.GI5643@tbergstrom-lnx.Nvidia.com>
+ <525EC973.7060802@wwwdotorg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <525EC973.7060802@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Christophe,
+On Wed, Oct 16, 2013 at 07:14:27PM +0200, Stephen Warren wrote:
+> On 10/16/2013 03:06 AM, Peter De Schrijver wrote:
+> > On Tue, Oct 15, 2013 at 07:48:57PM +0200, Stephen Warren wrote:
+> >> On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> >>> This patchset introduces common infrastructure for clocks which exist in                                                                                       
+> >>> several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
+> >>> this new infrastructure.
+> ...
+> >> Testing on Venice2 (Tegra124): I see the following WARN during boot,
+> >> which I think is new relative to the internal branch you gave me yesterday:
+> >>
+> >>> [    0.300450] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:187 tegra_init_from_table+0x78/0x158()
+> ...
+> >>> [    0.372440] [<c07b4c1c>] (tegra_init_from_table+0x78/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
+> >>> [    0.384138] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
+> >>> [    0.394903] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
+> ...
+> > Did you see  'tegra_init_from_table: Failed to set parent pll_c2 of epp ' before? Tegra124 doesn't have EPP...
+> 
+> Yes, I get exactly that message. Sorry, I forgot to paste in the most
+> relevant line:-( I assume fixing this simply means removing an entry in
+> the init table in clk-tegra124.c, so should be simple.
 
-On 10/16/2013 05:14 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+Yep. Part of the next version.
 
-
-...
->> +
->> +static inline void st_i2c_set_bits(void __iomem *reg, u32 mask)
->> +{
->> +     writel(readl(reg) | mask, reg);
->> +}
->> +
->> +static inline void st_i2c_clr_bits(void __iomem *reg, u32 mask)
->> +{
->> +     writel(readl(reg) & ~mask, reg);
-> use set_bit api and use relaxed version
-Using the set_bit api here does not match with the purpose of these 
-functions.
-We want to be able to set/clear multiple bits, and AFAICS the set_bit 
-api does not
-provide this possibility.
-
-I took example on i2c-nomadik for these functions.
-
->> +}
->> +
->> +/* From I2C Specifications v0.5 */
->> +static struct st_i2c_timings i2c_timings[] = {
->> +     [I2C_MODE_STANDARD] = {
->> +             .rate                   = 100000,
->> +             .rep_start_hold         = 4000,
->> +             .rep_start_setup        = 4700,
->> +             .start_hold             = 4000,
->> +             .data_setup_time        = 250,
->> +             .stop_setup_time        = 4000,
->> +             .bus_free_time          = 4700,
->> +     },
->> +     [I2C_MODE_FAST] = {
->> +             .rate                   = 400000,
->> +             .rep_start_hold         = 600,
->> +             .rep_start_setup        = 600,
->> +             .start_hold             = 600,
->> +             .data_setup_time        = 100,
->> +             .stop_setup_time        = 600,
->> +             .bus_free_time          = 1300,
->> +     },
->> +};
-> so how do you plane to support other rate that 100k and 400k?
-The SSC IP only supports Standard and Fast modes.
-There are no plans to support faster modes.
->> +
->> +static void st_i2c_flush_rx_fifo(struct st_i2c_dev *i2c_dev)
->> +{
->> +     int count, i;
->> +
->> +     /*
->> +      * Counter only counts up to 7 but fifo size is 8...
->> +      * When fifo is full, counter is 0 and RIR bit of status register is
->> +      * set
->> +      */
->> +     if (readl(i2c_dev->base + SSC_STA) & SSC_STA_RIR)
->> +             count = SSC_RXFIFO_SIZE;
->> +     else
->> +             count = readl(i2c_dev->base + SSC_RX_FSTAT) &
->> +                     SSC_RX_FSTAT_STATUS;
->> +
->> +     for (i = 0; i < count; i++)
->> +             readl(i2c_dev->base + SSC_RBUF);
-> use readsl
-Since the read content is flushed, I prefer keeping it as it is instead 
-of allocating
-a buffer of the FIFO's size.
->
-> use relaxed version as much as possible
-I was not comfortable with the different possibilities (_raw_readl, 
-readl_relaxed, readl...).
-I found this interresting discussion: 
-_http://comments.gmane.org/gmane.linux.ports.arm.kernel/117626
- From what I understood, you are right, I should be able to use 
-readl_relaxed everywhere.
-
-Maybe I should perform a readl on the interrupt mask register before 
-returning from the interrupt handler,
-in order to ensure that the write to the IEN register is effective 
-before the IRQ for the device is re-enabled at GIC level.
-Maybe this could avoid the few spurious interrupts I face sometimes, I 
-will have a try.
-
->> +}
->> +
-...
->> +
->> +static int st_i2c_wait_free_bus(struct st_i2c_dev *i2c_dev)
->> +{
->> +     u32 sta;
->> +     int i;
->> +
->> +     for (i = 0; i < 10; i++) {
->> +             sta = readl(i2c_dev->base + SSC_STA);
->> +             if (!(sta & SSC_STA_BUSY))
->> +                     return 0;
->> +
->> +             usleep_range(2000, 4000);
-> can not use interrupt?
-Sadly, no.
-There is no interrupt linked to the busy bit.
->> +     }
->> +
-...
->> +
->> +static struct of_device_id st_i2c_match[] = {
->> +     { .compatible = "st,comms-ssc-i2c", },
-> the rules is to put the first soc that use the ip in the compatible
-> as st,sti7100-scc-i2c
-Ok. There are no plans to upstream the SH4 platforms, it will only 
-remains in stlinux.com.
-Maybe I can set the first ARM platform (STiH415)?
-That would give st,stih415-ssc-i2c.
-
-Thanks for the review,
-Maxime
-
->
-> Best Regards,
-> J.
