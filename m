@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab3JQSSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:18:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45960 "EHLO
+	id S1762276Ab3JQSS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:18:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45970 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab3JQSSr (ORCPT
+	with ESMTP id S1758031Ab3JQSS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:18:47 -0400
-Date: Thu, 17 Oct 2013 11:18:27 -0700
+	Thu, 17 Oct 2013 14:18:57 -0400
+Date: Thu, 17 Oct 2013 11:18:45 -0700
 From: tip-bot for Kuppuswamy Sathyanarayanan <tipbot@zytor.com>
-Message-ID: <tip-0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48@git.kernel.org>
+Message-ID: <tip-ecaf497694f340ae3c751ea5f93abca5a47600da@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         david.a.cohen@linux.intel.com,
         sathyanarayanan.kuppuswamy@linux.intel.com, tglx@linutronix.de,
@@ -17,11 +17,11 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         sathyanarayanan.kuppuswamy@linux.intel.com,
         david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com>
-References: <1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1381896701-23476-4-git-send-email-david.a.cohen@linux.intel.com>
+References: <1381896701-23476-4-git-send-email-david.a.cohen@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/intel-mid] mrst: Fixed printk/pr_* related issues
-Git-Commit-ID: 0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
+Subject: [tip:x86/intel-mid] mrst: Fixed checkpatch warnings
+Git-Commit-ID: ecaf497694f340ae3c751ea5f93abca5a47600da
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,78 +30,40 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:18:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:18:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
-Gitweb:     http://git.kernel.org/tip/0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
+Commit-ID:  ecaf497694f340ae3c751ea5f93abca5a47600da
+Gitweb:     http://git.kernel.org/tip/ecaf497694f340ae3c751ea5f93abca5a47600da
 Author:     Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-AuthorDate: Tue, 15 Oct 2013 21:11:30 -0700
+AuthorDate: Tue, 15 Oct 2013 21:11:32 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 Oct 2013 17:16:29 -0700
+CommitDate: Wed, 16 Oct 2013 17:16:33 -0700
 
-mrst: Fixed printk/pr_* related issues
+mrst: Fixed checkpatch warnings
 
-Fixed printk and pr_* related issues in mrst related files.
+Fixed checkpatch warnings in mrst related files.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-Link: http://lkml.kernel.org/r/1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com
+Link: http://lkml.kernel.org/r/1381896701-23476-4-git-send-email-david.a.cohen@linux.intel.com
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/platform/mrst/early_printk_mrst.c | 2 +-
- arch/x86/platform/mrst/mrst.c              | 2 +-
- arch/x86/platform/mrst/vrtc.c              | 5 ++---
- 3 files changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/platform/mrst/mrst.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
-index 028454f..95880f7 100644
---- a/arch/x86/platform/mrst/early_printk_mrst.c
-+++ b/arch/x86/platform/mrst/early_printk_mrst.c
-@@ -213,7 +213,7 @@ static void early_mrst_spi_putc(char c)
- 	}
- 
- 	if (!timeout)
--		pr_warning("MRST earlycon: timed out\n");
-+		pr_warn("MRST earlycon: timed out\n");
- 	else
- 		max3110_write_data(c);
- }
 diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 3ca5957..b9aeb54 100644
+index 235a742..2a45eab 100644
 --- a/arch/x86/platform/mrst/mrst.c
 +++ b/arch/x86/platform/mrst/mrst.c
-@@ -328,7 +328,7 @@ static inline int __init setup_x86_mrst_timer(char *arg)
- 	else if (strcmp("lapic_and_apbt", arg) == 0)
- 		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
- 	else {
--		pr_warning("X86 MRST timer option %s not recognised"
-+		pr_warn("X86 MRST timer option %s not recognised"
- 			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
- 			   arg);
- 		return -EINVAL;
-diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
-index 5e355b1..ca4f7d9 100644
---- a/arch/x86/platform/mrst/vrtc.c
-+++ b/arch/x86/platform/mrst/vrtc.c
-@@ -79,7 +79,7 @@ void vrtc_get_time(struct timespec *now)
- 	/* vRTC YEAR reg contains the offset to 1972 */
- 	year += 1972;
- 
--	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
-+	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
- 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
- 
- 	now->tv_sec = mktime(year, mon, mday, hour, min, sec);
-@@ -109,8 +109,7 @@ int vrtc_set_mmss(const struct timespec *now)
- 		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
- 		spin_unlock_irqrestore(&rtc_lock, flags);
- 	} else {
--		printk(KERN_ERR
--		       "%s: Invalid vRTC value: write of %lx to vRTC failed\n",
-+		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
- 			__FUNCTION__, now->tv_sec);
- 		retval = -EINVAL;
+@@ -977,7 +977,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 		case SFI_DEV_TYPE_UART:
+ 		case SFI_DEV_TYPE_HSI:
+ 		default:
+-			;
++			break;
+ 		}
  	}
+ 	return 0;
