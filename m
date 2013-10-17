@@ -1,165 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab3JQOBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:01:07 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40549 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3JQOBE (ORCPT
+	id S1756318Ab3JQOCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:02:22 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:23302 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3JQOCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:01:04 -0400
-Date: Thu, 17 Oct 2013 08:44:18 -0500
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave@sr71.net>, Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] vmsplice: Add limited zero copy to vmsplice
-Message-ID: <20131017134418.GA19741@linux.vnet.ibm.com>
-Mail-Followup-To: Vlastimil Babka <vbabka@suse.cz>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-	Rik van Riel <riel@redhat.com>,
-	Andrea Arcangeli <aarcange@redhat.com>, Dave Hansen <dave@sr71.net>,
-	Matt Helsley <matt.helsley@gmail.com>,
-	Anthony Liguori <anthony@codemonkey.ws>,
-	Michael Roth <mdroth@linux.vnet.ibm.com>,
-	Lei Li <lilei@linux.vnet.ibm.com>,
-	Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com>
- <1381177293-27125-3-git-send-email-rcj@linux.vnet.ibm.com>
- <525FC89E.6040208@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525FC89E.6040208@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101714-7014-0000-0000-000003C8C224
+	Thu, 17 Oct 2013 10:02:20 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-62-525fede94d8e
+Message-id: <525FEDDD.8000301@samsung.com>
+Date: Thu, 17 Oct 2013 18:02:05 +0400
+From: Tarek Dakhran <t.dakhran@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+MIME-version: 1.0
+To: Aliaksei Katovich <aliaksei.katovich@gmail.com>,
+        Kevin Hilman <khilman@linaro.org>
+Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
+References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
+ <87k3hc3lso.fsf@linaro.org> <20131017130435.GG3061@cat.local>
+In-reply-to: <20131017130435.GG3061@cat.local>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t/xy7ov38YHGdzYqGvxunkWq8WkdQeY
+	LOZ9lrWYf+Qcq8X/R69ZLc69Wslo0bvgKpvF18MrGC02Pb7GarGwbQmLxeVdc9gsZpzfx2Rx
+	+zKvxdLrF5ksnk64yGYxYfpaFovDK4AGrXs5ncViy88ORotXB9tYLDZvmspsMXXGD3YHMY81
+	89YwerQ097B5LPh8hd3j76oXzB47Z91l91i5/Aubx6vVM1k97lzbw+bx7tw5do/NS+o9Xl1j
+	8ejbsorRY/u1ecwenzfJeWycGxrAH8Vlk5Kak1mWWqRvl8CVcWfRZbaCZcoVR3d2MTUwHpft
+	YuTkkBAwkbg3bTIThC0mceHeerYuRi4OIYGljBIrVmxjhXA+ADnvu9lBqngFtCRO9LwFs1kE
+	VCXe7T7G3MXIwcEmoC2xZYcXSFhUIEziaNNPVohyQYkfk++xgNgiAhESL++vYweZySzwkVWi
+	u2k5G0hCWMBG4s7ZJqhlzYwSp/6/BFvAKaAnceTwKrBJzAJmEo9a1jFD2PISm9e8ZZ7AKDAL
+	yZJZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMksr/uYFx6zOoQowAHoxIP
+	74zlcUFCrIllxZW5hxglOJiVRHhd7scHCfGmJFZWpRblxxeV5qQWH2Jk4uCUamAs9yvuPfm4
+	feaXk4x7co5t0l/C9r2Z/RDftMaXKjtMs1ZxeRlIf31elBUqzrFp80QfA9nXdXm1CvFd60VZ
+	ik48qt/Gn2jyjWnNWX0Xx876Q1Xf+A8zRHov2LWvLILlx6S/H+Yuc49SZyua5qZ86MHJdXYz
+	7dxmHkv+/6euqlI3ds2u47w/zucqsRRnJBpqMRcVJwIAFyPJEcoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vlastimil Babka (vbabka@suse.cz) wrote:
-> On 10/07/2013 10:21 PM, Robert C Jennings wrote:
-> > From: Matt Helsley <matt.helsley@gmail.com>
-> > 
-> > It is sometimes useful to move anonymous pages over a pipe rather than
-> > save/swap them. Check the SPLICE_F_GIFT and SPLICE_F_MOVE flags to see
-> > if userspace would like to move such pages. This differs from plain
-> > SPLICE_F_GIFT in that the memory written to the pipe will no longer
-> > have the same contents as the original -- it effectively faults in new,
-> > empty anonymous pages.
-> > 
-> > On the read side the page written to the pipe will be copied unless
-> > SPLICE_F_MOVE is used. Otherwise copying will be performed and the page
-> > will be reclaimed. Note that so long as there is a mapping to the page
-> > copies will be done instead because rmap will have upped the map count for
-> > each anonymous mapping; this can happen do to fork(), for example. This
-> > is necessary because moving the page will usually change the anonymous
-> > page's nonlinear index and that can only be done if it's unmapped.
-> 
-> You might want to update comments of vmsplice_to_user() and
-> SYSCALL_DEFINE4(vmsplice) as they both explain how it's done only via
-> copying.
-> 
-> Vlastimil
-> 
+On 17.10.2013 17:04, Aliaksei Katovich wrote:
+> hi Kevin;
+>
+>> Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
+>>
+>>> The series of patches represent support of Exynos 5410 SoC
+>>>      
+>>> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
+>>> Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
+>>>      
+>>> Patches add new platform description, support of clock controller,
+>>> dual cluster support and device tree for Exynos 5410
+>>>     
+>>> Has been build on v3.12-rc5.
+>>> Has been tested on Exynos 5410 reference board (exynos_defconfig).
+>> Has anyone tried this on the exynos5410 based odroid-xu yet?
+>>
+>> I tried booting this on my recently arrived odroid-xu, but am not
+>> getting it to boot.
+> 	I am able to boot my odroid-xu+e to busybox with these patches applied
+> 	against 3.12-rc5: exynos_defconfig and exynos5410-smdk5410.dtb were
+> 	used.
+>
+> 	However there seem to be some issues with virq allocations, like this:
+>
+> <snippet>
+> Starting kernel ...
+>                     
+> [    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
+> [    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
+> [    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
+> [    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
+> [    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
+> [    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
+> )
+> [    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
+> [    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
+> [    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
+> [    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
+> [    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
+> [    0.000000] ---[ end trace 1b75b31a2719edcd ]---
+> [    0.000000] ------------[ cut here ]------------
+> [    0.000000] WARNING: CPU: 0 PID: 0 at kernel/irq/irqdomain.c:278 irq_domain_associate+0x128/0x1a8()
+> [    0.000000] error: virq337 is not allocated
+> [    0.000000] Modules linked in:
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W    3.12.0-rc5-00004-g1cb405f #1
+> [    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
+> [    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
+> [    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
+> [    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
+> [    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
+> [    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
+> )
+> [    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
+> [    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
+> [    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
+> [    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
+> [    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
+> [    0.000000] ---[ end trace 1b75b31a2719edce ]---
+> [    0.000000] ------------[ cut here ]------------
+> </snippet>
+>
+> 	You can check full boot log here http://sprunge.us/NKcU
+>
+> --
+> Aliaksei
+>
+>> I'm not yet terribly familiar with this SoC, what are the settings
+>> needed for DEBUG_LL on this board?
+>>
+>> Thanks,
+>>
+>> Kevin
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+Also change NR_CPUS to 8 in kernel config, so you will get 8 cores 
+booted instead of 2.
 
-I will update those as well.  Thanks.
-
-> > Signed-off-by: Matt Helsley <matt.helsley@gmail.com>
-> > Signed-off-by: Robert C Jennings <rcj@linux.vnet.ibm.com>
-> > ---
-> >  fs/splice.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 63 insertions(+)
-> > 
-> > diff --git a/fs/splice.c b/fs/splice.c
-> > index a62d61e..9d2ed128 100644
-> > --- a/fs/splice.c
-> > +++ b/fs/splice.c
-> > @@ -32,6 +32,10 @@
-> >  #include <linux/gfp.h>
-> >  #include <linux/socket.h>
-> >  #include <linux/compat.h>
-> > +#include <linux/page-flags.h>
-> > +#include <linux/hugetlb.h>
-> > +#include <linux/ksm.h>
-> > +#include <linux/swapops.h>
-> >  #include "internal.h"
-> >  
-> >  /*
-> > @@ -1562,6 +1566,65 @@ static int pipe_to_user(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
-> >  	char *src;
-> >  	int ret;
-> >  
-> > +	if (!buf->offset && (buf->len == PAGE_SIZE) &&
-> > +	    (buf->flags & PIPE_BUF_FLAG_GIFT) && (sd->flags & SPLICE_F_MOVE)) {
-> > +		struct page *page = buf->page;
-> > +		struct mm_struct *mm;
-> > +		struct vm_area_struct *vma;
-> > +		spinlock_t *ptl;
-> > +		pte_t *ptep, pte;
-> > +		unsigned long useraddr;
-> > +
-> > +		if (!PageAnon(page))
-> > +			goto copy;
-> > +		if (PageCompound(page))
-> > +			goto copy;
-> > +		if (PageHuge(page) || PageTransHuge(page))
-> > +			goto copy;
-> > +		if (page_mapped(page))
-> > +			goto copy;
-> > +		useraddr = (unsigned long)sd->u.userptr;
-> > +		mm = current->mm;
-> > +
-> > +		ret = -EAGAIN;
-> > +		down_read(&mm->mmap_sem);
-> > +		vma = find_vma_intersection(mm, useraddr, useraddr + PAGE_SIZE);
-> > +		if (IS_ERR_OR_NULL(vma))
-> > +			goto up_copy;
-> > +		if (!vma->anon_vma) {
-> > +			ret = anon_vma_prepare(vma);
-> > +			if (ret)
-> > +				goto up_copy;
-> > +		}
-> > +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
-> > +		ret = lock_page_killable(page);
-> > +		if (ret)
-> > +			goto up_copy;
-> > +		ptep = get_locked_pte(mm, useraddr, &ptl);
-> > +		if (!ptep)
-> > +			goto unlock_up_copy;
-> > +		pte = *ptep;
-> > +		if (pte_present(pte))
-> > +			goto unlock_up_copy;
-> > +		get_page(page);
-> > +		page_add_anon_rmap(page, vma, useraddr);
-> > +		pte = mk_pte(page, vma->vm_page_prot);
-> > +		set_pte_at(mm, useraddr, ptep, pte);
-> > +		update_mmu_cache(vma, useraddr, ptep);
-> > +		pte_unmap_unlock(ptep, ptl);
-> > +		ret = 0;
-> > +unlock_up_copy:
-> > +		unlock_page(page);
-> > +up_copy:
-> > +		up_read(&mm->mmap_sem);
-> > +		if (!ret) {
-> > +			ret = sd->len;
-> > +			goto out;
-> > +		}
-> > +		/* else ret < 0 and we should fallback to copying */
-> > +		VM_BUG_ON(ret > 0);
-> > +	}
-> > +copy:
-> >  	/*
-> >  	 * See if we can use the atomic maps, by prefaulting in the
-> >  	 * pages and doing an atomic copy
-> > 
-> 
-
+Best regards,
+     Tarek Dakhran
