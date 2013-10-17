@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762855Ab3JQVIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:08:43 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58058 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759409Ab3JQVIk (ORCPT
+	id S1762870Ab3JQVIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:08:47 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45201 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762847Ab3JQVIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:08:40 -0400
+	Thu, 17 Oct 2013 17:08:43 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Vlad Lungu <vlad.lungu@windriver.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 02/10] tty: xuartps: Use devm_kzalloc
-Date: Thu, 17 Oct 2013 14:08:05 -0700
-Message-Id: <1382044093-29905-3-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH 03/10] tty: xuartps: Implement BREAK detection, add SYSRQ support
+Date: Thu, 17 Oct 2013 14:08:06 -0700
+Message-Id: <1382044093-29905-4-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -22,68 +23,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the device managed interface for memory allocation, simplifying
-error paths.
+From: Vlad Lungu <vlad.lungu@windriver.com>
 
+The Cadence UART does not do break detection, even if the
+datasheet says it does. This patch adds break detection in
+software (tested in 8N1 mode only) and enables SYSRQ,
+allowing for Break-g to enter KDB and all the other goodies.
+
+Signed-off-by: Vlad Lungu <vlad.lungu@windriver.com>
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/tty/serial/xilinx_uartps.c | 14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+I ported this patch to 3.12 and fixed some style issues
+---
+ drivers/tty/serial/xilinx_uartps.c | 50 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 103ba8826d06..8c0745951605 100644
+index 8c0745951605..5d5557af4d22 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -949,27 +949,26 @@ static int xuartps_probe(struct platform_device *pdev)
- 	struct resource *res, *res2;
- 	struct xuartps *xuartps_data;
+@@ -11,13 +11,17 @@
+  *
+  */
  
--	xuartps_data = kzalloc(sizeof(*xuartps_data), GFP_KERNEL);
-+	xuartps_data = devm_kzalloc(&pdev->dev, sizeof(*xuartps_data),
-+			GFP_KERNEL);
- 	if (!xuartps_data)
- 		return -ENOMEM;
++#if defined(CONFIG_SERIAL_XILINX_PS_UART_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
++#define SUPPORT_SYSRQ
++#endif
++
+ #include <linux/platform_device.h>
+ #include <linux/serial.h>
++#include <linux/console.h>
+ #include <linux/serial_core.h>
+ #include <linux/slab.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+-#include <linux/console.h>
+ #include <linux/clk.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
+@@ -128,6 +132,9 @@
+ #define XUARTPS_IXR_RXEMPTY	0x00000002 /* RX FIFO empty interrupt. */
+ #define XUARTPS_IXR_MASK	0x00001FFF /* Valid bit mask */
  
- 	xuartps_data->aperclk = devm_clk_get(&pdev->dev, "aper_clk");
- 	if (IS_ERR(xuartps_data->aperclk)) {
- 		dev_err(&pdev->dev, "aper_clk clock not found.\n");
--		rc = PTR_ERR(xuartps_data->aperclk);
--		goto err_out_free;
-+		return PTR_ERR(xuartps_data->aperclk);
- 	}
- 	xuartps_data->refclk = devm_clk_get(&pdev->dev, "ref_clk");
- 	if (IS_ERR(xuartps_data->refclk)) {
- 		dev_err(&pdev->dev, "ref_clk clock not found.\n");
--		rc = PTR_ERR(xuartps_data->refclk);
--		goto err_out_free;
-+		return PTR_ERR(xuartps_data->refclk);
- 	}
++/* Goes in read_status_mask for break detection as the HW doesn't do it*/
++#define XUARTPS_IXR_BRK		0x80000000
++
+ /** Channel Status Register
+  *
+  * The channel status register (CSR) is provided to enable the control logic
+@@ -171,6 +178,23 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
+ 	 */
+ 	isrstatus = xuartps_readl(XUARTPS_ISR_OFFSET);
  
- 	rc = clk_prepare_enable(xuartps_data->aperclk);
- 	if (rc) {
- 		dev_err(&pdev->dev, "Unable to enable APER clock.\n");
--		goto err_out_free;
-+		return rc;
- 	}
- 	rc = clk_prepare_enable(xuartps_data->refclk);
- 	if (rc) {
-@@ -1020,8 +1019,6 @@ err_out_clk_disable:
- 	clk_disable_unprepare(xuartps_data->refclk);
- err_out_clk_dis_aper:
- 	clk_disable_unprepare(xuartps_data->aperclk);
--err_out_free:
--	kfree(xuartps_data);
++	/*
++	 * There is no hardware break detection, so we interpret framing
++	 * error with all-zeros data as a break sequence. Most of the time,
++	 * there's another non-zero byte at the end of the sequence.
++	 */
++
++	if (isrstatus & XUARTPS_IXR_FRAMING) {
++		while (!(xuartps_readl(XUARTPS_SR_OFFSET) &
++					XUARTPS_SR_RXEMPTY)) {
++			if (!xuartps_readl(XUARTPS_FIFO_OFFSET)) {
++				port->read_status_mask |= XUARTPS_IXR_BRK;
++				isrstatus &= ~XUARTPS_IXR_FRAMING;
++			}
++		}
++		xuartps_writel(XUARTPS_IXR_FRAMING, XUARTPS_ISR_OFFSET);
++	}
++
+ 	/* drop byte with parity error if IGNPAR specified */
+ 	if (isrstatus & port->ignore_status_mask & XUARTPS_IXR_PARITY)
+ 		isrstatus &= ~(XUARTPS_IXR_RXTRIG | XUARTPS_IXR_TOUT);
+@@ -184,6 +208,30 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
+ 		while ((xuartps_readl(XUARTPS_SR_OFFSET) &
+ 			XUARTPS_SR_RXEMPTY) != XUARTPS_SR_RXEMPTY) {
+ 			data = xuartps_readl(XUARTPS_FIFO_OFFSET);
++
++			/* Non-NULL byte after BREAK is garbage (99%) */
++			if (data && (port->read_status_mask &
++						XUARTPS_IXR_BRK)) {
++				port->read_status_mask &= ~XUARTPS_IXR_BRK;
++				port->icount.brk++;
++				if (uart_handle_break(port))
++					continue;
++			}
++
++			/*
++			 * uart_handle_sysrq_char() doesn't work if
++			 * spinlocked, for some reason
++			 */
++			 if (port->sysrq) {
++				spin_unlock(&port->lock);
++				if (uart_handle_sysrq_char(port,
++							(unsigned char)data)) {
++					spin_lock(&port->lock);
++					continue;
++				}
++				spin_lock(&port->lock);
++			}
++
+ 			port->icount.rx++;
  
- 	return rc;
- }
-@@ -1043,7 +1040,6 @@ static int xuartps_remove(struct platform_device *pdev)
- 	port->mapbase = 0;
- 	clk_disable_unprepare(xuartps_data->refclk);
- 	clk_disable_unprepare(xuartps_data->aperclk);
--	kfree(xuartps_data);
- 	return rc;
- }
- 
+ 			if (isrstatus & XUARTPS_IXR_PARITY) {
 -- 
 1.8.4.1
 
