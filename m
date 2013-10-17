@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab3JQSF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:05:28 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:42420 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758112Ab3JQSF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:05:26 -0400
+	id S1758954Ab3JQSFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:05:45 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:55463 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758112Ab3JQSFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 14:05:43 -0400
 X-IronPort-AV: E=Sophos;i="4.93,515,1378857600"; 
-   d="scan'208";a="64695284"
+   d="scan'208";a="61985398"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 16/19] arm,arm64: do not always merge biovec if we are running on Xen
-Date: Thu, 17 Oct 2013 18:43:31 +0100
-Message-ID: <1382031814-8782-16-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 17/19] grant-table: call set_phys_to_machine after mapping grant refs
+Date: Thu, 17 Oct 2013 18:43:32 +0100
+Message-ID: <1382031814-8782-17-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to what it is done on X86: biovecs are prevented from merging
-otherwise every dma requests would be forced to bounce on the swiotlb buffer.
+When mapping/unmapping grant refs, call
+set_phys_to_machine to update the P2M with the new mappings for
+autotranslate guests.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
-Changes in v7:
-- remove the extra autotranslate check in biomerge.c.
 ---
- arch/arm/include/asm/io.h   |    8 ++++++++
- arch/arm64/include/asm/io.h |    9 +++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+ drivers/xen/grant-table.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index d070741..c45effc 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -24,9 +24,11 @@
- #ifdef __KERNEL__
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 04cdeb8..a36cb03 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -49,6 +49,7 @@
+ #include <xen/grant_table.h>
+ #include <xen/interface/memory.h>
+ #include <xen/hvc-console.h>
++#include <xen/swiotlb-xen.h>
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/interface.h>
  
- #include <linux/types.h>
-+#include <linux/blk_types.h>
- #include <asm/byteorder.h>
- #include <asm/memory.h>
- #include <asm-generic/pci_iomap.h>
-+#include <xen/xen.h>
+@@ -889,8 +890,15 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 			gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, map_ops + i,
+ 						&map_ops[i].status, __func__);
  
- /*
-  * ISA I/O bus memory addresses are 1:1 with the physical address.
-@@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- #define BIOVEC_MERGEABLE(vec1, vec2)	\
- 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
+-	if (xen_feature(XENFEAT_auto_translated_physmap))
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++		for (i = 0; i < count; i++) {
++			if (map_ops[i].status)
++				continue;
++			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
++					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
++		}
+ 		return ret;
++	}
  
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #ifdef CONFIG_MMU
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
- extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index 1d12f89..c163287b 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -22,11 +22,14 @@
- #ifdef __KERNEL__
+ 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
+@@ -933,8 +941,13 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 	if (ret)
+ 		return ret;
  
- #include <linux/types.h>
-+#include <linux/blk_types.h>
+-	if (xen_feature(XENFEAT_auto_translated_physmap))
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++		for (i = 0; i < count; i++) {
++			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
++					INVALID_P2M_ENTRY);
++		}
+ 		return ret;
++	}
  
- #include <asm/byteorder.h>
- #include <asm/barrier.h>
- #include <asm/pgtable.h>
- 
-+#include <xen/xen.h>
-+
- /*
-  * Generic IO read/write.  These perform native-endian accesses.
-  */
-@@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
-  */
- #define xlate_dev_kmem_ptr(p)	p
- 
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #endif	/* __KERNEL__ */
- #endif	/* __ASM_IO_H */
+ 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+ 		arch_enter_lazy_mmu_mode();
 -- 
 1.7.2.5
 
