@@ -1,64 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762207Ab3JQC7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 22:59:16 -0400
-Received: from smtprelay0069.hostedemail.com ([216.40.44.69]:39300 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1762180Ab3JQC7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 22:59:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1978:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:4250:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,M
-X-HE-Tag: land24_6d5880bb4b938
-X-Filterd-Recvd-Size: 2078
-Message-ID: <1381978749.22110.76.camel@joe-AO722>
-Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-From: Joe Perches <joe@perches.com>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
-        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Date: Wed, 16 Oct 2013 19:59:09 -0700
-In-Reply-To: <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	 <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1762237Ab3JQC71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 22:59:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10752 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762180Ab3JQC7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 22:59:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
+   d="scan'208";a="394164426"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: linux-kernel@vger.kernel.org, sfi-devel@simplefirmware.org,
+        linux-gpio@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Len Brown <lenb@kernel.org>
+Subject: [PATCH] gpiolib: append SFI helpers for GPIO API
+Date: Wed, 16 Oct 2013 20:03:35 -0700
+Message-Id: <1381979015-28980-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-16 at 10:56 -0400, Chen, Gong wrote:
-> GENMASK is used to create a contiguous bitmask([hi:lo]). It is
-> implemented twice in current kernel. One is in EDAC driver, the other
-> is in SiS/XGI FB driver. Move it to a more generic place for other
-> usage.
-[]
-> diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-[]
-> @@ -10,6 +10,14 @@
->  #define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
->  #endif
->  
-> +/*
-> + * Create a contiguous bitmask starting at bit position @l and ending at
-> + * position @h. For example
-> + * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-ull
+To support some (legacy) firmwares and platforms let's make life easier for
+their customers.
 
-> + */
-> +#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
-> +#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Len Brown <lenb@kernel.org>
+---
+ drivers/gpio/Kconfig       |  4 +++
+ drivers/gpio/Makefile      |  1 +
+ drivers/gpio/gpiolib-sfi.c | 76 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/sfi/sfi_core.c     |  7 +++++
+ include/linux/sfi_gpio.h   | 27 ++++++++++++++++
+ 5 files changed, 115 insertions(+)
+ create mode 100644 drivers/gpio/gpiolib-sfi.c
+ create mode 100644 include/linux/sfi_gpio.h
 
-
-Maybe add a
-
-BUILD_BUG_ON(__builtin_constant_p(l) && __builtin_constant_p(h) && \
-	     (h) < (l))
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 3471962..3fa2a0d 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -51,6 +51,10 @@ config OF_GPIO
+ 	def_bool y
+ 	depends on OF
+ 
++config GPIO_SFI
++	def_bool y
++	depends on SFI
++
+ config GPIO_ACPI
+ 	def_bool y
+ 	depends on ACPI
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index f951866..d548ff3 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -5,6 +5,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ obj-$(CONFIG_GPIO_DEVRES)	+= devres.o
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_GPIO_SFI)		+= gpiolib-sfi.o
+ obj-$(CONFIG_GPIO_ACPI)		+= gpiolib-acpi.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+diff --git a/drivers/gpio/gpiolib-sfi.c b/drivers/gpio/gpiolib-sfi.c
+new file mode 100644
+index 0000000..2f15a81
+--- /dev/null
++++ b/drivers/gpio/gpiolib-sfi.c
+@@ -0,0 +1,76 @@
++/*
++ * SFI helpers for GPIO API
++ *
++ * Copyright (C) 2013, Intel Corporation
++ * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
++ *
++ * Based on work done for Intel MID platforms (mrst.c)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define pr_fmt(fmt) "SFI: GPIO: " fmt
++
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++#include <linux/export.h>
++#include <linux/sfi_gpio.h>
++#include <linux/sfi.h>
++
++static struct sfi_gpio_table_entry *sfi_gpio_table;
++static int sfi_gpio_num_entry;
++
++int sfi_get_gpio_by_name(const char *name)
++{
++	struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
++	int i;
++
++	if (!pentry)
++		return -1;
++
++	for (i = 0; i < sfi_gpio_num_entry; i++, pentry++) {
++		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
++			return pentry->pin_no;
++	}
++
++	return -1;
++}
++EXPORT_SYMBOL_GPL(sfi_get_gpio_by_name);
++
++static int __init sfi_gpio_parse(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb = (struct sfi_table_simple *)table;
++	struct sfi_gpio_table_entry *pentry;
++	int num, i;
++
++	if (sfi_gpio_table)
++		return 0;
++
++	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
++	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
++
++	sfi_gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
++	if (!sfi_gpio_table)
++		return -ENOMEM;
++
++	memcpy(sfi_gpio_table, pentry, num * sizeof(*pentry));
++	sfi_gpio_num_entry = num;
++
++	pr_debug("Pin info:\n");
++	for (i = 0; i < num; i++, pentry++)
++		pr_debug("[%2d] chip = %16.16s, name = %16.16s, pin=%d\n", i,
++			 pentry->controller_name, pentry->pin_name,
++			 pentry->pin_no);
++
++	return 0;
++}
++
++int __init sfi_gpio_init(void)
++{
++	return sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_gpio_parse);
++}
+diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
+index 296db7a..2828da0 100644
+--- a/drivers/sfi/sfi_core.c
++++ b/drivers/sfi/sfi_core.c
+@@ -67,6 +67,7 @@
+ #include <linux/acpi.h>
+ #include <linux/init.h>
+ #include <linux/sfi.h>
++#include <linux/sfi_gpio.h>
+ #include <linux/slab.h>
+ 
+ #include "sfi_core.h"
+@@ -512,6 +513,12 @@ void __init sfi_init_late(void)
+ 	syst_va = sfi_map_memory(syst_pa, length);
+ 
+ 	sfi_acpi_init();
++
++	/*
++	 * Parsing GPIO table first, since the DEVS table will need this table
++	 * to map the pin name to the actual pin.
++	 */
++	sfi_gpio_init();
+ }
+ 
+ /*
+diff --git a/include/linux/sfi_gpio.h b/include/linux/sfi_gpio.h
+new file mode 100644
+index 0000000..ef7e497
+--- /dev/null
++++ b/include/linux/sfi_gpio.h
+@@ -0,0 +1,27 @@
++#ifndef _LINUX_SFI_GPIO_H_
++#define _LINUX_SFI_GPIO_H_
++
++#include <linux/errno.h>
++#include <linux/gpio.h>
++#include <linux/sfi.h>
++
++#ifdef CONFIG_GPIO_SFI
++
++int sfi_get_gpio_by_name(const char *name);
++int __init sfi_gpio_init(void);
++
++#else /* CONFIG_GPIO_SFI */
++
++static inline int sfi_get_gpio_by_name(const char *name);
++{
++	return -1;
++}
++
++static inline int __init sfi_gpio_init(void)
++{
++	return -ENODEV;
++}
++
++#endif /* CONFIG_GPIO_SFI */
++
++#endif /* _LINUX_SFI_GPIO_H_ */
+-- 
+1.8.4.rc3
 
