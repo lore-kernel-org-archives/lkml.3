@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934082Ab3JQDBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 23:01:10 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:37350 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab3JQDBI (ORCPT
+	id S1762152Ab3JQDFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 23:05:19 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:56282 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761009Ab3JQDFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 23:01:08 -0400
-Message-ID: <525F52F0.2030006@gmail.com>
-Date: Wed, 16 Oct 2013 21:01:04 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 16 Oct 2013 23:05:17 -0400
+Date: Wed, 16 Oct 2013 20:05:12 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, vmpressure: add high level
+Message-ID: <20131017030512.GA21327@teo>
+References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 2/2] perf-report: add --max-stack option to limit callchain
- stack scan
-References: <1381953595-36427-1-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1381953595-36427-1-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/13 1:59 PM, Waiman Long wrote:
-> This patch adds a new --max-stack option to perf-report to limit the
-> depth of callchain stack data to look at to reduce the time it takes
-> for perf-report to finish its processing. It trades the presence of
-> trailing stack information with faster speed.
+Hello David,
 
-I like the patch. I have a similar option in my perf-sched-timehist 
-command, and I have a patch somewhere for perf-script.
+On Wed, Oct 16, 2013 at 05:43:55PM -0700, David Rientjes wrote:
+> Vmpressure has two important levels: medium and critical.  Medium is 
+> defined at 60% and critical is defined at 95%.
+> 
+> We have a customer who needs a notification at a higher level than medium, 
+> which is slight to moderate reclaim activity, and before critical to start 
+> throttling incoming requests to save memory and avoid oom.
+> 
+> This patch adds the missing link: a high level defined at 80%.
+> 
+> In the future, it would probably be better to allow the user to specify an 
+> integer ratio for the notification rather than relying on arbitrarily 
+> specified levels.
 
-It would be even better to pass this arg kernel side and limit the stack 
-depth at data collection time.
+Does the customer need to differentiate the two levels (medium and high),
+or the customer only interested in this (80%) specific level?
 
----8<---
+In the latter case, instead of adding a new level I would vote for adding
+a [sysfs] knob for modifying medium level's threshold.
 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 72eae74..d90d04a 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -37,6 +37,12 @@
->
->   #include <linux/bitmap.h>
->
-> +/*
-> + * 2-level stringification macro to enable stringification of macro value
-> + * */
-> +#define	__to_string(x)	#x
-> +#define	STRINGIFY(x)	__to_string(x)
+Thanks,
 
-These 2 lines should be somewhere else -- like util/util.h
-
----8<---
-
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 2122141..2725aca 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -771,7 +771,8 @@ static void perf_event__process_sample(struct perf_tool *tool,
->   		    sample->callchain) {
->   			err = machine__resolve_callchain(machine, evsel,
->   							 al.thread, sample,
-> -							 &parent, &al);
-> +							 &parent, &al,
-> +							 PERF_MAX_STACK_DEPTH);
->   			if (err)
->   				return;
->   		}
-
-Why not add the option to perf-top as well? copy-paste.
-
-David
+Anton
