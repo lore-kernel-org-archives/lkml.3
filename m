@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab3JQQ7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:59:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49351 "EHLO mx1.redhat.com"
+	id S1757748Ab3JQRCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:02:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38993 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754994Ab3JQQ7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:59:39 -0400
-Message-ID: <1382029114.1768.10.camel@deneb.redhat.com>
-Subject: Re: [PATCH v2 2/3] arm: Add [U]EFI runtime services support
-From: Mark Salter <msalter@redhat.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
-        grant.likely@secretlab.ca, roy.franz@linaro.org
-Date: Thu, 17 Oct 2013 12:58:34 -0400
-In-Reply-To: <20131017143121.GJ1557@rocoto.smurfnet.nu>
-References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
-	 <1380799481-5470-3-git-send-email-leif.lindholm@linaro.org>
-	 <20131017140739.GI10834@console-pimps.org>
-	 <20131017143121.GJ1557@rocoto.smurfnet.nu>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1756803Ab3JQRCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 13:02:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,515,1378882800"; 
+   d="scan'208";a="309174880"
+Message-ID: <5260191E.4060603@linux.intel.com>
+Date: Thu, 17 Oct 2013 10:06:38 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
+MIME-Version: 1.0
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, sfi-devel@simplefirmware.org,
+        linux-gpio@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] gpiolib: append SFI helpers for GPIO API
+References: <1381979015-28980-1-git-send-email-david.a.cohen@linux.intel.com> <1382013695.29062.141.camel@smile>
+In-Reply-To: <1382013695.29062.141.camel@smile>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-17 at 16:31 +0200, Leif Lindholm wrote:
-> On Thu, Oct 17, 2013 at 03:07:39PM +0100, Matt Fleming wrote:
-> > > +/*
-> > > + * If you need to (temporarily) support buggy firmware.
-> > > + */
-> > > +#define KEEP_BOOT_SERVICES_REGIONS
-> > 
-> > Have you seen firmware that requires this? I'm just curious more than
-> > anything else.
-> 
-> Not really.
-> I _think_ I saw it on a debug build of a development platform once.
-> That coincided with me seeing a post on linux-efi about some laptop
-> that broke unless boot services regions were preserved, so I decided
-> to put it in there for any future debugging.
->  
+On 10/17/2013 05:41 AM, Andy Shevchenko wrote:
+> On Wed, 2013-10-16 at 20:03 -0700, David Cohen wrote:
+>> From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>>
+>> To support some (legacy) firmwares and platforms let's make life easier for
+>> their customers.
+>>
+>
+>
+>> +int sfi_get_gpio_by_name(const char *name)
+>> +{
+>> +	struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
+>> +	int i;
+>> +
+>> +	if (!pentry)
+>> +		return -1;
+>
+> ^^^^ It seems an old version.
+>
+> New version was published while ago and even has an ACK from Linus:
+>
+> http://www.spinics.net/lists/kernel/msg1545960.html
 
-I see a fairly consistent segfault when the arm64 kernel calls the
-SetVirtualAddressMap function. It doesn't happen when the boot services
-regions are included in the mapping. This is with edk2 firmware. I
-haven't really dug into where it goes wrong.
+Interesting :)
+I got this patch cooking in our internal tree for quite some time.
+Didn't realize about the new version. I'm waiting it to be merged to
+send an Intel Mid patch that depends on that.
 
+Please, ignore this version and consider the one pointed out by Andy.
+
+Br, David Cohen
+
+>
+>
 
