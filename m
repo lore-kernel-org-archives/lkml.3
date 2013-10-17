@@ -1,122 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3JQNYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:24:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48142 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753574Ab3JQNYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:24:49 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: netfilter-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] netfilter: fix ordering of jumpstack allocation and table update
-Date: Thu, 17 Oct 2013 14:24:33 +0100
-Message-Id: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
+	id S1755573Ab3JQNbo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:31:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579Ab3JQNbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:31:42 -0400
+Date: Thu, 17 Oct 2013 15:31:34 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] ext4: pair trace_ext4_writepages &
+ trace_ext4_writepages_result
+In-Reply-To: <1382012926-398-1-git-send-email-ming.lei@canonical.com>
+Message-ID: <alpine.LFD.2.00.1310171531040.3212@localhost.localdomain>
+References: <1382012926-398-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During kernel stability testing on an SMP ARMv7 system, Yalin Wang
-reported the following panic from the netfilter code:
+On Thu, 17 Oct 2013, Ming Lei wrote:
 
-  1fe0: 0000001c 5e2d3b10 4007e779 4009e110 60000010 00000032 ff565656 ff545454
-  [<c06c48dc>] (ipt_do_table+0x448/0x584) from [<c0655ef0>] (nf_iterate+0x48/0x7c)
-  [<c0655ef0>] (nf_iterate+0x48/0x7c) from [<c0655f7c>] (nf_hook_slow+0x58/0x104)
-  [<c0655f7c>] (nf_hook_slow+0x58/0x104) from [<c0683bbc>] (ip_local_deliver+0x88/0xa8)
-  [<c0683bbc>] (ip_local_deliver+0x88/0xa8) from [<c0683718>] (ip_rcv_finish+0x418/0x43c)
-  [<c0683718>] (ip_rcv_finish+0x418/0x43c) from [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598)
-  [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598) from [<c062b314>] (process_backlog+0x84/0x158)
-  [<c062b314>] (process_backlog+0x84/0x158) from [<c062de84>] (net_rx_action+0x70/0x1dc)
-  [<c062de84>] (net_rx_action+0x70/0x1dc) from [<c0088230>] (__do_softirq+0x11c/0x27c)
-  [<c0088230>] (__do_softirq+0x11c/0x27c) from [<c008857c>] (do_softirq+0x44/0x50)
-  [<c008857c>] (do_softirq+0x44/0x50) from [<c0088614>] (local_bh_enable_ip+0x8c/0xd0)
-  [<c0088614>] (local_bh_enable_ip+0x8c/0xd0) from [<c06b0330>] (inet_stream_connect+0x164/0x298)
-  [<c06b0330>] (inet_stream_connect+0x164/0x298) from [<c061d68c>] (sys_connect+0x88/0xc8)
-  [<c061d68c>] (sys_connect+0x88/0xc8) from [<c000e340>] (ret_fast_syscall+0x0/0x30)
-  Code: 2a000021 e59d2028 e59de01c e59f011c (e7824103)
-  ---[ end trace da227214a82491bd ]---
-  Kernel panic - not syncing: Fatal exception in interrupt
+> Date: Thu, 17 Oct 2013 20:28:46 +0800
+> From: Ming Lei <ming.lei@canonical.com>
+> To: linux-kernel@vger.kernel.org
+> Cc: Jan Kara <jack@suse.cz>, Ming Lei <ming.lei@canonical.com>,
+>     Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+>     "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+> Subject: [PATCH] ext4: pair trace_ext4_writepages &
+>     trace_ext4_writepages_result
+> 
+> Pair the two trace events to make troubeshooting writepages
+> easier, and it should be more convinient to write a simple script
+> to parse the traces.
+> 
+> Cc: Ted Tso <tytso@mit.edu>
+> Cc: linux-ext4@vger.kernel.org
+> Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+> Cc: Jan Kara <jack@suse.cz>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
 
-This comes about because CPU1 is executing xt_replace_table in response
-to a setsockopt syscall, resulting in:
+It looks good.
 
-	ret = xt_jumpstack_alloc(newinfo);
-		--> newinfo->jumpstack = kzalloc(size, GFP_KERNEL);
+Thanks!
 
-	[...]
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 
-	table->private = newinfo;
-	newinfo->initial_entries = private->initial_entries;
-
-Meanwhile, CPU0 is handling the network receive path and ends up in
-ipt_do_table, resulting in:
-
-	private = table->private;
-
-	[...]
-
-	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
-
-On weakly ordered memory architectures, the writes to table->private
-and newinfo->jumpstack from CPU1 can be observed out of order by CPU0.
-Furthermore, on architectures which don't respect ordering of address
-dependencies (i.e. Alpha), the reads from CPU0 can also be re-ordered.
-
-This patch adds an smp_wmb() before the assignment to table->private
-(which is essentially publishing newinfo) to ensure that all writes to
-newinfo will be observed before plugging it into the table structure.
-A dependent-read barrier is also added on the consumer side, to ensure
-the same ordering requirement are also respected there.
-
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reported-by: Wang, Yalin <Yalin.Wang@sonymobile.com>
-Tested-by: Wang, Yalin <Yalin.Wang@sonymobile.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- net/ipv4/netfilter/ip_tables.c | 5 +++++
- net/netfilter/x_tables.c       | 7 ++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
-index d23118d..3686458 100644
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -327,6 +327,11 @@ ipt_do_table(struct sk_buff *skb,
- 	addend = xt_write_recseq_begin();
- 	private = table->private;
- 	cpu        = smp_processor_id();
-+	/*
-+	 * Ensure we load private members after we've fetched the base
-+	 * pointer.
-+	 */
-+	smp_read_barrier_depends();
- 	table_base = private->entries[cpu];
- 	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
- 	stackptr   = per_cpu_ptr(private->stackptr, cpu);
-diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-index 8b03028..227aa11 100644
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -845,8 +845,13 @@ xt_replace_table(struct xt_table *table,
- 		return NULL;
- 	}
- 
--	table->private = newinfo;
- 	newinfo->initial_entries = private->initial_entries;
-+	/*
-+	 * Ensure contents of newinfo are visible before assigning to
-+	 * private.
-+	 */
-+	smp_wmb();
-+	table->private = newinfo;
- 
- 	/*
- 	 * Even though table entries have now been swapped, other CPU's
--- 
-1.8.2.2
-
+> ---
+>  fs/ext4/inode.c |   11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 32beaa4..0ad73d4 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -2420,16 +2420,15 @@ static int ext4_writepages(struct address_space *mapping,
+>  	 * because that could violate lock ordering on umount
+>  	 */
+>  	if (!mapping->nrpages || !mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+> -		return 0;
+> +		goto out_writepages;
+>  
+>  	if (ext4_should_journal_data(inode)) {
+>  		struct blk_plug plug;
+> -		int ret;
+>  
+>  		blk_start_plug(&plug);
+>  		ret = write_cache_pages(mapping, wbc, __writepage, mapping);
+>  		blk_finish_plug(&plug);
+> -		return ret;
+> +		goto out_writepages;
+>  	}
+>  
+>  	/*
+> @@ -2442,8 +2441,10 @@ static int ext4_writepages(struct address_space *mapping,
+>  	 * *never* be called, so if that ever happens, we would want
+>  	 * the stack trace.
+>  	 */
+> -	if (unlikely(sbi->s_mount_flags & EXT4_MF_FS_ABORTED))
+> -		return -EROFS;
+> +	if (unlikely(sbi->s_mount_flags & EXT4_MF_FS_ABORTED)) {
+> +		ret = -EROFS;
+> +		goto out_writepages;
+> +	}
+>  
+>  	if (ext4_should_dioread_nolock(inode)) {
+>  		/*
+> 
