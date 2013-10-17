@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761533Ab3JQAhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 20:37:24 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:64647 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758383Ab3JQAhW (ORCPT
+	id S1761807Ab3JQAju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 20:39:50 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:36558 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760618Ab3JQAjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 20:37:22 -0400
-X-Nat-Received: from [202.181.97.72]:61733 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1381970226.31395
-Message-Id: <201310170037.r9H0b6jT024903@www262.sakura.ne.jp>
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: keescook@chromium.org
-Cc: james.l.morris@oracle.com, jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, rusty@rustcorp.com.au,
-        casey@schaufler-ca.com
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 17 Oct 2013 09:37:06 +0900
-References: <20130920203556.GA8726@www.outflux.net> <alpine.LRH.2.02.1309241124420.3782@tundra.namei.org> <alpine.LRH.2.02.1309241128430.3782@tundra.namei.org> <CAGXu5jJ9t7tet4Bx=VUaVmjp1C18iK-nLpQBgmXqgukoAmmd4A@mail.gmail.com> <20131016151831.GE5186@outflux.net> <201310170547.EHH26015.QOtHJOLFOFVMSF@I-love.SAKURA.ne.jp> <525F083D.8060502@schaufler-ca.com> <CAGXu5jLSDynZ_XRZGZ+0uZTgtygO1n8+3rOnR+WonH5-tkui6A@mail.gmail.com>
-In-Reply-To: <CAGXu5jLSDynZ_XRZGZ+0uZTgtygO1n8+3rOnR+WonH5-tkui6A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16102013 #11266284, status: clean
+	Wed, 16 Oct 2013 20:39:49 -0400
+From: Felipe Pena <felipensp@gmail.com>
+To: Stefano Brivio <stefano.brivio@polimi.it>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, b43-dev@lists.infradead.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH] drivers: net: wireless: b43: Fix possible NULL ptr dereference
+Date: Wed, 16 Oct 2013 21:40:24 -0300
+Message-Id: <1381970424-4709-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> So I sent this LSM as one I\'d been waiting
-> for stacking on. Essentially, I\'m breaking the catch-22 by sending
-> this. I\'d like it to get into the tree so we don\'t have a catch-22
-> about stacking any more. :)
+On the ternary expression the 'e' variable could be NULL dereferenced,
+when b43_nphy_get_rf_ctl_over_rev7 function returns NULL.
 
-I\'m also trying to break the catch-22 by sending KPortReserve.
-I would send another one which uses only security_file_alloc/free .
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ drivers/net/wireless/b43/phy_n.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> The core changes first, and the userspace interface changes next?
+diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
+index 7c970d3..05ee7f1 100644
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -164,7 +164,8 @@ static void b43_nphy_rf_ctl_override_rev7(struct b43_wldev *dev, u16 field,
+ 		}
+ 		en_addr = en_addrs[override][i];
 
-I welcome that approach, for none of such single function LSM modules
-depends on userspace interface changes.
+-		val_addr = (i == 0) ? e->val_addr_core0 : e->val_addr_core1;
++		if (e)
++			val_addr = (i == 0) ? e->val_addr_core0 : e->val_addr_core1;
+
+ 		if (off) {
+ 			b43_phy_mask(dev, en_addr, ~en_mask);
+--
+1.7.10.4
+
