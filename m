@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762885Ab3JQVIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:08:50 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51553 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762847Ab3JQVIs (ORCPT
+	id S1762918Ab3JQVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:08:58 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34828 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762886Ab3JQVIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:08:48 -0400
+	Thu, 17 Oct 2013 17:08:55 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Suneel <suneelg@xilinx.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 05/10] tty: xuartps: support 64 byte FIFO size
-Date: Thu, 17 Oct 2013 14:08:08 -0700
-Message-Id: <1382044093-29905-6-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH 07/10] tty: xuartps: Updating set_baud_rate()
+Date: Thu, 17 Oct 2013 14:08:10 -0700
+Message-Id: <1382044093-29905-8-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -23,88 +22,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suneel <suneelg@xilinx.com>
+The original algorithm to find the best baud rate dividers does not necessarily
+find the best set of dividers. And in the worst case may even write illegal
+values to the hardware.
+The new function should make better use of the hardware capabilities and be able
+to provide valid settings for a wider range of baud rates and also input clocks.
 
-Changes to use the 64 byte FIFO depth and fix the issue
-by clearing the txempty interrupt in isr status for tx
-after filling in data in start_tx function
-
-Signed-off-by: Suneel Garapati <suneelg@xilinx.com>
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
-I fixed some style issues of the original patch.
----
- drivers/tty/serial/xilinx_uartps.c | 30 +++++++++++++++++++++++-------
- 1 file changed, 23 insertions(+), 7 deletions(-)
+ drivers/tty/serial/xilinx_uartps.c | 136 +++++++++++++++++++++++++------------
+ 1 file changed, 93 insertions(+), 43 deletions(-)
 
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 62259f37ddda..6e8ec6e9d5a2 100644
+index fdc739b55eb3..95e12c216984 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -33,12 +33,22 @@
- #define XUARTPS_MAJOR		0	/* use dynamic node allocation */
- #define XUARTPS_MINOR		0	/* works best with devtmpfs */
- #define XUARTPS_NR_PORTS	2
--#define XUARTPS_FIFO_SIZE	16	/* FIFO size */
-+#define XUARTPS_FIFO_SIZE	64	/* FIFO size */
- #define XUARTPS_REGISTER_SPACE	0xFFF
+@@ -156,6 +156,11 @@ MODULE_PARM_DESC(rx_timeout, "Rx timeout, 1-255");
+ #define XUARTPS_SR_TXFULL	0x00000010 /* TX FIFO full */
+ #define XUARTPS_SR_RXTRIG	0x00000001 /* Rx Trigger */
  
- #define xuartps_readl(offset)		ioread32(port->membase + offset)
- #define xuartps_writel(val, offset)	iowrite32(val, port->membase + offset)
++/* baud dividers min/max values */
++#define XUARTPS_BDIV_MIN	4
++#define XUARTPS_BDIV_MAX	255
++#define XUARTPS_CD_MAX		65535
++
+ /**
+  * struct xuartps - device data
+  * @refclk	Reference clock
+@@ -305,59 +310,94 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
+ }
  
-+/* Rx Trigger level */
-+static int rx_trigger_level = 56;
-+module_param(rx_trigger_level, uint, S_IRUGO);
-+MODULE_PARM_DESC(rx_trigger_level, "Rx trigger level, 1-63 bytes");
-+
-+/* Rx Timeout */
-+static int rx_timeout = 10;
-+module_param(rx_timeout, uint, S_IRUGO);
-+MODULE_PARM_DESC(rx_timeout, "Rx timeout, 1-255");
-+
- /********************************Register Map********************************/
- /** UART
-  *
-@@ -394,7 +404,7 @@ static void xuartps_start_tx(struct uart_port *port)
- 		port->state->xmit.tail = (port->state->xmit.tail + 1) &
- 					(UART_XMIT_SIZE - 1);
- 	}
+ /**
+- * xuartps_set_baud_rate - Calculate and set the baud rate
+- * @port: Handle to the uart port structure
+- * @baud: Baud rate to set
+- *
++ * xuartps_calc_baud_divs - Calculate baud rate divisors
++ * @clk: UART module input clock
++ * @baud: Desired baud rate
++ * @rbdiv: BDIV value (return value)
++ * @rcd: CD value (return value)
++ * @div8: Value for clk_sel bit in mod (return value)
+  * Returns baud rate, requested baud when possible, or actual baud when there
+- *	was too much error
+- **/
+-static unsigned int xuartps_set_baud_rate(struct uart_port *port,
+-						unsigned int baud)
++ *	was too much error, zero if no valid divisors are found.
++ *
++ * Formula to obtain baud rate is
++ *	baud_tx/rx rate = clk/CD * (BDIV + 1)
++ *	input_clk = (Uart User Defined Clock or Apb Clock)
++ *		depends on UCLKEN in MR Reg
++ *	clk = input_clk or input_clk/8;
++ *		depends on CLKS in MR reg
++ *	CD and BDIV depends on values in
++ *			baud rate generate register
++ *			baud rate clock divisor register
++ */
++static unsigned int xuartps_calc_baud_divs(unsigned int clk, unsigned int baud,
++		u32 *rbdiv, u32 *rcd, int *div8)
+ {
+-	unsigned int sel_clk;
+-	unsigned int calc_baud = 0;
+-	unsigned int brgr_val, brdiv_val;
++	u32 cd, bdiv;
++	unsigned int calc_baud;
++	unsigned int bestbaud = 0;
+ 	unsigned int bauderror;
++	unsigned int besterror = ~0;
+ 
+-	/* Formula to obtain baud rate is
+-	 *	baud_tx/rx rate = sel_clk/CD * (BDIV + 1)
+-	 *	input_clk = (Uart User Defined Clock or Apb Clock)
+-	 *		depends on UCLKEN in MR Reg
+-	 *	sel_clk = input_clk or input_clk/8;
+-	 *		depends on CLKS in MR reg
+-	 *	CD and BDIV depends on values in
+-	 *			baud rate generate register
+-	 *			baud rate clock divisor register
+-	 */
+-	sel_clk = port->uartclk;
+-	if (xuartps_readl(XUARTPS_MR_OFFSET) & XUARTPS_MR_CLKSEL)
+-		sel_clk = sel_clk / 8;
 -
-+	xuartps_writel(XUARTPS_IXR_TXEMPTY, XUARTPS_ISR_OFFSET);
- 	/* Enable the TX Empty interrupt */
- 	xuartps_writel(XUARTPS_IXR_TXEMPTY, XUARTPS_IER_OFFSET);
+-	/* Find the best values for baud generation */
+-	for (brdiv_val = 4; brdiv_val < 255; brdiv_val++) {
++	if (baud < clk / ((XUARTPS_BDIV_MAX + 1) * XUARTPS_CD_MAX)) {
++		*div8 = 1;
++		clk /= 8;
++	} else {
++		*div8 = 0;
++	}
  
-@@ -528,7 +538,7 @@ static void xuartps_set_termios(struct uart_port *port,
- 			| (XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN),
+-		brgr_val = sel_clk / (baud * (brdiv_val + 1));
+-		if (brgr_val < 2 || brgr_val > 65535)
++	for (bdiv = XUARTPS_BDIV_MIN; bdiv <= XUARTPS_BDIV_MAX; bdiv++) {
++		cd = DIV_ROUND_CLOSEST(clk, baud * (bdiv + 1));
++		if (cd < 1 || cd > XUARTPS_CD_MAX)
+ 			continue;
+ 
+-		calc_baud = sel_clk / (brgr_val * (brdiv_val + 1));
++		calc_baud = clk / (cd * (bdiv + 1));
+ 
+ 		if (baud > calc_baud)
+ 			bauderror = baud - calc_baud;
+ 		else
+ 			bauderror = calc_baud - baud;
+ 
+-		/* use the values when percent error is acceptable */
+-		if (((bauderror * 100) / baud) < 3) {
+-			calc_baud = baud;
+-			break;
++		if (besterror > bauderror) {
++			*rbdiv = bdiv;
++			*rcd = cd;
++			bestbaud = calc_baud;
++			besterror = bauderror;
+ 		}
+ 	}
++	/* use the values when percent error is acceptable */
++	if (((besterror * 100) / baud) < 3)
++		bestbaud = baud;
++
++	return bestbaud;
++}
+ 
+-	/* Set the values for the new baud rate */
+-	xuartps_writel(brgr_val, XUARTPS_BAUDGEN_OFFSET);
+-	xuartps_writel(brdiv_val, XUARTPS_BAUDDIV_OFFSET);
++/**
++ * xuartps_set_baud_rate - Calculate and set the baud rate
++ * @port: Handle to the uart port structure
++ * @baud: Baud rate to set
++ * Returns baud rate, requested baud when possible, or actual baud when there
++ *	   was too much error, zero if no valid divisors are found.
++ */
++static unsigned int xuartps_set_baud_rate(struct uart_port *port,
++		unsigned int baud)
++{
++	unsigned int calc_baud;
++	u32 cd, bdiv;
++	u32 mreg;
++	int div8;
++
++	calc_baud = xuartps_calc_baud_divs(port->uartclk, baud, &bdiv, &cd,
++			&div8);
++
++	/* Write new divisors to hardware */
++	mreg = xuartps_readl(XUARTPS_MR_OFFSET);
++	if (div8)
++		mreg |= XUARTPS_MR_CLKSEL;
++	else
++		mreg &= ~XUARTPS_MR_CLKSEL;
++	xuartps_writel(mreg, XUARTPS_MR_OFFSET);
++	xuartps_writel(cd, XUARTPS_BAUDGEN_OFFSET);
++	xuartps_writel(bdiv, XUARTPS_BAUDDIV_OFFSET);
+ 
+ 	return calc_baud;
+ }
+@@ -495,7 +535,7 @@ static void xuartps_set_termios(struct uart_port *port,
+ 				struct ktermios *termios, struct ktermios *old)
+ {
+ 	unsigned int cval = 0;
+-	unsigned int baud;
++	unsigned int baud, minbaud, maxbaud;
+ 	unsigned long flags;
+ 	unsigned int ctrl_reg, mode_reg;
+ 
+@@ -512,8 +552,14 @@ static void xuartps_set_termios(struct uart_port *port,
+ 			(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS),
  			XUARTPS_CR_OFFSET);
  
--	xuartps_writel(10, XUARTPS_RXTOUT_OFFSET);
-+	xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
- 
- 	port->read_status_mask = XUARTPS_IXR_TXEMPTY | XUARTPS_IXR_RXTRIG |
- 			XUARTPS_IXR_OVERRUN | XUARTPS_IXR_TOUT;
-@@ -631,11 +641,17 @@ static int xuartps_startup(struct uart_port *port)
- 		| XUARTPS_MR_PARITY_NONE | XUARTPS_MR_CHARLEN_8_BIT,
- 		 XUARTPS_MR_OFFSET);
- 
--	/* Set the RX FIFO Trigger level to 14 assuming FIFO size as 16 */
--	xuartps_writel(14, XUARTPS_RXWM_OFFSET);
+-	/* Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk */
+-	baud = uart_get_baud_rate(port, termios, old, 0, 10000000);
 +	/*
-+	 * Set the RX FIFO Trigger level to use most of the FIFO, but it
-+	 * can be tuned with a module parameter
++	 * Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk
++	 * min and max baud should be calculated here based on port->uartclk.
++	 * this way we get a valid baud and can safely call set_baud()
 +	 */
-+	xuartps_writel(rx_trigger_level, XUARTPS_RXWM_OFFSET);
++	minbaud = port->uartclk / ((XUARTPS_BDIV_MAX + 1) * XUARTPS_CD_MAX * 8);
++	maxbaud = port->uartclk / (XUARTPS_BDIV_MIN + 1);
++	baud = uart_get_baud_rate(port, termios, old, minbaud, maxbaud);
+ 	baud = xuartps_set_baud_rate(port, baud);
+ 	if (tty_termios_baud_rate(termios))
+ 		tty_termios_encode_baud_rate(termios, baud, baud);
+@@ -589,13 +635,17 @@ static void xuartps_set_termios(struct uart_port *port,
+ 				cval |= XUARTPS_MR_PARITY_MARK;
+ 			else
+ 				cval |= XUARTPS_MR_PARITY_SPACE;
+-		} else if (termios->c_cflag & PARODD)
++		} else {
++			if (termios->c_cflag & PARODD)
+ 				cval |= XUARTPS_MR_PARITY_ODD;
+ 			else
+ 				cval |= XUARTPS_MR_PARITY_EVEN;
+-	} else
++		}
++	} else {
+ 		cval |= XUARTPS_MR_PARITY_NONE;
+-	xuartps_writel(cval , XUARTPS_MR_OFFSET);
++	}
++	cval |= mode_reg & 1;
++	xuartps_writel(cval, XUARTPS_MR_OFFSET);
  
--	/* Receive Timeout register is enabled with value of 10 */
--	xuartps_writel(10, XUARTPS_RXTOUT_OFFSET);
-+	/*
-+	 * Receive Timeout register is enabled but it
-+	 * can be tuned with a module parameter
-+	 */
-+	xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
- 
- 	/* Clear out any pending interrupts before enabling them */
- 	xuartps_writel(xuartps_readl(XUARTPS_ISR_OFFSET), XUARTPS_ISR_OFFSET);
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ }
 -- 
 1.8.4.1
 
