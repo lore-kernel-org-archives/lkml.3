@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab3JQOdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:33:06 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50464 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756187Ab3JQOdD (ORCPT
+	id S1756674Ab3JQOg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:36:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35434 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab3JQOg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:33:03 -0400
-Date: Thu, 17 Oct 2013 15:32:04 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Naour Romain <romain.naour@openwide.fr>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-Message-ID: <20131017143204.GE2442@localhost.localdomain>
+	Thu, 17 Oct 2013 10:36:26 -0400
+Message-ID: <525FF5E6.2090709@linutronix.de>
+Date: Thu, 17 Oct 2013 16:36:22 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Mack <zonque@gmail.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH 1/2] dma: cppi41: redo descriptor collection in abort
+ case
+References: <1382019576-25105-1-git-send-email-bigeasy@linutronix.de> <525FF234.8010105@linutronix.de> <525FF2E4.8030304@gmail.com>
+In-Reply-To: <525FF2E4.8030304@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 12:45:29PM +0200, Daniel Lezcano wrote:
-> On 10/14/2013 05:08 PM, Vyacheslav Tyrtov wrote:
-> > From: Tarek Dakhran <t.dakhran@samsung.com>
-> > 
-> > Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-> > This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
-
-[...]
-
-> > +	__mcpm_cpu_down(cpu, cluster);
-> > +
-> > +	if (!skip_wfi) {
-> > +		exynos_core_power_down(cpu, cluster);
-> > +		wfi();
-> > +	}
-> > +}
+On 10/17/2013 04:23 PM, Daniel Mack wrote:
+>> Daniel, could please look if this solves your suspend / resume warnings?
 > 
-> I did not looked line by line but these functions looks very similar
-> than the tc2_pm.c's function. no ?
+> Will do (hopefully) tomorrow. So this is a replacement for my "dma:
+> cppi41: move -EAGAIN in tear_down" patch, or does it go on top of it?
 
-This is true.
+I applied your three patches and manage to break 2 of 4 tests I had. It
+was still the same without your patch. So I made this change and merged
+it back into your patch so this patch should apply ontop of your 2/3.
 
-> May be some code consolidation could be considered here.
+> How does your patch queue look like? Someone should probably re-collect
+> all necessary patches for the next merge window eventually, so Vinod
+> knows what to apply :)
+
+dma: cppi41: add support for suspend and resume
+dma: cppi41: restore more registers
+dma: cppi41: use cppi41_pop_desc() where possible
+dma: cppi41: redo descriptor collection in abort case
+dma: cppi41: return code > 0 of pm_runtime_get_sync() is not an error
+
+The first one is in Vinod's tree.
+
 > 
-> Added Nico and Lorenzo in Cc.
-> 
-> Thanks
->   -- Daniel
+> Thanks,
+> Daniel
 
-Nico can commnent further, but I think the main concern here was that
-this code shouldn't be factored prematurely.
+Sebastian
 
-There are many low-level platform specifics involved here, so it's
-hard to be certain that all platforms could fit into a more abstracted
-framework until we have some evidence to look at.
-
-This could be revisited when we have a few diverse MCPM ports to
-compare.
-
-
-The low-level A15/A7 cacheflush sequence is already being factored
-by Nico [1].
-
-Cheers
----Dave
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205085.html
-[PATCH] ARM: cacheflush: consolidate single-CPU ARMv7 cache disabling code
-
-[...]
