@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762583Ab3JQT0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758635Ab3JQT0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:26:53 -0400
-Date: Thu, 17 Oct 2013 16:26:30 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        dsahern@gmail.com, jolsa@redhat.com, ak@linux.intel.com
-Subject: Re: [PATCH v3] perf: disable PERF_RECORD_MMAP2 support
-Message-ID: <20131017192630.GB6443@infradead.org>
-References: <20131017173215.GA8820@quad>
+	id S1762468Ab3JQTbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:31:12 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:58372 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759631Ab3JQTbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 15:31:10 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH] media: Add BCM2048 radio driver
+Date: Thu, 17 Oct 2013 21:31:04 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Eero Nurkkala <ext-eero.nurkkala@nokia.com>,
+        Nils Faerber <nils.faerber@kernelconcepts.de>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>
+References: <1381847218-8408-1-git-send-email-pali.rohar@gmail.com> <525D5A77.4050704@xs4all.nl>
+In-Reply-To: <525D5A77.4050704@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017173215.GA8820@quad>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: multipart/signed;
+  boundary="nextPart2126331.EpyfVm5nKJ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310172131.05106@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 17, 2013 at 07:32:15PM +0200, Stephane Eranian escreveu:
-> 
-> For now, we disable the extended MMAP record support (MMAP2).
-> We have identified cases where it would not report the correct
-> mapping information, clone(VM_CLONE) but with separate pids.
-> We will revisit the support once we find a solution for this case.
-> 
-> The patch changes the kernel to return EINVAL if attr->mmap2
-> is set. The patch also modifies the perf tool to use regular PERF_RECORD_MMAP
-> for synthetic events and it also prevents the tool from requesting attr->mmap2
-> mode because the kernel would reject it.
-> 
-> The support will be revisited once the kenrel interface is updated.
-> 
-> In V2, we reduce the patch to the strict minimum.
-> In V3, we avoid calling perf_event_open() with mmap2 set because we
-> know it will fail and require fallback retry.
+--nextPart2126331.EpyfVm5nKJ
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Again it applied, but with some fuzz, which branch did you coded this
-against? Testing...
+Hello,
 
-[acme@zoo linux]$ patch -p1 < /wb/1
-patching file kernel/events/core.c
-Hunk #1 succeeded at 6767 (offset -6 lines).
-patching file tools/perf/util/event.c
-patching file tools/perf/util/evsel.c
-Hunk #1 succeeded at 678 with fuzz 1.
-[acme@zoo linux]$ 
+so what do you suggest? Add it to staging for now (or not)?
 
-- Arnaldo
+On Tuesday 15 October 2013 17:08:39 Hans Verkuil wrote:
+> Hi Pali,
+>=20
+> Thanks for the patch, but I am afraid it will need some work
+> to make this acceptable for inclusion into the kernel.
+>=20
+> The main thing you need to do is to implement all the controls
+> using the control framework (see
+> Documentation/video4linux/v4l2-controls.txt). Most drivers
+> are by now converted to the control framework, so you will
+> find many examples of how to do this in drivers/media/radio.
+>=20
+> The sysfs stuff should be replaced by controls as well. A lot
+> of the RDS support is now available as controls (although
+> there may well be some missing features, but that is easy
+> enough to add). Since the RDS data is actually read() from
+> the device I am not sure whether the RDS properties/controls
+> should be there at all.
+>=20
+> Finally this driver should probably be split up into two
+> parts: one v4l2_subdev-based core driver and one platform
+> driver. See e.g. radio-si4713/si4713-i2c.c as a good example.
+> But I would wait with that until the rest of the driver is
+> cleaned up. Then I have a better idea of whether this is
+> necessary or not.
+>=20
+> It's also very useful to run v4l2-compliance (available in the
+> v4l-utils.git repo on git.linuxtv.org). That does lots of
+> sanity checks.
+>=20
+> Another option is to add the driver as-is to
+> drivers/staging/media, and clean it up bit by bit.
+>=20
+> Regards,
+>=20
+> 	Hans
+>=20
+> On 10/15/2013 04:26 PM, Pali Roh=C3=A1r wrote:
+> > This adds support for the BCM2048 radio module found in
+> > Nokia N900
+> >=20
+> > Signed-off-by: Eero Nurkkala <ext-eero.nurkkala@nokia.com>
+> > Signed-off-by: Nils Faerber <nils.faerber@kernelconcepts.de>
+> > Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > ---
+> >=20
+> >  drivers/media/radio/Kconfig         |   10 +
+> >  drivers/media/radio/Makefile        |    1 +
+> >  drivers/media/radio/radio-bcm2048.c | 2744
+> >  +++++++++++++++++++++++++++++++++++
+> >  include/media/radio-bcm2048.h       |   30 +
+> >  4 files changed, 2785 insertions(+)
+> >  create mode 100644 drivers/media/radio/radio-bcm2048.c
+> >  create mode 100644 include/media/radio-bcm2048.h
+> >=20
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2126331.EpyfVm5nKJ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlJgOvkACgkQi/DJPQPkQ1JXvgCdGFp6l+xrq5y10srybawMUOlI
+iuUAoIAIJmy932MYACnEuwjZ9OTwTyOJ
+=/Nhc
+-----END PGP SIGNATURE-----
+
+--nextPart2126331.EpyfVm5nKJ--
