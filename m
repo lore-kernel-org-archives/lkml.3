@@ -1,93 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762286Ab3JQRqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:46:18 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:15504 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab3JQRqN (ORCPT
+	id S1759460Ab3JQRpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:45:13 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:38538 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758852Ab3JQRom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:46:13 -0400
-X-AuditID: cbfec372-b7fe76d000003347-2b-526022640654
-Date: Thu, 17 Oct 2013 14:46:04 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        alsa-devel@alsa-project.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/8] [media] exynos4-is: Don't use i2c_client->driver
-Message-id: <20131017144604.1d649988@samsung.com>
-In-reply-to: <1380444666-12019-3-git-send-email-lars@metafoo.de>
-References: <1380444666-12019-1-git-send-email-lars@metafoo.de>
- <1380444666-12019-3-git-send-email-lars@metafoo.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t/hIN0UpYQgg6YHUha9504yWVy5eIjJ
-	YurDJ2wWV76+Z7M42/SG3WLJ5PmsFt+udDBZdPz9wmhxedccNoueDVtZLTp39bNaHH7Tzmrx
-	cvMbJouVJ2YxO/B5bPjcxOaxc9Zddo9NqzrZPLZ/e8Dqcb/7OJPHkjeHWD32vV3G5tG3ZRWj
-	x+bT1R4nTz1h8fi8SS6AO4rLJiU1J7MstUjfLoEr49XXfUwFLbwVzW1trA2Mn7m6GDk5JARM
-	JNq/72GEsMUkLtxbz9bFyMUhJLCEUeL2xEtQTjeTxJrnDWBVLAKqEm8nn2YDsdkEjCReNbaw
-	gtgiAhoS/99MYgdpYBY4zCzx408fWIOwgKfEz7e/wIp4BQwl3u16yA5icwo4SLS+WAc0iANo
-	Q6nE243aIKaEgJPE1qm+ENWCEj8m32MBsZkFtCQ2b2tihbDlJTavecs8gVFgFpKyWUjKZiEp
-	W8DIvIpRtLQ4uaA4KT3XUK84Mbe4NC9dLzk/dxMjJMqKdjA+22B1iFGAg1GJh1fiZ3yQEGti
-	WXFl7iFGCQ5mJRHeVuGEICHelMTKqtSi/Pii0pzU4kOMTBycUg2Mi0ouFB4VnJAzbUtm2RMn
-	XdPZhix9QTWH/kUn7jpRdixwudOT9NjGS25hIVZLFs5ZN7lp4r118lzxKSvPKe9z2cHRrhme
-	yriv4WqKclqb5YUpc/5wMzPOZA+ay8DKf8NQue7i2R0yzu+TSm9NCTG12+UVZWvpl/175s87
-	l6XPG74Q/Saz9PlCJZbijERDLeai4kQAeJOrhJACAAA=
+	Thu, 17 Oct 2013 13:44:42 -0400
+X-IronPort-AV: E=Sophos;i="4.93,515,1378857600"; 
+   d="scan'208";a="61976361"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 03/19] arm/xen,arm64/xen: introduce p2m
+Date: Thu, 17 Oct 2013 18:43:18 +0100
+Message-ID: <1382031814-8782-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, 29 Sep 2013 10:51:00 +0200
-Lars-Peter Clausen <lars@metafoo.de> escreveu:
+Introduce physical to machine and machine to physical tracking
+mechanisms based on rbtrees for arm/xen and arm64/xen.
 
-> The 'driver' field of the i2c_client struct is redundant and is going to be
-> removed. The results of the expressions 'client->driver.driver->field' and
-> 'client->dev.driver->field' are identical, so replace all occurrences of the
-> former with the later.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+We need it because any guests on ARM are an autotranslate guests,
+therefore a physical address is potentially different from a machine
+address. When programming a device to do DMA, we need to be
+extra-careful to use machine addresses rather than physical addresses to
+program the device. Therefore we need to know the physical to machine
+mappings.
 
-Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+For the moment we assume that dom0 starts with a 1:1 physical to machine
+mapping, in other words physical addresses correspond to machine
+addresses. However when mapping a foreign grant reference, obviously the
+1:1 model doesn't work anymore. So at the very least we need to be able
+to track grant mappings.
 
-> ---
->  drivers/media/platform/exynos4-is/media-dev.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> index a835112..7a4ee4c 100644
-> --- a/drivers/media/platform/exynos4-is/media-dev.c
-> +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> @@ -411,8 +411,8 @@ static int fimc_md_of_add_sensor(struct fimc_md *fmd,
->  
->  	device_lock(&client->dev);
->  
-> -	if (!client->driver ||
-> -	    !try_module_get(client->driver->driver.owner)) {
-> +	if (!client->dev.driver ||
-> +	    !try_module_get(client->dev.driver->owner)) {
->  		ret = -EPROBE_DEFER;
->  		v4l2_info(&fmd->v4l2_dev, "No driver found for %s\n",
->  						node->full_name);
-> @@ -442,7 +442,7 @@ static int fimc_md_of_add_sensor(struct fimc_md *fmd,
->  	fmd->num_sensors++;
->  
->  mod_put:
-> -	module_put(client->driver->driver.owner);
-> +	module_put(client->dev.driver->owner);
->  dev_put:
->  	device_unlock(&client->dev);
->  	put_device(&client->dev);
+We need locking to protect accesses to the two trees.
 
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
+Changes in v8:
+- move pfn_to_mfn and mfn_to_pfn to page.h as static inline functions;
+- no need to walk the tree if phys_to_mach.rb_node is NULL;
+- correctly handle multipage p2m entries;
+- substitute the spin_lock with a rwlock.
+---
+ arch/arm/include/asm/xen/page.h |   49 ++++++++--
+ arch/arm/xen/Makefile           |    2 +-
+ arch/arm/xen/p2m.c              |  208 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/xen/Makefile         |    2 +-
+ 4 files changed, 252 insertions(+), 9 deletions(-)
+ create mode 100644 arch/arm/xen/p2m.c
+
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index 359a7b5..d1b5dd5 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -7,11 +7,10 @@
+ #include <linux/pfn.h>
+ #include <linux/types.h>
+ 
++#include <xen/xen.h>
+ #include <xen/interface/grant_table.h>
+ 
+-#define pfn_to_mfn(pfn)			(pfn)
+ #define phys_to_machine_mapping_valid(pfn) (1)
+-#define mfn_to_pfn(mfn)			(mfn)
+ #define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
+ 
+ #define pte_mfn	    pte_pfn
+@@ -32,6 +31,44 @@ typedef struct xpaddr {
+ 
+ #define INVALID_P2M_ENTRY      (~0UL)
+ 
++unsigned long __pfn_to_mfn(unsigned long pfn);
++unsigned long __mfn_to_pfn(unsigned long mfn);
++extern struct rb_root phys_to_mach;
++
++static inline unsigned long pfn_to_mfn(unsigned long pfn)
++{
++	unsigned long mfn;
++	
++	if (phys_to_mach.rb_node != NULL) {
++		mfn = __pfn_to_mfn(pfn);
++		if (mfn != INVALID_P2M_ENTRY)
++			return mfn;
++	}
++
++	if (xen_initial_domain())
++		return pfn;
++	else
++		return INVALID_P2M_ENTRY;
++}
++
++static inline unsigned long mfn_to_pfn(unsigned long mfn)
++{
++	unsigned long pfn;
++
++	if (phys_to_mach.rb_node != NULL) {
++		pfn = __mfn_to_pfn(mfn);
++		if (pfn != INVALID_P2M_ENTRY)
++			return pfn;
++	}
++
++	if (xen_initial_domain())
++		return mfn;
++	else
++		return INVALID_P2M_ENTRY;
++}
++
++#define mfn_to_local_pfn(mfn) mfn_to_pfn(mfn)
++
+ static inline xmaddr_t phys_to_machine(xpaddr_t phys)
+ {
+ 	unsigned offset = phys.paddr & ~PAGE_MASK;
+@@ -76,11 +113,9 @@ static inline int m2p_remove_override(struct page *page, bool clear_pte)
+ 	return 0;
+ }
+ 
+-static inline bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+-{
+-	BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
+-	return true;
+-}
++bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
++bool __set_phys_to_machine_multi(unsigned long pfn, unsigned long mfn,
++		unsigned long nr_pages);
+ 
+ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ {
+diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+index 4384103..21e6ff5 100644
+--- a/arch/arm/xen/Makefile
++++ b/arch/arm/xen/Makefile
+@@ -1 +1 @@
+-obj-y		:= enlighten.o hypercall.o grant-table.o
++obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o
+diff --git a/arch/arm/xen/p2m.c b/arch/arm/xen/p2m.c
+new file mode 100644
+index 0000000..5df4a9a
+--- /dev/null
++++ b/arch/arm/xen/p2m.c
+@@ -0,0 +1,208 @@
++#include <linux/bootmem.h>
++#include <linux/gfp.h>
++#include <linux/export.h>
++#include <linux/rwlock.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/dma-mapping.h>
++#include <linux/vmalloc.h>
++#include <linux/swiotlb.h>
++
++#include <xen/xen.h>
++#include <xen/interface/memory.h>
++#include <xen/swiotlb-xen.h>
++
++#include <asm/cacheflush.h>
++#include <asm/xen/page.h>
++#include <asm/xen/hypercall.h>
++#include <asm/xen/interface.h>
++
++struct xen_p2m_entry {
++	unsigned long pfn;
++	unsigned long mfn;
++	unsigned long nr_pages;
++	struct rb_node rbnode_mach;
++	struct rb_node rbnode_phys;
++};
++
++rwlock_t p2m_lock;
++struct rb_root phys_to_mach = RB_ROOT;
++static struct rb_root mach_to_phys = RB_ROOT;
++
++static int xen_add_phys_to_mach_entry(struct xen_p2m_entry *new)
++{
++	struct rb_node **link = &phys_to_mach.rb_node;
++	struct rb_node *parent = NULL;
++	struct xen_p2m_entry *entry;
++	int rc = 0;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct xen_p2m_entry, rbnode_phys);
++
++		if (new->mfn == entry->mfn)
++			goto err_out;
++		if (new->pfn == entry->pfn)
++			goto err_out;
++
++		if (new->pfn < entry->pfn)
++			link = &(*link)->rb_left;
++		else
++			link = &(*link)->rb_right;
++	}
++	rb_link_node(&new->rbnode_phys, parent, link);
++	rb_insert_color(&new->rbnode_phys, &phys_to_mach);
++	goto out;
++
++err_out:
++	rc = -EINVAL;
++	pr_warn("%s: cannot add pfn=%pa -> mfn=%pa: pfn=%pa -> mfn=%pa already exists\n",
++			__func__, &new->pfn, &new->mfn, &entry->pfn, &entry->mfn);
++out:
++	return rc;
++}
++
++unsigned long __pfn_to_mfn(unsigned long pfn)
++{
++	struct rb_node *n = phys_to_mach.rb_node;
++	struct xen_p2m_entry *entry;
++	unsigned long irqflags;
++
++	read_lock_irqsave(&p2m_lock, irqflags);
++	while (n) {
++		entry = rb_entry(n, struct xen_p2m_entry, rbnode_phys);
++		if (entry->pfn <= pfn &&
++				entry->pfn + entry->nr_pages > pfn) {
++			read_unlock_irqrestore(&p2m_lock, irqflags);
++			return entry->mfn + (pfn - entry->pfn);
++		}
++		if (pfn < entry->pfn)
++			n = n->rb_left;
++		else
++			n = n->rb_right;
++	}
++	read_unlock_irqrestore(&p2m_lock, irqflags);
++
++	return INVALID_P2M_ENTRY;
++}
++EXPORT_SYMBOL_GPL(__pfn_to_mfn);
++
++static int xen_add_mach_to_phys_entry(struct xen_p2m_entry *new)
++{
++	struct rb_node **link = &mach_to_phys.rb_node;
++	struct rb_node *parent = NULL;
++	struct xen_p2m_entry *entry;
++	int rc = 0;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct xen_p2m_entry, rbnode_mach);
++
++		if (new->mfn == entry->mfn)
++			goto err_out;
++		if (new->pfn == entry->pfn)
++			goto err_out;
++
++		if (new->mfn < entry->mfn)
++			link = &(*link)->rb_left;
++		else
++			link = &(*link)->rb_right;
++	}
++	rb_link_node(&new->rbnode_mach, parent, link);
++	rb_insert_color(&new->rbnode_mach, &mach_to_phys);
++	goto out;
++
++err_out:
++	rc = -EINVAL;
++	pr_warn("%s: cannot add pfn=%pa -> mfn=%pa: pfn=%pa -> mfn=%pa already exists\n",
++			__func__, &new->pfn, &new->mfn, &entry->pfn, &entry->mfn);
++out:
++	return rc;
++}
++
++unsigned long __mfn_to_pfn(unsigned long mfn)
++{
++	struct rb_node *n = mach_to_phys.rb_node;
++	struct xen_p2m_entry *entry;
++	unsigned long irqflags;
++
++	read_lock_irqsave(&p2m_lock, irqflags);
++	while (n) {
++		entry = rb_entry(n, struct xen_p2m_entry, rbnode_mach);
++		if (entry->mfn <= mfn &&
++				entry->mfn + entry->nr_pages > mfn) {
++			read_unlock_irqrestore(&p2m_lock, irqflags);
++			return entry->pfn + (mfn - entry->mfn);
++		}
++		if (mfn < entry->mfn)
++			n = n->rb_left;
++		else
++			n = n->rb_right;
++	}
++	read_unlock_irqrestore(&p2m_lock, irqflags);
++
++	return INVALID_P2M_ENTRY;
++}
++EXPORT_SYMBOL_GPL(__mfn_to_pfn);
++
++bool __set_phys_to_machine_multi(unsigned long pfn,
++		unsigned long mfn, unsigned long nr_pages)
++{
++	int rc;
++	unsigned long irqflags;
++	struct xen_p2m_entry *p2m_entry;
++	struct rb_node *n = phys_to_mach.rb_node;
++
++	if (mfn == INVALID_P2M_ENTRY) {
++		write_lock_irqsave(&p2m_lock, irqflags);
++		while (n) {
++			p2m_entry = rb_entry(n, struct xen_p2m_entry, rbnode_phys);
++			if (p2m_entry->pfn <= pfn &&
++					p2m_entry->pfn + p2m_entry->nr_pages > pfn) {
++				rb_erase(&p2m_entry->rbnode_mach, &mach_to_phys);
++				rb_erase(&p2m_entry->rbnode_phys, &phys_to_mach);
++				write_unlock_irqrestore(&p2m_lock, irqflags);
++				kfree(p2m_entry);	
++				return true;
++			}
++			if (pfn < p2m_entry->pfn)
++				n = n->rb_left;
++			else
++				n = n->rb_right;
++		}
++		write_unlock_irqrestore(&p2m_lock, irqflags);
++		return true;
++	}
++
++	p2m_entry = kzalloc(sizeof(struct xen_p2m_entry), GFP_NOWAIT);
++	if (!p2m_entry) {
++		pr_warn("cannot allocate xen_p2m_entry\n");
++		return false;
++	}
++	p2m_entry->pfn = pfn;
++	p2m_entry->nr_pages = nr_pages;
++	p2m_entry->mfn = mfn;
++
++	write_lock_irqsave(&p2m_lock, irqflags);
++	if ((rc = xen_add_phys_to_mach_entry(p2m_entry) < 0) ||
++		(rc = xen_add_mach_to_phys_entry(p2m_entry) < 0)) {
++		write_unlock_irqrestore(&p2m_lock, irqflags);
++		return false;
++	}
++	write_unlock_irqrestore(&p2m_lock, irqflags);
++	return true;
++}
++EXPORT_SYMBOL_GPL(__set_phys_to_machine_multi);
++
++bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
++{
++	return __set_phys_to_machine_multi(pfn, mfn, 1);
++}
++EXPORT_SYMBOL_GPL(__set_phys_to_machine);
++
++int p2m_init(void)
++{
++	rwlock_init(&p2m_lock);
++	return 0;
++}
++arch_initcall(p2m_init);
+diff --git a/arch/arm64/xen/Makefile b/arch/arm64/xen/Makefile
+index be24040..cd866b0 100644
+--- a/arch/arm64/xen/Makefile
++++ b/arch/arm64/xen/Makefile
+@@ -1,2 +1,2 @@
+-xen-arm-y	+= $(addprefix ../../arm/xen/, enlighten.o grant-table.o)
++xen-arm-y	+= $(addprefix ../../arm/xen/, enlighten.o grant-table.o p2m.o)
+ obj-y		:= xen-arm.o hypercall.o
 -- 
+1.7.2.5
 
-Cheers,
-Mauro
