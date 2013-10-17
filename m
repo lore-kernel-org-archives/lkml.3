@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3JQM5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:57:53 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:63871 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3JQM5v (ORCPT
+	id S1755246Ab3JQNEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:04:44 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:57769 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3JQNEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:57:51 -0400
-From: Liuyongan <liuyongan@huawei.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Qianhuibin <qianhuibin@huawei.com>
-Subject: kprobe pre_handler change return IP
-Thread-Topic: kprobe pre_handler change return IP
-Thread-Index: Ac7LOCsFLnDCNv9iRNWFSiq5It69WA==
-Date: Thu, 17 Oct 2013 12:57:40 +0000
-Message-ID: <E4ABEE53CC34664FA3F0BD8AEAF50A1941474DB1@szxeml511-mbs.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: AZW9 Agxf BikP CZrq DMID Dv1x D1ic FtXD F6Ca GTEr Ghll
- GjGy HTd3 IYij IcX2
- KguX;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{885716E5-B803-4CD0-83C6-5D45E6C5B810};bABpAHUAeQBvAG4AZwBhAG4AQABoAHUAYQB3AGUAaQAuAGMAbwBtAA==;Thu,
- 17 Oct 2013 12:55:37
- GMT;awBwAHIAbwBiAGUAIABwAHIAZQBfAGgAYQBuAGQAbABlAHIAIABjAGgAYQBuAGcAZQAgAHIAZQB0AHUAcgBuACAASQBQAA==
-x-cr-puzzleid: {885716E5-B803-4CD0-83C6-5D45E6C5B810}
-x-originating-ip: [10.135.68.95]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 17 Oct 2013 09:04:41 -0400
+Date: Thu, 17 Oct 2013 16:04:35 +0300
+From: Aliaksei Katovich <aliaksei.katovich@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
+Message-ID: <20131017130435.GG3061@cat.local>
+References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
+ <87k3hc3lso.fsf@linaro.org>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <87k3hc3lso.fsf@linaro.org>
+X-Operating-System: GNU/Linux
+X-Kernel: Linux 3.12.0-rc1+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9HCvww0009451
 
-I use kprobe to probe a function suppose: 
-          int is_winter(int num) { ... }
-          int replace_is_winter(int num) { ...} 
-I want to replace is_winter() with replace_is_winter(), so when we call is_winter, replace_is_winter will be called.
-                                                                                                                  
-so:  
-   int my_pre_handler(struct kprobe *p, struct pt_regs *regs)
-   { 
-        regs->ip = (unsigned long)&replace_is_winter;
-        return 1;
-   } 
+hi Kevin;
 
-and echo 0 > /proc/sys/debug/kprobes-optimization so that jump instruction will not be used.
+> Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
+> 
+> > The series of patches represent support of Exynos 5410 SoC
+> >     
+> > The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
+> > Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
+> >     
+> > Patches add new platform description, support of clock controller,
+> > dual cluster support and device tree for Exynos 5410 
+> >    
+> > Has been build on v3.12-rc5.
+> > Has been tested on Exynos 5410 reference board (exynos_defconfig).
+> 
+> Has anyone tried this on the exynos5410 based odroid-xu yet?  
+> 
+> I tried booting this on my recently arrived odroid-xu, but am not
+> getting it to boot.
 
-I got a exception in fault_handler, and trap number is 14.
+	I am able to boot my odroid-xu+e to busybox with these patches applied
+	against 3.12-rc5: exynos_defconfig and exynos5410-smdk5410.dtb were
+	used.
 
-   fault_handler: p->addr = 0xffffffffa08e201a, ip = ffffffff8021c59d, trap #14n
+	However there seem to be some issues with virq allocations, like this:
 
-Anyone here can help me ?
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+<snippet>
+Starting kernel ...
+                   
+[    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
+[    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
+[    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
+[    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
+[    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
+[    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
+)
+[    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
+[    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
+[    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
+[    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
+[    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
+[    0.000000] ---[ end trace 1b75b31a2719edcd ]---
+[    0.000000] ------------[ cut here ]------------
+[    0.000000] WARNING: CPU: 0 PID: 0 at kernel/irq/irqdomain.c:278 irq_domain_associate+0x128/0x1a8()
+[    0.000000] error: virq337 is not allocated
+[    0.000000] Modules linked in:
+[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W    3.12.0-rc5-00004-g1cb405f #1
+[    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
+[    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
+[    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
+[    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
+[    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
+[    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
+)
+[    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
+[    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
+[    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
+[    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
+[    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
+[    0.000000] ---[ end trace 1b75b31a2719edce ]---
+[    0.000000] ------------[ cut here ]------------
+</snippet>
+
+	You can check full boot log here http://sprunge.us/NKcU
+
+--
+Aliaksei
+
+> 
+> I'm not yet terribly familiar with this SoC, what are the settings 
+> needed for DEBUG_LL on this board?
+> 
+> Thanks,
+> 
+> Kevin
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
