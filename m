@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3JQI1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 04:27:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65485 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3JQI1w (ORCPT
+	id S1753344Ab3JQIbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 04:31:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39996 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab3JQIbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 04:27:52 -0400
-Date: Thu, 17 Oct 2013 10:27:13 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
- status
-In-Reply-To: <20131017020745.GA14013@intel.com>
-Message-ID: <Pine.LNX.4.64.1310170851230.27369@axis700.grange>
-References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
- <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
- <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
- <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
- <20131017020745.GA14013@intel.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:IQvdk3Pvq2EDm+Tp3lxFNo+PYa7bQ2sdUZAKJkeIXsB
- HHp2aUnhwH+59MjqmP9rwji3p83n4SVz/rAIEFOULFu7hpxC8b
- J18rILBHm3aPRJUTuUqwYLAbj9ku0uK6fDQ0T9cXdC6csG0V8l
- PLafJzRixaYMwF6R7pjhDD2+On3mqQlg04bCg78K8BpUmEFQ1r
- 8YdB94LqTiFMDU6Ry4km0d8I2fQxTR+/KvL7IghljR2Ugej1eD
- G1aczlZnsB3THjNBeENQefkfqZikdtI9UVUCyZYXX3Y3HZwwRX
- HitfNpi0/bxh+MjR+T00Lona0NIRxi3kH2P2fX4P5W7u0LPkBL
- QYuKaMqn4qR18rvz3Awm8E+DVbEnfh/Y07iMPxsaulDv3kpVMR
- Bhww2SqtLi5fg==
+	Thu, 17 Oct 2013 04:31:48 -0400
+X-AuditID: cbfee68e-b7f486d0000040b6-c4-525fa071cefe
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: avoid to write during the recovery
+Date: Thu, 17 Oct 2013 17:31:12 +0900
+Message-id: <1381998672-19014-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ93CBfFBBo2HZSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgymhacIKt4BF/xebd
+	09kaGP/wdDFyckgImEhcvjKFGcIWk7hwbz1bFyMXh5DAMkaJ1fsfsMIULe3uZIZILGKUePy8
+	kxXCaWaSWN/0D6iFg4NNQFti834DkAYRAWaJBVPPM4LUMAtMYJT4v+g9C0iNsIClRMeJLJAa
+	FgFViUeX+xlBbF4Bd4mml8dZIJZpS2x7PhGsV0LgPpvEjK8L2CAaBCS+TT4ENkdCQFZi0wGo
+	qyUlDq64wTKBUXABI8MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJAQ7NvBePOA9SHGZKBx
+	E5mlRJPzgSGcVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFG
+	Jg5OqQbG2oIOWZm6BVkXz066ZuH+O8fu2DlPW5WaYzq/Z+V0Xreaz7/ism3RzfkyAZY2Hrvv
+	nglfbcB6XCz6pMTTePWVhp1O9sKrJ9X5nVFzYzotpZngk86j9702/WpNcs1c9sVFeyZ/kHog
+	dz5y82rn6284w0SChV5PnL7kpcpctZkc6flnl8177rlMiaU4I9FQi7moOBEAFeJu4VcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd3CBfFBBr+XSlhc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5jRtOAEW8Ej/orNu6ezNTD+4eli5OSQEDCRWNrdyQxhi0lcuLeerYuRi0NI
+	YBGjxOPnnawQTjOTxPqmf0AZDg42AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3LCA1wgKW
+	Eh0nskBqWARUJR5d7mcEsXkF3CWaXh5ngVimLbHt+UTGCYzcCxgZVjGKphYkFxQnpeca6RUn
+	5haX5qXrJefnbmIEB/gz6R2MqxosDjEKcDAq8fDOWB4XJMSaWFZcmXuIUYKDWUmE98S0+CAh
+	3pTEyqrUovz4otKc1OJDjMlA2ycyS4km5wOjL68k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFC
+	AumJJanZqakFqUUwW5g4OKUaGI02S9b2u7gUcvPOfxChJtWwaNfLBVIbZcULShO0zhyW2im6
+	WP6yUdTpD80K16euq85xcTU4Z3Iva/E8bTutPzpsXw9YB/3+2ve1s2Sq8+VXK0yyFN/r7Jbq
+	qBBQ1mR/Gdoiu/vePsNGm6U8P5MmTqru7lLeUjd102H5PcrCzT7iu2cJPkl+r8RSnJFoqMVc
+	VJwIAPp0ejK0AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013, Vinod Koul wrote:
+This patch enhances the recovery routine not to write any data/node/meta until
+its completion.
+If any writes are sent to the disk, it could contaminate the written history
+that will be used for further recovery.
 
-> On Wed, Oct 16, 2013 at 11:45:48AM -0700, Dan Williams wrote:
-> > On Wed, Oct 16, 2013 at 11:29 AM, Guennadi Liakhovetski
-> > >
-> > > Doesn't this break kernel compilation for a total of 27 commits? Or am I
-> > > missing anything?
-> > 
-> > Yes, I think at the start DMA_COMPLETE should just be a alias for
-> > DMA_SUCCESS, then after all the driver renames are in delete
-> > DMA_SUCCESS.
-> Oops, taht was bad of me. ffixes in v2 and sending patch 29 for removal case
-
-Ok, yes, this should work now. I'm wondering though - is DMA_COMPLTE 
-really a better name? AFAICS, we can only differentiate between 2 
-possibilities with the current API: a transfer is "in progress" - between 
-last used and last completed, and "unknown" - either completed, or 
-aborted, or not yet submitted - if the cookie is larger, than last 
-completed and we assume, that it has wrapped.
-
-Actually for a driver, that I'm currently working on, I implemented a 
-cache of N last cookies (e.g. 128), which is a bitfield, where I just 
-record a 1, if that descriptor has failed, and a 0, if completed 
-successfully. That way I can report one of 4 states: cookie on queue, 
-completed successfully, failed, unknown. I'm not sure, whether I'll keep 
-this in the final version, this doesn't really fit the present dmaengine 
-API concept. We could make this generic, if desired. Otherwise your 
-proposed error callback should help too. But in either case I think with 
-the current implementation we cannot find out whether a specific cookie 
-completed successfully or failed.
-
-One more observation: I looked at a couple of drivers, using the DMA_ERROR 
-state. E.g. mmp_tdma.c, mxs-dma.c. They store errors in a .status field in 
-their private data. Then they return that status in their 
-.device_tx_status() methods - independent on the cookie! This doesn't look 
-right to me... at_hdmac.c does something similarly strange.
-
-Thanks
-Guennadi
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ fs/f2fs/checkpoint.c |  2 +-
+ fs/f2fs/node.c       | 17 +++++++++++------
+ 2 files changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 2a5999d..8d16071 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -81,7 +81,7 @@ static int f2fs_write_meta_page(struct page *page,
+ 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+ 
+ 	/* Should not write any meta pages, if any IO error was occurred */
+-	if (wbc->for_reclaim ||
++	if (wbc->for_reclaim || sbi->por_doing ||
+ 			is_set_ckpt_flags(F2FS_CKPT(sbi), CP_ERROR_FLAG)) {
+ 		dec_page_count(sbi, F2FS_DIRTY_META);
+ 		wbc->pages_skipped++;
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 51ef278..ef80f79 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1156,6 +1156,9 @@ static int f2fs_write_node_page(struct page *page,
+ 	block_t new_addr;
+ 	struct node_info ni;
+ 
++	if (sbi->por_doing)
++		goto redirty_out;
++
+ 	wait_on_page_writeback(page);
+ 
+ 	/* get old block addr of this node page */
+@@ -1171,12 +1174,8 @@ static int f2fs_write_node_page(struct page *page,
+ 		return 0;
+ 	}
+ 
+-	if (wbc->for_reclaim) {
+-		dec_page_count(sbi, F2FS_DIRTY_NODES);
+-		wbc->pages_skipped++;
+-		set_page_dirty(page);
+-		return AOP_WRITEPAGE_ACTIVATE;
+-	}
++	if (wbc->for_reclaim)
++		goto redirty_out;
+ 
+ 	mutex_lock(&sbi->node_write);
+ 	set_page_writeback(page);
+@@ -1186,6 +1185,12 @@ static int f2fs_write_node_page(struct page *page,
+ 	mutex_unlock(&sbi->node_write);
+ 	unlock_page(page);
+ 	return 0;
++
++redirty_out:
++	dec_page_count(sbi, F2FS_DIRTY_NODES);
++	wbc->pages_skipped++;
++	set_page_dirty(page);
++	return AOP_WRITEPAGE_ACTIVATE;
+ }
+ 
+ /*
+-- 
+1.8.4.474.g128a96c
+
