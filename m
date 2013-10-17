@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3JQJoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:44:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43030 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753437Ab3JQJn7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:43:59 -0400
-Date: Thu, 17 Oct 2013 10:43:19 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/7] arm64: introduce basic aarch64 instruction
- decoding helpers
-Message-ID: <20131017094318.GC18765@mudshark.cambridge.arm.com>
-References: <1381893492-7135-1-git-send-email-liuj97@gmail.com>
- <1381893492-7135-2-git-send-email-liuj97@gmail.com>
- <20131016105142.GD5403@mudshark.cambridge.arm.com>
- <525EB279.9050504@gmail.com>
- <525EC98A.6090802@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754428Ab3JQJpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:45:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44610 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab3JQJpa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 17 Oct 2013 05:45:30 -0400
+Message-Id: <525FCDD702000078000FBBF5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 17 Oct 2013 10:45:27 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Arjan van de Ven" <arjan@linux.intel.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux@roeck-us.net>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86: unify copy_from_user() checking
+References: <525E964402000078000FB70C@nat28.tlf.novell.com>
+ <525E9BF7.7020706@linux.intel.com>
+ <525EC6C402000078000FB895@nat28.tlf.novell.com>
+ <525EC73E.3060204@linux.intel.com>
+In-Reply-To: <525EC73E.3060204@linux.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <525EC98A.6090802@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 06:14:50PM +0100, Jiang Liu wrote:
-> On 10/16/2013 11:36 PM, Jiang Liu wrote:
-> > On 10/16/2013 06:51 PM, Will Deacon wrote:
-> >> Take care here:
-> >>
-> >> 	- This doesn't guarantee that CPUs exclusively see new_insn (they
-> >> 	  may see old_insn, even after patching)
-> > Good point. Still need some synchronization mechanism lighter than
-> > stop_machine(). How about kick_all_cpus_sync(), which should be lighter
-> > than stop_machine()?
-> For jump label, x86 uses three smp_call_function() to replace a
-> stop_machine(). Seems it's valuable for us to use just one
-> kick_all_cpus_sync() to avoid a stop_machine().
+>>> On 16.10.13 at 19:05, Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-Yes, the exception return after handling the IPI from kick_all_cpus_sync
-should be enough to synchronise the pipeline, providing that all cache
-maintenance by the CPU writing the new instructions has completed (if you're
-using flush_icache_range then you're fine).
+>>> if you have found cases where this matters... maybe you found a new security
+>>> issue...
+>>
+>> Iirc I could convince myself that in the cited cases the warnings
+>> were there for no reason.
+> 
+> can you pick one on a source level ?
+> (and the gcc 4.6 had a few false positives which is why it got disabled 
+> there)
 
-Will
+Sure: Let's take __tun_chr_ioctl(): While a static function, it gets
+called with two different values for ifreq_len, both of which are
+provably (for a human) correct. I don't think, however, that the
+compiler can be expected to do so on its own in all cases - I would
+expect it to be able to when it decides to inline the function in
+both callers, but the larger that function grows, the more likely
+it'll become that the compiler chooses to keep it separate (and it
+surely would when CONFIG_CC_OPTIMIZE_FOR_SIZE).
+
+Otoh one would expect a modern compiler to be able to do the
+checking in the case of aer_inject_write(). Yet not everyone is
+using most recent compiler versions, but I personally expect a
+warning free compilation in that case too (at least outside the
+staging sub-tree, which I avoid to build as much as possible). And
+I know that I had seen the warning there (or else it wouldn't have
+caught my attention, and I wouldn't have quoted it in the patch
+description).
+
+Jan
+
