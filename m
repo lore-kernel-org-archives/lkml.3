@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab3JQP3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:29:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24289 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755326Ab3JQP3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:29:33 -0400
-Date: Thu, 17 Oct 2013 17:22:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/2] perf: Optimize the fill/align code in
-	perf_event_mmap_event()
-Message-ID: <20131017152223.GB14098@redhat.com>
-References: <20131012192203.GA21738@redhat.com> <20131014102426.GX3081@twins.programming.kicks-ass.net> <20131016200924.GA23214@redhat.com>
+	id S1757092Ab3JQPbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:31:36 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:36829 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab3JQPbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 11:31:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016200924.GA23214@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <525FFA40.9050901@wwwdotorg.org>
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+	<1380846199-12829-4-git-send-email-syin@broadcom.com>
+	<CAEPRUYqfpdp1GqxBgx-q=hyvQDe4uyi6okzHPW2QmfmPG_Z3NQ@mail.gmail.com>
+	<525FFA40.9050901@wwwdotorg.org>
+Date: Thu, 17 Oct 2013 08:31:31 -0700
+Message-ID: <CAEPRUYq5DA982AqAmrUpsb3qc30VaFBawaXKTp2pcDvdbM-S1g@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+From: Christian Daudt <bcm@fixthebug.org>
+To: Stephen Warren <swarren@wwwdotorg.org>, Kevin Hilman <khilman@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. memset(tmp, 0) and especially kzalloc(PATH_MAX) are suboptimal,
-   we only need to zero-fill the alignment.
+On Thu, Oct 17, 2013 at 7:54 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/17/2013 12:03 AM, Christian Daudt wrote:
+>> On Thu, Oct 3, 2013 at 5:23 PM, Sherman Yin <syin@broadcom.com> wrote:
+>>> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
+>>>
+>>> Signed-off-by: Sherman Yin <syin@broadcom.com>
+>>> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+>>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>>> ---
+>>>  arch/arm/mach-bcm/Kconfig       |    2 +
+>>>  drivers/pinctrl/Kconfig         |   10 +
+>>>  drivers/pinctrl/Makefile        |    1 +
+>>>  drivers/pinctrl/pinctrl-capri.c | 1727 +++++++++++++++++++++++++++++++++++++++
+>>>  4 files changed, 1740 insertions(+)
+>>>  create mode 100644 drivers/pinctrl/pinctrl-capri.c
+>>>
+>>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+>>> index 69d67f7..2546365 100644
+>>> --- a/arch/arm/mach-bcm/Kconfig
+>>> +++ b/arch/arm/mach-bcm/Kconfig
+>>> @@ -10,6 +10,8 @@ config ARCH_BCM
+>>>         select GENERIC_CLOCKEVENTS
+>>>         select GENERIC_TIME
+>>>         select GPIO_BCM
+>>> +       select PINCTRL
+>>> +       select PINCTRL_CAPRI
+>>>         select SPARSE_IRQ
+>>>         select TICK_ONESHOT
+>>>         select CACHE_L2X0
+>>
+>> On your subsequent patchset pls move this from Kconfig to
+>> arm/configs/bcm_defconfig, and break that modification into a separate
+>> patch from the drivers/* modification.
+>
+> The other SoCs I'm familiar with all select this from their ARCH_xxx
+> config symbol.
+>
+I had a discussion on what is best left under ARCH and what is best
+left to defconfig with Kevin Hilman a while back and the conclusion
+was that any config not strictly required for bootup is best left to
+defconfig. This will allow multiplatform kernels to switch to using
+them as loadable modules later on, something not possible with configs
+put under ARCH_xxx.
 
-   Remove this memset/__GFP_ZERO and fill the extra bytes by hand.
-
-2. The usage of strncpy(tmp) is not optimal too, we can add the new
-   label and do this in one place.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/core.c |   47 +++++++++++++++++++++++------------------------
- 1 files changed, 23 insertions(+), 24 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4a1e7b8..777a268 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5098,20 +5098,17 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	int maj = 0, min = 0;
- 	u64 ino = 0, gen = 0;
- 	unsigned int size;
--	char tmp[16];
--	char *buf = NULL;
--	const char *name;
--
--	memset(tmp, 0, sizeof(tmp));
-+	char tmp[16], *name, *buf = NULL;
-+	const char *str;
- 
- 	if (file) {
- 		struct inode *inode;
- 		dev_t dev;
- 
--		buf = kzalloc(PATH_MAX, GFP_KERNEL);
-+		buf = kmalloc(PATH_MAX, GFP_KERNEL);
- 		if (!buf) {
--			name = strncpy(tmp, "//enomem", sizeof(tmp));
--			goto got_name;
-+			str = "//enomem";
-+			goto cpy_name;
- 		}
- 		/*
- 		 * d_path works from the end of the rb backwards, so we
-@@ -5120,8 +5117,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		 */
- 		name = d_path(&file->f_path, buf, PATH_MAX - sizeof(u64));
- 		if (IS_ERR(name)) {
--			name = strncpy(tmp, "//toolong", sizeof(tmp));
--			goto got_name;
-+			str = "//toolong";
-+			goto cpy_name;
- 		}
- 		inode = file_inode(vma->vm_file);
- 		dev = inode->i_sb->s_dev;
-@@ -5129,32 +5126,34 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		gen = inode->i_generation;
- 		maj = MAJOR(dev);
- 		min = MINOR(dev);
--
-+		goto got_name;
- 	} else {
--		name = arch_vma_name(vma);
--		if (name) {
--			name = strncpy(tmp, name, sizeof(tmp) - 1);
--			tmp[sizeof(tmp) - 1] = '\0';
--			goto got_name;
--		}
-+		str = arch_vma_name(vma);
-+		if (str)
-+			goto cpy_name;
- 
- 		if (vma->vm_start <= vma->vm_mm->start_brk &&
- 				vma->vm_end >= vma->vm_mm->brk) {
--			name = strncpy(tmp, "[heap]", sizeof(tmp));
--			goto got_name;
-+			str = "[heap]";
-+			goto cpy_name;
- 		}
- 		if (vma->vm_start <= vma->vm_mm->start_stack &&
- 				vma->vm_end >= vma->vm_mm->start_stack) {
--			name = strncpy(tmp, "[stack]", sizeof(tmp));
--			goto got_name;
-+			str = "[stack]";
-+			goto cpy_name;
- 		}
- 
--		name = strncpy(tmp, "//anon", sizeof(tmp));
--		goto got_name;
-+		str = "//anon";
-+		goto cpy_name;
- 	}
- 
-+cpy_name:
-+	strlcpy(tmp, str, sizeof(tmp));
-+	name = tmp;
- got_name:
--	size = ALIGN(strlen(name)+1, sizeof(u64));
-+	size = strlen(name) + 1;
-+	while (size % sizeof(u64))
-+		name[size++] = '\0';
- 
- 	mmap_event->file_name = name;
- 	mmap_event->file_size = size;
--- 
-1.5.5.1
-
-
+ Thanks,
+    csd
