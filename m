@@ -1,140 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762725Ab3JQUYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 16:24:46 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45711 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762696Ab3JQUYo (ORCPT
+	id S932092Ab3JQUZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 16:25:38 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:35362 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762524Ab3JQUZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 16:24:44 -0400
-Message-ID: <52604793.40506@gmail.com>
-Date: Fri, 18 Oct 2013 07:24:51 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 17 Oct 2013 16:25:37 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [PATCH] Bluetooth: Add hci_h4p driver
+Date: Thu, 17 Oct 2013 22:25:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
+	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: linux-usb@vger.kernel.org,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stern@rowland.harvard.edu,
-        Lennert Buytenhek <buytenh@wantstofly.org>, gregkh@linuxfoundation.org,
-        olof@lixom.net, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/2 v3] ARM: ep93xx_defconfig: cleanup ep93xx_defconfig
-References: <201310171125.37004.hartleys@visionengravers.com>
-In-Reply-To: <201310171125.37004.hartleys@visionengravers.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart3728288.q054zeFcxh";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201310172225.33343@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/13 05:25, H Hartley Sweeten wrote:
+--nextPart3728288.q054zeFcxh
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Generate ep93xx_defconfig by doing:
-> 
-> make ep93xx_defconfig
-> make savedefconfig
-> mv defconfig arch/arm/configs/ep93xx_defconfig
-> 
-> No functional change. This just refreshes the ep93xx_defconfig to make it
-> easier and cleaner when adding new entries.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
-
-Acked-by: Ryan Mallon <rmallon@gmail.com>
-
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Lennert Buytenhek <kernel@wantstofly.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
+On Friday 20 September 2013 21:01:50 Pali Roh=C3=A1r wrote:
+> From: Ville Tervo <ville.tervo@nokia.com>
+>=20
+> This driver adding support for Nokia N900 bluetooth hardware
+>=20
+> Signed-off-by: Ville Tervo <ville.tervo@nokia.com>
+> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 > ---
->  arch/arm/configs/ep93xx_defconfig | 16 ++--------------
->  1 file changed, 2 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
-> index 806005a..8eccbcb 100644
-> --- a/arch/arm/configs/ep93xx_defconfig
-> +++ b/arch/arm/configs/ep93xx_defconfig
-> @@ -1,15 +1,14 @@
-> -CONFIG_EXPERIMENTAL=y
->  CONFIG_SYSVIPC=y
->  CONFIG_IKCONFIG=y
->  CONFIG_IKCONFIG_PROC=y
->  CONFIG_LOG_BUF_SHIFT=14
-> -CONFIG_SYSFS_DEPRECATED_V2=y
->  CONFIG_EXPERT=y
->  CONFIG_SLAB=y
->  CONFIG_MODULES=y
->  CONFIG_MODULE_UNLOAD=y
->  CONFIG_MODULE_FORCE_UNLOAD=y
->  # CONFIG_BLK_DEV_BSG is not set
-> +CONFIG_PARTITION_ADVANCED=y
->  # CONFIG_IOSCHED_CFQ is not set
->  CONFIG_ARCH_EP93XX=y
->  CONFIG_CRUNCH=y
-> @@ -47,11 +46,8 @@ CONFIG_IPV6=y
->  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
->  # CONFIG_FW_LOADER is not set
->  CONFIG_MTD=y
-> -CONFIG_MTD_CONCAT=y
-> -CONFIG_MTD_PARTITIONS=y
->  CONFIG_MTD_REDBOOT_PARTS=y
->  CONFIG_MTD_CMDLINE_PARTS=y
-> -CONFIG_MTD_CHAR=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_CFI=y
->  CONFIG_MTD_CFI_ADV_OPTIONS=y
-> @@ -67,15 +63,14 @@ CONFIG_SCSI=y
->  # CONFIG_SCSI_PROC_FS is not set
->  CONFIG_BLK_DEV_SD=y
->  CONFIG_NETDEVICES=y
-> -CONFIG_NET_ETHERNET=y
->  CONFIG_EP93XX_ETH=y
->  CONFIG_USB_RTL8150=y
->  # CONFIG_INPUT is not set
->  # CONFIG_SERIO is not set
->  # CONFIG_VT is not set
-> +# CONFIG_LEGACY_PTYS is not set
->  CONFIG_SERIAL_AMBA_PL010=y
->  CONFIG_SERIAL_AMBA_PL010_CONSOLE=y
-> -# CONFIG_LEGACY_PTYS is not set
->  # CONFIG_HW_RANDOM is not set
->  CONFIG_I2C=y
->  CONFIG_I2C_CHARDEV=y
-> @@ -86,7 +81,6 @@ CONFIG_WATCHDOG=y
->  CONFIG_EP93XX_WATCHDOG=y
->  CONFIG_USB=y
->  CONFIG_USB_DEBUG=y
-> -CONFIG_USB_DEVICEFS=y
->  CONFIG_USB_DYNAMIC_MINORS=y
->  CONFIG_USB_OHCI_HCD=y
->  CONFIG_USB_STORAGE=y
-> @@ -100,24 +94,18 @@ CONFIG_RTC_DRV_EP93XX=y
->  CONFIG_EXT2_FS=y
->  CONFIG_EXT3_FS=y
->  # CONFIG_EXT3_FS_XATTR is not set
-> -CONFIG_INOTIFY=y
->  CONFIG_VFAT_FS=y
->  CONFIG_TMPFS=y
->  CONFIG_JFFS2_FS=y
->  CONFIG_NFS_FS=y
-> -CONFIG_NFS_V3=y
->  CONFIG_ROOT_NFS=y
-> -CONFIG_PARTITION_ADVANCED=y
->  CONFIG_NLS_CODEPAGE_437=y
->  CONFIG_NLS_ISO8859_1=y
->  CONFIG_MAGIC_SYSRQ=y
-> -CONFIG_DEBUG_KERNEL=y
->  CONFIG_DEBUG_SLAB=y
->  CONFIG_DEBUG_SPINLOCK=y
->  CONFIG_DEBUG_MUTEXES=y
-> -# CONFIG_RCU_CPU_STALL_DETECTOR is not set
->  CONFIG_DEBUG_USER=y
-> -CONFIG_DEBUG_ERRORS=y
->  CONFIG_DEBUG_LL=y
->  # CONFIG_CRYPTO_ANSI_CPRNG is not set
->  CONFIG_LIBCRC32C=y
+>  drivers/bluetooth/Kconfig             |   10 +
+>  drivers/bluetooth/Makefile            |    2 +
+>  drivers/bluetooth/hci_h4p/Makefile    |    7 +
+>  drivers/bluetooth/hci_h4p/core.c      | 1085
+> +++++++++++++++++++++++++++++++++
+> drivers/bluetooth/hci_h4p/fw-bcm.c    |  149 +++++
+>  drivers/bluetooth/hci_h4p/fw-csr.c    |  152 +++++
+>  drivers/bluetooth/hci_h4p/fw-ti1273.c |  113 ++++
+>  drivers/bluetooth/hci_h4p/fw.c        |  166 +++++
+>  drivers/bluetooth/hci_h4p/hci_h4p.h   |  238 ++++++++
+>  drivers/bluetooth/hci_h4p/uart.c      |  203 ++++++
+>  include/linux/bluetooth/hci_h4p.h     |   41 ++
+>  11 files changed, 2166 insertions(+)
+>  create mode 100644 drivers/bluetooth/hci_h4p/Makefile
+>  create mode 100644 drivers/bluetooth/hci_h4p/core.c
+>  create mode 100644 drivers/bluetooth/hci_h4p/fw-bcm.c
+>  create mode 100644 drivers/bluetooth/hci_h4p/fw-csr.c
+>  create mode 100644 drivers/bluetooth/hci_h4p/fw-ti1273.c
+>  create mode 100644 drivers/bluetooth/hci_h4p/fw.c
+>  create mode 100644 drivers/bluetooth/hci_h4p/hci_h4p.h
+>  create mode 100644 drivers/bluetooth/hci_h4p/uart.c
+>  create mode 100644 include/linux/bluetooth/hci_h4p.h
+>=20
 
+Can somebody look & comment this patch? What is needed to be part=20
+of upstream kernel?
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart3728288.q054zeFcxh
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlJgR70ACgkQi/DJPQPkQ1LypQCfaZR4KQO4zfn5IVL8ZZH1p+rb
+dkEAniyMDWBvcfUJHepYkWWYtVZ/iJrg
+=NKgj
+-----END PGP SIGNATURE-----
+
+--nextPart3728288.q054zeFcxh--
