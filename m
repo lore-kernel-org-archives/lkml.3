@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3JQIO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 04:14:28 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:49346 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab3JQIOY (ORCPT
+	id S1753172Ab3JQIQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 04:16:55 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53044 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab3JQIQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 04:14:24 -0400
-Date: Thu, 17 Oct 2013 10:14:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131017081420.GB22705@gmail.com>
-References: <1381416608-2741-1-git-send-email-eranian@google.com>
- <20131010180049.GD9929@pd.tnic>
- <20131016124627.GA2611@gmail.com>
- <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
- <20131016175302.GB4100@infradead.org>
- <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+	Thu, 17 Oct 2013 04:16:51 -0400
+Date: Thu, 17 Oct 2013 10:16:42 +0200
+From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@au1.ibm.com>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, jslaby@suse.cz,
+        gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
+ HUPCL control
+Message-ID: <20131017081642.GA6134@linux.vnet.ibm.com>
+Mail-Followup-To: Benjamin Herrenschmidt <benh@au1.ibm.com>, jslaby@suse.cz,
+	gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
+	heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+	linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+	linux-s390@vger.kernel.org
+References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
+ <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
+ <1381475711.5630.67.camel@pasglop>
+ <20131011124707.GA6082@linux.vnet.ibm.com>
+ <1381524204.5630.91.camel@pasglop>
+ <20131015153626.GA6129@linux.vnet.ibm.com>
+ <1381870070.17841.24.camel@pasglop>
+ <20131016090432.GA6053@linux.vnet.ibm.com>
+ <1381965672.17841.71.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+In-Reply-To: <1381965672.17841.71.camel@pasglop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101708-0542-0000-0000-000006C5ECE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 16, 2013 at 06:21:12PM -0500, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-10-16 at 11:04 +0200, Hendrik Brueckner wrote:
+> > Indeed, two callbacks change the DTR line.  The main difference is that
+> > tiocmget/tiocmset can be called from user space by ioctl.  That's not the case
+> > for the dtr_cts callback.  Also, tiocmget/tiocmset provide more flags that can
+> > be changed (ST, SR, CTS, CD, RNG, RI,  ...)
+> > 
+> > Assume we would like to unify them have a single callback to change DTR, then
+> > we have to take care of these differences.  So the question to you now is
+> > whether you plan for a) other modem flags to be changed and b) if changing the
+> > DTR line (or other control flags) through an ioctl?
+> > 
+> > Depending on your results, I could work on sth that helps us both and reduces
+> > the callbacks.
+> 
+> Can we not just have the users of dtr_cts just call the backend's tiocmset ?
 
-* Stephane Eranian <eranian@google.com> wrote:
+That's possible.  The only concern is that the tiocmset() callback could be
+triggered from within the hvc_console() layer as well as from user space via
+ioctl.  For the hvc_iucv driver, I do not want to introduce this ioctl.
 
-> On Wed, Oct 16, 2013 at 7:53 PM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
-> > Em Wed, Oct 16, 2013 at 03:13:54PM +0200, Stephane Eranian escreveu:
-> >> On Wed, Oct 16, 2013 at 2:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >> > We should also tell user-space that the unit of this counter is 'Joule'.
-> >> >
-> >> > Then things like:
-> >> >
-> >> >         perf stat -a -e power/* sleep 1
-> >> >
-> >> > would output, without knowing any RAPL details:
-> >> >
-> >> >             0.20619 Joule    power/energy-core
-> >> >             2.42151 Joule    power/energy-pkg
-> >> >
-> >> Not sure there is already some support for this in perf stat. Arnaldo?
-> >
-> > Nope, there is not, we would have to have some table somewhere with
-> > "event-regexp: unit-string"
-> >
-> >> If not that we need another sysfs file to export the unit. Another
-> >> possibility is for perf stat to recognize the power/* and extract the
-> >> unit from the event name. In my example power/joules-cores -> joules.
-> >
-> > I.e. you would be encoding the counter unit as the suffix, might as well
-> > call it "power/cores.joules" and use the dot as the separator for the
-> > unit, but would be just a compact form to encode the counter->unit
-> > table.
->
-> May be easier to add a sysfs entry with the unit to display.
+One option would be to add parameter to the hvc_callbacks that indicate the
+origin so that a backend could filter.
 
-Yes - with no entry meaning a raw 'count' or such.
+> If they need to filter or clamp bits, we could handle all that in hvc_console
+> by caching the user intended value and passing a cooked value down to the backend..
 
-Thanks,
+Sure the hvc_console layer could do as much as possible.
 
-	Ingo
+> 
+> None of that is urgent or anything, it's just odd and would be nice to cleanup.
+
+Thanks and kind regards,
+  Hendrik
+
