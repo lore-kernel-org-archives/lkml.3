@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab3JQJ2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:28:21 -0400
-Received: from mail.oefa.gob.pe ([190.116.34.227]:33186 "EHLO mail.oefa.gob.pe"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810Ab3JQJ2T convert rfc822-to-8bit (ORCPT
+	id S1753748Ab3JQJaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:30:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51223 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab3JQJaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:28:19 -0400
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Oct 2013 05:30:15 -0400
+Message-ID: <525FADC3.4090505@ti.com>
+Date: Thu, 17 Oct 2013 12:28:35 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: system administrator
-To: Recipients <13@oefa.gob.pe>
-From: "WEBMASTER" <13@oefa.gob.pe>
-Date: Thu, 17 Oct 2013 09:20:53 +0100
-Reply-To: 647812717@qq.com
-Message-Id: <20131017083216.7A04E7FB469A@mail.oefa.gob.pe>
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+CC: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] OMAP4460: cpuidle: Workaround for ROM bug because
+ of CA9 r2pX GIC control register change
+References: <1382000776-15897-1-git-send-email-grygorii.strashko@ti.com> <525FACA9.3060405@ti.com>
+In-Reply-To: <525FACA9.3060405@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.172]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
-your email has exceeded 2GB, which is created by Webmaster, you are currently running at 2.30GB, you can not Send or receive new messages until you check your account.Complete the form to verify your account.
+Sorry, forgot to mention that patches are based on 4a10c2a Linux 3.12-rc2
 
-Please complete the details below to confirm your account
+On 10/17/2013 12:23 PM, Grygorii Strashko wrote:
+> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
+> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC control register change."
+> need to be applied not only when system is booting, but when
+> MPU hits OSWR state through CPUIdle too.
+>
+> Now the same issue is reproduced on boards PandaES and Tablet/Blaze with
+> SOM OMAP4460 ES1.0 when CONFIG_CPU_IDLE is enabled.
+> - GIC distributor is disabled
+> - scheduling is not performed any more
+>
+> Grygorii Strashko (2):
+>    Revert "ARM: OMAP4+: CPUidle: Deprecate use of omap4_mpuss_read_prev_context_state()"
+>    ARM: OMAP4460: cpuidle: WA for ROM bug because of CA9 r2pX gic control register change
+>
+>   arch/arm/mach-omap2/common.h              |    6 +++++
+>   arch/arm/mach-omap2/cpuidle44xx.c         |   35 +++++++++++++++++++++++++++--
+>   arch/arm/mach-omap2/omap-mpuss-lowpower.c |   14 ++++++++++++
+>   arch/arm/mach-omap2/omap4-common.c        |    6 +++++
+>   4 files changed, 59 insertions(+), 2 deletions(-)
+>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+>
+> Regards,
+> -grygorii
+>
 
-(1) E-mail:
-(2) Name:
-(3) Password:
-(4) Confirm Password:
-
-thank you
-system administrator
