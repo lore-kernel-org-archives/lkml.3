@@ -1,389 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762461Ab3JQS01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:26:27 -0400
-Received: from dukecmmtar03.coxmail.com ([68.99.120.44]:49847 "EHLO
-	dukecmmtar03.coxmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762425Ab3JQS0Y (ORCPT
+	id S1762523Ab3JQS14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:27:56 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:57181 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758770Ab3JQS1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:26:24 -0400
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: linux-usb@vger.kernel.org
-Subject: [PATCH 2/2 v3] usb: ohci: remove ep93xx bus glue platform driver
-Date: Thu, 17 Oct 2013 11:25:49 -0700
-User-Agent: KMail/1.9.9
-Cc: ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <rmallon@gmail.com>, stern@rowland.harvard.edu,
-        Lennert Buytenhek <buytenh@wantstofly.org>, gregkh@linuxfoundation.org,
-        olof@lixom.net, Russell King <linux@arm.linux.org.uk>
+	Thu, 17 Oct 2013 14:27:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201310171125.50024.hartleys@visionengravers.com>
+In-Reply-To: <20131017124515.3566d7c1@plati.site>
+References: <CAH2r5muRfQ6y1vzu_1icz4BGTqEPfgaOsHExbQay_yZiCOZQ_A@mail.gmail.com>
+	<20131017124515.3566d7c1@plati.site>
+Date: Thu, 17 Oct 2013 13:27:52 -0500
+Message-ID: <CADT32eJHi--oChq5TJLjv5GsVYAOGdnpY_=nxTBE10dKasr8Hg@mail.gmail.com>
+Subject: Re: cp --reflink and target file open flags
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: David Disseldorp <ddiss@suse.de>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert ep93xx to use the OHCI platform driver and remove the
-ohci-ep93xx bus glue driver.
+I think it would not matter which ioctl is used if the target file is
+not opened with flag O_RDWR.
 
-Enable CONFIG_OHCI_HCD_PLATFORM in the ep93xx_defconfig so that USB
-is still enabled by default on the EP93xx platform.
+Perhaps cifs.ko can make the decision to change O_WRONLY
+to O_RDWR based on the flag and location of the source and
+destination files.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/configs/ep93xx_defconfig |   1 +
- arch/arm/mach-ep93xx/clock.c      |   2 +-
- arch/arm/mach-ep93xx/core.c       |  40 ++++++++-
- drivers/usb/host/ohci-ep93xx.c    | 184 --------------------------------------
- drivers/usb/host/ohci-hcd.c       |  18 ----
- 5 files changed, 38 insertions(+), 207 deletions(-)
- delete mode 100644 drivers/usb/host/ohci-ep93xx.c
 
-diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
-index 8eccbcb..6ac5ea7 100644
---- a/arch/arm/configs/ep93xx_defconfig
-+++ b/arch/arm/configs/ep93xx_defconfig
-@@ -83,6 +83,7 @@ CONFIG_USB=y
- CONFIG_USB_DEBUG=y
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_OHCI_HCD=y
-+CONFIG_USB_OHCI_HCD_PLATFORM=y
- CONFIG_USB_STORAGE=y
- CONFIG_USB_SERIAL=y
- CONFIG_USB_SERIAL_CONSOLE=y
-diff --git a/arch/arm/mach-ep93xx/clock.c b/arch/arm/mach-ep93xx/clock.c
-index c95dbce..39ef3b6 100644
---- a/arch/arm/mach-ep93xx/clock.c
-+++ b/arch/arm/mach-ep93xx/clock.c
-@@ -212,7 +212,7 @@ static struct clk_lookup clocks[] = {
- 	INIT_CK(NULL,			"hclk",		&clk_h),
- 	INIT_CK(NULL,			"apb_pclk",	&clk_p),
- 	INIT_CK(NULL,			"pll2",		&clk_pll2),
--	INIT_CK("ep93xx-ohci",		NULL,		&clk_usb_host),
-+	INIT_CK("ohci-platform",	NULL,		&clk_usb_host),
- 	INIT_CK("ep93xx-keypad",	NULL,		&clk_keypad),
- 	INIT_CK("ep93xx-fb",		NULL,		&clk_video),
- 	INIT_CK("ep93xx-spi.0",		NULL,		&clk_spi),
-diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
-index 3f12b88..92d59c4 100644
---- a/arch/arm/mach-ep93xx/core.c
-+++ b/arch/arm/mach-ep93xx/core.c
-@@ -36,6 +36,7 @@
- #include <linux/export.h>
- #include <linux/irqchip/arm-vic.h>
- #include <linux/reboot.h>
-+#include <linux/usb/ohci_pdriver.h>
- 
- #include <mach/hardware.h>
- #include <linux/platform_data/video-ep93xx.h>
-@@ -297,22 +298,53 @@ static struct platform_device ep93xx_rtc_device = {
- 	.resource	= ep93xx_rtc_resource,
- };
- 
-+/*************************************************************************
-+ * EP93xx OHCI USB Host
-+ *************************************************************************/
-+
-+static struct clk *ep93xx_ohci_host_clock;
-+
-+static int ep93xx_ohci_power_on(struct platform_device *pdev)
-+{
-+	if (!ep93xx_ohci_host_clock) {
-+		ep93xx_ohci_host_clock = devm_clk_get(&pdev->dev, NULL);
-+		if (IS_ERR(ep93xx_ohci_host_clock))
-+			return PTR_ERR(ep93xx_ohci_host_clock);
-+	}
-+
-+	clk_enable(ep93xx_ohci_host_clock);
-+
-+	return 0;
-+}
-+
-+static void ep93xx_ohci_power_off(struct platform_device *pdev)
-+{
-+	clk_disable(ep93xx_ohci_host_clock);
-+}
-+
-+static struct usb_ohci_pdata ep93xx_ohci_pdata = {
-+	.power_on	= ep93xx_ohci_power_on,
-+	.power_off	= ep93xx_ohci_power_off,
-+	.power_suspend	= ep93xx_ohci_power_off,
-+};
- 
- static struct resource ep93xx_ohci_resources[] = {
- 	DEFINE_RES_MEM(EP93XX_USB_PHYS_BASE, 0x1000),
- 	DEFINE_RES_IRQ(IRQ_EP93XX_USB),
- };
- 
-+static u64 ep93xx_ohci_dma_mask = DMA_BIT_MASK(32);
- 
- static struct platform_device ep93xx_ohci_device = {
--	.name		= "ep93xx-ohci",
-+	.name		= "ohci-platform",
- 	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(ep93xx_ohci_resources),
-+	.resource	= ep93xx_ohci_resources,
- 	.dev		= {
--		.dma_mask		= &ep93xx_ohci_device.dev.coherent_dma_mask,
-+		.dma_mask		= &ep93xx_ohci_dma_mask,
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+		.platform_data		= &ep93xx_ohci_pdata,
- 	},
--	.num_resources	= ARRAY_SIZE(ep93xx_ohci_resources),
--	.resource	= ep93xx_ohci_resources,
- };
- 
- 
-diff --git a/drivers/usb/host/ohci-ep93xx.c b/drivers/usb/host/ohci-ep93xx.c
-deleted file mode 100644
-index 84a20d5..0000000
---- a/drivers/usb/host/ohci-ep93xx.c
-+++ /dev/null
-@@ -1,184 +0,0 @@
--/*
-- * OHCI HCD (Host Controller Driver) for USB.
-- *
-- * (C) Copyright 1999 Roman Weissgaerber <weissg@vienna.at>
-- * (C) Copyright 2000-2002 David Brownell <dbrownell@users.sourceforge.net>
-- * (C) Copyright 2002 Hewlett-Packard Company
-- *
-- * Bus Glue for ep93xx.
-- *
-- * Written by Christopher Hoover <ch@hpl.hp.com>
-- * Based on fragments of previous driver by Russell King et al.
-- *
-- * Modified for LH7A404 from ohci-sa1111.c
-- *  by Durgesh Pattamatta <pattamattad@sharpsec.com>
-- *
-- * Modified for pxa27x from ohci-lh7a404.c
-- *  by Nick Bane <nick@cecomputing.co.uk> 26-8-2004
-- *
-- * Modified for ep93xx from ohci-pxa27x.c
-- *  by Lennert Buytenhek <buytenh@wantstofly.org> 28-2-2006
-- *  Based on an earlier driver by Ray Lehtiniemi
-- *
-- * This file is licenced under the GPL.
-- */
--
--#include <linux/clk.h>
--#include <linux/device.h>
--#include <linux/signal.h>
--#include <linux/platform_device.h>
--
--static struct clk *usb_host_clock;
--
--static int ohci_ep93xx_start(struct usb_hcd *hcd)
--{
--	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
--	int ret;
--
--	if ((ret = ohci_init(ohci)) < 0)
--		return ret;
--
--	if ((ret = ohci_run(ohci)) < 0) {
--		dev_err(hcd->self.controller, "can't start %s\n",
--			hcd->self.bus_name);
--		ohci_stop(hcd);
--		return ret;
--	}
--
--	return 0;
--}
--
--static struct hc_driver ohci_ep93xx_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "EP93xx OHCI",
--	.hcd_priv_size		= sizeof(struct ohci_hcd),
--	.irq			= ohci_irq,
--	.flags			= HCD_USB11 | HCD_MEMORY,
--	.start			= ohci_ep93xx_start,
--	.stop			= ohci_stop,
--	.shutdown		= ohci_shutdown,
--	.urb_enqueue		= ohci_urb_enqueue,
--	.urb_dequeue		= ohci_urb_dequeue,
--	.endpoint_disable	= ohci_endpoint_disable,
--	.get_frame_number	= ohci_get_frame,
--	.hub_status_data	= ohci_hub_status_data,
--	.hub_control		= ohci_hub_control,
--#ifdef CONFIG_PM
--	.bus_suspend		= ohci_bus_suspend,
--	.bus_resume		= ohci_bus_resume,
--#endif
--	.start_port_reset	= ohci_start_port_reset,
--};
--
--static int ohci_hcd_ep93xx_drv_probe(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd;
--	struct resource *res;
--	int irq;
--	int ret;
--
--	if (usb_disabled())
--		return -ENODEV;
--
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0)
--		return irq;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENXIO;
--
--	hcd = usb_create_hcd(&ohci_ep93xx_hc_driver, &pdev->dev, "ep93xx");
--	if (!hcd)
--		return -ENOMEM;
--
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
--	if (IS_ERR(hcd->regs)) {
--		ret = PTR_ERR(hcd->regs);
--		goto err_put_hcd;
--	}
--
--	usb_host_clock = devm_clk_get(&pdev->dev, NULL);
--	if (IS_ERR(usb_host_clock)) {
--		ret = PTR_ERR(usb_host_clock);
--		goto err_put_hcd;
--	}
--
--	clk_enable(usb_host_clock);
--
--	ohci_hcd_init(hcd_to_ohci(hcd));
--
--	ret = usb_add_hcd(hcd, irq, 0);
--	if (ret)
--		goto err_clk_disable;
--
--	return 0;
--
--err_clk_disable:
--	clk_disable(usb_host_clock);
--err_put_hcd:
--	usb_put_hcd(hcd);
--
--	return ret;
--}
--
--static int ohci_hcd_ep93xx_drv_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	clk_disable(usb_host_clock);
--	usb_put_hcd(hcd);
--
--	return 0;
--}
--
--#ifdef CONFIG_PM
--static int ohci_hcd_ep93xx_drv_suspend(struct platform_device *pdev, pm_message_t state)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
--
--	if (time_before(jiffies, ohci->next_statechange))
--		msleep(5);
--	ohci->next_statechange = jiffies;
--
--	clk_disable(usb_host_clock);
--	return 0;
--}
--
--static int ohci_hcd_ep93xx_drv_resume(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
--
--	if (time_before(jiffies, ohci->next_statechange))
--		msleep(5);
--	ohci->next_statechange = jiffies;
--
--	clk_enable(usb_host_clock);
--
--	ohci_resume(hcd, false);
--	return 0;
--}
--#endif
--
--
--static struct platform_driver ohci_hcd_ep93xx_driver = {
--	.probe		= ohci_hcd_ep93xx_drv_probe,
--	.remove		= ohci_hcd_ep93xx_drv_remove,
--	.shutdown	= usb_hcd_platform_shutdown,
--#ifdef CONFIG_PM
--	.suspend	= ohci_hcd_ep93xx_drv_suspend,
--	.resume		= ohci_hcd_ep93xx_drv_resume,
--#endif
--	.driver		= {
--		.name	= "ep93xx-ohci",
--		.owner	= THIS_MODULE,
--	},
--};
--
--MODULE_ALIAS("platform:ep93xx-ohci");
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 604cad1..5845c82 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1204,11 +1204,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ohci_hcd_pxa27x_driver
- #endif
- 
--#ifdef CONFIG_ARCH_EP93XX
--#include "ohci-ep93xx.c"
--#define EP93XX_PLATFORM_DRIVER	ohci_hcd_ep93xx_driver
--#endif
--
- #ifdef CONFIG_ARCH_AT91
- #include "ohci-at91.c"
- #define AT91_PLATFORM_DRIVER	ohci_hcd_at91_driver
-@@ -1344,12 +1339,6 @@ static int __init ohci_hcd_mod_init(void)
- 		goto error_exynos;
- #endif
- 
--#ifdef EP93XX_PLATFORM_DRIVER
--	retval = platform_driver_register(&EP93XX_PLATFORM_DRIVER);
--	if (retval < 0)
--		goto error_ep93xx;
--#endif
--
- #ifdef AT91_PLATFORM_DRIVER
- 	retval = platform_driver_register(&AT91_PLATFORM_DRIVER);
- 	if (retval < 0)
-@@ -1393,10 +1382,6 @@ static int __init ohci_hcd_mod_init(void)
- 	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
-  error_at91:
- #endif
--#ifdef EP93XX_PLATFORM_DRIVER
--	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
-- error_ep93xx:
--#endif
- #ifdef EXYNOS_PLATFORM_DRIVER
- 	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
-  error_exynos:
-@@ -1462,9 +1447,6 @@ static void __exit ohci_hcd_mod_exit(void)
- #ifdef AT91_PLATFORM_DRIVER
- 	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
- #endif
--#ifdef EP93XX_PLATFORM_DRIVER
--	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
--#endif
- #ifdef EXYNOS_PLATFORM_DRIVER
- 	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
- #endif
--- 
-1.8.3.2
-
+On Thu, Oct 17, 2013 at 5:45 AM, David Disseldorp <ddiss@suse.de> wrote:
+> On Wed, 16 Oct 2013 18:36:19 -0500
+> Steve French <smfrench@gmail.com> wrote:
+>
+>> cp --reflink opens the target file for O_WRONLY before invoking the
+>> (BTRFS) ioctl for clone file, but for copy offload over the network
+>> the SMB2 specification requires that the target file be open O_RDWR.
+>>
+>> I may be able to upgrade the target file handle on the fly by
+>> reopening it in cifs.ko, and of course I can write an SMB2/SMB3
+>> specific copy command, but it would be preferable to allow use of cp
+>> --reflink since so many people are familiar with it.
+>>
+>> There is quite a bit of flexibility in server side copy offload  -
+>> more than cp an offer, especially when using SMB3 or later dialects
+>> (e.g. in number of chunks sent at one time, chunk size, attributes
+>> copied, and even whether to use T10 style offload), but still it would
+>> be nice to support "cp --reflink" over the network.  Any ideas on
+>> this?
+>>
+>> After looking at copy.c in coreutils for cp - I couldn't think of any
+>> trivial way to force cp to open the target RW.
+>>
+>> Ideas?
+>
+> You should be able to avoid this by using FSCTL_SRV_COPYCHUNK_WRITE
+> instead of FSCTL_SRV_COPYCHUNK on the wire. The former doesn't require
+> read access on the target, while the latter does. See [MS-SMB2] 2.2.31
+> and smbtorture's copy_chunk_bad_access test.
+>
+> Samba only supported FSCTL_SRV_COPYCHUNK until now, as that's what
+> Windows Server 2k12 uses for copies initiated by Explorer. I've just
+> sent out the trivial patches adding FSCTL_SRV_COPYCHUNK_WRITE support.
+>
+> Cheers, David
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
