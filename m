@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3JQXhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 19:37:39 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:49315 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab3JQXhh (ORCPT
+	id S1754217Ab3JQXi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 19:38:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63444 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab3JQXiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 19:37:37 -0400
-X-AuditID: cbfee691-b7fe06d0000008c4-1b-526074c0e256
+	Thu, 17 Oct 2013 19:38:25 -0400
+X-AuditID: cbfee68f-b7fc96d000006ecb-54-526074f0a361
 From: Kukjin Kim <kgene@kernel.org>
-To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Olof Johansson'" <olof@lixom.net>, "'Arnd Bergmann'" <arnd@arndb.de>
-References: <1380390554-4400-1-git-send-email-tomasz.figa@gmail.com>
- <3346618.t8I6lVv536@flatron>
-In-reply-to: <3346618.t8I6lVv536@flatron>
-Subject: RE: [PATCH] ARM: s3c64xx: Select CPU_V6K instead of CPU_V6
-Date: Fri, 18 Oct 2013 08:37:34 +0900
-Message-id: <1e2901cecb91$db24edd0$916ec970$@org>
+To: "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>, augulis.darius@gmail.com,
+        "=?ISO-8859-1?Q?'J=FCrgen_Beisert'?=" <jbe@pengutronix.de>,
+        oselas@community.pengutronix.de
+References: <1380471121-9478-1-git-send-email-tomasz.figa@gmail.com>
+ <1527511.ScaEHrLnaz@flatron>
+In-reply-to: <1527511.ScaEHrLnaz@flatron>
+Subject: RE: [PATCH] ARM: s3c64xx: mini6410: Correct card detect type for HSMMC1
+Date: Fri, 18 Oct 2013 08:38:22 +0900
+Message-id: <1e2a01cecb91$f790c700$e6b25500$@org>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7KnicaH7oMlYFFTkKSZTt+jF5LFwA8tsmw
+Thread-index: Ac7Knkrdjt1XwEd2RDKCkQmnCM0cogA85kmg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zfd0DJQlBBn/uiFn8nXSM3WLT42us
-	Fpd3zWGzmHF+H5PF7cu8Fqeuf2azWLXrD6MDu0dLcw+bx+9fkxg9ds66y+6xeUm9x5UTTawe
-	nzfJBbBFcdmkpOZklqUW6dslcGW8vD6ZpeA5e8WaWV/YGxg72LoYOTkkBEwkuqdMYIGwxSQu
-	3FsPFhcSWMYosbozA6bm/fOHQHEuoPh0RonPnfeYIJy/jBKHHr8Ccjg42ASUJRqb9EEahAW0
-	JBZuaQIbKiLgL3HlxnFGkHpmgS2MEs9/fmCC2JAscXr7fUYQm1NAU2LLrufsEM3OEq/nf2UG
-	sVkEVCUWXW0Hq+cVMJT4cXQClC0o8WPyPbAFzEDL1u88zgRhy0tsXvOWGeQeCQF1iUd/dSFu
-	MJKYNO0nVLmIxL4X78DukRD4yy7xYv0tRohdAhLfJh9igeiVldh0gBnieUmJgytusExglJyF
-	ZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzFCYnviDsb7B6wPMSYD
-	rZ/ILCWanA9MDXkl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYf
-	YmTi4JRqYFx8JqzfSiHDme2lCJtK0LX7a1Q1NoTmzF6/ql7j3qXXrJ1XPrEsCHLKV4327Lik
-	Jvl+ul5dxRLevLsC669GxPpJTpcNm2Mc67HlwJf51zzqd7CdbLu74LtEnmOAdOq5Sc1Tg5n/
-	hfonecudu+zX1viCmXfri6mtumrMrFJtR/i91v04tpfzuhJLcUaioRZzUXEiAH3C+s0DAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t9jQd0DJQlBBrNbhSz+TjrGbrHp8TVW
-	i8u75rBZzDi/j8ni9mVei1PXP7NZrNr1h9GB3aOluYfN4/evSYweO2fdZffYvKTe48qJJlaP
-	z5vkAtiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
-	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvLw+maXgOXvFmllf
-	2BsYO9i6GDk5JARMJN4/fwhli0lcuLceyObiEBKYzijxufMeE4Tzl1Hi0ONXQA4HB5uAskRj
-	kz5Ig7CAlsTCLU0sILaIgL/ElRvHGUHqmQW2MEo8//mBCSQhJJAscXr7fUYQm1NAU2LLrufs
-	EM3OEq/nf2UGsVkEVCUWXW0Hq+cVMJT4cXQClC0o8WPyPbAFzEDL1u88zgRhy0tsXvOWGeQe
-	CQF1iUd/dSFuMJKYNO0nVLmIxL4X7xgnMArPQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRc
-	I73ixNzi0rx0veT83E2M4NTxTHoH46oGi0OMAhyMSjy8B77FBwmxJpYVV+YeYpTgYFYS4W0V
-	TggS4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgWssriTc0NjEzsjQyszAyMTcnTVhJnPdg
-	q3WgkEB6YklqdmpqQWoRzBYmDk6pBkax6d9v7r1yLzTULHujw1pnpcsfn8n3TlpVEJHUqzKF
-	peDAz/qfuRGTH271Flpz5UVx65lkrS9zD1dkeDNOfPj1thRXd0QWlwnvhC9paU8b6nr873yZ
-	+D1DTphtpYKzQMifJW6+n6Mt73jcrf5fe1s5q//aSru68tbNa2Rfryx8+16E8VwXv50SS3FG
-	oqEWc1FxIgAGg4ZdYQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zA90PJQlBBqt7hCz2vv3HaDFp3QEm
+	i4NbFjJbbHp8jdXi8q45bBYzzu9jsrh9mddi05wjLBardv1hdOD0aGnuYfPo7ZnA6vF31Qtm
+	j52z7rJ7bF5S79H/18Dj8ya5APYoLpuU1JzMstQifbsEroynF5YwFswSrNi9/yFjA2MLXxcj
+	J4eEgInE/+NTWSFsMYkL99azgdhCAssYJV6cK4GpubdhMVMXIxdQfBGjxLGNxxkhiv4yShx/
+	btnFyMHBJqAs0dikDxIWFtCSWLiliQXEFhHwkdg9bwobSC+zwGwmiSln37FA9CZLtPVDLOMU
+	0JR4eOQ9K8gcYYEAiY/fU0BMFgFViZ6ztSAVvAKGEh/3HGCGsAUlfky+BzaFWUBHYn/rNDYI
+	W15i85q3zCCtEgLqEo/+6kJcYCSxbM9OdogSEYl9L94xglwjITCVQ+Ln8W9gc1gEBCS+TT7E
+	AtErK7EJYpWEgKTEwRU3WCYwSs5CsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ6UXGesWJucWl
+	eel6yfm5mxghEd+/g/HuAetDjMlA6ycyS4km5wMTRl5JvKGxmZGFqYmpsZG5pRlpwkrivGot
+	1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGBWbWkyfSC3jyd0fFPby9PVURY7vXsWXq4OW
+	WRhvdqxN4RactdtwbcyB3azTJvVMKj2+9rfKyQMT2Z5FKRjNbGp8lhtSLvRG77nnxPvTf7eE
+	xlU928lgU74u4+KftK0XPz7J8vyVOr0w9ujTW6/KmVt+X8vtevznaGJ6AJs/264tYp/3lTzr
+	36XEUpyRaKjFXFScCAAfBFs1DgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJKsWRmVeSWpSXmKPExsVy+t9jAd0PJQlBBve6eS32vv3HaDFp3QEm
+	i4NbFjJbbHp8jdXi8q45bBYzzu9jsrh9mddi05wjLBardv1hdOD0aGnuYfPo7ZnA6vF31Qtm
+	j52z7rJ7bF5S79H/18Dj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sL
+	cyWFvMTcVFslF58AXbfMHKDDlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGE
+	dYwZTy8sYSyYJVixe/9DxgbGFr4uRk4OCQETiXsbFjNB2GISF+6tZ+ti5OIQEljEKHFs43FG
+	kISQwF9GiePPLbsYOTjYBJQlGpv0QcLCAloSC7c0sYDYIgI+ErvnTQHrZRaYzSQx5ew7Foje
+	ZIm2fpChnBycApoSD4+8ZwWZIywQIPHxewqIySKgKtFzthakglfAUOLjngPMELagxI/J98Cm
+	MAvoSOxvncYGYctLbF7zlhmkVUJAXeLRX12IC4wklu3ZyQ5RIiKx78U7xgmMwrOQTJqFZNIs
+	JJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4oTyT3sG4qsHiEKMAB6MSD++B
+	b/FBQqyJZcWVuYcYJTiYlUR4W4UTgoR4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5js8kri
+	DY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBsXyNEsP64ybVBb/v
+	XqsQNpR0d/Dkbbgdm/KAtX3D9RKd2H/KSz5vkCkRe1gX6rPx+9K7zYVcby2tWkuO7r665n6U
+	wQ9RFjOGi0nH5hor7bSb1pD1iG2D4lefRU9EX4dvUQ08xVsx1+ju3Mw39o9m/eZ3nbz8aP6p
+	F3KxLcsLu89d0FV9elI2U4mlOCPRUIu5qDgRAOtE5sxsAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -63,37 +65,64 @@ Tomasz Figa wrote:
 > 
 > Hi Kukjin,
 > 
-> On Saturday 28 of September 2013 19:49:14 Tomasz Figa wrote:
-> > All S3C64XX SoCs come with ARM1176JZF-s core, which fully supports
-> > ARMv6K extensions. This patch lets the kernel use them on S3C6410 by
-> > adding selection of CPU_V6K to ARCH_S3C64XX.
+Hi,
+
+> On Sunday 29 of September 2013 18:12:01 Tomasz Figa wrote:
+> > According to board schematics, for HSMMC1 a GPIO line is used to detect
+> > card presence, while currently it is being configured for internal card
+> > detect line, which is multiplexed with card detect line of HSMMC0 and
+> > thus breaking it.
+> >
+> > This patch adds proper sdhci platform data setting card detect type to
+> > external GPIO and fixing operation of HSMMC0.
 > >
 > > Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 > > ---
-> >  arch/arm/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >  arch/arm/mach-s3c64xx/mach-mini6410.c | 10 ++++++++++
+> >  1 file changed, 10 insertions(+)
 > 
-> What do you think about this patch?
+> Would you mind taking this patch to your tree?
 > 
-Yeah, ARM1176JZF-s is correct. Applied.
-
-Thanks,
+Applied, thanks.
 Kukjin
 
 > Best regards,
 > Tomasz
 > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index b766dad..3a41bbb 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -728,7 +728,7 @@ config ARCH_S3C64XX
-> >  	select CLKDEV_LOOKUP
-> >  	select CLKSRC_SAMSUNG_PWM
-> >  	select COMMON_CLK
-> > -	select CPU_V6
-> > +	select CPU_V6K
-> >  	select GENERIC_CLOCKEVENTS
-> >  	select GPIO_SAMSUNG
-> >  	select HAVE_CLK
+> > diff --git a/arch/arm/mach-s3c64xx/mach-mini6410.c
+> > b/arch/arm/mach-s3c64xx/mach-mini6410.c index 58d46a3..97ae470 100644
+> > --- a/arch/arm/mach-s3c64xx/mach-mini6410.c
+> > +++ b/arch/arm/mach-s3c64xx/mach-mini6410.c
+> > @@ -36,7 +36,9 @@
+> >  #include <plat/devs.h>
+> >  #include <plat/fb.h>
+> >  #include <linux/platform_data/mtd-nand-s3c2410.h>
+> > +#include <linux/platform_data/mmc-sdhci-s3c.h>
+> >  #include <plat/regs-serial.h>
+> > +#include <plat/sdhci.h>
+> >  #include <linux/platform_data/touchscreen-s3c2410.h>
+> >
+> >  #include <video/platform_lcd.h>
+> > @@ -214,6 +216,13 @@ static struct platform_device mini6410_lcd_powerdev
+> > = { .dev.platform_data	= &mini6410_lcd_power_data,
+> >  };
+> >
+> > +static struct s3c_sdhci_platdata mini6410_hsmmc1_pdata = {
+> > +	.max_width		= 4,
+> > +	.cd_type		= S3C_SDHCI_CD_GPIO,
+> > +	.ext_cd_gpio		= S3C64XX_GPN(10),
+> > +	.ext_cd_gpio_invert	= true,
+> > +};
+> > +
+> >  static struct platform_device *mini6410_devices[] __initdata = {
+> >  	&mini6410_device_eth,
+> >  	&s3c_device_hsmmc0,
+> > @@ -321,6 +330,7 @@ static void __init mini6410_machine_init(void)
+> >
+> >  	s3c_nand_set_platdata(&mini6410_nand_info);
+> >  	s3c_fb_set_platdata(&mini6410_lcd_pdata[features.lcd_index]);
+> > +	s3c_sdhci1_set_platdata(&mini6410_hsmmc1_pdata);
+> >  	s3c24xx_ts_set_platdata(NULL);
+> >
+> >  	/* configure nCS1 width to 16 bits */
 
