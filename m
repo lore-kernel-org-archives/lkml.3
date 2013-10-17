@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762789Ab3JQVA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:00:26 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:36103 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762371Ab3JQVAZ (ORCPT
+	id S1762731Ab3JQVFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:05:05 -0400
+Received: from gw03.mail.saunalahti.fi ([195.197.172.111]:48426 "EHLO
+	gw03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758386Ab3JQVFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:00:25 -0400
+	Thu, 17 Oct 2013 17:05:04 -0400
+X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Oct 2013 17:05:04 EDT
+Date: Thu, 17 Oct 2013 23:54:28 +0300 (EEST)
+From: Joonas Saarinen <jza@saunalahti.fi>
+To: linux-kernel@vger.kernel.org
+Message-ID: <17862115.9387961382043268695.JavaMail.jza@saunalahti.fi>
+Subject: Re: AMD Bobcat cpufreq
 MIME-Version: 1.0
-In-Reply-To: <20131017112806.GA5293@intel.com>
-References: <20130920203556.GA8726@www.outflux.net>
-	<alpine.LRH.2.02.1310171858170.32257@tundra.namei.org>
-	<20131017112806.GA5293@intel.com>
-Date: Thu, 17 Oct 2013 14:00:24 -0700
-X-Google-Sender-Auth: -j2eht7nHLNtC4qQqczXnGojm8s
-Message-ID: <CAGXu5j+OJZFQxmuGtpcEakNMTVfcP8kSPoC4R9Yu6_eYLk2T-g@mail.gmail.com>
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-From: Kees Cook <keescook@chromium.org>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: James Morris <jmorris@namei.org>, LKML <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; Charset=iso-8859-1; Format=Flowed
+Content-Transfer-Encoding: 7bit
+X-Mailer: Saunalahti webmail - http://saunalahti.fi
+X-Originating-IP: 80.223.182.224
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 4:30 AM, Jarkko Sakkinen
-<jarkko.sakkinen@linux.intel.com> wrote:
-> On Thu, Oct 17, 2013 at 07:02:17PM +1100, James Morris wrote:
->> This seems like a regression in terms of separating mechanism and policy.
->>
->> We have several access control systems available (SELinux, at least) which
->> can implement this functionality with existing mechanisms using dynamic
->> policy.
->>
->> I'm concerned about the long term architectural impact of a proliferation
->> of arbitrary hard-coded security policies in the kernel.  I don't
->> understand the push in this direction, frankly.
+On Thu, 22 Aug 2013 13:17:53 +0200 Borislav Petkov wrote:
+> On Tue, Aug 20, 2013 at 10:58:07PM +0300, Joonas Saarinen wrote:
+> > Hi guys,
+> > 
+> > The turbo core feature on AMD Bobcat platform seems not to be
+> > working. I have a netbook with C-60 CPU which never cranks the
+> > frequency over 1000MHz (it could reach 1333MHz).
 >
-> The biggest risk in LSM stacker is really to become backdoor for very product
-> dilated kernel changes that are not accepted to the mainline kernel. I think
-> having LSM stacker would be benefical but barrier should be set very high
-> for "one-shot" modules.
+> Yeah, how about more info like which kernel, /proc/cpuinfo, full
+> dmesg, dmidecode... sounds like enough for starters.
 >
-> One big benefit that I see in LSM stacker is not at least directly security
-> related. It would be perfect integration tool when you want for example
-> provide Android run-time in an OS that uses AppArmor or SMACK as its security
-> framework.
+> Thanks.
 
-I think of stacking as a way to help people do quick prototyping of
-security changes without getting in the way of their distro's MAC.
+All right. I'm finally back to re-investigate the issue. The
+requested data can be found at:
 
--Kees
+http://users.metropolia.fi/~joonasms/bobcat/
 
--- 
-Kees Cook
-Chrome OS Security
+The CPU underclocks as expected but the turbo multiplier is never
+activated.
+
+Joonas
+
