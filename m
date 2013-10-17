@@ -1,81 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3JQIQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 04:16:55 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53044 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab3JQIQv (ORCPT
+	id S1753244Ab3JQIRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 04:17:17 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:12990 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab3JQIQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Oct 2013 04:16:51 -0400
-Date: Thu, 17 Oct 2013 10:16:42 +0200
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@au1.ibm.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, jslaby@suse.cz,
-        gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
- HUPCL control
-Message-ID: <20131017081642.GA6134@linux.vnet.ibm.com>
-Mail-Followup-To: Benjamin Herrenschmidt <benh@au1.ibm.com>, jslaby@suse.cz,
-	gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-	heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-	linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-	linux-s390@vger.kernel.org
-References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
- <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
- <1381475711.5630.67.camel@pasglop>
- <20131011124707.GA6082@linux.vnet.ibm.com>
- <1381524204.5630.91.camel@pasglop>
- <20131015153626.GA6129@linux.vnet.ibm.com>
- <1381870070.17841.24.camel@pasglop>
- <20131016090432.GA6053@linux.vnet.ibm.com>
- <1381965672.17841.71.camel@pasglop>
+Message-ID: <525F9CEF.9020904@atmel.com>
+Date: Thu, 17 Oct 2013 10:16:47 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381965672.17841.71.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101708-0542-0000-0000-000006C5ECE8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-serial@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] tty/serial: at91: add a fallback option to determine
+ uart/usart property
+References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com> <64f8f1db6f888456be8ee410a7e9bb9851d070a5.1381394411.git.nicolas.ferre@atmel.com> <20131014135921.GG11420@ns203013.ovh.net> <525D0896.6020907@atmel.com> <20131016201451.GA21296@kroah.com>
+In-Reply-To: <20131016201451.GA21296@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 06:21:12PM -0500, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-10-16 at 11:04 +0200, Hendrik Brueckner wrote:
-> > Indeed, two callbacks change the DTR line.  The main difference is that
-> > tiocmget/tiocmset can be called from user space by ioctl.  That's not the case
-> > for the dtr_cts callback.  Also, tiocmget/tiocmset provide more flags that can
-> > be changed (ST, SR, CTS, CD, RNG, RI,  ...)
-> > 
-> > Assume we would like to unify them have a single callback to change DTR, then
-> > we have to take care of these differences.  So the question to you now is
-> > whether you plan for a) other modem flags to be changed and b) if changing the
-> > DTR line (or other control flags) through an ioctl?
-> > 
-> > Depending on your results, I could work on sth that helps us both and reduces
-> > the callbacks.
-> 
-> Can we not just have the users of dtr_cts just call the backend's tiocmset ?
+On 16/10/2013 22:14, Greg Kroah-Hartman :
+> On Tue, Oct 15, 2013 at 11:19:18AM +0200, Nicolas Ferre wrote:
+>> On 14/10/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD :
+>>> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
+>>>> On older SoC, the "name" field is not filled in the register map.
+>>>> Fix the way to figure out if the serial port is an uart or an usart for these
+>>>> older products (with corresponding properties).
+>>>>
+>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>> ---
+>>>>   drivers/tty/serial/atmel_serial.c | 19 ++++++++++++++++++-
+>>>>   include/linux/atmel_serial.h      |  1 +
+>>>>   2 files changed, 19 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+>>>> index 6b0f75e..c7d99af 100644
+>>>> --- a/drivers/tty/serial/atmel_serial.c
+>>>> +++ b/drivers/tty/serial/atmel_serial.c
+>>>> @@ -99,6 +99,7 @@ static void atmel_stop_rx(struct uart_port *port);
+>>>>   #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
+>>>>   #define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
+>>>>   #define UART_GET_IP_NAME(port)	__raw_readl((port)->membase + ATMEL_US_NAME)
+>>>> +#define UART_GET_IP_VERSION(port) __raw_readl((port)->membase + ATMEL_US_VERSION)
+>>>>
+>>>>    /* PDC registers */
+>>>>   #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
+>>>> @@ -1503,6 +1504,7 @@ static void atmel_get_ip_name(struct uart_port *port)
+>>>>   {
+>>>>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+>>>>   	int name = UART_GET_IP_NAME(port);
+>>>> +	u32 version;
+>>>>   	int usart, uart;
+>>>>   	/* usart and uart ascii */
+>>>>   	usart = 0x55534152;
+>>>> @@ -1517,7 +1519,22 @@ static void atmel_get_ip_name(struct uart_port *port)
+>>>>   		dev_dbg(port->dev, "This is uart\n");
+>>>>   		atmel_port->is_usart = false;
+>>>>   	} else {
+>>>> -		dev_err(port->dev, "Not supported ip name, set to uart\n");
+>>>> +		/* fallback for older SoCs: use version field */
+>>>> +		version = UART_GET_IP_VERSION(port);
+>>>> +		switch (version) {
+>>>> +		case 0x302:
+>>>> +		case 0x10213:
+>>>> +			dev_dbg(port->dev, "This version is usart\n");
+>>>> +			atmel_port->is_usart = true;
+>>>> +			break;
+>>>> +		case 0x203:
+>>>> +		case 0x10202:
+>>>> +			dev_dbg(port->dev, "This version is uart\n");
+>>>> +			atmel_port->is_usart = false;
+>>>> +			break;
+>>>> +		default:
+>>>> +			dev_err(port->dev, "Not supported ip name nor version, set to uart\n");
+>>>
+>>> it's not really an error a dev_warn is more oppropriate
+>>
+>> As we are already in -rc5 and that these fixes are critical for at91
+>> platforms, I will not re-spin another patch just for this.
+>>
+>> Moreover, I have the feeling that if we end up in this case, it
+>> means that we are in big troubles because the usart/uart included in
+>> the product triggering this log is not known (I recall that newer
+>> products do not have to hit these lines of code).
+>>
+>> With these 2 reasons, I prefer to keep my patch like it is.
+>>
+>> Greg, can you consider taking these two patches as regression fixes
+>> for 3.12 (with Tested-by tag from Thomas)?
+>
+> Is this really a regression from 3.11?
 
-That's possible.  The only concern is that the tiocmset() callback could be
-triggered from within the hvc_console() layer as well as from user space via
-ioctl.  For the hvc_iucv driver, I do not want to introduce this ioctl.
+Yes it is. Commit id that I am referring to in patch 1/2 
+(055560b04a8cd063aea916fd083b7aec02c2adb8) hit the mainline in 3.12-rc 
+time-frame.
 
-One option would be to add parameter to the hvc_callbacks that indicate the
-origin so that a backend could filter.
+> What's the worry about waiting
+> for 3.13-rc1, getting this correct, and then backporting them to the
+> 3.12-stable trees?
 
-> If they need to filter or clamp bits, we could handle all that in hvc_console
-> by caching the user intended value and passing a cooked value down to the backend..
+It will break all older at91 in 3.12-final. Moreover, I do think that 
+the actual patches are bringing an incorrect solution and I do not plan 
+to have a better one (which one?) for 3.13...
 
-Sure the hvc_console layer could do as much as possible.
+> I'd prefer that, so, please clean this up properly and resend it, with
+> the tested-by: lines and I'll queue them up for 3.13-rc1.
 
-> 
-> None of that is urgent or anything, it's just odd and would be nice to cleanup.
+I do not know what to cleanup. Anyway, tell me if you want that I resend 
+the series of 2 patches with the "Tested-by" tag included.
 
-Thanks and kind regards,
-  Hendrik
-
+Bye,
+-- 
+Nicolas Ferre
