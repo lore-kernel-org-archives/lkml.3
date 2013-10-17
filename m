@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3JQMoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:44:09 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13536 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab3JQMjL (ORCPT
+	id S1755552Ab3JQMp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:45:57 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:36055 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3JQMpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:39:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 17 Oct 2013 05:34:42 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 04/15] clk: tegra: Add TEGRA_PERIPH_NO_DIV flag
-Date: Thu, 17 Oct 2013 15:38:35 +0300
-Message-ID: <1382013526-12800-5-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 17 Oct 2013 08:45:55 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-6c-525fdc01e7de
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] spi: spi-s3c64xx: Add missing pm_runtime_put on setup fail
+Date: Thu, 17 Oct 2013 14:45:41 +0200
+Message-id: <1382013941-861-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xy7qMd+KDDGaf07WYtO4Ak8XUh0/Y
+	LF6/MLToXXCVzWLT42usFpd3zWGzmHF+H5NF48eb7BaH37SzOnB6/F31gtlj06pONo/NS+o9
+	+rasYvT4vEkugDWKyyYlNSezLLVI3y6BK+PE2bNMBWtYK7b9m8PUwLiLpYuRk0NCwETiyc6v
+	7BC2mMSFe+vZuhi5OIQEljJKfD6/jBHC6WOS2PlrAlgHm4CxxOblS9hAbBGBLInb/7YwgxQx
+	CzxjlPh78DErSEJYwFtiwc0/zCA2i4CqxIq2bjCbV8BVYuLDf0BTOYDWKUjMmWQzgZF7ASPD
+	KkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQsPmyg3HxMatDjAIcjEo8vDOWxwUJsSaWFVfm
+	HmKU4GBWEuHdsj0+SIg3JbGyKrUoP76oNCe1+BAjEwenVAOj+sLE6Y7xMnyH18Xw9rOKP5y7
+	eHtmc9TOB20S/Y/msx4N2n2J5+W/2yb+cR4+mz0y2xsmG5rrKsbrXX3eN/3tz2VqR0Vrtxuq
+	9UycIu1VvujSGtkFof+emhw8Gtbz/PF7xqBVt8/9MitynbFtj8P60hcND8U8DDoitwjw3vSJ
+	m31p+ao5/xr9lFiKMxINtZiLihMBcCF8NPkBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag indicates the peripheral clock does not have a divider. It will
-simplify the initialization tables and avoids some very similar code.
+pm_runtime_put() wasn't called if clock rate could not be set up in
+s3c64xx_spi_setup() leading to invalid count of device pm_runtime usage.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/clk/tegra/clk-periph.c |   11 ++++++++---
- drivers/clk/tegra/clk.h        |    1 +
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/spi/spi-s3c64xx.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
-index 5102d5e..b5feccc 100644
---- a/drivers/clk/tegra/clk-periph.c
-+++ b/drivers/clk/tegra/clk-periph.c
-@@ -173,12 +173,16 @@ const struct clk_ops tegra_clk_periph_nodiv_ops = {
- static struct clk *_tegra_clk_register_periph(const char *name,
- 			const char **parent_names, int num_parents,
- 			struct tegra_clk_periph *periph,
--			void __iomem *clk_base, u32 offset, bool div,
-+			void __iomem *clk_base, u32 offset,
- 			unsigned long flags)
- {
- 	struct clk *clk;
- 	struct clk_init_data init;
- 	struct tegra_clk_periph_regs *bank;
-+	bool div = !(periph->gate.flags & TEGRA_PERIPH_NO_DIV);
-+
-+	flags |= periph->gate.flags & TEGRA_PERIPH_NO_DIV ?
-+			CLK_SET_RATE_PARENT : 0;
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index a80376d..0ddaff2 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -1121,6 +1121,7 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
+ 	return 0;
  
- 	init.name = name;
- 	init.ops = div ? &tegra_clk_periph_ops : &tegra_clk_periph_nodiv_ops;
-@@ -216,7 +220,7 @@ struct clk *tegra_clk_register_periph(const char *name,
- 		u32 offset, unsigned long flags)
- {
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, true, flags);
-+			periph, clk_base, offset, flags);
- }
+ setup_exit:
++	pm_runtime_put(&sdd->pdev->dev);
+ 	/* setup() returns with device de-selected */
+ 	disable_cs(sdd, spi);
  
- struct clk *tegra_clk_register_periph_nodiv(const char *name,
-@@ -224,6 +228,7 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
- 		u32 offset)
- {
-+	periph->gate.flags |= TEGRA_PERIPH_NO_DIV;
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, false, CLK_SET_RATE_PARENT);
-+			periph, clk_base, offset, CLK_SET_RATE_PARENT);
- }
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 997357e..a826720 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -397,6 +397,7 @@ struct tegra_clk_periph_gate {
- #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
- #define TEGRA_PERIPH_ON_APB BIT(2)
- #define TEGRA_PERIPH_WAR_1005168 BIT(3)
-+#define TEGRA_PERIPH_NO_DIV BIT(4)
- 
- void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
- extern const struct clk_ops tegra_clk_periph_gate_ops;
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.7.9.5
 
