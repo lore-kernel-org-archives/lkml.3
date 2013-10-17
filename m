@@ -1,139 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3JQOCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:02:22 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:23302 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab3JQOCU (ORCPT
+	id S1756242Ab3JQOEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:04:47 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:42286 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488Ab3JQOEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:02:20 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-62-525fede94d8e
-Message-id: <525FEDDD.8000301@samsung.com>
-Date: Thu, 17 Oct 2013 18:02:05 +0400
-From: Tarek Dakhran <t.dakhran@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-MIME-version: 1.0
-To: Aliaksei Katovich <aliaksei.katovich@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>
-Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Naour Romain <romain.naour@openwide.fr>,
-        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
- <87k3hc3lso.fsf@linaro.org> <20131017130435.GG3061@cat.local>
-In-reply-to: <20131017130435.GG3061@cat.local>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t/xy7ov38YHGdzYqGvxunkWq8WkdQeY
-	LOZ9lrWYf+Qcq8X/R69ZLc69Wslo0bvgKpvF18MrGC02Pb7GarGwbQmLxeVdc9gsZpzfx2Rx
-	+zKvxdLrF5ksnk64yGYxYfpaFovDK4AGrXs5ncViy88ORotXB9tYLDZvmspsMXXGD3YHMY81
-	89YwerQ097B5LPh8hd3j76oXzB47Z91l91i5/Aubx6vVM1k97lzbw+bx7tw5do/NS+o9Xl1j
-	8ejbsorRY/u1ecwenzfJeWycGxrAH8Vlk5Kak1mWWqRvl8CVcWfRZbaCZcoVR3d2MTUwHpft
-	YuTkkBAwkbg3bTIThC0mceHeerYuRi4OIYGljBIrVmxjhXA+ADnvu9lBqngFtCRO9LwFs1kE
-	VCXe7T7G3MXIwcEmoC2xZYcXSFhUIEziaNNPVohyQYkfk++xgNgiAhESL++vYweZySzwkVWi
-	u2k5G0hCWMBG4s7ZJqhlzYwSp/6/BFvAKaAnceTwKrBJzAJmEo9a1jFD2PISm9e8ZZ7AKDAL
-	yZJZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMksr/uYFx6zOoQowAHoxIP
-	74zlcUFCrIllxZW5hxglOJiVRHhd7scHCfGmJFZWpRblxxeV5qQWH2Jk4uCUamAs9yvuPfm4
-	feaXk4x7co5t0l/C9r2Z/RDftMaXKjtMs1ZxeRlIf31elBUqzrFp80QfA9nXdXm1CvFd60VZ
-	ik48qt/Gn2jyjWnNWX0Xx876Q1Xf+A8zRHov2LWvLILlx6S/H+Yuc49SZyua5qZ86MHJdXYz
-	7dxmHkv+/6euqlI3ds2u47w/zucqsRRnJBpqMRcVJwIAFyPJEcoCAAA=
+	Thu, 17 Oct 2013 10:04:45 -0400
+Date: Thu, 17 Oct 2013 16:02:25 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: Re: [PATCH -next] misc: fix various misc/mic/host/ build errors
+Message-ID: <20131017140224.GA32734@ulmo.nvidia.com>
+References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+ <525C481E.1010908@infradead.org>
+ <20131016192648.GA19637@kroah.com>
+ <525EEBD4.7070800@infradead.org>
+ <20131016194440.GA14416@kroah.com>
+ <20131016203024.GA6579@mithrandir>
+ <20131016203727.GB1633@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+In-Reply-To: <20131016203727.GB1633@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.10.2013 17:04, Aliaksei Katovich wrote:
-> hi Kevin;
->
->> Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
->>
->>> The series of patches represent support of Exynos 5410 SoC
->>>      
->>> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
->>> Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
->>>      
->>> Patches add new platform description, support of clock controller,
->>> dual cluster support and device tree for Exynos 5410
->>>     
->>> Has been build on v3.12-rc5.
->>> Has been tested on Exynos 5410 reference board (exynos_defconfig).
->> Has anyone tried this on the exynos5410 based odroid-xu yet?
->>
->> I tried booting this on my recently arrived odroid-xu, but am not
->> getting it to boot.
-> 	I am able to boot my odroid-xu+e to busybox with these patches applied
-> 	against 3.12-rc5: exynos_defconfig and exynos5410-smdk5410.dtb were
-> 	used.
->
-> 	However there seem to be some issues with virq allocations, like this:
->
-> <snippet>
-> Starting kernel ...
->                     
-> [    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
-> [    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
-> [    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
-> [    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
-> [    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
-> [    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
-> )
-> [    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
-> [    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
-> [    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
-> [    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
-> [    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
-> [    0.000000] ---[ end trace 1b75b31a2719edcd ]---
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: CPU: 0 PID: 0 at kernel/irq/irqdomain.c:278 irq_domain_associate+0x128/0x1a8()
-> [    0.000000] error: virq337 is not allocated
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W    3.12.0-rc5-00004-g1cb405f #1
-> [    0.000000] [<c0014d48>] (unwind_backtrace+0x0/0xf8) from [<c00117d0>] (show_stack+0x10/0x14)
-> [    0.000000] [<c00117d0>] (show_stack+0x10/0x14) from [<c0363488>] (dump_stack+0x6c/0xac)
-> [    0.000000] [<c0363488>] (dump_stack+0x6c/0xac) from [<c001e330>] (warn_slowpath_common+0x64/0x88)
-> [    0.000000] [<c001e330>] (warn_slowpath_common+0x64/0x88) from [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40)
-> [    0.000000] [<c001e3e8>] (warn_slowpath_fmt+0x30/0x40) from [<c005a1b4>] (irq_domain_associate+0x128/0x1a8)
-> [    0.000000] [<c005a1b4>] (irq_domain_associate+0x128/0x1a8) from [<c005a508>] (irq_domain_associate_many+0x30/0x3c
-> )
-> [    0.000000] [<c005a508>] (irq_domain_associate_many+0x30/0x3c) from [<c005a768>] (irq_domain_add_simple+0x78/0x90)
-> [    0.000000] [<c005a768>] (irq_domain_add_simple+0x78/0x90) from [<c04b044c>] (combiner_of_init+0xb4/0x198)
-> [    0.000000] [<c04b044c>] (combiner_of_init+0xb4/0x198) from [<c04b6938>] (of_irq_init+0x278/0x2a0)
-> [    0.000000] [<c04b6938>] (of_irq_init+0x278/0x2a0) from [<c049b8fc>] (start_kernel+0x18c/0x384)
-> [    0.000000] [<c049b8fc>] (start_kernel+0x18c/0x384) from [<40008074>] (0x40008074)
-> [    0.000000] ---[ end trace 1b75b31a2719edce ]---
-> [    0.000000] ------------[ cut here ]------------
-> </snippet>
->
-> 	You can check full boot log here http://sprunge.us/NKcU
->
-> --
-> Aliaksei
->
->> I'm not yet terribly familiar with this SoC, what are the settings
->> needed for DEBUG_LL on this board?
->>
->> Thanks,
->>
->> Kevin
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
-Also change NR_CPUS to 8 in kernel config, so you will get 8 cores 
-booted instead of 2.
 
-Best regards,
-     Tarek Dakhran
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Oct 16, 2013 at 01:37:27PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Oct 16, 2013 at 10:30:25PM +0200, Thierry Reding wrote:
+> > On Wed, Oct 16, 2013 at 12:44:40PM -0700, Greg Kroah-Hartman wrote:
+> > > On Wed, Oct 16, 2013 at 12:41:08PM -0700, Randy Dunlap wrote:
+> > > > On 10/16/13 12:26, Greg Kroah-Hartman wrote:
+> > > > > On Mon, Oct 14, 2013 at 12:38:06PM -0700, Randy Dunlap wrote:
+> > > > >> From: Randy Dunlap <rdunlap@infradead.org>
+> > > > >>
+> > > > >> Fix various build errors (on x86_64) for drivers/misc/mic/host/:
+> > > > >>
+> > > > >>   drivers/misc/mic/host/mic_main.c:378:3: error: too many argume=
+nts to function 'sysfs_get_dirent'
+> > > > >>   drivers/misc/mic/host/mic_intr.h:134:58: warning: 'struct pci_=
+dev' declared inside parameter list [enabled by default]
+> > > > >>   drivers/misc/mic/host/mic_intr.h:134:58: warning: its scope is=
+ only this definition or declaration, which is probably not what you want [=
+enabled by default]
+> > > > >>   drivers/misc/mic/host/mic_intr.h:135:58: warning: 'struct pci_=
+dev' declared inside parameter list [enabled by default]
+> > > > >>   drivers/misc/mic/host/mic_device.h:169:2: error: implicit decl=
+aration of function 'ioread32' [-Werror=3Dimplicit-function-declaration]
+> > > > >>   drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_read=
+':
+> > > > >>   drivers/misc/mic/host/mic_device.h:169:2: error: implicit decl=
+aration of function 'ioread32' [-Werror=3Dimplicit-function-declaration]
+> > > > >>   drivers/misc/mic/host/mic_device.h: In function 'mic_mmio_writ=
+e':
+> > > > >>   drivers/misc/mic/host/mic_device.h:183:2: error: implicit decl=
+aration of function 'iowrite32' [-Werror=3Dimplicit-function-declaration]
+> > > > >>
+> > > > >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> > > > >> Cc: Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>
+> > > > >> Cc: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> > > > >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > >> Cc: Nikhil Rao <nikhil.rao@intel.com>
+> > > > >> Cc: Sudeep Dutt <sudeep.dutt@intel.com>
+> > > > >=20
+> > > > > This is a -next issue only at this point in time, I thought it wa=
+s in
+> > > > > the -next tree as a "fixup" already?
+> > > >=20
+> > > > Are you asking the driver maintainers?
+> > >=20
+> > > No, the linux-next maintainers.
+> > >=20
+> > > The driver maintainers have nothing to do with this, it's a sysfs cha=
+nge
+> > > in my driver-core tree that causes this issue.
+> >=20
+> > Well, we do carry a patch to fix this, but that generally doesn't get
+> > carried to Linus' tree automatically as far as I know. So I guess it's
+> > fine for now, but when the merge window opens you'll need to make sure
+> > that Linus merges the branches in the correct order so that the build
+> > doesn't break in between.
+>=20
+> Yes, I'll do that as part of my normal tree submission process.
+
+Actually, ensuring correct merge order won't be enough, will it? That
+doesn't magically fixes that the function's signature actually changed.
+
+Shouldn't the update of the sysfs_get_dirent() call be fixed within the
+same patch that updates the sysfs_get_dirent() signature?
+
+Thierry
+
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSX+3wAAoJEN0jrNd/PrOhk4QQAKdty12NACyeHpBQMH076LRf
+zLwiG1gBPNypH9l1h/1skYUa2crRXrKcPrH3MW/8kIsC6WpxOSjvSPgzZs/qH6iE
+TpOJL5nZ7KArr9aivUmZr7drK4JS1H1osfV2aO/n0+C2XuB/N9ryx5gsq7a6rWhz
+qO1LvkBkYJyeFoqZL9YxKlKhWpJyWkVqfc5lVHX0lQvFEF5BeEWUGdv+Dnrw4uKx
+BRxYPI98ZxLXRktRa6ebEESMoiaDbvJwiz0ImgSG9rj2Bc0cszgXJNEp+Y7/6kCw
+U38cN13IzR7GbvCE2ipOCrLMqzDWFDVI4LrfqBWG1OMSTWTPRY8c2pMCjkJymS6m
+rS7Rc6WWs0sXCNPNlKzCyuE5vRJbv3Co5dMN2SpSdNR56vCy8OIvgpJLjAs3G/jA
+r9E9KQ/txuf+n++RPEJPAqSMjRtVSEjb6nt8fefANbRTbUdHXcq/6h66ZpythHtP
+tgLuge2e6orZrpXFosz8NRPAaoyQxWVUfdrRX3jP9UhE/8NczreueAyZr/eFOQWd
+eoSANGMMV+TL2w5EH6sCjFAi2hqEM0vKja/1JoP7U4swNQRn7oVcbYKrjPgq798a
+oBHvk5B3dyNvVHkw0UQGeGUif6nWBAnvSP/IbOfH9QmiDj4uerSQki0uRyzdvHs8
+BGpXovHhxjtJwKZWgCiw
+=iASK
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
