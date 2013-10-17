@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3JQJLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 05:11:36 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:26735
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab3JQJLd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 05:11:33 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>
-CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
-        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
-        <oskar@scara.com>, <shawn.guo@linaro.org>, <b42378@freescale.com>,
-        <b18965@freescale.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCHv1 3/8] ARM: dts: Enables SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
-Date: Thu, 17 Oct 2013 17:01:12 +0800
-Message-ID: <1382000477-17304-4-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753699Ab3JQJQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 05:16:32 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:54298 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab3JQJQa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 17 Oct 2013 05:16:30 -0400
+Message-Id: <525FC70A02000078000FBB8B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 17 Oct 2013 10:16:26 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "HATAYAMA Daisuke" <d.hatayama@jp.fujitsu.com>
+Cc: <davem@davemloft.net>, <adobriyan@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix proc_reg_get_unmapped_area()
+References: <525E957802000078000FB6FE@nat28.tlf.novell.com>
+ <20131016134044.d1bd8004f4fb94df405a541d@linux-foundation.org>
+ <525FAC8B02000078000FBAE8@nat28.tlf.novell.com>
+ <525FA177.1030506@jp.fujitsu.com>
+In-Reply-To: <525FA177.1030506@jp.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add and enable SAI device.
+>>> On 17.10.13 at 10:36, HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+> (2013/10/17 16:23), Jan Beulich wrote:
+>>>>> On 16.10.13 at 22:40, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>> On Wed, 16 Oct 2013 12:32:40 +0100 "Jan Beulich" <JBeulich@suse.com> wrote:
+>>>
+>>>> Commit c4fe24485729fc2cbff324c111e67a1cc2f9adea ("sparc: fix PCI device
+>>>> proc file mmap(2)"), while fixing one problem, introduced two new ones:
+>>>> - the function truncates the return value from ->get_unmapped_area() on
+>>>>    64-bit architectures,
+>>>> - _all_ descendants are now required to set .get_unmapped_area to non-
+>>>>    NULL, which wasn't necessary before (and shouldn't be).
+>>>>
+>>>> Both - afaict - are a result from a too simplistic copy'n'paste from
+>>>> proc_reg_mmap() done in that change.
+>>>>
+>>>> This likely also addresses reports like the one at
+>>>>
+>>> 
+> http://linux-kernel.2935.n7.nabble.com/mmap-for-proc-vmcore-broken-since-3-12-rc1-td729 
+> 
+>>> 326.html.
+>>>>
+>>>> ...
+>>>>
+>>>> --- 3.12-rc5/fs/proc/inode.c
+>>>> +++ 3.12-rc5-proc-get-unmapped-area/fs/proc/inode.c
+>>>> @@ -288,12 +288,12 @@ static int proc_reg_mmap(struct file *fi
+>>>>   static unsigned long proc_reg_get_unmapped_area(struct file *file, 
+> unsigned
+>>> long orig_addr, unsigned long len, unsigned long pgoff, unsigned long flags)
+>>>>   {
+>>>>   	struct proc_dir_entry *pde = PDE(file_inode(file));
+>>>> -	int rv = -EIO;
+>>>> -	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned
+>>> long, unsigned long, unsigned long);
+>>>> +	unsigned long rv = -EIO;
+>>>> +
+>>>>   	if (use_pde(pde)) {
+>>>> -		get_unmapped_area = pde->proc_fops->get_unmapped_area;
+>>>> -		if (get_unmapped_area)
+>>>> -			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
+>>>> +		rv = (pde->proc_fops->get_unmapped_area
+>>>> +		      ?: current->mm->get_unmapped_area)(file, orig_addr, len,
+>>>> +							 pgoff, flags);
+>>>>   		unuse_pde(pde);
+>>>>   	}
+>>>>   	return rv;
+>>>
+>>> I think these two patches will address the problems:
+>>>
+>>> http://ozlabs.org/~akpm/mmots/broken-out/procfs-fix-unintended-truncation-of-retur 
+>>> ned-mapped-address.patch
+>>> http://ozlabs.org/~akpm/mmots/broken-out/procfs-call-default-get_unmapped_area-on- 
+>>> mmu-present-architectures.patch
+>>>
+>>> I'll be sending those Linuswards today.  Please check them.  (I think
+>>> your version would break the nommu build).
+>>
+>> Yes indeed - I did search for existing patches, but didn't find them.
+>> I see Linus merged them already, so there's no point anymore
+>> sending Reviewed-by tags.
+>>
+>> I think though that in the !MMU case the second of them leaves an
+>> issue unfixed nevertheless: If the specific procfs handler has no
+>> .get_unmapped_area, the operation would still fail in that case
+>> rather than succeed as it did before that wrapper got added.)
+>>
+>> Jan
+>>
+> 
+> Yes, there remains difference on no-mmu that if mmap is not defined, mmap() 
+> now returns
+> EIO, it should return ENODEV.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+No, afaict it should succeed (and simply use the address that came in).
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index 1a58678..e4106dd 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -57,6 +57,12 @@
- 	status = "okay";
- };
- 
-+&sai2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_sai2_1>;
-+	status = "okay";
-+};
-+
- &uart1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_uart1_1>;
--- 
-1.8.0
-
+Jan
 
