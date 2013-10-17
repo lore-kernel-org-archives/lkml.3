@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab3JQRgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:36:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44025 "EHLO
+	id S1758629Ab3JQRgs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:36:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758517Ab3JQRgN (ORCPT
+	with ESMTP id S1757608Ab3JQRgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:36:13 -0400
-Date: Thu, 17 Oct 2013 10:36:12 -0700
+	Thu, 17 Oct 2013 13:36:46 -0400
+Date: Thu, 17 Oct 2013 10:36:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
+        Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] char/misc fixes for 3.12-rc6
-Message-ID: <20131017173612.GA8003@kroah.com>
+Subject: [GIT PATCH] Driver core fixes for 3.12-rc6
+Message-ID: <20131017173645.GA8057@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,49 +22,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
+The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
 
-  Linux 3.12-rc4 (2013-10-06 14:00:20 -0700)
+  Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.12-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.12-rc6
 
-for you to fetch changes up to e13cef8ded69e469b56e150e30619693b91b1864:
+for you to fetch changes up to a37f86305c80f441b8b99dae7c19d3f9d2effc15:
 
-  Merge tag 'iio-fixes-for-3.12c' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into char-misc-linus (2013-10-17 09:40:52 -0700)
+  driver core: Release device_hotplug_lock when store_mem_state returns EINVAL (2013-10-16 18:42:41 -0700)
 
 ----------------------------------------------------------------
+Driver core fix for 3.12-rc6
 
-Char / misc driver fixes for 3.12-rc6
-
-Here are some small iio and w1 driver fixes for 3.12-rc6.
-
-There is also a hyper-v fix in here, which turned out to be incorrect,
-so it was reverted.  That will probably have to wait unto 3.13-rc1 to
-get accepted as it's still being discussed.
+Here is one fix for the hotplug memory path that resolves a regression
+when removing memory that showed up in 3.12-rc1.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Greg Kroah-Hartman (2):
-      Revert "Drivers: hv: vmbus: Fix a bug in channel rescind code"
-      Merge tag 'iio-fixes-for-3.12c' of git://git.kernel.org/.../jic23/iio into char-misc-linus
+Yasuaki Ishimatsu (1):
+      driver core: Release device_hotplug_lock when store_mem_state returns EINVAL
 
-Hans-Frieder Vogt (2):
-      w1 - fix fops in w1_bus_notify
-      w1 - call request_module with w1 master mutex unlocked
-
-K. Y. Srinivasan (1):
-      Drivers: hv: vmbus: Fix a bug in channel rescind code
-
-Lars-Peter Clausen (1):
-      iio:buffer: Free active scan mask in iio_disable_all_buffers()
-
-Wei Yongjun (1):
-      iio: frequency: adf4350: add missing clk_disable_unprepare() on error in adf4350_probe()
-
- drivers/iio/frequency/adf4350.c   | 6 ++++--
- drivers/iio/industrialio-buffer.c | 3 +++
- drivers/w1/w1.c                   | 6 ++++++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/base/memory.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
