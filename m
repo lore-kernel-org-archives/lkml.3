@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3JQP5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:57:22 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:65125 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295Ab3JQP5U (ORCPT
+	id S1757516Ab3JQP6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:58:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38467 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab3JQP6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:57:20 -0400
+	Thu, 17 Oct 2013 11:58:45 -0400
+Message-ID: <52600931.1020803@wwwdotorg.org>
+Date: Thu, 17 Oct 2013 09:58:41 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <52600821.9010304@gmail.com>
-References: <20131017142839.GA8482@quad>
-	<52600821.9010304@gmail.com>
-Date: Thu, 17 Oct 2013 17:57:20 +0200
-Message-ID: <CABPqkBR1LhiL-HpbffZAZ=HouFnGRaxvkgREBFUy3HsMXCA=jg@mail.gmail.com>
-Subject: Re: [PATCH v2] perf: disable PERF_RECORD_MMAP2 support
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 00/15] Introduce common infra for tegra clocks
+References: <1382013674-12901-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1382013674-12901-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 5:54 PM, David Ahern <dsahern@gmail.com> wrote:
-> On 10/17/13 8:28 AM, Stephane Eranian wrote:
->>
->>
->> For now, we disable the extended MMAP record support (MMAP2).
->> We have identified cases where it would not report the correct
->> mapping information, clone(VM_CLONE) but with separate pids.
->> We will revisit the support once we find a solution for this case.
->>
->> The patch changes the kernel to return EINVAL if attr->mmap2
->> is set. The patch also modifies the perf tool to use regular
->> PERF_RECORD_MMAP
->> for synthetic events and it also prevents the tool from requesting
->> attr->mmap2
->> mode because the kernel would reject it.
->>
->> The support will be revisited once the kenrel interface is updated.
->
->
-> Why not disable mmap2 as well:
->
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index 0ce9febf1ba0..289f34dbe970 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -678,7 +678,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
->         attr->sample_type   |= PERF_SAMPLE_WEIGHT;
->
->     attr->mmap  = track;
-> -   attr->mmap2 = track && !perf_missing_features.mmap2;
-> +   /* attr->mmap2 = track && !perf_missing_features.mmap2; */
->     attr->comm  = track;
->
-It is disabled automatically later on. I checked that. Wanted to minimize
-the changes.
+On 10/17/2013 06:41 AM, Peter De Schrijver wrote:
+> This patchset introduces common infrastructure for clocks which exist in
+> several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
+> this new infrastructure.
+
+This series, and the other series "[PATCH v3 0/7] Tegra124 clock support",
+
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+Patch 1 in this series also (or the whole lot if you want),
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
+There are some ifdef issues though, which should be fixed before
+actually applying this:
+
+tegra_defconfig builds fine.
+
+tegra_defconfig minus CONFIG_ARCH_TEGRA_114_SOC yields:
+
+> drivers/clk/tegra/clk-pll.c:1734:12: error: ‘clk_pll_iddq_enable’ undeclared here (not in a function)
+> drivers/clk/tegra/clk-pll.c:1735:13: error: ‘clk_pll_iddq_disable’ undeclared here (not in a function)
+> drivers/clk/tegra/clk-pll.c:1737:16: error: ‘clk_pll_ramp_round_rate’ undeclared here (not in a function)
+> drivers/clk/tegra/clk-pll.c:1738:14: error: ‘clk_pllxc_set_rate’ undeclared here (not in a function)
+> drivers/clk/tegra/clk-pll.c: In function ‘tegra_clk_register_pllss’:
+> drivers/clk/tegra/clk-pll.c:1781:2: error: implicit declaration of function ‘_clip_vco_min’ [-Werror=implicit-function-declaration]
+> drivers/clk/tegra/clk-pll.c:1785:2: error: implicit declaration of function ‘_pll_fixed_mdiv’ [-Werror=implicit-function-declaration]
+
+(Thanks for Aaron Plattner for pointing that out)
+
+Can you please double-check all 15 valid combinations of
+CONFIG_ARCH_TEGRA_xx_SOC to make sure they all build.
