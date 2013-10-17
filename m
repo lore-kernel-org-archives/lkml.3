@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762447Ab3JQSUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:20:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46056 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759035Ab3JQSUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:20:41 -0400
-Date: Thu, 17 Oct 2013 11:20:07 -0700
-From: tip-bot for David Cohen <tipbot@zytor.com>
-Message-ID: <tip-bedc8013631804c61f873cca4117e7af8236285a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1381896701-23476-12-git-send-email-david.a.cohen@linux.intel.com>
-References: <1381896701-23476-12-git-send-email-david.a.cohen@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/intel-mid] x86: intel-mid:
-  add section for sfi device table
-Git-Commit-ID: bedc8013631804c61f873cca4117e7af8236285a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1762474Ab3JQSU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:20:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46059 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762455Ab3JQSUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 14:20:55 -0400
+Message-ID: <52602A29.506@zytor.com>
+Date: Thu, 17 Oct 2013 11:19:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:20:13 -0700 (PDT)
+To: Ingo Molnar <mingo@kernel.org>, Neil Horman <nhorman@tuxdriver.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com> <20131012172124.GA18241@gmail.com> <20131014202854.GH26880@hmsreliant.think-freely.org> <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com> <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com> <20131017003421.GA31470@hmsreliant.think-freely.org> <20131017084121.GC22705@gmail.com>
+In-Reply-To: <20131017084121.GC22705@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bedc8013631804c61f873cca4117e7af8236285a
-Gitweb:     http://git.kernel.org/tip/bedc8013631804c61f873cca4117e7af8236285a
-Author:     David Cohen <david.a.cohen@linux.intel.com>
-AuthorDate: Tue, 15 Oct 2013 21:11:40 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 Oct 2013 17:16:49 -0700
+On 10/17/2013 01:41 AM, Ingo Molnar wrote:
+> 
+> To correctly simulate the workload you'd have to:
+> 
+>  - allocate a buffer larger than your L2 cache.
+> 
+>  - to measure the effects of the prefetches you'd also have to randomize
+>    the individual buffer positions. See how 'perf bench numa' implements a
+>    random walk via --data_rand_walk, in tools/perf/bench/numa.c.
+>    Otherwise the CPU might learn your simplistic stream direction and the
+>    L2 cache might hw-prefetch your data, interfering with any explicit 
+>    prefetches the code does. In many real-life usecases packet buffers are
+>    scattered.
+> 
+> Also, it would be nice to see standard deviation noise numbers when two 
+> averages are close to each other, to be able to tell whether differences 
+> are statistically significant or not.
+> 
 
-x86: intel-mid: add section for sfi device table
+Seriously, though, how much does it matter?  All the above seems likely
+to do is to drown the signal by adding noise.
 
-When Intel mid uses SFI table to enumerate devices, it requires an extra
-device table with further information about how to probe such devices.
+If the parallel (threaded) checksumming is faster, which theory says it
+should and microbenchmarking confirms, how important are the
+macrobenchmarks?
 
-This patch creates a section where the device table will stay if
-CONFIG_X86_INTEL_MID is selected.
+	-hpa
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1381896701-23476-12-git-send-email-david.a.cohen@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/vmlinux.lds.S | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index 10c4f30..da6b35a 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -199,6 +199,15 @@ SECTIONS
- 		__x86_cpu_dev_end = .;
- 	}
- 
-+#ifdef CONFIG_X86_INTEL_MID
-+	.x86_intel_mid_dev.init : AT(ADDR(.x86_intel_mid_dev.init) - \
-+								LOAD_OFFSET) {
-+		__x86_intel_mid_dev_start = .;
-+		*(.x86_intel_mid_dev.init)
-+		__x86_intel_mid_dev_end = .;
-+	}
-+#endif
-+
- 	/*
- 	 * start address and size of operations which during runtime
- 	 * can be patched with virtualization friendly instructions or
