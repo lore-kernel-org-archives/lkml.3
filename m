@@ -1,278 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab3JQVMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:12:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35607 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282Ab3JQVLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:11:49 -0400
-Date: Thu, 17 Oct 2013 23:11:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        dave.hansen@linux.intel.com, Stephane Eranian <eranian@google.com>,
-        jmario@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131017211138.GF26785@twins.programming.kicks-ass.net>
-References: <20131016105755.GX10651@twins.programming.kicks-ass.net>
- <20131016205227.GJ7456@tassilo.jf.intel.com>
- <20131016210319.GI10651@twins.programming.kicks-ass.net>
- <20131016230712.GC26785@twins.programming.kicks-ass.net>
- <20131017094145.GE3364@laptop.programming.kicks-ass.net>
- <20131017160034.GO227855@redhat.com>
- <20131017160439.GP227855@redhat.com>
- <20131017163039.GR10651@twins.programming.kicks-ass.net>
- <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
- <20131017210816.GY10651@twins.programming.kicks-ass.net>
+	id S932450Ab3JQVMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:12:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab3JQVMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 17:12:31 -0400
+Message-ID: <526052B3.9030000@redhat.com>
+Date: Thu, 17 Oct 2013 23:12:19 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017210816.GY10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Gerd Hoffmann <kraxel@redhat.com>
+CC: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] xhci: Remove segments from radix tree on failed insert.
+References: <20131017194458.GA12351@xanatos>
+In-Reply-To: <20131017194458.GA12351@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 11:08:16PM +0200, Peter Zijlstra wrote:
-> I did a patch that avoids the page count mucking about, Don didn't see
-> any significant improvements from it.
+Hi,
 
-On top of which there's another patch -- which could as easily be done
-without it, that adds some state to the copy_from_user_nmi() and avoids
-re-doing the page walk and memcpy().
+On 10/17/2013 09:44 PM, Sarah Sharp wrote:
+> If we're expanding a stream ring, we want to make sure we can add those
+> ring segments to the radix tree that maps segments to ring pointers.
+> Try the radix tree insert after the new ring segments have been allocated
+> (the last segment in the new ring chunk will point to the first newly
+> allocated segment), but before the new ring segments are linked into the
+> old ring.
+>
+> If insert fails on any one segment, remove each segment from the radix
+> tree, deallocate the new segments, and return.  Otherwise, link the new
+> segments into the tree.
+>
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> ---
+>
+> Something like this.
 
-Don also tried a vraiant of the below for the pebs fixup code; that
-turned out to be slower than the single copy all at once.
+Thanks for working on this.
 
-The below -- as stated in the changelog -- might still improve the
-frame-pointer chase, but I've no numbers what so ever atm.
+ > It's ugly, but it compiles.  I haven't tested it.
+> Hans, can you review and test this?
 
----
-Subject: perf, x86: Optimize copy_from_user_nmi()
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Thu, 17 Oct 2013 11:41:45 +0200
+Reviewed, I've one small nitpick, see inline comments, other then that it looks
+good, and I don't find it all that ugly :)
 
-In an attempt to speed up the frame-pointer chase we introduce a new
-copy_from_user_nmi() interface:
+I've also run various tests and it seems to work as advertised (I've not
+managed to trigger the error path though AFAIK).
 
-  struct copy_from_user_nmi_state;
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-  void *copy_from_user_nmi_iter(void *to, void __user *from, int s,
-				struct copy_from_user_nmi_state *state);
-  void copy_from_user_nmi_end(struct copy_from_user_nmi_state *state);
+>
+> Sarah Sharp
+>
+>   drivers/usb/host/xhci-mem.c | 106 +++++++++++++++++++++++++++++++++-----------
+>   1 file changed, 80 insertions(+), 26 deletions(-)
+>
+> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+> index a455c56..6ce8d31 100644
+> --- a/drivers/usb/host/xhci-mem.c
+> +++ b/drivers/usb/host/xhci-mem.c
+> @@ -180,53 +180,98 @@ static void xhci_link_rings(struct xhci_hcd *xhci, struct xhci_ring *ring,
+>    * extended systems (where the DMA address can be bigger than 32-bits),
+>    * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
+>    */
+> -static int xhci_update_stream_mapping(struct xhci_ring *ring, gfp_t mem_flags)
+> +static int xhci_insert_segment_mapping(struct radix_tree_root *trb_address_map,
+> +		struct xhci_ring *ring,
+> +		struct xhci_segment *seg,
+> +		gfp_t mem_flags)
+>   {
+> -	struct xhci_segment *seg;
+>   	unsigned long key;
+>   	int ret;
+>
+> -	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
+> +	key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
+> +	/* Skip any segments that were already added. */
+> +	if (radix_tree_lookup(trb_address_map, key))
+>   		return 0;
+>
+> -	seg = ring->first_seg;
+> -	do {
+> -		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
+> -		/* Skip any segments that were already added. */
+> -		if (radix_tree_lookup(ring->trb_address_map, key))
+> -			continue;
+> +	ret = radix_tree_maybe_preload(mem_flags);
+> +	if (ret)
+> +		return ret;
+> +	ret = radix_tree_insert(trb_address_map,
+> +			key, ring);
+> +	radix_tree_preload_end();
+> +	return ret;
+> +}
+>
+> -		ret = radix_tree_maybe_preload(mem_flags);
+> -		if (ret)
+> -			return ret;
+> -		ret = radix_tree_insert(ring->trb_address_map,
+> -				key, ring);
+> -		radix_tree_preload_end();
+> +static void xhci_remove_segment_mapping(struct radix_tree_root *trb_address_map,
+> +		struct xhci_segment *seg)
+> +{
+> +	unsigned long key;
+> +
+> +	key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
+> +	if (radix_tree_lookup(trb_address_map, key))
+> +		radix_tree_delete(trb_address_map, key);
+> +}
+> +
+> +static int xhci_update_stream_segment_mapping(
+> +		struct radix_tree_root *trb_address_map,
+> +		struct xhci_ring *ring,
+> +		struct xhci_segment *first_seg,
+> +		struct xhci_segment *last_seg,
+> +		gfp_t mem_flags)
+> +{
+> +	struct xhci_segment *seg;
+> +	struct xhci_segment *failed_seg;
+> +	int ret;
+> +
+> +	if (WARN_ON_ONCE(trb_address_map == NULL))
+> +		return 0;
+> +
+> +	seg = first_seg;
+> +	do {
+> +		ret = xhci_insert_segment_mapping(trb_address_map,
+> +				ring, seg, mem_flags);
+>   		if (ret)
+> -			return ret;
+> +			goto remove_streams;
+> +		if (seg == last_seg)
+> +			return 0;
+>   		seg = seg->next;
+> -	} while (seg != ring->first_seg);
+> +	} while (seg != first_seg);
 
-The _iter() method returns a pointer to the memory requested; if this
-is entirely contained within one page it simply returns a pointer into
-the kmap and avoids the copy. Otherwise it will copy into the buffer
-provided in the @to argument and return a pointer thereto.
+The while here tests for looping round, but that should never
+happen, IMHO using do {} while (true); here would be more clear,
+and also consistent with how the tear-down is done in the
+error case in xhci_ring_expansion.
 
-Because we potentially need to keep the kmap alive, we need the
-closing _end() function and the @state variable.
+>
+>   	return 0;
+> +
+> +remove_streams:
+> +	failed_seg = seg;
+> +	seg = first_seg;
+> +	do {
+> +		xhci_remove_segment_mapping(trb_address_map, seg);
+> +		if (seg == failed_seg)
+> +			return ret;
+> +		seg = seg->next;
+> +	} while (seg != first_seg);
 
-Since we keep state, we also avoid the page-table walk for consecutive
-accesses to the same page.
+And I would also prefer "} while (true};" here for the same reasons.
 
-Using this we (hopefully) reduce the number of page-table walks (and
-kmap on i386) operations.
+> +
+> +	return ret;
+>   }
+>
+>   static void xhci_remove_stream_mapping(struct xhci_ring *ring)
+>   {
+>   	struct xhci_segment *seg;
+> -	unsigned long key;
+>
+>   	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
+>   		return;
+>
+>   	seg = ring->first_seg;
+>   	do {
+> -		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
+> -		if (radix_tree_lookup(ring->trb_address_map, key))
+> -			radix_tree_delete(ring->trb_address_map, key);
+> +		xhci_remove_segment_mapping(ring->trb_address_map, seg);
+>   		seg = seg->next;
+>   	} while (seg != ring->first_seg);
+>   }
+>
+> +static int xhci_update_stream_mapping(struct xhci_ring *ring, gfp_t mem_flags)
+> +{
+> +	return xhci_update_stream_segment_mapping(ring->trb_address_map, ring,
+> +			ring->first_seg, ring->last_seg, mem_flags);
+> +}
+> +
+>   /* XXX: Do we need the hcd structure in all these functions? */
+>   void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
+>   {
+> @@ -429,16 +474,25 @@ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
+>   	if (ret)
+>   		return -ENOMEM;
+>
+> +	ret = xhci_update_stream_segment_mapping(ring->trb_address_map, ring,
+> +			first, last, flags);
+> +	if (ret) {
+> +		struct xhci_segment *next;
+> +		do {
+> +			next = first->next;
+> +			xhci_segment_free(xhci, first);
+> +			if (first == last)
+> +				break;
+> +			first = next;
+> +		} while (true);
+> +		return ret;
+> +	}
+> +
+>   	xhci_link_rings(xhci, ring, first, last, num_segs);
+>   	xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,
+>   			"ring expansion succeed, now has %d segments",
+>   			ring->num_segs);
+>
+> -	if (ring->type == TYPE_STREAM) {
+> -		ret = xhci_update_stream_mapping(ring, flags);
+> -		WARN_ON(ret); /* FIXME */
+> -	}
+> -
+>   	return 0;
+>   }
+>
+>
 
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: dave.hansen@linux.intel.com
-Cc: eranian@google.com
-Cc: jmario@redhat.com
-Cc: acme@infradead.org
-Cc: mingo@kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131017094145.GE3364@laptop.programming.kicks-ass.net
----
- arch/x86/include/asm/uaccess.h   |   13 ++++++
- arch/x86/kernel/cpu/perf_event.c |   32 ++++++---------
- arch/x86/lib/usercopy.c          |   79 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 106 insertions(+), 18 deletions(-)
+Regards,
 
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -516,6 +516,19 @@ struct __large_struct { unsigned long bu
- 
- extern unsigned long
- copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
-+
-+struct copy_from_user_nmi_state {
-+	void *map;
-+	unsigned long address;
-+	unsigned long flags;
-+};
-+
-+extern void *
-+copy_from_user_nmi_iter(void *to, const void __user *from,
-+			unsigned long n, struct copy_from_user_nmi_state *state);
-+extern void
-+copy_from_user_nmi_end(struct copy_from_user_nmi_state *state);
-+
- extern __must_check long
- strncpy_from_user(char *dst, const char __user *src, long count);
- 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1979,8 +1979,9 @@ static inline int
- perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- {
- 	/* 32-bit process in 64-bit kernel. */
-+	struct copy_from_user_nmi_state state = { NULL };
- 	unsigned long ss_base, cs_base;
--	struct stack_frame_ia32 frame;
-+	struct stack_frame_ia32 frame, *f;
- 	const void __user *fp;
- 
- 	if (!test_thread_flag(TIF_IA32))
-@@ -1991,20 +1992,17 @@ perf_callchain_user32(struct pt_regs *re
- 
- 	fp = compat_ptr(ss_base + regs->bp);
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
--		unsigned long bytes;
--		frame.next_frame     = 0;
--		frame.return_address = 0;
--
--		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
--		if (bytes != sizeof(frame))
-+		f = copy_from_user_nmi_iter(&frame, fp, sizeof(frame), &state);
-+		if (!f)
- 			break;
- 
- 		if (!valid_user_frame(fp, sizeof(frame)))
- 			break;
- 
--		perf_callchain_store(entry, cs_base + frame.return_address);
--		fp = compat_ptr(ss_base + frame.next_frame);
-+		perf_callchain_store(entry, cs_base + f->return_address);
-+		fp = compat_ptr(ss_base + f->next_frame);
- 	}
-+	copy_from_user_nmi_end(&state);
- 	return 1;
- }
- #else
-@@ -2018,7 +2016,8 @@ perf_callchain_user32(struct pt_regs *re
- void
- perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- {
--	struct stack_frame frame;
-+	struct copy_from_user_nmi_state state = { NULL };
-+	struct stack_frame frame, *f;
- 	const void __user *fp;
- 
- 	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
-@@ -2043,20 +2042,17 @@ perf_callchain_user(struct perf_callchai
- 		return;
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
--		unsigned long bytes;
--		frame.next_frame	     = NULL;
--		frame.return_address = 0;
--
--		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
--		if (bytes != sizeof(frame))
-+		f = copy_from_user_nmi_iter(&frame, fp, sizeof(frame), &state);
-+		if (!f)
- 			break;
- 
- 		if (!valid_user_frame(fp, sizeof(frame)))
- 			break;
- 
--		perf_callchain_store(entry, frame.return_address);
--		fp = frame.next_frame;
-+		perf_callchain_store(entry, f->return_address);
-+		fp = f->next_frame;
- 	}
-+	copy_from_user_nmi_end(&state);
- }
- 
- /*
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -53,3 +53,82 @@ copy_from_user_nmi(void *to, const void
- 	return len;
- }
- EXPORT_SYMBOL_GPL(copy_from_user_nmi);
-+
-+void *copy_from_user_nmi_iter(void *to, const void __user *from,
-+		unsigned long n, struct copy_from_user_nmi_state *state)
-+{
-+	unsigned long offset, addr = (unsigned long)from;
-+	unsigned long size, len = 0;
-+	unsigned long flags;
-+	struct page *page;
-+	void *map, *_to = to;
-+	int ret;
-+
-+	if (__range_not_ok(from, n, TASK_SIZE))
-+		return NULL;
-+
-+	if (state->map) {
-+		if ((state->address >> PAGE_SHIFT) ==
-+		    (addr >> PAGE_SHIFT)) {
-+			flags = state->flags;
-+			map = state->map;
-+			goto got_page;
-+		}
-+		kunmap_atomic(state->map);
-+		local_irq_restore(state->flags);
-+	}
-+
-+	for (;;) {
-+		local_irq_save(flags);
-+		ret = ___get_user_pages_fast(addr, 1, 0, &page);
-+		if (!ret) {
-+			local_irq_restore(flags);
-+			state->map = NULL;
-+			return NULL;
-+		}
-+
-+		map = kmap_atomic(page);
-+
-+got_page:
-+		offset = addr & (PAGE_SIZE - 1);
-+		size = min(PAGE_SIZE - offset, n - len);
-+
-+		/*
-+		 * If the entire desired range falls within the one page
-+		 * avoid the copy and return a pointer into the kmap.
-+		 */
-+		if (size == n) {
-+			_to = map + offset;
-+			break;
-+		}
-+
-+		memcpy(to, map+offset, size);
-+		len += size;
-+
-+		if (len == n)
-+			break;
-+
-+		to   += size;
-+		addr += size;
-+
-+		kunmap_atomic(map);
-+		local_irq_restore(flags);
-+	}
-+
-+	state->address = addr;
-+	state->flags = flags;
-+	state->map = map;
-+
-+	return _to;
-+}
-+EXPORT_SYMBOL_GPL(copy_from_user_nmi_iter);
-+
-+void copy_from_user_nmi_end(struct copy_from_user_nmi_state *state)
-+{
-+	if (state->map) {
-+		kunmap_atomic(state->map);
-+		local_irq_restore(state->flags);
-+		state->map = NULL;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(copy_from_user_nmi_end);
+Hans
