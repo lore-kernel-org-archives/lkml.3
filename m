@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3JQNeB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:34:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52815 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3JQNeA (ORCPT
+	id S1755973Ab3JQNfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:35:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63478 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755421Ab3JQNfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:34:00 -0400
-Date: Thu, 17 Oct 2013 15:33:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
-        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org,
-        mingo@kernel.org
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131017133350.GG3364@laptop.programming.kicks-ass.net>
-References: <20131014203549.GY227855@redhat.com>
- <20131015101404.GD10651@twins.programming.kicks-ass.net>
- <20131015130226.GX26785@twins.programming.kicks-ass.net>
- <20131015143227.GY26785@twins.programming.kicks-ass.net>
- <20131015150736.GZ26785@twins.programming.kicks-ass.net>
- <20131015154104.GA227855@redhat.com>
- <20131016105755.GX10651@twins.programming.kicks-ass.net>
- <20131016124649.GG227855@redhat.com>
- <20131016133125.GY10651@twins.programming.kicks-ass.net>
+	Thu, 17 Oct 2013 09:35:10 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH] ACPI / power: Drop automaitc resume of power resource dependent devices
+Date: Thu, 17 Oct 2013 15:47 +0200
+Message-ID: <2220996.Balj6KfZAP@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <3517410.N1Ot4TpM2j@vostro.rjw.lan>
+References: <4814451.BPLed2xxbP@vostro.rjw.lan> <525F8A48.9020007@intel.com> <3517410.N1Ot4TpM2j@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016133125.GY10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 03:31:25PM +0200, Peter Zijlstra wrote:
-> Pick a smaller box? I seem to be able to reproduce on my wsm-ep, which
-> boots inside a minute :-)
+On Thursday, October 17, 2013 01:56:23 PM Rafael J. Wysocki wrote:
+> On Thursday, October 17, 2013 02:57:12 PM Aaron Lu wrote:
+> > On 10/16/2013 09:25 PM, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > The mechanism causing devices depending on a given power resource
+> > > (that is, devices that can be in D0 only if that power resource is
+> > > on) to be resumed automatically when the power resource is turned
+> > > on (and their "inferred" power state becomes D0 as a result) is
+> > > inherently racy and in fact unnecessary.
+> > > 
+> > > It is racy, because if the power resources is turned on and then
+> > > immediately off, the device resume triggered by the first transition
+> > > to "on" may still happen, causing the power resource to be turned
+> > > on again.  That again will trigger the "resume of dependent devices"
+> > > mechanism, but if the devices in question are not in use, they will
+> > > be suspended in the meantime causing the power resource to be turned
+> > > off.  However, the "resume of dependent devices" will next resume
+> > > them again and so on.  In some cases (USB port PM in particular) that
+> > > leads to an endless busy loop of flipping the resource on and off
+> > > continuously.
+> > > 
+> > > It is needless, because whoever turns a power resource on will most
+> > > likely turn it off at some point and the devices that go into "D0"
+> > > as a result of turning it on will then go back into D3cold.
+> > > Moreover, turning all power resources a device needs to go into
+> > > D0 is not sufficient for a full transition into D0 in general.
+> > > Namely, _PS0 may need to be executed in addition to that in some
+> > > cases.  This means that the whole rationale of the "resume of
+> > > dependent devices" mechanism was incorrect to begin with and it's
+> > > best to remove it entirely.
+> > 
+> > With this patch, your previous patch could also be applied now:
+> > https://lkml.org/lkml/2013/6/14/173
+> > [PATCH 4/4] ACPI / PM: Drop two functions that are not used any more
+> 
+> Good catch and that code is dead anyway AFAICS, because power_dependent is only
+> used in device_pm.c (in those two functions) and in scan.c (where it is
+> initialized).
 
-OK, so what I'm actually seeing on my WSM is that sched/clock.c is
-'broken' for the purpose we're using it for.
+That obviously is with the $subject patch applied.
 
-What triggered it is that my WSM-EP is broken :-(
+Thanks!
 
-[    0.001000] tsc: Fast TSC calibration using PIT
-[    0.002000] tsc: Detected 2533.715 MHz processor
-[    0.500180] TSC synchronization [CPU#0 -> CPU#6]:
-[    0.505197] Measured 3 cycles TSC warp between CPUs, turning off TSC clock.
-[    0.004000] tsc: Marking TSC unstable due to check_tsc_sync_source failed
-
-For some reason it consistently detects TSC skew, even though NHM+
-should have a single clock domain for 'reasonable' systems.
-
-This marks sched_clock_stable=0, which means that we do fancy stuff to
-try and get a 'sane' clock. Part of this fancy stuff relies on the tick,
-clearly that's gone when NOHZ=y. So for idle cpus time gets stuck, until
-it either wakes up or gets kicked by another cpu.
-
-While this is perfectly fine for the scheduler -- it only cares about
-actually running stuff, and when we're running stuff we're obviously not
-idle. This does somewhat break down for perf which can trigger events
-just fine on an otherwise idle cpu.
-
-So I've got NMIs get get 'measured' as taking ~1ms, which actually
-don't last nearly that long:
-
-          <idle>-0     [013] d.h.   886.311970: rcu_nmi_enter <-do_nmi
-...
-          <idle>-0     [013] d.h.   886.311997: perf_sample_event_took: HERE!!! : 1040990
-
-So ftrace (which uses sched_clock(), not the fancy bits) only sees
-~27us, but we measure ~1ms !!
-
-Now since all this measurement stuff lives in x86 code, we can actually
-fix it:
-
----
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1276,16 +1276,16 @@ void perf_events_lapic_init(void)
- static int __kprobes
- perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- {
--	int ret;
- 	u64 start_clock;
- 	u64 finish_clock;
-+	int ret;
- 
- 	if (!atomic_read(&active_events))
- 		return NMI_DONE;
- 
--	start_clock = local_clock();
-+	start_clock = sched_clock();
- 	ret = x86_pmu.handle_irq(regs);
--	finish_clock = local_clock();
-+	finish_clock = sched_clock();
- 
- 	perf_sample_event_took(finish_clock - start_clock);
- 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index ba77ebc2c353..6fcb49ce50a1 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -113,10 +113,10 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
- 		u64 before, delta, whole_msecs;
- 		int remainder_ns, decimal_msecs, thishandled;
- 
--		before = local_clock();
-+		before = sched_clock();
- 		thishandled = a->handler(type, regs);
- 		handled += thishandled;
--		delta = local_clock() - before;
-+		delta = sched_clock() - before;
- 		trace_nmi_handler(a->handler, (int)delta, thishandled);
- 
- 		if (delta < nmi_longest_ns)
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
