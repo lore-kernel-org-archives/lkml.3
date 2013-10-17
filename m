@@ -1,159 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3JQOsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:48:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48192 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756187Ab3JQOsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:48:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,514,1378882800"; 
-   d="asc'?scan'208";a="418434211"
-Date: Thu, 17 Oct 2013 10:33:48 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, tony.luck@intel.com, joe@perches.com,
-        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-Message-ID: <20131017143348.GA3891@gchen.bj.intel.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>, tony.luck@intel.com,
-	joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
-	arozansk@redhat.com, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
- <20131016160550.GG13608@pd.tnic>
- <20131016125646.7141b580@gandalf.local.home>
- <20131016180038.GO13608@pd.tnic>
- <20131016181117.GP13608@pd.tnic>
+	id S1756941Ab3JQOtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:49:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35205 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab3JQOtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 10:49:20 -0400
+Message-ID: <525FF88A.7090606@ti.com>
+Date: Thu, 17 Oct 2013 17:47:38 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
-Content-Disposition: inline
-In-Reply-To: <20131016181117.GP13608@pd.tnic>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: OMAP4460: cpuidle: WA for ROM bug because of
+ CA9 r2pX gic control register change
+References: <1382000776-15897-3-git-send-email-grygorii.strashko@ti.com> <525FACB1.3030101@ti.com> <525FECB8.20600@ti.com>
+In-Reply-To: <525FECB8.20600@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.172]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/17/2013 04:57 PM, Santosh Shilimkar wrote:
+> On Thursday 17 October 2013 05:24 AM, Grygorii Strashko wrote:
+>> On OMAP4+ devices, GIC register context is lost when MPUSS hits the
+>> OSWR. On the CPU wakeup path, ROM code gets executed and one of the
+>> steps in it is to restore the saved context of the GIC.
+>>
+>> The ROM code uses GICD != 1 condition to decide how the GIC registers
+>> are handled in wakeup path from OSWR. But, GICD  register has changed
+>> between CortexA9 r1pX and r2pX and it contains 2 bits now. Secure view
+>> which ROM code sees:
+>>        bit 1 == Enable Non-secure
+>>        bit 0 == Enable secure
+>> Non-secure view which HLOS sees:
+>>        bit 0 == Enable Non-secure
+>>
+>> As result, on OMAP4460(r2pX) devices, when the ROM code is executed
+>> during CPU1 wakeup, GICD == 3 and it fails to understand the real wakeup
+>> power state and reconfigures GIC distributor to boot values and, as
+>> result, the entire interrupt controller context will loose in a live
+>> system.
+>>
+>> Hence, implement a workaround on OMAP4460 devices in case if MPUSS has
+>> hit OSWR - as long as CPU1 sees GICD == 1 in it's wakeup path from OSWR,
+>> the issue won't happen:
+>>       1.1) CPU0 must disable the GIC distributor, before doing the CPU1
+>> wakeup,
+>>       1.2) CPU0 should wait until CPU1 will re-enable the GIC distributor
+>>         2) CPU1 must re-enable the GIC distributor on it's wakeup path.
+>>
+>> The workaround for CPUIdle has been implemented in the same way as
+>> for boot-up & hot-plug path in:
+>>   - http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;
+>> a=commitdiff;h=ff999b8a0983ee15668394ed49e38d3568fc6859
+>>
+>> For more information see:
+>> - https://patchwork.kernel.org/patch/1609011/
+>> - http://www.spinics.net/lists/arm-kernel/msg201402.html
+>>
+>> The ROM code bug is applicable to only OMAP4460(r2pX) devices.
+>> OMAP4470 (also r2pX) is not affected by this bug because ROM code has been
+>> fixed.
+>>
+> Just give reference to the commit which has best description about
+> the bug and just say applying the fix for idle case.
+>
+> ff999b8a {ARM: OMAP4460: Workaround for ROM...}
+>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Cc: Kevin Hilman <khilman@linaro.org>
+>> Reported-and-Tested-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   arch/arm/mach-omap2/common.h       |    1 +
+>>   arch/arm/mach-omap2/cpuidle44xx.c  |   34 +++++++++++++++++++++++++++++++++-
+>>   arch/arm/mach-omap2/omap4-common.c |    6 ++++++
+>>   3 files changed, 40 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+>> index b875a4a..7957110 100644
+>> --- a/arch/arm/mach-omap2/common.h
+>> +++ b/arch/arm/mach-omap2/common.h
+>> @@ -232,6 +232,7 @@ static inline void __iomem *omap4_get_scu_base(void)
+>>
+>>   extern void __init gic_init_irq(void);
+>>   extern void gic_dist_disable(void);
+>> +extern void gic_dist_enable(void);
+>>   extern bool gic_dist_disabled(void);
+>>   extern void gic_timer_retrigger(void);
+>>   extern void omap_smc1(u32 fn, u32 arg);
+>> diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
+>> index 384aa1c..528638b 100644
+>> --- a/arch/arm/mach-omap2/cpuidle44xx.c
+>> +++ b/arch/arm/mach-omap2/cpuidle44xx.c
+>> @@ -80,6 +80,7 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+>>               int index)
+>>   {
+>>       struct idle_statedata *cx = state_ptr + index;
+>> +    u32 mpuss_context_lost = 0;
+>>
+>>       /*
+>>        * CPU0 has to wait and stay ON until CPU1 is OFF state.
+>> @@ -126,13 +127,44 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
+>>       omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+>>       cpu_done[dev->cpu] = true;
+>>
+>> +    mpuss_context_lost = omap4_mpuss_read_prev_context_state();
+>> +
+> Just use the targeted state since couple idle almost grantees
+> the low power entry. Even in failed case, applying errata sequence
+> is harmless.
+>
+>>       /* Wakeup CPU1 only if it is not offlined */
+>>       if (dev->cpu == 0 && cpumask_test_cpu(1, cpu_online_mask)) {
+>> +        /*
+>> +         * GIC distributor control register has changed between
+>> +         * CortexA9 r1pX and r2pX. The Control Register secure
+>> +         * banked version is now composed of 2 bits:
+>> +         * bit 0 == Secure Enable
+>> +         * bit 1 == Non-Secure Enable
+>> +         * The Non-Secure banked register has not changed
+>> +         * Because the ROM Code is based on the r1pX GIC, the CPU1
+>> +         * GIC restoration will cause a problem to CPU0 Non-Secure SW.
+>> +         * The workaround must be:
+>> +         * 1) Before doing the CPU1 wakeup, CPU0 must disable
+>> +         * the GIC distributor and wait until it will be enabled by CPU1
+>> +         * 2) CPU1 must re-enable the GIC distributor on
+>> +         * it's wakeup path.
+>> +         */
+>> +        if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) &&
+>> +            mpuss_context_lost)
+> Use target state here..
+>
+>> +            gic_dist_disable();
+>> +
+>>           clkdm_wakeup(cpu_clkdm[1]);
+>>           omap_set_pwrdm_state(cpu_pd[1], PWRDM_POWER_ON);
+>>           clkdm_allow_idle(cpu_clkdm[1]);
+>> +
+>> +        if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) &&
+>> +            mpuss_context_lost)
+>> +            while (gic_dist_disabled()) {
+>> +                udelay(1);
+>> +                cpu_relax();
+>> +            }
+> Am surprised you didn't live lock here. CPUs can wait here infinitely
 
---u3/rZRmxL6MmkK24
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+yes. Thats why i did revert in patch 1 to guarantee that this loop will 
+be executed at right time.
 
-On Wed, Oct 16, 2013 at 08:11:17PM +0200, Borislav Petkov wrote:
-> Date: Wed, 16 Oct 2013 20:11:17 +0200
-> From: Borislav Petkov <bp@alien8.de>
-> To: Steven Rostedt <rostedt@goodmis.org>, "Chen, Gong"
->  <gong.chen@linux.intel.com>
-> Cc: tony.luck@intel.com, joe@perches.com, naveen.n.rao@linux.vnet.ibm.com,
->  arozansk@redhat.com, linux-acpi@vger.kernel.org,
->  linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-> User-Agent: Mutt/1.5.21 (2010-09-15)
->=20
-> On Wed, Oct 16, 2013 at 08:00:38PM +0200, Borislav Petkov wrote:
-> > Right, the only difference I can see is that include/ras/ras_event.h
-> > doesn't have those below:
-> >=20
-> > #undef TRACE_INCLUDE_PATH
-> > #undef TRACE_INCLUDE_FILE
-> > #define TRACE_INCLUDE_PATH .
-> >=20
-> > Perhaps that is the problem?
-> >=20
-> > Gong, what is exactly the issue you're observing?
->=20
-> Ok, I think I know what the issue is:
->=20
-> Gong has
->=20
-> diff --git a/drivers/acpi/extlog_trace.c b/drivers/acpi/extlog_trace.c
-> new file mode 100644
-> index 000000000000..28640807fb09
-> --- /dev/null
-> +++ b/drivers/acpi/extlog_trace.c
-> @@ -0,0 +1,107 @@
-> +#include <linux/export.h>
-> +#include <linux/dmi.h>
-> +#include "extlog_trace.h"
-> +
-> +#define CREATE_TRACE_POINTS
-> +#define TRACE_INCLUDE_PATH ../../include/ras
-> +#include <ras/ras_event.h>
->=20
-> for the ras tracepoint although this is done already in
-> drivers/edac/edac_mc.c
->=20
+> because the distributor isn't turned on in idle case. Suspend case,
+> CPU1 on its boot-up will enable distributor and hence everything works
+> with above check.
+>
 
-Sorry I don't express clearly enough. The patch [v2 9/9] in this patch
-seris can work well. The bogus one is in myself reply for patch [v2 0/9].
-In this patch series I keep trace interface always builtin, so it can
-work for module & builtin, whether CREATE_TRACE_POINTS is defined
-multi-times or not.
+>>       }
+>>
+>> +    if (IS_PM44XX_ERRATUM(PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD) && dev->cpu)
+>> +        gic_dist_enable();
+>> +
+> Just move this code under omap-mpuss-lowpower.c and then things should work
+> properly. It won't affect suspend code since suspend path is different.
+>
 
-The weird thing for bogus patch is if it is compiled as a module, I can
-find the trace_xxx function is called definitely and paramerters are
-expected but nothing output via trace interface, just like below:
+ok. I will do. Thanks for your review.
 
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 0/0   #P:120
-#
-#                              _-----=3D> irqs-off
-#                             / _----=3D> need-resched
-#                            | / _---=3D> hardirq/softirq
-#                            || / _--=3D> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
+> Thanks for the fix though...
+>
+> Regards,
+> Santosh
+>
 
-
-I highly suspect my trace_xxx function is compiled as an empty function
-if following my bogus patch.
-
-> Gong, can you try moving the CREATE_TRACE_POINTS line to a new file -
-> arch/x86/ras/ras.c and define it there and not anywhere else, i.e. move
-> it away from edac_mc.c. Does that help?
-
-In current kernel we haven't arch/x86/ras/ras.c. You mean I create
-a new one there and just add some trace macro definition?
-
->=20
-> Also, see Documentation/trace/tracepoints.txt for more info.
->=20
-> HTH.
->=20
-> --=20
-> Regards/Gruss,
->     Boris.
->=20
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-
---u3/rZRmxL6MmkK24
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSX/VMAAoJEI01n1+kOSLHlpEP/jJ/ENGp0FR45RfrolH1mIJW
-uKMZTX1EmBPY5Bd5NHZwF7+ORRbZPZzfLmNUGYBAHcOUFPSDgUhozzkIair9rJvx
-umMt6O3mUv3GI29rvVMsf1MhZglWLUZdy8X7rkYQmtS0AuJT+OfbyyMUqvidHn4N
-YB23J/hjSl1AAyd6UfX4Aj+MlEM0phyHQZQtjWV9py7Wp9iXfN7Gic+SI3CLcR4z
-hm/Muhy29J5HtheD1p1XI+Hpr/MZGWZ+6jFaUVBLT9RW37S+oV6BIH7GhxoTc/LY
-tj+zXFGwkgAJeA87oCOBwlkvtraE0B+IvOyR+MPctrolQB0O3VN3HUJ98L9pJ/PS
-f2CqpLH7f1Zu6yG2qb0aZmymYCDWFpBbdlhfdd+UMgfWtGt1JVdL2sRerT0qwqAT
-GGVZ2HFbgjPj9SepssGHj+VngEXN6tqNGuTFfpYOLPmmcNJuiG63JM22V0CJlE9Y
-w+Hsac571jvaOqATDfUyyJi+6mf3GCgnq7cxS1cAN6tH/KPl3zYywr/t6VdoZVH8
-LPmA63tEtOP3CPDsj4PGvuxSS33d9TnWPT8E7aQoDaHC5yvYzvZGxv+f+tyRhj9M
-xocWg/7R2xmrMFdMcNAgs6iJ7pFaSmqolZAVvD5EWcmoSrElW7J7FTnGlJ6u2mcS
-1n/RUlHFsZgPlwFKY19B
-=GB0+
------END PGP SIGNATURE-----
-
---u3/rZRmxL6MmkK24--
