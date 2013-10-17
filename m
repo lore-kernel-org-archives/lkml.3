@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab3JQQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:49:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45113 "EHLO
+	id S1758196Ab3JQQuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:50:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45147 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757552Ab3JQQt4 (ORCPT
+	with ESMTP id S1756377Ab3JQQuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:49:56 -0400
-Date: Thu, 17 Oct 2013 09:49:12 -0700
-From: tip-bot for Thierry Reding <tipbot@zytor.com>
-Message-ID: <tip-4a7d3e8a9939cf8073c247286d81cbe0ae48eba2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, treding@nvidia.com, sboyd@codeaurora.org,
-        john.stultz@linaro.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, thierry.reding@gmail.com,
-        swarren@wwwdotorg.org, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, treding@nvidia.com, sboyd@codeaurora.org,
-        john.stultz@linaro.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1381843911-31962-1-git-send-email-treding@nvidia.com>
-References: <1381843911-31962-1-git-send-email-treding@nvidia.com>
+	Thu, 17 Oct 2013 12:50:16 -0400
+Date: Thu, 17 Oct 2013 09:49:20 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-7c3f2ab7b844f1a859afbc3d41925e8a0faba5fa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, juri.lelli@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, juri.lelli@gmail.com
+In-Reply-To: <20131015103507.GF10651@twins.programming.kicks-ass.net>
+References: <20131015103507.GF10651@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] clocksource: arch_timer:
-  Do not register arch_sys_counter twice
-Git-Commit-ID: 4a7d3e8a9939cf8073c247286d81cbe0ae48eba2
+Subject: [tip:sched/core] sched/rt: Add missing rmb()
+Git-Commit-ID: 7c3f2ab7b844f1a859afbc3d41925e8a0faba5fa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,78 +27,92 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:49:18 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:49:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4a7d3e8a9939cf8073c247286d81cbe0ae48eba2
-Gitweb:     http://git.kernel.org/tip/4a7d3e8a9939cf8073c247286d81cbe0ae48eba2
-Author:     Thierry Reding <thierry.reding@gmail.com>
-AuthorDate: Tue, 15 Oct 2013 15:31:51 +0200
+Commit-ID:  7c3f2ab7b844f1a859afbc3d41925e8a0faba5fa
+Gitweb:     http://git.kernel.org/tip/7c3f2ab7b844f1a859afbc3d41925e8a0faba5fa
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 15 Oct 2013 12:35:07 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Oct 2013 08:30:03 +0200
+CommitDate: Wed, 16 Oct 2013 14:22:13 +0200
 
-clocksource: arch_timer: Do not register arch_sys_counter twice
+sched/rt: Add missing rmb()
 
-Commit:
+While discussing the proposed SCHED_DEADLINE patches which in parts
+mimic the existing FIFO code it was noticed that the wmb in
+rt_set_overloaded() didn't have a matching barrier.
 
-   65cd4f6 ("arch_timer: Move to generic sched_clock framework")
+The only site using rt_overloaded() to test the rto_count is
+pull_rt_task() and we should issue a matching rmb before then assuming
+there's an rto_mask bit set.
 
-added code to register the arch_sys_counter in arch_timer_register(),
-but it is already registered in arch_counter_register().
+Without that smp_rmb() in there we could actually miss seeing the
+rto_mask bit.
 
-This results in the timer being added to the clocksource list twice,
-therefore causing an infinite loop in the list.
+Also, change to using smp_[wr]mb(), even though this is SMP only code;
+memory barriers without smp_ always make me think they're against
+hardware of some sort.
 
-Remove the duplicate registration and register the scheduler
-clock after the original registration instead.
-
-This fixes a hang during boot on Tegra114 (Cortex-A15).
-
-[ While I've only tested this on Tegra114, I suspect the same hang
-  during boot happens for all processors that use this clock source. ]
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Link: http://lkml.kernel.org/r/1381843911-31962-1-git-send-email-treding@nvidia.com
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: vincent.guittot@linaro.org
+Cc: luca.abeni@unitn.it
+Cc: bruce.ashfield@windriver.com
+Cc: dhaval.giani@gmail.com
+Cc: rostedt@goodmis.org
+Cc: hgu1972@gmail.com
+Cc: oleg@redhat.com
+Cc: fweisbec@gmail.com
+Cc: darren@dvhart.com
+Cc: johan.eker@ericsson.com
+Cc: p.faure@akatech.ch
+Cc: paulmck@linux.vnet.ibm.com
+Cc: raistlin@linux.it
+Cc: claudio@evidence.eu.com
+Cc: insop.song@gmail.com
+Cc: michael@amarulasolutions.com
+Cc: liming.wang@windriver.com
+Cc: fchecconi@gmail.com
+Cc: jkacur@redhat.com
+Cc: tommaso.cucinotta@sssup.it
+Cc: Juri Lelli <juri.lelli@gmail.com>
+Cc: harald.gustafsson@ericsson.com
+Cc: nicola.manica@disi.unitn.it
+Cc: tglx@linutronix.de
+Link: http://lkml.kernel.org/r/20131015103507.GF10651@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/clocksource/arm_arch_timer.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ kernel/sched/rt.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index f655036..95fb944 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -436,6 +436,9 @@ static void __init arch_counter_register(unsigned type)
- 	cyclecounter.mult = clocksource_counter.mult;
- 	cyclecounter.shift = clocksource_counter.shift;
- 	timecounter_init(&timecounter, &cyclecounter, start_count);
-+
-+	/* 56 bits minimum, so we assume worst case rollover */
-+	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index e9304cd..a848f52 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -246,8 +246,10 @@ static inline void rt_set_overload(struct rq *rq)
+ 	 * if we should look at the mask. It would be a shame
+ 	 * if we looked at the mask, but the mask was not
+ 	 * updated yet.
++	 *
++	 * Matched by the barrier in pull_rt_task().
+ 	 */
+-	wmb();
++	smp_wmb();
+ 	atomic_inc(&rq->rd->rto_count);
  }
  
- static void arch_timer_stop(struct clock_event_device *clk)
-@@ -515,15 +518,6 @@ static int __init arch_timer_register(void)
- 		goto out;
- 	}
+@@ -1626,6 +1628,12 @@ static int pull_rt_task(struct rq *this_rq)
+ 	if (likely(!rt_overloaded(this_rq)))
+ 		return 0;
  
--	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
--	cyclecounter.mult = clocksource_counter.mult;
--	cyclecounter.shift = clocksource_counter.shift;
--	timecounter_init(&timecounter, &cyclecounter,
--			 arch_counter_get_cntvct());
--
--	/* 56 bits minimum, so we assume worst case rollover */
--	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
--
- 	if (arch_timer_use_virtual) {
- 		ppi = arch_timer_ppi[VIRT_PPI];
- 		err = request_percpu_irq(ppi, arch_timer_handler_virt,
++	/*
++	 * Match the barrier from rt_set_overloaded; this guarantees that if we
++	 * see overloaded we must also see the rto_mask bit.
++	 */
++	smp_rmb();
++
+ 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+ 		if (this_cpu == cpu)
+ 			continue;
