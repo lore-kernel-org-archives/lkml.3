@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab3JQMJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:09:49 -0400
-Received: from mailrelay-out2.netcologne.de ([81.173.193.132]:43451 "EHLO
-	mailrelay-out2.netcologne.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222Ab3JQMJr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:09:47 -0400
-From: =?iso-8859-1?Q?Kelleter=2C_G=FCnther?= <GKelleter@datus.com>
-To: Andrew Hendry <andrew.hendry@gmail.com>,
-        David Laight <David.Laight@aculab.com>
-CC: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
-        "linux-x25@vger.kernel.org" <linux-x25@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	id S1755037Ab3JQMMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:12:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46538 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753373Ab3JQMMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 08:12:14 -0400
+Date: Thu, 17 Oct 2013 13:11:35 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] X.25: Fix address field length calculation
-Thread-Topic: [PATCH] X.25: Fix address field length calculation
-Thread-Index: AQHOybLnty+s/FnB5kKUVGTJOhUv65n142AAgAEC2gCAAbWDgIAAEs8A
-Date: Thu, 17 Oct 2013 12:09:33 +0000
-Message-ID: <525FD37C.50003@datus.com>
-References: <525D5131.9070007@datus.com>
-	<1381858190.22110.25.camel@joe-AO722>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B738F@saturn3.aculab.com>
- <CADo0ohh7jZhc_WJFkrYYxoYza8ZeSEadzwgwabJWwQ1TucdCcg@mail.gmail.com>
-In-Reply-To: <CADo0ohh7jZhc_WJFkrYYxoYza8ZeSEadzwgwabJWwQ1TucdCcg@mail.gmail.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.52.21.9]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <50211790EE7DB34C981F36D3D8EAF8C1@datus.local>
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v4 3/7] arm64: move encode_insn_immediate() from module.c
+ to insn.c
+Message-ID: <20131017121135.GK18765@mudshark.cambridge.arm.com>
+References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>
+ <1381990781-27814-4-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-X-purgate-ID: 153929::1382011783-00000593-E037872B/0-0/0-0
-X-purgate: clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381990781-27814-4-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 17, 2013 at 07:19:36AM +0100, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> Function encode_insn_immediate() will be used by other instruction
+> manipulate related functions, so move it into insn.c and rename it
+> as aarch64_insn_encode_immediate().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/arm64/include/asm/insn.h |  14 ++++
+>  arch/arm64/kernel/insn.c      |  58 ++++++++++++++++
+>  arch/arm64/kernel/module.c    | 152 +++++++++++++-----------------------------
+>  3 files changed, 117 insertions(+), 107 deletions(-)
+> 
+> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+> index fc439b9..d62b601 100644
+> --- a/arch/arm64/include/asm/insn.h
+> +++ b/arch/arm64/include/asm/insn.h
+> @@ -42,6 +42,18 @@ enum aarch64_insn_encoding_class {
+>                                          * system instructions */
+>  };
+> 
+> +enum aarch64_insn_imm_type {
+> +       AARCH64_INSN_IMM_MOVK,
+> +       AARCH64_INSN_IMM_ADR,
+> +       AARCH64_INSN_IMM_26,
+> +       AARCH64_INSN_IMM_19,
+> +       AARCH64_INSN_IMM_16,
+> +       AARCH64_INSN_IMM_14,
+> +       AARCH64_INSN_IMM_12,
+> +       AARCH64_INSN_IMM_9,
+> +       AARCH64_INSN_IMM_MAX
+> +};
+> +
+>  #define        __AARCH64_INSN_FUNCS(abbr, mask, val)   \
+>  static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
+>  { return (code & (mask)) == (val); }   \
+> @@ -80,6 +92,8 @@ static __always_inline void aarch64_insn_write(void *addr, u32 insn)
+>  }
+> 
+>  enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+> +u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+> +                                 u32 insn, u64 imm);
+>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+> 
+>  int aarch64_insn_patch_text_nosync(void *addrs[], u32 insns[], int cnt);
+> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+> index 8dd5fbe..344d23ed 100644
+> --- a/arch/arm64/kernel/insn.c
+> +++ b/arch/arm64/kernel/insn.c
+> @@ -147,3 +147,61 @@ int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
+> 
+>         return ret;
+>  }
+> +
+> +u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+> +                                 u32 insn, u64 imm)
+> +{
+> +       u32 immlo, immhi, lomask, himask, mask;
+> +       int shift;
+> +
+> +       switch (type) {
+> +       case AARCH64_INSN_IMM_MOVK:
+> +               mask = BIT(16) - 1;
+> +               shift = 5;
+> +               break;
 
-E.g. called address 7 digits and caller address 3 digits. Called DCE
-answering without facilities
-gives us this packet (hex):
+This is just AARCH64_INSN_IMM_16 now that we're not dealing with MOV
+relocations. You can kill INSN_IMM_MOVK in the enum.
 
-37 12 34 56 71 23 00
+The rest of the patch looks fine.
 
-then x25_parse_address_block()  tries to pull 1+7+3 = 11 bytes from the
-packet (with pskb_may_pull())
-which only has 7 bytes.
-When facilities are included the wrong calculated length has no effect
-since the facilities make this packet long enough to make pskb_may_pull
-with wrong number
-of bytes succeed. later x25_addr_ntoa() correctly pulls 6 bytes for
-addresses from the packet.
-
-
-Am 17.10.2013 13:02, schrieb Andrew Hendry:
-> Sorry for the previous html mail.
-> This appears to be correct, what length addresses are you getting back
-> in the call accept when this happens?
->
-> On Wed, Oct 16, 2013 at 7:56 PM, David Laight <David.Laight@aculab.com> wrote:
->>> On Tue, 2013-10-15 at 14:29 +0000, Kelleter, Günther wrote:
->>>> Addresses are BCD encoded, not ASCII. x25_addr_ntoa got it right.
->>> []
->>>> Wrong length calculation leads to rejection of CALL ACCEPT packets.
->>> []
->>>> diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
->>> []
->>>> @@ -98,7 +98,7 @@ int x25_parse_address_block(struct sk_buff *skb,
->>>>     }
->>>>     len = *skb->data;
->>>> -   needed = 1 + (len >> 4) + (len & 0x0f);
->>>> +   needed = 1 + ((len >> 4) + (len & 0x0f) + 1) / 2;
->>> This calculation looks odd.
->> Looks correct to me...
->> In X.25 the lengths (in digits) of the called and calling addresses
->> are encoded in the high and low nibbles of one byte and then
->> followed by both addresses with a digit in each nibble.
->> If the length of the first address is odd, the second one
->> isn't byte aligned.
->>
->>         David
->>
->>
->>
-
-
--- 
+Will
