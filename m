@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762514Ab3JQTNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:13:40 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:55627 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762224Ab3JQTNj (ORCPT
+	id S1762548Ab3JQTO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:14:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46191 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758797Ab3JQTO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:13:39 -0400
-Date: Thu, 17 Oct 2013 19:13:38 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 13/15] slab: use struct page for slab management
-In-Reply-To: <1381913052-23875-14-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <00000141c7d66282-aa92b1f2-2a69-424b-9498-8e5367304d32-000000@email.amazonses.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1381913052-23875-14-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.17-54.240.9.42
+	Thu, 17 Oct 2013 15:14:57 -0400
+Date: Thu, 17 Oct 2013 15:14:54 -0400 (EDT)
+Message-Id: <20131017.151454.701894564686762206.davem@davemloft.net>
+To: michael.opdenacker@free-electrons.com
+Cc: mac@melware.de, isdn@linux-pingi.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdn: remove deprecated IRQF_DISABLED
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1381641869-7709-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1381641869-7709-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 17 Oct 2013 12:14:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013, Joonsoo Kim wrote:
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Date: Sun, 13 Oct 2013 07:24:29 +0200
 
-> -					 * see PAGE_MAPPING_ANON below.
-> -					 */
-> +	union {
-> +		struct address_space *mapping;	/* If low bit clear, points to
-> +						 * inode address_space, or NULL.
-> +						 * If page mapped as anonymous
-> +						 * memory, low bit is set, and
-> +						 * it points to anon_vma object:
-> +						 * see PAGE_MAPPING_ANON below.
-> +						 */
-> +		void *s_mem;			/* slab first object */
-> +	};
+> This patch proposes to remove the use of the IRQF_DISABLED flag
+> 
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-The overloading of mapping has caused problems in the past since slab
-pages are (or are they no longer?) used for DMA to disk. At that point the
-I/O subsystem may be expecting a mapping in the page struct if this field
-is not NULL.
-
+Applied to net-next.
