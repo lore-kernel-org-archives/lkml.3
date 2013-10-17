@@ -1,126 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab3JQO2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:28:40 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:58740 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab3JQO2i (ORCPT
+	id S1756840Ab3JQOaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:30:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47532 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755999Ab3JQOae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:28:38 -0400
-Date: Thu, 17 Oct 2013 16:28:39 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, ak@linux.intel.com, dsahern@gmail.com,
-        jolsa@redhat.com, acme@redhat.com, hughd@google.com
-Subject: [PATCH v2] perf: disable PERF_RECORD_MMAP2 support
-Message-ID: <20131017142839.GA8482@quad>
+	Thu, 17 Oct 2013 10:30:34 -0400
+Date: Thu, 17 Oct 2013 10:30:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Gerd Hoffmann <kraxel@redhat.com>, Hans de Goede <hdegoede@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2] xhci: fix usb3 streams
+In-Reply-To: <20131016234314.GJ7082@xanatos>
+Message-ID: <Pine.LNX.4.44L0.1310171025580.1303-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Oct 2013, Sarah Sharp wrote:
 
-For now, we disable the extended MMAP record support (MMAP2).
-We have identified cases where it would not report the correct
-mapping information, clone(VM_CLONE) but with separate pids.
-We will revisit the support once we find a solution for this case.
+> > > xhci maintains a radix tree for each stream endpoint because it must
+> > > be able to map a trb address to the stream ring.  Each ring segment
+> > > must be added to the ring for this to work.  Currently xhci sticks
+> > > only the first segment of each stream ring into the radix tree.
 
-The patch changes the kernel to return EINVAL if attr->mmap2
-is set. The patch also modifies the perf tool to use regular PERF_RECORD_MMAP
-for synthetic events and it also prevents the tool from requesting attr->mmap2
-mode because the kernel would reject it.
+> > There may be a simpler approach to this problem.
+> > 
+> > When using a new ring segment, keep the first TRB entry in reserve.  
+> > Don't put a normal TRB in there, instead leave it as a no-op entry
+> > containing a pointer to the stream ring.  (Make the prior Link TRB
+> > point to the second entry in the new segment instead of the first.)
+> > 
+> > Then you won't have to add to or remove anything from the radix tree.
+> 
+> I don't understand how this would help.  Are you advocating a different
+> way of mapping TRB DMA addresses to stream rings that would allow us to
+> ditch the radix tree all together?
+> 
+> Ok, so with your solution, we have a virtual stream ring pointer as the
+> first TRB of the segment.  We get an event with the DMA address of a TRB
+> in one of many stream rings on an endpoint.  From that, I think we can
+> infer the DMA address of the first TRB on the segment, due to the
+> alignment requirements and ring size.
+> 
+> And then what do we do with that?  We don't have the virtual address of
+> that first TRB, so the xHCI driver can't read the ring pointer from it.
+> I'm confused as to what the next steps would be to solve this.
 
-The support will be revisited once the kenrel interface is updated.
+My mistake; I misunderstood the original description of the problem.  
+I didn't realize that "map a trb address" referred to the TRB's DMA
+address.
 
-In V2, we reduce the patch to the strict minimum.
+BTW, ohci-hcd faces the same problem (of mapping DMA addresses to
+kernel addresses).  It solves the problem with a hash table rather than
+a radix tree.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- kernel/events/core.c    |    4 ++++
- tools/perf/util/event.c |   30 +++++++++++++-----------------
- 2 files changed, 17 insertions(+), 17 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c716385..5bd7fe4 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6773,6 +6773,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
- 
-+	/* disabled for now */
-+	if (attr->mmap2)
-+		return -EINVAL;
-+
- 	if (attr->__reserved_1)
- 		return -EINVAL;
- 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 9b393e7..63df031 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -187,7 +187,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP2;
-+	event->header.type = PERF_RECORD_MMAP;
- 	/*
- 	 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
- 	 */
-@@ -198,7 +198,6 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
--		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -209,13 +208,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
--		       &event->mmap2.start, &event->mmap2.len, prot,
--		       &event->mmap2.pgoff, &event->mmap2.maj,
--		       &event->mmap2.min,
--		       &ino, execname);
--
--		event->mmap2.ino = (u64)ino;
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
-+		       &event->mmap.start, &event->mmap.len, prot,
-+		       &event->mmap.pgoff,
-+		       execname);
- 
- 		if (n != 8)
- 			continue;
-@@ -227,15 +223,15 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
- 
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap2.filename, execname, size);
-+		memcpy(event->mmap.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap2.len -= event->mmap.start;
--		event->mmap2.header.size = (sizeof(event->mmap2) -
--					(sizeof(event->mmap2.filename) - size));
--		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
--		event->mmap2.header.size += machine->id_hdr_size;
--		event->mmap2.pid = tgid;
--		event->mmap2.tid = pid;
-+		event->mmap.len -= event->mmap.start;
-+		event->mmap.header.size = (sizeof(event->mmap) -
-+					(sizeof(event->mmap.filename) - size));
-+		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
-+		event->mmap.header.size += machine->id_hdr_size;
-+		event->mmap.pid = tgid;
-+		event->mmap.tid = pid;
- 
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
--- 
-1.7.9.5
+Alan Stern
 
