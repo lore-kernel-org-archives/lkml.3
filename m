@@ -1,233 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab3JQVMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:12:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932151Ab3JQVMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:12:31 -0400
-Message-ID: <526052B3.9030000@redhat.com>
-Date: Thu, 17 Oct 2013 23:12:19 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S932485Ab3JQVMj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:12:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45438 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab3JQVMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 17:12:37 -0400
+Date: Thu, 17 Oct 2013 14:12:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY/Serial fixes for 3.12-rc4
+Message-ID: <20131017211236.GA6155@kroah.com>
+References: <20131005173403.GA4811@kroah.com>
+ <CA+55aFzEtnOOB4yPbWg4tmvWTPjQL1_YsZks6wgpGimaQdOEtA@mail.gmail.com>
+ <5250A74E.4070805@hurleysoftware.com>
+ <5250C6CD.1040803@hurleysoftware.com>
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Gerd Hoffmann <kraxel@redhat.com>
-CC: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] xhci: Remove segments from radix tree on failed insert.
-References: <20131017194458.GA12351@xanatos>
-In-Reply-To: <20131017194458.GA12351@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5250C6CD.1040803@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Oct 05, 2013 at 10:11:25PM -0400, Peter Hurley wrote:
+> On 10/05/2013 07:57 PM, Peter Hurley wrote:
+> >On 10/05/2013 02:53 PM, Linus Torvalds wrote:
+> >>On Sat, Oct 5, 2013 at 10:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>>
+> >>>One fixes the reported regression in the n_tty code that a number of
+> >>>people found recently
+> >>
+> >>That one looks broken.
+> >>
+> >>Well, it looks like it might "work", but do so by hiding the issue for
+> >>one case, while leaving it in the more general case.
+> >>
+> >>Why does it do that
+> >>
+> >>     up_read(&tty->termios_rwsem);
+> >>     tty_flush_to_ldisc(tty);
+> >>     down_read(&tty->termios_rwsem);
+> >>
+> >>only if TTY_OTHER_CLOSED is set? If flushing the ldisc can generate
+> >>more data, then we should do it *unconditionally* when we see that we
+> >>currently have no data to read.
+> >>
+> >>As it is, it looks like the patch fixes the TTY_OTHER_CLOSED case
+> >>("read all pending data before returning -EIO"), but it leaves the
+> >>same broken case for the O_NONBLOCK case and for a hung up tty.
+> >>
+> >>The O_NONBLOCK case is presumably just a performance problem (the data
+> >>will come at _some_ point later), but it just looks bad in general.
+> >>And the tty_hung_up_p() looks actiely buggy, with the same bug as the
+> >>TTY_OTHER_CLOSED case that the patch tried to fix.
+> >>
+> >>Hmm? Am I missing something?
+> 
+> Apologies, I realized I didn't address the O_NONBLOCK case.
+> 
+> My reasoning for excluding O_NONBLOCK is that tty_flush_to_ldisc()
+> _waits_ for flush_to_ldisc() to complete. In the worst (admittedly
+> contrived) case, this could be unbounded running time: a sufficiently
+> fast source could keep flush_to_ldisc() running forever by writing
+> 4K chars and then 4k backspaces, ad infinitum.
+> 
+> 
+> >When a slave pty is closed, it's not hung up specifically so the
+> >master pty can be read.
+> >
+> >The same is not true for a regular tty; when a regular tty is hung up,
+> >all the pending data is vaporized (ie., what the tty layer refers
+> >to as 'flushed'). So checking for more data when tty_hung_up_p() is
+> >true is pointless.
+> >
+> >The distinction is clearer when you consider that even after the slave
+> >pty is closed, the master pty can still be read() even if it wasn't
+> >waiting in n_tty_read() at the time; this is not true of a regular tty, which
+> >cannot be read() after a hangup [tty_hung_up_p() tests if the
+> >file_operations pointer is set to non-operational read/write/ioctl functions].
+> >
+> >The patch fixes a race condition which is peculiar to ptys only.
+> >
+> >>The code is a bit confusing in *other* ways too: if you look later, it
+> >>does this:
+> >>
+> >>     n_tty_set_room(tty);
+> >>
+> >>which is documented to have to happen inside the termios_rwsem.
+> >>HOWEVER, what does that do? It actually does an _asynchronous_
+> >>queue_work() of &tty->port->buf.work, in case there is now more room,
+> >>and the previous one was blocked. And guess what that workqueue is all
+> >>about? Right: it's flush_to_ldisc() - which is the work that
+> >>tty_flush_to_ldisc() is trying to flush. So we're actually basically
+> >>making sure we've flush the previous pending work.
+> >
+> >The flush_to_ldisc() worker no longer re-schedules itself.
+> >
+> >The flush_to_ldisc() worker is scheduled when one of two events
+> >happen; 1) the driver has just written received data to the tty
+> >buffers, or 2) space has just become available in the N_TTY line
+> >discipline's read buffer when it was previously full.
+> >
+> >The flush_to_ldisc() worker continues to run as long as space
+> >is available in the line discipline's read buffer or until the
+> >tty buffers are empty.
+> >
+> >Concurrently with the flush_to_ldisc() worker, a reader may have
+> >an empty read buffer; the flush_to_ldisc() worker may or may not
+> >generate more input to be read.
+> >
+> >Generally when a reader has an empty read buffer, it will sleep unless
+> >one of the other conditions is met (TTY_OTHER_CLOSED, tty_hung_up_p,
+> >non-blocking, etc).
+> >
+> >Before sleeping, the reader will (re-)schedule the flush_to_ldisc()
+> >worker in case it read some input on the previous loop iteration
+> >(thus creating space in the read buffer when there was none previously).
+> >
+> >(That doesn't preclude that flush_to_ldisc() may already be running
+> >but isn't processing as fast as the reader is reading.)
+> >
+> >
+> >>So even the tty_flush_to_ldisc(tty) that gets done in that patch is
+> >>not necessarily sufficient, because the work might not have been
+> >>scheduled because the flip buffer used to be full. Then flushing the
+> >>work won't do anything, even though there is actually more data. Now,
+> >>that is a very unlikely situation (I think it requires two concurrent
+> >>readers), but it looks like it might be real.
+> >
+> >I don't think this condition is possible for a single reader (because
+> >the read condition will be satisfied and the reader will return).
+> >Multiple concurrent readers are excluded by the atomic_read_lock mutex
+> >at the the top of n_tty_read().
+> 
+> However, the atomic_read_lock exclusion needs to cover the
+> unconditional n_tty_set_room() when leaving n_tty_read() and
+> it doesn't. Thus, the departing reader fails to ensure the subsequent
+> reader has a running flush_to_ldisc() worker.
+> 
+> Patch forthcoming.
 
-On 10/17/2013 09:44 PM, Sarah Sharp wrote:
-> If we're expanding a stream ring, we want to make sure we can add those
-> ring segments to the radix tree that maps segments to ring pointers.
-> Try the radix tree insert after the new ring segments have been allocated
-> (the last segment in the new ring chunk will point to the first newly
-> allocated segment), but before the new ring segments are linked into the
-> old ring.
->
-> If insert fails on any one segment, remove each segment from the radix
-> tree, deallocate the new segments, and return.  Otherwise, link the new
-> segments into the tree.
->
-> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> ---
->
-> Something like this.
+Did I miss this patch, or did it not come forth?
 
-Thanks for working on this.
+thanks,
 
- > It's ugly, but it compiles.  I haven't tested it.
-> Hans, can you review and test this?
-
-Reviewed, I've one small nitpick, see inline comments, other then that it looks
-good, and I don't find it all that ugly :)
-
-I've also run various tests and it seems to work as advertised (I've not
-managed to trigger the error path though AFAIK).
-
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-
->
-> Sarah Sharp
->
->   drivers/usb/host/xhci-mem.c | 106 +++++++++++++++++++++++++++++++++-----------
->   1 file changed, 80 insertions(+), 26 deletions(-)
->
-> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-> index a455c56..6ce8d31 100644
-> --- a/drivers/usb/host/xhci-mem.c
-> +++ b/drivers/usb/host/xhci-mem.c
-> @@ -180,53 +180,98 @@ static void xhci_link_rings(struct xhci_hcd *xhci, struct xhci_ring *ring,
->    * extended systems (where the DMA address can be bigger than 32-bits),
->    * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
->    */
-> -static int xhci_update_stream_mapping(struct xhci_ring *ring, gfp_t mem_flags)
-> +static int xhci_insert_segment_mapping(struct radix_tree_root *trb_address_map,
-> +		struct xhci_ring *ring,
-> +		struct xhci_segment *seg,
-> +		gfp_t mem_flags)
->   {
-> -	struct xhci_segment *seg;
->   	unsigned long key;
->   	int ret;
->
-> -	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
-> +	key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> +	/* Skip any segments that were already added. */
-> +	if (radix_tree_lookup(trb_address_map, key))
->   		return 0;
->
-> -	seg = ring->first_seg;
-> -	do {
-> -		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> -		/* Skip any segments that were already added. */
-> -		if (radix_tree_lookup(ring->trb_address_map, key))
-> -			continue;
-> +	ret = radix_tree_maybe_preload(mem_flags);
-> +	if (ret)
-> +		return ret;
-> +	ret = radix_tree_insert(trb_address_map,
-> +			key, ring);
-> +	radix_tree_preload_end();
-> +	return ret;
-> +}
->
-> -		ret = radix_tree_maybe_preload(mem_flags);
-> -		if (ret)
-> -			return ret;
-> -		ret = radix_tree_insert(ring->trb_address_map,
-> -				key, ring);
-> -		radix_tree_preload_end();
-> +static void xhci_remove_segment_mapping(struct radix_tree_root *trb_address_map,
-> +		struct xhci_segment *seg)
-> +{
-> +	unsigned long key;
-> +
-> +	key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> +	if (radix_tree_lookup(trb_address_map, key))
-> +		radix_tree_delete(trb_address_map, key);
-> +}
-> +
-> +static int xhci_update_stream_segment_mapping(
-> +		struct radix_tree_root *trb_address_map,
-> +		struct xhci_ring *ring,
-> +		struct xhci_segment *first_seg,
-> +		struct xhci_segment *last_seg,
-> +		gfp_t mem_flags)
-> +{
-> +	struct xhci_segment *seg;
-> +	struct xhci_segment *failed_seg;
-> +	int ret;
-> +
-> +	if (WARN_ON_ONCE(trb_address_map == NULL))
-> +		return 0;
-> +
-> +	seg = first_seg;
-> +	do {
-> +		ret = xhci_insert_segment_mapping(trb_address_map,
-> +				ring, seg, mem_flags);
->   		if (ret)
-> -			return ret;
-> +			goto remove_streams;
-> +		if (seg == last_seg)
-> +			return 0;
->   		seg = seg->next;
-> -	} while (seg != ring->first_seg);
-> +	} while (seg != first_seg);
-
-The while here tests for looping round, but that should never
-happen, IMHO using do {} while (true); here would be more clear,
-and also consistent with how the tear-down is done in the
-error case in xhci_ring_expansion.
-
->
->   	return 0;
-> +
-> +remove_streams:
-> +	failed_seg = seg;
-> +	seg = first_seg;
-> +	do {
-> +		xhci_remove_segment_mapping(trb_address_map, seg);
-> +		if (seg == failed_seg)
-> +			return ret;
-> +		seg = seg->next;
-> +	} while (seg != first_seg);
-
-And I would also prefer "} while (true};" here for the same reasons.
-
-> +
-> +	return ret;
->   }
->
->   static void xhci_remove_stream_mapping(struct xhci_ring *ring)
->   {
->   	struct xhci_segment *seg;
-> -	unsigned long key;
->
->   	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
->   		return;
->
->   	seg = ring->first_seg;
->   	do {
-> -		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-> -		if (radix_tree_lookup(ring->trb_address_map, key))
-> -			radix_tree_delete(ring->trb_address_map, key);
-> +		xhci_remove_segment_mapping(ring->trb_address_map, seg);
->   		seg = seg->next;
->   	} while (seg != ring->first_seg);
->   }
->
-> +static int xhci_update_stream_mapping(struct xhci_ring *ring, gfp_t mem_flags)
-> +{
-> +	return xhci_update_stream_segment_mapping(ring->trb_address_map, ring,
-> +			ring->first_seg, ring->last_seg, mem_flags);
-> +}
-> +
->   /* XXX: Do we need the hcd structure in all these functions? */
->   void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
->   {
-> @@ -429,16 +474,25 @@ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
->   	if (ret)
->   		return -ENOMEM;
->
-> +	ret = xhci_update_stream_segment_mapping(ring->trb_address_map, ring,
-> +			first, last, flags);
-> +	if (ret) {
-> +		struct xhci_segment *next;
-> +		do {
-> +			next = first->next;
-> +			xhci_segment_free(xhci, first);
-> +			if (first == last)
-> +				break;
-> +			first = next;
-> +		} while (true);
-> +		return ret;
-> +	}
-> +
->   	xhci_link_rings(xhci, ring, first, last, num_segs);
->   	xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,
->   			"ring expansion succeed, now has %d segments",
->   			ring->num_segs);
->
-> -	if (ring->type == TYPE_STREAM) {
-> -		ret = xhci_update_stream_mapping(ring, flags);
-> -		WARN_ON(ret); /* FIXME */
-> -	}
-> -
->   	return 0;
->   }
->
->
-
-Regards,
-
-Hans
+greg k-h
