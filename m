@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab3JQQMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:12:34 -0400
-Received: from www.sr71.net ([198.145.64.142]:49153 "EHLO blackbird.sr71.net"
+	id S1757611Ab3JQQQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:16:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57973 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756377Ab3JQQMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:12:32 -0400
-Message-ID: <52600C49.7070306@sr71.net>
-Date: Thu, 17 Oct 2013 09:11:53 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757115Ab3JQQQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 12:16:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,515,1378882800"; 
+   d="scan'208";a="309153044"
+Message-ID: <52600D4A.8030506@linux.intel.com>
+Date: Thu, 17 Oct 2013 09:16:10 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, cl@gentwo.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC][PATCH 1/8] mm: pcp: rename percpu pageset functions
-References: <20131015203536.1475C2BE@viggo.jf.intel.com> <20131015203538.35606A47@viggo.jf.intel.com> <alpine.DEB.2.02.1310161831090.15575@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1310161831090.15575@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, tglx@linutronix.de, linux@roeck-us.net,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86: unify copy_from_user() checking
+References: <525E964402000078000FB70C@nat28.tlf.novell.com> <525E9BF7.7020706@linux.intel.com> <525EC6C402000078000FB895@nat28.tlf.novell.com> <525EC73E.3060204@linux.intel.com> <525FCDD702000078000FBBF5@nat28.tlf.novell.com> <52600608.2010704@linux.intel.com> <5260241602000078000FBDD9@nat28.tlf.novell.com> <52600A99.2070507@linux.intel.com> <5260279702000078000FBDE8@nat28.tlf.novell.com>
+In-Reply-To: <5260279702000078000FBDE8@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 06:32 PM, David Rientjes wrote:
->> > +static void pageset_setup_from_batch_size(struct per_cpu_pageset *p,
->> > +					unsigned long batch)
->> >  {
->> > -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
->> > +	unsigned long high;
->> > +	high = 6 * batch;
->> > +	if (!batch)
->> > +		batch = 1;
-> high = 6 * batch should be here?
+On 10/17/2013 9:08 AM, Jan Beulich wrote:
+>>>> On 17.10.13 at 18:04, Arjan van de Ven <arjan@linux.intel.com> wrote:
+>>>
+>>> ... and the non-constant case be taken care of at run time.
+>>> That's precisely what the patch does.
+>>
+>> fair enough.
+>>
+>> I would like to see a comment above the code to describe this reasoning
+>> and the objective and what the desired behavior is... so that we don't
+>> have to reverse engineer this again 2 years from now ;-)
+>
+> Will do, and then perhaps mirror the whole behavior to
+> copy_to_user().
 
-Ahh, nice catch, thanks.  I'll fix that up and resend.
+yeah that certainly makes sense
 
 
 
+in hindsight we should have made the copy_*_user prototype take a "type" argument,
+so that the sizeof/etc are done inside the macro.
+Or at least have this available as an option with a "advanced" version with just a size.
+but that's a 20 year old thing at this point...
