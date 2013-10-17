@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3JQETb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 00:19:31 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44218 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3JQETa (ORCPT
+	id S1752081Ab3JQEdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 00:33:03 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:42385 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3JQEcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 00:19:30 -0400
-Date: Wed, 16 Oct 2013 21:19:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joe Perches <joe@perches.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [bug] get_maintainer.pl incomplete output
-In-Reply-To: <1381982635.22110.84.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1310162117140.2453@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com> <alpine.DEB.2.02.1310162046090.30995@chino.kir.corp.google.com> <1381982635.22110.84.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 17 Oct 2013 00:32:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1381960909-1735-4-git-send-email-tim.kryger@linaro.org>
+References: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
+	<1381960909-1735-4-git-send-email-tim.kryger@linaro.org>
+Date: Wed, 16 Oct 2013 21:32:51 -0700
+Message-ID: <CAEPRUYqqxLevwM6dRpGUnfCgF2qZ_NVTDYTzKoFg+zbOPggfMQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH 3/4] ARM: dts: bcm281xx: Add i2c busses
+From: Christian Daudt <bcm@fixthebug.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013, Joe Perches wrote:
+Hi Tim,
+ This patch does not work as it relies on the yet-unmerged clock code
+for bcm11351. This patch does not apply to -rc, and when tweaked it
+does not compile as it references  non-existent bsc_clks.
+ Has the clk patches been submitted yet ? Applying this will have to
+wait until those have been accepted.
 
-> > I haven't looked closely at scripts/get_maintainer.pl, but I recently 
-> > wrote a patch touching mm/vmpressure.c and it doesn't list the file's 
-> > author, Anton Vorontsov <anton.vorontsov@linaro.org>.
-> > 
-> > Even when I do scripts/get_maintainer.pl -f mm/vmpressure.c, his entry is 
-> > missing and git blame attributs >90% of the lines to his authorship.
-> > 
-> > $ ./scripts/get_maintainer.pl -f mm/vmpressure.c 
-> > Tejun Heo <tj@kernel.org> (commit_signer:6/7=86%)
-> > Michal Hocko <mhocko@suse.cz> (commit_signer:5/7=71%)
-> > Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/7=57%)
-> > Li Zefan <lizefan@huawei.com> (commit_signer:3/7=43%)
-> > "Kirill A. Shutemov" <kirill@shutemov.name> (commit_signer:1/7=14%)
-> > linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
-> > linux-kernel@vger.kernel.org (open list)
-> > 
-> > Any ideas?
-> 
-> get_maintainer has a lot of options.
-> 
-> get_maintainer tries to find people that are either
-> listed in the MAINTAINERS file or that have recently
-> (in the last year by default) worked on the file.
-> 
-> If you want to find all authors, use the --git-blame option
-> 
-> It's not the default because it can take quite awhile to run.
-> 
+ thanks,
+   csd
 
-Hmm, it's a little strange to only consider recent activity when >90% of 
-the lines were written by someone not listed.  Isn't there any faster way 
-to determine that besides using the expensive git blame?  Something like 
-weighing the output of "git show --shortstat" for all commits in "git log 
-mm/vmpressure.c" to determine the most important recent changes?  That 
-should be fairly cheap.
+
+On Wed, Oct 16, 2013 at 3:01 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> Add the DTS nodes for all the i2c busses in the SoC.
+>
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Christian Daudt <csd@broadcom.com>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> ---
+>  arch/arm/boot/dts/bcm11351.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+> index 1246885..4bfd7e3 100644
+> --- a/arch/arm/boot/dts/bcm11351.dtsi
+> +++ b/arch/arm/boot/dts/bcm11351.dtsi
+> @@ -146,6 +146,46 @@
+>                 status = "disabled";
+>         };
+>
+> +       i2c@3e016000 {
+> +               compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
+> +               reg = <0x3e016000 0x80>;
+> +               interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               clocks = <&bsc1_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       i2c@3e017000 {
+> +               compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
+> +               reg = <0x3e017000 0x80>;
+> +               interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               clocks = <&bsc2_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       i2c@3e018000 {
+> +               compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
+> +               reg = <0x3e018000 0x80>;
+> +               interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               clocks = <&bsc3_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       i2c@3500d000 {
+> +               compatible = "brcm,bcm11351-i2c", "brcm,kona-i2c";
+> +               reg = <0x3500d000 0x80>;
+> +               interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               clocks = <&pmu_bsc_clk>;
+> +               status = "disabled";
+> +       };
+> +
+>         clocks {
+>                 bsc1_clk: bsc1 {
+>                         compatible = "fixed-clock";
+> --
+> 1.8.0.1
+>
+>
