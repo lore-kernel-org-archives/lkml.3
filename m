@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab3JQS54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:57:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44910 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758121Ab3JQS5z (ORCPT
+	id S1762284Ab3JQTBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:01:40 -0400
+Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:48442 "EHLO
+	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758867Ab3JQTBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:57:55 -0400
+	Thu, 17 Oct 2013 15:01:39 -0400
+Date: Thu, 17 Oct 2013 19:01:38 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 3/5] slab: restrict the number of objects in a slab
+In-Reply-To: <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000141c7cb668b-1e2528ea-ce87-4380-a0dd-e5be9384cd84-000000@email.amazonses.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com> <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-Date: Thu, 17 Oct 2013 11:57:54 -0700
-Message-ID: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com>
-Subject: Corrupted low memory in v3.9+
-From: Olof Johansson <olof@lixom.net>
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+n Thu, 17 Oct 2013, Joonsoo Kim wrote:
 
-When booting a newer kernel on a Chromebox (Samsung SNB system,
-coreboot firmware, verified boot and not using seabios), I get reports
-of:
+> To prepare to implement byte sized index for managing the freelist
+> of a slab, we should restrict the number of objects in a slab to be less
+> or equal to 256, since byte only represent 256 different values.
+> Setting the size of object to value equal or more than newly introduced
+> SLAB_MIN_SIZE ensures that the number of objects in a slab is less or
+> equal to 256 for a slab with 1 page.
 
-[    1.727520] Corrupted low memory at ffff880000002a90 (2a90 phys) = 100000000
-[    1.734565] Corrupted low memory at ffff880000002a98 (2a98 phys) =
-50000000000
+Ok so that results in a mininum size object size of 2^(12 - 8) = 2^4 ==
+16 bytes on x86. This is not true for order 1 pages (which SLAB also
+supports) where we need 32 bytes.
 
-I bisected it down to:
+Problems may arise on PPC or IA64 where the page size may be larger than
+64K. With 64K we have a mininum size of 2^(16 - 8) = 256 bytes. For those
+arches we may need 16 bit sized indexes. Maybe make that compile time
+determined base on page size? > 64KByte results in 16 bit sized indexes?
 
-commit 95c9608478d639dcffc14ea47b31bff021a99ed1
-Author: H. Peter Anvin <hpa@zytor.com>
-Date:   Thu Feb 14 14:02:52 2013 -0800
+Otherwise I like this approach. Simplifies a lot and its very cache
+friendly.
 
-    x86, mm: Move reserving low memory later in initialization
-
-    Move the reservation of low memory, except for the 4K which actually
-    does belong to the BIOS, later in the initialization; in particular,
-    after we have already reserved the trampoline.
-
-    The current code locates the trampoline as high as possible, so by
-    deferring the allocation we will still be able to reserve as much
-    memory as is possible.  This allows us to run with reservelow=640k
-    without getting a crash on system startup.
-
-
-My config has:
-
-CONFIG_X86_RESERVE_LOW=64
-
-...but /proc/iomem says:
-
-00000000-00000fff : reserved
-00001000-0009ffff : System RAM
-000a0000-000fffff : reserved
-[...]
-
-
-While before the above patch it said:
-
-00000000-00000fff : reserved
-00001000-0000ffff : reserved
-00010000-0009ffff : System RAM
-[...]
-
-And the low memory checker never even ran before, since it had nothing
-to check. Earlier the lower reserved region would be included in the
-e820-reserved area if I read the code correctly, and now it's just
-marked reserved by the memblock code.
-
-I guess it could be argued either way whether this is a regression or
-not; but at the end of the day we now have systems where this warning
-pops when it didn't use to. :(
-
-
--Olof
