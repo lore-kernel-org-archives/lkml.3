@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3JQGD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:03:26 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51353 "EHLO
+	id S1751950Ab3JQGC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:02:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:43238 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3JQGC7 (ORCPT
+	with ESMTP id S1751073Ab3JQGC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:02:59 -0400
-X-AuditID: 9c93017d-b7b2eae000005519-3c-525f7d906d4d
+	Thu, 17 Oct 2013 02:02:57 -0400
+X-AuditID: 9c93017d-b7b2eae000005519-32-525f7d8f2801
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>,
@@ -16,44 +16,90 @@ Cc: Christoph Lameter <cl@linux.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 5/5] slab: make more slab management structure off the slab
-Date: Thu, 17 Oct 2013 15:03:17 +0900
-Message-Id: <1381989797-29269-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 0/5] slab: implement byte sized indexes for the freelist of a slab
+Date: Thu, 17 Oct 2013 15:03:12 +0900
+Message-Id: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, the size of the freelist for the slab management diminish,
-so that the on-slab management structure can waste large space
-if the object of the slab is large.
+This patchset implements byte sized indexes for the freelist of a slab.
 
-Consider a 128 byte sized slab. If on-slab is used, 31 objects can be
-in the slab. The size of the freelist for this case would be 31 bytes
-so that 97 bytes, that is, more than 75% of object size, are wasted.
+Currently, the freelist of a slab consist of unsigned int sized indexes.
+Most of slabs have less number of objects than 256, so much space is wasted.
+To reduce this overhead, this patchset implements byte sized indexes for
+the freelist of a slab. With it, we can save 3 bytes for each objects.
 
-In a 64 byte sized slab case, no space is wasted if we use on-slab.
-So set off-slab determining constraint to 128 bytes.
+Below is some numbers of 'cat /proc/slabinfo'.
 
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+* Before *
+kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
+kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
+kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
+kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0
+kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0
+kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
+kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0
+kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 2f379ba..19ae154 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2257,7 +2257,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	 * it too early on. Always use on-slab management when
- 	 * SLAB_NOLEAKTRACE to avoid recursive calls into kmemleak)
- 	 */
--	if ((size >= (PAGE_SIZE >> 3)) && !slab_early_init &&
-+	if ((size >= (PAGE_SIZE >> 5)) && !slab_early_init &&
- 	    !(flags & SLAB_NOLEAKTRACE))
- 		/*
- 		 * Size is large, assume best to place the slab management obj
+* After *
+kmalloc-512          521    648    512    8    1 : tunables   54   27    0 : slabdata     81     81      0
+kmalloc-256          208    208    256   16    1 : tunables  120   60    0 : slabdata     13     13      0
+kmalloc-192         1029   1029    192   21    1 : tunables  120   60    0 : slabdata     49     49      0
+kmalloc-96           529    589    128   31    1 : tunables  120   60    0 : slabdata     19     19      0
+kmalloc-64          2142   2142     64   63    1 : tunables  120   60    0 : slabdata     34     34      0
+kmalloc-128          660    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
+kmalloc-32         11716  11780     32  124    1 : tunables  120   60    0 : slabdata     95     95      0
+kmem_cache           197    210    192   21    1 : tunables  120   60    0 : slabdata     10     10      0
+
+kmem_caches consisting of objects less than or equal to 256 byte have
+one or more objects than before. In the case of kmalloc-32, we have 11 more
+objects, so 352 bytes (11 * 32) are saved and this is roughly 9% saving of
+memory. Of couse, this percentage decreases as the number of objects
+in a slab decreases.
+
+Here are the performance results on my 4 cpus machine.
+
+* Before *
+
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
+
+       229,945,138 cache-misses                                                  ( +-  0.23% )
+
+      11.627897174 seconds time elapsed                                          ( +-  0.14% )
+
+* After *
+
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
+
+       218,640,472 cache-misses                                                  ( +-  0.42% )
+
+      11.504999837 seconds time elapsed                                          ( +-  0.21% )
+
+cache-misses are reduced by this patchset, roughly 5%.
+And elapsed times are improved by 1%.
+
+This patchset comes from a Christoph's idea.
+https://lkml.org/lkml/2013/8/23/315
+
+Patches are on top of my previous posting named as
+"slab: overload struct slab over struct page to reduce memory usage"
+https://lkml.org/lkml/2013/10/16/155
+
+Thanks.
+
+Joonsoo Kim (5):
+  slab: factor out calculate nr objects in cache_estimate
+  slab: introduce helper functions to get/set free object
+  slab: restrict the number of objects in a slab
+  slab: introduce byte sized index for the freelist of a slab
+  slab: make more slab management structure off the slab
+
+ mm/slab.c |   90 +++++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 58 insertions(+), 32 deletions(-)
+
 -- 
 1.7.9.5
 
