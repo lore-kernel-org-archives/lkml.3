@@ -1,212 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab3JQQbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:31:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58186 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab3JQQa7 (ORCPT
+	id S1757518Ab3JQQhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:37:53 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:62317 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab3JQQhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:30:59 -0400
-Date: Thu, 17 Oct 2013 18:30:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
-        eranian@google.com, jmario@redhat.com, linux-kernel@vger.kernel.org,
-        acme@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131017163039.GR10651@twins.programming.kicks-ass.net>
-References: <20131015143227.GY26785@twins.programming.kicks-ass.net>
- <20131015150736.GZ26785@twins.programming.kicks-ass.net>
- <20131015154104.GA227855@redhat.com>
- <20131016105755.GX10651@twins.programming.kicks-ass.net>
- <20131016205227.GJ7456@tassilo.jf.intel.com>
- <20131016210319.GI10651@twins.programming.kicks-ass.net>
- <20131016230712.GC26785@twins.programming.kicks-ass.net>
- <20131017094145.GE3364@laptop.programming.kicks-ass.net>
- <20131017160034.GO227855@redhat.com>
- <20131017160439.GP227855@redhat.com>
+	Thu, 17 Oct 2013 12:37:51 -0400
+Message-ID: <52601259.2010308@atmel.com>
+Date: Thu, 17 Oct 2013 18:37:45 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017160439.GP227855@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Mike Turquette" <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v4 15/17] clk: at91: add PMC clk device tree binding doc.
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com> <1381491532-14738-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1381491532-14738-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 12:04:39PM -0400, Don Zickus wrote:
-> I take that back the copy_from_user_nmi_iter is not super fast, I just had
-> a bug in how I accumulate total time.  So some how this approach is slower
-> that yesterdays.
-
-Humm interesting..
-
-Slightly weird, because that instruction decoder stuff is a nest of calls
-too, I wouldn't have thought the one extra call made such a difference.
-
-I suppose it would still be an improvement for the FP chase.
-
-So I'll stick with the one below for now; this one is actually compile
-and runtime tested.
-
----
-Subject: perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 16 Oct 2013 12:57:55 +0200
-
-On Mon, Oct 14, 2013 at 04:35:49PM -0400, Don Zickus wrote:
-> While there are a few places that are causing latencies, for now I focused on
-> the longest one first.  It seems to be 'copy_user_from_nmi'
+On 11/10/2013 13:38, Boris BREZILLON :
+> This patch adds new at91 clks dt bindings documentation.
 >
-> intel_pmu_handle_irq ->
-> 	intel_pmu_drain_pebs_nhm ->
-> 		__intel_pmu_drain_pebs_nhm ->
-> 			__intel_pmu_pebs_event ->
-> 				intel_pmu_pebs_fixup_ip ->
-> 					copy_from_user_nmi
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+
+It seems good
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+> ---
+>   .../devicetree/bindings/clock/at91-clock.txt       |  328 ++++++++++++++++++++
+>   1 file changed, 328 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
 >
-> In intel_pmu_pebs_fixup_ip(), if the while-loop goes over 50, the sum of
-> all the copy_from_user_nmi latencies seems to go over 1,000,000 cycles
-> (there are some cases where only 10 iterations are needed to go that high
-> too, but in generall over 50 or so).  At this point copy_user_from_nmi
-> seems to account for over 90% of the nmi latency.
+> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+> new file mode 100644
+> index 0000000..360d8fe
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+> @@ -0,0 +1,328 @@
+> +Device Tree Clock bindings for arch-at91
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible : shall be one of the following:
+> +	"atmel,at91rm9200-pmc" or
+> +	"atmel,at91sam9g45-pmc" or
+> +	"atmel,at91sam9n12-pmc" or
+> +	"atmel,at91sam9x5-pmc" or
+> +	"atmel,sama5d3-pmc":
+> +		at91 PMC (Power Management Controller)
+> +		All at91 specific clocks (clocks defined below) must be child
+> +		node of the PMC node.
+> +
+> +	"atmel,at91rm9200-clk-main":
+> +		at91 main oscillator
+> +
+> +	"atmel,at91rm9200-clk-master" or
+> +	"atmel,at91sam9x5-clk-master":
+> +		at91 master clock
+> +
+> +	"atmel,at91sam9x5-clk-peripheral" or
+> +	"atmel,at91rm9200-clk-peripheral":
+> +		at91 peripheral clocks
+> +
+> +	"atmel,at91rm9200-clk-pll" or
+> +	"atmel,at91sam9g45-clk-pll" or
+> +	"atmel,at91sam9g20-clk-pllb" or
+> +	"atmel,sama5d3-clk-pll":
+> +		at91 pll clocks
+> +
+> +	"atmel,at91sam9x5-clk-plldiv":
+> +		at91 plla divisor
+> +
+> +	"atmel,at91rm9200-clk-programmable" or
+> +	"atmel,at91sam9g45-clk-programmable" or
+> +	"atmel,at91sam9x5-clk-programmable":
+> +		at91 programmable clocks
+> +
+> +	"atmel,at91sam9x5-clk-smd":
+> +		at91 SMD (Soft Modem) clock
+> +
+> +	"atmel,at91rm9200-clk-system":
+> +		at91 system clocks
+> +
+> +	"atmel,at91rm9200-clk-usb" or
+> +	"atmel,at91sam9x5-clk-usb" or
+> +	"atmel,at91sam9n12-clk-usb":
+> +		at91 usb clock
+> +
+> +	"atmel,at91sam9x5-clk-utmi":
+> +		at91 utmi clock
+> +
+> +Required properties for PMC node:
+> +- reg : defines the IO memory reserved for the PMC.
+> +- interrupts : shall be set to PMC interrupt line.
+> +- interrupt-controller : tell that the PMC is an interrupt controller.
+> +- #interrupt-cells : must be set to 1. The first cell encodes the interrupt id,
+> +	and reflect the bit position in the PMC_ER/DR/SR registers.
+> +	You can use the dt macros defined in dt-bindings/clk/at91.h.
+> +	0 (AT91_PMC_MOSCS) -> main oscillator ready
+> +	1 (AT91_PMC_LOCKA) -> PLL A ready
+> +	2 (AT91_PMC_LOCKB) -> PLL B ready
+> +	3 (AT91_PMC_MCKRDY) -> master clock ready
+> +	6 (AT91_PMC_LOCKU) -> UTMI PLL clock ready
+> +	8 .. 15 (AT91_PMC_PCKRDY(id)) -> programmable clock ready
+> +	16 (AT91_PMC_MOSCSELS) -> main oscillator selected
+> +	17 (AT91_PMC_MOSCRCS) -> RC main oscillator stabilized
+> +	18 (AT91_PMC_CFDEV) -> clock failure detected
+> +
+> +For example:
+> + 	pmc: pmc@fffffc00 {
+> +		compatible = "atmel,sama5d3-pmc";
+> +		interrupts = <1 4 7>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +
+> +		/* put at91 clocks here */
+> +	};
+> +
+> +Required properties for main clock:
+> +- interrupt-parent : must reference the PMC node.
+> +- interrupts : shall be set to "<0>".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks (optional if clock-frequency is provided) : shall be the slow clock
+> +	phandle. This clock is used to calculate the main clock rate if
+> +	"clock-frequency" is not provided.
+> +- clock-frequency : the main oscillator frequency.Prefer the use of
+> +	"clock-frequency" over automatic clock rate calculation.
+> +
+> +For example:
+> +	main: mainck {
+> +		compatible = "atmel,at91rm9200-clk-main";
+> +		interrupt-parent = <&pmc>;
+> +		interrupts = <0>;
+> +		#clock-cells = <0>;
+> +		clocks = <&ck32k>;
+> +		clock-frequency = <18432000>;
+> +	};
+> +
+> +Required properties for master clock:
+> +- interrupt-parent : must reference the PMC node.
+> +- interrupts : shall be set to "<3>".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the master clock sources (see atmel datasheet) phandles.
+> +	e.g. "<&ck32k>, <&main>, <&plla>, <&pllb>".
+> +- atmel,clk-output-range : minimum and maximum clock frequency (two u32
+> +			   fields).
+> +	   e.g. output = <0 133000000>; <=> 0 to 133MHz.
+> +- atmel,clk-divisors : master clock divisors table (four u32 fields).
+> +		0 <=> reserved value.
+> +		e.g. divisors = <1 2 4 6>;
+> +- atmel,master-clk-have-div3-pres : some SoC use the reserved value 7 in the
+> +				    PRES field as CLOCK_DIV3 (e.g sam9x5).
+> +
+> +For example:
+> +	mck: mck {
+> +		compatible = "atmel,at91rm9200-clk-master";
+> +		interrupt-parent = <&pmc>;
+> +		interrupts = <3>;
+> +		#clock-cells = <0>;
+> +		atmel,clk-output-range = <0 133000000>;
+> +		atmel,clk-divisors = <1 2 4 0>;
+> +	};
+> +
+> +Required properties for peripheral clocks:
+> +- #clock-cells : from common clock binding; shall be set to 1. The second cell
+> +	is used to encode the peripheral id. Peripheral ids are defined in
+> +	atmel's SoC datasheets.
+> +- clocks : shall be the master clock phandle.
+> +	e.g. clocks = <&mck>;
+> +- name: device tree node describing a specific system clock.
+> +	* atmel,clk-id: peripheral id. See Atmel's datasheets to get a full
+> +	  list of peripheral ids.
+> +	* atmel,clk-default-divisor (optional, only available for
+> +	  "atmel,at91sam9x5-clk-peripheral"): sam9x5 and sama5d3 SoC provides
+> +	  configurable peripheral clock divisor. If you define this property
+> +	  (u32), the default divisor will be applied when enabling
+> +	  peripheral clock. If not provided the peripheral clock is not
+> +	  divided.
+> +
+> +For example:
+> +	periph: periphck {
+> +		compatible = "atmel,at91sam9x5-clk-peripheral";
+> +		#clock-cells = <1>;
+> +		clocks = <&mck>;
+> +
+> +		pioAB_clk {
+> +			atmel,clk-id = <2>;
+> +			atmel,clk-default-divisor = <1>;
+> +		};
+> +
+> +		pioCD_clk {
+> +			atmel,clk-id = <3>;
+> +			atmel,clk-default-divisor = <2>;
+> +		};
+> +	};
+> +
+> +
+> +Required properties for pll clocks:
+> +- interrupt-parent : must reference the PMC node.
+> +- interrupts : shall be set to "<1>".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the main clock phandle.
+> +- atmel,clk-id : pll id.
+> +	0 -> PLL A
+> +	1 -> PLL B
+> +- atmel,clk-input-range : minimum and maximum source clock frequency (two u32
+> +			  fields).
+> +	  e.g. input = <1 32000000>; <=> 1 to 32MHz.
+> +- #atmel,pll-clk-output-range-cells : number of cells reserved for pll output
+> +				      range description. Sould be set to 2, 3
+> +				      or 4.
+> +	* 1st and 2nd cells represent the frequency range (min-max).
+> +	* 3rd cell is optional and represents the OUT field value for the given
+> +	  range.
+> +	* 4th cell is optional and represents the ICPLL field (PLLICPR
+> +	  register)
+> +- atmel,pll-clk-output-ranges : pll output frequency ranges + optional parameter
+> +				depending on #atmel,pll-output-range-cells
+> +				property value.
+> +
+> +For example:
+> +	plla: pllack {
+> +		compatible = "atmel,at91sam9g45-clk-pll";
+> +		interrupt-parent = <&pmc>;
+> +		interrupts = <1>;
+> +		#clock-cells = <0>;
+> +		clocks = <&main>;
+> +		atmel,clk-id = <0>;
+> +		atmel,clk-input-range = <2000000 32000000>;
+> +		#atmel,pll-clk-output-range-cells = <4>;
+> +		atmel,pll-clk-output-ranges = <74500000 800000000 0 0
+> +					       69500000 750000000 1 0
+> +					       64500000 700000000 2 0
+> +					       59500000 650000000 3 0
+> +					       54500000 600000000 0 1
+> +					       49500000 550000000 1 1
+> +					       44500000 500000000 2 1
+> +					       40000000 450000000 3 1>;
+> +	};
+> +
+> +Required properties for plldiv clocks (plldiv = pll / 2):
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the plla clock phandle.
+> +
+> +The pll divisor is equal to 2 and cannot be changed.
+> +
+> +For example:
+> +	plladiv: plladivck {
+> +		compatible = "atmel,at91sam9x5-clk-plldiv";
+> +		#clock-cells = <0>;
+> +		clocks = <&plla>;
+> +	};
+> +
+> +Required properties for programmable clocks:
+> +- interrupt-parent : must reference the PMC node.
+> +- #clock-cells : from common clock binding; shall be set to 1. The second cell
+> +	is used to encode the programmable clock id.
+> +	Peripheral ids are in atmel's SoC
+> +	datasheets.
+> +- clocks : shall be the programmable clock source phandles.
+> +	e.g. clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
+> +- name: device tree node describing a specific prog clock.
+> +	* atmel,clk-id : programmable clock id (register offset from  PCKx
+> +			 register).
+> +	* interrupts : shall be set to "<(8 + id)>".
+> +
+> +For example:
+> +	prog: progck {
+> +		compatible = "atmel,at91sam9g45-clk-programmable";
+> +		interrupt-parent = <&pmc>;
+> +		#clock-cells = <1>;
+> +		clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
+> +
+> +		prog0 {
+> +			atmel,clk-id = <0>;
+> +			interrupts = <8>;
+> +		};
+> +
+> +		prog1 {
+> +			atmel,clk-id = <1>;
+> +			interrupts = <9>;
+> +		};
+> +	};
+> +
+> +
+> +Required properties for smd clock:
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the smd clock source phandles.
+> +	e.g. clocks = <&plladiv>, <&utmi>;
+> +
+> +For example:
+> +	smd: smdck {
+> +		compatible = "atmel,at91sam9x5-clk-smd";
+> +		#clock-cells = <0>;
+> +		clocks = <&plladiv>, <&utmi>;
+> +	};
+> +
+> +Required properties for system clocks:
+> +- #clock-cells : from common clock binding; shall be set to 1. The second cell
+> +	is used to encode the system clock id (bit used in SCER/SCDR register).
+> +- name: device tree node describing a specific system clock.
+> +	* id: system clock id (bit position in SCER/SCDR/SCSR registers).
+> +	      See Atmel's datasheet to get a full list of system clock ids.
+> +
+> +For example:
+> +	system: systemck {
+> +		compatible = "atmel,at91rm9200-clk-system";
+> +		#clock-cells = <1>;
+> +
+> +		ddrck {
+> +			atmel,clk-id = <2>;
+> +			clocks = <&mck>;
+> +		};
+> +
+> +		uhpck {
+> +			atmel,clk-id = <6>;
+> +			clocks = <&usb>;
+> +		};
+> +
+> +		udpck {
+> +			atmel,clk-id = <7>;
+> +			clocks = <&usb>;
+> +		};
+> +	};
+> +
+> +
+> +Required properties for usb clock:
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the smd clock source phandles.
+> +	e.g. clocks = <&pllb>;
+> +- atmel,clk-divisors (only available for "atmel,at91rm9200-clk-usb"):
+> +	usb clock divisor table.
+> +	e.g. divisors = <1 2 4 0>;
+> +
+> +For example:
+> +	usb: usbck {
+> +		compatible = "atmel,at91sam9x5-clk-usb";
+> +		#clock-cells = <0>;
+> +		clocks = <&plladiv>, <&utmi>;
+> +	};
+> +
+> +	usb: usbck {
+> +		compatible = "atmel,at91rm9200-clk-usb";
+> +		#clock-cells = <0>;
+> +		clocks = <&pllb>;
+> +		atmel,clk-divisors = <1 2 4 0>;
+> +	};
+> +
+> +
+> +Required properties for utmi clock:
+> +- interrupt-parent : must reference the PMC node.
+> +- interrupts : shall be set to "<AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- clocks : shall be the main clock source phandle.
+> +
+> +For example:
+> +	utmi: utmick {
+> +		compatible = "atmel,at91sam9x5-clk-utmi";
+> +		interrupt-parent = <&pmc>;
+> +		interrupts = <AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>;
+> +		#clock-cells = <0>;
+> +		clocks = <&main>;
+> +	};
+>
 
-So avoid having to call copy_from_user_nmi() for every instruction.
-Since we already limit the max basic block size, we can easily
-pre-allocate a piece of memory to copy the entire thing into in one
-go.
 
-Don reports (for a previous version):
-> Your patch made a huge difference in improvement.  The
-> copy_from_user_nmi() no longer hits the million of cycles.  I still
-> have a batch of 100,000-300,000 cycles.  My longest NMI paths used
-> to be dominated by copy_from_user_nmi, now it is not (I have to dig
-> up the new hot path).
-
-Cc: jmario@redhat.com
-Cc: acme@infradead.org
-Cc: mingo@kernel.org
-Cc: dave.hansen@linux.intel.com
-Cc: eranian@google.com
-Cc: ak@linux.intel.com
-Reported-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   48 +++++++++++++++++++++---------
- 1 file changed, 34 insertions(+), 14 deletions(-)
-
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -12,6 +12,7 @@
- 
- #define BTS_BUFFER_SIZE		(PAGE_SIZE << 4)
- #define PEBS_BUFFER_SIZE	PAGE_SIZE
-+#define PEBS_FIXUP_SIZE		PAGE_SIZE
- 
- /*
-  * pebs_record_32 for p4 and core not supported
-@@ -228,12 +229,14 @@ void fini_debug_store_on_cpu(int cpu)
- 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
- }
- 
-+static DEFINE_PER_CPU(void *, insn_buffer);
-+
- static int alloc_pebs_buffer(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
- 	int node = cpu_to_node(cpu);
- 	int max, thresh = 1; /* always use a single PEBS record */
--	void *buffer;
-+	void *buffer, *ibuffer;
- 
- 	if (!x86_pmu.pebs)
- 		return 0;
-@@ -242,6 +245,15 @@ static int alloc_pebs_buffer(int cpu)
- 	if (unlikely(!buffer))
- 		return -ENOMEM;
- 
-+	if (x86_pmu.intel_cap.pebs_format < 2) {
-+		ibuffer = kzalloc_node(PEBS_FIXUP_SIZE, GFP_KERNEL, node);
-+		if (!ibuffer) {
-+			kfree(buffer);
-+			return -ENOMEM;
-+		}
-+		per_cpu(insn_buffer, cpu) = ibuffer;
-+	}
-+
- 	max = PEBS_BUFFER_SIZE / x86_pmu.pebs_record_size;
- 
- 	ds->pebs_buffer_base = (u64)(unsigned long)buffer;
-@@ -262,6 +274,9 @@ static void release_pebs_buffer(int cpu)
- 	if (!ds || !x86_pmu.pebs)
- 		return;
- 
-+	kfree(per_cpu(insn_buffer, cpu));
-+	per_cpu(insn_buffer, cpu) = NULL;
-+
- 	kfree((void *)(unsigned long)ds->pebs_buffer_base);
- 	ds->pebs_buffer_base = 0;
- }
-@@ -729,6 +744,7 @@ static int intel_pmu_pebs_fixup_ip(struc
- 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
- 	unsigned long ip = regs->ip;
- 	int is_64bit = 0;
-+	void *kaddr;
- 
- 	/*
- 	 * We don't need to fixup if the PEBS assist is fault like
-@@ -752,7 +768,7 @@ static int intel_pmu_pebs_fixup_ip(struc
- 	 * unsigned math, either ip is before the start (impossible) or
- 	 * the basic block is larger than 1 page (sanity)
- 	 */
--	if ((ip - to) > PAGE_SIZE)
-+	if ((ip - to) > PEBS_FIXUP_SIZE)
- 		return 0;
- 
- 	/*
-@@ -763,29 +779,33 @@ static int intel_pmu_pebs_fixup_ip(struc
- 		return 1;
- 	}
- 
-+	if (!kernel_ip(ip)) {
-+		int size, bytes;
-+		u8 *buf = this_cpu_read(insn_buffer);
-+
-+		size = ip - to; /* Must fit our buffer, see above */
-+		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
-+		if (bytes != size)
-+			return 0;
-+
-+		kaddr = buf;
-+	} else {
-+		kaddr = (void *)to;
-+	}
-+
- 	do {
- 		struct insn insn;
--		u8 buf[MAX_INSN_SIZE];
--		void *kaddr;
- 
- 		old_to = to;
--		if (!kernel_ip(ip)) {
--			int bytes, size = MAX_INSN_SIZE;
--
--			bytes = copy_from_user_nmi(buf, (void __user *)to, size);
--			if (bytes != size)
--				return 0;
--
--			kaddr = buf;
--		} else
--			kaddr = (void *)to;
- 
- #ifdef CONFIG_X86_64
- 		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
- #endif
- 		insn_init(&insn, kaddr, is_64bit);
- 		insn_get_length(&insn);
-+
- 		to += insn.length;
-+		kaddr += insn.length;
- 	} while (to < ip);
- 
- 	if (to == ip) {
+-- 
+Nicolas Ferre
