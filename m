@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3JQGDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:03:48 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51353 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3JQGC6 (ORCPT
+	id S1752606Ab3JQGDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:03:54 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:63691 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3JQGDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:02:58 -0400
-X-AuditID: 9c93017d-b7b2eae000005519-38-525f7d90ea3e
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 3/5] slab: restrict the number of objects in a slab
-Date: Thu, 17 Oct 2013 15:03:15 +0900
-Message-Id: <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 17 Oct 2013 02:03:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1380846199-12829-4-git-send-email-syin@broadcom.com>
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+	<1380846199-12829-4-git-send-email-syin@broadcom.com>
+Date: Wed, 16 Oct 2013 23:03:49 -0700
+Message-ID: <CAEPRUYqfpdp1GqxBgx-q=hyvQDe4uyi6okzHPW2QmfmPG_Z3NQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+From: Christian Daudt <bcm@fixthebug.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare to implement byte sized index for managing the freelist
-of a slab, we should restrict the number of objects in a slab to be less
-or equal to 256, since byte only represent 256 different values.
-Setting the size of object to value equal or more than newly introduced
-SLAB_MIN_SIZE ensures that the number of objects in a slab is less or
-equal to 256 for a slab with 1 page.
+On Thu, Oct 3, 2013 at 5:23 PM, Sherman Yin <syin@broadcom.com> wrote:
+> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
+>
+> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  arch/arm/mach-bcm/Kconfig       |    2 +
+>  drivers/pinctrl/Kconfig         |   10 +
+>  drivers/pinctrl/Makefile        |    1 +
+>  drivers/pinctrl/pinctrl-capri.c | 1727 +++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 1740 insertions(+)
+>  create mode 100644 drivers/pinctrl/pinctrl-capri.c
+>
+> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> index 69d67f7..2546365 100644
+> --- a/arch/arm/mach-bcm/Kconfig
+> +++ b/arch/arm/mach-bcm/Kconfig
+> @@ -10,6 +10,8 @@ config ARCH_BCM
+>         select GENERIC_CLOCKEVENTS
+>         select GENERIC_TIME
+>         select GPIO_BCM
+> +       select PINCTRL
+> +       select PINCTRL_CAPRI
+>         select SPARSE_IRQ
+>         select TICK_ONESHOT
+>         select CACHE_L2X0
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On your subsequent patchset pls move this from Kconfig to
+arm/configs/bcm_defconfig, and break that modification into a separate
+patch from the drivers/* modification.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index ec197b9..3cee122 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -157,6 +157,10 @@
- #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
- #endif
- 
-+/* We use byte sized index to manage the freelist of a slab */
-+#define NR_PER_BYTE (1 << BITS_PER_BYTE)
-+#define SLAB_MIN_SIZE (PAGE_SIZE >> BITS_PER_BYTE)
-+
- /*
-  * true if a page was allocated from pfmemalloc reserves for network-based
-  * swap
-@@ -2016,6 +2020,10 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
- 		if (!num)
- 			continue;
- 
-+		/* We can't handler number of objects more than NR_PER_BYTE */
-+		if (num > NR_PER_BYTE)
-+			break;
-+
- 		if (flags & CFLGS_OFF_SLAB) {
- 			/*
- 			 * Max number of objs-per-slab for caches which
-@@ -2258,6 +2266,12 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 		flags |= CFLGS_OFF_SLAB;
- 
- 	size = ALIGN(size, cachep->align);
-+	/*
-+	 * We want to restrict the number of objects in a slab to be equal or
-+	 * less than 256 in order to manage freelist via byte sized indexes.
-+	 */
-+	if (size < SLAB_MIN_SIZE)
-+		size = ALIGN(SLAB_MIN_SIZE, cachep->align);
- 
- 	left_over = calculate_slab_order(cachep, size, cachep->align, flags);
- 
--- 
-1.7.9.5
-
+ thanks,
+   csd
