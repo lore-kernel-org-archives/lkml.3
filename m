@@ -1,114 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab3JQNfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:35:51 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46931 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3JQNfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:35:48 -0400
-From: Majunath Goudar <csmanjuvijay@gmail.com>
-To: csmanjuvijay@gmail.com
-Cc: Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Greg KH <greg@kroah.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH V3 5/6] USB: OHCI: Properly handle ohci-exynos suspend
-Date: Thu, 17 Oct 2013 19:05:12 +0530
-Message-Id: <1382016913-10872-6-git-send-email-csmanjuvijay@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1382016913-10872-1-git-send-email-csmanjuvijay@gmail.com>
-References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
- <1382016913-10872-1-git-send-email-csmanjuvijay@gmail.com>
+	id S1756000Ab3JQNha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:37:30 -0400
+Received: from muin.pair.com ([209.68.1.55]:51378 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755138Ab3JQNh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 09:37:28 -0400
+Message-ID: <525FE815.1040300@tabi.org>
+Date: Thu, 17 Oct 2013 08:37:25 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Firefox/24.0 SeaMonkey/2.21
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+        lgirdwood@gmail.com, broonie@kernel.org, mark.rutland@arm.com,
+        alsa-devel@alsa-project.org, linux-doc@vger.kernel.org, tiwai@suse.de,
+        b18965@freescale.com, LW@KARO-electronics.de, linux@arm.linux.org.uk,
+        b42378@freescale.com, oskar@scara.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, ian.campbell@citrix.com,
+        pawel.moll@arm.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, fabio.estevam@freescale.com,
+        linux-kernel@vger.kernel.org, rob@landley.net, r64188@freescale.com,
+        shawn.guo@linaro.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [alsa-devel] [PATCHv1 1/8] ALSA: Add SAI SoC Digital Audio Interface
+ driver.
+References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com> <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com> <525FD4C7.3050806@tabi.org> <525FD65B.3040004@metafoo.de> <525FE48B.7020709@tabi.org> <525FE728.90403@metafoo.de>
+In-Reply-To: <525FE728.90403@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend scenario in case of ohci-exynos glue was not
-properly handled as it was not suspending generic part
-of ohci controller. Alan Stern suggested, properly handle
-ohci-exynos suspend scenario.
+Lars-Peter Clausen wrote:
+>> >Maybe I've been out of the loop for too long, but why is that a particular
+>> >problem with this driver?
 
-Calling explicitly the ohci_suspend() routine in
-exynos_ohci_suspend() will ensure proper handling of suspend
-scenario.
+> It is usually something you'd want to check in general to make sure that you
+> don't have multiple device that access the same iomem region at the same time.
 
-V1->V2:
-      -No changes.
-       Due to the build failure on ep93xx reverted this patch.
-       This patch is needed as Alan Stern suggestion.
-
-V2->V3:
-      -No changes.
-      As a build failure on "ep93xx proper suspend patch"
-      and Linaro id bounced. Rewrote this patch on top of latest
-      Greg usb-next branch. This patch not gives any build error. 
-      Patch is required for ohci-exynos proper suspending as Alan 
-      mentioned.
-
-      Initially when I wrote this patch I was working in Linaro, 
-      now I am not part of Linaro that is why Linaro id is bouncing. 
-      Sending this patch from personal mail id.
-
-Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
----
- drivers/usb/host/ohci-exynos.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a87baed..4b5c8bd 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -192,23 +192,14 @@ static int exynos_ohci_suspend(struct device *dev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct platform_device *pdev = to_platform_device(dev);
-+	bool do_wakeup = device_may_wakeup(dev);
- 	unsigned long flags;
--	int rc = 0;
-+	int rc = ohci_suspend(hcd, do_wakeup);
- 
--	/*
--	 * Root hub was already suspended. Disable irq emission and
--	 * mark HW unaccessible, bail out if RH has been resumed. Use
--	 * the spinlock to properly synchronize with possible pending
--	 * RH suspend or resume activity.
--	 */
--	spin_lock_irqsave(&ohci->lock, flags);
--	if (ohci->rh_state != OHCI_RH_SUSPENDED &&
--			ohci->rh_state != OHCI_RH_HALTED) {
--		rc = -EINVAL;
--		goto fail;
--	}
-+	if (rc)
-+		return rc;
- 
--	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	spin_lock_irqsave(&ohci->lock, flags);
- 
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
-@@ -217,10 +208,9 @@ static int exynos_ohci_suspend(struct device *dev)
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
--fail:
- 	spin_unlock_irqrestore(&ohci->lock, flags);
- 
--	return rc;
-+	return 0;
- }
- 
- static int exynos_ohci_resume(struct device *dev)
--- 
-1.7.9.5
-
+I understand that, but I'm trying to figure out why of_iomap() is okay 
+for hundreds of other drivers, but not this one.  I've used it dozens of 
+times myself, without ever worrying about overlapping regions.
