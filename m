@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762870Ab3JQVIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:08:47 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:45201 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762847Ab3JQVIn (ORCPT
+	id S1762901Ab3JQVIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:08:54 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:44095 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762886Ab3JQVIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:08:43 -0400
+	Thu, 17 Oct 2013 17:08:50 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Vlad Lungu <vlad.lungu@windriver.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, John Linn <john.linn@xilinx.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 03/10] tty: xuartps: Implement BREAK detection, add SYSRQ support
-Date: Thu, 17 Oct 2013 14:08:06 -0700
-Message-Id: <1382044093-29905-4-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH 06/10] tty: xuartps: Force enable the UART in xuartps_console_write
+Date: Thu, 17 Oct 2013 14:08:09 -0700
+Message-Id: <1382044093-29905-7-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -23,109 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Lungu <vlad.lungu@windriver.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-The Cadence UART does not do break detection, even if the
-datasheet says it does. This patch adds break detection in
-software (tested in 8N1 mode only) and enables SYSRQ,
-allowing for Break-g to enter KDB and all the other goodies.
+It is possible that under certain circumstances xuartps_console_write is entered
+while the UART disabled. When this happens the code will busy loop in
+xuartps_console_putchar, since the character is never written and the TXEMPTY
+flag is never set. The result is a system lockup. This patch force enables the
+UART for the duration of xuartps_console_write to avoid this.
 
-Signed-off-by: Vlad Lungu <vlad.lungu@windriver.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: John Linn <john.linn@xilinx.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
-I ported this patch to 3.12 and fixed some style issues
+Squashed from these original patches:
+	tty: xuartps: Force enable the UART in xuartps_console_write
+
+	It is possible that under certain circumstances xuartps_console_write is entered
+	while the UART disabled. When this happens the code will busy loop in
+	xuartps_console_putchar, since the character is never written and the TXEMPTY
+	flag is never set. The result is a system lockup. This patch force enables the
+	UART for the duration of xuartps_console_write to avoid this.
+
+	Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+
+and
+
+	tty: xuartps: Fix bad register write in console_write
+
+	The commit:
+	serial: xilinx_uartps: Force enable the UART in xuartps_console_write
+	(sha1: d21aec67c1c782314d20b3d619e76cf8aae593dc)
+	caused  a new bug as the write to the control register had
+	the offset and the value to write reversed.
+
+	Reported-by: Jason Andrews <jasona@cadence.com>
+	Signed-off-by: John Linn <john.linn@xilinx.com>
+	Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/tty/serial/xilinx_uartps.c | 50 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
+ drivers/tty/serial/xilinx_uartps.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 8c0745951605..5d5557af4d22 100644
+index 6e8ec6e9d5a2..fdc739b55eb3 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -11,13 +11,17 @@
-  *
-  */
+@@ -953,7 +953,7 @@ static void xuartps_console_write(struct console *co, const char *s,
+ {
+ 	struct uart_port *port = &xuartps_port[co->index];
+ 	unsigned long flags;
+-	unsigned int imr;
++	unsigned int imr, ctrl;
+ 	int locked = 1;
  
-+#if defined(CONFIG_SERIAL_XILINX_PS_UART_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-+#define SUPPORT_SYSRQ
-+#endif
-+
- #include <linux/platform_device.h>
- #include <linux/serial.h>
-+#include <linux/console.h>
- #include <linux/serial_core.h>
- #include <linux/slab.h>
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
--#include <linux/console.h>
- #include <linux/clk.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-@@ -128,6 +132,9 @@
- #define XUARTPS_IXR_RXEMPTY	0x00000002 /* RX FIFO empty interrupt. */
- #define XUARTPS_IXR_MASK	0x00001FFF /* Valid bit mask */
- 
-+/* Goes in read_status_mask for break detection as the HW doesn't do it*/
-+#define XUARTPS_IXR_BRK		0x80000000
-+
- /** Channel Status Register
-  *
-  * The channel status register (CSR) is provided to enable the control logic
-@@ -171,6 +178,23 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
- 	 */
- 	isrstatus = xuartps_readl(XUARTPS_ISR_OFFSET);
+ 	if (oops_in_progress)
+@@ -965,9 +965,19 @@ static void xuartps_console_write(struct console *co, const char *s,
+ 	imr = xuartps_readl(XUARTPS_IMR_OFFSET);
+ 	xuartps_writel(imr, XUARTPS_IDR_OFFSET);
  
 +	/*
-+	 * There is no hardware break detection, so we interpret framing
-+	 * error with all-zeros data as a break sequence. Most of the time,
-+	 * there's another non-zero byte at the end of the sequence.
++	 * Make sure that the tx part is enabled. Set the TX enable bit and
++	 * clear the TX disable bit to enable the transmitter.
 +	 */
++	ctrl = xuartps_readl(XUARTPS_CR_OFFSET);
++	xuartps_writel((ctrl & ~XUARTPS_CR_TX_DIS) | XUARTPS_CR_TX_EN,
++		XUARTPS_CR_OFFSET);
 +
-+	if (isrstatus & XUARTPS_IXR_FRAMING) {
-+		while (!(xuartps_readl(XUARTPS_SR_OFFSET) &
-+					XUARTPS_SR_RXEMPTY)) {
-+			if (!xuartps_readl(XUARTPS_FIFO_OFFSET)) {
-+				port->read_status_mask |= XUARTPS_IXR_BRK;
-+				isrstatus &= ~XUARTPS_IXR_FRAMING;
-+			}
-+		}
-+		xuartps_writel(XUARTPS_IXR_FRAMING, XUARTPS_ISR_OFFSET);
-+	}
-+
- 	/* drop byte with parity error if IGNPAR specified */
- 	if (isrstatus & port->ignore_status_mask & XUARTPS_IXR_PARITY)
- 		isrstatus &= ~(XUARTPS_IXR_RXTRIG | XUARTPS_IXR_TOUT);
-@@ -184,6 +208,30 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
- 		while ((xuartps_readl(XUARTPS_SR_OFFSET) &
- 			XUARTPS_SR_RXEMPTY) != XUARTPS_SR_RXEMPTY) {
- 			data = xuartps_readl(XUARTPS_FIFO_OFFSET);
-+
-+			/* Non-NULL byte after BREAK is garbage (99%) */
-+			if (data && (port->read_status_mask &
-+						XUARTPS_IXR_BRK)) {
-+				port->read_status_mask &= ~XUARTPS_IXR_BRK;
-+				port->icount.brk++;
-+				if (uart_handle_break(port))
-+					continue;
-+			}
-+
-+			/*
-+			 * uart_handle_sysrq_char() doesn't work if
-+			 * spinlocked, for some reason
-+			 */
-+			 if (port->sysrq) {
-+				spin_unlock(&port->lock);
-+				if (uart_handle_sysrq_char(port,
-+							(unsigned char)data)) {
-+					spin_lock(&port->lock);
-+					continue;
-+				}
-+				spin_lock(&port->lock);
-+			}
-+
- 			port->icount.rx++;
+ 	uart_console_write(port, s, count, xuartps_console_putchar);
+ 	xuartps_console_wait_tx(port);
  
- 			if (isrstatus & XUARTPS_IXR_PARITY) {
++	xuartps_writel(ctrl, XUARTPS_CR_OFFSET);
++
+ 	/* restore interrupt state, it seems like there may be a h/w bug
+ 	 * in that the interrupt enable register should not need to be
+ 	 * written based on the data sheet
 -- 
 1.8.4.1
 
