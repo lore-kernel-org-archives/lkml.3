@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762918Ab3JQVI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:08:58 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34828 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762886Ab3JQVIz (ORCPT
+	id S1762936Ab3JQVJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:09:05 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:48100 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762886Ab3JQVJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 17:08:55 -0400
+	Thu, 17 Oct 2013 17:09:00 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 07/10] tty: xuartps: Updating set_baud_rate()
-Date: Thu, 17 Oct 2013 14:08:10 -0700
-Message-Id: <1382044093-29905-8-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH 09/10] tty: xuartps: Implement suspend/resume callbacks
+Date: Thu, 17 Oct 2013 14:08:12 -0700
+Message-Id: <1382044093-29905-10-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1382044093-29905-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -22,212 +22,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original algorithm to find the best baud rate dividers does not necessarily
-find the best set of dividers. And in the worst case may even write illegal
-values to the hardware.
-The new function should make better use of the hardware capabilities and be able
-to provide valid settings for a wider range of baud rates and also input clocks.
+Implement suspend and resume callbacks in order to support system
+suspend/hibernation.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/tty/serial/xilinx_uartps.c | 136 +++++++++++++++++++++++++------------
- 1 file changed, 93 insertions(+), 43 deletions(-)
+ drivers/tty/serial/xilinx_uartps.c | 114 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
 
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index fdc739b55eb3..95e12c216984 100644
+index 82195040e906..9ecd8ea4f3ae 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -156,6 +156,11 @@ MODULE_PARM_DESC(rx_timeout, "Rx timeout, 1-255");
- #define XUARTPS_SR_TXFULL	0x00000010 /* TX FIFO full */
- #define XUARTPS_SR_RXTRIG	0x00000001 /* Rx Trigger */
+@@ -1198,6 +1198,119 @@ console_initcall(xuartps_console_init);
  
-+/* baud dividers min/max values */
-+#define XUARTPS_BDIV_MIN	4
-+#define XUARTPS_BDIV_MAX	255
-+#define XUARTPS_CD_MAX		65535
-+
- /**
-  * struct xuartps - device data
-  * @refclk	Reference clock
-@@ -305,59 +310,94 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
- }
+ #endif /* CONFIG_SERIAL_XILINX_PS_UART_CONSOLE */
  
- /**
-- * xuartps_set_baud_rate - Calculate and set the baud rate
-- * @port: Handle to the uart port structure
-- * @baud: Baud rate to set
-- *
-+ * xuartps_calc_baud_divs - Calculate baud rate divisors
-+ * @clk: UART module input clock
-+ * @baud: Desired baud rate
-+ * @rbdiv: BDIV value (return value)
-+ * @rcd: CD value (return value)
-+ * @div8: Value for clk_sel bit in mod (return value)
-  * Returns baud rate, requested baud when possible, or actual baud when there
-- *	was too much error
-- **/
--static unsigned int xuartps_set_baud_rate(struct uart_port *port,
--						unsigned int baud)
-+ *	was too much error, zero if no valid divisors are found.
-+ *
-+ * Formula to obtain baud rate is
-+ *	baud_tx/rx rate = clk/CD * (BDIV + 1)
-+ *	input_clk = (Uart User Defined Clock or Apb Clock)
-+ *		depends on UCLKEN in MR Reg
-+ *	clk = input_clk or input_clk/8;
-+ *		depends on CLKS in MR reg
-+ *	CD and BDIV depends on values in
-+ *			baud rate generate register
-+ *			baud rate clock divisor register
-+ */
-+static unsigned int xuartps_calc_baud_divs(unsigned int clk, unsigned int baud,
-+		u32 *rbdiv, u32 *rcd, int *div8)
- {
--	unsigned int sel_clk;
--	unsigned int calc_baud = 0;
--	unsigned int brgr_val, brdiv_val;
-+	u32 cd, bdiv;
-+	unsigned int calc_baud;
-+	unsigned int bestbaud = 0;
- 	unsigned int bauderror;
-+	unsigned int besterror = ~0;
- 
--	/* Formula to obtain baud rate is
--	 *	baud_tx/rx rate = sel_clk/CD * (BDIV + 1)
--	 *	input_clk = (Uart User Defined Clock or Apb Clock)
--	 *		depends on UCLKEN in MR Reg
--	 *	sel_clk = input_clk or input_clk/8;
--	 *		depends on CLKS in MR reg
--	 *	CD and BDIV depends on values in
--	 *			baud rate generate register
--	 *			baud rate clock divisor register
--	 */
--	sel_clk = port->uartclk;
--	if (xuartps_readl(XUARTPS_MR_OFFSET) & XUARTPS_MR_CLKSEL)
--		sel_clk = sel_clk / 8;
--
--	/* Find the best values for baud generation */
--	for (brdiv_val = 4; brdiv_val < 255; brdiv_val++) {
-+	if (baud < clk / ((XUARTPS_BDIV_MAX + 1) * XUARTPS_CD_MAX)) {
-+		*div8 = 1;
-+		clk /= 8;
-+	} else {
-+		*div8 = 0;
-+	}
- 
--		brgr_val = sel_clk / (baud * (brdiv_val + 1));
--		if (brgr_val < 2 || brgr_val > 65535)
-+	for (bdiv = XUARTPS_BDIV_MIN; bdiv <= XUARTPS_BDIV_MAX; bdiv++) {
-+		cd = DIV_ROUND_CLOSEST(clk, baud * (bdiv + 1));
-+		if (cd < 1 || cd > XUARTPS_CD_MAX)
- 			continue;
- 
--		calc_baud = sel_clk / (brgr_val * (brdiv_val + 1));
-+		calc_baud = clk / (cd * (bdiv + 1));
- 
- 		if (baud > calc_baud)
- 			bauderror = baud - calc_baud;
- 		else
- 			bauderror = calc_baud - baud;
- 
--		/* use the values when percent error is acceptable */
--		if (((bauderror * 100) / baud) < 3) {
--			calc_baud = baud;
--			break;
-+		if (besterror > bauderror) {
-+			*rbdiv = bdiv;
-+			*rcd = cd;
-+			bestbaud = calc_baud;
-+			besterror = bauderror;
- 		}
- 	}
-+	/* use the values when percent error is acceptable */
-+	if (((besterror * 100) / baud) < 3)
-+		bestbaud = baud;
-+
-+	return bestbaud;
-+}
- 
--	/* Set the values for the new baud rate */
--	xuartps_writel(brgr_val, XUARTPS_BAUDGEN_OFFSET);
--	xuartps_writel(brdiv_val, XUARTPS_BAUDDIV_OFFSET);
++#ifdef CONFIG_PM_SLEEP
 +/**
-+ * xuartps_set_baud_rate - Calculate and set the baud rate
-+ * @port: Handle to the uart port structure
-+ * @baud: Baud rate to set
-+ * Returns baud rate, requested baud when possible, or actual baud when there
-+ *	   was too much error, zero if no valid divisors are found.
++ * xuartps_suspend - suspend event
++ * @device: Pointer to the device structure
++ *
++ * Returns 0
 + */
-+static unsigned int xuartps_set_baud_rate(struct uart_port *port,
-+		unsigned int baud)
++static int xuartps_suspend(struct device *device)
 +{
-+	unsigned int calc_baud;
-+	u32 cd, bdiv;
-+	u32 mreg;
-+	int div8;
++	struct uart_port *port = dev_get_drvdata(device);
++	struct tty_struct *tty;
++	struct device *tty_dev;
++	int may_wake = 0;
 +
-+	calc_baud = xuartps_calc_baud_divs(port->uartclk, baud, &bdiv, &cd,
-+			&div8);
-+
-+	/* Write new divisors to hardware */
-+	mreg = xuartps_readl(XUARTPS_MR_OFFSET);
-+	if (div8)
-+		mreg |= XUARTPS_MR_CLKSEL;
-+	else
-+		mreg &= ~XUARTPS_MR_CLKSEL;
-+	xuartps_writel(mreg, XUARTPS_MR_OFFSET);
-+	xuartps_writel(cd, XUARTPS_BAUDGEN_OFFSET);
-+	xuartps_writel(bdiv, XUARTPS_BAUDDIV_OFFSET);
- 
- 	return calc_baud;
- }
-@@ -495,7 +535,7 @@ static void xuartps_set_termios(struct uart_port *port,
- 				struct ktermios *termios, struct ktermios *old)
- {
- 	unsigned int cval = 0;
--	unsigned int baud;
-+	unsigned int baud, minbaud, maxbaud;
- 	unsigned long flags;
- 	unsigned int ctrl_reg, mode_reg;
- 
-@@ -512,8 +552,14 @@ static void xuartps_set_termios(struct uart_port *port,
- 			(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS),
- 			XUARTPS_CR_OFFSET);
- 
--	/* Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk */
--	baud = uart_get_baud_rate(port, termios, old, 0, 10000000);
-+	/*
-+	 * Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk
-+	 * min and max baud should be calculated here based on port->uartclk.
-+	 * this way we get a valid baud and can safely call set_baud()
-+	 */
-+	minbaud = port->uartclk / ((XUARTPS_BDIV_MAX + 1) * XUARTPS_CD_MAX * 8);
-+	maxbaud = port->uartclk / (XUARTPS_BDIV_MIN + 1);
-+	baud = uart_get_baud_rate(port, termios, old, minbaud, maxbaud);
- 	baud = xuartps_set_baud_rate(port, baud);
- 	if (tty_termios_baud_rate(termios))
- 		tty_termios_encode_baud_rate(termios, baud, baud);
-@@ -589,13 +635,17 @@ static void xuartps_set_termios(struct uart_port *port,
- 				cval |= XUARTPS_MR_PARITY_MARK;
- 			else
- 				cval |= XUARTPS_MR_PARITY_SPACE;
--		} else if (termios->c_cflag & PARODD)
-+		} else {
-+			if (termios->c_cflag & PARODD)
- 				cval |= XUARTPS_MR_PARITY_ODD;
- 			else
- 				cval |= XUARTPS_MR_PARITY_EVEN;
--	} else
-+		}
-+	} else {
- 		cval |= XUARTPS_MR_PARITY_NONE;
--	xuartps_writel(cval , XUARTPS_MR_OFFSET);
++	/* Get the tty which could be NULL so don't assume it's valid */
++	tty = tty_port_tty_get(&port->state->port);
++	if (tty) {
++		tty_dev = tty->dev;
++		may_wake = device_may_wakeup(tty_dev);
++		tty_kref_put(tty);
 +	}
-+	cval |= mode_reg & 1;
-+	xuartps_writel(cval, XUARTPS_MR_OFFSET);
++
++	/*
++	 * Call the API provided in serial_core.c file which handles
++	 * the suspend.
++	 */
++	uart_suspend_port(&xuartps_uart_driver, port);
++	if (console_suspend_enabled && !may_wake) {
++		struct xuartps *xuartps = port->private_data;
++
++		clk_disable(xuartps->refclk);
++		clk_disable(xuartps->aperclk);
++	} else {
++		unsigned long flags = 0;
++
++		spin_lock_irqsave(&port->lock, flags);
++		/* Empty the receive FIFO 1st before making changes */
++		while (!(xuartps_readl(XUARTPS_SR_OFFSET) & XUARTPS_SR_RXEMPTY))
++			xuartps_readl(XUARTPS_FIFO_OFFSET);
++		/* set RX trigger level to 1 */
++		xuartps_writel(1, XUARTPS_RXWM_OFFSET);
++		/* disable RX timeout interrups */
++		xuartps_writel(XUARTPS_IXR_TOUT, XUARTPS_IDR_OFFSET);
++		spin_unlock_irqrestore(&port->lock, flags);
++	}
++
++	return 0;
++}
++
++/**
++ * xuartps_resume - Resume after a previous suspend
++ * @device: Pointer to the device structure
++ *
++ * Returns 0
++ */
++static int xuartps_resume(struct device *device)
++{
++	struct uart_port *port = dev_get_drvdata(device);
++	unsigned long flags = 0;
++	u32 ctrl_reg;
++	struct tty_struct *tty;
++	struct device *tty_dev;
++	int may_wake = 0;
++
++	/* Get the tty which could be NULL so don't assume it's valid */
++	tty = tty_port_tty_get(&port->state->port);
++	if (tty) {
++		tty_dev = tty->dev;
++		may_wake = device_may_wakeup(tty_dev);
++		tty_kref_put(tty);
++	}
++
++	if (console_suspend_enabled && !may_wake) {
++		struct xuartps *xuartps = port->private_data;
++
++		clk_enable(xuartps->aperclk);
++		clk_enable(xuartps->refclk);
++
++		spin_lock_irqsave(&port->lock, flags);
++
++		/* Set TX/RX Reset */
++		xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
++				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST),
++				XUARTPS_CR_OFFSET);
++		while (xuartps_readl(XUARTPS_CR_OFFSET) &
++				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST))
++			cpu_relax();
++
++		/* restore rx timeout value */
++		xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
++		/* Enable Tx/Rx */
++		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
++		xuartps_writel(
++			(ctrl_reg & ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS)) |
++			(XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN),
++			XUARTPS_CR_OFFSET);
++
++		spin_unlock_irqrestore(&port->lock, flags);
++	} else {
++		spin_lock_irqsave(&port->lock, flags);
++		/* restore original rx trigger level */
++		xuartps_writel(rx_trigger_level, XUARTPS_RXWM_OFFSET);
++		/* enable RX timeout interrupt */
++		xuartps_writel(XUARTPS_IXR_TOUT, XUARTPS_IER_OFFSET);
++		spin_unlock_irqrestore(&port->lock, flags);
++	}
++
++	return uart_resume_port(&xuartps_uart_driver, port);
++}
++#endif /* ! CONFIG_PM_SLEEP */
++
++static SIMPLE_DEV_PM_OPS(xuartps_dev_pm_ops, xuartps_suspend, xuartps_resume);
++
+ /** Structure Definitions
+  */
+ static struct uart_driver xuartps_uart_driver = {
+@@ -1348,6 +1461,7 @@ static struct platform_driver xuartps_platform_driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = XUARTPS_NAME,		/* Driver name */
+ 		.of_match_table = xuartps_of_match,
++		.pm = &xuartps_dev_pm_ops,
+ 		},
+ };
  
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
 -- 
 1.8.4.1
 
