@@ -1,226 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3JQGjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:39:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48694 "EHLO mga09.intel.com"
+	id S1752072Ab3JQGqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:46:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1832 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab3JQGjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:39:35 -0400
+	id S1750817Ab3JQGp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 02:45:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,512,1378882800"; 
-   d="scan'208";a="420435194"
-Subject: [PATCH v2] n_gsm: race between ld close and gsmtty open
-From: channing <chao.bi@intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Oct 2013 15:08:27 +0800
-Message-ID: <1381993707.19582.12.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+   d="asc'?scan'208";a="412392324"
+Date: Thu, 17 Oct 2013 02:30:59 -0400
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
+        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thomas Winischhofer <thomas@winischhofer.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
+Message-ID: <20131017063059.GB14946@gchen.bj.intel.com>
+Mail-Followup-To: Joe Perches <joe@perches.com>, tony.luck@intel.com,
+	bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com,
+	arozansk@redhat.com, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Thomas Winischhofer <thomas@winischhofer.net>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	Tomi Valkeinen <tomi.valkeinen@ti.com>
+References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
+ <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
+ <1381978749.22110.76.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
+Content-Disposition: inline
+In-Reply-To: <1381978749.22110.76.camel@joe-AO722>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-ttyA has ld associated to n_gsm, when ttyA is closing, it triggers
-to release gsmttyB's ld data dlci[B], then race would happen if gsmttyB
-is opening in parallel.
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here are race cases we found recently in test:
+On Wed, Oct 16, 2013 at 07:59:09PM -0700, Joe Perches wrote:
+> Date: Wed, 16 Oct 2013 19:59:09 -0700
+> From: Joe Perches <joe@perches.com>
+> To: "Chen, Gong" <gong.chen@linux.intel.com>
+> Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
+>  m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
+>  linux-kernel@vger.kernel.org, Thomas Winischhofer
+>  <thomas@winischhofer.net>, Jean-Christophe Plagniol-Villard
+>  <plagnioj@jcrosoft.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
+> X-Mailer: Evolution 3.6.4-0ubuntu1=20
+>=20
+> On Wed, 2013-10-16 at 10:56 -0400, Chen, Gong wrote:
+> > GENMASK is used to create a contiguous bitmask([hi:lo]). It is
+> > implemented twice in current kernel. One is in EDAC driver, the other
+> > is in SiS/XGI FB driver. Move it to a more generic place for other
+> > usage.
+> []
+> > diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+> []
+> > @@ -10,6 +10,14 @@
+> >  #define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long=
+))
+> >  #endif
+> > =20
+> > +/*
+> > + * Create a contiguous bitmask starting at bit position @l and ending =
+at
+> > + * position @h. For example
+> > + * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+>=20
+> ull
+>=20
+> > + */
+> > +#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+> > +#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
+>=20
+>=20
+> Maybe add a
+>=20
+> BUILD_BUG_ON(__builtin_constant_p(l) && __builtin_constant_p(h) && \
+> 	     (h) < (l))
+>=20
+No, if so, users can't use variables for this macro.
 
-CASE #1
-====================================================================
-releasing dlci[B] race with gsmtty_install(gsmttyB), then panic
-in gsmtty_open(gsmttyB), as below:
+--/NkBOFFp2J2Af1nK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- tty_release(ttyA)                  tty_open(gsmttyB)
-     |                                   |
-   -----                           gsmtty_install(gsmttyB)
-     |                                   |
-   -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
- tty_ldisc_release(ttyA)               -----
-     |                                   |
- gsm_dlci_release(dlci[B])             -----
-     |                                   |
- gsm_dlci_free(dlci[B])                -----
-     |                                   |
-   -----                           gsmtty_open(gsmttyB)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
- gsmtty_open()
- {
-     struct gsm_dlci *dlci = tty->driver_data; => here it uses dlci[B]
-     ...
- }
+iQIcBAEBAgAGBQJSX4QiAAoJEI01n1+kOSLHLhoQAInW+q5yvH1dYUdhudDzdgpl
+K6edVgyywW24vD39XyXJ/xZhgw/bnlv+bKtxbucu9Ma0Wx/IIP3L2Y5lPMgEkWhx
+f3JlL3GEVh/HuEFId7UxpC0EzvPLZ0fEYXDUbIiasgc2McsPSTSbsiT4o8Gagz0W
+SIcyblIKMX8oc+EAv2L1a9jH69awuVGY1Jh9iCi820LH3JPomfF8YULUZwR/p2wu
+cn0+XpoVN6kZwFJuHsE3K8apZAWPYHwjXrUfpfxlOlZU72mlyjND7RSSlwKD91xJ
+rByvlxnLymCkedJarGM7cTV/o602yrS3XDnvmpQE07gkVe09HjPhlgkJPqJTpxCb
+FSG/8WPNP2pwwQ5s45C6pkdhtWloHpegKkyEQocLXjY3qp201tZVDnJUBl/u9N6c
+ZqL/t/IOdD4O4VGIa2wbv/l00O1KoHaKPyQjGXPec4L2lm690958rWTRB5QQM4DT
+MNtPrRBKOpJqGezjZ62HU2Dy6V3yqBn/t5IYz9MXlSV9z/8meRYMdjPa/PFdd4FX
+2/v7wORkfvbI39Rvepkfg1kCkQn9aMwDFHh49Bly9Jy/09KTsBE79JnLA+FLtzK/
+1SzNgJSt/0ndLz495rZ52QNvUwDhM6gyWeW1JbPABFkuFtZSS6n/2wNuCjq8NoJq
+ppOdB9HKvYDoz+nIZPUF
+=eRZD
+-----END PGP SIGNATURE-----
 
- In gsmtty_open(gsmttyA), it uses dlci[B] which was release, so hit a panic.
-=====================================================================
-
-CASE #2
-=====================================================================
-releasing dlci[0] race with gsmtty_install(gsmttyB), then panic
-in gsmtty_open(), as below:
-
- tty_release(ttyA)                  tty_open(gsmttyB)
-     |                                   |
-   -----                           gsmtty_install(gsmttyB)
-     |                                   |
-   -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
-     |                                   |
-   -----                         gsmtty_open(gsmttyB) fail
-     |                                   |
-   -----                           tty_release(gsmttyB)
-     |                                   |
-   -----                           gsmtty_close(gsmttyB)
-     |                                   |
-   -----                        gsmtty_detach_dlci(dlci[B])
-     |                                   |
-   -----                             dlci_put(dlci[B])
-     |                                   |
- tty_ldisc_release(ttyA)               -----
-     |                                   |
- gsm_dlci_release(dlci[0])             -----
-     |                                   |
- gsm_dlci_free(dlci[0])                -----
-     |                                   |
-   -----                             dlci_put(dlci[0])
-
- In gsmtty_detach_dlci(dlci[B]), it tries to use dlci[0] which was released,
- then hit panic.
-=====================================================================
-
-IMHO, n_gsm tty operations would refer released ldisc,  as long as
-gsm_dlci_release() has chance to release ldisc data when some gsmtty operations
-are not completed..
-
-This patch is try to avoid it by:
-
-1) in n_gsm driver, use a global gsm spin lock to avoid gsm_dlci_release() run in
-parallel with gsmtty_install();
-
-2) Increase dlci's ref count in gsmtty_install() instead of in gsmtty_open(), the
-purpose is to prevent gsm_dlci_release() releasing dlci after gsmtty_install()
-allocats dlci but before gsmtty_open increases dlci's ref count;
-
-3) Decrease dlci's ref count in gsmtty_remove(), which is a tty framework api, and
-this is the opposite process of step 2).
-
-Signed-off-by: Chao Bi <chao.bi@intel.com>
----
- drivers/tty/n_gsm.c |   37 +++++++++++++++++++++++++++----------
- 1 files changed, 27 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..069bfd6 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2054,9 +2054,11 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
- 					dlci->state == DLCI_CLOSED);
- 	}
- 	/* Free up any link layer users */
-+	spin_lock(&gsm->lock);
- 	for (i = 0; i < NUM_DLCI; i++)
- 		if (gsm->dlci[i])
- 			gsm_dlci_release(gsm->dlci[i]);
-+	spin_unlock(&gsm->lock);
- 	/* Now wipe the queues */
- 	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
- 		kfree(txq);
-@@ -2909,23 +2911,33 @@ static int gsmtty_install(struct tty_driver *driver, struct tty_struct *tty)
- 	This is ok from a locking
- 	perspective as we don't have to worry about this
- 	if DLCI0 is lost */
--	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
-+	spin_lock(&gsm->lock);
-+	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN) {
-+		spin_unlock(&gsm->lock);
- 		return -EL2NSYNC;
-+	}
- 	dlci = gsm->dlci[line];
- 	if (dlci == NULL) {
- 		alloc = true;
- 		dlci = gsm_dlci_alloc(gsm, line);
- 	}
--	if (dlci == NULL)
-+	if (dlci == NULL) {
-+		spin_unlock(&gsm->lock);
- 		return -ENOMEM;
-+	}
- 	ret = tty_port_install(&dlci->port, driver, tty);
- 	if (ret) {
- 		if (alloc)
- 			dlci_put(dlci);
-+		spin_unlock(&gsm->lock);
- 		return ret;
- 	}
- 
-+	dlci_get(dlci);
-+	dlci_get(gsm->dlci[0]);
-+	mux_get(gsm);
- 	tty->driver_data = dlci;
-+	spin_unlock(&gsm->lock);
- 
- 	return 0;
- }
-@@ -2936,9 +2948,6 @@ static int gsmtty_open(struct tty_struct *tty, struct file *filp)
- 	struct tty_port *port = &dlci->port;
- 
- 	port->count++;
--	dlci_get(dlci);
--	dlci_get(dlci->gsm->dlci[0]);
--	mux_get(dlci->gsm);
- 	tty_port_tty_set(port, tty);
- 
- 	dlci->modem_rx = 0;
-@@ -2965,7 +2974,7 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
- 	mutex_unlock(&dlci->mutex);
- 	gsm = dlci->gsm;
- 	if (tty_port_close_start(&dlci->port, tty, filp) == 0)
--		goto out;
-+		return;
- 	gsm_dlci_begin_close(dlci);
- 	if (test_bit(ASYNCB_INITIALIZED, &dlci->port.flags)) {
- 		if (C_HUPCL(tty))
-@@ -2973,10 +2982,7 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
- 	}
- 	tty_port_close_end(&dlci->port, tty);
- 	tty_port_tty_set(&dlci->port, NULL);
--out:
--	dlci_put(dlci);
--	dlci_put(gsm->dlci[0]);
--	mux_put(gsm);
-+	return;
- }
- 
- static void gsmtty_hangup(struct tty_struct *tty)
-@@ -3153,6 +3159,16 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- 	return gsmtty_modem_update(dlci, encode);
- }
- 
-+static void gsmtty_remove(struct tty_driver *driver, struct tty_struct *tty)
-+{
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	struct gsm_mux *gsm = dlci->gsm;
-+
-+	dlci_put(dlci);
-+	dlci_put(gsm->dlci[0]);
-+	mux_put(gsm);
-+	driver->ttys[tty->index] = NULL;
-+}
- 
- /* Virtual ttys for the demux */
- static const struct tty_operations gsmtty_ops = {
-@@ -3172,6 +3188,7 @@ static const struct tty_operations gsmtty_ops = {
- 	.tiocmget		= gsmtty_tiocmget,
- 	.tiocmset		= gsmtty_tiocmset,
- 	.break_ctl		= gsmtty_break_ctl,
-+	.remove			= gsmtty_remove,
- };
- 
- 
--- 
-1.7.1
-
-
-
+--/NkBOFFp2J2Af1nK--
