@@ -1,144 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3JQLXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 07:23:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51155 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab3JQLXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 07:23:15 -0400
-Message-ID: <525FC89E.6040208@suse.cz>
-Date: Thu, 17 Oct 2013 13:23:10 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754394Ab3JQL0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 07:26:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61924 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752905Ab3JQL0h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 07:26:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <lantianyu1986@gmail.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
+Date: Thu, 17 Oct 2013 13:38:27 +0200
+Message-ID: <4249062.PmvqKh0Nrz@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <525F4E03.2050606@intel.com>
+References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <525F372A.5070807@intel.com> <525F4E03.2050606@intel.com>
 MIME-Version: 1.0
-To: Robert C Jennings <rcj@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave@sr71.net>, Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] vmsplice: Add limited zero copy to vmsplice
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com> <1381177293-27125-3-git-send-email-rcj@linux.vnet.ibm.com>
-In-Reply-To: <1381177293-27125-3-git-send-email-rcj@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 10:21 PM, Robert C Jennings wrote:
-> From: Matt Helsley <matt.helsley@gmail.com>
+On Thursday, October 17, 2013 10:40:03 AM Lan Tianyu wrote:
+> On 2013年10月17日 09:02, Lan Tianyu wrote:
+> > On 2013年10月16日 20:42, Rafael J. Wysocki wrote:
+> >> On Wednesday, October 16, 2013 05:26:21 PM Lan Tianyu wrote:
+> >>> This is a multi-part message in MIME format.
+> >>> --------------090400010209000300030201
+> >>> Content-Type: text/plain; charset=UTF-8
+> >>> Content-Transfer-Encoding: 8bit
+> >>>
+> >>> On 10/16/2013 05:22 AM, Rafael J. Wysocki wrote:
+> >>>> On Tuesday, October 15, 2013 04:58:28 PM Lan Tianyu wrote:
+> >>>>> On 2013å¹´10æ11æ¥ 19:19, Rafael J. Wysocki wrote:
+> >>>>>> On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com
+> >>>>>> wrote:
+> >>>>>>> From: Lan Tianyu <tianyu.lan@intel.com>
+> >>>>>>>
+> >>>>>>> Currently, when one power resource is turned on, devices owning
+> >>>>>>> it will be requested to resume regardless of their runtime pm
+> >>>>>>> status. ACPI power resource maybe turn on in some devices'
+> >>>>>>> runtime pm resume callback(E.G, usb port) while turning on the
+> >>>>>>> power resource will trigger one new resume request of the
+> >>>>>>> device. It causes infinite loop between resume and suspend.
+> >>>>>>> This has happened on clearing usb port's PM Qos NO_POWER_OFF
+> >>>>>>> flag twice. This patch is to add check of physical device's
+> >>>>>>> runtime pm status and request resume if the device is
+> >>>>>>> suspended.
+> >>>>>>>
+> >>>>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com> ---
+> >>>>>>> drivers/acpi/power.c | 6 ++++-- 1 file changed, 4
+> >>>>>>> insertions(+), 2 deletions(-)
+> >>>>>>>
+> >>>>>>> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c index
+> >>>>>>>  0dbe5cd..228c138 100644 --- a/drivers/acpi/power.c +++
+> >>>>>>> b/drivers/acpi/power.c @@ -250,8 +250,10 @@ static void
+> >>>>>>> acpi_power_resume_dependent(struct work_struct *work)
+> >>>>>>>
+> >>>>>>> mutex_lock(&adev->physical_node_lock);
+> >>>>>>>
+> >>>>>>> -	list_for_each_entry(pn, &adev->physical_node_list, node) -
+> >>>>>>> pm_request_resume(pn->dev); +	list_for_each_entry(pn,
+> >>>>>>> &adev->physical_node_list, node) { +		if
+> >>>>>>> (pm_runtime_suspended(pn->dev)) + pm_request_resume(pn->dev);
+> >>>>>>> + }
+> >>>>>>
+> >>>>>> This is racy, because the status may change right after you check
+> >>>>>> it and before you call pm_request_resume().
+> >>>>>
+> >>>>> Yes, the runtime status may be changed just after the check.
+> >>>>>
+> >>>>>>
+> >>>>>> Besides, pm_request_resume() checks the status of the device and
+> >>>>>>  won't try to resume it if it is not suspended.
+> >>>>>>
+> >>>>>
+> >>>>> For this issue, usb port is in the RPM_SUSPENDING state when
+> >>>>> pm_request_resume() is called.
+> >>>>
+> >>>> Why exactly does that happen?
+> >>>>
+> >>>>> The deferred_resume will be set to true during this procedure and
+> >>>>> trigger resume after finishing suspend. USB port runtime resume
+> >>>>> callback will turn on its power resource again and the work of
+> >>>>> acpi_power_resume_dependent() is scheduled. Because the usb port's
+> >>>>>  usage count remains zero, it's to be suspended soon. When
+> >>>>> pm_request_resume() of acpi_power_resume_dependent() is called, the
+> >>>>> usb port is always in the PRM_SUSPENDING. Fall in the loop of
+> >>>>> suspend and resume.
+> >>>>>
+> >>>>> How about running acpi_power_dependent when turning on power
+> >>>>> resource rather than scheduling a work to run it?
+> >>>>
+> >>>> Is this actually going to help?  Even if
+> >>>> acpi_power_resume_dependent() is run synchronously from within the
+> >>>> resume callback, it will still see RPM_SUSPENDING as the device's
+> >>>> status, won't it?
+> >>>>
+> >>>>> After this, pm_request_resume() can check device's right status
+> >>>>> just after turning on power resource.
+> >>>>
+> >>>> The status doesn't change until the .runtime_suspend() callback
+> >>>> returns and running pm_request_resume() syncrhonously from that
+> >>>> callback for the device being suspended just plain doesn't make
+> >>>> sense.
+> >>>>
+> >>>>
+> >>>> Can you please explain to me how this is possible that the USB port's
+> >>>> power resource is turned "on" while the port is RPM_SUSPENDING?
+> >>>>
+> >>> [This mail seems not to be sent to maillist. So resend. Try again
+> >>> Sorry for noise]
+> >>>
+> >>>
+> >>> Hi Rafael:
+> >>>
+> >>> No, I mean the acpi_power_resume_dependent() is running while the port's
+> >>> status is RPM_SUSPENDING. It runs from a work item and turning on power
+> >>> resource adds the work to workqueue. There is a timeslot between running
+> >>> acpi_power_resume_dependent() and turning on power resource. In the
+> >>> timeslot, the device runtime pm status maybe change.
+> >>>
+> >>> In this case, changing PM Qos flag will do pm_runtime_get_sync and
+> >>> pm_runtime_put usb port. The usb port is without device attached and so
+> >>> it will be resumed and suspended soon during changing PM Qos flag.
+> >>>
+> >>> Resume callback turns on power resource if NO_POWER_OFF flag has been
+> >>> cleared and add the work of acpi_power_resume_dependent() to
+> >>> workqueue. After resume, the usb port will be suspended while the
+> >>> acpi_power_resume_dependent() is running. pm_request_resume() gets
+> >>> RPM_SUSPENDING as the usb port's runtime status and set the
+> >>> deferred_resume of usb port.
+> >>>
+> >>> After suspend, usb port will be resumed again and turn on power
+> >>> resource. The work of acpi_power_resume_dependent() is also added to
+> >>> workqueue. Because the usb port's usage count remains 0 during this
+> >>> procedure. it will be suspended soon after resume. While suspending,
+> >>> acpi_power_resume_dependent() is running and pm_request_resume()
+> >>> sets deferred_resume again. The infinite look starts.
+> >>
+> >> So the problem is that the whole thing is racy.  There is no guarantee
+> >> that the power resource will not be turned off after the
+> >> acpi_power_get_inferred_state() check in acpi_power_resume_dependent()
+> >> and before rpm_resume() queued by the pm_request_resume() called from
+> >> there runs.  Playing with the time windows doesn't make that race go away.
+> >>
+> >> If we did what you suggested, the race still would be there, because the
+> >> queued up resume may still run after the power resource has been turned off.
+> > 
+> > Yes, the queued up resume will run after the power resource has been
+> > turned off but normally the resume should try to turn on the power
+> > resource before doing some hardware related operations. If so, there
+> > will not be problem, right?
+> > 
 > 
-> It is sometimes useful to move anonymous pages over a pipe rather than
-> save/swap them. Check the SPLICE_F_GIFT and SPLICE_F_MOVE flags to see
-> if userspace would like to move such pages. This differs from plain
-> SPLICE_F_GIFT in that the memory written to the pipe will no longer
-> have the same contents as the original -- it effectively faults in new,
-> empty anonymous pages.
+> Sorry. I think I misunderstood your word. Please ignore the previous
+> comment.
 > 
-> On the read side the page written to the pipe will be copied unless
-> SPLICE_F_MOVE is used. Otherwise copying will be performed and the page
-> will be reclaimed. Note that so long as there is a mapping to the page
-> copies will be done instead because rmap will have upped the map count for
-> each anonymous mapping; this can happen do to fork(), for example. This
-> is necessary because moving the page will usually change the anonymous
-> page's nonlinear index and that can only be done if it's unmapped.
-
-You might want to update comments of vmsplice_to_user() and
-SYSCALL_DEFINE4(vmsplice) as they both explain how it's done only via
-copying.
-
-Vlastimil
-
-> Signed-off-by: Matt Helsley <matt.helsley@gmail.com>
-> Signed-off-by: Robert C Jennings <rcj@linux.vnet.ibm.com>
-> ---
->  fs/splice.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 63 insertions(+)
+> Yes, there is still a racy. I think of one case that there are multi
+> devices that share one power resource. One device turns on power
+> resource during resuming and queue resumes for other devices. The device
+> enter into suspend and power resource turns off soon. When one other
+> device do resume, the power resource will turn on again and queue resume
+> for the previous device. Just like a Ping-pong.
 > 
-> diff --git a/fs/splice.c b/fs/splice.c
-> index a62d61e..9d2ed128 100644
-> --- a/fs/splice.c
-> +++ b/fs/splice.c
-> @@ -32,6 +32,10 @@
->  #include <linux/gfp.h>
->  #include <linux/socket.h>
->  #include <linux/compat.h>
-> +#include <linux/page-flags.h>
-> +#include <linux/hugetlb.h>
-> +#include <linux/ksm.h>
-> +#include <linux/swapops.h>
->  #include "internal.h"
->  
->  /*
-> @@ -1562,6 +1566,65 @@ static int pipe_to_user(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->  	char *src;
->  	int ret;
->  
-> +	if (!buf->offset && (buf->len == PAGE_SIZE) &&
-> +	    (buf->flags & PIPE_BUF_FLAG_GIFT) && (sd->flags & SPLICE_F_MOVE)) {
-> +		struct page *page = buf->page;
-> +		struct mm_struct *mm;
-> +		struct vm_area_struct *vma;
-> +		spinlock_t *ptl;
-> +		pte_t *ptep, pte;
-> +		unsigned long useraddr;
-> +
-> +		if (!PageAnon(page))
-> +			goto copy;
-> +		if (PageCompound(page))
-> +			goto copy;
-> +		if (PageHuge(page) || PageTransHuge(page))
-> +			goto copy;
-> +		if (page_mapped(page))
-> +			goto copy;
-> +		useraddr = (unsigned long)sd->u.userptr;
-> +		mm = current->mm;
-> +
-> +		ret = -EAGAIN;
-> +		down_read(&mm->mmap_sem);
-> +		vma = find_vma_intersection(mm, useraddr, useraddr + PAGE_SIZE);
-> +		if (IS_ERR_OR_NULL(vma))
-> +			goto up_copy;
-> +		if (!vma->anon_vma) {
-> +			ret = anon_vma_prepare(vma);
-> +			if (ret)
-> +				goto up_copy;
-> +		}
-> +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
-> +		ret = lock_page_killable(page);
-> +		if (ret)
-> +			goto up_copy;
-> +		ptep = get_locked_pte(mm, useraddr, &ptl);
-> +		if (!ptep)
-> +			goto unlock_up_copy;
-> +		pte = *ptep;
-> +		if (pte_present(pte))
-> +			goto unlock_up_copy;
-> +		get_page(page);
-> +		page_add_anon_rmap(page, vma, useraddr);
-> +		pte = mk_pte(page, vma->vm_page_prot);
-> +		set_pte_at(mm, useraddr, ptep, pte);
-> +		update_mmu_cache(vma, useraddr, ptep);
-> +		pte_unmap_unlock(ptep, ptl);
-> +		ret = 0;
-> +unlock_up_copy:
-> +		unlock_page(page);
-> +up_copy:
-> +		up_read(&mm->mmap_sem);
-> +		if (!ret) {
-> +			ret = sd->len;
-> +			goto out;
-> +		}
-> +		/* else ret < 0 and we should fallback to copying */
-> +		VM_BUG_ON(ret > 0);
-> +	}
-> +copy:
->  	/*
->  	 * See if we can use the atomic maps, by prefaulting in the
->  	 * pages and doing an atomic copy
+> >>
+> >> Unfortunately, I don't see how we can fix this race in a satisfactory way
+> >> and I'm starting to think that the whole resuming of dependent devices may
+> >> be a bad idea.
+> >>
+> >> IIRC, the original concern was that devices may end up in D0-uninitialized
+> >> if we don't do that, but then whoever turned the power resource on will
+> >> probably turn if off at one point anyway, so they will be in that state
+> >> temporarily.  In other words, in addition to the fact that this is racy,
+> >> there even is no reason to do it.
+> >>
+> >> I'll send a patch to rip off that stuff later today.
 > 
+> Currently, dropping it should be the better choice but I think we still
+> need to resolve the D0-uninitialized problem, right?
 
+Why do you think it is a problem in the first place?  Those devices will not
+be accessed while in that state (unless there's a bug somewhere).
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
