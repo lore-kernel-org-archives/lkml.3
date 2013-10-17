@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762160Ab3JQB3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 21:29:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34315 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762109Ab3JQB3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 21:29:35 -0400
-Date: Thu, 17 Oct 2013 12:29:22 +1100
-From: NeilBrown <neilb@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131017122922.69b41b11@notabene.brown>
-In-Reply-To: <20131016213005.GL10651@twins.programming.kicks-ass.net>
-References: <1381949500-501-1-git-send-email-treding@nvidia.com>
-	<1381949500-501-2-git-send-email-treding@nvidia.com>
-	<20131016213005.GL10651@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/XYbnB.MuKVBMd2FRlLMbFFS"; protocol="application/pgp-signature"
+	id S1762169Ab3JQBcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 21:32:09 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:61236 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761403Ab3JQBcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 21:32:07 -0400
+Date: Wed, 16 Oct 2013 18:32:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@sr71.net>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, cl@gentwo.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC][PATCH 1/8] mm: pcp: rename percpu pageset functions
+In-Reply-To: <20131015203538.35606A47@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1310161831090.15575@chino.kir.corp.google.com>
+References: <20131015203536.1475C2BE@viggo.jf.intel.com> <20131015203538.35606A47@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XYbnB.MuKVBMd2FRlLMbFFS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 15 Oct 2013, Dave Hansen wrote:
 
-On Wed, 16 Oct 2013 23:30:05 +0200 Peter Zijlstra <peterz@infradead.org>
-wrote:
+> diff -puN mm/page_alloc.c~rename-pageset-functions mm/page_alloc.c
+> --- linux.git/mm/page_alloc.c~rename-pageset-functions	2013-10-15 09:57:05.870612107 -0700
+> +++ linux.git-davehans/mm/page_alloc.c	2013-10-15 09:57:05.875612329 -0700
+> @@ -4136,10 +4136,18 @@ static void pageset_update(struct per_cp
+>  	pcp->batch = batch;
+>  }
+>  
+> -/* a companion to pageset_set_high() */
+> -static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
+> +/*
+> + * Set the batch size for hot per_cpu_pagelist, and derive
+> + * the high water mark from the batch size.
+> + */
+> +static void pageset_setup_from_batch_size(struct per_cpu_pageset *p,
+> +					unsigned long batch)
+>  {
+> -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
+> +	unsigned long high;
+> +	high = 6 * batch;
+> +	if (!batch)
+> +		batch = 1;
 
-> On Wed, Oct 16, 2013 at 08:51:39PM +0200, Thierry Reding wrote:
-> > Today's linux-next merge of the tip tree got a conflict in
-> >=20
-> > 	include/linux/wait.h
-> >=20
-> > caused by commits 1ab2460 (wait: add wait_event_cmd()) and fb869b6
-> > (sched/wait: Clean up wait.h details a bit).
-> >=20
-> > I've cleaned it up (see below). Please verify that the resolution looks
-> > good.
->=20
-> >  +#define __wait_event_cmd(wq, condition, cmd1, cmd2)			\
-> >  +do {									\
-> >  +	DEFINE_WAIT(__wait);						\
-> >  +									\
-> >  +	for (;;) {							\
-> >  +		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> >  +		if (condition)						\
-> >  +			break;						\
-> >  +		cmd1;							\
-> >  +		schedule();						\
-> >  +		cmd2;							\
-> >  +	}								\
-> >  +	finish_wait(&wq, &__wait);					\
-> >  +} while (0)
->=20
-> Ideally we'd write the new thing like:
->=20
-> #define __wait_event_cmd(wq, condition, cmd1, cmd2) 			\
-> 	(void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,	\
-> 			    cmd1; schedule(); cmd2)
->=20
+high = 6 * batch should be here?
 
-Oooo.. that looks much nicer.  I'll make it look like that before it goes
-upstream.
-
-Thanks,
-NeilBrown
-
---Sig_/XYbnB.MuKVBMd2FRlLMbFFS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUl89cjnsnt1WYoG5AQKLdxAAmbgLKCOkFONtpEBZ5zZur4Ud0JF31m+D
-unHxY+69vXC9Hg8tyBH3FqTzzUy17ahWck6h7LTvxh2sjix0bryVYaPqqpOgxj0G
-9jgExLyFNNyv3b9UaqMpTchqumr6fpB6njt/8ghjU63rBvh7tStxkMR6eUnrSAy0
-YbXQedEmJyvt37zhxvlg2tPvkWt80LqeDAQ78qMK16RFRh7rGDI1H8yJygnBuojk
-LdngDRTGNN233gEVcrKH/P2IivXIK2xLi6tdwM3KPeZDywqyS9OCLyYmEIfax2V9
-d1rJTRyl5kqcs6LXfZhyTJvlsJHpqu6paEgh5Oi4ZgBuMOErz8UW3q1OFAstdhvz
-sG+l6xx+22eodf+/CQv2P6REaAfUdTLdKmjsJDDMCxbTtE3rIXTX8D84FODmIxzv
-BINEo34Dd34rME+GkdT9P/bFUbKkC/H+2V/XtPalRmwKs55ykbH2JL8fNDtEAdM6
-lyvUyWzsbPnl5o8zirvk9F3R0DlEsiHNAI0kJtkBZglRkB1BvWXUECm5cx8V4Mm5
-QyvRp2riLMEOR/zRUikhfu7/A0ByH8vgIVJ+KZ83NiiJl5R66Ld5NGgLiQmHw6ON
-I52Yv8xLGw9R2xNPbxAts7CnlYCKzPD+PJFOwkVSpFqWP83ZUet2HvTteJSq9GWf
-cSRHXDCaA1Y=
-=JMk6
------END PGP SIGNATURE-----
-
---Sig_/XYbnB.MuKVBMd2FRlLMbFFS--
+> +	pageset_update(&p->pcp, high, batch);
+>  }
+>  
+>  static void pageset_init(struct per_cpu_pageset *p)
+> @@ -4158,15 +4166,15 @@ static void pageset_init(struct per_cpu_
+>  static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+>  {
+>  	pageset_init(p);
+> -	pageset_set_batch(p, batch);
+> +	pageset_setup_from_batch_size(p, batch);
+>  }
+>  
+>  /*
+> - * pageset_set_high() sets the high water mark for hot per_cpu_pagelist
+> - * to the value high for the pageset p.
+> + * Set the high water mark for the per_cpu_pagelist, and derive
+> + * the batch size from this high mark.
+>   */
+> -static void pageset_set_high(struct per_cpu_pageset *p,
+> -				unsigned long high)
+> +static void pageset_setup_from_high_mark(struct per_cpu_pageset *p,
+> +					unsigned long high)
+>  {
+>  	unsigned long batch = max(1UL, high / 4);
+>  	if ((high / 4) > (PAGE_SHIFT * 8))
+> @@ -4179,11 +4187,11 @@ static void __meminit pageset_set_high_a
+>  		struct per_cpu_pageset *pcp)
+>  {
+>  	if (percpu_pagelist_fraction)
+> -		pageset_set_high(pcp,
+> +		pageset_setup_from_high_mark(pcp,
+>  			(zone->managed_pages /
+>  				percpu_pagelist_fraction));
+>  	else
+> -		pageset_set_batch(pcp, zone_batchsize(zone));
+> +		pageset_setup_from_batch_size(pcp, zone_batchsize(zone));
+>  }
+>  
+>  static void __meminit zone_pageset_init(struct zone *zone, int cpu)
+> @@ -5781,8 +5789,9 @@ int percpu_pagelist_fraction_sysctl_hand
+>  		unsigned long  high;
+>  		high = zone->managed_pages / percpu_pagelist_fraction;
+>  		for_each_possible_cpu(cpu)
+> -			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
+> -					 high);
+> +			pageset_setup_from_high_mark(
+> +					per_cpu_ptr(zone->pageset, cpu),
+> +					high);
+>  	}
+>  	mutex_unlock(&pcp_batch_high_lock);
+>  	return 0;
