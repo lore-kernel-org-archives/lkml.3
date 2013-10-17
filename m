@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3JQGC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:02:58 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43238 "EHLO
+	id S1752545Ab3JQGDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:03:48 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51353 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3JQGC5 (ORCPT
+	with ESMTP id S1751835Ab3JQGC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:02:57 -0400
-X-AuditID: 9c93017d-b7b2eae000005519-32-525f7d8f2801
+	Thu, 17 Oct 2013 02:02:58 -0400
+X-AuditID: 9c93017d-b7b2eae000005519-38-525f7d90ea3e
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>,
@@ -16,90 +16,65 @@ Cc: Christoph Lameter <cl@linux.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 0/5] slab: implement byte sized indexes for the freelist of a slab
-Date: Thu, 17 Oct 2013 15:03:12 +0900
-Message-Id: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 3/5] slab: restrict the number of objects in a slab
+Date: Thu, 17 Oct 2013 15:03:15 +0900
+Message-Id: <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements byte sized indexes for the freelist of a slab.
+To prepare to implement byte sized index for managing the freelist
+of a slab, we should restrict the number of objects in a slab to be less
+or equal to 256, since byte only represent 256 different values.
+Setting the size of object to value equal or more than newly introduced
+SLAB_MIN_SIZE ensures that the number of objects in a slab is less or
+equal to 256 for a slab with 1 page.
 
-Currently, the freelist of a slab consist of unsigned int sized indexes.
-Most of slabs have less number of objects than 256, so much space is wasted.
-To reduce this overhead, this patchset implements byte sized indexes for
-the freelist of a slab. With it, we can save 3 bytes for each objects.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Below is some numbers of 'cat /proc/slabinfo'.
-
-* Before *
-kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
-kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
-kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
-kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0
-kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0
-kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0
-kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
-
-* After *
-kmalloc-512          521    648    512    8    1 : tunables   54   27    0 : slabdata     81     81      0
-kmalloc-256          208    208    256   16    1 : tunables  120   60    0 : slabdata     13     13      0
-kmalloc-192         1029   1029    192   21    1 : tunables  120   60    0 : slabdata     49     49      0
-kmalloc-96           529    589    128   31    1 : tunables  120   60    0 : slabdata     19     19      0
-kmalloc-64          2142   2142     64   63    1 : tunables  120   60    0 : slabdata     34     34      0
-kmalloc-128          660    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-kmalloc-32         11716  11780     32  124    1 : tunables  120   60    0 : slabdata     95     95      0
-kmem_cache           197    210    192   21    1 : tunables  120   60    0 : slabdata     10     10      0
-
-kmem_caches consisting of objects less than or equal to 256 byte have
-one or more objects than before. In the case of kmalloc-32, we have 11 more
-objects, so 352 bytes (11 * 32) are saved and this is roughly 9% saving of
-memory. Of couse, this percentage decreases as the number of objects
-in a slab decreases.
-
-Here are the performance results on my 4 cpus machine.
-
-* Before *
-
- Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-
-       229,945,138 cache-misses                                                  ( +-  0.23% )
-
-      11.627897174 seconds time elapsed                                          ( +-  0.14% )
-
-* After *
-
- Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-
-       218,640,472 cache-misses                                                  ( +-  0.42% )
-
-      11.504999837 seconds time elapsed                                          ( +-  0.21% )
-
-cache-misses are reduced by this patchset, roughly 5%.
-And elapsed times are improved by 1%.
-
-This patchset comes from a Christoph's idea.
-https://lkml.org/lkml/2013/8/23/315
-
-Patches are on top of my previous posting named as
-"slab: overload struct slab over struct page to reduce memory usage"
-https://lkml.org/lkml/2013/10/16/155
-
-Thanks.
-
-Joonsoo Kim (5):
-  slab: factor out calculate nr objects in cache_estimate
-  slab: introduce helper functions to get/set free object
-  slab: restrict the number of objects in a slab
-  slab: introduce byte sized index for the freelist of a slab
-  slab: make more slab management structure off the slab
-
- mm/slab.c |   90 +++++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 58 insertions(+), 32 deletions(-)
-
+diff --git a/mm/slab.c b/mm/slab.c
+index ec197b9..3cee122 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -157,6 +157,10 @@
+ #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
+ #endif
+ 
++/* We use byte sized index to manage the freelist of a slab */
++#define NR_PER_BYTE (1 << BITS_PER_BYTE)
++#define SLAB_MIN_SIZE (PAGE_SIZE >> BITS_PER_BYTE)
++
+ /*
+  * true if a page was allocated from pfmemalloc reserves for network-based
+  * swap
+@@ -2016,6 +2020,10 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
+ 		if (!num)
+ 			continue;
+ 
++		/* We can't handler number of objects more than NR_PER_BYTE */
++		if (num > NR_PER_BYTE)
++			break;
++
+ 		if (flags & CFLGS_OFF_SLAB) {
+ 			/*
+ 			 * Max number of objs-per-slab for caches which
+@@ -2258,6 +2266,12 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 		flags |= CFLGS_OFF_SLAB;
+ 
+ 	size = ALIGN(size, cachep->align);
++	/*
++	 * We want to restrict the number of objects in a slab to be equal or
++	 * less than 256 in order to manage freelist via byte sized indexes.
++	 */
++	if (size < SLAB_MIN_SIZE)
++		size = ALIGN(SLAB_MIN_SIZE, cachep->align);
+ 
+ 	left_over = calculate_slab_order(cachep, size, cachep->align, flags);
+ 
 -- 
 1.7.9.5
 
