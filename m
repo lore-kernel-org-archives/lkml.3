@@ -1,186 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab3JQKqQ (ORCPT <rfc822;w@1wt.eu>);
+	id S1754878Ab3JQKqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:46:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8290 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754683Ab3JQKqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Oct 2013 06:46:16 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:65046 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab3JQKqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:46:14 -0400
-X-Nat-Received: from [202.181.97.72]:59479 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1382006729.31822
-To: mingo@kernel.org
-Cc: peterz@infradead.org, maarten.lankhorst@canonical.com,
-        imirkin@alum.mit.edu, linux-kernel@vger.kernel.org,
-        daniel.vetter@ffwll.ch, robdclark@gmail.com
-Subject: [PATCH for 3.12] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201310171945.AGB17114.FSQVtHOJFOOFML@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 17 Oct 2013 19:45:29 +0900
-Mime-Version: 1.0
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,513,1378882800"; 
+   d="scan'208";a="394334019"
+Date: Thu, 17 Oct 2013 15:23:08 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
+ status
+Message-ID: <20131017095308.GF14013@intel.com>
+References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
+ <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
+ <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+ <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+ <20131017020745.GA14013@intel.com>
+ <Pine.LNX.4.64.1310170851230.27369@axis700.grange>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17102013 #11274988, status: clean
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1310170851230.27369@axis700.grange>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-"!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
-correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+On Thu, Oct 17, 2013 at 10:27:13AM +0200, Guennadi Liakhovetski wrote:
+> On Thu, 17 Oct 2013, Vinod Koul wrote:
+> 
+> > On Wed, Oct 16, 2013 at 11:45:48AM -0700, Dan Williams wrote:
+> > > On Wed, Oct 16, 2013 at 11:29 AM, Guennadi Liakhovetski
+> > > >
+> > > > Doesn't this break kernel compilation for a total of 27 commits? Or am I
+> > > > missing anything?
+> > > 
+> > > Yes, I think at the start DMA_COMPLETE should just be a alias for
+> > > DMA_SUCCESS, then after all the driver renames are in delete
+> > > DMA_SUCCESS.
+> > Oops, taht was bad of me. ffixes in v2 and sending patch 29 for removal case
+> 
+> Ok, yes, this should work now. I'm wondering though - is DMA_COMPLTE 
+> really a better name? AFAICS, we can only differentiate between 2 
+> possibilities with the current API: a transfer is "in progress" - between 
+> last used and last completed, and "unknown" - either completed, or 
+> aborted, or not yet submitted - if the cookie is larger, than last 
+> completed and we assume, that it has wrapped.
+well, once you submit N, and chekcing status, if you get last > N, then you
+assume it completed. If last is M then M is completed and M + 1 running and rest
+in queue. You know which one is last submitted in client
 
-Fix it by explicitly passing a bool which tells whether p != NULL or not.
+> Actually for a driver, that I'm currently working on, I implemented a 
+> cache of N last cookies (e.g. 128), which is a bitfield, where I just 
+> record a 1, if that descriptor has failed, and a 0, if completed 
+> successfully. That way I can report one of 4 states: cookie on queue, 
+> completed successfully, failed, unknown. I'm not sure, whether I'll keep 
+> this in the final version, this doesn't really fit the present dmaengine 
+> API concept. We could make this generic, if desired. Otherwise your 
+> proposed error callback should help too. But in either case I think with 
+> the current implementation we cannot find out whether a specific cookie 
+> completed successfully or failed.
+The propsed error callback will tell you if dmaengine detected a failure or not.
+That should with above cover well
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- kernel/mutex.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+> One more observation: I looked at a couple of drivers, using the DMA_ERROR 
+> state. E.g. mmp_tdma.c, mxs-dma.c. They store errors in a .status field in 
+> their private data. Then they return that status in their 
+> .device_tx_status() methods - independent on the cookie! This doesn't look 
+> right to me... at_hdmac.c does something similarly strange.
+Yup bunch of ones arent being good citizens..
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 6d647ae..d24105b 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -410,7 +410,7 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
- static __always_inline int __sched
- __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		    struct lockdep_map *nest_lock, unsigned long ip,
--		    struct ww_acquire_ctx *ww_ctx)
-+		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
- {
- 	struct task_struct *task = current;
- 	struct mutex_waiter waiter;
-@@ -450,7 +450,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		struct task_struct *owner;
- 		struct mspin_node  node;
- 
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
- 
- 			ww = container_of(lock, struct ww_mutex, base);
-@@ -480,7 +480,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
--			if (!__builtin_constant_p(ww_ctx == NULL)) {
-+			if (use_ww_ctx) {
- 				struct ww_mutex *ww;
- 				ww = container_of(lock, struct ww_mutex, base);
- 
-@@ -551,7 +551,7 @@ slowpath:
- 			goto err;
- 		}
- 
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			ret = __mutex_lock_check_stamp(lock, ww_ctx);
- 			if (ret)
- 				goto err;
-@@ -575,7 +575,7 @@ skip_wait:
- 	lock_acquired(&lock->dep_map, ip);
- 	mutex_set_owner(lock);
- 
--	if (!__builtin_constant_p(ww_ctx == NULL)) {
-+	if (use_ww_ctx) {
- 		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
- 		struct mutex_waiter *cur;
- 
-@@ -615,7 +615,7 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    subclass, NULL, _RET_IP_, NULL);
-+			    subclass, NULL, _RET_IP_, NULL, 0);
- }
- 
- EXPORT_SYMBOL_GPL(mutex_lock_nested);
-@@ -625,7 +625,7 @@ _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
- {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    0, nest, _RET_IP_, NULL);
-+			    0, nest, _RET_IP_, NULL, 0);
- }
- 
- EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
-@@ -635,7 +635,7 @@ mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_KILLABLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
- EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
- 
-@@ -644,7 +644,7 @@ mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
- 
- EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
-@@ -682,7 +682,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- 
- 	might_sleep();
- 	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
--				   0, &ctx->dep_map, _RET_IP_, ctx);
-+				   0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
- 
-@@ -697,7 +697,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- 
- 	might_sleep();
- 	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
--				  0, &ctx->dep_map, _RET_IP_, ctx);
-+				  0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
-@@ -809,28 +809,28 @@ __mutex_lock_slowpath(atomic_t *lock_count)
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
--			    NULL, _RET_IP_, NULL);
-+			    NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_killable_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_interruptible_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __ww_mutex_lock_slowpath(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- static noinline int __sched
-@@ -838,7 +838,7 @@ __ww_mutex_lock_interruptible_slowpath(struct ww_mutex *lock,
- 					    struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- #endif
+~Vinod
 -- 
-1.7.1
