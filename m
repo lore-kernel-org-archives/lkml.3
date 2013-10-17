@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3JQIJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 04:09:06 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:23546 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab3JQII6 (ORCPT
+	id S1752994Ab3JQIO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 04:14:28 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:49346 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab3JQIOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 04:08:58 -0400
-Message-ID: <525F9B14.8080106@atmel.com>
-Date: Thu, 17 Oct 2013 10:08:52 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 17 Oct 2013 04:14:24 -0400
+Date: Thu, 17 Oct 2013 10:14:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131017081420.GB22705@gmail.com>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
+ <20131010180049.GD9929@pd.tnic>
+ <20131016124627.GA2611@gmail.com>
+ <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+ <20131016175302.GB4100@infradead.org>
+ <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <g.liakhovetski@gmx.de>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 03/28] dmaengine: at_hdma: use DMA_COMPLETE for dma completion
- status
-References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com> <1381940926-25564-4-git-send-email-vinod.koul@intel.com>
-In-Reply-To: <1381940926-25564-4-git-send-email-vinod.koul@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/10/2013 18:28, Vinod Koul :
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+* Stephane Eranian <eranian@google.com> wrote:
 
-> ---
->   drivers/dma/at_hdmac.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+> On Wed, Oct 16, 2013 at 7:53 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Wed, Oct 16, 2013 at 03:13:54PM +0200, Stephane Eranian escreveu:
+> >> On Wed, Oct 16, 2013 at 2:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> > We should also tell user-space that the unit of this counter is 'Joule'.
+> >> >
+> >> > Then things like:
+> >> >
+> >> >         perf stat -a -e power/* sleep 1
+> >> >
+> >> > would output, without knowing any RAPL details:
+> >> >
+> >> >             0.20619 Joule    power/energy-core
+> >> >             2.42151 Joule    power/energy-pkg
+> >> >
+> >> Not sure there is already some support for this in perf stat. Arnaldo?
+> >
+> > Nope, there is not, we would have to have some table somewhere with
+> > "event-regexp: unit-string"
+> >
+> >> If not that we need another sysfs file to export the unit. Another
+> >> possibility is for perf stat to recognize the power/* and extract the
+> >> unit from the event name. In my example power/joules-cores -> joules.
+> >
+> > I.e. you would be encoding the counter unit as the suffix, might as well
+> > call it "power/cores.joules" and use the dot as the separator for the
+> > unit, but would be just a compact form to encode the counter->unit
+> > table.
 >
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index c787f38..1ef7457 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -1102,7 +1102,7 @@ atc_tx_status(struct dma_chan *chan,
->   	int bytes = 0;
->
->   	ret = dma_cookie_status(chan, cookie, txstate);
-> -	if (ret == DMA_SUCCESS)
-> +	if (ret == DMA_COMPLETE)
->   		return ret;
->   	/*
->   	 * There's no point calculating the residue if there's
->
+> May be easier to add a sysfs entry with the unit to display.
 
+Yes - with no entry meaning a raw 'count' or such.
 
--- 
-Nicolas Ferre
+Thanks,
+
+	Ingo
