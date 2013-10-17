@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3JQOFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:05:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49148 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755429Ab3JQOFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:05:45 -0400
-Date: Thu, 17 Oct 2013 15:05:43 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Christian Daudt <bcm@fixthebug.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [RESEND PATCH v2 4/6] clocksource: kona: Add basic use of
- external clock
-Message-ID: <20131017140542.GE24056@e106331-lin.cambridge.arm.com>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
- <1381960030-1640-5-git-send-email-tim.kryger@linaro.org>
+	id S1756615Ab3JQOHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:07:06 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51543 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755754Ab3JQOHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 10:07:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: Re: [RFC V4 PATCH 00/15] Signature verification of hibernate snapshot
+Date: Thu, 17 Oct 2013 16:18:47 +0200
+Message-ID: <3744955.cCTmoQ1ejp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1379206621-18639-1-git-send-email-jlee@suse.com>
+References: <1379206621-18639-1-git-send-email-jlee@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381960030-1640-5-git-send-email-tim.kryger@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 10:47:08PM +0100, Tim Kryger wrote:
-> When an clock handle is specified in the device tree, enable it and use
-> it to determine the external clock frequency.
-
-I'd drop handle here and just say "When a clock is specified".
-
-This will need a binding document update.
-
+On Sunday, September 15, 2013 08:56:46 AM Lee, Chun-Yi wrote:
+> Hi experts,
 > 
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
->  drivers/clocksource/bcm_kona_timer.c | 14 +++++++++++---
->  1 file changed, 11 insertions(+), 3 deletions(-)
+> This patchset is the implementation for signature verification of hibernate
+> snapshot image. The origin idea is from Jiri Kosina: Let EFI bootloader
+> generate key-pair in UEFI secure boot environment, then pass it to kernel
+> for sign/verify S4 image.
 > 
-> diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
-> index 0d7d8c3..fd11f96 100644
-> --- a/drivers/clocksource/bcm_kona_timer.c
-> +++ b/drivers/clocksource/bcm_kona_timer.c
-> @@ -17,6 +17,7 @@
->  #include <linux/jiffies.h>
->  #include <linux/clockchips.h>
->  #include <linux/types.h>
-> +#include <linux/clk.h>
->  
->  #include <linux/io.h>
->  #include <asm/mach/time.h>
-> @@ -107,11 +108,18 @@ static const struct of_device_id bcm_timer_ids[] __initconst = {
->  static void __init kona_timers_init(struct device_node *node)
->  {
->  	u32 freq;
-> +	struct clk *external_clk;
->  
-> -	if (!of_property_read_u32(node, "clock-frequency", &freq))
-> +	external_clk = of_clk_get_by_name(node, NULL);
+> Due to there have potential threat from the S4 image hacked, it may causes
+> kernel lost the trust in UEFI secure boot. Hacker attack the S4 snapshot
+> image in swap partition through whatever exploit from another trusted OS,
+> and the exploit may don't need physical access machine.
+> 
+> So, this patchset give the ability to kernel for parsing RSA private key
+> from EFI bootloader, then using the private key to generate the signature
+> of S4 snapshot image. Kernel put the signature to snapshot header, and
+> verify the signature when kernel try to recover snapshot image to memory.
 
-Is there only a single external clock input to the kona timer, or is
-only one relevant here?
+I wonder what the status of this work is?  Is it considered ready for inclusion
+or are you still going to work on it and resubmit?
 
-Are there any other inputs currently not modelled (e.g. regulators)?
+Rafael
 
-> +
-> +	if (!IS_ERR(external_clk)) {
-> +		arch_timer_rate = clk_get_rate(external_clk);
-> +		clk_prepare_enable(external_clk);
-> +	} else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
->  		arch_timer_rate = freq;
-> -	else
-> -		panic("clock-frequency not set in the .dts file");
-> +	} else {
-> +		panic("neither clock-frequency or clocks handle in .dts file");
-
-Nit: it's not a handle, it's a phandle+args pair.
-
-Why not just "Unable to determine clock frequency"?
-
-Do we need to panic here? Might a system have other clocks it could use
-to continue?
-
-Thanks,
-Mark.
