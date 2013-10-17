@@ -1,136 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab3JQOMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:12:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42852 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3JQOMl (ORCPT
+	id S1756410Ab3JQONN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:13:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49284 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755352Ab3JQONM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:12:41 -0400
-Date: Thu, 17 Oct 2013 07:13:46 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] tty/serial: at91: add a fallback option to determine
- uart/usart property
-Message-ID: <20131017141346.GA22104@kroah.com>
-References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com>
- <64f8f1db6f888456be8ee410a7e9bb9851d070a5.1381394411.git.nicolas.ferre@atmel.com>
- <20131014135921.GG11420@ns203013.ovh.net>
- <525D0896.6020907@atmel.com>
- <20131016201451.GA21296@kroah.com>
- <525F9CEF.9020904@atmel.com>
+	Thu, 17 Oct 2013 10:13:12 -0400
+Date: Thu, 17 Oct 2013 15:13:09 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [RESEND PATCH v2 6/6] mmc: sdhci-bcm-kona: Add basic use of
+ clocks
+Message-ID: <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+ <1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525F9CEF.9020904@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 10:16:47AM +0200, Nicolas Ferre wrote:
-> On 16/10/2013 22:14, Greg Kroah-Hartman :
-> > On Tue, Oct 15, 2013 at 11:19:18AM +0200, Nicolas Ferre wrote:
-> >> On 14/10/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD :
-> >>> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
-> >>>> On older SoC, the "name" field is not filled in the register map.
-> >>>> Fix the way to figure out if the serial port is an uart or an usart for these
-> >>>> older products (with corresponding properties).
-> >>>>
-> >>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >>>> ---
-> >>>>   drivers/tty/serial/atmel_serial.c | 19 ++++++++++++++++++-
-> >>>>   include/linux/atmel_serial.h      |  1 +
-> >>>>   2 files changed, 19 insertions(+), 1 deletion(-)
-> >>>>
-> >>>> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-> >>>> index 6b0f75e..c7d99af 100644
-> >>>> --- a/drivers/tty/serial/atmel_serial.c
-> >>>> +++ b/drivers/tty/serial/atmel_serial.c
-> >>>> @@ -99,6 +99,7 @@ static void atmel_stop_rx(struct uart_port *port);
-> >>>>   #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
-> >>>>   #define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
-> >>>>   #define UART_GET_IP_NAME(port)	__raw_readl((port)->membase + ATMEL_US_NAME)
-> >>>> +#define UART_GET_IP_VERSION(port) __raw_readl((port)->membase + ATMEL_US_VERSION)
-> >>>>
-> >>>>    /* PDC registers */
-> >>>>   #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
-> >>>> @@ -1503,6 +1504,7 @@ static void atmel_get_ip_name(struct uart_port *port)
-> >>>>   {
-> >>>>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
-> >>>>   	int name = UART_GET_IP_NAME(port);
-> >>>> +	u32 version;
-> >>>>   	int usart, uart;
-> >>>>   	/* usart and uart ascii */
-> >>>>   	usart = 0x55534152;
-> >>>> @@ -1517,7 +1519,22 @@ static void atmel_get_ip_name(struct uart_port *port)
-> >>>>   		dev_dbg(port->dev, "This is uart\n");
-> >>>>   		atmel_port->is_usart = false;
-> >>>>   	} else {
-> >>>> -		dev_err(port->dev, "Not supported ip name, set to uart\n");
-> >>>> +		/* fallback for older SoCs: use version field */
-> >>>> +		version = UART_GET_IP_VERSION(port);
-> >>>> +		switch (version) {
-> >>>> +		case 0x302:
-> >>>> +		case 0x10213:
-> >>>> +			dev_dbg(port->dev, "This version is usart\n");
-> >>>> +			atmel_port->is_usart = true;
-> >>>> +			break;
-> >>>> +		case 0x203:
-> >>>> +		case 0x10202:
-> >>>> +			dev_dbg(port->dev, "This version is uart\n");
-> >>>> +			atmel_port->is_usart = false;
-> >>>> +			break;
-> >>>> +		default:
-> >>>> +			dev_err(port->dev, "Not supported ip name nor version, set to uart\n");
-> >>>
-> >>> it's not really an error a dev_warn is more oppropriate
-> >>
-> >> As we are already in -rc5 and that these fixes are critical for at91
-> >> platforms, I will not re-spin another patch just for this.
-> >>
-> >> Moreover, I have the feeling that if we end up in this case, it
-> >> means that we are in big troubles because the usart/uart included in
-> >> the product triggering this log is not known (I recall that newer
-> >> products do not have to hit these lines of code).
-> >>
-> >> With these 2 reasons, I prefer to keep my patch like it is.
-> >>
-> >> Greg, can you consider taking these two patches as regression fixes
-> >> for 3.12 (with Tested-by tag from Thomas)?
-> >
-> > Is this really a regression from 3.11?
+On Wed, Oct 16, 2013 at 10:47:10PM +0100, Tim Kryger wrote:
+> Enable the external clock needed by the host controller during the
+> probe and disable it during the remove.
+
+This requires a biding document update.
+
+I note that the binding is already incomplete (it does not describe the
+interrupts or reg).
+
 > 
-> Yes it is. Commit id that I am referring to in patch 1/2 
-> (055560b04a8cd063aea916fd083b7aec02c2adb8) hit the mainline in 3.12-rc 
-> time-frame.
-
-Ok.
-
-> > What's the worry about waiting
-> > for 3.13-rc1, getting this correct, and then backporting them to the
-> > 3.12-stable trees?
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  drivers/mmc/host/sdhci-bcm-kona.c | 30 ++++++++++++++++++++++++++++--
+>  1 file changed, 28 insertions(+), 2 deletions(-)
 > 
-> It will break all older at91 in 3.12-final. Moreover, I do think that 
-> the actual patches are bringing an incorrect solution and I do not plan 
-> to have a better one (which one?) for 3.13...
-> 
-> > I'd prefer that, so, please clean this up properly and resend it, with
-> > the tested-by: lines and I'll queue them up for 3.13-rc1.
-> 
-> I do not know what to cleanup. Anyway, tell me if you want that I resend 
-> the series of 2 patches with the "Tested-by" tag included.
+> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+> index 85472d3..91db099 100644
+> --- a/drivers/mmc/host/sdhci-bcm-kona.c
+> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
+> @@ -54,6 +54,7 @@
+>  
+>  struct sdhci_bcm_kona_dev {
+>  	struct mutex	write_lock; /* protect back to back writes */
+> +	struct clk	*external_clk;
 
-I thought there was some dev_warn() changes that were asked for...
+Is this the only clock input the unit has?
 
-Anyway, please resend them if you want me to take them for any tree as I
-no longer have them in my queue.
+Are there any other external resources the device needs (e.g. gpios,
+regulators)?
 
-thanks,
+>  };
+>  
+>  
+> @@ -252,11 +253,29 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+>  	mmc_of_parse(host->mmc);
+>  
+>  	if (!host->mmc->f_max) {
+> -		dev_err(&pdev->dev, "Missing max-freq for SDHCI cfg\n");
+> +		dev_err(dev, "Missing max-freq for SDHCI cfg\n");
 
-greg k-h
+This seems like an unrelated change.
+
+>  		ret = -ENXIO;
+>  		goto err_pltfm_free;
+>  	}
+>  
+> +	/* Get and enable the external clock */
+> +	kona_dev->external_clk = devm_clk_get(dev, NULL);
+> +	if (IS_ERR(kona_dev->external_clk)) {
+> +		dev_err(dev, "Failed to get external clock\n");
+> +		ret = PTR_ERR(kona_dev->external_clk);
+> +		goto err_pltfm_free;
+
+This seems like a pretty clear breakage of existing DTBs.
+
+Why?
+
+Thanks,
+Mark.
