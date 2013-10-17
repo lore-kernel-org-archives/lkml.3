@@ -1,141 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab3JQSQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:16:51 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:60340 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758270Ab3JQSQs (ORCPT
+	id S1759418Ab3JQSSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:18:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45960 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758031Ab3JQSSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:16:48 -0400
-Date: Thu, 17 Oct 2013 14:16:44 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: Dave Martin <Dave.Martin@arm.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Naour Romain <romain.naour@openwide.fr>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-In-Reply-To: <52600A7D.2000809@linaro.org>
-Message-ID: <alpine.LFD.2.03.1310171345300.1873@syhkavp.arg>
-References: <20131017143204.GE2442@localhost.localdomain> <52600A7D.2000809@linaro.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 17 Oct 2013 14:18:47 -0400
+Date: Thu, 17 Oct 2013 11:18:27 -0700
+From: tip-bot for Kuppuswamy Sathyanarayanan <tipbot@zytor.com>
+Message-ID: <tip-0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.a.cohen@linux.intel.com,
+        sathyanarayanan.kuppuswamy@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com>
+References: <1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/intel-mid] mrst: Fixed printk/pr_* related issues
+Git-Commit-ID: 0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:18:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013, Daniel Lezcano wrote:
+Commit-ID:  0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
+Gitweb:     http://git.kernel.org/tip/0d73e8722ecc4eb0cbbc2b551cf1704f8f19dd48
+Author:     Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+AuthorDate: Tue, 15 Oct 2013 21:11:30 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 16 Oct 2013 17:16:29 -0700
 
-> On 10/17/2013 04:32 PM, Dave Martin wrote:
-> > On Thu, Oct 17, 2013 at 12:45:29PM +0200, Daniel Lezcano wrote:
-> > > On 10/14/2013 05:08 PM, Vyacheslav Tyrtov wrote:
-> > > > From: Tarek Dakhran <t.dakhran@samsung.com>
-> > > > 
-> > > > Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-> > > > This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
-> > 
-> > [...]
-> > 
-> > > > +	__mcpm_cpu_down(cpu, cluster);
-> > > > +
-> > > > +	if (!skip_wfi) {
-> > > > +		exynos_core_power_down(cpu, cluster);
-> > > > +		wfi();
-> > > > +	}
-> > > > +}
-> > > 
-> > > I did not looked line by line but these functions looks very similar
-> > > than the tc2_pm.c's function. no ?
-> > 
-> > This is true.
-> > 
-> > > May be some code consolidation could be considered here.
-> > > 
-> > > Added Nico and Lorenzo in Cc.
-> > > 
-> > > Thanks
-> > >    -- Daniel
-> > 
-> > Nico can commnent further, but I think the main concern here was that
-> > this code shouldn't be factored prematurely.
-> 
-> I do not share this opinion.
-> 
-> > There are many low-level platform specifics involved here, so it's
-> > hard to be certain that all platforms could fit into a more abstracted
-> > framework until we have some evidence to look at.
-> > 
-> > This could be revisited when we have a few diverse MCPM ports to
-> > compare.
-> 
-> I am worried about seeing more and more duplicated code around the ARM arch
-> (eg. arm[64]/kernel/smp.c arm64/kernel/smp.c).
+mrst: Fixed printk/pr_* related issues
 
-I didn't look too closely at those files so can't comment much on them.
+Fixed printk and pr_* related issues in mrst related files.
 
-> The cpuidle drivers have been duplicated and it took a while before
-> refactoring them, and it is not finished. The hotplug code have been
-> duplicated and now it is very difficult to factor it out.
-> 
-> A lot of work have been done to consolidate the code across the different SoC
-> since the last 2 years.
-> 
-> If we let duplicate code populate the different files, they will belong to
-> different maintainers, thus different trees. Each SoC contributors will tend
-> to add their small changes making the code to diverge more and more and making
-> difficult to re-factor it later.
-> 
-> I am in favor of preventing duplicate code entering in the kernel and force
-> the contributors to improve the kernel in general, not just the small part
-> they are supposed to work on. Otherwise, we are letting the kernel to fork
-> itself, internally...
+Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Link: http://lkml.kernel.org/r/1381896701-23476-2-git-send-email-david.a.cohen@linux.intel.com
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/mrst/early_printk_mrst.c | 2 +-
+ arch/x86/platform/mrst/mrst.c              | 2 +-
+ arch/x86/platform/mrst/vrtc.c              | 5 ++---
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
-Now I'm going to comment.
-
-What you say above is perfectly right.  As a general principle, we want 
-good consolidation.  That's the theory.
-
-However you need to know what needs to be consolidated in the first 
-place.  In practice you cannot consolidate duplicated code if that code 
-doesn't exist. In the cpuidle and hotplug cases it is very easy now to 
-see what kind of consolidation should have been done after the facts.  
-I'm sure that 10 years ago that wasn't as obvious.
-
-In the MCPM case we didn't know up front what exactly would end up being 
-duplicated in each machine specific backend.  And to some extent we 
-still don't know as there is very few backends merged into mainline at 
-this point (I know more of them exist out of tree but I didn't see the 
-code yet). Right now we have only 2 such backends and some duplication 
-was already identified, hence the patch to abstract the v7 cache 
-flushing I posted recently.
-
-Another possibility for consolidation in the MCPM backends is the last 
-man determination.  However we've seen that the PSCI compatibility 
-backend doesn't need that and abstracting that just yet might be 
-premature, possibly making interaction with PSCI very awkward.
-
-So it is very important to get the right balance between code 
-duplication and over-engineering.  Premature abstractions do fall into 
-the over-engineering category and it is just as bad.  Above all it is 
-most important to be vigilant and take care of duplicated code before it 
-gets too big.
-
-In the past we've seen bad code duplication in some subsystems because 
-no one was looking at the big picture.  In the MCPM case I'm watching. 
-And in this case we're far from being in a critical situation.
-
-
-Nicolas
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+index 028454f..95880f7 100644
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
++++ b/arch/x86/platform/mrst/early_printk_mrst.c
+@@ -213,7 +213,7 @@ static void early_mrst_spi_putc(char c)
+ 	}
+ 
+ 	if (!timeout)
+-		pr_warning("MRST earlycon: timed out\n");
++		pr_warn("MRST earlycon: timed out\n");
+ 	else
+ 		max3110_write_data(c);
+ }
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 3ca5957..b9aeb54 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -328,7 +328,7 @@ static inline int __init setup_x86_mrst_timer(char *arg)
+ 	else if (strcmp("lapic_and_apbt", arg) == 0)
+ 		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
+ 	else {
+-		pr_warning("X86 MRST timer option %s not recognised"
++		pr_warn("X86 MRST timer option %s not recognised"
+ 			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
+ 			   arg);
+ 		return -EINVAL;
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+index 5e355b1..ca4f7d9 100644
+--- a/arch/x86/platform/mrst/vrtc.c
++++ b/arch/x86/platform/mrst/vrtc.c
+@@ -79,7 +79,7 @@ void vrtc_get_time(struct timespec *now)
+ 	/* vRTC YEAR reg contains the offset to 1972 */
+ 	year += 1972;
+ 
+-	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
++	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
+ 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
+ 
+ 	now->tv_sec = mktime(year, mon, mday, hour, min, sec);
+@@ -109,8 +109,7 @@ int vrtc_set_mmss(const struct timespec *now)
+ 		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
+ 		spin_unlock_irqrestore(&rtc_lock, flags);
+ 	} else {
+-		printk(KERN_ERR
+-		       "%s: Invalid vRTC value: write of %lx to vRTC failed\n",
++		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
+ 			__FUNCTION__, now->tv_sec);
+ 		retval = -EINVAL;
+ 	}
