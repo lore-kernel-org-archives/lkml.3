@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762479Ab3JQTJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:09:44 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:54841 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762444Ab3JQTJn (ORCPT
+	id S1758908Ab3JQTKg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:10:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48737 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758160Ab3JQTKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:09:43 -0400
-Date: Thu, 17 Oct 2013 19:09:41 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 11/15] slab: remove SLAB_LIMIT
-In-Reply-To: <1381913052-23875-12-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <00000141c7d2c80f-ddc771c0-b1be-4300-a264-a9a4bc6b686d-000000@email.amazonses.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1381913052-23875-12-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 17 Oct 2013 15:10:34 -0400
+Date: Thu, 17 Oct 2013 15:10:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+cc: linux-usb@vger.kernel.org,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        <gregkh@linuxfoundation.org>, <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2/2 v3] usb: ohci: remove ep93xx bus glue platform driver
+In-Reply-To: <201310171125.50024.hartleys@visionengravers.com>
+Message-ID: <Pine.LNX.4.44L0.1310171506210.2436-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.17-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Oct 2013, Joonsoo Kim wrote:
+On Thu, 17 Oct 2013, H Hartley Sweeten wrote:
 
-> It's useless now, so remove it.
+> Convert ep93xx to use the OHCI platform driver and remove the
+> ohci-ep93xx bus glue driver.
+> 
+> Enable CONFIG_OHCI_HCD_PLATFORM in the ep93xx_defconfig so that USB
+> is still enabled by default on the EP93xx platform.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Acked-by: Christoph Lameter <cl@linux.com>
+> +/*************************************************************************
+> + * EP93xx OHCI USB Host
+> + *************************************************************************/
+> +
+> +static struct clk *ep93xx_ohci_host_clock;
+> +
+> +static int ep93xx_ohci_power_on(struct platform_device *pdev)
+> +{
+> +	if (!ep93xx_ohci_host_clock) {
+> +		ep93xx_ohci_host_clock = devm_clk_get(&pdev->dev, NULL);
+> +		if (IS_ERR(ep93xx_ohci_host_clock))
+> +			return PTR_ERR(ep93xx_ohci_host_clock);
+> +	}
+> +
+> +	clk_enable(ep93xx_ohci_host_clock);
+> +
+> +	return 0;
+
+Wasn't this supposed to be changed to:
+
+	return clk_enable(ep93xx_ohci_host_clock);
+
+?  Otherwise it looks fine.  After fixing this, you can add
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+Alan Stern
+
