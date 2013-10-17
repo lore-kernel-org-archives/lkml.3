@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab3JQGck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:32:40 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64222 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3JQGcj (ORCPT
+	id S1752890Ab3JQGcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:32:46 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:52829 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3JQGcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:32:39 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v4 7/7] jump_label: use defined macros instead of hard-coding for better readability
-Date: Thu, 17 Oct 2013 14:19:40 +0800
-Message-Id: <1381990781-27814-8-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381990781-27814-1-git-send-email-liuj97@gmail.com>
-References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>
+	Thu, 17 Oct 2013 02:32:43 -0400
+X-AuditID: 85900ec0-d0927b9000001514-b3-525f84886b03
+Message-ID: <525F8485.7090503@hitachi.com>
+Date: Thu, 17 Oct 2013 15:32:37 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        aaronx.j.fabbri@intel.com
+Subject: Re: Re: [PATCH V2 0/5] trace-cmd: Support the feature recording
+ trace data of guests on the host
+References: <20130913020627.28927.69090.stgit@yunodevel> <20131014172637.2ced6be9@gandalf.local.home>
+In-Reply-To: <20131014172637.2ced6be9@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Hi Steven,
 
-Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
-readability.
+(2013/10/15 6:26), Steven Rostedt wrote:
+> On Fri, 13 Sep 2013 11:06:27 +0900
+> Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>
+>
+>> <How to use>
+>> 1. Run virt-server on a host
+>>     # trace-cmd virt-server
+>>
+>> 2. Make guest domain directory
+>>     # mkdir -p /tmp/trace-cmd/virt/<domain>
+>>     # chmod 710 /tmp/trace-cmd/virt/<domain>
+>>     # chgrp qemu /tmp/trace-cmd/virt/<domain>
+>
+> Quick comment. I think the above should be done by trace-cmd. At least
+> have options for it like:
+>
+> trace-cmd virt-server -d /tmp/trace-cmd/virt/domain -m 710 -g qemu
+>
+> Perhaps default some of those, and have trace-cmd print out:
+>
+>    Process Directory:     /tmp/trace-cmd/virt/domain
+>    Directory permission:  0710
+>    Group:                 qemu
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
----
- include/linux/jump_label.h | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+OK. As you say, when we know domains which we will boot, trace-cmd
+should make those automatically. So, I'll add this feature.
+Note that if we don't know domains when we boot virt-sevrer, we must
+make those manually now.
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index a507907..6e54029 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -74,18 +74,21 @@ struct module;
- #include <linux/atomic.h>
- #ifdef HAVE_JUMP_LABEL
- 
--#define JUMP_LABEL_TRUE_BRANCH 1UL
-+#define JUMP_LABEL_TYPE_FALSE_BRANCH	0UL
-+#define JUMP_LABEL_TYPE_TRUE_BRANCH	1UL
-+#define JUMP_LABEL_TYPE_MASK		1UL
- 
- static
- inline struct jump_entry *jump_label_get_entries(struct static_key *key)
- {
- 	return (struct jump_entry *)((unsigned long)key->entries
--						& ~JUMP_LABEL_TRUE_BRANCH);
-+						& ~JUMP_LABEL_TYPE_MASK);
- }
- 
- static inline bool jump_label_get_branch_default(struct static_key *key)
- {
--	if ((unsigned long)key->entries & JUMP_LABEL_TRUE_BRANCH)
-+	if (((unsigned long)key->entries & JUMP_LABEL_TYPE_MASK) ==
-+	    JUMP_LABEL_TYPE_TRUE_BRANCH)
- 		return true;
- 	return false;
- }
-@@ -116,9 +119,11 @@ extern void static_key_slow_dec(struct static_key *key);
- extern void jump_label_apply_nops(struct module *mod);
- 
- #define STATIC_KEY_INIT_TRUE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
-+	{ .enabled = ATOMIC_INIT(1), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
- #define STATIC_KEY_INIT_FALSE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
-+	{ .enabled = ATOMIC_INIT(0), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
- 
- #else  /* !HAVE_JUMP_LABEL */
- 
+In this patch set, virt-server always uses /tmp/trace-cmd/virt, so
+we had better indicate only the domain name with d option, I think.
+
+trace-cmd virt-server -d domain -m 710 -g qemu
+
+What do you think about this?
+
+Thanks,
+
+Yoshihiro YUNOMAE
+
+> OK, now to look at the actual code ;-)
+>
+> -- Steve
+>
+>
+>>
+>> 3. Make FIFO on the host
+>>     # mkfifo /tmp/trace-cmd/virt/<domain>/trace-path-cpu{0,1,...,X}.{in,out}
+>>
+>> 4. Set up of virtio-serial pipe of a guest on the host
+>>     Add the following tags to domain XML files.
+>>     # virsh edit <domain>
+>>     <channel type='unix'>
+>>        <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
+>>        <target type='virtio' name='agent-ctl-path'/>
+>>     </channel>
+>>     <channel type='pipe'>
+>>        <source path='/tmp/trace-cmd/virt/<domain>/trace-path-cpu0'/>
+>>        <target type='virtio' name='trace-path-cpu0'/>
+>>     </channel>
+>>     ... (cpu1, cpu2, ...)
+>>
+>> 5. Boot the guest
+>>     # virsh start <domain>
+>>
+>> 6. Execute "record --virt" on the guest
+>>     # trace-cmd record --virt -e sched*
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
 -- 
-1.8.1.2
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
 
