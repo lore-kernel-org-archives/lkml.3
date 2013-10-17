@@ -1,204 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762651Ab3JQT6x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:58:53 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:58190 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762501Ab3JQT6u (ORCPT
+	id S1762664Ab3JQUAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 16:00:44 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:50287 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759508Ab3JQUAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:58:50 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Simon Horman <horms@verge.net.au>,
-        ahonig@google.com, keescook@google.com,
-        Dave Anderson <anderson@redhat.com>
-References: <525FA702.5070805@jp.fujitsu.com>
-Date: Thu, 17 Oct 2013 12:58:30 -0700
-In-Reply-To: <525FA702.5070805@jp.fujitsu.com> (HATAYAMA Daisuke's message of
-	"Thu, 17 Oct 2013 17:59:46 +0900")
-Message-ID: <8738nzbrfd.fsf@xmission.com>
+	Thu, 17 Oct 2013 16:00:41 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Aliaksei Katovich <aliaksei.katovich@gmail.com>
+Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
+References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
+	<87k3hc3lso.fsf@linaro.org> <20131017130435.GG3061@cat.local>
+Date: Thu, 17 Oct 2013 13:00:37 -0700
+In-Reply-To: <20131017130435.GG3061@cat.local> (Aliaksei Katovich's message of
+	"Thu, 17 Oct 2013 16:04:35 +0300")
+Message-ID: <87zjq71xcq.fsf@linaro.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19aj/jFl/236oMWp+FnvQsGEMu/VkHLRYc=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3961]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: kexec cannot find text map area if kaslr is enabled
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+Aliaksei Katovich <aliaksei.katovich@gmail.com> writes:
 
-> Hello,
+> hi Kevin;
 >
-> I tried to use x86/kaslr branch to check if how it works with kdump
-> framework.
-
-As far as I can tell x86/kaslr is a pretty silly idea.  There don't seem
-to be enough bits to make it hard to brute force, much less hard to
-guess.  And it is a lot of pain to get there... Sigh.
-
-> I found kexec doesn't work. According to the message, it looks like kexec failing
-> to find kernel text map area from kcore.
-
-Well kexec -p doesn't work. 
-
-> $ sudo /sbin/kexec  -p --command-line="ro root=UUID=cdd5e357-d223-47ee-9d6e-d1fa78b3f8a4 rd_NO_LUKS nodmraid rd_NO_MD KEYBOARDTYPE=pc KEYTABLE=jp106 LANG=ja_JP.UTF-8 rd_NO_LVM rd_NO_DM consol\
-> e=ttyS0,19200n8r trace_event=block:*,irq:*,mce:*,sched:*,signal:*,workqueue:*,scsi:* trace_buf_size=25165824 irqpoll nr_cpus=2 reset_devices cgroup_disable=memory mce=off enable_lazy_purge " --initrd=/boot/initrd-3.12.0-rc4-k\
-> aslrkdump.img /boot/vmlinuz-3.12.0-rc4-kaslr
-> Can't find kernel text map area from kcore
-> Cannot load /boot/vmlinuz-3.12.0-rc4-kaslr
+>> Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
+>> 
+>> > The series of patches represent support of Exynos 5410 SoC
+>> >     
+>> > The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
+>> > Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
+>> >     
+>> > Patches add new platform description, support of clock controller,
+>> > dual cluster support and device tree for Exynos 5410 
+>> >    
+>> > Has been build on v3.12-rc5.
+>> > Has been tested on Exynos 5410 reference board (exynos_defconfig).
+>> 
+>> Has anyone tried this on the exynos5410 based odroid-xu yet?  
+>> 
+>> I tried booting this on my recently arrived odroid-xu, but am not
+>> getting it to boot.
 >
-> From source code, it looks like kexec trying to find text map area by hard-coded
-> __START_KERNEL_map address. But this is being altered by kaslr.
-
-Looking at the code you have found the hard coded address of -2G is
-fine, and actually required by the compiler.   The actual problem
-appears to be that the structure of the kernel mapping has changed.
-There are now two mappings in the -2GB range.  one of 10MiB and one
-of 1024MiB.  Where the code was looking for a mapping of 512MiB.
-
-The entire bit of code is a just for pretty printing the core and I
-suspect could be done more robustly, possibly by reporting all of the
-kernel vaddrs of the mappings.
-
-I expect you could increase X86_64_KERNEL_TEXT_SIZE 2GiB -1 aka
-0x7fffffff and the code would work.  I don't know if you would have a
-recognizable text segment in the core dump.
-
-I believe ultimately what we want is to have an elf image with all of
-the same PT_LOAD segments as /proc/kcore, and the current implementation
-is not general enough to do that.  So this probably makes a good
-opportunity to rewrite it.
-
-It may also make sense to have some information from /proc/kallsyms.  We
-aren't doing that on i386 and have something that works, so I suspect
-the same logic will work on x86_64.  At least until it is decided that
-the best way to load the kernel is to randomly reorder and relink all of
-the .o's in the kernel at boot time.
-
-Eric
-
-> static int get_kernel_vaddr_and_size(struct kexec_info *UNUSED(info),
->                                      struct crash_elf_info *elf_info)
-> <cut>
->         /* Traverse through the Elf headers and find the region where
->          * kernel is mapped. */
->         end_phdr = &ehdr.e_phdr[ehdr.e_phnum];
->         for(phdr = ehdr.e_phdr; phdr != end_phdr; phdr++) {
->                 if (phdr->p_type == PT_LOAD) {
->                         unsigned long long saddr = phdr->p_vaddr;
->                         unsigned long long eaddr = phdr->p_vaddr + phdr->p_memsz;
->                         unsigned long long size;
+> 	I am able to boot my odroid-xu+e to busybox with these patches applied
+> 	against 3.12-rc5: exynos_defconfig and exynos5410-smdk5410.dtb were
+> 	used.
 >
->                         /* Look for kernel text mapping header. */
->                         if ((saddr >= X86_64__START_KERNEL_map) &&
->                             (eaddr <= X86_64__START_KERNEL_map + X86_64_KERNEL_TEXT_SIZE)) {
->                                 saddr = _ALIGN_DOWN(saddr, X86_64_KERN_VADDR_ALIGN);
->                                 elf_info->kern_vaddr_start = saddr;
->                                 size = eaddr - saddr;
->                                 /* Align size to page size boundary. */
->                                 size = _ALIGN(size, align);
->                                 elf_info->kern_size = size;
->                                 dbgprintf("kernel vaddr = 0x%llx size = 0x%llx\n",
->                                         saddr, size);
->                                 return 0;
->                         }
->                 }
->         }
->         fprintf(stderr, "Can't find kernel text map area from kcore\n");
->         return -1;
->
-> It seems to me that kexec needs to get runtime relocation information for example
-> from /proc/kallsyms.
->
-> I think there would be other part that doesn't work well due to this kind of hard coded address.
->
-> FYI, here are also part of /proc/iomem and /proc/kcore information on my environment:
->
-> $ readelf -l /proc/kcore
-> Elf file type is CORE (Core file)
-> Entry point 0x0
-> There are 11 program headers, starting at offset 64
->
-> Program Headers:
->   Type           Offset             VirtAddr           PhysAddr
->                  FileSiz            MemSiz              Flags  Align
->   NOTE           0x00000000000002a8 0x0000000000000000 0x0000000000000000
->                  0x0000000000000c74 0x0000000000000000         0
->   LOAD           0x00007fffff601000 0xffffffffff600000 0x0000000000000000
->                  0x0000000000800000 0x0000000000800000  RWE    1000
->   LOAD           0x00007fffa3001000 0xffffffffa3000000 0x0000000000000000
->                  0x0000000000ed4000 0x0000000000ed4000  RWE    1000
->   LOAD           0x0000490000001000 0xffffc90000000000 0x0000000000000000
->                  0x00001fffffffffff 0x00001fffffffffff  RWE    1000
->   LOAD           0x00007fffc0001000 0xffffffffc0000000 0x0000000000000000
->                  0x000000003f000000 0x000000003f000000  RWE    1000
->   LOAD           0x0000080000002000 0xffff880000001000 0x0000000000000000
->                  0x000000000009a000 0x000000000009a000  RWE    1000
->   LOAD           0x00006a0000001000 0xffffea0000000000 0x0000000000000000
->                  0x0000000000003000 0x0000000000003000  RWE    1000
->   LOAD           0x0000080000101000 0xffff880000100000 0x0000000000000000
->                  0x000000007af0d000 0x000000007af0d000  RWE    1000
->   LOAD           0x00006a0000004000 0xffffea0000003000 0x0000000000000000
->                  0x0000000001ae6000 0x0000000001ae6000  RWE    1000
->   LOAD           0x0000080100001000 0xffff880100000000 0x0000000000000000
->                  0x0000000780000000 0x0000000780000000  RWE    1000
->   LOAD           0x00006a0003801000 0xffffea0003800000 0x0000000000000000
->                  0x000000001a400000 0x000000001a400000  RWE    1000
->
-> 00000000-00000fff : reserved
-> 00001000-0009afff : System RAM
-> 0009b000-0009ffff : reserved
-> 000a0000-000bffff : PCI Bus 0000:00
-> 000c0000-000c7fff : Video ROM
-> 000c8000-000c8fff : Adapter ROM
-> 000c9000-000cefff : Adapter ROM
-> 000e0000-000fffff : reserved
->   000f0000-000fffff : System ROM
-> 00100000-7b00cfff : System RAM
->   03000000-22ffffff : Crash kernel
->   23000000-2355118e : Kernel code
->   2355118f-23af95ff : Kernel data
->   23cb2000-23eadfff : Kernel bss
-> 7b00d000-7b00ffff : reserved
-> 7b010000-7b65efff : ACPI Non-volatile Storage
-> 7b65f000-7b681fff : ACPI Tables
-> 7b682000-7b7bffff : reserved
-> 7b7c0000-7ba3ffff : ACPI Non-volatile Storage
-> 7ba40000-7baaafff : reserved
-> 7baab000-7bcfffff : ACPI Tables
-> 7bd00000-7bd12fff : reserved
-> 7bd13000-7bd15fff : ACPI Tables
-> 7bd16000-7bd45fff : reserved
-> 7bd46000-7bd5efff : ACPI Tables
-> 7bd5f000-7bdfefff : reserved
-> 7bdff000-7bdfffff : ACPI Tables
-> 7be00000-7be4efff : reserved
->   7be1b018-7be1b067 : APEI ERST
->   7be1b070-7be1b077 : APEI ERST
->   7be1b078-7be1d017 : APEI ERST
-> 7be4f000-7bf83fff : ACPI Tables
-> 7bf84000-7bfcefff : ACPI Non-volatile Storage
-> 7bfcf000-7bffefff : ACPI Tables
-> 7bfff000-8fffffff : reserved
->   80000000-8fffffff : PCI MMCONFIG 0000 [bus 00-ff]
-> 90000000-afffffff : PCI Bus 0000:00
-> <cut>
+> 	However there seem to be some issues with virq allocations, like this:
+
+Ah, I've seen the same thing, but for me it doesn't boot reliably.
+Sometimes there's an immediate fault like this[1], and once in a rare
+while, it starts to boot and I see the same virq errors.
+
+Curious what you guys are using for boot loaders.  I found some
+pre-build u-boot binaries along with the necessary BL1/2 binary blobs in
+the hardkernel kernel repo: https://github.com/hardkernel/linux.git
+branch: origin/odroidxu-3.4.y
+path: tools/hardkernel/u-boot-pre-built
+
+Unfortunatly, that u-boot doesn't have usb networking support built in
+so I couln't use u-boot to tftp the kernel, so I was able to use fasboot
+to load the kernel/ramdisk, but it's very flaky.
+
+Do you have an pointers of where to get a known working bootloader.
+Ideally, a u-boot with networking/tftp support would be ideal.
+
+Thanks,
+
+Kevin
+
+[1]
+USB cable Connected![0x4]
+Starting download of 10008576 bytes
+.........
+downloading of 10008576 bytes finished
+Kernel size: 00296bc5
+Ramdisk size: 006f3c00
+Booting kernel..
+## Booting kernel from Legacy Image at 40008000 ...
+   Image Name:   Linux
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    2714501 Bytes = 2.6 MiB
+   Load Address: 40008000
+   Entry Point:  40008000
+   Verifying Checksum ... OK
+   XIP Kernel Image ... OK
+OK 
+
+Starting kernel ...
+
+undefined instruction
+pc : [<4000800c>]          lr : [<bfc65df4>]
+sp : bfb5bbc8  ip : 00000000     fp : 00001251
+r10: 00000000  r9 : 00000000     r8 : bfb5bf30
+r7 : 00000000  r6 : 00000000     r5 : 40008000  r4 : bfcabac0
+r3 : bfb5bfa8  r2 : 40000100     r1 : 00001251  r0 : 00000000
+Flags: nZCv  IRQs off  FIQs off  Mode SVC_32
+Resetting CPU ...
+
+emmc resetting ...
+resetting ...
+
