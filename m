@@ -1,199 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762211Ab3JQCu0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 22:50:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47100 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761009Ab3JQCuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 22:50:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
-   d="scan'208";a="418096270"
-Message-ID: <525F4E03.2050606@intel.com>
-Date: Thu, 17 Oct 2013 10:40:03 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1762222Ab3JQCwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 22:52:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:46468 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1761009Ab3JQCwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 22:52:20 -0400
+X-IronPort-AV: E=Sophos;i="4.93,511,1378828800"; 
+   d="scan'208";a="8779084"
+Message-ID: <525F51DF.4080809@cn.fujitsu.com>
+Date: Thu, 17 Oct 2013 10:56:31 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lan Tianyu <lantianyu1986@gmail.com>, Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status
- before requesting to resume it
-References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <16284735.7LFgSiThhv@vostro.rjw.lan> <525E5BBD.5030108@intel.com> <4608605.e0aa4PbnhL@vostro.rjw.lan> <525F372A.5070807@intel.com>
-In-Reply-To: <525F372A.5070807@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] rcu: Create rcu_sync infrastructure
+References: <20131008102505.404025673@infradead.org> <20131008103830.180541879@infradead.org>
+In-Reply-To: <20131008103830.180541879@infradead.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/17 10:49:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/17 10:49:58,
+	Serialize complete at 2013/10/17 10:49:58
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年10月17日 09:02, Lan Tianyu wrote:
-> On 2013年10月16日 20:42, Rafael J. Wysocki wrote:
->> On Wednesday, October 16, 2013 05:26:21 PM Lan Tianyu wrote:
->>> This is a multi-part message in MIME format.
->>> --------------090400010209000300030201
->>> Content-Type: text/plain; charset=UTF-8
->>> Content-Transfer-Encoding: 8bit
->>>
->>> On 10/16/2013 05:22 AM, Rafael J. Wysocki wrote:
->>>> On Tuesday, October 15, 2013 04:58:28 PM Lan Tianyu wrote:
->>>>> On 2013å¹´10æ11æ¥ 19:19, Rafael J. Wysocki wrote:
->>>>>> On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com
->>>>>> wrote:
->>>>>>> From: Lan Tianyu <tianyu.lan@intel.com>
->>>>>>>
->>>>>>> Currently, when one power resource is turned on, devices owning
->>>>>>> it will be requested to resume regardless of their runtime pm
->>>>>>> status. ACPI power resource maybe turn on in some devices'
->>>>>>> runtime pm resume callback(E.G, usb port) while turning on the
->>>>>>> power resource will trigger one new resume request of the
->>>>>>> device. It causes infinite loop between resume and suspend.
->>>>>>> This has happened on clearing usb port's PM Qos NO_POWER_OFF
->>>>>>> flag twice. This patch is to add check of physical device's
->>>>>>> runtime pm status and request resume if the device is
->>>>>>> suspended.
->>>>>>>
->>>>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com> ---
->>>>>>> drivers/acpi/power.c | 6 ++++-- 1 file changed, 4
->>>>>>> insertions(+), 2 deletions(-)
->>>>>>>
->>>>>>> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c index
->>>>>>>  0dbe5cd..228c138 100644 --- a/drivers/acpi/power.c +++
->>>>>>> b/drivers/acpi/power.c @@ -250,8 +250,10 @@ static void
->>>>>>> acpi_power_resume_dependent(struct work_struct *work)
->>>>>>>
->>>>>>> mutex_lock(&adev->physical_node_lock);
->>>>>>>
->>>>>>> -	list_for_each_entry(pn, &adev->physical_node_list, node) -
->>>>>>> pm_request_resume(pn->dev); +	list_for_each_entry(pn,
->>>>>>> &adev->physical_node_list, node) { +		if
->>>>>>> (pm_runtime_suspended(pn->dev)) + pm_request_resume(pn->dev);
->>>>>>> + }
->>>>>>
->>>>>> This is racy, because the status may change right after you check
->>>>>> it and before you call pm_request_resume().
->>>>>
->>>>> Yes, the runtime status may be changed just after the check.
->>>>>
->>>>>>
->>>>>> Besides, pm_request_resume() checks the status of the device and
->>>>>>  won't try to resume it if it is not suspended.
->>>>>>
->>>>>
->>>>> For this issue, usb port is in the RPM_SUSPENDING state when
->>>>> pm_request_resume() is called.
->>>>
->>>> Why exactly does that happen?
->>>>
->>>>> The deferred_resume will be set to true during this procedure and
->>>>> trigger resume after finishing suspend. USB port runtime resume
->>>>> callback will turn on its power resource again and the work of
->>>>> acpi_power_resume_dependent() is scheduled. Because the usb port's
->>>>>  usage count remains zero, it's to be suspended soon. When
->>>>> pm_request_resume() of acpi_power_resume_dependent() is called, the
->>>>> usb port is always in the PRM_SUSPENDING. Fall in the loop of
->>>>> suspend and resume.
->>>>>
->>>>> How about running acpi_power_dependent when turning on power
->>>>> resource rather than scheduling a work to run it?
->>>>
->>>> Is this actually going to help?  Even if
->>>> acpi_power_resume_dependent() is run synchronously from within the
->>>> resume callback, it will still see RPM_SUSPENDING as the device's
->>>> status, won't it?
->>>>
->>>>> After this, pm_request_resume() can check device's right status
->>>>> just after turning on power resource.
->>>>
->>>> The status doesn't change until the .runtime_suspend() callback
->>>> returns and running pm_request_resume() syncrhonously from that
->>>> callback for the device being suspended just plain doesn't make
->>>> sense.
->>>>
->>>>
->>>> Can you please explain to me how this is possible that the USB port's
->>>> power resource is turned "on" while the port is RPM_SUSPENDING?
->>>>
->>> [This mail seems not to be sent to maillist. So resend. Try again
->>> Sorry for noise]
->>>
->>>
->>> Hi Rafael:
->>>
->>> No, I mean the acpi_power_resume_dependent() is running while the port's
->>> status is RPM_SUSPENDING. It runs from a work item and turning on power
->>> resource adds the work to workqueue. There is a timeslot between running
->>> acpi_power_resume_dependent() and turning on power resource. In the
->>> timeslot, the device runtime pm status maybe change.
->>>
->>> In this case, changing PM Qos flag will do pm_runtime_get_sync and
->>> pm_runtime_put usb port. The usb port is without device attached and so
->>> it will be resumed and suspended soon during changing PM Qos flag.
->>>
->>> Resume callback turns on power resource if NO_POWER_OFF flag has been
->>> cleared and add the work of acpi_power_resume_dependent() to
->>> workqueue. After resume, the usb port will be suspended while the
->>> acpi_power_resume_dependent() is running. pm_request_resume() gets
->>> RPM_SUSPENDING as the usb port's runtime status and set the
->>> deferred_resume of usb port.
->>>
->>> After suspend, usb port will be resumed again and turn on power
->>> resource. The work of acpi_power_resume_dependent() is also added to
->>> workqueue. Because the usb port's usage count remains 0 during this
->>> procedure. it will be suspended soon after resume. While suspending,
->>> acpi_power_resume_dependent() is running and pm_request_resume()
->>> sets deferred_resume again. The infinite look starts.
->>
->> So the problem is that the whole thing is racy.  There is no guarantee
->> that the power resource will not be turned off after the
->> acpi_power_get_inferred_state() check in acpi_power_resume_dependent()
->> and before rpm_resume() queued by the pm_request_resume() called from
->> there runs.  Playing with the time windows doesn't make that race go away.
->>
->> If we did what you suggested, the race still would be there, because the
->> queued up resume may still run after the power resource has been turned off.
+On 10/08/2013 06:25 PM, Peter Zijlstra wrote:
+> From: Oleg Nesterov <oleg@redhat.com>
 > 
-> Yes, the queued up resume will run after the power resource has been
-> turned off but normally the resume should try to turn on the power
-> resource before doing some hardware related operations. If so, there
-> will not be problem, right?
+> It is functionally equivalent to
+> 
+>         struct rcu_sync_struct {
+>                 atomic_t counter;
+>         };
+> 
+>         static inline bool rcu_sync_is_idle(struct rcu_sync_struct *xxx)
+>         {
+>                 return atomic_read(&xxx->counter) == 0;
+>         }
+> 
+>         static inline void rcu_sync_enter(struct rcu_sync_struct *xxx)
+>         {
+>                 atomic_inc(&xxx->counter);
+>                 synchronize_sched();
+>         }
+> 
+>         static inline void rcu_sync_enter(struct rcu_sync_struct *xxx)
+>         {
+>                 synchronize_sched();
+>                 atomic_dec(&xxx->counter);
+>         }
+> 
+> except: it records the state and synchronize_sched() is only called by
+> rcu_sync_enter() and only if necessary.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Reviewed-by: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/20130929183634.GA15563@redhat.com
+> ---
+>  include/linux/rcusync.h |   64 ++++++++++++++++++++++++++++
+>  kernel/Makefile         |    3 -
+>  kernel/rcusync.c        |  108 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 174 insertions(+), 1 deletion(-)
+> 
+> --- /dev/null
+> +++ b/include/linux/rcusync.h
+> @@ -0,0 +1,64 @@
+> +#ifndef _LINUX_RCUSYNC_H_
+> +#define _LINUX_RCUSYNC_H_
+> +
+> +#include <linux/wait.h>
+> +#include <linux/rcupdate.h>
+> +
+> +struct rcu_sync_struct {
+> +	int			gp_state;
+> +	int			gp_count;
+> +	wait_queue_head_t	gp_wait;
+> +
+> +	int			cb_state;
+> +	struct rcu_head		cb_head;
+> +
+> +	void (*sync)(void);
+> +	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
+> +};
+> +
+> +#define ___RCU_SYNC_INIT(name)						\
+> +	.gp_state = 0,							\
+> +	.gp_count = 0,							\
+> +	.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),		\
+> +	.cb_state = 0
+> +
+> +#define __RCU_SCHED_SYNC_INIT(name) {					\
+> +	___RCU_SYNC_INIT(name),						\
+> +	.sync = synchronize_sched,					\
+> +	.call = call_rcu_sched,						\
+> +}
+> +
+> +#define __RCU_BH_SYNC_INIT(name) {					\
+> +	___RCU_SYNC_INIT(name),						\
+> +	.sync = synchronize_rcu_bh,					\
+> +	.call = call_rcu_bh,						\
+> +}
+> +
+> +#define __RCU_SYNC_INIT(name) {						\
+> +	___RCU_SYNC_INIT(name),						\
+> +	.sync = synchronize_rcu,					\
+> +	.call = call_rcu,						\
+> +}
+> +
+> +#define DEFINE_RCU_SCHED_SYNC(name)					\
+> +	struct rcu_sync_struct name = __RCU_SCHED_SYNC_INIT(name)
+> +
+> +#define DEFINE_RCU_BH_SYNC(name)					\
+> +	struct rcu_sync_struct name = __RCU_BH_SYNC_INIT(name)
+> +
+> +#define DEFINE_RCU_SYNC(name)						\
+> +	struct rcu_sync_struct name = __RCU_SYNC_INIT(name)
+> +
+> +static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+> +{
+> +	return !rss->gp_state; /* GP_IDLE */
+> +}
+
+Hi, All
+
+We may need to use ACCESS_ONCE() here to avoid the compiler access it multi-times.
+
+it would be better: return ACCESS_ONCE(rss->gp_state) == GP_IDLE;
+
+
+-my comment continues until it reaches a "Thanks".-
+
+> +
+> +enum rcu_sync_type { RCU_SYNC, RCU_SCHED_SYNC, RCU_BH_SYNC };
+> +
+> +extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
+> +extern void rcu_sync_enter(struct rcu_sync_struct *);
+> +extern void rcu_sync_exit(struct rcu_sync_struct *);
+> +
+> +#endif /* _LINUX_RCUSYNC_H_ */
+> +
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -10,7 +10,8 @@ obj-y     = fork.o exec_domain.o panic.o
+>  	    kthread.o wait.o sys_ni.o posix-cpu-timers.o mutex.o \
+>  	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
+>  	    notifier.o ksysfs.o cred.o reboot.o \
+> -	    async.o range.o groups.o lglock.o smpboot.o
+> +	    async.o range.o groups.o lglock.o smpboot.o \
+> +	    rcusync.o
+>  
+>  ifdef CONFIG_FUNCTION_TRACER
+>  # Do not trace debug files and internal ftrace files
+> --- /dev/null
+> +++ b/kernel/rcusync.c
+> @@ -0,0 +1,108 @@
+> +
+> +#include <linux/rcusync.h>
+> +#include <linux/sched.h>
+> +
+> +enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
+> +enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
+> +
+> +#define	rss_lock	gp_wait.lock
+> +
+> +void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
+> +{
+> +	memset(rss, 0, sizeof(*rss));
+> +	init_waitqueue_head(&rss->gp_wait);
+> +
+> +	switch (type) {
+> +	case RCU_SYNC:
+> +		rss->sync = synchronize_rcu;
+> +		rss->call = call_rcu;
+> +		break;
+> +
+> +	case RCU_SCHED_SYNC:
+> +		rss->sync = synchronize_sched;
+> +		rss->call = call_rcu_sched;
+> +		break;
+> +
+> +	case RCU_BH_SYNC:
+> +		rss->sync = synchronize_rcu_bh;
+> +		rss->call = call_rcu_bh;
+> +		break;
+> +	}
+> +}
+> +
+> +void rcu_sync_enter(struct rcu_sync_struct *rss)
+> +{
+> +	bool need_wait, need_sync;
+> +
+> +	spin_lock_irq(&rss->rss_lock);
+> +	need_wait = rss->gp_count++;
+> +	need_sync = rss->gp_state == GP_IDLE;
+
+I suggest that "need_wait = rss->gp_state == GP_PENDING;"
+
+
+
+> +	if (need_sync)
+> +		rss->gp_state = GP_PENDING;
+> +	spin_unlock_irq(&rss->rss_lock);
+> +
+> +	BUG_ON(need_wait && need_sync);
+> +
+> +	if (need_sync) {
+> +		rss->sync();
+> +		rss->gp_state = GP_PASSED;
+> +		wake_up_all(&rss->gp_wait);
+> +	} else if (need_wait) {
+> +		wait_event(rss->gp_wait, rss->gp_state == GP_PASSED);
+
+memory_barrier is required here in case rss->gp_state is read without rss_lock held.
+
+CPU1				CPU2				CPU3
+								rcu_read_lock()
+								rcu_sync_is_idle()
+rcu_sync_enter()
+  rss->sync()			rcu_sync_enter()
+				/* XXXX */
+								rcu_read_unlock()
+  rss->sync() returns
+  rss->gp_state = GP_PASSED;
+				  wait_event()(fastpath)
+				/* code here maybe run on XXX by CPU reorder */
+				
+
+
+> +	} else {
+> +		/*
+> +		 * Possible when there's a pending CB from a rcu_sync_exit().
+> +		 * Nobody has yet been allowed the 'fast' path and thus we can
+> +		 * avoid doing any sync(). The callback will get 'dropped'.
+> +		 */
+> +		BUG_ON(rss->gp_state != GP_PASSED);
+
+memory_barrier is required here like above.
+
+
+> +	}
+> +}
+> +
+> +static void rcu_sync_func(struct rcu_head *rcu)
+> +{
+> +	struct rcu_sync_struct *rss =
+> +		container_of(rcu, struct rcu_sync_struct, cb_head);
+> +	unsigned long flags;
+> +
+> +
+> +	BUG_ON(rss->gp_state != GP_PASSED);
+> +	BUG_ON(rss->cb_state == CB_IDLE);
+> +
+> +	spin_lock_irqsave(&rss->rss_lock, flags);
+> +	if (rss->gp_count) {
+> +		/*
+> +		 * A new rcu_sync_begin() has happened; drop the callback.
+> +		 */
+> +		rss->cb_state = CB_IDLE;
+> +	} else if (rss->cb_state == CB_REPLAY) {
+> +		/*
+> +		 * A new rcu_sync_exit() has happened; requeue the callback
+> +		 * to catch a later GP.
+> +		 */
+> +		rss->cb_state = CB_PENDING;
+> +		rss->call(&rss->cb_head, rcu_sync_func);
+> +	} else {
+> +		/*
+> +		 * We're at least a GP after rcu_sync_exit(); eveybody will now
+
+s/eveybody/everybody/
+
+
+
+Please add
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+Thanks,
+Lai
+
+> +		 * have observed the write side critical section. Let 'em rip!.
+> +		 */
+> +		rss->cb_state = CB_IDLE;
+> +		rss->gp_state = GP_IDLE;
+> +	}
+> +	spin_unlock_irqrestore(&rss->rss_lock, flags);
+> +}
+> +
+> +void rcu_sync_exit(struct rcu_sync_struct *rss)
+> +{
+> +	spin_lock_irq(&rss->rss_lock);
+> +	if (!--rss->gp_count) {
+> +		if (rss->cb_state == CB_IDLE) {
+> +			rss->cb_state = CB_PENDING;
+> +			rss->call(&rss->cb_head, rcu_sync_func);
+> +		} else if (rss->cb_state == CB_PENDING) {
+> +			rss->cb_state = CB_REPLAY;
+> +		}
+> +	}
+> +	spin_unlock_irq(&rss->rss_lock);
+> +}
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-Sorry. I think I misunderstood your word. Please ignore the previous
-comment.
-
-Yes, there is still a racy. I think of one case that there are multi
-devices that share one power resource. One device turns on power
-resource during resuming and queue resumes for other devices. The device
-enter into suspend and power resource turns off soon. When one other
-device do resume, the power resource will turn on again and queue resume
-for the previous device. Just like a Ping-pong.
-
->>
->> Unfortunately, I don't see how we can fix this race in a satisfactory way
->> and I'm starting to think that the whole resuming of dependent devices may
->> be a bad idea.
->>
->> IIRC, the original concern was that devices may end up in D0-uninitialized
->> if we don't do that, but then whoever turned the power resource on will
->> probably turn if off at one point anyway, so they will be in that state
->> temporarily.  In other words, in addition to the fact that this is racy,
->> there even is no reason to do it.
->>
->> I'll send a patch to rip off that stuff later today.
-
-Currently, dropping it should be the better choice but I think we still
-need to resolve the D0-uninitialized problem, right? I will try to
-resolve it by other way.
-
->>
->> Thanks,
->> Rafael
->>
-> 
-> 
-
-
--- 
-Best regards
-Tianyu Lan
