@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762152Ab3JQDFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 23:05:19 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:56282 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761009Ab3JQDFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 23:05:17 -0400
-Date: Wed, 16 Oct 2013 20:05:12 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, vmpressure: add high level
-Message-ID: <20131017030512.GA21327@teo>
-References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762229Ab3JQDJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 23:09:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28485 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762120Ab3JQDJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 23:09:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
+   d="scan'208";a="394167445"
+From: Vinod Koul <vinod.koul@intel.com>
+To: dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, g.liakhovetski@gmx.de,
+        linux@arm.linux.org.uk, Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 29/29] dmaengine: remove unused DMA_SUCCESS
+Date: Thu, 17 Oct 2013 07:46:02 +0530
+Message-Id: <1381976162-14617-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1381940926-25564-29-git-send-email-vinod.koul@intel.com>
+References: <1381940926-25564-29-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David,
+after all the users are converted
 
-On Wed, Oct 16, 2013 at 05:43:55PM -0700, David Rientjes wrote:
-> Vmpressure has two important levels: medium and critical.  Medium is 
-> defined at 60% and critical is defined at 95%.
-> 
-> We have a customer who needs a notification at a higher level than medium, 
-> which is slight to moderate reclaim activity, and before critical to start 
-> throttling incoming requests to save memory and avoid oom.
-> 
-> This patch adds the missing link: a high level defined at 80%.
-> 
-> In the future, it would probably be better to allow the user to specify an 
-> integer ratio for the notification rather than relying on arbitrarily 
-> specified levels.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ include/linux/dmaengine.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Does the customer need to differentiate the two levels (medium and high),
-or the customer only interested in this (80%) specific level?
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 683c380..4b460a6 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -55,7 +55,6 @@ enum dma_status {
+ 	DMA_IN_PROGRESS,
+ 	DMA_PAUSED,
+ 	DMA_ERROR,
+-	DMA_SUCCESS,
+ };
+ 
+ /**
+-- 
+1.7.0.4
 
-In the latter case, instead of adding a new level I would vote for adding
-a [sysfs] knob for modifying medium level's threshold.
-
-Thanks,
-
-Anton
