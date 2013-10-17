@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3JQObS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:31:18 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43145 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3JQObQ (ORCPT
+	id S1756908Ab3JQOdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:33:06 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50464 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756187Ab3JQOdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:31:16 -0400
-Date: Thu, 17 Oct 2013 16:31:21 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
-        grant.likely@secretlab.ca, roy.franz@linaro.org, msalter@redhat.com
-Subject: Re: [PATCH v2 2/3] arm: Add [U]EFI runtime services support
-Message-ID: <20131017143121.GJ1557@rocoto.smurfnet.nu>
-References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
- <1380799481-5470-3-git-send-email-leif.lindholm@linaro.org>
- <20131017140739.GI10834@console-pimps.org>
+	Thu, 17 Oct 2013 10:33:03 -0400
+Date: Thu, 17 Oct 2013 15:32:04 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
+Message-ID: <20131017143204.GE2442@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131017140739.GI10834@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 03:07:39PM +0100, Matt Fleming wrote:
-> > +/*
-> > + * If you need to (temporarily) support buggy firmware.
-> > + */
-> > +#define KEEP_BOOT_SERVICES_REGIONS
-> 
-> Have you seen firmware that requires this? I'm just curious more than
-> anything else.
+On Thu, Oct 17, 2013 at 12:45:29PM +0200, Daniel Lezcano wrote:
+> On 10/14/2013 05:08 PM, Vyacheslav Tyrtov wrote:
+> > From: Tarek Dakhran <t.dakhran@samsung.com>
+> > 
+> > Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
+> > This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
 
-Not really.
-I _think_ I saw it on a debug build of a development platform once.
-That coincided with me seeing a post on linux-efi about some laptop
-that broke unless boot services regions were preserved, so I decided
-to put it in there for any future debugging.
- 
-> > +/*
-> > + * Returns 1 if 'facility' is enabled, 0 otherwise.
-> > + */
-> > +int efi_enabled(int facility)
-> > +{
-> > +	return test_bit(facility, &arm_efi_facility) != 0;
-> > +}
-> > +EXPORT_SYMBOL(efi_enabled);
-> 
-> This should move to drivers/firmware/efi/efi.c. Let me write a patch
-> that moves the x86 stuff out of arch/x86 and means you can get rid of
-> this hunk.
- 
-Excellent, thanks!
+[...]
 
-> > +/*
-> > + * Called explicitly from init/mm.c
-> > + */
-> 
-> That's init/main.c.
- 
-*cough*, right.
-
-> > +void __init efi_enter_virtual_mode(void)
-> > +{
-> > +	efi_status_t status;
+> > +	__mcpm_cpu_down(cpu, cluster);
 > > +
-> > +	if (!efi_enabled(EFI_BOOT)) {
-> > +		pr_info("EFI services will not be available.\n");
-> > +		return;
+> > +	if (!skip_wfi) {
+> > +		exynos_core_power_down(cpu, cluster);
+> > +		wfi();
+> > +	}
+> > +}
 > 
-> This is dead code as PATCH 3 does,
+> I did not looked line by line but these functions looks very similar
+> than the tc2_pm.c's function. no ?
+
+This is true.
+
+> May be some code consolidation could be considered here.
 > 
-> diff --git a/init/main.c b/init/main.c
-> index af310af..ec6d76e 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -875,6 +875,10 @@ static noinline void __init
-> kernel_init_freeable(void)
-> 	smp_prepare_cpus(setup_max_cpus);
+> Added Nico and Lorenzo in Cc.
 > 
-> 	do_pre_smp_initcalls();
-> +
-> +	if (IS_ENABLED(CONFIG_ARM) && efi_enabled(EFI_BOOT))
-> +		efi_enter_virtual_mode();
-> +
+> Thanks
+>   -- Daniel
 
-True.
+Nico can commnent further, but I think the main concern here was that
+this code shouldn't be factored prematurely.
 
-However, this call site is likely to change in the future (preferably
-to an early_initcall), if we redesign the memory mapping to be reusable
-after kexec(). At which point the test in efi_enter_virtual_mode() will
-make sense again.
+There are many low-level platform specifics involved here, so it's
+hard to be certain that all platforms could fit into a more abstracted
+framework until we have some evidence to look at.
 
-Could I change the test in init/main.c to do
-     if (IS_ENABLED(CONFIG_ARM) && IS_ENABLED(CONFIG_EFI))
-instead?
+This could be revisited when we have a few diverse MCPM ports to
+compare.
 
-/
-    Leif
+
+The low-level A15/A7 cacheflush sequence is already being factored
+by Nico [1].
+
+Cheers
+---Dave
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205085.html
+[PATCH] ARM: cacheflush: consolidate single-CPU ARMv7 cache disabling code
+
+[...]
