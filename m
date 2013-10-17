@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab3JQSsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:48:12 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:36223 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758652Ab3JQSsK (ORCPT
+	id S1759356Ab3JQS54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:57:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44910 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758121Ab3JQS5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:48:10 -0400
-Message-ID: <1382035687.2045.155.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Date: Thu, 17 Oct 2013 11:48:07 -0700
-In-Reply-To: <52602A29.506@zytor.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	 <20131012172124.GA18241@gmail.com>
-	 <20131014202854.GH26880@hmsreliant.think-freely.org>
-	 <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
-	 <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131017003421.GA31470@hmsreliant.think-freely.org>
-	 <20131017084121.GC22705@gmail.com> <52602A29.506@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 17 Oct 2013 14:57:55 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+Date: Thu, 17 Oct 2013 11:57:54 -0700
+Message-ID: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com>
+Subject: Corrupted low memory in v3.9+
+From: Olof Johansson <olof@lixom.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-17 at 11:19 -0700, H. Peter Anvin wrote:
+Hi Peter,
 
-> Seriously, though, how much does it matter?  All the above seems likely
-> to do is to drown the signal by adding noise.
+When booting a newer kernel on a Chromebox (Samsung SNB system,
+coreboot firmware, verified boot and not using seabios), I get reports
+of:
 
-I don't think so.
+[    1.727520] Corrupted low memory at ffff880000002a90 (2a90 phys) = 100000000
+[    1.734565] Corrupted low memory at ffff880000002a98 (2a98 phys) =
+50000000000
 
-> 
-> If the parallel (threaded) checksumming is faster, which theory says it
-> should and microbenchmarking confirms, how important are the
-> macrobenchmarks?
+I bisected it down to:
 
-Seriously, micro benchmarks are very misleading.
+commit 95c9608478d639dcffc14ea47b31bff021a99ed1
+Author: H. Peter Anvin <hpa@zytor.com>
+Date:   Thu Feb 14 14:02:52 2013 -0800
 
-I spent time on this patch, and found no changes on real workloads.
+    x86, mm: Move reserving low memory later in initialization
 
-I was excited first, then disappointed.
+    Move the reservation of low memory, except for the 4K which actually
+    does belong to the BIOS, later in the initialization; in particular,
+    after we have already reserved the trampoline.
 
-I hope we will find the real issue, as I really don't care of micro
-benchmarks.
+    The current code locates the trampoline as high as possible, so by
+    deferring the allocation we will still be able to reserve as much
+    memory as is possible.  This allows us to run with reservelow=640k
+    without getting a crash on system startup.
 
 
+My config has:
+
+CONFIG_X86_RESERVE_LOW=64
+
+...but /proc/iomem says:
+
+00000000-00000fff : reserved
+00001000-0009ffff : System RAM
+000a0000-000fffff : reserved
+[...]
+
+
+While before the above patch it said:
+
+00000000-00000fff : reserved
+00001000-0000ffff : reserved
+00010000-0009ffff : System RAM
+[...]
+
+And the low memory checker never even ran before, since it had nothing
+to check. Earlier the lower reserved region would be included in the
+e820-reserved area if I read the code correctly, and now it's just
+marked reserved by the memblock code.
+
+I guess it could be argued either way whether this is a regression or
+not; but at the end of the day we now have systems where this warning
+pops when it didn't use to. :(
+
+
+-Olof
