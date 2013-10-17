@@ -1,56 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762678Ab3JQUXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 16:23:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45194 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245Ab3JQUXu (ORCPT
+	id S1762725Ab3JQUYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 16:24:46 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:45711 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762696Ab3JQUYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 16:23:50 -0400
-Date: Thu, 17 Oct 2013 13:23:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Damien Ramonda <damien.ramonda@intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, pierre.tardy@intel.com,
-        fengguang.wu@intel.com, david.a.cohen@intel.com
-Subject: Re: [PATCH] readahead: fix sequential read cache miss detection
-Message-Id: <20131017132348.a89c6cb5222eda83fb0ce079@linux-foundation.org>
-In-Reply-To: <1382033352-21225-1-git-send-email-damien.ramonda@intel.com>
-References: <1382033352-21225-1-git-send-email-damien.ramonda@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Oct 2013 16:24:44 -0400
+Message-ID: <52604793.40506@gmail.com>
+Date: Fri, 18 Oct 2013 07:24:51 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: linux-usb@vger.kernel.org,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stern@rowland.harvard.edu,
+        Lennert Buytenhek <buytenh@wantstofly.org>, gregkh@linuxfoundation.org,
+        olof@lixom.net, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2 v3] ARM: ep93xx_defconfig: cleanup ep93xx_defconfig
+References: <201310171125.37004.hartleys@visionengravers.com>
+In-Reply-To: <201310171125.37004.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013 20:09:12 +0200 Damien Ramonda <damien.ramonda@intel.com> wrote:
+On 18/10/13 05:25, H Hartley Sweeten wrote:
 
-> The kernel's readahead algorithm sometimes interprets random read
-> accesses as sequential and triggers unnecessary data prefecthing
-> from storage device (impacting random read average latency).
+> Generate ep93xx_defconfig by doing:
 > 
-> In order to identify sequential cache read misses, the readahead
-> algorithm intends to check whether offset - previous offset == 1
-> (trivial sequential reads) or offset - previous offset == 0
-> (sequential reads not aligned on page boundary):
+> make ep93xx_defconfig
+> make savedefconfig
+> mv defconfig arch/arm/configs/ep93xx_defconfig
 > 
-> if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL)
+> No functional change. This just refreshes the ep93xx_defconfig to make it
+> easier and cleaner when adding new entries.
 > 
-> The current offset is stored in the "offset" variable of type
-> "pgoff_t" (unsigned long), while previous offset is stored in
-> "ra->prev_pos" of type "loff_t" (long long). Therefore,
-> operands of the if statement are implicitly converted to type
-> long long. Consequently, when previous offset > current offset
-> (which happens on random pattern), the if condition is true
-> and access is wrongly interpeted as sequential. An unnecessary
-> data prefetching is triggered, impacting the average
-> random read latency.
-> 
-> Storing the previous offset value in a "pgoff_t" variable
-> (unsigned long) fixes the sequential read detection logic.
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Do you have any performance testing results which would permit
-people to understand the significance of this change?
 
-Thanks.
+Acked-by: Ryan Mallon <rmallon@gmail.com>
+
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Lennert Buytenhek <kernel@wantstofly.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  arch/arm/configs/ep93xx_defconfig | 16 ++--------------
+>  1 file changed, 2 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
+> index 806005a..8eccbcb 100644
+> --- a/arch/arm/configs/ep93xx_defconfig
+> +++ b/arch/arm/configs/ep93xx_defconfig
+> @@ -1,15 +1,14 @@
+> -CONFIG_EXPERIMENTAL=y
+>  CONFIG_SYSVIPC=y
+>  CONFIG_IKCONFIG=y
+>  CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=14
+> -CONFIG_SYSFS_DEPRECATED_V2=y
+>  CONFIG_EXPERT=y
+>  CONFIG_SLAB=y
+>  CONFIG_MODULES=y
+>  CONFIG_MODULE_UNLOAD=y
+>  CONFIG_MODULE_FORCE_UNLOAD=y
+>  # CONFIG_BLK_DEV_BSG is not set
+> +CONFIG_PARTITION_ADVANCED=y
+>  # CONFIG_IOSCHED_CFQ is not set
+>  CONFIG_ARCH_EP93XX=y
+>  CONFIG_CRUNCH=y
+> @@ -47,11 +46,8 @@ CONFIG_IPV6=y
+>  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+> -CONFIG_MTD_CONCAT=y
+> -CONFIG_MTD_PARTITIONS=y
+>  CONFIG_MTD_REDBOOT_PARTS=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+>  CONFIG_MTD_CFI_ADV_OPTIONS=y
+> @@ -67,15 +63,14 @@ CONFIG_SCSI=y
+>  # CONFIG_SCSI_PROC_FS is not set
+>  CONFIG_BLK_DEV_SD=y
+>  CONFIG_NETDEVICES=y
+> -CONFIG_NET_ETHERNET=y
+>  CONFIG_EP93XX_ETH=y
+>  CONFIG_USB_RTL8150=y
+>  # CONFIG_INPUT is not set
+>  # CONFIG_SERIO is not set
+>  # CONFIG_VT is not set
+> +# CONFIG_LEGACY_PTYS is not set
+>  CONFIG_SERIAL_AMBA_PL010=y
+>  CONFIG_SERIAL_AMBA_PL010_CONSOLE=y
+> -# CONFIG_LEGACY_PTYS is not set
+>  # CONFIG_HW_RANDOM is not set
+>  CONFIG_I2C=y
+>  CONFIG_I2C_CHARDEV=y
+> @@ -86,7 +81,6 @@ CONFIG_WATCHDOG=y
+>  CONFIG_EP93XX_WATCHDOG=y
+>  CONFIG_USB=y
+>  CONFIG_USB_DEBUG=y
+> -CONFIG_USB_DEVICEFS=y
+>  CONFIG_USB_DYNAMIC_MINORS=y
+>  CONFIG_USB_OHCI_HCD=y
+>  CONFIG_USB_STORAGE=y
+> @@ -100,24 +94,18 @@ CONFIG_RTC_DRV_EP93XX=y
+>  CONFIG_EXT2_FS=y
+>  CONFIG_EXT3_FS=y
+>  # CONFIG_EXT3_FS_XATTR is not set
+> -CONFIG_INOTIFY=y
+>  CONFIG_VFAT_FS=y
+>  CONFIG_TMPFS=y
+>  CONFIG_JFFS2_FS=y
+>  CONFIG_NFS_FS=y
+> -CONFIG_NFS_V3=y
+>  CONFIG_ROOT_NFS=y
+> -CONFIG_PARTITION_ADVANCED=y
+>  CONFIG_NLS_CODEPAGE_437=y
+>  CONFIG_NLS_ISO8859_1=y
+>  CONFIG_MAGIC_SYSRQ=y
+> -CONFIG_DEBUG_KERNEL=y
+>  CONFIG_DEBUG_SLAB=y
+>  CONFIG_DEBUG_SPINLOCK=y
+>  CONFIG_DEBUG_MUTEXES=y
+> -# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+>  CONFIG_DEBUG_USER=y
+> -CONFIG_DEBUG_ERRORS=y
+>  CONFIG_DEBUG_LL=y
+>  # CONFIG_CRYPTO_ANSI_CPRNG is not set
+>  CONFIG_LIBCRC32C=y
+
+
