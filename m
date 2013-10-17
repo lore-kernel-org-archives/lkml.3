@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762537Ab3JQTYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:24:01 -0400
-Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:33595 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1762469Ab3JQTYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:24:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:7903:9010:10004:10400:10429:10430:10431:10848:10967:11232:11658:11914:12517:12519:12740:13069:13072:13311:13357:19903:19997,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: value06_79cd3f9164421
-X-Filterd-Recvd-Size: 2951
-Message-ID: <1382037835.22110.137.camel@joe-AO722>
-Subject: Re: [bug] get_maintainer.pl incomplete output
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 17 Oct 2013 12:23:55 -0700
-In-Reply-To: <20131017121215.826ab6cced73118f3dba8d4f@linux-foundation.org>
-References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
-	 <alpine.DEB.2.02.1310162046090.30995@chino.kir.corp.google.com>
-	 <20131017121215.826ab6cced73118f3dba8d4f@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1762583Ab3JQT0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:26:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4440 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758635Ab3JQT0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 15:26:53 -0400
+Date: Thu, 17 Oct 2013 16:26:30 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        dsahern@gmail.com, jolsa@redhat.com, ak@linux.intel.com
+Subject: Re: [PATCH v3] perf: disable PERF_RECORD_MMAP2 support
+Message-ID: <20131017192630.GB6443@infradead.org>
+References: <20131017173215.GA8820@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131017173215.GA8820@quad>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-17 at 12:12 -0700, Andrew Morton wrote:
-> On Wed, 16 Oct 2013 20:51:18 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+Em Thu, Oct 17, 2013 at 07:32:15PM +0200, Stephane Eranian escreveu:
 > 
-> > I haven't looked closely at scripts/get_maintainer.pl, but I recently 
-> > wrote a patch touching mm/vmpressure.c and it doesn't list the file's 
-> > author, Anton Vorontsov <anton.vorontsov@linaro.org>.
-> > 
-> > Even when I do scripts/get_maintainer.pl -f mm/vmpressure.c, his entry is 
-> > missing and git blame attributs >90% of the lines to his authorship.
-> > 
-> > $ ./scripts/get_maintainer.pl -f mm/vmpressure.c 
-> > Tejun Heo <tj@kernel.org> (commit_signer:6/7=86%)
-> > Michal Hocko <mhocko@suse.cz> (commit_signer:5/7=71%)
-> > Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/7=57%)
-> > Li Zefan <lizefan@huawei.com> (commit_signer:3/7=43%)
-> > "Kirill A. Shutemov" <kirill@shutemov.name> (commit_signer:1/7=14%)
-> > linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
-> > linux-kernel@vger.kernel.org (open list)
+> For now, we disable the extended MMAP record support (MMAP2).
+> We have identified cases where it would not report the correct
+> mapping information, clone(VM_CLONE) but with separate pids.
+> We will revisit the support once we find a solution for this case.
 > 
-> get_maintainer should, by default, answer the question "who should I
-> email about this file".  It clearly isn't doing this, and that's a
-> pretty big fail.
-
-I disagree.
-
-It's decidedly good at doing precisely that when a
-MAINTAINERS entry exists.
-
-When no one is a listed maintainer, the results
-can certainly be tweaked to be better.
-
-> I've learned not to trust it, so when I use it I always have to check
-> its homework with "git log | grep Author" :(
+> The patch changes the kernel to return EINVAL if attr->mmap2
+> is set. The patch also modifies the perf tool to use regular PERF_RECORD_MMAP
+> for synthetic events and it also prevents the tool from requesting attr->mmap2
+> mode because the kernel would reject it.
 > 
-> Joe, pretty please?
+> The support will be revisited once the kenrel interface is updated.
+> 
+> In V2, we reduce the patch to the strict minimum.
+> In V3, we avoid calling perf_event_open() with mmap2 set because we
+> know it will fail and require fallback retry.
 
-It's really a question of "how long ago is too long ago" as
-older commits way too often also show old/invalid email
-addresses.
+Again it applied, but with some fuzz, which branch did you coded this
+against? Testing...
 
-I also don't want to wait over 30 seconds or so to find out
-who is listed as a git signer/author by default.
+[acme@zoo linux]$ patch -p1 < /wb/1
+patching file kernel/events/core.c
+Hunk #1 succeeded at 6767 (offset -6 lines).
+patching file tools/perf/util/event.c
+patching file tools/perf/util/evsel.c
+Hunk #1 succeeded at 678 with fuzz 1.
+[acme@zoo linux]$ 
 
-Adding the commit listed "Author:" as a signer doesn't seem
-too hard though.  I'll play with that.
-
+- Arnaldo
