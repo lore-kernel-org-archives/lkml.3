@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3JQWLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 18:11:45 -0400
-Received: from s15283307.onlinehome-server.info ([87.106.208.187]:38335 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762378Ab3JQWLo convert rfc822-to-8bit (ORCPT
+	id S1757731Ab3JQWO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 18:14:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60633 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab3JQWOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 18:11:44 -0400
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: [PATCH] Bluetooth: Add hci_h4p driver
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <201310172225.33343@pali>
-Date: Fri, 18 Oct 2013 00:11:44 +0200
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3B0F039C-4680-46FF-A654-48D6A28B9B5E@holtmann.org>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com> <201310172225.33343@pali>
-To: =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-X-Mailer: Apple Mail (2.1510)
+	Thu, 17 Oct 2013 18:14:54 -0400
+Date: Thu, 17 Oct 2013 23:14:50 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: George Spelvin <linux@horizon.com>
+Cc: jack@suse.cz, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
+Message-ID: <20131017221450.GU13318@ZenIV.linux.org.uk>
+References: <20131009172336.GH13318@ZenIV.linux.org.uk>
+ <20131017211143.1712.qmail@science.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131017211143.1712.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali,
-
->> This driver adding support for Nokia N900 bluetooth hardware
->> 
->> Signed-off-by: Ville Tervo <ville.tervo@nokia.com>
->> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->> ---
->> drivers/bluetooth/Kconfig             |   10 +
->> drivers/bluetooth/Makefile            |    2 +
->> drivers/bluetooth/hci_h4p/Makefile    |    7 +
->> drivers/bluetooth/hci_h4p/core.c      | 1085
->> +++++++++++++++++++++++++++++++++
->> drivers/bluetooth/hci_h4p/fw-bcm.c    |  149 +++++
->> drivers/bluetooth/hci_h4p/fw-csr.c    |  152 +++++
->> drivers/bluetooth/hci_h4p/fw-ti1273.c |  113 ++++
->> drivers/bluetooth/hci_h4p/fw.c        |  166 +++++
->> drivers/bluetooth/hci_h4p/hci_h4p.h   |  238 ++++++++
->> drivers/bluetooth/hci_h4p/uart.c      |  203 ++++++
->> include/linux/bluetooth/hci_h4p.h     |   41 ++
->> 11 files changed, 2166 insertions(+)
->> create mode 100644 drivers/bluetooth/hci_h4p/Makefile
->> create mode 100644 drivers/bluetooth/hci_h4p/core.c
->> create mode 100644 drivers/bluetooth/hci_h4p/fw-bcm.c
->> create mode 100644 drivers/bluetooth/hci_h4p/fw-csr.c
->> create mode 100644 drivers/bluetooth/hci_h4p/fw-ti1273.c
->> create mode 100644 drivers/bluetooth/hci_h4p/fw.c
->> create mode 100644 drivers/bluetooth/hci_h4p/hci_h4p.h
->> create mode 100644 drivers/bluetooth/hci_h4p/uart.c
->> create mode 100644 include/linux/bluetooth/hci_h4p.h
->> 
+On Thu, Oct 17, 2013 at 05:11:43PM -0400, George Spelvin wrote:
+> Al Viro wrote:
+> > Note that do_group_exit() is preceded by
+> >                spin_unlock_irq(&sighand->siglock);
+> > so no matter what happened in callers, irq is enabled.  I'd suggest sticking
+> > such BUG_ON() into __fput() and trying to reproduce that crap...
 > 
-> Can somebody look & comment this patch? What is needed to be part 
-> of upstream kernel?
+> Well, it happened again (error appended).  Can you please clarify what you mean
+> by "such BUG_ON()"; I'm having a hard time following the RCU code and determining
+> all the situations under which __fput() might be called.
 
-you need to rebase against bluetooth-next at least.
+__fput() can be called via task_work_run() or via schedule_work().  That's
+all.  And it certainly should never be called with interrupts disabled.
+So stick BUG_ON(irqs_disabled()) in it (WARN_ON() might be better, but
+not by much).
 
-Regards
-
-Marcel
-
+There are two ways these traces could've happened:
+	* exit_task_work() called by do_exit() with irqs disabled.
+Definitely buggy (and would do really nasty things to several functions
+called by do_exit() before that one).  If such BUG_ON() triggers in
+__fput(), this is what happens and the next step will be sticking
+several BUG_ON(irqs_disabled()) in do_exit() - something like
+	BUG_ON(irqs_disabled());
+        exit_sem(tsk);
+	BUG_ON(irqs_disabled());
+        exit_shm(tsk);
+	BUG_ON(irqs_disabled());
+        exit_files(tsk);
+	BUG_ON(irqs_disabled());
+        exit_fs(tsk);
+	BUG_ON(irqs_disabled());
+        exit_task_namespaces(tsk);
+	BUG_ON(irqs_disabled());
+        exit_task_work(tsk);
+and checking which of those triggers; that'll tell us who has disabled it
+and forgot to enable.
+	* __fput() is called with irqs enabled, but somewhere on the
+way into ext4 (dput -> iput -> evict inode -> free blocks, now that
+unlinked file got closed -> ...) we manage to disable irqs and forget
+to enable them.
