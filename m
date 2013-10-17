@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab3JQFcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 01:32:14 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:40052 "EHLO
+	id S1752477Ab3JQFd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 01:33:28 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:40087 "EHLO
 	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3JQFcM (ORCPT
+	with ESMTP id S1751309Ab3JQFcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 01:32:12 -0400
+	Thu, 17 Oct 2013 01:32:14 -0400
 From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH net-next v3 0/9] Introduce support to lazy initialize mostly static keys
-Date: Thu, 17 Oct 2013 07:31:54 +0200
-Message-Id: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH net-next v3 9/9] net: switch net_secret key generation to net_get_random_once
+Date: Thu, 17 Oct 2013 07:32:03 +0200
+Message-Id: <1381987923-1524-10-git-send-email-hannes@stressinduktion.org>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
+References: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+---
+ net/core/secure_seq.c | 14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
-This series implements support for delaying the initialization of secret
-keys, e.g. used for hashing, for as long as possible. This functionality
-is implemented by a new macro, net_get_random_bytes.
-
-I already used it to protect the socket hashes, the syncookie secret
-(most important) and the tcp_fastopen secrets.
-
-Changelog:
-v2) Use static_keys in net_get_random_once to have as minimal impact to
-    the fast-path as possible.
-v3) added patch "static_key: WARN on usage before jump_label_init was called":
-    Patch "x86/jump_label: expect default_nop if static_key gets enabled
-    on boot-up" relaxes the checks for using static_key primitives before
-    jump_label_init. So tighten them first.
-
-Included patches:
- ipv4: split inet_ehashfn to hash functions per compilation unit
- ipv6: split inet6_ehashfn to hash functions per compilation unit
- static_key: WARN on usage before jump_label_init was called
- x86/jump_label: expect default_nop if static_key gets enabled on boot-up
- net: introduce new macro net_get_random_once
- inet: split syncookie keys for ipv4 and ipv6 and initialize with net_get_random_once
- inet: convert inet_ehash_secret and ipv6_hash_secret to net_get_random_once
- tcp: switch tcp_fastopen key generation to net_get_random_once
- net: switch net_secret key generation to net_get_random_once
-
-Diffstat:
- arch/x86/kernel/jump_label.c         | 25 ++++++++++++++++++-------
- include/linux/jump_label.h           | 10 ++++++++++
- include/linux/jump_label_ratelimit.h |  2 ++
- include/linux/net.h                  | 25 +++++++++++++++++++++++++
- include/net/inet6_hashtables.h       | 28 +++++++---------------------
- include/net/inet_sock.h              | 26 ++++++--------------------
- include/net/ipv6.h                   |  4 ++--
- include/net/tcp.h                    |  3 +--
- init/main.c                          |  7 +++++++
- kernel/jump_label.c                  |  5 +++++
- net/core/secure_seq.c                | 14 ++------------
- net/core/utils.c                     | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- net/ipv4/af_inet.c                   | 27 ---------------------------
- net/ipv4/inet_hashtables.c           | 25 +++++++++++++++++++++++++
- net/ipv4/syncookies.c                | 15 +++++----------
- net/ipv4/sysctl_net_ipv4.c           |  5 +++++
- net/ipv4/tcp_fastopen.c              | 27 ++++++++++++++++-----------
- net/ipv4/udp.c                       | 20 ++++++++++++++++----
- net/ipv6/af_inet6.c                  |  5 -----
- net/ipv6/inet6_hashtables.c          | 33 +++++++++++++++++++++++++++++++++
- net/ipv6/syncookies.c                | 12 +++++++++---
- net/ipv6/udp.c                       | 31 +++++++++++++++++++++++++++----
- net/rds/connection.c                 | 12 +++++++++---
- 23 files changed, 278 insertions(+), 131 deletions(-)
-
-Greetings,
-
-  Hannes
+diff --git a/net/core/secure_seq.c b/net/core/secure_seq.c
+index 3f1ec15..b02fd16 100644
+--- a/net/core/secure_seq.c
++++ b/net/core/secure_seq.c
+@@ -7,6 +7,7 @@
+ #include <linux/hrtimer.h>
+ #include <linux/ktime.h>
+ #include <linux/string.h>
++#include <linux/net.h>
+ 
+ #include <net/secure_seq.h>
+ 
+@@ -16,18 +17,7 @@ static u32 net_secret[NET_SECRET_SIZE] ____cacheline_aligned;
+ 
+ static void net_secret_init(void)
+ {
+-	u32 tmp;
+-	int i;
+-
+-	if (likely(net_secret[0]))
+-		return;
+-
+-	for (i = NET_SECRET_SIZE; i > 0;) {
+-		do {
+-			get_random_bytes(&tmp, sizeof(tmp));
+-		} while (!tmp);
+-		cmpxchg(&net_secret[--i], 0, tmp);
+-	}
++	net_get_random_once(net_secret, sizeof(net_secret));
+ }
+ 
+ #ifdef CONFIG_INET
+-- 
+1.8.3.1
 
