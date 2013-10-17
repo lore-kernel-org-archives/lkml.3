@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab3JQRFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:05:17 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:45814 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab3JQRFP (ORCPT
+	id S1757691Ab3JQRIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:08:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43909 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab3JQRID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:05:15 -0400
-Message-ID: <526018C6.5070604@linaro.org>
-Date: Thu, 17 Oct 2013 10:05:10 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 17 Oct 2013 13:08:03 -0400
+Date: Thu, 17 Oct 2013 10:08:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/50] 3.11.6-stable review
+Message-ID: <20131017170802.GA27458@kroah.com>
+References: <20131016174358.335646140@linuxfoundation.org>
+ <526015BE.1020404@samsung.com>
 MIME-Version: 1.0
-To: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev
- doesn't exist
-References: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526015BE.1020404@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 02:33 PM, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->
-> Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
-> on ARM. (http://bugs.ruby-lang.org/issues/9008)
->
-> Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
-> RTC device is present) intruduced to return ENOTSUPP when
-> clock_get{time,res} can't find a RTC device. However it is incorrect.
->
-> Posix and Linux man pages agree that clock_gettime and clock_getres
-> should return EINVAL if clk_id argument is invalid. This is significant
-> different from timer_create API.
->
-> This patch fixes it.
+On Thu, Oct 17, 2013 at 10:52:14AM -0600, Shuah Khan wrote:
+> On 10/16/2013 11:44 AM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.11.6 release.
+> >There are 50 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Fri Oct 18 17:43:24 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.6-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+> 
+> 3.11.6
+> 
+> Patch applied cleanly - yes
+> Compile testing - passed
+> Boot testing - passed
+> dmesg regression testing - passed
+> 
+> dmesgs look good. No regressions compared to the previous dmesgs for
+> this release. dmesg emerg, crit, alert, err are clean. No
+> regressions in warn.
+> 
 
-Hrm... So I feel like there is a difference here. The clockid for
-CLOCK_BOOTTIME_ALARM and CLOCK_REALTIME_ALARM are both valid.
+Thanks for testing this, and 3.10.17 and letting me know it's all
+working properly.
 
-Its just that they're not supported on this specific hardware because it
-apparently lacks a RTC that has told the system it can be used as a
-wakeup device (Its actually quite likely on the hardware that the RTC
-can be a wakeup device, but that the driver is probably setting the
-wakeup flag after the RTC registered - so there is probably a driver bug
-here too).
-
-So I feel like in this case EINVAL isn't quite right.  I'll admit it is
-somewhat new behavior, because we haven't had any clockids before that
-were dependent on the particular hardware, they either existed in a
-kernel verison or didn't.
-
-Would updating the manpage be a better route?
-
-thanks
--john
-
-
+greg k-h
