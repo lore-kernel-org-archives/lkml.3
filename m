@@ -1,226 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab3JQDAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Oct 2013 23:00:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41283 "EHLO mga03.intel.com"
+	id S933901Ab3JQDA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Oct 2013 23:00:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4337 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762180Ab3JQDAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Oct 2013 23:00:21 -0400
+	id S932792Ab3JQDA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Oct 2013 23:00:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,511,1378882800"; 
-   d="scan'208";a="375885637"
-Subject: [PATCH] n_gsm: race between ld close and gsmtty open
-From: channing <chao.bi@intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Oct 2013 11:29:10 +0800
-Message-ID: <1381980550.19582.8.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="420376074"
+Date: Thu, 17 Oct 2013 07:37:45 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
+ status
+Message-ID: <20131017020745.GA14013@intel.com>
+References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
+ <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
+ <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+ <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 16, 2013 at 11:45:48AM -0700, Dan Williams wrote:
+> On Wed, Oct 16, 2013 at 11:29 AM, Guennadi Liakhovetski
+> >
+> > Doesn't this break kernel compilation for a total of 27 commits? Or am I
+> > missing anything?
+> 
+> Yes, I think at the start DMA_COMPLETE should just be a alias for
+> DMA_SUCCESS, then after all the driver renames are in delete
+> DMA_SUCCESS.
+Oops, taht was bad of me. ffixes in v2 and sending patch 29 for removal case
 
-ttyA has ld associated to n_gsm, when ttyA is closing, it triggers
-to release gsmttyB's ld data dlci[B], then race would happen if gsmttyB
-is opening in parallel.
+--
 
-Here are some of race cases we found recently in test:
+>From 7768309422a1345d32857974fe8b57805adfd561 Mon Sep 17 00:00:00 2001
+From: Vinod Koul <vinod.koul@intel.com>
+Date: Wed, 16 Oct 2013 13:29:02 +0530
+Subject: [PATCH] dmaengine: use DMA_COMPLETE for dma completion status
 
-CASE #1
-====================================================================
-releasing dlci[B] race with gsmtty_install(gsmttyB), then panic
-in gsmtty_open(gsmttyB), as below:
+the DMA_SUCCESS is a misnomer as dmaengine indicates the transfer is complete and
+gives no guarantee of the transfer success. Hence we should use DMA_COMPLTE
+instead of DMA_SUCCESS
 
- tty_release(ttyA)                  tty_open(gsmttyB)
-     |                                   |
-   -----                           gsmtty_install(gsmttyB)
-     |                                   |
-   -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
- tty_ldisc_release(ttyA)               -----
-     |                                   |
- gsm_dlci_release(dlci[B])             -----
-     |                                   |
- gsm_dlci_free(dlci[B])                -----
-     |                                   |
-   -----                           gsmtty_open(gsmttyB)
-
- gsmtty_open()
- {
-     struct gsm_dlci *dlci = tty->driver_data; => here it uses dlci[B]
-     ...
- }
-
- In gsmtty_open(gsmttyA), it uses dlci[B] which was release, so hit a panic.
-=====================================================================
-
-CASE #2
-=====================================================================
-releasing dlci[0] race with gsmtty_install(gsmttyB), then panic
-in gsmtty_open(), as below:
-
- tty_release(ttyA)                  tty_open(gsmttyB)
-     |                                   |
-   -----                           gsmtty_install(gsmttyB)
-     |                                   |
-   -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
-     |                                   |
-   -----                         gsmtty_open(gsmttyB) fail
-     |                                   |
-   -----                           tty_release(gsmttyB)
-     |                                   |
-   -----                           gsmtty_close(gsmttyB)
-     |                                   |
-   -----                        gsmtty_detach_dlci(dlci[B])
-     |                                   |
-   -----                             dlci_put(dlci[B])
-     |                                   |
- tty_ldisc_release(ttyA)               -----
-     |                                   |
- gsm_dlci_release(dlci[0])             -----
-     |                                   |
- gsm_dlci_free(dlci[0])                -----
-     |                                   |
-   -----                             dlci_put(dlci[0])
-
- In gsmtty_detach_dlci(dlci[B]), it tries to use dlci[0] which was released,
- then hit panic.
-=====================================================================
-
-IMHO, n_gsm tty operations would refer released ldisc,  as long as
-gsm_dlci_release() has chance to release ldisc data when some gsmtty operations
-are not completed..
-
-This patch is try to avoid it by:
-
-1) in n_gsm driver, use a global gsm spin lock to avoid gsm_dlci_release() run in
-parallel with gsmtty_install();
-
-2) Increase dlci's ref count in gsmtty_install() instead of in gsmtty_open(), the
-purpose is to prevent gsm_dlci_release() releasing dlci after gsmtty_install()
-allocats dlci but before gsmtty_open increases dlci's ref count;
-
-3) Decrease dlci's ref count in gsmtty_remove(), which is a tty framework api, and
-this is the opposite process of step 2).
-
-Signed-off-by: Chao Bi <chao.bi@intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 ---
- drivers/tty/n_gsm.c |   37 +++++++++++++++++++++++++++----------
- 1 files changed, 27 insertions(+), 10 deletions(-)
+ drivers/dma/dmaengine.c   |    2 +-
+ include/linux/dmaengine.h |   13 +++++++------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..41ef7d7 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2054,9 +2054,11 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
- 					dlci->state == DLCI_CLOSED);
- 	}
- 	/* Free up any link layer users */
-+	spin_lock(&gsm->lock);
- 	for (i = 0; i < NUM_DLCI; i++)
- 		if (gsm->dlci[i])
- 			gsm_dlci_release(gsm->dlci[i]);
-+	spin_unlock(&gsm->lock);
- 	/* Now wipe the queues */
- 	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
- 		kfree(txq);
-@@ -2909,23 +2911,33 @@ static int gsmtty_install(struct tty_driver *driver, struct tty_struct *tty)
- 	This is ok from a locking
- 	perspective as we don't have to worry about this
- 	if DLCI0 is lost */
--	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
-+	spin_lock(&gsm->lock);
-+	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN) {
-+		spin_unlock(&gsm->lock);
- 		return -EL2NSYNC;
-+	}
- 	dlci = gsm->dlci[line];
- 	if (dlci == NULL) {
- 		alloc = true;
- 		dlci = gsm_dlci_alloc(gsm, line);
- 	}
--	if (dlci == NULL)
-+	if (dlci == NULL) {
-+		spin_unlock(&gsm->lock);
- 		return -ENOMEM;
-+	}
- 	ret = tty_port_install(&dlci->port, driver, tty);
- 	if (ret) {
- 		if (alloc)
- 			dlci_put(dlci);
-+		spin_unlock(&gsm->lock);
- 		return ret;
- 	}
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 9162ac8..81d8765 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -1062,7 +1062,7 @@ dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+ 	unsigned long dma_sync_wait_timeout = jiffies + msecs_to_jiffies(5000);
  
-+	dlci_get(dlci);
-+	dlci_get(gsm->dlci[0]);
-+	mux_get(gsm);
- 	tty->driver_data = dlci;
-+	spin_unlock(&gsm->lock);
+ 	if (!tx)
+-		return DMA_SUCCESS;
++		return DMA_COMPLETE;
  
- 	return 0;
- }
-@@ -2936,9 +2948,6 @@ static int gsmtty_open(struct tty_struct *tty, struct file *filp)
- 	struct tty_port *port = &dlci->port;
+ 	while (tx->cookie == -EBUSY) {
+ 		if (time_after_eq(jiffies, dma_sync_wait_timeout)) {
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 0bc7275..683c380 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -45,16 +45,17 @@ static inline int dma_submit_error(dma_cookie_t cookie)
  
- 	port->count++;
--	dlci_get(dlci);
--	dlci_get(dlci->gsm->dlci[0]);
--	mux_get(dlci->gsm);
- 	tty_port_tty_set(port, tty);
- 
- 	dlci->modem_rx = 0;
-@@ -2965,7 +2974,7 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
- 	mutex_unlock(&dlci->mutex);
- 	gsm = dlci->gsm;
- 	if (tty_port_close_start(&dlci->port, tty, filp) == 0)
--		goto out;
-+		return;
- 	gsm_dlci_begin_close(dlci);
- 	if (test_bit(ASYNCB_INITIALIZED, &dlci->port.flags)) {
- 		if (C_HUPCL(tty))
-@@ -2973,10 +2982,7 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
- 	}
- 	tty_port_close_end(&dlci->port, tty);
- 	tty_port_tty_set(&dlci->port, NULL);
--out:
--	dlci_put(dlci);
--	dlci_put(gsm->dlci[0]);
--	mux_put(gsm);
-+	return;
- }
- 
- static void gsmtty_hangup(struct tty_struct *tty)
-@@ -3153,6 +3159,16 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- 	return gsmtty_modem_update(dlci, encode);
- }
- 
-+static int gsmtty_remove(struct tty_driver *driver, struct tty_struct *tty)
-+{
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	struct gsm_mux *gsm = dlci->gsm;
-+
-+	dlci_put(dlci);
-+	dlci_put(gsm->dlci[0]);
-+	mux_put(gsm);
-+	driver->ttys[tty->index] = NULL;
-+}
- 
- /* Virtual ttys for the demux */
- static const struct tty_operations gsmtty_ops = {
-@@ -3172,6 +3188,7 @@ static const struct tty_operations gsmtty_ops = {
- 	.tiocmget		= gsmtty_tiocmget,
- 	.tiocmset		= gsmtty_tiocmset,
- 	.break_ctl		= gsmtty_break_ctl,
-+	.remove			= gsmtty_remove,
+ /**
+  * enum dma_status - DMA transaction status
+- * @DMA_SUCCESS: transaction completed successfully
++ * @DMA_COMPLETE: transaction completed
+  * @DMA_IN_PROGRESS: transaction not yet processed
+  * @DMA_PAUSED: transaction is paused
+  * @DMA_ERROR: transaction failed
+  */
+ enum dma_status {
+-	DMA_SUCCESS,
++	DMA_COMPLETE,
+ 	DMA_IN_PROGRESS,
+ 	DMA_PAUSED,
+ 	DMA_ERROR,
++	DMA_SUCCESS,
  };
  
- 
+ /**
+@@ -979,10 +980,10 @@ static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
+ {
+ 	if (last_complete <= last_used) {
+ 		if ((cookie <= last_complete) || (cookie > last_used))
+-			return DMA_SUCCESS;
++			return DMA_COMPLETE;
+ 	} else {
+ 		if ((cookie <= last_complete) && (cookie > last_used))
+-			return DMA_SUCCESS;
++			return DMA_COMPLETE;
+ 	}
+ 	return DMA_IN_PROGRESS;
+ }
+@@ -1013,11 +1014,11 @@ static inline struct dma_chan *dma_find_channel(enum dma_transaction_type tx_typ
+ }
+ static inline enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
+ {
+-	return DMA_SUCCESS;
++	return DMA_COMPLETE;
+ }
+ static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+ {
+-	return DMA_SUCCESS;
++	return DMA_COMPLETE;
+ }
+ static inline void dma_issue_pending_all(void)
+ {
 -- 
-1.7.1
+1.7.0.4
 
-
-
+-- 
