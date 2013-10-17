@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3JQOLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:11:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59715 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3JQOLU (ORCPT
+	id S1756210Ab3JQOMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:12:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42852 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755478Ab3JQOMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:11:20 -0400
-Date: Thu, 17 Oct 2013 15:10:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Timur Tabi <timur@tabi.org>, Xiubo Li <Li.Xiubo@freescale.com>,
-        r65073@freescale.com, lgirdwood@gmail.com, mark.rutland@arm.com,
-        alsa-devel@alsa-project.org, linux-doc@vger.kernel.org, tiwai@suse.de,
-        b18965@freescale.com, LW@KARO-electronics.de, linux@arm.linux.org.uk,
-        b42378@freescale.com, oskar@scara.com, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, ian.campbell@citrix.com,
-        pawel.moll@arm.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, fabio.estevam@freescale.com,
-        linux-kernel@vger.kernel.org, rob@landley.net, r64188@freescale.com,
-        shawn.guo@linaro.org, linuxppc-dev@lists.ozlabs.org
-Message-ID: <20131017141003.GO2443@sirena.org.uk>
-References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
- <1382000477-17304-2-git-send-email-Li.Xiubo@freescale.com>
- <525FD4C7.3050806@tabi.org>
- <525FD65B.3040004@metafoo.de>
- <525FE48B.7020709@tabi.org>
- <525FE728.90403@metafoo.de>
- <525FE815.1040300@tabi.org>
- <525FEB7A.5040406@metafoo.de>
+	Thu, 17 Oct 2013 10:12:41 -0400
+Date: Thu, 17 Oct 2013 07:13:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] tty/serial: at91: add a fallback option to determine
+ uart/usart property
+Message-ID: <20131017141346.GA22104@kroah.com>
+References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com>
+ <64f8f1db6f888456be8ee410a7e9bb9851d070a5.1381394411.git.nicolas.ferre@atmel.com>
+ <20131014135921.GG11420@ns203013.ovh.net>
+ <525D0896.6020907@atmel.com>
+ <20131016201451.GA21296@kroah.com>
+ <525F9CEF.9020904@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5+z6kX2Nyw2GkWv9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525FEB7A.5040406@metafoo.de>
-X-Cookie: Time and tide wait for no man.
+In-Reply-To: <525F9CEF.9020904@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCHv1 1/8] ALSA: Add SAI SoC Digital Audio
- Interface driver.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 17, 2013 at 10:16:47AM +0200, Nicolas Ferre wrote:
+> On 16/10/2013 22:14, Greg Kroah-Hartman :
+> > On Tue, Oct 15, 2013 at 11:19:18AM +0200, Nicolas Ferre wrote:
+> >> On 14/10/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD :
+> >>> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
+> >>>> On older SoC, the "name" field is not filled in the register map.
+> >>>> Fix the way to figure out if the serial port is an uart or an usart for these
+> >>>> older products (with corresponding properties).
+> >>>>
+> >>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >>>> ---
+> >>>>   drivers/tty/serial/atmel_serial.c | 19 ++++++++++++++++++-
+> >>>>   include/linux/atmel_serial.h      |  1 +
+> >>>>   2 files changed, 19 insertions(+), 1 deletion(-)
+> >>>>
+> >>>> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> >>>> index 6b0f75e..c7d99af 100644
+> >>>> --- a/drivers/tty/serial/atmel_serial.c
+> >>>> +++ b/drivers/tty/serial/atmel_serial.c
+> >>>> @@ -99,6 +99,7 @@ static void atmel_stop_rx(struct uart_port *port);
+> >>>>   #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
+> >>>>   #define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
+> >>>>   #define UART_GET_IP_NAME(port)	__raw_readl((port)->membase + ATMEL_US_NAME)
+> >>>> +#define UART_GET_IP_VERSION(port) __raw_readl((port)->membase + ATMEL_US_VERSION)
+> >>>>
+> >>>>    /* PDC registers */
+> >>>>   #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
+> >>>> @@ -1503,6 +1504,7 @@ static void atmel_get_ip_name(struct uart_port *port)
+> >>>>   {
+> >>>>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+> >>>>   	int name = UART_GET_IP_NAME(port);
+> >>>> +	u32 version;
+> >>>>   	int usart, uart;
+> >>>>   	/* usart and uart ascii */
+> >>>>   	usart = 0x55534152;
+> >>>> @@ -1517,7 +1519,22 @@ static void atmel_get_ip_name(struct uart_port *port)
+> >>>>   		dev_dbg(port->dev, "This is uart\n");
+> >>>>   		atmel_port->is_usart = false;
+> >>>>   	} else {
+> >>>> -		dev_err(port->dev, "Not supported ip name, set to uart\n");
+> >>>> +		/* fallback for older SoCs: use version field */
+> >>>> +		version = UART_GET_IP_VERSION(port);
+> >>>> +		switch (version) {
+> >>>> +		case 0x302:
+> >>>> +		case 0x10213:
+> >>>> +			dev_dbg(port->dev, "This version is usart\n");
+> >>>> +			atmel_port->is_usart = true;
+> >>>> +			break;
+> >>>> +		case 0x203:
+> >>>> +		case 0x10202:
+> >>>> +			dev_dbg(port->dev, "This version is uart\n");
+> >>>> +			atmel_port->is_usart = false;
+> >>>> +			break;
+> >>>> +		default:
+> >>>> +			dev_err(port->dev, "Not supported ip name nor version, set to uart\n");
+> >>>
+> >>> it's not really an error a dev_warn is more oppropriate
+> >>
+> >> As we are already in -rc5 and that these fixes are critical for at91
+> >> platforms, I will not re-spin another patch just for this.
+> >>
+> >> Moreover, I have the feeling that if we end up in this case, it
+> >> means that we are in big troubles because the usart/uart included in
+> >> the product triggering this log is not known (I recall that newer
+> >> products do not have to hit these lines of code).
+> >>
+> >> With these 2 reasons, I prefer to keep my patch like it is.
+> >>
+> >> Greg, can you consider taking these two patches as regression fixes
+> >> for 3.12 (with Tested-by tag from Thomas)?
+> >
+> > Is this really a regression from 3.11?
+> 
+> Yes it is. Commit id that I am referring to in patch 1/2 
+> (055560b04a8cd063aea916fd083b7aec02c2adb8) hit the mainline in 3.12-rc 
+> time-frame.
 
---5+z6kX2Nyw2GkWv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok.
 
-On Thu, Oct 17, 2013 at 03:51:54PM +0200, Lars-Peter Clausen wrote:
-> On 10/17/2013 03:37 PM, Timur Tabi wrote:
+> > What's the worry about waiting
+> > for 3.13-rc1, getting this correct, and then backporting them to the
+> > 3.12-stable trees?
+> 
+> It will break all older at91 in 3.12-final. Moreover, I do think that 
+> the actual patches are bringing an incorrect solution and I do not plan 
+> to have a better one (which one?) for 3.13...
+> 
+> > I'd prefer that, so, please clean this up properly and resend it, with
+> > the tested-by: lines and I'll queue them up for 3.13-rc1.
+> 
+> I do not know what to cleanup. Anyway, tell me if you want that I resend 
+> the series of 2 patches with the "Tested-by" tag included.
 
-> > I understand that, but I'm trying to figure out why of_iomap() is okay for
-> > hundreds of other drivers, but not this one.  I've used it dozens of times
-> > myself, without ever worrying about overlapping regions.
+I thought there was some dev_warn() changes that were asked for...
 
-> The driver would work fine with just of_iomap(). But the resource range
-> check comes basically for free and it does help to catch errors, so I'd
-> recommend on using it rather than not using it.
+Anyway, please resend them if you want me to take them for any tree as I
+no longer have them in my queue.
 
-There's also the fact that it's a devm_ function which means less error
-handling code that we can break which is nice.  There's probably a case
-for an improved OF helper here...
+thanks,
 
---5+z6kX2Nyw2GkWv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSX++4AAoJELSic+t+oim9UWQP/0NLFy/f672CK3D2TKw6jpXp
-t+kX7AU+gXDdmR82JsW1LpMa+ZZtgA/RYezIi+yKL0BOadXLEdIZB86wsRT+Sqsp
-luBmPkpdVMCJDjcUpcatCsTkPBlqNy6UstzY+RnJlLUJ9QqC2JmUrueouZEcQXDj
-MKj13kFv+hp/6WTxBiaaVJdVhQ4S4ky2rYR4xtIQe0Fd/QGFYgEuRaOvwZx1+txY
-oennu3y9ADupCEcB3qzsnYj0EWu+wEbBltAMNa+lzHyc6pz1CqBrpKZguM9/Hj7t
-NManCo9b/3GA9ZQAasg2/lMwchqeMHswtg6N1aL9DDgpr58TWh75mBdiFqPtISjI
-k+ynBTwKfbEJtEF1xFEOfD9bHLZpmmqAQ9VSqg3gYzALCUqusqpdGbgPMM/edH5q
-Et14WDYSH/BZSuXUoJeQ53QjlqNFdWXAF51Vf3f1RoSkWoT53QCn2TEsc2oH5wUF
-GogKb67uxz+J4Rqe75aWpq5KRj5szkY0XmvOuwU4Po8RceJp0RuhSpqcGldlm2jn
-1wv/RVwiZeiPi74vTAaTUqqOMW6BXWmTktHVYVdzDZeVd5tgoqJ16tiQQB3XBQrl
-1qrJLxM6h/6/BDyR7NqpkPB3UvIwYDwbyISmgsEDVgw4W3FznpsLbbBiJdbsBXBz
-u30E/rYr0FH2eMVLlGk7
-=Bz6j
------END PGP SIGNATURE-----
-
---5+z6kX2Nyw2GkWv9--
+greg k-h
