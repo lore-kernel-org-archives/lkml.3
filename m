@@ -1,123 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab3JQHxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 03:53:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3236 "EHLO mga09.intel.com"
+	id S1752531Ab3JQH5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 03:57:34 -0400
+Received: from tundra.namei.org ([65.99.196.166]:41464 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752646Ab3JQHxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 03:53:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,512,1378882800"; 
-   d="asc'?scan'208";a="420459314"
-Date: Thu, 17 Oct 2013 03:38:24 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
-        m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-Message-ID: <20131017073824.GC14946@gchen.bj.intel.com>
-Mail-Followup-To: Joe Perches <joe@perches.com>, tony.luck@intel.com,
-	bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com,
-	arozansk@redhat.com, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Thomas Winischhofer <thomas@winischhofer.net>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	Tomi Valkeinen <tomi.valkeinen@ti.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
- <1381935366-11731-4-git-send-email-gong.chen@linux.intel.com>
- <1381978749.22110.76.camel@joe-AO722>
- <20131017063059.GB14946@gchen.bj.intel.com>
- <1381993136.22110.95.camel@joe-AO722>
+	id S1751056Ab3JQH5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 03:57:30 -0400
+Date: Thu, 17 Oct 2013 19:02:17 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kees Cook <keescook@chromium.org>
+cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
+In-Reply-To: <20130920203556.GA8726@www.outflux.net>
+Message-ID: <alpine.LRH.2.02.1310171858170.32257@tundra.namei.org>
+References: <20130920203556.GA8726@www.outflux.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3siQDZowHQqNOShm"
-Content-Disposition: inline
-In-Reply-To: <1381993136.22110.95.camel@joe-AO722>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This seems like a regression in terms of separating mechanism and policy.  
 
---3siQDZowHQqNOShm
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We have several access control systems available (SELinux, at least) which 
+can implement this functionality with existing mechanisms using dynamic 
+policy.
 
-On Wed, Oct 16, 2013 at 11:58:56PM -0700, Joe Perches wrote:
-> Date: Wed, 16 Oct 2013 23:58:56 -0700
-> From: Joe Perches <joe@perches.com>
-> To: Chen Gong <gong.chen@linux.intel.com>
-> Cc: tony.luck@intel.com, bp@alien8.de, naveen.n.rao@linux.vnet.ibm.com,
->  m.chehab@samsung.com, arozansk@redhat.com, linux-acpi@vger.kernel.org,
->  linux-kernel@vger.kernel.org, Thomas Winischhofer
->  <thomas@winischhofer.net>, Jean-Christophe Plagniol-Villard
->  <plagnioj@jcrosoft.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Subject: Re: [PATCH v2 3/9] bitops: Introduce a more generic BITMASK macro
-> X-Mailer: Evolution 3.6.4-0ubuntu1=20
->=20
-> On Thu, 2013-10-17 at 02:30 -0400, Chen Gong wrote:
-> > On Wed, Oct 16, 2013 at 07:59:09PM -0700, Joe Perches wrote:
-> []
-> > > Maybe add a
-> > >=20
-> > > BUILD_BUG_ON(__builtin_constant_p(l) && __builtin_constant_p(h) && \
-> > > 	     (h) < (l))
-> > >=20
-> > No, if so, users can't use variables for this macro.
->=20
-> __builtin_constant_p checks for constants
->=20
-> Built-in Function: int __builtin_constant_p (exp)
->         You can use the built-in function __builtin_constant_p to
->         determine if a value is known to be constant at compile-time and
->         hence that GCC can perform constant-folding on expressions
->         involving that value. The argument of the function is the value
->         to test. The function returns the integer 1 if the argument is
->         known to be a compile-time constant and 0 if it is not known to
->         be a compile-time constant. A return of 0 does not indicate that
->         the value is not a constant, but merely that GCC cannot prove it
->         is a constant with the specified value of the -O option.=20
->        =20
+I'm concerned about the long term architectural impact of a proliferation 
+of arbitrary hard-coded security policies in the kernel.  I don't 
+understand the push in this direction, frankly.
 
-Yes, even we have following codes __builtin_constant_p still can return 1,
-so long as the value of variable can be identified.
 
-int len =3D sizeof(int);
-if (__builtin_constant_p(len)) {
-        do_1;
-} else {
-        do_0;
-}
 
-but the point is we can use GENMASK like GENMASK(end_bit, start_bit) but
-we don't know the value of end_bit/start_bit at compile-time.
+On Fri, 20 Sep 2013, Kees Cook wrote:
 
---3siQDZowHQqNOShm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> This LSM enforces that modules must all come from the same filesystem,
+> with the expectation that such a filesystem is backed by a read-only
+> device such as dm-verity or CDROM. This allows systems that have a
+> verified or unchanging filesystem to enforce module loading restrictions
+> without needing to sign the modules individually.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  security/Kconfig         |    6 ++
+>  security/Makefile        |    2 +
+>  security/modpin/Kconfig  |    9 +++
+>  security/modpin/Makefile |    1 +
+>  security/modpin/modpin.c |  197 ++++++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 215 insertions(+)
+>  create mode 100644 security/modpin/Kconfig
+>  create mode 100644 security/modpin/Makefile
+>  create mode 100644 security/modpin/modpin.c
+> 
+> diff --git a/security/Kconfig b/security/Kconfig
+> index e9c6ac7..80172fd 100644
+> --- a/security/Kconfig
+> +++ b/security/Kconfig
+> @@ -121,6 +121,7 @@ source security/selinux/Kconfig
+>  source security/smack/Kconfig
+>  source security/tomoyo/Kconfig
+>  source security/apparmor/Kconfig
+> +source security/modpin/Kconfig
+>  source security/yama/Kconfig
+>  
+>  source security/integrity/Kconfig
+> @@ -131,6 +132,7 @@ choice
+>  	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
+>  	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
+>  	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
+> +	default DEFAULT_SECURITY_MODPIN if SECURITY_MODPIN
+>  	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
+>  	default DEFAULT_SECURITY_DAC
+>  
+> @@ -150,6 +152,9 @@ choice
+>  	config DEFAULT_SECURITY_APPARMOR
+>  		bool "AppArmor" if SECURITY_APPARMOR=y
+>  
+> +	config DEFAULT_SECURITY_MODPIN
+> +		bool "ModPin" if SECURITY_MODPIN=y
+> +
+>  	config DEFAULT_SECURITY_YAMA
+>  		bool "Yama" if SECURITY_YAMA=y
+>  
+> @@ -164,6 +169,7 @@ config DEFAULT_SECURITY
+>  	default "smack" if DEFAULT_SECURITY_SMACK
+>  	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
+>  	default "apparmor" if DEFAULT_SECURITY_APPARMOR
+> +	default "modpin" if DEFAULT_SECURITY_MODPIN
+>  	default "yama" if DEFAULT_SECURITY_YAMA
+>  	default "" if DEFAULT_SECURITY_DAC
+>  
+> diff --git a/security/Makefile b/security/Makefile
+> index c26c81e..73d0a05 100644
+> --- a/security/Makefile
+> +++ b/security/Makefile
+> @@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
+>  subdir-$(CONFIG_SECURITY_SMACK)		+= smack
+>  subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
+>  subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
+> +subdir-$(CONFIG_SECURITY_MODPIN)	+= modpin
+>  subdir-$(CONFIG_SECURITY_YAMA)		+= yama
+>  
+>  # always enable default capabilities
+> @@ -22,6 +23,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
+>  obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+>  obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
+>  obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
+> +obj-$(CONFIG_SECURITY_MODPIN)		+= modpin/built-in.o
+>  obj-$(CONFIG_SECURITY_YAMA)		+= yama/built-in.o
+>  obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+>  
+> diff --git a/security/modpin/Kconfig b/security/modpin/Kconfig
+> new file mode 100644
+> index 0000000..5be9dd5
+> --- /dev/null
+> +++ b/security/modpin/Kconfig
+> @@ -0,0 +1,9 @@
+> +config SECURITY_MODPIN
+> +	bool "Module filesystem origin pinning"
+> +	depends on SECURITY
+> +	help
+> +	  Module loading will be pinned to the first filesystem used for
+> +	  loading. Any modules that come from other filesystems will be
+> +	  rejected. This is best used on systems without an initrd that
+> +	  have a root filesystem backed by a read-only device such as
+> +	  dm-verity or a CDROM.
+> diff --git a/security/modpin/Makefile b/security/modpin/Makefile
+> new file mode 100644
+> index 0000000..9080b29
+> --- /dev/null
+> +++ b/security/modpin/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_SECURITY_MODPIN) += modpin.o
+> diff --git a/security/modpin/modpin.c b/security/modpin/modpin.c
+> new file mode 100644
+> index 0000000..107b4d8
+> --- /dev/null
+> +++ b/security/modpin/modpin.c
+> @@ -0,0 +1,197 @@
+> +/*
+> + * Module Pinning Security Module
+> + *
+> + * Copyright 2011-2013 Google Inc.
+> + *
+> + * Authors:
+> + *      Kees Cook       <keescook@chromium.org>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt) "ModPin LSM: " fmt
+> +
+> +#include <linux/module.h>
+> +#include <linux/security.h>
+> +#include <linux/sched.h>
+> +#include <linux/fs.h>
+> +#include <linux/fs_struct.h>
+> +#include <linux/mount.h>
+> +#include <linux/path.h>
+> +#include <linux/root_dev.h>
+> +
+> +static void report_load_module(struct path *path, char *operation)
+> +{
+> +	char *alloced = NULL;
+> +	char *pathname; /* Pointer to either static string or "alloced". */
+> +
+> +	if (!path)
+> +		pathname = "<unknown>";
+> +	else {
+> +		/* We will allow 11 spaces for ' (deleted)' to be appended */
+> +		alloced = pathname = kmalloc(PATH_MAX+11, GFP_KERNEL);
+> +		if (!pathname)
+> +			pathname = "<no_memory>";
+> +		else {
+> +			pathname = d_path(path, pathname, PATH_MAX+11);
+> +			if (IS_ERR(pathname))
+> +				pathname = "<too_long>";
+> +		}
+> +	}
+> +
+> +	pr_notice("init_module %s module=%s pid=%d\n",
+> +		  operation, pathname, task_pid_nr(current));
+> +
+> +	kfree(alloced);
+> +}
+> +
+> +static int modpin_enforced = 1;
+> +static struct dentry *pinned_root;
+> +static DEFINE_SPINLOCK(pinned_root_spinlock);
+> +
+> +#ifdef CONFIG_SYSCTL
+> +static int zero;
+> +static int one = 1;
+> +
+> +static struct ctl_path modpin_sysctl_path[] = {
+> +	{ .procname = "kernel", },
+> +	{ .procname = "modpin", },
+> +	{ }
+> +};
+> +
+> +static struct ctl_table modpin_sysctl_table[] = {
+> +	{
+> +		.procname       = "enforced",
+> +		.data           = &modpin_enforced,
+> +		.maxlen         = sizeof(int),
+> +		.mode           = 0644,
+> +		.proc_handler   = proc_dointvec_minmax,
+> +		.extra1         = &zero,
+> +		.extra2         = &one,
+> +	},
+> +	{ }
+> +};
+> +
+> +/*
+> + * Check if the root device is read-only (e.g. dm-verity is enabled).
+> + * This must be called after early kernel init, since only then is the
+> + * rootdev available.
+> + */
+> +static bool rootdev_readonly(void)
+> +{
+> +	bool rc;
+> +	struct block_device *bdev;
+> +	const fmode_t mode = FMODE_WRITE;
+> +
+> +	bdev = blkdev_get_by_dev(ROOT_DEV, mode, NULL);
+> +	if (IS_ERR(bdev)) {
+> +		/* In this weird case, assume it is read-only. */
+> +		pr_info("dev(%u,%u): FMODE_WRITE disallowed?!\n",
+> +			MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
+> +		return true;
+> +	}
+> +
+> +	rc = bdev_read_only(bdev);
+> +	blkdev_put(bdev, mode);
+> +
+> +	pr_info("dev(%u,%u): %s\n", MAJOR(ROOT_DEV), MINOR(ROOT_DEV),
+> +		rc ? "read-only" : "writable");
+> +
+> +	return rc;
+> +}
+> +
+> +static void check_pinning_enforcement(void)
+> +{
+> +	/*
+> +	 * If module pinning is not being enforced, allow sysctl to change
+> +	 * modes for testing.
+> +	 */
+> +	if (!rootdev_readonly()) {
+> +		if (!register_sysctl_paths(modpin_sysctl_path,
+> +					   modpin_sysctl_table))
+> +			pr_notice("sysctl registration failed!\n");
+> +		else
+> +			pr_info("module pinning can be disabled.\n");
+> +	} else
+> +		pr_info("module pinning engaged.\n");
+> +}
+> +#else
+> +static void check_pinning_enforcement(void) { }
+> +#endif
+> +
+> +
+> +static int modpin_load_module(struct file *file)
+> +{
+> +	struct dentry *module_root;
+> +
+> +	if (!file) {
+> +		if (!modpin_enforced) {
+> +			report_load_module(NULL, "old-api-pinning-ignored");
+> +			return 0;
+> +		}
+> +
+> +		report_load_module(NULL, "old-api-denied");
+> +		return -EPERM;
+> +	}
+> +
+> +	module_root = file->f_path.mnt->mnt_root;
+> +
+> +	/* First loaded module defines the root for all others. */
+> +	spin_lock(&pinned_root_spinlock);
+> +	if (!pinned_root) {
+> +		pinned_root = dget(module_root);
+> +		/*
+> +		 * Unlock now since it's only pinned_root we care about.
+> +		 * In the worst case, we will (correctly) report pinning
+> +		 * failures before we have announced that pinning is
+> +		 * enabled. This would be purely cosmetic.
+> +		 */
+> +		spin_unlock(&pinned_root_spinlock);
+> +		check_pinning_enforcement();
+> +		report_load_module(&file->f_path, "pinned");
+> +		return 0;
+> +	}
+> +	spin_unlock(&pinned_root_spinlock);
+> +
+> +	if (module_root != pinned_root) {
+> +		if (unlikely(!modpin_enforced)) {
+> +			report_load_module(&file->f_path, "pinning-ignored");
+> +			return 0;
+> +		}
+> +
+> +		report_load_module(&file->f_path, "denied");
+> +		return -EPERM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct security_operations modpin_ops = {
+> +	.name	= "modpin",
+> +	.kernel_module_from_file = modpin_load_module,
+> +};
+> +
+> +static int __init modpin_init(void)
+> +{
+> +	int error;
+> +
+> +	error = register_security(&modpin_ops);
+> +
+> +	if (error)
+> +		panic("Could not register ModPin security module");
+> +
+> +	pr_info("ready to pin.\n");
+> +
+> +	return error;
+> +}
+> +security_initcall(modpin_init);
+> +
+> +module_param(modpin_enforced, int, S_IRUSR);
+> +MODULE_PARM_DESC(modpin_enforced, "Module pinning enforced (default: true)");
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSX5PwAAoJEI01n1+kOSLHJTwP/1j0AyXAQJLTx0wyh6l5jEEg
-beG4MkqKr3iBEUc6ivjUw2rQWNrQ1BQeFPgMC46CYLlkH0q6RdKNEb0m7IkOTZjt
-k1eGGXrvGoYQGmddns2O5s2KuOWQSVV4sgBIlGF4I5wvfgHPGoSpb19Sw9w3hpx2
-wAm80hMvAF9W+W2lRt3dDLmeTlFFSa+twLMSKtMPlqUJasCC7kZDnZs14xxU+ZIY
-ISnRrC2KSQr99/2W2YfRytg9Ke2QmPfqyI2+dTN6njEKBKGkE8qmKboVSwZEdPX+
-H5WV5KXsh3LpI2t3c4fbehlKLE2tEDgyfwez+ojJBFIJt0wviz5TxO60hciPXAqO
-lLm6cOIU5REwNtw3RYfBGVuT2Dj0AIMT74+MpW6L6+8YdqFBh06dKIVgiWt3GcoM
-Fe8o9cBNZBusm0+ykNW2RoO3mICBLKhzenmYjCPuiyh4aefkMAWZjLgd9IGGnWQh
-Uh5FNOdV3MKLQJdC4FHBGMDeXPnr+g0aFsB0qvSxAZtkP4aO2s1XtCbbUDwc9bZ8
-bpLuQJ7ahZELfImMkK1oEG8Cj/LL1buDJ7ylHJsfy2FGJ5gCS2HH0mOEDRgxU+mb
-v1DVTjLPB8FgLlUam61pN++9K+dk5gJpFloIq7OALuWAoGAcOKPQapeGVOV2NEnx
-wyQG4BQilfb7hdOWCAWl
-=Sc/M
------END PGP SIGNATURE-----
-
---3siQDZowHQqNOShm--
+-- 
+James Morris
+<jmorris@namei.org>
