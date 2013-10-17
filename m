@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762383Ab3JQU66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 16:58:58 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:55202 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab3JQU64 convert rfc822-to-8bit (ORCPT
+	id S1762789Ab3JQVA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:00:26 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:36103 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762371Ab3JQVAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 16:58:56 -0400
+	Thu, 17 Oct 2013 17:00:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131016120951.B5012E0090@blue.fi.intel.com>
-References: <20131015001304.GH3432@hippobay.mtv.corp.google.com>
- <20131015110146.7E8BEE0090@blue.fi.intel.com> <CACz4_2fiF+vaAbFixgGF+Uxn0av4H8y-aMQdyi3yYs5pdS2WBA@mail.gmail.com>
- <20131016120951.B5012E0090@blue.fi.intel.com>
-From: Ning Qu <quning@google.com>
-Date: Thu, 17 Oct 2013 13:58:35 -0700
-Message-ID: <CACz4_2eR+-N+FmOj+JB0YXKNZZpOaP7JG79rCr=xFKKLp4y7fw@mail.gmail.com>
-Subject: Re: [PATCH 07/12] mm, thp, tmpfs: handle huge page in
- shmem_undo_range for truncate
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131017112806.GA5293@intel.com>
+References: <20130920203556.GA8726@www.outflux.net>
+	<alpine.LRH.2.02.1310171858170.32257@tundra.namei.org>
+	<20131017112806.GA5293@intel.com>
+Date: Thu, 17 Oct 2013 14:00:24 -0700
+X-Google-Sender-Auth: -j2eht7nHLNtC4qQqczXnGojm8s
+Message-ID: <CAGXu5j+OJZFQxmuGtpcEakNMTVfcP8kSPoC4R9Yu6_eYLk2T-g@mail.gmail.com>
+Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
+From: Kees Cook <keescook@chromium.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: James Morris <jmorris@namei.org>, LKML <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Best wishes,
+On Thu, Oct 17, 2013 at 4:30 AM, Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+> On Thu, Oct 17, 2013 at 07:02:17PM +1100, James Morris wrote:
+>> This seems like a regression in terms of separating mechanism and policy.
+>>
+>> We have several access control systems available (SELinux, at least) which
+>> can implement this functionality with existing mechanisms using dynamic
+>> policy.
+>>
+>> I'm concerned about the long term architectural impact of a proliferation
+>> of arbitrary hard-coded security policies in the kernel.  I don't
+>> understand the push in this direction, frankly.
+>
+> The biggest risk in LSM stacker is really to become backdoor for very product
+> dilated kernel changes that are not accepted to the mainline kernel. I think
+> having LSM stacker would be benefical but barrier should be set very high
+> for "one-shot" modules.
+>
+> One big benefit that I see in LSM stacker is not at least directly security
+> related. It would be perfect integration tool when you want for example
+> provide Android run-time in an OS that uses AppArmor or SMACK as its security
+> framework.
+
+I think of stacking as a way to help people do quick prototyping of
+security changes without getting in the way of their distro's MAC.
+
+-Kees
+
 -- 
-Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
-
-
-On Wed, Oct 16, 2013 at 5:09 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Ning Qu wrote:
->> > Again. Here and below ifdef is redundant: PageTransHugeCache() is zero
->> > compile-time and  thp case will be optimize out.
->>
->> The problem is actually from HPAGE_CACHE_INDEX_MASK, it is marked as
->> build bug when CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is false. So we
->> either wrap some logic inside a inline function, or we have to be like
->> this .. Or we don't treat the HPAGE_CACHE_INDEX_MASK as a build bug?
->
-> HPAGE_CACHE_INDEX_MASK shouldn't be a problem.
-> If it's wrapped into 'if PageTransHugeCache(page)' or similar it will be
-> eliminated by compiler if thp-pc disabled and build bug will not be
-> triggered.
->
->>
->> >
->> > And do we really need a copy of truncate logic here? Is there a way to
->> > share code?
->> >
->> The truncate between tmpfs and general one is similar but not exactly
->> the same (no readahead), so share the whole function might not be a
->> good choice from the perspective of tmpfs? Anyway, there are other
->> similar functions in tmpfs, e.g. the one you mentioned for
->> shmem_add_to_page_cache. It is possible to share the code, I am just
->> worried it will make the logic more complicated?
->
-> I think introducing thp-pc is good opportunity to refactor all these code.
-
-I agree, I review the code of generate truncate and shmem_undo_range again.
-There are just too many differences in almost every major piece of
-logic. It's really
-not possible to extract any meaningful common function to share between them.
-
-And I agree, we will try to refactor any other functions which are
-possible. Thanks!
-
->
-> --
->  Kirill A. Shutemov
+Kees Cook
+Chrome OS Security
