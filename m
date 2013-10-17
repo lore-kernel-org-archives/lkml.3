@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762609Ab3JQTQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 15:16:40 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:57443 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762314Ab3JQTQi (ORCPT
+	id S1758728Ab3JQTWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 15:22:15 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:56546 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757861Ab3JQTWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 15:16:38 -0400
+	Thu, 17 Oct 2013 15:22:14 -0400
+Date: Thu, 17 Oct 2013 19:22:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
+In-Reply-To: <20131016183818.GD3364@laptop.programming.kicks-ass.net>
+Message-ID: <00000141c7de3c3e-51b4dd7b-901e-466e-829a-b1f7c4b9ec90-000000@email.amazonses.com>
+References: <20131015174722.615394057@linux.com> <20131015174747.813545438@linux.com> <20131016084920.GT10651@twins.programming.kicks-ass.net> <00000141c1d04300-e935e477-6669-4388-8109-c77064ee27e7-000000@email.amazonses.com> <20131016153603.GZ10651@twins.programming.kicks-ass.net>
+ <00000141c1fae3ba-6b52fea1-74f9-42f7-b1db-70dda847e7f9-000000@email.amazonses.com> <20131016162537.GB10651@twins.programming.kicks-ass.net> <20131016183818.GD3364@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1380074758-19808-1-git-send-email-robherring2@gmail.com>
-References: <1379968234-23373-1-git-send-email-robherring2@gmail.com>
-	<1380074758-19808-1-git-send-email-robherring2@gmail.com>
-Date: Thu, 17 Oct 2013 14:16:37 -0500
-Message-ID: <CAL_JsqK0hPtoD22fw3J+TmgNwJeJUYwjB9i1C4n817GvuOxQxw@mail.gmail.com>
-Subject: Re: [PATCH v2] TTY: hvc_dcc: probe for a JTAG connection before registering
-From: Rob Herring <robherring2@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Paolo Pisati <paolo.pisati@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.17-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 24, 2013 at 9:05 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> Enabling the ARM DCC console and using without a JTAG connection will
-> simply hang the system. Since distros like to turn on all options, this
-> is a reoccurring problem to debug. We can do better by checking if
-> anything is attached and handling characters. There is no way to probe
-> this, so send a newline and check that it is handled.
->
-> Cc: Paolo Pisati <paolo.pisati@canonical.com>
-> Cc: Tim Gardner <tim.gardner@canonical.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
-> v2: use time_is_after_jiffies
->
->  drivers/tty/hvc/hvc_dcc.c | 21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
+On Wed, 16 Oct 2013, Peter Zijlstra wrote:
 
-Greg, Jiri,
-
-Can you please apply.
-
-Rob
-
+> On Wed, Oct 16, 2013 at 06:25:37PM +0200, Peter Zijlstra wrote:
+> > To rename __this_cpu to raw_cpu; it would then need a little manual
+> > fixup and generic __this_cpu -> raW_cpu map, which can add the
+> > preemption check.
 >
-> diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-> index 44fbeba..3502a7b 100644
-> --- a/drivers/tty/hvc/hvc_dcc.c
-> +++ b/drivers/tty/hvc/hvc_dcc.c
-> @@ -86,6 +86,21 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
->         return i;
->  }
->
-> +static bool hvc_dcc_check(void)
-> +{
-> +       unsigned long time = jiffies + (HZ / 10);
-> +
-> +       /* Write a test character to check if it is handled */
-> +       __dcc_putchar('\n');
-> +
-> +       while (time_is_after_jiffies(time)) {
-> +               if (!(__dcc_getstatus() & DCC_STATUS_TX))
-> +                       return true;
-> +       }
-> +
-> +       return false;
-> +}
-> +
->  static const struct hv_ops hvc_dcc_get_put_ops = {
->         .get_chars = hvc_dcc_get_chars,
->         .put_chars = hvc_dcc_put_chars,
-> @@ -93,6 +108,9 @@ static const struct hv_ops hvc_dcc_get_put_ops = {
->
->  static int __init hvc_dcc_console_init(void)
+> Something like so perhaps... only lightly compile tested
+> (x86_64-defconfig).
+
+First portion looks good to me on first glance.
+
+> diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
+> index 8729723..95e3532 100644
+> --- a/arch/x86/include/asm/preempt.h
+> +++ b/arch/x86/include/asm/preempt.h
+> @@ -13,12 +13,12 @@ DECLARE_PER_CPU(int, __preempt_count);
+>   */
+>  static __always_inline int preempt_count(void)
 >  {
-> +       if (!hvc_dcc_check())
-> +               return -ENODEV;
-> +
->         hvc_instantiate(0, 0, &hvc_dcc_get_put_ops);
->         return 0;
+> -	return __this_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
+> +	return raw_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
 >  }
-> @@ -100,6 +118,9 @@ console_initcall(hvc_dcc_console_init);
 >
->  static int __init hvc_dcc_init(void)
+>  static __always_inline void preempt_count_set(int pc)
 >  {
-> +       if (!hvc_dcc_check())
-> +               return -ENODEV;
-> +
->         hvc_alloc(0, 0, &hvc_dcc_get_put_ops, 128);
->         return 0;
+> -	__this_cpu_write_4(__preempt_count, pc);
+> +	raw_cpu_write_4(__preempt_count, pc);
 >  }
-> --
-> 1.8.1.2
+
+Huh? What happened here? Why do we use the __this_cpu_read_4 here?
+This should be just raw_cpu_write()
+
+And more following
+
+> diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+> index d17784e..b5aca54 100644
+> --- a/include/asm-generic/percpu.h
+> +++ b/include/asm-generic/percpu.h
+> @@ -56,17 +56,18 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
+>  #define per_cpu(var, cpu) \
+>  	(*SHIFT_PERCPU_PTR(&(var), per_cpu_offset(cpu)))
 >
+> -#ifndef __this_cpu_ptr
+> -#define __this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
+> +#ifndef raw_cpu_ptr
+> +#define raw_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
+>  #endif
+
+
+Got another patch here that gets rid of __this_cpu_ptr and uses
+raw_cpu_ptr everywhere instead. Would be good to make this all symmetric.
+
+
