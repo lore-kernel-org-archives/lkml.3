@@ -1,210 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762757Ab3JQUeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 16:34:11 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38997 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758867Ab3JQUeG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 16:34:06 -0400
+	id S1762759Ab3JQUg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 16:36:57 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51586 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756787Ab3JQUgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 16:36:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCHv6] drivers: power: Detect device suspend/resume lockup and log event in pstore.
+Date: Thu, 17 Oct 2013 22:48:47 +0200
+Message-ID: <5678693.zK9KaoGeB6@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1382032126-28477-1-git-send-email-zoran.markovic@linaro.org>
+References: <1382032126-28477-1-git-send-email-zoran.markovic@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <525F7F0F.5010306@intel.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
- <1381493941-4650-6-git-send-email-tianyu.lan@intel.com> <20131016235541.GD17866@google.com>
- <525F7F0F.5010306@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 17 Oct 2013 14:33:43 -0600
-Message-ID: <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com>
-Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
- resource conversion
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Yoknis, Mike" <mike.yoknis@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Mike]
+On Thursday, October 17, 2013 10:48:46 AM Zoran Markovic wrote:
+> From: Benoit Goby <benoit@android.com>
+> 
+> Rather than hard-lock the kernel, dump the suspend/resume thread stack and
+> panic() to capture a message in pstore when a driver takes too long to
+> suspend/resume. Default suspend/resume watchdog timeout is set to 12
+> seconds to be longer than the usbhid 10 second timeout, but could be
+> changed at compile time.
+> 
+> Exclude from the watchdog the time spent waiting for children that
+> are resumed asynchronously and time every device, whether or not they
+> resumed synchronously.
+> 
+> This patch is targeted for mobile devices where a suspend/resume lockup
+> could cause a system reboot. Information about failing device can be
+> retrieved in subsequent boot session by mounting pstore and inspecting
+> the log. Laptops with EFI-enabled pstore could also benefit from
+> this feature.
+> 
+> The hardware watchdog timer is likely suspended during this time and
+> couldn't be relied upon. The soft-lockup detector would eventually tell
+> that tasks are not scheduled, but would provide little context as to why.
+> The patch hence uses system timer and assumes it is still active while the
+> devices are suspended/resumed.
+> 
+> This feature can be enabled/disabled during kernel configuration.
+> 
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Todd Poynor <toddpoynor@google.com>
+> Cc: San Mehat <san@google.com>
+> Cc: Benoit Goby <benoit@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Original-author: San Mehat <san@google.com>
+> Signed-off-by: Benoit Goby <benoit@android.com>
+> [zoran.markovic@linaro.org: Changed printk(KERN_EMERG,...) to pr_emerg(...),
+> tweaked commit message. Moved call to dpm_wd_set() before device_lock() in
+> device_resume(). Minor changes to add compile-time inclusion of the feature.
+> Renamed 'dpm_wd...' to 'dpm_watchdog...'. Fixed compile errors/warnings for
+> x86_64 and s390.]
+> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 
-On Thu, Oct 17, 2013 at 12:09 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> On 2013年10月17日 07:55, Bjorn Helgaas wrote:
->> On Fri, Oct 11, 2013 at 08:19:01PM +0800, tianyu.lan@intel.com wrote:
->>> From: Lan Tianyu <tianyu.lan@intel.com>
->>>
->>> Using ACPI resource functions to convert ACPI resource to generic resource
->>>
->>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->>> ---
->>> This patch just passes through compilation test due to no ia64 machine on hand.
->>>
->>>  arch/ia64/pci/pci.c | 38 +++++++++++++++++++++-----------------
->>>  1 file changed, 21 insertions(+), 17 deletions(-)
->>>
->>> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
->>> index 2326790..14fa175 100644
->>> --- a/arch/ia64/pci/pci.c
->>> +++ b/arch/ia64/pci/pci.c
->>> @@ -232,8 +232,9 @@ out:
->>>      return ~0;
->>>  }
->>>
->>> -static acpi_status resource_to_window(struct acpi_resource *resource,
->>> -                                  struct acpi_resource_address64 *addr)
->>> +static acpi_status resource_to_window(struct acpi_resource *ares,
->>> +                                  struct acpi_resource_address64 *addr,
->>> +                                  struct resource *res)
->>>  {
->>>      acpi_status status;
->>>
->>> @@ -244,7 +245,7 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
->>>       *      - producers, i.e., the address space is routed downstream,
->>>       *        not consumed by the bridge itself
->>>       */
->>> -    status = acpi_resource_to_address64(resource, addr);
->>> +    status = acpi_dev_resource_address_space_full(ares, addr, res);
->>>      if (ACPI_SUCCESS(status) &&
->>>          (addr->resource_type == ACPI_MEMORY_RANGE ||
->>>           addr->resource_type == ACPI_IO_RANGE) &&
->>> @@ -255,51 +256,54 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
->>>      return AE_ERROR;
->>>  }
->>>
->>> -static acpi_status count_window(struct acpi_resource *resource, void *data)
->>> +static acpi_status count_window(struct acpi_resource *ares, void *data)
->>>  {
->>>      unsigned int *windows = (unsigned int *) data;
->>>      struct acpi_resource_address64 addr;
->>> +    struct resource res;
->>>      acpi_status status;
->>>
->>> -    status = resource_to_window(resource, &addr);
->>> +    status = resource_to_window(ares, &addr, &res);
->>>      if (ACPI_SUCCESS(status))
->>>              (*windows)++;
->>>
->>>      return AE_OK;
->>>  }
->>>
->>> -static acpi_status add_window(struct acpi_resource *res, void *data)
->>> +static acpi_status add_window(struct acpi_resource *ares, void *data)
->>>  {
->>>      struct pci_root_info *info = data;
->>> -    struct resource *resource;
->>> +    struct resource *resource = &info->res[info->res_num];
->>>      struct acpi_resource_address64 addr;
->>>      acpi_status status;
->>> -    unsigned long flags, offset = 0;
->>> +    unsigned long offset = 0;
->>>      struct resource *root;
->>>
->>>      /* Return AE_OK for non-window resources to keep scanning for more */
->>> -    status = resource_to_window(res, &addr);
->>> +    status = resource_to_window(ares, &addr, resource);
->>>      if (!ACPI_SUCCESS(status))
->>>              return AE_OK;
->>>
->>> -    if (addr.resource_type == ACPI_MEMORY_RANGE) {
->>> -            flags = IORESOURCE_MEM;
->>> +    if (resource->flags & IORESOURCE_MEM) {
->>>              root = &iomem_resource;
->>>              offset = addr.translation_offset;
->>> -    } else if (addr.resource_type == ACPI_IO_RANGE) {
->>> -            flags = IORESOURCE_IO;
->>> +    } else if (resource->flags & IORESOURCE_IO) {
->>>              root = &ioport_resource;
->>>              offset = add_io_space(info, &addr);
->>>              if (offset == ~0)
->>>                      return AE_OK;
->>> +
->>> +            /*
->>> +             * io space address translation offset depends
->>> +             * on the return value of add_io_space(). So
->>> +             * Repopulate resource->start and end here.
->>
->> "Repopulate" makes it sound like "resource->start" got clobbered
->> somewhere.  But it didn't.  I think it's just that each bridge can
->> support its own I/O port range, and the PCI port numbers reported
->> in the acpi_resource may not be distinct, and add_io_space() adds
->> an offset so all the I/O port ranges fit into one global I/O port
->> space.
->>
->> For example, I think these two bridges have the same port numbers
->> (0x0-0xfff) in their acpi_resource, but the second has an offset
->> of 0x1000000 in the system I/O port space, and I think this offset
->> is what add_io_space() returns:
->>
->>   HWP0002:00: host bridge window [io  0x0000-0x0fff]     (PCI [0x0-0xfff])
->>   HWP0002:09: host bridge window [io  0x1000000-0x1000fff] (PCI [0x0-0xfff])
->>
->>> +             */
->>> +            resource->start = addr.minimum + offset;
->>> +            resource->end = resource->start + addr.address_length - 1;
->>
->> Can't we use this:
->>
->>               resource->start += offset;
->>               resource->end += offset;
->>
->> to avoid breaking the encapsulation of struct acpi_resource_address64?
->
-> resource->start has been populated with "addr.minimum +
-> addr.translation_offset" in the acpi_dev_resource_address_space().
+Applied, thanks!
 
-That's true, but this is a change from previous behavior.  Previously,
-x86 applied addr.translation_offset to both MEM and IO resources (in
-setup_resource()), but ia64 applied it only to MEM resources (in
-add_window()).  With your patch, we apply it to both types in
-acpi_dev_resource_address_space(), which is a change for ia64.
-
-I know translation_offset is used on some HP ia64 boxes, but I'm not
-aware of it being used for IO resources on any x86 boxes.  On those
-ia64 boxes, the bridge also does type translation (the resource is MEM
-on the primary side but IO on the secondary side).  In that case, I'm
-not sure it makes sense to add the translation_offset to an IO address
-and expect the result to be a MEM address.
-
-On these HP ia64 boxes, the firmware puts the CPU physical address of
-the MEM resource in the translation_offset (see the call to
-new_space()).  The bridge then translates that MEM resource to IO on
-the secondary side.  It's awfully hard for me to extract this usage
-from the ACPI spec, so possibly this is just a quirk of the way HP
-encoded these IO resources.  But it *is* a precedent, and I'm not
-aware of anybody doing anything that conflicts with it.
-
-I wonder if it would make sense to make
-acpi_dev_resource_address_space() ignore addr.translation_offset for
-IO resources.  Or maybe ignore it if the _TTP (type translation) bit
-is set?
-
-I think the main intent of translation_offset (_TRA) is to map a
-smaller address space into part of a larger space of the same type,
-e.g., a 32-bit PCI memory space into a 40+ bit CPU memory space.  That
-doesn't apply directly to IO ports, because I don't think any CPU has
-a native IO port address space larger than 16 bits, so there's no
-extra space to map into.
-
-Mike, is there any chance you could collect an acpidump from an rx7620
-or similar ia64 system?  In particular, I want to see a multi-node
-system where we have several PCI domains, and whether it sets the _TTP
-bits.
-
-> continuing to add the offset to resource->start seems not right.
->
-> The add_io_space() accepts translation_offset and then ioremap it to
-> mmio address. Add the result to io_space array and assign a space
-> number. Left shift the space number 24 bits as the return offset of
-> add_io_space().
->
-> When one io port address is accessed, __ia64_mk_io_addr() will do
-> reverse operations and find associated mmio address.
-
-Yep, got it.  I wrote all that code originally :)  Obviously it hasn't
-turned out to be particularly easy to understand.
-
-Bjorn
+> ---
+>  drivers/base/power/main.c |   72 +++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/power/Kconfig      |   16 ++++++++++
+>  2 files changed, 88 insertions(+)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 9f098a8..f2633da 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -30,6 +30,8 @@
+>  #include <linux/suspend.h>
+>  #include <trace/events/power.h>
+>  #include <linux/cpuidle.h>
+> +#include <linux/timer.h>
+> +
+>  #include "../base.h"
+>  #include "power.h"
+>  
+> @@ -390,6 +392,70 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+>  	return error;
+>  }
+>  
+> +#ifdef CONFIG_DPM_WATCHDOG
+> +struct dpm_watchdog {
+> +	struct device		*dev;
+> +	struct task_struct	*tsk;
+> +	struct timer_list	timer;
+> +};
+> +
+> +#define DECLARE_DPM_WATCHDOG_ON_STACK(wd) \
+> +	struct dpm_watchdog wd
+> +
+> +/**
+> + * dpm_watchdog_handler - Driver suspend / resume watchdog handler.
+> + *
+> + * Called when a driver has timed out suspending or resuming.
+> + * There's not much we can do here to recover so panic() to
+> + * capture a crash-dump in pstore.
+> + */
+> +static void dpm_watchdog_handler(unsigned long data)
+> +{
+> +	struct dpm_watchdog *wd = (void *)data;
+> +
+> +	dev_emerg(wd->dev, "**** DPM device timeout ****\n");
+> +	show_stack(wd->tsk, NULL);
+> +	panic("%s %s: unrecoverable failure\n",
+> +		dev_driver_string(wd->dev), dev_name(wd->dev));
+> +}
+> +
+> +/**
+> + * dpm_watchdog_set - Enable pm watchdog for given device.
+> + * @wd: Watchdog. Must be allocated on the stack.
+> + * @dev: Device to handle.
+> + */
+> +static void dpm_watchdog_set(struct dpm_watchdog *wd, struct device *dev)
+> +{
+> +	struct timer_list *timer = &wd->timer;
+> +
+> +	wd->dev = dev;
+> +	wd->tsk = current;
+> +
+> +	init_timer_on_stack(timer);
+> +	/* use same timeout value for both suspend and resume */
+> +	timer->expires = jiffies + HZ * CONFIG_DPM_WATCHDOG_TIMEOUT;
+> +	timer->function = dpm_watchdog_handler;
+> +	timer->data = (unsigned long)wd;
+> +	add_timer(timer);
+> +}
+> +
+> +/**
+> + * dpm_watchdog_clear - Disable suspend/resume watchdog.
+> + * @wd: Watchdog to disable.
+> + */
+> +static void dpm_watchdog_clear(struct dpm_watchdog *wd)
+> +{
+> +	struct timer_list *timer = &wd->timer;
+> +
+> +	del_timer_sync(timer);
+> +	destroy_timer_on_stack(timer);
+> +}
+> +#else
+> +#define DECLARE_DPM_WATCHDOG_ON_STACK(wd)
+> +#define dpm_watchdog_set(x, y)
+> +#define dpm_watchdog_clear(x)
+> +#endif
+> +
+>  /*------------------------- Resume routines -------------------------*/
+>  
+>  /**
+> @@ -576,6 +642,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+>  	pm_callback_t callback = NULL;
+>  	char *info = NULL;
+>  	int error = 0;
+> +	DECLARE_DPM_WATCHDOG_ON_STACK(wd);
+>  
+>  	TRACE_DEVICE(dev);
+>  	TRACE_RESUME(0);
+> @@ -584,6 +651,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+>  		goto Complete;
+>  
+>  	dpm_wait(dev->parent, async);
+> +	dpm_watchdog_set(&wd, dev);
+>  	device_lock(dev);
+>  
+>  	/*
+> @@ -642,6 +710,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+>  
+>   Unlock:
+>  	device_unlock(dev);
+> +	dpm_watchdog_clear(&wd);
+>  
+>   Complete:
+>  	complete_all(&dev->power.completion);
+> @@ -1060,6 +1129,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	pm_callback_t callback = NULL;
+>  	char *info = NULL;
+>  	int error = 0;
+> +	DECLARE_DPM_WATCHDOG_ON_STACK(wd);
+>  
+>  	dpm_wait_for_children(dev, async);
+>  
+> @@ -1083,6 +1153,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	if (dev->power.syscore)
+>  		goto Complete;
+>  
+> +	dpm_watchdog_set(&wd, dev);
+>  	device_lock(dev);
+>  
+>  	if (dev->pm_domain) {
+> @@ -1139,6 +1210,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	}
+>  
+>  	device_unlock(dev);
+> +	dpm_watchdog_clear(&wd);
+>  
+>   Complete:
+>  	complete_all(&dev->power.completion);
+> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+> index d444c4e..2fac9cc 100644
+> --- a/kernel/power/Kconfig
+> +++ b/kernel/power/Kconfig
+> @@ -178,6 +178,22 @@ config PM_SLEEP_DEBUG
+>  	def_bool y
+>  	depends on PM_DEBUG && PM_SLEEP
+>  
+> +config DPM_WATCHDOG
+> +	bool "Device suspend/resume watchdog"
+> +	depends on PM_DEBUG && PSTORE
+> +	---help---
+> +	  Sets up a watchdog timer to capture drivers that are
+> +	  locked up attempting to suspend/resume a device.
+> +	  A detected lockup causes system panic with message
+> +	  captured in pstore device for inspection in subsequent
+> +	  boot session.
+> +
+> +config DPM_WATCHDOG_TIMEOUT
+> +	int "Watchdog timeout in seconds"
+> +	range 1 120
+> +	default 12
+> +	depends on DPM_WATCHDOG
+> +
+>  config PM_TRACE
+>  	bool
+>  	help
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
