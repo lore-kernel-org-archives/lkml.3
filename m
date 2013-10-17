@@ -1,181 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab3JQRpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 13:45:16 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:38545 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759034Ab3JQRol (ORCPT
+	id S1762280Ab3JQRp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 13:45:56 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:53603 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762250Ab3JQRpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 13:44:41 -0400
-X-IronPort-AV: E=Sophos;i="4.93,515,1378857600"; 
-   d="scan'208";a="61976360"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 10/19] xen: introduce xen_alloc/free_coherent_pages
-Date: Thu, 17 Oct 2013 18:43:25 +0100
-Message-ID: <1382031814-8782-10-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+	Thu, 17 Oct 2013 13:45:52 -0400
+X-AuditID: cbfec373-b7f6d6d00000330d-fa-5260224e1909
+Date: Thu, 17 Oct 2013 14:45:43 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, David Airlie <airlied@linux.ie>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3/8] [media] core: Don't use i2c_client->driver
+Message-id: <20131017144543.10e5542e@samsung.com>
+In-reply-to: <1380444666-12019-4-git-send-email-lars@metafoo.de>
+References: <1380444666-12019-1-git-send-email-lars@metafoo.de>
+ <1380444666-12019-4-git-send-email-lars@metafoo.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/hYF0/pYQgg/1rbCx6z51ksrhy8RCT
+	xdSHT9gsrnx9z2axZPJ8VotvVzqYLDr+fmG0uLxrDptFz4atrBadu/pZLV5ufsNksfLELGYH
+	Ho8Nn5vYPHbOusvusWlVJ5vH9m8PWD3udx9n8ljy5hCrx763y9g8Np+u9jh56gmLx+dNcgFc
+	UVw2Kak5mWWpRfp2CVwZ986pFrxQqri48RJrA+NemS5GTg4JAROJL4fXs0DYYhIX7q1n62Lk
+	4hASWMIocWHtJVYIp5tJYuqxh0xdjBwcLAKqEteWxYM0sAkYSbxqbGEFsUUENCT+v5nEDlLP
+	LPCSSeJZ71QmkISwgLPErCl9bCA2r4ChxPfrXxlB5nAKOEgcOgwWFhIolZg75wEbSFhCwEli
+	61RfiGpBiR+T74HdxiygJbF5WxMrhC0vsXnNW+YJjAKzkJTNQlI2C0nZAkbmVYyipcXJBcVJ
+	6blGesWJucWleel6yfm5mxghMVS8g/HFBqtDjAIcjEo8vBI/44OEWBPLiitzDzFKcDArifC2
+	CicECfGmJFZWpRblxxeV5qQWH2Jk4uCUamCsCZlT/X1Nyn52cf6l3nr31T8qL98pKcp2uuGK
+	mvaGTnk278byIvWsfUyKj5LvLdzwdK/DlFeP+b8EW8d9O9zfKlnx3G3yFws3hx3e22+8LFr3
+	JHz/noIHSZ9ulWtNYdZdbhv212WLAZ/6NrmDRzYorq/99PHKS7XAPi+FMpXFhq/LXS5ds+NX
+	YinOSDTUYi4qTgQAeV/Nwn8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-and devices. On native x86 is sufficient to call __get_free_pages in
-order to get a coherent buffer, while on ARM (and potentially ARM64) we
-need to call the native dma_ops->alloc implementation.
+Em Sun, 29 Sep 2013 10:51:01 +0200
+Lars-Peter Clausen <lars@metafoo.de> escreveu:
 
-Introduce xen_alloc_coherent_pages to abstract the arch specific buffer
-allocation.
+> The 'driver' field of the i2c_client struct is redundant and is going to be
+> removed. The results of the expressions 'client->driver.driver->field' and
+> 'client->dev.driver->field' are identical, so replace all occurrences of the
+> former with the later.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Similarly introduce xen_free_coherent_pages to free a coherent buffer:
-on x86 is simply a call to free_pages while on ARM and ARM64 is
-arm_dma_ops.free.
+Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  drivers/media/v4l2-core/tuner-core.c  |  6 +++---
+>  drivers/media/v4l2-core/v4l2-common.c | 10 +++++-----
+>  include/media/v4l2-common.h           |  2 +-
+>  3 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/media/v4l2-core/tuner-core.c b/drivers/media/v4l2-core/tuner-core.c
+> index ddc9379..4133af0 100644
+> --- a/drivers/media/v4l2-core/tuner-core.c
+> +++ b/drivers/media/v4l2-core/tuner-core.c
+> @@ -43,7 +43,7 @@
+>  
+>  #define UNSET (-1U)
+>  
+> -#define PREFIX (t->i2c->driver->driver.name)
+> +#define PREFIX (t->i2c->dev.driver->name)
+>  
+>  /*
+>   * Driver modprobe parameters
+> @@ -452,7 +452,7 @@ static void set_type(struct i2c_client *c, unsigned int type,
+>  	}
+>  
+>  	tuner_dbg("%s %s I2C addr 0x%02x with type %d used for 0x%02x\n",
+> -		  c->adapter->name, c->driver->driver.name, c->addr << 1, type,
+> +		  c->adapter->name, c->dev.driver->name, c->addr << 1, type,
+>  		  t->mode_mask);
+>  	return;
+>  
+> @@ -556,7 +556,7 @@ static void tuner_lookup(struct i2c_adapter *adap,
+>  		int mode_mask;
+>  
+>  		if (pos->i2c->adapter != adap ||
+> -		    strcmp(pos->i2c->driver->driver.name, "tuner"))
+> +		    strcmp(pos->i2c->dev.driver->name, "tuner"))
+>  			continue;
+>  
+>  		mode_mask = pos->mode_mask;
+> diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
+> index 037d7a5..433d6d7 100644
+> --- a/drivers/media/v4l2-core/v4l2-common.c
+> +++ b/drivers/media/v4l2-core/v4l2-common.c
+> @@ -236,14 +236,14 @@ void v4l2_i2c_subdev_init(struct v4l2_subdev *sd, struct i2c_client *client,
+>  	v4l2_subdev_init(sd, ops);
+>  	sd->flags |= V4L2_SUBDEV_FL_IS_I2C;
+>  	/* the owner is the same as the i2c_client's driver owner */
+> -	sd->owner = client->driver->driver.owner;
+> +	sd->owner = client->dev.driver->owner;
+>  	sd->dev = &client->dev;
+>  	/* i2c_client and v4l2_subdev point to one another */
+>  	v4l2_set_subdevdata(sd, client);
+>  	i2c_set_clientdata(client, sd);
+>  	/* initialize name */
+>  	snprintf(sd->name, sizeof(sd->name), "%s %d-%04x",
+> -		client->driver->driver.name, i2c_adapter_id(client->adapter),
+> +		client->dev.driver->name, i2c_adapter_id(client->adapter),
+>  		client->addr);
+>  }
+>  EXPORT_SYMBOL_GPL(v4l2_i2c_subdev_init);
+> @@ -274,11 +274,11 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
+>  	   loaded. This delay-load mechanism doesn't work if other drivers
+>  	   want to use the i2c device, so explicitly loading the module
+>  	   is the best alternative. */
+> -	if (client == NULL || client->driver == NULL)
+> +	if (client == NULL || client->dev.driver == NULL)
+>  		goto error;
+>  
+>  	/* Lock the module so we can safely get the v4l2_subdev pointer */
+> -	if (!try_module_get(client->driver->driver.owner))
+> +	if (!try_module_get(client->dev.driver->owner))
+>  		goto error;
+>  	sd = i2c_get_clientdata(client);
+>  
+> @@ -287,7 +287,7 @@ struct v4l2_subdev *v4l2_i2c_new_subdev_board(struct v4l2_device *v4l2_dev,
+>  	if (v4l2_device_register_subdev(v4l2_dev, sd))
+>  		sd = NULL;
+>  	/* Decrease the module use count to match the first try_module_get. */
+> -	module_put(client->driver->driver.owner);
+> +	module_put(client->dev.driver->owner);
+>  
+>  error:
+>  	/* If we have a client but no subdev, then something went wrong and
+> diff --git a/include/media/v4l2-common.h b/include/media/v4l2-common.h
+> index 16550c4..a707529 100644
+> --- a/include/media/v4l2-common.h
+> +++ b/include/media/v4l2-common.h
+> @@ -35,7 +35,7 @@
+>  	printk(level "%s %d-%04x: " fmt, name, i2c_adapter_id(adapter), addr , ## arg)
+>  
+>  #define v4l_client_printk(level, client, fmt, arg...)			    \
+> -	v4l_printk(level, (client)->driver->driver.name, (client)->adapter, \
+> +	v4l_printk(level, (client)->dev.driver->name, (client)->adapter, \
+>  		   (client)->addr, fmt , ## arg)
+>  
+>  #define v4l_err(client, fmt, arg...) \
 
 
-Changes in v7:
-- rename __get_dma_ops to __generic_dma_ops;
-- call __generic_dma_ops(hwdev)->alloc/free on arm64 too.
-
-Changes in v6:
-- call __get_dma_ops to get the native dma_ops pointer on arm.
----
- arch/arm/include/asm/xen/page-coherent.h   |   22 ++++++++++++++++++++++
- arch/arm64/include/asm/xen/page-coherent.h |   22 ++++++++++++++++++++++
- arch/ia64/include/asm/xen/page-coherent.h  |   24 ++++++++++++++++++++++++
- arch/x86/include/asm/xen/page-coherent.h   |   24 ++++++++++++++++++++++++
- 4 files changed, 92 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/xen/page-coherent.h
- create mode 100644 arch/arm64/include/asm/xen/page-coherent.h
- create mode 100644 arch/ia64/include/asm/xen/page-coherent.h
- create mode 100644 arch/x86/include/asm/xen/page-coherent.h
-
-diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..c4d843c
---- /dev/null
-+++ b/arch/arm/include/asm/xen/page-coherent.h
-@@ -0,0 +1,22 @@
-+#ifndef _ASM_ARM_XEN_PAGE_COHERENT_H
-+#define _ASM_ARM_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
-+}
-+
-+#endif /* _ASM_ARM_XEN_PAGE_COHERENT_H */
-diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..3b4f029
---- /dev/null
-+++ b/arch/arm64/include/asm/xen/page-coherent.h
-@@ -0,0 +1,22 @@
-+#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
-+#define _ASM_ARM64_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
-+}
-+
-+#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
-diff --git a/arch/ia64/include/asm/xen/page-coherent.h b/arch/ia64/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..37b929c
---- /dev/null
-+++ b/arch/ia64/include/asm/xen/page-coherent.h
-@@ -0,0 +1,24 @@
-+#ifndef _ASM_IA64_XEN_PAGE_COHERENT_H
-+#define _ASM_IA64_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	void *vstart = (void*)__get_free_pages(flags, get_order(size));
-+	*dma_handle = virt_to_phys(vstart);
-+	return vstart;
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	free_pages((unsigned long) cpu_addr, get_order(size));
-+}
-+
-+#endif /* _ASM_IA64_XEN_PAGE_COHERENT_H */
-diff --git a/arch/x86/include/asm/xen/page-coherent.h b/arch/x86/include/asm/xen/page-coherent.h
-new file mode 100644
-index 0000000..31de2e0
---- /dev/null
-+++ b/arch/x86/include/asm/xen/page-coherent.h
-@@ -0,0 +1,24 @@
-+#ifndef _ASM_X86_XEN_PAGE_COHERENT_H
-+#define _ASM_X86_XEN_PAGE_COHERENT_H
-+
-+#include <asm/page.h>
-+#include <linux/dma-attrs.h>
-+#include <linux/dma-mapping.h>
-+
-+static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
-+		dma_addr_t *dma_handle, gfp_t flags,
-+		struct dma_attrs *attrs)
-+{
-+	void *vstart = (void*)__get_free_pages(flags, get_order(size));
-+	*dma_handle = virt_to_phys(vstart);
-+	return vstart;
-+}
-+
-+static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
-+		void *cpu_addr, dma_addr_t dma_handle,
-+		struct dma_attrs *attrs)
-+{
-+	free_pages((unsigned long) cpu_addr, get_order(size));
-+}
-+
-+#endif /* _ASM_X86_XEN_PAGE_COHERENT_H */
 -- 
-1.7.2.5
 
+Cheers,
+Mauro
