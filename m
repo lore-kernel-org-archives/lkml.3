@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3JQOkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:40:04 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56855 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3JQOkC (ORCPT
+	id S1756921Ab3JQOkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:40:42 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39566 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755326Ab3JQOkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:40:02 -0400
-Date: Thu, 17 Oct 2013 16:39:57 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
- status
-In-Reply-To: <20131017142755.GA4477@breakpoint.cc>
-Message-ID: <Pine.LNX.4.64.1310171638030.27369@axis700.grange>
-References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
- <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
- <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
- <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
- <20131017020745.GA14013@intel.com> <20131017142755.GA4477@breakpoint.cc>
+	Thu, 17 Oct 2013 10:40:40 -0400
+Message-ID: <525FF6E0.7070000@gmail.com>
+Date: Thu, 17 Oct 2013 22:40:32 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:d+hHtXo3+I8TBwVcao8uGrU41zg7U0y7DgNpyWCad4X
- KhsBNLX5Mgefd0A7z6jgMyvAnS+bvr73meeSCFUwJGXsYu3GxA
- kBAaHPwc1DPV0U1YJr56Du77/ue57MQQxV2NCenWG1MW/+Dhcb
- qnQT69ak+ZL/h5GRm+2e5JRui60IjQSI0Zm7B/kK7NutLboHni
- cOAcpAOh1m4idRkEAnCVlM5r7Y+5yVUSiDmQ9/Jo8zBJRzQojR
- /XbxAiLyNBotFzWFqun9jSw5dHpX4DmdLkftE2T46V+bfQ+cmS
- R4ohyWYKYMwL34hY0pKrPPiR3JfTAQM3kkm2Y3zk3F5fhkhlSd
- ReyVxx8fXpTTAeDhTFi8D1E2j3BxOAQvKv76aWHSS+rcCuVPG/
- dR7dL3lcI6+OA==
+To: Will Deacon <will.deacon@arm.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] arm64, jump label: optimize jump label implementation
+References: <1381893492-7135-1-git-send-email-liuj97@gmail.com> <1381893492-7135-7-git-send-email-liuj97@gmail.com> <20131016114608.GH5403@mudshark.cambridge.arm.com> <525EC8D1.7000900@gmail.com> <20131017093944.GB18765@mudshark.cambridge.arm.com>
+In-Reply-To: <20131017093944.GB18765@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian
-
-On Thu, 17 Oct 2013, Sebastian Andrzej Siewior wrote:
-
-> On Thu, Oct 17, 2013 at 07:37:45AM +0530, Vinod Koul wrote:
-> > index 0bc7275..683c380 100644
-> > --- a/include/linux/dmaengine.h
-> > +++ b/include/linux/dmaengine.h
-> > @@ -45,16 +45,17 @@ static inline int dma_submit_error(dma_cookie_t cookie)
-> >  
-> >  /**
-> >   * enum dma_status - DMA transaction status
-> > - * @DMA_SUCCESS: transaction completed successfully
-> > + * @DMA_COMPLETE: transaction completed
-> >   * @DMA_IN_PROGRESS: transaction not yet processed
-> >   * @DMA_PAUSED: transaction is paused
-> >   * @DMA_ERROR: transaction failed
-> >   */
-> >  enum dma_status {
-> > -	DMA_SUCCESS,
-> > +	DMA_COMPLETE,
-> >  	DMA_IN_PROGRESS,
-> >  	DMA_PAUSED,
-> >  	DMA_ERROR,
-> > +	DMA_SUCCESS,
-> >  };
+On 10/17/2013 05:39 PM, Will Deacon wrote:
+> On Wed, Oct 16, 2013 at 06:11:45PM +0100, Jiang Liu wrote:
+>> On 10/16/2013 07:46 PM, Will Deacon wrote:
+>>>
+>>>> +	} else {
+>>>> +		insn = aarch64_insn_gen_nop();
+>>>
+>>> You could make the code more concise by limiting your patching ability to
+>>> branch immediates. Then a nop is simply a branch to the next instruction (I
+>>> doubt any modern CPUs will choke on this, whereas the architecture requires
+>>> a NOP to take time).
+>> I guess a NOP should be more effecient than a "B #4" on real CPUs:)
 > 
-> There are some drivers which compare against == or != DMA_SUCCESS. Shouldn't this
-> become
->   enum dma_status {
->  -	DMA_SUCCESS,
->  +	DMA_COMPLETE = 0, DMA_SUCCESS = 0,
->   	DMA_IN_PROGRESS,
->   	DMA_PAUSED,
->   	DMA_ERROR,
->   };
+> Well, I was actually questioning that. A NOP *has* to take time (the
+> architecture prevents implementations from discaring it) whereas a static,
+> unconditional branch will likely be discarded early on by CPUs with even
+> simple branch prediction logic.
+I naively thought "NOP" is cheaper than a "B" :(
+Will use a "B #1" to replace "NOP".
+
+Thanks!
+Gerry
+
 > 
-> so nothing breaks during the transition?
+> Will
+> 
 
-Good catch. I would do
-
- enum dma_status {
--	DMA_SUCCESS,
-+	DMA_COMPLETE,
- 	DMA_IN_PROGRESS,
- 	DMA_PAUSED,
- 	DMA_ERROR,
- };
- 
-+ #define DMA_SUCCESS DMA_COMPLETE
-
-and then just remove the last line again
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
