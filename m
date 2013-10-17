@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab3JQGBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 02:01:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54504 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3JQGBc (ORCPT
+	id S1752140Ab3JQGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 02:02:59 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51353 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab3JQGC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 02:01:32 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-5d-525f7d3a6733
-Date: Thu, 17 Oct 2013 15:01:53 +0900
+	Thu, 17 Oct 2013 02:02:57 -0400
+X-AuditID: 9c93017d-b7b2eae000005519-33-525f7d8f5304
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 00/15] slab: overload struct slab over struct page to
- reduce memory usage
-Message-ID: <20131017060153.GB26617@lge.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 1/5] slab: factor out calculate nr objects in cache_estimate
+Date: Thu, 17 Oct 2013 15:03:13 +0900
+Message-Id: <1381989797-29269-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 01:34:57PM -0700, Andrew Morton wrote:
-> On Wed, 16 Oct 2013 17:43:57 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > There is two main topics in this patchset. One is to reduce memory usage
-> > and the other is to change a management method of free objects of a slab.
-> > 
-> > The SLAB allocate a struct slab for each slab. The size of this structure
-> > except bufctl array is 40 bytes on 64 bits machine. We can reduce memory
-> > waste and cache footprint if we overload struct slab over struct page.
-> 
-> Seems a good idea from a quick look.
+This logic is not simple to understand so that making separate function
+helping readability. Additionally, we can use this change in the
+following patch which implement for freelist to have another sized index
+in according to nr objects.
 
-Thanks :)
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-> 
-> A thought: when we do things like this - adding additional
-> interpretations to `struct page', we need to bear in mind that other
-> unrelated code can inspect that pageframe.  It is not correct to assume
-> that because slab "owns" this page, no other code will be looking at it
-> and interpreting its contents.
-> 
-> One example is mm/memory-failure.c:memory_failure().  It starts with a
-> raw pfn, uses that to get at the `struct page', then starts playing
-> around with it.  Will that code still work correctly when some of the
-> page's fields have been overlayed with slab-specific contents?
+diff --git a/mm/slab.c b/mm/slab.c
+index af2db76..cb0a734 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -565,9 +565,31 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+ 	return cachep->array[smp_processor_id()];
+ }
+ 
+-static size_t slab_mgmt_size(size_t nr_objs, size_t align)
++static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
++				size_t idx_size, size_t align)
+ {
+-	return ALIGN(nr_objs * sizeof(unsigned int), align);
++	int nr_objs;
++	size_t freelist_size;
++
++	/*
++	 * Ignore padding for the initial guess. The padding
++	 * is at most @align-1 bytes, and @buffer_size is at
++	 * least @align. In the worst case, this result will
++	 * be one greater than the number of objects that fit
++	 * into the memory allocation when taking the padding
++	 * into account.
++	 */
++	nr_objs = slab_size / (buffer_size + idx_size);
++
++	/*
++	 * This calculated number will be either the right
++	 * amount, or one greater than what we want.
++	 */
++	freelist_size = slab_size - nr_objs * buffer_size;
++	if (freelist_size < ALIGN(nr_objs * idx_size, align))
++		nr_objs--;
++
++	return nr_objs;
+ }
+ 
+ /*
+@@ -600,25 +622,9 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
+ 		nr_objs = slab_size / buffer_size;
+ 
+ 	} else {
+-		/*
+-		 * Ignore padding for the initial guess. The padding
+-		 * is at most @align-1 bytes, and @buffer_size is at
+-		 * least @align. In the worst case, this result will
+-		 * be one greater than the number of objects that fit
+-		 * into the memory allocation when taking the padding
+-		 * into account.
+-		 */
+-		nr_objs = (slab_size) / (buffer_size + sizeof(unsigned int));
+-
+-		/*
+-		 * This calculated number will be either the right
+-		 * amount, or one greater than what we want.
+-		 */
+-		if (slab_mgmt_size(nr_objs, align) + nr_objs*buffer_size
+-		       > slab_size)
+-			nr_objs--;
+-
+-		mgmt_size = slab_mgmt_size(nr_objs, align);
++		nr_objs = calculate_nr_objs(slab_size, buffer_size,
++					sizeof(unsigned int), align);
++		mgmt_size = ALIGN(nr_objs * sizeof(unsigned int), align);
+ 	}
+ 	*num = nr_objs;
+ 	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
+-- 
+1.7.9.5
 
-Yes, it would work correctly since the SLUB already overload many fields
-of struct page with slab-specific contents. One exception is mapping field
-which isn't overloaded by the SLUB. But I guess there is no problem,
-because the code inspecting random struct page may be already check
-PageSlab() or PageLRU() and then skip it if so.
-
-> 
-> And memory_failure() is just one example - another is compact_zone()
-> and there may well be others.
-> 
-> This issue hasn't been well thought through.  Given a random struct
-> page, there isn't any protocol to determine what it actually *is*. 
-> It's a plain old variant record, but it lacks the agreed-upon tag field
-> which tells users which variant is currently in use.
-
-With PageSlab(), we can determine that this page is the slab page.
-Do we need more? Is there another user who overload struct page?
-
-Thanks.
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
