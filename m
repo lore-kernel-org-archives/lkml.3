@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab3JQQuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 12:50:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45166 "EHLO
+	id S1758357Ab3JQQvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 12:51:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45167 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757960Ab3JQQur (ORCPT
+	with ESMTP id S1758259Ab3JQQu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 12:50:47 -0400
-Date: Thu, 17 Oct 2013 09:49:57 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-c2d816443ef305aba8eaf0bf368f4d3d87494f06@git.kernel.org>
+	Thu, 17 Oct 2013 12:50:58 -0400
+Date: Thu, 17 Oct 2013 09:50:06 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-9536c8d2da8059b00775bd9c5a84816b608cf6f4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, oleg@redhat.com, tglx@linutronix.de
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, dzickus@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20131007161824.GA29757@redhat.com>
-References: <20131007161824.GA29757@redhat.com>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <20131016105755.GX10651@twins.programming.kicks-ass.net>
+References: <20131016105755.GX10651@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/wait: Introduce prepare_to_wait_event()
-Git-Commit-ID: c2d816443ef305aba8eaf0bf368f4d3d87494f06
+Subject: [tip:perf/core] perf/x86: Optimize intel_pmu_pebs_fixup_ip()
+Git-Commit-ID: 9536c8d2da8059b00775bd9c5a84816b608cf6f4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,135 +29,190 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:50:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 09:50:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c2d816443ef305aba8eaf0bf368f4d3d87494f06
-Gitweb:     http://git.kernel.org/tip/c2d816443ef305aba8eaf0bf368f4d3d87494f06
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Mon, 7 Oct 2013 18:18:24 +0200
+Commit-ID:  9536c8d2da8059b00775bd9c5a84816b608cf6f4
+Gitweb:     http://git.kernel.org/tip/9536c8d2da8059b00775bd9c5a84816b608cf6f4
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 15 Oct 2013 12:14:04 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Oct 2013 14:22:18 +0200
+CommitDate: Wed, 16 Oct 2013 15:44:00 +0200
 
-sched/wait: Introduce prepare_to_wait_event()
+perf/x86: Optimize intel_pmu_pebs_fixup_ip()
 
-Add the new helper, prepare_to_wait_event() which should only be used
-by ___wait_event().
+There's been reports of high NMI handler overhead, highlighted by
+such kernel messages:
 
-prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
-is true, otherwise it does prepare_to_wait/exclusive.  This allows to
-uninline the signal-pending checks in wait_event*() macros.
+  [ 3697.380195] perf samples too long (10009 > 10000), lowering kernel.perf_event_max_sample_rate to 13000
+  [ 3697.389509] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 9.331 msecs
 
-Also, it can initialize wait->private/func. We do not care if they were
-already initialized, the values are the same. This also shaves a couple
-of insns from the inlined code.
+Don Zickus analyzed the source of the overhead and reported:
 
-This obviously makes prepare_*() path a little bit slower, but we are
-likely going to sleep anyway, so I think it makes sense to shrink .text:
+ > While there are a few places that are causing latencies, for now I focused on
+ > the longest one first.  It seems to be 'copy_user_from_nmi'
+ >
+ > intel_pmu_handle_irq ->
+ >	intel_pmu_drain_pebs_nhm ->
+ >		__intel_pmu_drain_pebs_nhm ->
+ >			__intel_pmu_pebs_event ->
+ >				intel_pmu_pebs_fixup_ip ->
+ >					copy_from_user_nmi
+ >
+ > In intel_pmu_pebs_fixup_ip(), if the while-loop goes over 50, the sum of
+ > all the copy_from_user_nmi latencies seems to go over 1,000,000 cycles
+ > (there are some cases where only 10 iterations are needed to go that high
+ > too, but in generall over 50 or so).  At this point copy_user_from_nmi
+ > seems to account for over 90% of the nmi latency.
 
-               text    data      bss      dec     hex  filename
-            ===================================================
-   before:  5126092 2959248 10117120 18202460 115bf5c   vmlinux
-    after:  5124618 2955152 10117120 18196890 115a99a   vmlinux
+The solution to that is to avoid having to call copy_from_user_nmi() for
+every instruction.
 
-on my build.
+Since we already limit the max basic block size, we can easily
+pre-allocate a piece of memory to copy the entire thing into in one
+go.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Don reported this test result:
+
+ > Your patch made a huge difference in improvement.  The
+ > copy_from_user_nmi() no longer hits the million of cycles.  I still
+ > have a batch of 100,000-300,000 cycles.  My longest NMI paths used
+ > to be dominated by copy_from_user_nmi, now it is not (I have to dig
+ > up the new hot path).
+
+Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
+Cc: jmario@redhat.com
+Cc: acme@infradead.org
+Cc: dave.hansen@linux.intel.com
+Cc: eranian@google.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131007161824.GA29757@redhat.com
+Link: http://lkml.kernel.org/r/20131016105755.GX10651@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/wait.h | 24 ++++++++++++++----------
- kernel/wait.c        | 24 ++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 52 ++++++++++++++++++++++---------
+ 1 file changed, 38 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 04c0260..ec099b0 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -187,27 +187,30 @@ wait_queue_head_t *bit_waitqueue(void *, int);
- 	__cond || !__ret;						\
- })
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 32e9ed8..c1760ff 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -12,6 +12,7 @@
  
--#define ___wait_signal_pending(state)					\
--	((state == TASK_INTERRUPTIBLE && signal_pending(current)) ||	\
--	 (state == TASK_KILLABLE && fatal_signal_pending(current)))
-+#define ___wait_is_interruptible(state)					\
-+	(!__builtin_constant_p(state) ||				\
-+		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
+ #define BTS_BUFFER_SIZE		(PAGE_SIZE << 4)
+ #define PEBS_BUFFER_SIZE	PAGE_SIZE
++#define PEBS_FIXUP_SIZE		PAGE_SIZE
  
- #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
- ({									\
- 	__label__ __out;						\
--	DEFINE_WAIT(__wait);						\
-+	wait_queue_t __wait;						\
- 	long __ret = ret;						\
- 									\
-+	INIT_LIST_HEAD(&__wait.task_list);				\
-+	if (exclusive)							\
-+		__wait.flags = WQ_FLAG_EXCLUSIVE;			\
-+	else								\
-+		__wait.flags = 0;					\
-+									\
- 	for (;;) {							\
--		if (exclusive)						\
--			prepare_to_wait_exclusive(&wq, &__wait, state); \
--		else							\
--			prepare_to_wait(&wq, &__wait, state);		\
-+		long __int = prepare_to_wait_event(&wq, &__wait, state);\
- 									\
- 		if (condition)						\
- 			break;						\
- 									\
--		if (___wait_signal_pending(state)) {			\
--			__ret = -ERESTARTSYS;				\
-+		if (___wait_is_interruptible(state) && __int) {		\
-+			__ret = __int;					\
- 			if (exclusive) {				\
- 				abort_exclusive_wait(&wq, &__wait,	\
- 						     state, NULL);	\
-@@ -791,6 +794,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, signed long tim
-  */
- void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
- void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait, unsigned int mode, void *key);
- int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
-diff --git a/kernel/wait.c b/kernel/wait.c
-index d550920..de21c63 100644
---- a/kernel/wait.c
-+++ b/kernel/wait.c
-@@ -92,6 +92,30 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
+ /*
+  * pebs_record_32 for p4 and core not supported
+@@ -228,12 +229,14 @@ void fini_debug_store_on_cpu(int cpu)
+ 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
  }
- EXPORT_SYMBOL(prepare_to_wait_exclusive);
  
-+long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
-+{
-+	unsigned long flags;
++static DEFINE_PER_CPU(void *, insn_buffer);
 +
-+	if (signal_pending_state(state, current))
-+		return -ERESTARTSYS;
-+
-+	wait->private = current;
-+	wait->func = autoremove_wake_function;
-+
-+	spin_lock_irqsave(&q->lock, flags);
-+	if (list_empty(&wait->task_list)) {
-+		if (wait->flags & WQ_FLAG_EXCLUSIVE)
-+			__add_wait_queue_tail(q, wait);
-+		else
-+			__add_wait_queue(q, wait);
+ static int alloc_pebs_buffer(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+ 	int node = cpu_to_node(cpu);
+ 	int max, thresh = 1; /* always use a single PEBS record */
+-	void *buffer;
++	void *buffer, *ibuffer;
+ 
+ 	if (!x86_pmu.pebs)
+ 		return 0;
+@@ -242,6 +245,19 @@ static int alloc_pebs_buffer(int cpu)
+ 	if (unlikely(!buffer))
+ 		return -ENOMEM;
+ 
++	/*
++	 * HSW+ already provides us the eventing ip; no need to allocate this
++	 * buffer then.
++	 */
++	if (x86_pmu.intel_cap.pebs_format < 2) {
++		ibuffer = kzalloc_node(PEBS_FIXUP_SIZE, GFP_KERNEL, node);
++		if (!ibuffer) {
++			kfree(buffer);
++			return -ENOMEM;
++		}
++		per_cpu(insn_buffer, cpu) = ibuffer;
 +	}
-+	set_current_state(state);
-+	spin_unlock_irqrestore(&q->lock, flags);
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL(prepare_to_wait_event);
+ 	max = PEBS_BUFFER_SIZE / x86_pmu.pebs_record_size;
+ 
+ 	ds->pebs_buffer_base = (u64)(unsigned long)buffer;
+@@ -262,6 +278,9 @@ static void release_pebs_buffer(int cpu)
+ 	if (!ds || !x86_pmu.pebs)
+ 		return;
+ 
++	kfree(per_cpu(insn_buffer, cpu));
++	per_cpu(insn_buffer, cpu) = NULL;
 +
- /**
-  * finish_wait - clean up after waiting in a queue
-  * @q: waitqueue waited on
+ 	kfree((void *)(unsigned long)ds->pebs_buffer_base);
+ 	ds->pebs_buffer_base = 0;
+ }
+@@ -729,6 +748,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+ 	unsigned long ip = regs->ip;
+ 	int is_64bit = 0;
++	void *kaddr;
+ 
+ 	/*
+ 	 * We don't need to fixup if the PEBS assist is fault like
+@@ -752,7 +772,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 	 * unsigned math, either ip is before the start (impossible) or
+ 	 * the basic block is larger than 1 page (sanity)
+ 	 */
+-	if ((ip - to) > PAGE_SIZE)
++	if ((ip - to) > PEBS_FIXUP_SIZE)
+ 		return 0;
+ 
+ 	/*
+@@ -763,29 +783,33 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 		return 1;
+ 	}
+ 
++	if (!kernel_ip(ip)) {
++		int size, bytes;
++		u8 *buf = this_cpu_read(insn_buffer);
++
++		size = ip - to; /* Must fit our buffer, see above */
++		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
++		if (bytes != size)
++			return 0;
++
++		kaddr = buf;
++	} else {
++		kaddr = (void *)to;
++	}
++
+ 	do {
+ 		struct insn insn;
+-		u8 buf[MAX_INSN_SIZE];
+-		void *kaddr;
+ 
+ 		old_to = to;
+-		if (!kernel_ip(ip)) {
+-			int bytes, size = MAX_INSN_SIZE;
+-
+-			bytes = copy_from_user_nmi(buf, (void __user *)to, size);
+-			if (bytes != size)
+-				return 0;
+-
+-			kaddr = buf;
+-		} else
+-			kaddr = (void *)to;
+ 
+ #ifdef CONFIG_X86_64
+ 		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
+ #endif
+ 		insn_init(&insn, kaddr, is_64bit);
+ 		insn_get_length(&insn);
++
+ 		to += insn.length;
++		kaddr += insn.length;
+ 	} while (to < ip);
+ 
+ 	if (to == ip) {
