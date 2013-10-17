@@ -1,92 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab3JQHX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 03:23:28 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55193 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab3JQHX1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 17 Oct 2013 03:23:27 -0400
-Message-Id: <525FAC8B02000078000FBAE8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 17 Oct 2013 08:23:23 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <davem@davemloft.net>, <adobriyan@gmail.com>, <d.hatayama@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix proc_reg_get_unmapped_area()
-References: <525E957802000078000FB6FE@nat28.tlf.novell.com>
- <20131016134044.d1bd8004f4fb94df405a541d@linux-foundation.org>
-In-Reply-To: <20131016134044.d1bd8004f4fb94df405a541d@linux-foundation.org>
-Mime-Version: 1.0
+	id S1752869Ab3JQH2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 03:28:46 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:48418 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750892Ab3JQH2n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 03:28:43 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Date: Thu, 17 Oct 2013 09:27:25 +0200
+Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Topic: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
+Thread-Index: Ac7LClSqleas+eOoTgimFBRbgRDrDQ==
+Message-ID: <525F915D.9020501@st.com>
+References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+ <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>
+ <20131016151419.GA14104@ns203013.ovh.net>
+In-Reply-To: <20131016151419.GA14104@ns203013.ovh.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.10.13 at 22:40, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 16 Oct 2013 12:32:40 +0100 "Jan Beulich" <JBeulich@suse.com> wrote:
-> 
->> Commit c4fe24485729fc2cbff324c111e67a1cc2f9adea ("sparc: fix PCI device
->> proc file mmap(2)"), while fixing one problem, introduced two new ones:
->> - the function truncates the return value from ->get_unmapped_area() on
->>   64-bit architectures,
->> - _all_ descendants are now required to set .get_unmapped_area to non-
->>   NULL, which wasn't necessary before (and shouldn't be).
->> 
->> Both - afaict - are a result from a too simplistic copy'n'paste from
->> proc_reg_mmap() done in that change.
->> 
->> This likely also addresses reports like the one at
->> 
-> http://linux-kernel.2935.n7.nabble.com/mmap-for-proc-vmcore-broken-since-3-12-rc1-td729 
-> 326.html.
->> 
->> ...
->>
->> --- 3.12-rc5/fs/proc/inode.c
->> +++ 3.12-rc5-proc-get-unmapped-area/fs/proc/inode.c
->> @@ -288,12 +288,12 @@ static int proc_reg_mmap(struct file *fi
->>  static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned 
-> long orig_addr, unsigned long len, unsigned long pgoff, unsigned long flags)
->>  {
->>  	struct proc_dir_entry *pde = PDE(file_inode(file));
->> -	int rv = -EIO;
->> -	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned 
-> long, unsigned long, unsigned long);
->> +	unsigned long rv = -EIO;
+Hi Jean-Christophe,
+
+On 10/16/2013 05:14 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+
+
+...
 >> +
->>  	if (use_pde(pde)) {
->> -		get_unmapped_area = pde->proc_fops->get_unmapped_area;
->> -		if (get_unmapped_area)
->> -			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
->> +		rv = (pde->proc_fops->get_unmapped_area
->> +		      ?: current->mm->get_unmapped_area)(file, orig_addr, len,
->> +							 pgoff, flags);
->>  		unuse_pde(pde);
->>  	}
->>  	return rv;
-> 
-> I think these two patches will address the problems:
-> 
-> http://ozlabs.org/~akpm/mmots/broken-out/procfs-fix-unintended-truncation-of-retur 
-> ned-mapped-address.patch
-> http://ozlabs.org/~akpm/mmots/broken-out/procfs-call-default-get_unmapped_area-on- 
-> mmu-present-architectures.patch
-> 
-> I'll be sending those Linuswards today.  Please check them.  (I think
-> your version would break the nommu build).
+>> +static inline void st_i2c_set_bits(void __iomem *reg, u32 mask)
+>> +{
+>> +     writel(readl(reg) | mask, reg);
+>> +}
+>> +
+>> +static inline void st_i2c_clr_bits(void __iomem *reg, u32 mask)
+>> +{
+>> +     writel(readl(reg) & ~mask, reg);
+> use set_bit api and use relaxed version
+Using the set_bit api here does not match with the purpose of these 
+functions.
+We want to be able to set/clear multiple bits, and AFAICS the set_bit 
+api does not
+provide this possibility.
 
-Yes indeed - I did search for existing patches, but didn't find them.
-I see Linus merged them already, so there's no point anymore
-sending Reviewed-by tags.
+I took example on i2c-nomadik for these functions.
 
-I think though that in the !MMU case the second of them leaves an
-issue unfixed nevertheless: If the specific procfs handler has no
-.get_unmapped_area, the operation would still fail in that case
-rather than succeed as it did before that wrapper got added.)
+>> +}
+>> +
+>> +/* From I2C Specifications v0.5 */
+>> +static struct st_i2c_timings i2c_timings[] = {
+>> +     [I2C_MODE_STANDARD] = {
+>> +             .rate                   = 100000,
+>> +             .rep_start_hold         = 4000,
+>> +             .rep_start_setup        = 4700,
+>> +             .start_hold             = 4000,
+>> +             .data_setup_time        = 250,
+>> +             .stop_setup_time        = 4000,
+>> +             .bus_free_time          = 4700,
+>> +     },
+>> +     [I2C_MODE_FAST] = {
+>> +             .rate                   = 400000,
+>> +             .rep_start_hold         = 600,
+>> +             .rep_start_setup        = 600,
+>> +             .start_hold             = 600,
+>> +             .data_setup_time        = 100,
+>> +             .stop_setup_time        = 600,
+>> +             .bus_free_time          = 1300,
+>> +     },
+>> +};
+> so how do you plane to support other rate that 100k and 400k?
+The SSC IP only supports Standard and Fast modes.
+There are no plans to support faster modes.
+>> +
+>> +static void st_i2c_flush_rx_fifo(struct st_i2c_dev *i2c_dev)
+>> +{
+>> +     int count, i;
+>> +
+>> +     /*
+>> +      * Counter only counts up to 7 but fifo size is 8...
+>> +      * When fifo is full, counter is 0 and RIR bit of status register is
+>> +      * set
+>> +      */
+>> +     if (readl(i2c_dev->base + SSC_STA) & SSC_STA_RIR)
+>> +             count = SSC_RXFIFO_SIZE;
+>> +     else
+>> +             count = readl(i2c_dev->base + SSC_RX_FSTAT) &
+>> +                     SSC_RX_FSTAT_STATUS;
+>> +
+>> +     for (i = 0; i < count; i++)
+>> +             readl(i2c_dev->base + SSC_RBUF);
+> use readsl
+Since the read content is flushed, I prefer keeping it as it is instead 
+of allocating
+a buffer of the FIFO's size.
+>
+> use relaxed version as much as possible
+I was not comfortable with the different possibilities (_raw_readl, 
+readl_relaxed, readl...).
+I found this interresting discussion: 
+_http://comments.gmane.org/gmane.linux.ports.arm.kernel/117626
+ From what I understood, you are right, I should be able to use 
+readl_relaxed everywhere.
 
-Jan
+Maybe I should perform a readl on the interrupt mask register before 
+returning from the interrupt handler,
+in order to ensure that the write to the IEN register is effective 
+before the IRQ for the device is re-enabled at GIC level.
+Maybe this could avoid the few spurious interrupts I face sometimes, I 
+will have a try.
 
+>> +}
+>> +
+...
+>> +
+>> +static int st_i2c_wait_free_bus(struct st_i2c_dev *i2c_dev)
+>> +{
+>> +     u32 sta;
+>> +     int i;
+>> +
+>> +     for (i = 0; i < 10; i++) {
+>> +             sta = readl(i2c_dev->base + SSC_STA);
+>> +             if (!(sta & SSC_STA_BUSY))
+>> +                     return 0;
+>> +
+>> +             usleep_range(2000, 4000);
+> can not use interrupt?
+Sadly, no.
+There is no interrupt linked to the busy bit.
+>> +     }
+>> +
+...
+>> +
+>> +static struct of_device_id st_i2c_match[] = {
+>> +     { .compatible = "st,comms-ssc-i2c", },
+> the rules is to put the first soc that use the ip in the compatible
+> as st,sti7100-scc-i2c
+Ok. There are no plans to upstream the SH4 platforms, it will only 
+remains in stlinux.com.
+Maybe I can set the first ARM platform (STiH415)?
+That would give st,stih415-ssc-i2c.
+
+Thanks for the review,
+Maxime
+
+>
+> Best Regards,
+> J.
