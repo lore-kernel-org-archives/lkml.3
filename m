@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3JQKS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 06:18:28 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:59767 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab3JQKSZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 06:18:25 -0400
-Date: Thu, 17 Oct 2013 12:17:21 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>, <r64188@freescale.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
-        <fabio.estevam@freescale.com>, <oskar@scara.com>,
-        <shawn.guo@linaro.org>, <b42378@freescale.com>, <b18965@freescale.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCHv1 5/8] ASoC: sgtl5000: Revise the bugs about the
- sgt15000 codec.
-Message-ID: <20131017121721.43e1b34b@ipc1.ka-ro>
-In-Reply-To: <1382000477-17304-6-git-send-email-Li.Xiubo@freescale.com>
-References: <1382000477-17304-1-git-send-email-Li.Xiubo@freescale.com>
-	<1382000477-17304-6-git-send-email-Li.Xiubo@freescale.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1754773Ab3JQKSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 06:18:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51501 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab3JQKSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 06:18:38 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 7/7] init: execute jump_label_init() earlier
+Date: Thu, 17 Oct 2013 12:10:30 +0200
+Message-Id: <1382004631-25895-8-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
+References: <1382004631-25895-1-git-send-email-rkrcmar@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Patching of jump labels does not have to depend on any other init code,
+so we should do it as soon as possible because static_keys cannot be
+used before that.
 
-Xiubo Li <Li.Xiubo@freescale.com> wrote:
-> When the CONFIG_REGULATOR is disabled there will be some warnings
-> printed out.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  sound/soc/codecs/sgtl5000.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-> index 1f4093f..4e2e4c9 100644
-> --- a/sound/soc/codecs/sgtl5000.c
-> +++ b/sound/soc/codecs/sgtl5000.c
-> @@ -883,14 +883,19 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
->  				struct regulator_init_data *init_data,
->  				int voltage)
->  {
-> +#ifdef CONFIG_SND_SOC_FSL_SGTL5000
-> +	return 0;
-> +#else
->  	dev_err(codec->dev, "this setup needs regulator support in the kernel\n");
->  	return -EINVAL;
-> +#endif
->
-This looks wrong to me, as this will disable the error for unsolicited
-platforms in a multi arch kernel!
+If we find it does depend on something, the init case of patching should
+be modified.
 
->  static int ldo_regulator_remove(struct snd_soc_codec *codec)
->  {
->  	return 0;
->  }
-> +
->  #endif
->  
-Why do you add an extra empty line here?
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+There should be no reason to use static_key_enabled() now, I'll remove
+it from api in following series if there are no objections.
 
+I would also feel a bit safer with disabled interrupts, but it might not
+be required.
 
-Lothar Waßmann
+ init/main.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f..c84fbb9 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -489,6 +489,11 @@ asmlinkage void __init start_kernel(void)
+ 	 */
+ 	boot_init_stack_canary();
+ 
++	/*
++	 * Jump labels have undefined semantics before initialization
++	 */
++	jump_label_init();
++
+ 	cgroup_init_early();
+ 
+ 	local_irq_disable();
+@@ -518,7 +523,6 @@ asmlinkage void __init start_kernel(void)
+ 		   __stop___param - __start___param,
+ 		   -1, -1, &unknown_bootoption);
+ 
+-	jump_label_init();
+ 
+ 	/*
+ 	 * These use large bootmem allocations and must precede
 -- 
-___________________________________________________________
+1.8.3.1
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
