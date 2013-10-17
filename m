@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3JQMfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:35:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50523 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755079Ab3JQMfG (ORCPT
+	id S1755186Ab3JQMjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:39:01 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:14255 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3JQMi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:35:06 -0400
-Date: Thu, 17 Oct 2013 14:32:03 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Stefan Roese <sr@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: sun4i_handle_irq: WARNING at net/ipv4/tcp_input.c:2711
- tcp_fastretrans_alert
-Message-ID: <20131017123203.GM3041@lukather>
-References: <20130821094432.GA28249@lnx-rg>
- <20130823182116.GE1230@lukather>
- <CACQ1gAinSoTCTtf9Y6TL=vtEm1jnJgis0n=y=frNtuPxue9-ng@mail.gmail.com>
+	Thu, 17 Oct 2013 08:38:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 17 Oct 2013 05:34:31 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 01/15] ARM: tegra30: add missing CLK IDs
+Date: Thu, 17 Oct 2013 15:38:32 +0300
+Message-ID: <1382013526-12800-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z7bbLlDR+qKEHzO8"
-Content-Disposition: inline
-In-Reply-To: <CACQ1gAinSoTCTtf9Y6TL=vtEm1jnJgis0n=y=frNtuPxue9-ng@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Tegra30 clock bindings lack few IDs for audio and clk_out muxes.
 
---z7bbLlDR+qKEHzO8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ include/dt-bindings/clock/tegra30-car.h |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-Hi Richard
+diff --git a/include/dt-bindings/clock/tegra30-car.h b/include/dt-bindings/clock/tegra30-car.h
+index e40fae8..2244582 100644
+--- a/include/dt-bindings/clock/tegra30-car.h
++++ b/include/dt-bindings/clock/tegra30-car.h
+@@ -260,6 +260,14 @@
+ /* 298 */
+ /* 299 */
+ #define TEGRA30_CLK_CLK_OUT_1_MUX 300
+-#define TEGRA30_CLK_CLK_MAX 301
++#define TEGRA30_CLK_CLK_OUT_2_MUX 301
++#define TEGRA30_CLK_CLK_OUT_3_MUX 302
++#define TEGRA30_CLK_AUDIO0_MUX 303
++#define TEGRA30_CLK_AUDIO1_MUX 304
++#define TEGRA30_CLK_AUDIO2_MUX 305
++#define TEGRA30_CLK_AUDIO3_MUX 306
++#define TEGRA30_CLK_AUDIO4_MUX 307
++#define TEGRA30_CLK_SPDIF_MUX 308
++#define TEGRA30_CLK_CLK_MAX 309
+ 
+ #endif	/* _DT_BINDINGS_CLOCK_TEGRA30_CAR_H */
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-On Thu, Oct 17, 2013 at 01:46:49PM +0200, Richard Genoud wrote:
-> > Hmmm, that seems pretty far from the network/interrupt drivers, and it
-> > looks like other users have seen this on !ARM machines:
-> > http://forums.gentoo.org/viewtopic-p-7379928.html
-> > https://bugzilla.redhat.com/show_bug.cgi?id=3D989251
-> >
-> > There's a patch in the redhat's bugzilla, could you try to apply it and
-> > see if it solves your problem?
-> >
-> > Maybe the netdev guys will have other ideas as well.
-> For the record, I set:
-> net.ipv4.tcp_early_retrans =3D 2
-> net.ipv4.tcp_frto =3D 0
-> And I didn't see the warning any more.
-> It's seems that a patch is on it's way. I'll try it instead of setting
-> the sysctl.
-> http://thread.gmane.org/gmane.linux.network/286793
-
-Ah, I wanted to ask you about the status of this.
-
-Thanks for the follow-up,
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---z7bbLlDR+qKEHzO8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSX9jCAAoJEBx+YmzsjxAgEkMQALfSDDLIIZazDHaeKV+TqxqW
-+xvXAyJiolm7rRYCncBzzRDG4AKGbTTQXpXltw+cSoW4BVaRJ2vAdHl8atS/7m1M
-e+HegI+l+DUGSwcld/kvocUoWlI089dYF2AlG0qZxQnbmIyX79RVWiADxmKKkx33
-U2SN13WSjt27VnNa+RzC/xyV6l7vqfJyMoWbwSQwa00A4s4AflcPVTRUPLXZKfUs
-vsrPJTqIHag+3KSBtuqDg/ulPxuZ3nHHLRX47wiDADqhmNi6c/2GxtJoU0f1CBfF
-P1Zn1oxa9wzHuYI09XhDORpRZQ02OGlQHJEcxQinOzT8fDD16YS6aeyTEe89//03
-t6ZGuwPvrlmO4mjaMhlE2SfnYdlPrmC0lp0DoLmSvVag6CoV+WfXh5SAA8+locAR
-cOktyQaov5KjZBDhNvCPg1ekNheKJVoL5YQbhWmC3PYcYloCF1uxOJoNRQ/NufBG
-0HXjxFtCrR4ZyP2Mm6xWHuQdQ9Vy4ruS1Q/ReT5+PKqKFLwd6fr0+3RzDia2+6P6
-5Ljhk1SJgAeNXOj50UA5+jpeqBoyz0xhhvHJoHK8k/m0kuuR7msT1TIGzTILiJnz
-oV8qRsU20iJ3bz+yshGlE72eSEPydyLOR9POh9k6UFmAqjOx8TIwks8NKwHT3ZHC
-5oXiVRxhzq5AY5TC4M9D
-=n0z3
------END PGP SIGNATURE-----
-
---z7bbLlDR+qKEHzO8--
