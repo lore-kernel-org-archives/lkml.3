@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab3JQOUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:20:42 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:59309 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab3JQOUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:20:39 -0400
-Date: Thu, 17 Oct 2013 16:18:19 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: linux-pwm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <rmallon@gmail.com>, arnd@arndb.de,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH v2] pwm: add ep93xx PWM support
-Message-ID: <20131017141818.GB32734@ulmo.nvidia.com>
-References: <201310151840.03569.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QKdGvSO+nmPlgiQ/"
-Content-Disposition: inline
-In-Reply-To: <201310151840.03569.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756564Ab3JQOV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:21:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41876 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755605Ab3JQOV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 10:21:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,514,1378882800"; 
+   d="scan'208";a="418421747"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc] mei: move host_clients_map cleanup to device init
+Date: Thu, 17 Oct 2013 17:20:22 +0300
+Message-Id: <1382019622-7768-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
---QKdGvSO+nmPlgiQ/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Move host_clients_map cleanup from host client init to device init.
 
-On Tue, Oct 15, 2013 at 06:40:03PM -0700, H Hartley Sweeten wrote:
-> Remove the non-standard EP93xx PWM driver in drivers/misc and add
-> a new driver for the PWM controllers on the EP93xx platform based
-> on the PWM framework.
->=20
-> These PWM controllers each support 1 PWM channel with programmable
-> duty cycle, frequency, and polarity inversion.
->=20
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> v2: address issues pointed out by Thierry Reding.
->=20
->  drivers/misc/Kconfig      |  13 ---
->  drivers/misc/Makefile     |   1 -
->  drivers/misc/ep93xx_pwm.c | 286 ----------------------------------------=
-------
->  drivers/pwm/Kconfig       |   9 ++
->  drivers/pwm/Makefile      |   1 +
->  drivers/pwm/pwm-ep93xx.c  | 230 +++++++++++++++++++++++++++++++++++++
->  6 files changed, 240 insertions(+), 300 deletions(-)
->  delete mode 100644 drivers/misc/ep93xx_pwm.c
->  create mode 100644 drivers/pwm/pwm-ep93xx.c
+This fixes bug where we cleaned up the bitmask that servers as pool for
+host client ids while file descriptors are kept open during suspend.
+On resume a new connection will be assigned id that is already taken
+by opened file descriptor. Consequently read/write will fail due to
+mismatched book keeping.
 
-Applied, thanks.
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/client.c | 9 ---------
+ drivers/misc/mei/init.c   | 8 ++++++++
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
-Thierry
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index a48c0e7..0ccc22c 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -365,15 +365,6 @@ void mei_host_client_init(struct work_struct *work)
+ 
+ 	mutex_lock(&dev->device_lock);
+ 
+-	bitmap_zero(dev->host_clients_map, MEI_CLIENTS_MAX);
+-	dev->open_handle_count = 0;
+-
+-	/*
+-	 * Reserving the first three client IDs
+-	 * 0: Reserved for MEI Bus Message communications
+-	 */
+-	bitmap_set(dev->host_clients_map, 0, 1);
+-
+ 	for (i = 0; i < dev->me_clients_num; i++) {
+ 		client_props = &dev->me_clients[i].props;
+ 
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index bcb4a6b..4c93e3d 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -68,6 +68,14 @@ void mei_device_init(struct mei_device *dev)
+ 	mei_io_list_init(&dev->amthif_cmd_list);
+ 	mei_io_list_init(&dev->amthif_rd_complete_list);
+ 
++	bitmap_zero(dev->host_clients_map, MEI_CLIENTS_MAX);
++	dev->open_handle_count = 0;
++
++	/*
++	 * Reserving the first client ID
++	 * 0: Reserved for MEI Bus Message communications
++	 */
++	bitmap_set(dev->host_clients_map, 0, 1);
+ }
+ EXPORT_SYMBOL_GPL(mei_device_init);
+ 
+-- 
+1.8.3.1
 
---QKdGvSO+nmPlgiQ/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSX/GqAAoJEN0jrNd/PrOhW7IP/19LXMHr3SgX4AOj3drqrCP3
-BknfpnkYGwEGxwZIVd0UPvpAYm7cqplEzNqptBSEAfk38XAN9MMYCD1fagC4eMwz
-3ZGChB9nYSZg0eYeTpztCnZKsP26lb0ExrrQ9l9OWucU4MY1K65gHPuQyf0GzEYR
-7HHPd14RRq2xMjqgLRewx6/xNsfmApjJGNwhTjUvLwq4QMma82TAPFsl4giRUOuc
-+omN/pQ/CeIsyC84JpJ+NT8Nl+yu/jG8XPhYGIGrFwXe5bgIuxm6tvOujUDY3i9A
-pT5oXZ9GGGH5Bl2ZMdnZBXD8epwMKG63HKzrK8ARCVTIfNJWkRlghGzwlLnm8nAD
-fRxHcAgrFxdfVmWDVO+p/NYc9LCWgEvNsfbigBbM8kol2KVXvTEVP7Us1HGZnUND
-JkahTSdOc2xf66X3GA1lj+45suvUWFjQs+r1/RKzT0n4bPRoOZeFL20HVYOASxxx
-IK7GXLersCwOJUep4ej7nQYM0UXIQb1yrq/T2CiojNUh39tYyT8WORxRTNXw7ilj
-ZS8T2jhOnA5IMJDDLC88OWS6at5riT6/oAvTMkeFVJv+2kbz/gdypFwXDfV+f5Y1
-I6XKtmaDwh1KL2E9jZUviO+xuOD8b1lWaK8KASgq6xDUh7wDpCRNBRCflQMX7snG
-gNlPakZZBvmkqRYtY9Tp
-=r3sz
------END PGP SIGNATURE-----
-
---QKdGvSO+nmPlgiQ/--
