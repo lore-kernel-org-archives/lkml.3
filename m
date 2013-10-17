@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3JQMTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 08:19:30 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48778 "EHLO
+	id S1755217Ab3JQMTk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 08:19:40 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48781 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753574Ab3JQMT1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754944Ab3JQMT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 08:19:27 -0400
+	Thu, 17 Oct 2013 08:19:29 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-efi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 1/2] efi: Add asm-generic/efi.h for non-x86
-Date: Thu, 17 Oct 2013 13:19:14 +0100
-Message-Id: <1382012355-8846-2-git-send-email-matt@console-pimps.org>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Jones <pjones@redhat.com>
+Subject: [PATCH v3 2/2] x86/efi: Add EFI framebuffer earlyprintk support
+Date: Thu, 17 Oct 2013 13:19:15 +0100
+Message-Id: <1382012355-8846-3-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382012355-8846-1-git-send-email-matt@console-pimps.org>
 References: <1382012355-8846-1-git-send-email-matt@console-pimps.org>
@@ -25,231 +24,343 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
->From the #ifdef CONFIG_X86 in linux/efi.h it's clear we need a place to
-declare functions that are implemented differently for each
-architecture.
+It's incredibly difficult to diagnose early EFI boot issues without
+special hardware because earlyprintk=vga doesn't work on EFI systems.
 
-Since it's only x86 that needs to do special things, add a generic EFI
-header file that can be used by everyone else and move the x86-specific
-stuff to arch/x86/include/asm/efi.h.
-
-Because the asm files are now included from linux/efi.h directly, this
-change means we no longer have to include the asm file explicitly from C
-files, allowing us to delete quite a few #include lines.
+Add support for writing to the EFI framebuffer, via earlyprintk=efi,
+which will actually give users a chance of providing debug output.
 
 Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Peter Jones <pjones@redhat.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/ia64/include/asm/efi.h      |  6 ++++++
- arch/x86/boot/compressed/eboot.c |  1 -
- arch/x86/include/asm/efi.h       | 10 ++++++++++
- arch/x86/kernel/setup.c          |  1 -
- arch/x86/platform/efi/efi.c      |  1 -
- arch/x86/platform/efi/efi_32.c   |  1 -
- arch/x86/platform/efi/efi_64.c   |  1 -
- arch/x86/platform/uv/bios_uv.c   |  1 -
- include/asm-generic/efi.h        | 17 +++++++++++++++++
- include/linux/efi.h              | 31 ++-----------------------------
- 10 files changed, 35 insertions(+), 35 deletions(-)
- create mode 100644 arch/ia64/include/asm/efi.h
- create mode 100644 include/asm-generic/efi.h
 
-diff --git a/arch/ia64/include/asm/efi.h b/arch/ia64/include/asm/efi.h
-new file mode 100644
-index 0000000..7b69db7
---- /dev/null
-+++ b/arch/ia64/include/asm/efi.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_EFI_H
-+#define _ASM_EFI_H
-+
-+#include <asm-generic/efi.h>
-+
-+#endif /* _ASM_EFI_H */
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a4..d6eb766 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -9,7 +9,6 @@
+v3:
+
+ - use white as foreground text colour
+
+v2:
+
+ - add asm/efi.h to efi/early_printk.c for console prototype
+ - Kconfig.debug: clear up grammar
+ - remove uneeded paranthesis, due to precedence
+ - multiply without spaces
+ - make char unsigned
+ - make 'dst' u32 * and get rid of memcpy()
+ - delete mask code and write color directly
+ - move efi_x, efi_y to top of file
+ - standardize on unsigned int over int
+ - s++ on separate line
+ - switch ~(u32)0 for -1
+ - scroll instead of clearing screen
+ - rename early_efi_clear_line() early_efi_clear_scanline()
+
+ Documentation/kernel-parameters.txt  |   8 +-
+ arch/x86/Kconfig.debug               |   9 ++
+ arch/x86/include/asm/efi.h           |   2 +
+ arch/x86/kernel/early_printk.c       |   6 ++
+ arch/x86/platform/efi/Makefile       |   1 +
+ arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 214 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/platform/efi/early_printk.c
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index fcbb736..c07cb09 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -847,6 +847,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
- #include <linux/efi.h>
- #include <linux/pci.h>
--#include <asm/efi.h>
- #include <asm/setup.h>
- #include <asm/desc.h>
+ 	earlyprintk=	[X86,SH,BLACKFIN,ARM]
+ 			earlyprintk=vga
++			earlyprintk=efi
+ 			earlyprintk=xen
+ 			earlyprintk=serial[,ttySn[,baudrate]]
+ 			earlyprintk=serial[,0x...[,baudrate]]
+@@ -860,7 +861,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Append ",keep" to not disable it when the real console
+ 			takes over.
  
+-			Only vga or serial or usb debug port at a time.
++			Only one of vga, efi, serial, or usb debug port can
++			be used at a time.
+ 
+ 			Currently only ttyS0 and ttyS1 may be specified by
+ 			name.  Other I/O ports may be explicitly specified
+@@ -874,8 +876,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Interaction with the standard serial driver is not
+ 			very good.
+ 
+-			The VGA output is eventually overwritten by the real
+-			console.
++			The VGA and EFI output is eventually overwritten by
++			the real console.
+ 
+ 			The xen output can only be used by Xen PV guests.
+ 
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 78d91af..b6fe388 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -59,6 +59,15 @@ config EARLY_PRINTK_DBGP
+ 	  with klogd/syslogd or the X server. You should normally N here,
+ 	  unless you want to debug such a crash. You need usb debug device.
+ 
++config EARLY_PRINTK_EFI
++	bool "Early printk via the EFI framebuffer"
++	depends on EFI && EARLY_PRINTK && FONT_SUPPORT
++	---help---
++	  Write kernel log output directly into the EFI framebuffer.
++
++	  This is useful for kernel debugging when your machine crashes very
++	  early before the console code is initialized.
++
+ config X86_PTDUMP
+ 	bool "Export kernel pagetable layout to userspace via debugfs"
+ 	depends on DEBUG_KERNEL
 diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 0062a01..4c8f5c2 100644
+index 4c8f5c2..485f48c4 100644
 --- a/arch/x86/include/asm/efi.h
 +++ b/arch/x86/include/asm/efi.h
-@@ -101,9 +101,14 @@ extern void efi_call_phys_prelog(void);
- extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
-+extern void efi_late_init(void);
-+extern void efi_free_boot_services(void);
-+extern efi_status_t efi_query_variable_store(u32 attributes, unsigned long size);
- 
- #ifdef CONFIG_EFI
- 
-+extern int efi_enabled(int facility);
-+
- static inline bool efi_is_native(void)
- {
+@@ -114,6 +114,8 @@ static inline bool efi_is_native(void)
  	return IS_ENABLED(CONFIG_X86_64) == efi_enabled(EFI_64BIT);
-@@ -120,6 +125,11 @@ static inline bool efi_is_native(void)
- #define efi_call4(_f, _a1, _a2, _a3, _a4)		(-ENOSYS)
- #define efi_call5(_f, _a1, _a2, _a3, _a4, _a5)		(-ENOSYS)
- #define efi_call6(_f, _a1, _a2, _a3, _a4, _a5, _a6)	(-ENOSYS)
+ }
+ 
++extern struct console early_efi_console;
 +
-+static inline int efi_enabled(int facility)
+ #else
+ /*
+  * IF EFI is not configured, have the EFI calls return -ENOSYS.
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index d15f575..2b99124 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -17,6 +17,7 @@
+ #include <asm/mrst.h>
+ #include <asm/pgtable.h>
+ #include <linux/usb/ehci_def.h>
++#include <linux/efi.h>
+ 
+ /* Simple VGA output */
+ #define VGABASE		(__ISA_IO_base + 0xb8000)
+@@ -234,6 +235,11 @@ static int __init setup_early_printk(char *buf)
+ 			early_console_register(&early_hsu_console, keep);
+ 		}
+ #endif
++#ifdef CONFIG_EARLY_PRINTK_EFI
++		if (!strncmp(buf, "efi", 3))
++			early_console_register(&early_efi_console, keep);
++#endif
++
+ 		buf++;
+ 	}
+ 	return 0;
+diff --git a/arch/x86/platform/efi/Makefile b/arch/x86/platform/efi/Makefile
+index 6db1cc4..b7b0b35 100644
+--- a/arch/x86/platform/efi/Makefile
++++ b/arch/x86/platform/efi/Makefile
+@@ -1,2 +1,3 @@
+ obj-$(CONFIG_EFI) 		+= efi.o efi_$(BITS).o efi_stub_$(BITS).o
+ obj-$(CONFIG_ACPI_BGRT) += efi-bgrt.o
++obj-$(CONFIG_EARLY_PRINTK_EFI)	+= early_printk.o
+diff --git a/arch/x86/platform/efi/early_printk.c b/arch/x86/platform/efi/early_printk.c
+new file mode 100644
+index 0000000..6599a00
+--- /dev/null
++++ b/arch/x86/platform/efi/early_printk.c
+@@ -0,0 +1,191 @@
++/*
++ * Copyright (C) 2013 Intel Corporation; author Matt Fleming
++ *
++ *  This file is part of the Linux kernel, and is made available under
++ *  the terms of the GNU General Public License version 2.
++ */
++
++#include <linux/console.h>
++#include <linux/efi.h>
++#include <linux/font.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <asm/setup.h>
++
++static const struct font_desc *font;
++static u32 efi_x, efi_y;
++
++static __init void early_efi_clear_scanline(unsigned int y)
 +{
++	unsigned long base, *dst;
++	u16 len;
++
++	base = boot_params.screen_info.lfb_base;
++	len = boot_params.screen_info.lfb_linelength;
++
++	dst = early_ioremap(base + y*len, len);
++	if (!dst)
++		return;
++
++	memset(dst, 0, len);
++	early_iounmap(dst, len);
++}
++
++static __init void early_efi_scroll_up(void)
++{
++	unsigned long base, *dst, *src;
++	u16 len;
++	u32 i, height;
++
++	base = boot_params.screen_info.lfb_base;
++	len = boot_params.screen_info.lfb_linelength;
++	height = boot_params.screen_info.lfb_height;
++
++	for (i = 0; i < height - font->height; i++) {
++		dst = early_ioremap(base + i*len, len);
++		if (!dst)
++			return;
++
++		src = early_ioremap(base + (i + font->height) * len, len);
++		if (!src) {
++			early_iounmap(dst, len);
++			return;
++		}
++
++		memmove(dst, src, len);
++
++		early_iounmap(src, len);
++		early_iounmap(dst, len);
++	}
++}
++
++static void early_efi_write_char(u32 *dst, unsigned char c, unsigned int h)
++{
++	const u32 color_black = 0x00000000;
++	const u32 color_white = 0x00ffffff;
++	const u8 *src;
++	u8 s8;
++	int m;
++
++	src = font->data + c * font->height;
++	s8 = *(src + h);
++
++	for (m = 0; m < 8; m++) {
++		if ((s8 >> (7 - m)) & 1)
++			*dst = color_white;
++		else
++			*dst = color_black;
++		dst++;
++	}
++}
++
++static __init void
++early_efi_write(struct console *con, const char *str, unsigned int num)
++{
++	struct screen_info *si;
++	unsigned long base;
++	unsigned int len;
++	const char *s;
++	void *dst;
++
++	base = boot_params.screen_info.lfb_base;
++	si = &boot_params.screen_info;
++	len = si->lfb_linelength;
++
++	while (num) {
++		unsigned int linemax;
++		unsigned int h, count = 0;
++
++		for (s = str; *s && *s != '\n'; s++) {
++			if (count == num)
++				break;
++			count++;
++		}
++
++		linemax = (si->lfb_width - efi_x) / font->width;
++		if (count > linemax)
++			count = linemax;
++
++		for (h = 0; h < font->height; h++) {
++			unsigned int n, x;
++
++			dst = early_ioremap(base + (efi_y + h) * len, len);
++			if (!dst)
++				return;
++
++			s = str;
++			n = count;
++			x = efi_x;
++
++			while (n-- > 0) {
++				early_efi_write_char(dst + x*4, *s, h);
++				x += font->width;
++				s++;
++			}
++
++			early_iounmap(dst, len);
++		}
++
++		num -= count;
++		efi_x += count * font->width;
++		str += count;
++
++		if (num > 0 && *s == '\n') {
++			efi_x = 0;
++			efi_y += font->height;
++			str++;
++			num--;
++		}
++
++		if (efi_x >= si->lfb_width) {
++			efi_x = 0;
++			efi_y += font->height;
++		}
++
++		if (efi_y + font->height >= si->lfb_height) {
++			u32 i;
++
++			efi_y -= font->height;
++			early_efi_scroll_up();
++
++			for (i = 0; i < font->height; i++)
++				early_efi_clear_scanline(efi_y + i);
++		}
++	}
++}
++
++static __init int early_efi_setup(struct console *con, char *options)
++{
++	struct screen_info *si;
++	u16 xres, yres;
++	u32 i;
++
++	si = &boot_params.screen_info;
++	xres = si->lfb_width;
++	yres = si->lfb_height;
++
++	/*
++	 * early_efi_write_char() implicitly assumes a framebuffer with
++	 * 32-bits per pixel.
++	 */
++	if (si->lfb_depth != 32)
++		return -ENODEV;
++
++	font = get_default_font(xres, yres, -1, -1);
++	if (!font)
++		return -ENODEV;
++
++	efi_y = rounddown(yres, font->height) - font->height;
++	for (i = 0; i < (yres - efi_y) / font->height; i++)
++		early_efi_scroll_up();
++
 +	return 0;
 +}
- #endif /* CONFIG_EFI */
- 
- #endif /* _ASM_X86_EFI_H */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f0de629..415e51b 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -78,7 +78,6 @@
- #include <asm/e820.h>
- #include <asm/mpspec.h>
- #include <asm/setup.h>
--#include <asm/efi.h>
- #include <asm/timer.h>
- #include <asm/i8259.h>
- #include <asm/sections.h>
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..4fce62a 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -44,7 +44,6 @@
- #include <linux/bcd.h>
- 
- #include <asm/setup.h>
--#include <asm/efi.h>
- #include <asm/time.h>
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 40e4469..108a825 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -29,7 +29,6 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
--#include <asm/efi.h>
- 
- /*
-  * To make EFI call EFI runtime service in physical addressing mode we need
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 39a0e7f..de26614 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -35,7 +35,6 @@
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
- #include <asm/proto.h>
--#include <asm/efi.h>
- #include <asm/cacheflush.h>
- #include <asm/fixmap.h>
- 
-diff --git a/arch/x86/platform/uv/bios_uv.c b/arch/x86/platform/uv/bios_uv.c
-index 7666121..f3b1fa1 100644
---- a/arch/x86/platform/uv/bios_uv.c
-+++ b/arch/x86/platform/uv/bios_uv.c
-@@ -21,7 +21,6 @@
- 
- #include <linux/efi.h>
- #include <linux/export.h>
--#include <asm/efi.h>
- #include <linux/io.h>
- #include <asm/uv/bios.h>
- #include <asm/uv/uv_hub.h>
-diff --git a/include/asm-generic/efi.h b/include/asm-generic/efi.h
-new file mode 100644
-index 0000000..8a31713
---- /dev/null
-+++ b/include/asm-generic/efi.h
-@@ -0,0 +1,17 @@
-+#ifndef _ASM_GENERIC_EFI_H
-+#define _ASM_GENERIC_EFI_H
 +
-+static inline void efi_late_init(void) {}
-+static inline void efi_free_boot_services(void) {}
-+
-+static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
-+{
-+	return EFI_SUCCESS;
-+}
-+
-+static inline int efi_enabled(int facility)
-+{
-+	return IS_ENABLED(CONFIG_EFI);
-+}
-+
-+#endif /* _ASM_GENERIC_EFI_H */
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 5f8f176..ced7644 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -573,19 +573,6 @@ extern void efi_map_pal_code (void);
- extern void efi_memmap_walk (efi_freemem_callback_t callback, void *arg);
- extern void efi_gettimeofday (struct timespec *ts);
- extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
--#ifdef CONFIG_X86
--extern void efi_late_init(void);
--extern void efi_free_boot_services(void);
--extern efi_status_t efi_query_variable_store(u32 attributes, unsigned long size);
--#else
--static inline void efi_late_init(void) {}
--static inline void efi_free_boot_services(void) {}
--
--static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
--{
--	return EFI_SUCCESS;
--}
--#endif
- extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
- extern u64 efi_get_iobase (void);
- extern u32 efi_mem_type (unsigned long phys_addr);
-@@ -635,22 +622,6 @@ extern int __init efi_setup_pcdp_console(char *);
- #define EFI_MEMMAP		4	/* Can we use EFI memory map? */
- #define EFI_64BIT		5	/* Is the firmware 64-bit? */
- 
--#ifdef CONFIG_EFI
--# ifdef CONFIG_X86
--extern int efi_enabled(int facility);
--# else
--static inline int efi_enabled(int facility)
--{
--	return 1;
--}
--# endif
--#else
--static inline int efi_enabled(int facility)
--{
--	return 0;
--}
--#endif
--
- /*
-  * Variable Attributes
-  */
-@@ -842,4 +813,6 @@ int efivars_sysfs_init(void);
- 
- #endif /* CONFIG_EFI_VARS */
- 
-+#include <asm/efi.h>
-+
- #endif /* _LINUX_EFI_H */
++struct console early_efi_console = {
++	.name =		"earlyefi",
++	.write =	early_efi_write,
++	.setup =	early_efi_setup,
++	.flags =	CON_PRINTBUFFER,
++	.index =	-1,
++};
 -- 
 1.8.1.4
 
