@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3JQUjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 16:39:22 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:54401 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245Ab3JQUjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 16:39:20 -0400
+	id S1762698Ab3JQUmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 16:42:21 -0400
+Received: from mout.gmx.net ([212.227.17.22]:53789 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756787Ab3JQUmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 16:42:19 -0400
+Message-ID: <52604BA9.20104@gmx.de>
+Date: Thu, 17 Oct 2013 22:42:17 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <52603CD6.6080507@linux.intel.com>
-References: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com>
-	<52603CD6.6080507@linux.intel.com>
-Date: Thu, 17 Oct 2013 13:39:20 -0700
-Message-ID: <CAOesGMjgvPWpZssrepDszTr0EexHtDXznWA4XYoZ6O_U=XJGAg@mail.gmail.com>
-Subject: Re: Corrupted low memory in v3.9+
-From: Olof Johansson <olof@lixom.net>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        list parisc-linux <parisc-linux@lists.parisc-linux.org>
+Subject: 3.12-rcX - NFS regression - kswapd0 / kswapd1 stays using 100% CPU?
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ASGnyIePYdalaj/xNad2BeTGcC1rBWuX82/CPqHzseaaGTZVirw
+ xmtgIeYlcJgwtY04v4Oj+4QPMeu3zGduezAqEg3H2Fq/CFNXHqOxAmLZiSlhHNJ5kitvSm5
+ es8Os7a9E6JLnGfCUg0YDmRKw/QeQXPuhjVC5Q1mwzneQSTVomqejUp+a0pnEK17+pBg79u
+ KhhggEazBTSrkF59KvAYg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 12:39 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 10/17/2013 11:57 AM, Olof Johansson wrote:
->>
->> And the low memory checker never even ran before, since it had nothing
->> to check. Earlier the lower reserved region would be included in the
->> e820-reserved area if I read the code correctly, and now it's just
->> marked reserved by the memblock code.
->>
->> I guess it could be argued either way whether this is a regression or
->> not; but at the end of the day we now have systems where this warning
->> pops when it didn't use to. :(
->>
->
-> I'm wondering if this is a problem with the low memory checker (the
-> residual value of which I have to admit to being skeptical of) or
-> something else.
+I'm seeing a regression with current kernel git head when using NFS-mounts.
+Architecture in my case is parisc, although I don't think that this is relevant.
+At least kernel 3.10 (and I think 3.11) didn't showed that problem.
 
-There's a chance that it's a valid trip of the low-memory checker,
-i.e. that we do have a bios (or more likely smm), that stomps on that
-memory -- it was never checked for in the past and definitely not
-warned about. I'm not sure if that was intentional behavior or not (to
-not check this area), I lack history on the topic.
+The symtom is, that "top" shows high usage of either kswapd0 or kswapd1.
+Here is an output with kswapd1:
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
+   37 root      20   0     0    0    0 R  91.8  0.0  63:00.40 kswapd1
+28448 root      20   0  3252 1428 1060 R  15.3  0.0   0:00.09 top
+    1 root      20   0  2784  988  852 S   0.0  0.0   0:09.95 init
 
-> Could you boot the box with "debug memblock=debug" and earlyprintk
-> turned on and send the boot output?
+This is what ps shows:
+lsXXXX:~# ps -ef |  grep mount
+root      1181     1  0 14:51 ?        00:00:18 /usr/sbin/automount --pid-file /var/run/autofs.pid
+root     25331  1181  0 21:25 ?        00:00:00 /bin/mount -n -t nfs -s -o nolock,rw,hard,intr homes:/unixhome1 /net/home1
+root     25332 25331  0 21:25 ?        00:00:00 /sbin/mount.nfs homes:/unixhome1 /net/home1 -s -n -o rw,nolock,hard,intr
 
-Ah, yes, I did verify that the first 64K were indeed set aside as
-reserved by doing just that:
+And using sysrq to show the blocked tasks I get in syslog:
+SysRq : Show Blocked State
+mount.nfs       D 00000000401040c0     0 25332  25331 0x00000010
+Backtrace:
+[<0000000040113a68>] __schedule+0x500/0x810
 
-[    0.000000] MEMBLOCK configuration:
-[    0.000000]  memory size = 0x7c750000 reserved size = 0xb05000
-[    0.000000]  memory.cnt  = 0x6
-[    0.000000]  memory[0x0] [0x00000000010000-0x0000000009ffff], 0x90000 bytes
-[    0.000000]  memory[0x1] [0x00000000100000-0x00000000efffff], 0xe00000 bytes
-[    0.000000]  memory[0x2] [0x00000001000000-0x0000001fffffff],
-0x1f000000 bytes
-[    0.000000]  memory[0x3] [0x00000020200000-0x0000003fffffff],
-0x1fe00000 bytes
-[    0.000000]  memory[0x4] [0x00000040200000-0x0000007c6bffff],
-0x3c4c0000 bytes
-[    0.000000]  memory[0x5] [0x00000100000000-0x000001005fffff], 0x600000 bytes
-[    0.000000]  reserved.cnt  = 0x2
-[    0.000000]  reserved[0x0] [0x0000000009f000-0x000000000fffff], 0x61000 bytes
-[    0.000000]  reserved[0x1] [0x00000001000000-0x00000001aa3fff],
-0xaa4000 bytes
-[    0.000000] memblock_reserve: [0x00000000099000-0x0000000009f000]
-reserve_real_mode+0x61/0x87
-[    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
-[    0.000000] reserving inaccessible SNB gfx pages
-[    0.000000] memblock_reserve: [0x00000000000000-0x00000000100000]
-setup_arch+0xa2d/0xa41
-[...]
+I know it's not a problem of the NFS server, since the same mount is still ok on other machines.
+The NFS directory was already mounted and in use when this mount happened again (called by cron-job). 
+ 
+Any ideas?
 
-Unfortunately x86 doesn't keep the memblock structures around, so
-there's no way to verify after booting in debugfs, but based on the
-above it should have been reserved properly.
-
-
--Olof
+Helge
