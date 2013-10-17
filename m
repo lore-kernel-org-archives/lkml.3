@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763172Ab3JQVzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 17:55:00 -0400
+	id S1763230Ab3JQVzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 17:55:43 -0400
 Received: from mga09.intel.com ([134.134.136.24]:35575 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762892Ab3JQVwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1762888Ab3JQVwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Oct 2013 17:52:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,517,1378882800"; 
-   d="scan'208";a="394625557"
+   d="scan'208";a="394625549"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org,
         Kuppuswamy Sathyanarayanan 
 	<sathyanarayanan.kuppuswamy@linux.intel.com>,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v9 07/14] intel_mid: Refactored sfi_parse_devs() function
-Date: Thu, 17 Oct 2013 14:55:50 -0700
-Message-Id: <1382046957-15987-8-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v9 02/14] mrst: Fixed indentation issues
+Date: Thu, 17 Oct 2013 14:55:45 -0700
+Message-Id: <1382046957-15987-3-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1382046957-15987-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1382046957-15987-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -27,224 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-SFI device_id[] table parsing code is duplicated in every SFI
-device handler. This patch removes this code duplication, by
-adding a seperate function get_device_id() to parse through the
-device table. Also this patch moves the SPI, I2C, IPC info code from
-sfi_parse_devs() to respective device handlers.
+Fixed indentation issues reported by checkpatch script in
+mrst related files.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- arch/x86/platform/intel-mid/intel-mid.c | 141 ++++++++++++++++----------------
- 1 file changed, 71 insertions(+), 70 deletions(-)
+ arch/x86/platform/mrst/early_printk_mrst.c |  3 ++-
+ arch/x86/platform/mrst/mrst.c              | 24 +++++++++++++-----------
+ 2 files changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index 742b7bf..f9c4be8 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -831,20 +831,15 @@ static void __init install_irq_resource(struct platform_device *pdev, int irq)
- 	platform_device_add_resources(pdev, &res, 1);
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+index 95880f7..39ecc27 100644
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
++++ b/arch/x86/platform/mrst/early_printk_mrst.c
+@@ -219,7 +219,8 @@ static void early_mrst_spi_putc(char c)
  }
  
--static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
-+static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
+ /* Early SPI only uses polling mode */
+-static void early_mrst_spi_write(struct console *con, const char *str, unsigned n)
++static void early_mrst_spi_write(struct console *con, const char *str,
++					unsigned n)
  {
--	const struct devs_id *dev = device_ids;
- 	struct platform_device *pdev;
- 	void *pdata = NULL;
+ 	int i;
  
--	while (dev->name[0]) {
--		if (dev->type == SFI_DEV_TYPE_IPC &&
--			!strncmp(dev->name, entry->name, SFI_NAME_LEN)) {
--			pdata = dev->get_platform_data(entry);
--			break;
--		}
--		dev++;
--	}
-+	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
-+		pentry->name, pentry->irq);
-+	pdata = dev->get_platform_data(pentry);
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index b9aeb54..235a742 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -131,7 +131,7 @@ struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
+ 	int i;
+ 	if (hint < sfi_mtimer_num) {
+ 		if (!sfi_mtimer_usage[hint]) {
+-			pr_debug("hint taken for timer %d irq %d\n",\
++			pr_debug("hint taken for timer %d irq %d\n",
+ 				hint, sfi_mtimer_array[hint].irq);
+ 			sfi_mtimer_usage[hint] = 1;
+ 			return &sfi_mtimer_array[hint];
+@@ -679,14 +679,14 @@ static void *msic_thermal_platform_data(void *info)
+ /* tc35876x DSI-LVDS bridge chip and panel platform data */
+ static void *tc35876x_platform_data(void *data)
+ {
+-       static struct tc35876x_platform_data pdata;
++	static struct tc35876x_platform_data pdata;
  
- 	/*
- 	 * On Medfield the platform device creation is handled by the MSIC
-@@ -853,68 +848,94 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
- 	if (intel_mid_has_msic())
- 		return;
+-       /* gpio pins set to -1 will not be used by the driver */
+-       pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
+-       pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
+-       pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
++	/* gpio pins set to -1 will not be used by the driver */
++	pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
++	pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
++	pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
  
--	pdev = platform_device_alloc(entry->name, 0);
-+	pdev = platform_device_alloc(pentry->name, 0);
- 	if (pdev == NULL) {
- 		pr_err("out of memory for SFI platform device '%s'.\n",
--			entry->name);
-+			pentry->name);
- 		return;
- 	}
--	install_irq_resource(pdev, entry->irq);
-+	install_irq_resource(pdev, pentry->irq);
- 
- 	pdev->dev.platform_data = pdata;
- 	intel_scu_device_register(pdev);
+-       return &pdata;
++	return &pdata;
  }
  
--static void __init sfi_handle_spi_dev(struct spi_board_info *spi_info)
-+static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
- {
--	const struct devs_id *dev = device_ids;
-+	struct spi_board_info spi_info;
- 	void *pdata = NULL;
+ static const struct devs_id __initconst device_ids[] = {
+@@ -729,7 +729,7 @@ static int i2c_next_dev;
  
--	while (dev->name[0]) {
--		if (dev->type == SFI_DEV_TYPE_SPI &&
--			!strncmp(dev->name, spi_info->modalias,
--						SFI_NAME_LEN)) {
--			pdata = dev->get_platform_data(spi_info);
--			break;
--		}
--		dev++;
--	}
--	spi_info->platform_data = pdata;
-+	memset(&spi_info, 0, sizeof(spi_info));
-+	strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
-+	spi_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
-+	spi_info.bus_num = pentry->host_num;
-+	spi_info.chip_select = pentry->addr;
-+	spi_info.max_speed_hz = pentry->max_freq;
-+	pr_debug("SPI bus=%d, name=%16.16s, irq=0x%2x, max_freq=%d, cs=%d\n",
-+		spi_info.bus_num,
-+		spi_info.modalias,
-+		spi_info.irq,
-+		spi_info.max_speed_hz,
-+		spi_info.chip_select);
-+
-+	pdata = dev->get_platform_data(&spi_info);
-+
-+	spi_info.platform_data = pdata;
- 	if (dev->delay)
--		intel_scu_spi_device_register(spi_info);
-+		intel_scu_spi_device_register(&spi_info);
+ static void __init intel_scu_device_register(struct platform_device *pdev)
+ {
+-	if(ipc_next_dev == MAX_IPCDEVS)
++	if (ipc_next_dev == MAX_IPCDEVS)
+ 		pr_err("too many SCU IPC devices");
  	else
--		spi_register_board_info(spi_info, 1);
-+		spi_register_board_info(&spi_info, 1);
- }
+ 		ipc_devs[ipc_next_dev++] = pdev;
+@@ -872,7 +872,8 @@ static void __init sfi_handle_spi_dev(struct spi_board_info *spi_info)
  
--static void __init sfi_handle_i2c_dev(int bus, struct i2c_board_info *i2c_info)
-+static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
- {
--	const struct devs_id *dev = device_ids;
-+	struct i2c_board_info i2c_info;
- 	void *pdata = NULL;
- 
-+	memset(&i2c_info, 0, sizeof(i2c_info));
-+	strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
-+	i2c_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
-+	i2c_info.addr = pentry->addr;
-+	pr_debug("I2C bus = %d, name = %16.16s, irq = 0x%2x, addr = 0x%x\n",
-+		pentry->host_num,
-+		i2c_info.type,
-+		i2c_info.irq,
-+		i2c_info.addr);
-+	pdata = dev->get_platform_data(&i2c_info);
-+	i2c_info.platform_data = pdata;
-+
-+	if (dev->delay)
-+		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
-+	else
-+		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
-+}
-+
-+static struct devs_id __init *get_device_id(u8 type, char *name)
-+{
-+	struct devs_id *dev = device_ids;
-+
-+	if (device_ids == NULL)
-+		return NULL;
-+
  	while (dev->name[0]) {
--		if (dev->type == SFI_DEV_TYPE_I2C &&
--			!strncmp(dev->name, i2c_info->type, SFI_NAME_LEN)) {
--			pdata = dev->get_platform_data(i2c_info);
--			break;
-+		if (dev->type == type &&
-+			!strncmp(dev->name, name, SFI_NAME_LEN)) {
-+			return dev;
+ 		if (dev->type == SFI_DEV_TYPE_SPI &&
+-				!strncmp(dev->name, spi_info->modalias, SFI_NAME_LEN)) {
++			!strncmp(dev->name, spi_info->modalias,
++						SFI_NAME_LEN)) {
+ 			pdata = dev->get_platform_data(spi_info);
+ 			break;
  		}
- 		dev++;
- 	}
--	i2c_info->platform_data = pdata;
+@@ -904,7 +905,7 @@ static void __init sfi_handle_i2c_dev(int bus, struct i2c_board_info *i2c_info)
+ 		intel_scu_i2c_device_register(bus, i2c_info);
+ 	else
+ 		i2c_register_board_info(bus, i2c_info, 1);
+- }
++}
  
--	if (dev->delay)
--		intel_scu_i2c_device_register(bus, i2c_info);
--	else
--		i2c_register_board_info(bus, i2c_info, 1);
-+	return NULL;
- }
  
--
  static int __init sfi_parse_devs(struct sfi_table_header *table)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_device_table_entry *pentry;
--	struct spi_board_info spi_info;
--	struct i2c_board_info i2c_info;
--	int num, i, bus;
-+	struct devs_id *dev = NULL;
-+	int num, i;
- 	int ioapic;
- 	struct io_apic_irq_attr irq_attr;
+@@ -1034,7 +1035,8 @@ static int __init pb_keys_init(void)
+ 	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
+ 	for (i = 0; i < num; i++) {
+ 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
+-		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc, gb[i].gpio);
++		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
++					gb[i].gpio);
+ 		if (gb[i].gpio == -1)
+ 			continue;
  
-@@ -939,40 +960,20 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 		} else
- 			irq = 0; /* No irq */
- 
-+		dev = get_device_id(pentry->type, pentry->name);
-+
-+		if ((dev == NULL) || (dev->get_platform_data == NULL))
-+			continue;
-+
- 		switch (pentry->type) {
- 		case SFI_DEV_TYPE_IPC:
--			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
--				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
--			sfi_handle_ipc_dev(pentry);
-+			sfi_handle_ipc_dev(pentry, dev);
- 			break;
- 		case SFI_DEV_TYPE_SPI:
--			memset(&spi_info, 0, sizeof(spi_info));
--			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
--			spi_info.irq = irq;
--			spi_info.bus_num = pentry->host_num;
--			spi_info.chip_select = pentry->addr;
--			spi_info.max_speed_hz = pentry->max_freq;
--			pr_debug("info[%2d]: SPI bus = %d, name = %16.16s, "
--				"irq = 0x%2x, max_freq = %d, cs = %d\n", i,
--				spi_info.bus_num,
--				spi_info.modalias,
--				spi_info.irq,
--				spi_info.max_speed_hz,
--				spi_info.chip_select);
--			sfi_handle_spi_dev(&spi_info);
-+			sfi_handle_spi_dev(pentry, dev);
- 			break;
- 		case SFI_DEV_TYPE_I2C:
--			memset(&i2c_info, 0, sizeof(i2c_info));
--			bus = pentry->host_num;
--			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
--			i2c_info.irq = irq;
--			i2c_info.addr = pentry->addr;
--			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
--				"irq = 0x%2x, addr = 0x%x\n", i, bus,
--				i2c_info.type,
--				i2c_info.irq,
--				i2c_info.addr);
--			sfi_handle_i2c_dev(bus, &i2c_info);
-+			sfi_handle_i2c_dev(pentry, dev);
- 			break;
- 		case SFI_DEV_TYPE_UART:
- 		case SFI_DEV_TYPE_HSI:
 -- 
 1.8.4.rc3
 
