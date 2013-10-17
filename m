@@ -1,33 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab3JQWc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 18:32:26 -0400
-Received: from sv.ilpiano.co.jp ([202.218.250.83]:53185 "EHLO sv.ilpiano.co.jp"
+	id S932256Ab3JQWcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 18:32:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3046 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757969Ab3JQWcY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 18:32:24 -0400
-X-Greylist: delayed 7552 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Oct 2013 18:32:23 EDT
-Message-Id: <8KUWS17V-BK6G-S6R7-AQU6-BTC2T1EJKFKD@waimax.net>
-Mime-Version: 1.0
-From: Alina Tekere <alinalukens@waimax.net>
-To: "ololabas.com," <linux-kernel@vger.kernel.org>
-Reply-To: alinatekere@aol.com
-Subject: helloo
-Date: Thu, 17 Oct 2013 20:26:20 GMT
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+	id S1752821Ab3JQWbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 18:31:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,517,1378882800"; 
+   d="scan'208";a="420869471"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, sathyanarayanan.kuppuswamy@linux.intel.com,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v10 08/12] intel_mid: Added custom handler for ipc devices
+Date: Thu, 17 Oct 2013 15:35:32 -0700
+Message-Id: <1382049336-21316-9-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello,
-how are you doing,? my name is Alina, please i know this mail will look strange to you
-but please i have a very important issue to discuss with you, please its very important, reply me back so that i will
-tell you more about it
-i will be waiting for your reply soon
-yours faithfully,
+From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-Alina
+Added a custom handler for medfield based ipc devices and
+moved devs_id structure defintion to header file.
+
+Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/include/asm/intel-mid.h        | 15 ++++++
+ arch/x86/platform/intel-mid/intel-mid.c | 82 ++++++++++++++++++++-------------
+ 2 files changed, 66 insertions(+), 31 deletions(-)
+
+diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
+index beb7a5f..ad236ae 100644
+--- a/arch/x86/include/asm/intel-mid.h
++++ b/arch/x86/include/asm/intel-mid.h
+@@ -19,6 +19,21 @@ extern int sfi_mrtc_num;
+ extern struct sfi_rtc_table_entry sfi_mrtc_array[];
+ 
+ /*
++ * Here defines the array of devices platform data that IAFW would export
++ * through SFI "DEVS" table, we use name and type to match the device and
++ * its platform data.
++ */
++struct devs_id {
++	char name[SFI_NAME_LEN + 1];
++	u8 type;
++	u8 delay;
++	void *(*get_platform_data)(void *info);
++	/* Custom handler for devices */
++	void (*device_handler)(struct sfi_device_table_entry *pentry,
++				struct devs_id *dev);
++};
++
++/*
+  * Medfield is the follow-up of Moorestown, it combines two chip solution into
+  * one. Other than that it also added always-on and constant tsc and lapic
+  * timers. Medfield is the platform name, and the chip name is called Penwell
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 7bfd784..40a3ff8 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -78,6 +78,8 @@ int sfi_mtimer_num;
+ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+ EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+ int sfi_mrtc_num;
++static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
++			struct devs_id *dev);
+ 
+ static void intel_mid_power_off(void)
+ {
+@@ -386,21 +388,6 @@ static int get_gpio_by_name(const char *name)
+ 	return -1;
+ }
+ 
+-/*
+- * Here defines the array of devices platform data that IAFW would export
+- * through SFI "DEVS" table, we use name and type to match the device and
+- * its platform data.
+- */
+-struct devs_id {
+-	char name[SFI_NAME_LEN + 1];
+-	u8 type;
+-	u8 delay;
+-	void *(*get_platform_data)(void *info);
+-	/* Custom handler for devices */
+-	void (*device_handler)(struct sfi_device_table_entry *pentry,
+-				struct devs_id *dev);
+-};
+-
+ /* the offset for the mapping of global gpio pin to irq */
+ #define INTEL_MID_IRQ_OFFSET 0x100
+ 
+@@ -695,24 +682,24 @@ static void *tc35876x_platform_data(void *data)
+ static const struct devs_id __initconst device_ids[] = {
+ 	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data, NULL},
+ 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data, NULL},
+-	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data, NULL},
++	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data, &ipc_device_handler},
+ 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data, NULL},
+ 	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
+ 	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
+ 	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data, NULL},
+ 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data, NULL},
+ 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data, NULL},
+-	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data, NULL},
++	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data, &ipc_device_handler},
+ 	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data, NULL},
+ 	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data, NULL},
+ 
+ 	/* MSIC subdevices */
+-	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data, NULL},
+-	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data, NULL},
+-	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data, NULL},
+-	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data, NULL},
+-	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data, NULL},
+-	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data, NULL},
++	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data, &ipc_device_handler},
++	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data, &ipc_device_handler},
++	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data, &ipc_device_handler},
++	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data, &ipc_device_handler},
++	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data, &ipc_device_handler},
++	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data, &ipc_device_handler},
+ 	{ 0 }
+ };
+ 
+@@ -843,13 +830,6 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
+ 		pentry->name, pentry->irq);
+ 	pdata = dev->get_platform_data(pentry);
+ 
+-	/*
+-	 * On Medfield the platform device creation is handled by the MSIC
+-	 * MFD driver so we don't need to do it here.
+-	 */
+-	if (intel_mid_has_msic())
+-		return;
+-
+ 	pdev = platform_device_alloc(pentry->name, 0);
+ 	if (pdev == NULL) {
+ 		pr_err("out of memory for SFI platform device '%s'.\n",
+@@ -859,7 +839,7 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
+ 	install_irq_resource(pdev, pentry->irq);
+ 
+ 	pdev->dev.platform_data = pdata;
+-	intel_scu_device_register(pdev);
++	platform_device_add(pdev);
+ }
+ 
+ static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
+@@ -914,6 +894,46 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
+ 		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
+ }
+ 
++static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
++				struct devs_id *dev)
++{
++	struct platform_device *pdev;
++	void *pdata = NULL;
++	static struct resource res __initdata = {
++		.name = "IRQ",
++		.flags = IORESOURCE_IRQ,
++	};
++
++	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
++		pentry->name, pentry->irq);
++
++	/*
++	 * We need to call platform init of IPC devices to fill misc_pdata
++	 * structure. It will be used in msic_init for initialization.
++	 */
++	if (dev != NULL)
++		pdata = dev->get_platform_data(pentry);
++
++	/*
++	 * On Medfield the platform device creation is handled by the MSIC
++	 * MFD driver so we don't need to do it here.
++	 */
++	if (intel_mid_has_msic())
++		return;
++
++	pdev = platform_device_alloc(pentry->name, 0);
++	if (pdev == NULL) {
++		pr_err("out of memory for SFI platform device '%s'.\n",
++			pentry->name);
++		return;
++	}
++	res.start = pentry->irq;
++	platform_device_add_resources(pdev, &res, 1);
++
++	pdev->dev.platform_data = pdata;
++	intel_scu_device_register(pdev);
++}
++
+ static struct devs_id __init *get_device_id(u8 type, char *name)
+ {
+ 	struct devs_id *dev = device_ids;
+-- 
+1.8.4.rc3
 
