@@ -1,27 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab3JQPZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 11:25:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:55980 "EHLO
+	id S1757176Ab3JQP1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 11:27:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38195 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756745Ab3JQPZr (ORCPT
+	by vger.kernel.org with ESMTP id S1755034Ab3JQP1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 11:25:47 -0400
-Date: Thu, 17 Oct 2013 11:25:41 -0400
+	Thu, 17 Oct 2013 11:27:14 -0400
+Date: Thu, 17 Oct 2013 11:27:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, joe@perches.com,
-        naveen.n.rao@linux.vnet.ibm.com, arozansk@redhat.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Extended H/W error log driver
-Message-ID: <20131017112541.166a44fb@gandalf.local.home>
-In-Reply-To: <20131017143348.GA3891@gchen.bj.intel.com>
-References: <1381935366-11731-1-git-send-email-gong.chen@linux.intel.com>
-	<20131016160550.GG13608@pd.tnic>
-	<20131016125646.7141b580@gandalf.local.home>
-	<20131016180038.GO13608@pd.tnic>
-	<20131016181117.GP13608@pd.tnic>
-	<20131017143348.GA3891@gchen.bj.intel.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] arm64, jump label: optimize jump label
+ implementation
+Message-ID: <20131017112713.2638910f@gandalf.local.home>
+In-Reply-To: <525FF6E0.7070000@gmail.com>
+References: <1381893492-7135-1-git-send-email-liuj97@gmail.com>
+	<1381893492-7135-7-git-send-email-liuj97@gmail.com>
+	<20131016114608.GH5403@mudshark.cambridge.arm.com>
+	<525EC8D1.7000900@gmail.com>
+	<20131017093944.GB18765@mudshark.cambridge.arm.com>
+	<525FF6E0.7070000@gmail.com>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -32,25 +38,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013 10:33:48 -0400
-Chen Gong <gong.chen@linux.intel.com> wrote:
+On Thu, 17 Oct 2013 22:40:32 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
 
-> > Gong, can you try moving the CREATE_TRACE_POINTS line to a new file -
-> > arch/x86/ras/ras.c and define it there and not anywhere else, i.e. move
-> > it away from edac_mc.c. Does that help?
+> >>> You could make the code more concise by limiting your patching ability to
+> >>> branch immediates. Then a nop is simply a branch to the next instruction (I
+> >>> doubt any modern CPUs will choke on this, whereas the architecture requires
+> >>> a NOP to take time).
+> >> I guess a NOP should be more effecient than a "B #4" on real CPUs:)
+> > 
+> > Well, I was actually questioning that. A NOP *has* to take time (the
+> > architecture prevents implementations from discaring it) whereas a static,
+> > unconditional branch will likely be discarded early on by CPUs with even
+> > simple branch prediction logic.
+> I naively thought "NOP" is cheaper than a "B" :(
+> Will use a "B #1" to replace "NOP".
 > 
-> In current kernel we haven't arch/x86/ras/ras.c. You mean I create
-> a new one there and just add some trace macro definition?
 
-The CREATE_TRACE_POINTS will cause the TRACE_EVENT() macro to define
-the functions used for tracing. If you have it defined more than once,
-it will either cause a kernel compile error (variables declared more
-than once), or if used in modules, will cause confusion (as well as
-bloat) because different functions and variables will be defined for
-the same tracepoint.
-
-If you need to create a separate file that you can have it defined in a
-single place, then please do so!
+Really?? What's the purpose of a NOP then? It seems to me that an
+architecture is broken if a NOP is slower than a static branch.
 
 -- Steve
