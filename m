@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762408Ab3JQSUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 14:20:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46024 "EHLO
+	id S1762428Ab3JQSUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 14:20:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46047 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758374Ab3JQSUR (ORCPT
+	with ESMTP id S1759339Ab3JQSUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 14:20:17 -0400
-Date: Thu, 17 Oct 2013 11:19:48 -0700
-From: tip-bot for Kuppuswamy Sathyanarayanan <tipbot@zytor.com>
-Message-ID: <tip-76b13ba79b6854700b812a4a7c9298583cad4bc5@git.kernel.org>
+	Thu, 17 Oct 2013 14:20:34 -0400
+Date: Thu, 17 Oct 2013 11:20:16 -0700
+From: tip-bot for David Cohen <tipbot@zytor.com>
+Message-ID: <tip-9f04349ad92c27757175aa338934787bab19f251@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         david.a.cohen@linux.intel.com,
         sathyanarayanan.kuppuswamy@linux.intel.com, tglx@linutronix.de,
         hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sathyanarayanan.kuppuswamy@linux.intel.com,
-        david.a.cohen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1381896701-23476-10-git-send-email-david.a.cohen@linux.intel.com>
-References: <1381896701-23476-10-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1381977419-27337-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1381977419-27337-1-git-send-email-david.a.cohen@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/intel-mid] intel_mid: Moved SFI related code to sfi.c
-Git-Commit-ID: 76b13ba79b6854700b812a4a7c9298583cad4bc5
+Subject: [tip:x86/intel-mid] intel_mid:
+  move platform device definitions to their own platform_<device>.* files
+Git-Commit-ID: 9f04349ad92c27757175aa338934787bab19f251
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,575 +31,339 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:19:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 17 Oct 2013 11:20:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  76b13ba79b6854700b812a4a7c9298583cad4bc5
-Gitweb:     http://git.kernel.org/tip/76b13ba79b6854700b812a4a7c9298583cad4bc5
-Author:     Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-AuthorDate: Tue, 15 Oct 2013 21:11:38 -0700
+Commit-ID:  9f04349ad92c27757175aa338934787bab19f251
+Gitweb:     http://git.kernel.org/tip/9f04349ad92c27757175aa338934787bab19f251
+Author:     David Cohen <david.a.cohen@linux.intel.com>
+AuthorDate: Wed, 16 Oct 2013 19:36:59 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 Oct 2013 17:16:46 -0700
+CommitDate: Thu, 17 Oct 2013 10:36:10 -0700
 
-intel_mid: Moved SFI related code to sfi.c
+intel_mid: move platform device definitions to their own platform_<device>.* files
 
-Moved SFI specific parsing/handling code to sfi.c. This will enable us
-to reuse our intel-mid code for platforms that supports firmware
-interfaces other than SFI (like ACPI).
+As Intel rolling out more SoC's after Moorestown, we need to
+re-structure the code in a way that is backward compatible and easy to
+expand. This patch implements a flexible way to support multiple boards
+and devices.
+
+This patch does not add any new functional support. It just refactors
+the existing code to increase the modularity and decrease the code
+duplication for supporting multiple soc's and boards.
+
+Currently intel-mid.c has both board and soc related code in one file.
+This patch moves the board related code to new files and let linker
+script to create SFI devite table following this:
+
+1. Move the SFI device specific code to
+   arch/x86/platform/intel-mid/device-libs/platform_<device>.*
+   A new device file is added for every supported device. This code will
+   get conditionally compiled by using corresponding device driver
+   CONFIG option.
+
+2. Move the device_ids location to .x86_intel_mid_dev.init section by
+   using new sfi_device() macro.
+
+This patch was based on previous code from Sathyanarayanan Kuppuswamy.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-Link: http://lkml.kernel.org/r/1381896701-23476-10-git-send-email-david.a.cohen@linux.intel.com
+Link: http://lkml.kernel.org/r/1381977419-27337-1-git-send-email-david.a.cohen@linux.intel.com
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/intel-mid.h        |   1 +
- arch/x86/platform/intel-mid/Makefile    |   2 +
- arch/x86/platform/intel-mid/intel-mid.c | 451 +----------------------------
- arch/x86/platform/intel-mid/sfi.c       | 485 ++++++++++++++++++++++++++++++++
- 4 files changed, 489 insertions(+), 450 deletions(-)
+ arch/x86/include/asm/intel-mid.h                   |  16 +
+ arch/x86/platform/intel-mid/Makefile               |   6 +-
+ arch/x86/platform/intel-mid/device_libs/Makefile   |  22 ++
+ .../intel-mid/device_libs/platform_bma023.c        |  20 +
+ .../intel-mid/device_libs/platform_emc1403.c       |  41 ++
+ .../intel-mid/device_libs/platform_gpio_keys.c     |  83 ++++
+ .../platform/intel-mid/device_libs/platform_ipc.c  |  68 ++++
+ .../platform/intel-mid/device_libs/platform_ipc.h  |  17 +
+ .../intel-mid/device_libs/platform_lis331.c        |  39 ++
+ .../intel-mid/device_libs/platform_max3111.c       |  35 ++
+ .../intel-mid/device_libs/platform_max7315.c       |  79 ++++
+ .../intel-mid/device_libs/platform_mpu3050.c       |  36 ++
+ .../platform/intel-mid/device_libs/platform_msic.c |  87 +++++
+ .../platform/intel-mid/device_libs/platform_msic.h |  19 +
+ .../intel-mid/device_libs/platform_msic_audio.c    |  47 +++
+ .../intel-mid/device_libs/platform_msic_battery.c  |  37 ++
+ .../intel-mid/device_libs/platform_msic_gpio.c     |  48 +++
+ .../intel-mid/device_libs/platform_msic_ocd.c      |  49 +++
+ .../device_libs/platform_msic_power_btn.c          |  36 ++
+ .../intel-mid/device_libs/platform_msic_thermal.c  |  37 ++
+ .../intel-mid/device_libs/platform_pmic_gpio.c     |  54 +++
+ .../intel-mid/device_libs/platform_tc35876x.c      |  36 ++
+ .../intel-mid/device_libs/platform_tca6416.c       |  57 +++
+ arch/x86/platform/intel-mid/intel-mid.c            | 419 ---------------------
+ arch/x86/platform/intel-mid/sfi.c                  |  14 +-
+ include/linux/sfi.h                                |   3 +
+ 26 files changed, 976 insertions(+), 429 deletions(-)
 
 diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index ad236ae..3b0e7a7 100644
+index 3b0e7a7..2838942 100644
 --- a/arch/x86/include/asm/intel-mid.h
 +++ b/arch/x86/include/asm/intel-mid.h
-@@ -15,6 +15,7 @@
+@@ -12,8 +12,11 @@
+ #define _ASM_X86_INTEL_MID_H
+ 
+ #include <linux/sfi.h>
++#include <linux/platform_device.h>
  
  extern int intel_mid_pci_init(void);
++extern int get_gpio_by_name(const char *name);
++extern void intel_scu_device_register(struct platform_device *pdev);
  extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
-+extern int __init sfi_parse_mtmr(struct sfi_table_header *table);
+ extern int __init sfi_parse_mtmr(struct sfi_table_header *table);
  extern int sfi_mrtc_num;
- extern struct sfi_rtc_table_entry sfi_mrtc_array[];
- 
-diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
-index de29635..b11e5b2 100644
---- a/arch/x86/platform/intel-mid/Makefile
-+++ b/arch/x86/platform/intel-mid/Makefile
-@@ -1,3 +1,5 @@
- obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
- obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
- obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
-+# SFI specific code
-+obj-$(CONFIG_SFI) += sfi.o
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index 40a3ff8..4091569 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -18,19 +18,9 @@
- #include <linux/interrupt.h>
- #include <linux/scatterlist.h>
- #include <linux/sfi.h>
--#include <linux/intel_pmic_gpio.h>
--#include <linux/spi/spi.h>
--#include <linux/i2c.h>
--#include <linux/platform_data/pca953x.h>
--#include <linux/gpio_keys.h>
--#include <linux/input.h>
--#include <linux/platform_device.h>
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/notifier.h>
--#include <linux/mfd/intel_msic.h>
--#include <linux/gpio.h>
--#include <linux/i2c/tc35876x.h>
- 
- #include <asm/setup.h>
- #include <asm/mpspec_def.h>
-@@ -68,19 +58,11 @@
- 
- enum intel_mid_timer_options intel_mid_timer_options;
- 
--static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
--static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
- enum intel_mid_cpu_type __intel_mid_cpu_chip;
- EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
- 
--int sfi_mtimer_num;
--
--struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
--EXPORT_SYMBOL_GPL(sfi_mrtc_array);
--int sfi_mrtc_num;
- static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
- 			struct devs_id *dev);
--
- static void intel_mid_power_off(void)
- {
- }
-@@ -90,114 +72,6 @@ static void intel_mid_reboot(void)
- 	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
- }
- 
--/* parse all the mtimer info to a static mtimer array */
--static int __init sfi_parse_mtmr(struct sfi_table_header *table)
--{
--	struct sfi_table_simple *sb;
--	struct sfi_timer_table_entry *pentry;
--	struct mpc_intsrc mp_irq;
--	int totallen;
--
--	sb = (struct sfi_table_simple *)table;
--	if (!sfi_mtimer_num) {
--		sfi_mtimer_num = SFI_GET_NUM_ENTRIES(sb,
--					struct sfi_timer_table_entry);
--		pentry = (struct sfi_timer_table_entry *) sb->pentry;
--		totallen = sfi_mtimer_num * sizeof(*pentry);
--		memcpy(sfi_mtimer_array, pentry, totallen);
--	}
--
--	pr_debug("SFI MTIMER info (num = %d):\n", sfi_mtimer_num);
--	pentry = sfi_mtimer_array;
--	for (totallen = 0; totallen < sfi_mtimer_num; totallen++, pentry++) {
--		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz,"
--			" irq = %d\n", totallen, (u32)pentry->phys_addr,
--			pentry->freq_hz, pentry->irq);
--			if (!pentry->irq)
--				continue;
--			mp_irq.type = MP_INTSRC;
--			mp_irq.irqtype = mp_INT;
--/* triggering mode edge bit 2-3, active high polarity bit 0-1 */
--			mp_irq.irqflag = 5;
--			mp_irq.srcbus = MP_BUS_ISA;
--			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
--			mp_irq.dstapic = MP_APIC_ALL;
--			mp_irq.dstirq = pentry->irq;
--			mp_save_irq(&mp_irq);
--	}
--
--	return 0;
--}
--
--struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
--{
--	int i;
--	if (hint < sfi_mtimer_num) {
--		if (!sfi_mtimer_usage[hint]) {
--			pr_debug("hint taken for timer %d irq %d\n",
--				hint, sfi_mtimer_array[hint].irq);
--			sfi_mtimer_usage[hint] = 1;
--			return &sfi_mtimer_array[hint];
--		}
--	}
--	/* take the first timer available */
--	for (i = 0; i < sfi_mtimer_num;) {
--		if (!sfi_mtimer_usage[i]) {
--			sfi_mtimer_usage[i] = 1;
--			return &sfi_mtimer_array[i];
--		}
--		i++;
--	}
--	return NULL;
--}
--
--void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
--{
--	int i;
--	for (i = 0; i < sfi_mtimer_num;) {
--		if (mtmr->irq == sfi_mtimer_array[i].irq) {
--			sfi_mtimer_usage[i] = 0;
--			return;
--		}
--		i++;
--	}
--}
--
--/* parse all the mrtc info to a global mrtc array */
--int __init sfi_parse_mrtc(struct sfi_table_header *table)
--{
--	struct sfi_table_simple *sb;
--	struct sfi_rtc_table_entry *pentry;
--	struct mpc_intsrc mp_irq;
--
--	int totallen;
--
--	sb = (struct sfi_table_simple *)table;
--	if (!sfi_mrtc_num) {
--		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
--						struct sfi_rtc_table_entry);
--		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
--		totallen = sfi_mrtc_num * sizeof(*pentry);
--		memcpy(sfi_mrtc_array, pentry, totallen);
--	}
--
--	pr_debug("SFI RTC info (num = %d):\n", sfi_mrtc_num);
--	pentry = sfi_mrtc_array;
--	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
--		pr_debug("RTC[%d]: paddr = 0x%08x, irq = %d\n",
--			totallen, (u32)pentry->phys_addr, pentry->irq);
--		mp_irq.type = MP_INTSRC;
--		mp_irq.irqtype = mp_INT;
--		mp_irq.irqflag = 0xf;	/* level trigger and active low */
--		mp_irq.srcbus = MP_BUS_ISA;
--		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
--		mp_irq.dstapic = MP_APIC_ALL;
--		mp_irq.dstirq = pentry->irq;
--		mp_save_irq(&mp_irq);
--	}
--	return 0;
--}
--
- static unsigned long __init intel_mid_calibrate_tsc(void)
- {
- 	unsigned long fast_calibrate;
-@@ -339,55 +213,6 @@ static inline int __init setup_x86_intel_mid_timer(char *arg)
- }
- __setup("x86_intel_mid_timer=", setup_x86_intel_mid_timer);
- 
--/*
-- * Parsing GPIO table first, since the DEVS table will need this table
-- * to map the pin name to the actual pin.
-- */
--static struct sfi_gpio_table_entry *gpio_table;
--static int gpio_num_entry;
--
--static int __init sfi_parse_gpio(struct sfi_table_header *table)
--{
--	struct sfi_table_simple *sb;
--	struct sfi_gpio_table_entry *pentry;
--	int num, i;
--
--	if (gpio_table)
--		return 0;
--	sb = (struct sfi_table_simple *)table;
--	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
--	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
--
--	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
--	if (!gpio_table)
--		return -1;
--	memcpy(gpio_table, pentry, num * sizeof(*pentry));
--	gpio_num_entry = num;
--
--	pr_debug("GPIO pin info:\n");
--	for (i = 0; i < num; i++, pentry++)
--		pr_debug("info[%2d]: controller = %16.16s, pin_name = %16.16s,"
--		" pin = %d\n", i,
--			pentry->controller_name,
--			pentry->pin_name,
--			pentry->pin_no);
--	return 0;
--}
--
--static int get_gpio_by_name(const char *name)
--{
--	struct sfi_gpio_table_entry *pentry = gpio_table;
--	int i;
--
--	if (!pentry)
--		return -1;
--	for (i = 0; i < gpio_num_entry; i++, pentry++) {
--		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
--			return pentry->pin_no;
--	}
--	return -1;
--}
--
- /* the offset for the mapping of global gpio pin to irq */
- #define INTEL_MID_IRQ_OFFSET 0x100
- 
-@@ -703,197 +528,6 @@ static const struct devs_id __initconst device_ids[] = {
- 	{ 0 }
+@@ -34,6 +37,10 @@ struct devs_id {
+ 				struct devs_id *dev);
  };
  
--#define MAX_IPCDEVS	24
--static struct platform_device *ipc_devs[MAX_IPCDEVS];
--static int ipc_next_dev;
--
--#define MAX_SCU_SPI	24
--static struct spi_board_info *spi_devs[MAX_SCU_SPI];
--static int spi_next_dev;
--
--#define MAX_SCU_I2C	24
--static struct i2c_board_info *i2c_devs[MAX_SCU_I2C];
--static int i2c_bus[MAX_SCU_I2C];
--static int i2c_next_dev;
--
--static void __init intel_scu_device_register(struct platform_device *pdev)
--{
--	if (ipc_next_dev == MAX_IPCDEVS)
--		pr_err("too many SCU IPC devices");
--	else
--		ipc_devs[ipc_next_dev++] = pdev;
--}
--
--static void __init intel_scu_spi_device_register(struct spi_board_info *sdev)
--{
--	struct spi_board_info *new_dev;
--
--	if (spi_next_dev == MAX_SCU_SPI) {
--		pr_err("too many SCU SPI devices");
--		return;
--	}
--
--	new_dev = kzalloc(sizeof(*sdev), GFP_KERNEL);
--	if (!new_dev) {
--		pr_err("failed to alloc mem for delayed spi dev %s\n",
--			sdev->modalias);
--		return;
--	}
--	memcpy(new_dev, sdev, sizeof(*sdev));
--
--	spi_devs[spi_next_dev++] = new_dev;
--}
--
--static void __init intel_scu_i2c_device_register(int bus,
--						struct i2c_board_info *idev)
--{
--	struct i2c_board_info *new_dev;
--
--	if (i2c_next_dev == MAX_SCU_I2C) {
--		pr_err("too many SCU I2C devices");
--		return;
--	}
--
--	new_dev = kzalloc(sizeof(*idev), GFP_KERNEL);
--	if (!new_dev) {
--		pr_err("failed to alloc mem for delayed i2c dev %s\n",
--			idev->type);
--		return;
--	}
--	memcpy(new_dev, idev, sizeof(*idev));
--
--	i2c_bus[i2c_next_dev] = bus;
--	i2c_devs[i2c_next_dev++] = new_dev;
--}
--
--BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
--EXPORT_SYMBOL_GPL(intel_scu_notifier);
--
--/* Called by IPC driver */
--void intel_scu_devices_create(void)
--{
--	int i;
--
--	for (i = 0; i < ipc_next_dev; i++)
--		platform_device_add(ipc_devs[i]);
--
--	for (i = 0; i < spi_next_dev; i++)
--		spi_register_board_info(spi_devs[i], 1);
--
--	for (i = 0; i < i2c_next_dev; i++) {
--		struct i2c_adapter *adapter;
--		struct i2c_client *client;
--
--		adapter = i2c_get_adapter(i2c_bus[i]);
--		if (adapter) {
--			client = i2c_new_device(adapter, i2c_devs[i]);
--			if (!client)
--				pr_err("can't create i2c device %s\n",
--					i2c_devs[i]->type);
--		} else
--			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
--	}
--	intel_scu_notifier_post(SCU_AVAILABLE, NULL);
--}
--EXPORT_SYMBOL_GPL(intel_scu_devices_create);
--
--/* Called by IPC driver */
--void intel_scu_devices_destroy(void)
--{
--	int i;
--
--	intel_scu_notifier_post(SCU_DOWN, NULL);
--
--	for (i = 0; i < ipc_next_dev; i++)
--		platform_device_del(ipc_devs[i]);
--}
--EXPORT_SYMBOL_GPL(intel_scu_devices_destroy);
--
--static void __init install_irq_resource(struct platform_device *pdev, int irq)
--{
--	/* Single threaded */
--	static struct resource __initdata res = {
--		.name = "IRQ",
--		.flags = IORESOURCE_IRQ,
--	};
--	res.start = irq;
--	platform_device_add_resources(pdev, &res, 1);
--}
--
--static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
--{
--	struct platform_device *pdev;
--	void *pdata = NULL;
--
--	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
--		pentry->name, pentry->irq);
--	pdata = dev->get_platform_data(pentry);
--
--	pdev = platform_device_alloc(pentry->name, 0);
--	if (pdev == NULL) {
--		pr_err("out of memory for SFI platform device '%s'.\n",
--			pentry->name);
--		return;
--	}
--	install_irq_resource(pdev, pentry->irq);
--
--	pdev->dev.platform_data = pdata;
--	platform_device_add(pdev);
--}
--
--static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
--{
--	struct spi_board_info spi_info;
--	void *pdata = NULL;
--
--	memset(&spi_info, 0, sizeof(spi_info));
--	strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
--	spi_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
--	spi_info.bus_num = pentry->host_num;
--	spi_info.chip_select = pentry->addr;
--	spi_info.max_speed_hz = pentry->max_freq;
--	pr_debug("SPI bus=%d, name=%16.16s, irq=0x%2x, max_freq=%d, cs=%d\n",
--		spi_info.bus_num,
--		spi_info.modalias,
--		spi_info.irq,
--		spi_info.max_speed_hz,
--		spi_info.chip_select);
--
--	pdata = dev->get_platform_data(&spi_info);
--
--	spi_info.platform_data = pdata;
--	if (dev->delay)
--		intel_scu_spi_device_register(&spi_info);
--	else
--		spi_register_board_info(&spi_info, 1);
--}
--
--static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
--{
--	struct i2c_board_info i2c_info;
--	void *pdata = NULL;
--
--	memset(&i2c_info, 0, sizeof(i2c_info));
--	strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
--	i2c_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
--	i2c_info.addr = pentry->addr;
--	pr_debug("I2C bus = %d, name = %16.16s, irq = 0x%2x, addr = 0x%x\n",
--		pentry->host_num,
--		i2c_info.type,
--		i2c_info.irq,
--		i2c_info.addr);
--	pdata = dev->get_platform_data(&i2c_info);
--	i2c_info.platform_data = pdata;
--
--	if (dev->delay)
--		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
--	else
--		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
--}
--
- static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
- 				struct devs_id *dev)
- {
-@@ -934,89 +568,6 @@ static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
- 	intel_scu_device_register(pdev);
- }
- 
--static struct devs_id __init *get_device_id(u8 type, char *name)
--{
--	struct devs_id *dev = device_ids;
--
--	if (device_ids == NULL)
--		return NULL;
--
--	while (dev->name[0]) {
--		if (dev->type == type &&
--			!strncmp(dev->name, name, SFI_NAME_LEN)) {
--			return dev;
--		}
--		dev++;
--	}
--
--	return NULL;
--}
--
--static int __init sfi_parse_devs(struct sfi_table_header *table)
--{
--	struct sfi_table_simple *sb;
--	struct sfi_device_table_entry *pentry;
--	struct devs_id *dev = NULL;
--	int num, i;
--	int ioapic;
--	struct io_apic_irq_attr irq_attr;
--
--	sb = (struct sfi_table_simple *)table;
--	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_device_table_entry);
--	pentry = (struct sfi_device_table_entry *)sb->pentry;
--
--	for (i = 0; i < num; i++, pentry++) {
--		int irq = pentry->irq;
--
--		if (irq != (u8)0xff) { /* native RTE case */
--			/* these SPI2 devices are not exposed to system as PCI
--			 * devices, but they have separate RTE entry in IOAPIC
--			 * so we have to enable them one by one here
--			 */
--			ioapic = mp_find_ioapic(irq);
--			irq_attr.ioapic = ioapic;
--			irq_attr.ioapic_pin = irq;
--			irq_attr.trigger = 1;
--			irq_attr.polarity = 1;
--			io_apic_set_pci_routing(NULL, irq, &irq_attr);
--		} else
--			irq = 0; /* No irq */
--
--		dev = get_device_id(pentry->type, pentry->name);
--
--		if ((dev == NULL) || (dev->get_platform_data == NULL))
--			continue;
--
--		if (dev->device_handler) {
--			dev->device_handler(pentry, dev);
--		} else {
--			switch (pentry->type) {
--			case SFI_DEV_TYPE_IPC:
--				sfi_handle_ipc_dev(pentry, dev);
--				break;
--			case SFI_DEV_TYPE_SPI:
--				sfi_handle_spi_dev(pentry, dev);
--				break;
--			case SFI_DEV_TYPE_I2C:
--				sfi_handle_i2c_dev(pentry, dev);
--				break;
--			case SFI_DEV_TYPE_UART:
--			case SFI_DEV_TYPE_HSI:
--			default:
--				break;
--			}
--		}
--	}
--	return 0;
--}
--
--static int __init intel_mid_platform_init(void)
--{
--	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
--	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
--	return 0;
--}
--arch_initcall(intel_mid_platform_init);
- 
++#define sfi_device(i)   \
++		static const struct devs_id *const __intel_mid_sfi_##i##_dev __used \
++		__attribute__((__section__(".x86_intel_mid_dev.init"))) = &i
++
  /*
-  * we will search these buttons in SFI GPIO table (by name)
-@@ -1078,4 +629,4 @@ static int __init pb_keys_init(void)
- 	}
- 	return 0;
+  * Medfield is the follow-up of Moorestown, it combines two chip solution into
+  * one. Other than that it also added always-on and constant tsc and lapic
+@@ -55,9 +62,15 @@ static inline enum intel_mid_cpu_type intel_mid_identify_cpu(void)
+ 	return __intel_mid_cpu_chip;
  }
--late_initcall(pb_keys_init);
-+late_initcall(pb_keys_init);
-\ No newline at end of file
-diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+ 
++static inline bool intel_mid_has_msic(void)
++{
++	return (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL);
++}
++
+ #else /* !CONFIG_X86_INTEL_MID */
+ 
+ #define intel_mid_identify_cpu()    (0)
++#define intel_mid_has_msic()    (0)
+ 
+ #endif /* !CONFIG_X86_INTEL_MID */
+ 
+@@ -94,4 +107,7 @@ extern void intel_scu_devices_destroy(void);
+ 
+ extern void intel_mid_rtc_init(void);
+ 
++/* the offset for the mapping of global gpio pin to irq */
++#define INTEL_MID_IRQ_OFFSET 0x100
++
+ #endif /* _ASM_X86_INTEL_MID_H */
+diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
+index b11e5b2..1d065c1 100644
+--- a/arch/x86/platform/intel-mid/Makefile
++++ b/arch/x86/platform/intel-mid/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
+-obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
+-obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
++obj-$(CONFIG_X86_INTEL_MID) += intel_mid_vrtc.o
++obj-$(CONFIG_EARLY_PRINTK_INTEL_MID) += early_printk_intel_mid.o
+ # SFI specific code
+-obj-$(CONFIG_SFI) += sfi.o
++obj-$(CONFIG_SFI) += sfi.o device_libs/
+diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
 new file mode 100644
-index 0000000..2f8196d
+index 0000000..097e7a7
 --- /dev/null
-+++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -0,0 +1,485 @@
++++ b/arch/x86/platform/intel-mid/device_libs/Makefile
+@@ -0,0 +1,22 @@
++# IPC Devices
++obj-y += platform_ipc.o
++obj-$(subst m,y,$(CONFIG_MFD_INTEL_MSIC)) += platform_msic.o
++obj-$(subst m,y,$(CONFIG_SND_MFLD_MACHINE)) += platform_msic_audio.o
++obj-$(subst m,y,$(CONFIG_GPIO_MSIC)) += platform_msic_gpio.o
++obj-$(subst m,y,$(CONFIG_MFD_INTEL_MSIC)) += platform_msic_ocd.o
++obj-$(subst m,y,$(CONFIG_MFD_INTEL_MSIC)) += platform_msic_battery.o
++obj-$(subst m,y,$(CONFIG_INTEL_MID_POWER_BUTTON)) += platform_msic_power_btn.o
++obj-$(subst m,y,$(CONFIG_GPIO_INTEL_PMIC)) += platform_pmic_gpio.o
++obj-$(subst m,y,$(CONFIG_INTEL_MFLD_THERMAL)) += platform_msic_thermal.o
++# I2C Devices
++obj-$(subst m,y,$(CONFIG_SENSORS_EMC1403)) += platform_emc1403.o
++obj-$(subst m,y,$(CONFIG_SENSORS_LIS3LV02D)) += platform_lis331.o
++obj-$(subst m,y,$(CONFIG_GPIO_PCA953X)) += platform_max7315.o
++obj-$(subst m,y,$(CONFIG_INPUT_MPU3050)) += platform_mpu3050.o
++obj-$(subst m,y,$(CONFIG_INPUT_BMA150)) += platform_bma023.o
++obj-$(subst m,y,$(CONFIG_GPIO_PCA953X)) += platform_tca6416.o
++obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
++# SPI Devices
++obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
++# MISC Devices
++obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_bma023.c b/arch/x86/platform/intel-mid/device_libs/platform_bma023.c
+new file mode 100644
+index 0000000..0ae7f2a
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_bma023.c
+@@ -0,0 +1,20 @@
 +/*
-+ * intel_mid_sfi.c: Intel MID SFI initialization code
++ * platform_bma023.c: bma023 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <asm/intel-mid.h>
++
++static const struct devs_id bma023_dev_id __initconst = {
++	.name = "bma023",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++};
++
++sfi_device(bma023_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
+new file mode 100644
+index 0000000..0d942c1
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
+@@ -0,0 +1,41 @@
++/*
++ * platform_emc1403.c: emc1403 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <asm/intel-mid.h>
++
++static void __init *emc1403_platform_data(void *info)
++{
++	static short intr2nd_pdata;
++	struct i2c_board_info *i2c_info = info;
++	int intr = get_gpio_by_name("thermal_int");
++	int intr2nd = get_gpio_by_name("thermal_alert");
++
++	if (intr == -1 || intr2nd == -1)
++		return NULL;
++
++	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
++
++	return &intr2nd_pdata;
++}
++
++static const struct devs_id emc1403_dev_id __initconst = {
++	.name = "emc1403",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++	.get_platform_data = &emc1403_platform_data,
++};
++
++sfi_device(emc1403_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
+new file mode 100644
+index 0000000..a013a48
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
+@@ -0,0 +1,83 @@
++/*
++ * platform_gpio_keys.c: gpio_keys platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/input.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/gpio.h>
++#include <linux/gpio_keys.h>
++#include <linux/platform_device.h>
++#include <asm/intel-mid.h>
++
++#define DEVICE_NAME "gpio-keys"
++
++/*
++ * we will search these buttons in SFI GPIO table (by name)
++ * and register them dynamically. Please add all possible
++ * buttons here, we will shrink them if no GPIO found.
++ */
++static struct gpio_keys_button gpio_button[] = {
++	{KEY_POWER,		-1, 1, "power_btn",	EV_KEY, 0, 3000},
++	{KEY_PROG1,		-1, 1, "prog_btn1",	EV_KEY, 0, 20},
++	{KEY_PROG2,		-1, 1, "prog_btn2",	EV_KEY, 0, 20},
++	{SW_LID,		-1, 1, "lid_switch",	EV_SW,  0, 20},
++	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 0, 20},
++	{KEY_VOLUMEDOWN,	-1, 1, "vol_down",	EV_KEY, 0, 20},
++	{KEY_CAMERA,		-1, 1, "camera_full",	EV_KEY, 0, 20},
++	{KEY_CAMERA_FOCUS,	-1, 1, "camera_half",	EV_KEY, 0, 20},
++	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw1",	EV_SW,  0, 20},
++	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
++};
++
++static struct gpio_keys_platform_data gpio_keys = {
++	.buttons	= gpio_button,
++	.rep		= 1,
++	.nbuttons	= -1, /* will fill it after search */
++};
++
++static struct platform_device pb_device = {
++	.name		= DEVICE_NAME,
++	.id		= -1,
++	.dev		= {
++		.platform_data	= &gpio_keys,
++	},
++};
++
++/*
++ * Shrink the non-existent buttons, register the gpio button
++ * device if there is some
++ */
++static int __init pb_keys_init(void)
++{
++	struct gpio_keys_button *gb = gpio_button;
++	int i, num, good = 0;
++
++	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
++	for (i = 0; i < num; i++) {
++		gb[i].gpio = get_gpio_by_name(gb[i].desc);
++		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
++					gb[i].gpio);
++		if (gb[i].gpio == -1)
++			continue;
++
++		if (i != good)
++			gb[good] = gb[i];
++		good++;
++	}
++
++	if (good) {
++		gpio_keys.nbuttons = good;
++		return platform_device_register(&pb_device);
++	}
++	return 0;
++}
++late_initcall(pb_keys_init);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_ipc.c b/arch/x86/platform/intel-mid/device_libs/platform_ipc.c
+new file mode 100644
+index 0000000..a84b73d
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_ipc.c
+@@ -0,0 +1,68 @@
++/*
++ * platform_ipc.c: IPC platform library file
 + *
 + * (C) Copyright 2013 Intel Corporation
 + * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
@@ -612,328 +377,37 @@ index 0000000..2f8196d
 +#include <linux/init.h>
 +#include <linux/kernel.h>
 +#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
 +#include <linux/sfi.h>
-+#include <linux/intel_pmic_gpio.h>
-+#include <linux/spi/spi.h>
-+#include <linux/i2c.h>
-+#include <linux/skbuff.h>
 +#include <linux/gpio.h>
-+#include <linux/gpio_keys.h>
-+#include <linux/input.h>
-+#include <linux/platform_device.h>
-+#include <linux/irq.h>
-+#include <linux/module.h>
-+#include <linux/notifier.h>
-+#include <linux/mmc/core.h>
-+#include <linux/mmc/card.h>
-+#include <linux/blkdev.h>
-+
-+#include <asm/setup.h>
-+#include <asm/mpspec_def.h>
-+#include <asm/hw_irq.h>
-+#include <asm/apic.h>
-+#include <asm/io_apic.h>
 +#include <asm/intel-mid.h>
-+#include <asm/intel_mid_vrtc.h>
-+#include <asm/io.h>
-+#include <asm/i8259.h>
-+#include <asm/intel_scu_ipc.h>
-+#include <asm/apb_timer.h>
-+#include <asm/reboot.h>
-+#include "intel_mid_weak_decls.h"
++#include "platform_ipc.h"
 +
-+#define	SFI_SIG_OEM0	"OEM0"
-+#define MAX_IPCDEVS	24
-+#define MAX_SCU_SPI	24
-+#define MAX_SCU_I2C	24
-+
-+static struct platform_device *ipc_devs[MAX_IPCDEVS];
-+static struct spi_board_info *spi_devs[MAX_SCU_SPI];
-+static struct i2c_board_info *i2c_devs[MAX_SCU_I2C];
-+static struct sfi_gpio_table_entry *gpio_table;
-+static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
-+static int ipc_next_dev;
-+static int spi_next_dev;
-+static int i2c_next_dev;
-+static int i2c_bus[MAX_SCU_I2C];
-+static int gpio_num_entry;
-+static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
-+int sfi_mrtc_num;
-+int sfi_mtimer_num;
-+
-+struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
-+EXPORT_SYMBOL_GPL(sfi_mrtc_array);
-+
-+struct blocking_notifier_head intel_scu_notifier =
-+			BLOCKING_NOTIFIER_INIT(intel_scu_notifier);
-+EXPORT_SYMBOL_GPL(intel_scu_notifier);
-+
-+/* parse all the mtimer info to a static mtimer array */
-+int __init sfi_parse_mtmr(struct sfi_table_header *table)
++void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
++				struct devs_id *dev)
 +{
-+	struct sfi_table_simple *sb;
-+	struct sfi_timer_table_entry *pentry;
-+	struct mpc_intsrc mp_irq;
-+	int totallen;
-+
-+	sb = (struct sfi_table_simple *)table;
-+	if (!sfi_mtimer_num) {
-+		sfi_mtimer_num = SFI_GET_NUM_ENTRIES(sb,
-+					struct sfi_timer_table_entry);
-+		pentry = (struct sfi_timer_table_entry *) sb->pentry;
-+		totallen = sfi_mtimer_num * sizeof(*pentry);
-+		memcpy(sfi_mtimer_array, pentry, totallen);
-+	}
-+
-+	pr_debug("SFI MTIMER info (num = %d):\n", sfi_mtimer_num);
-+	pentry = sfi_mtimer_array;
-+	for (totallen = 0; totallen < sfi_mtimer_num; totallen++, pentry++) {
-+		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz, irq = %d\n",
-+			totallen, (u32)pentry->phys_addr,
-+			pentry->freq_hz, pentry->irq);
-+			if (!pentry->irq)
-+				continue;
-+			mp_irq.type = MP_INTSRC;
-+			mp_irq.irqtype = mp_INT;
-+/* triggering mode edge bit 2-3, active high polarity bit 0-1 */
-+			mp_irq.irqflag = 5;
-+			mp_irq.srcbus = MP_BUS_ISA;
-+			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
-+			mp_irq.dstapic = MP_APIC_ALL;
-+			mp_irq.dstirq = pentry->irq;
-+			mp_save_irq(&mp_irq);
-+	}
-+
-+	return 0;
-+}
-+
-+struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
-+{
-+	int i;
-+	if (hint < sfi_mtimer_num) {
-+		if (!sfi_mtimer_usage[hint]) {
-+			pr_debug("hint taken for timer %d irq %d\n",
-+				hint, sfi_mtimer_array[hint].irq);
-+			sfi_mtimer_usage[hint] = 1;
-+			return &sfi_mtimer_array[hint];
-+		}
-+	}
-+	/* take the first timer available */
-+	for (i = 0; i < sfi_mtimer_num;) {
-+		if (!sfi_mtimer_usage[i]) {
-+			sfi_mtimer_usage[i] = 1;
-+			return &sfi_mtimer_array[i];
-+		}
-+		i++;
-+	}
-+	return NULL;
-+}
-+
-+void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
-+{
-+	int i;
-+	for (i = 0; i < sfi_mtimer_num;) {
-+		if (mtmr->irq == sfi_mtimer_array[i].irq) {
-+			sfi_mtimer_usage[i] = 0;
-+			return;
-+		}
-+		i++;
-+	}
-+}
-+
-+/* parse all the mrtc info to a global mrtc array */
-+int __init sfi_parse_mrtc(struct sfi_table_header *table)
-+{
-+	struct sfi_table_simple *sb;
-+	struct sfi_rtc_table_entry *pentry;
-+	struct mpc_intsrc mp_irq;
-+
-+	int totallen;
-+
-+	sb = (struct sfi_table_simple *)table;
-+	if (!sfi_mrtc_num) {
-+		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
-+						struct sfi_rtc_table_entry);
-+		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
-+		totallen = sfi_mrtc_num * sizeof(*pentry);
-+		memcpy(sfi_mrtc_array, pentry, totallen);
-+	}
-+
-+	pr_debug("SFI RTC info (num = %d):\n", sfi_mrtc_num);
-+	pentry = sfi_mrtc_array;
-+	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
-+		pr_debug("RTC[%d]: paddr = 0x%08x, irq = %d\n",
-+			totallen, (u32)pentry->phys_addr, pentry->irq);
-+		mp_irq.type = MP_INTSRC;
-+		mp_irq.irqtype = mp_INT;
-+		mp_irq.irqflag = 0xf;	/* level trigger and active low */
-+		mp_irq.srcbus = MP_BUS_ISA;
-+		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
-+		mp_irq.dstapic = MP_APIC_ALL;
-+		mp_irq.dstirq = pentry->irq;
-+		mp_save_irq(&mp_irq);
-+	}
-+	return 0;
-+}
-+
-+
-+/*
-+ * Parsing GPIO table first, since the DEVS table will need this table
-+ * to map the pin name to the actual pin.
-+ */
-+static int __init sfi_parse_gpio(struct sfi_table_header *table)
-+{
-+	struct sfi_table_simple *sb;
-+	struct sfi_gpio_table_entry *pentry;
-+	int num, i;
-+
-+	if (gpio_table)
-+		return 0;
-+	sb = (struct sfi_table_simple *)table;
-+	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
-+	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
-+
-+	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
-+	if (!gpio_table)
-+		return -1;
-+	memcpy(gpio_table, pentry, num * sizeof(*pentry));
-+	gpio_num_entry = num;
-+
-+	pr_debug("GPIO pin info:\n");
-+	for (i = 0; i < num; i++, pentry++)
-+		pr_debug("info[%2d]: controller = %16.16s, pin_name = %16.16s,"
-+		" pin = %d\n", i,
-+			pentry->controller_name,
-+			pentry->pin_name,
-+			pentry->pin_no);
-+	return 0;
-+}
-+
-+int get_gpio_by_name(const char *name)
-+{
-+	struct sfi_gpio_table_entry *pentry = gpio_table;
-+	int i;
-+
-+	if (!pentry)
-+		return -1;
-+	for (i = 0; i < gpio_num_entry; i++, pentry++) {
-+		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
-+			return pentry->pin_no;
-+	}
-+	return -1;
-+}
-+
-+void __init intel_scu_device_register(struct platform_device *pdev)
-+{
-+	if (ipc_next_dev == MAX_IPCDEVS)
-+		pr_err("too many SCU IPC devices");
-+	else
-+		ipc_devs[ipc_next_dev++] = pdev;
-+}
-+
-+static void __init intel_scu_spi_device_register(struct spi_board_info *sdev)
-+{
-+	struct spi_board_info *new_dev;
-+
-+	if (spi_next_dev == MAX_SCU_SPI) {
-+		pr_err("too many SCU SPI devices");
-+		return;
-+	}
-+
-+	new_dev = kzalloc(sizeof(*sdev), GFP_KERNEL);
-+	if (!new_dev) {
-+		pr_err("failed to alloc mem for delayed spi dev %s\n",
-+			sdev->modalias);
-+		return;
-+	}
-+	memcpy(new_dev, sdev, sizeof(*sdev));
-+
-+	spi_devs[spi_next_dev++] = new_dev;
-+}
-+
-+static void __init intel_scu_i2c_device_register(int bus,
-+						struct i2c_board_info *idev)
-+{
-+	struct i2c_board_info *new_dev;
-+
-+	if (i2c_next_dev == MAX_SCU_I2C) {
-+		pr_err("too many SCU I2C devices");
-+		return;
-+	}
-+
-+	new_dev = kzalloc(sizeof(*idev), GFP_KERNEL);
-+	if (!new_dev) {
-+		pr_err("failed to alloc mem for delayed i2c dev %s\n",
-+			idev->type);
-+		return;
-+	}
-+	memcpy(new_dev, idev, sizeof(*idev));
-+
-+	i2c_bus[i2c_next_dev] = bus;
-+	i2c_devs[i2c_next_dev++] = new_dev;
-+}
-+
-+/* Called by IPC driver */
-+void intel_scu_devices_create(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ipc_next_dev; i++)
-+		platform_device_add(ipc_devs[i]);
-+
-+	for (i = 0; i < spi_next_dev; i++)
-+		spi_register_board_info(spi_devs[i], 1);
-+
-+	for (i = 0; i < i2c_next_dev; i++) {
-+		struct i2c_adapter *adapter;
-+		struct i2c_client *client;
-+
-+		adapter = i2c_get_adapter(i2c_bus[i]);
-+		if (adapter) {
-+			client = i2c_new_device(adapter, i2c_devs[i]);
-+			if (!client)
-+				pr_err("can't create i2c device %s\n",
-+					i2c_devs[i]->type);
-+		} else
-+			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
-+	}
-+	intel_scu_notifier_post(SCU_AVAILABLE, NULL);
-+}
-+EXPORT_SYMBOL_GPL(intel_scu_devices_create);
-+
-+/* Called by IPC driver */
-+void intel_scu_devices_destroy(void)
-+{
-+	int i;
-+
-+	intel_scu_notifier_post(SCU_DOWN, NULL);
-+
-+	for (i = 0; i < ipc_next_dev; i++)
-+		platform_device_del(ipc_devs[i]);
-+}
-+EXPORT_SYMBOL_GPL(intel_scu_devices_destroy);
-+
-+static void __init install_irq_resource(struct platform_device *pdev, int irq)
-+{
-+	/* Single threaded */
++	struct platform_device *pdev;
++	void *pdata = NULL;
 +	static struct resource res __initdata = {
 +		.name = "IRQ",
 +		.flags = IORESOURCE_IRQ,
 +	};
-+	res.start = irq;
-+	platform_device_add_resources(pdev, &res, 1);
-+}
-+
-+static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
-+{
-+	struct platform_device *pdev;
-+	void *pdata = NULL;
 +
 +	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
 +		pentry->name, pentry->irq);
-+	pdata = dev->get_platform_data(pentry);
++
++	/*
++	 * We need to call platform init of IPC devices to fill misc_pdata
++	 * structure. It will be used in msic_init for initialization.
++	 */
++	if (dev != NULL)
++		pdata = dev->get_platform_data(pentry);
++
++	/*
++	 * On Medfield the platform device creation is handled by the MSIC
++	 * MFD driver so we don't need to do it here.
++	 */
++	if (intel_mid_has_msic())
++		return;
 +
 +	pdev = platform_device_alloc(pentry->name, 0);
 +	if (pdev == NULL) {
@@ -941,144 +415,1315 @@ index 0000000..2f8196d
 +			pentry->name);
 +		return;
 +	}
-+	install_irq_resource(pdev, pentry->irq);
++	res.start = pentry->irq;
++	platform_device_add_resources(pdev, &res, 1);
 +
 +	pdev->dev.platform_data = pdata;
-+	platform_device_add(pdev);
++	intel_scu_device_register(pdev);
 +}
 +
-+static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
++static const struct devs_id pmic_audio_dev_id __initconst = {
++	.name = "pmic_audio",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(pmic_audio_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_ipc.h b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
+new file mode 100644
+index 0000000..8f568dd
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
+@@ -0,0 +1,17 @@
++/*
++ * platform_ipc.h: IPC platform library header file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#ifndef _PLATFORM_IPC_H_
++#define _PLATFORM_IPC_H_
++
++extern void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
++			struct devs_id *dev) __attribute__((weak));
++#endif
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_lis331.c b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
+new file mode 100644
+index 0000000..15278c1
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
+@@ -0,0 +1,39 @@
++/*
++ * platform_lis331.c:  lis331 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <asm/intel-mid.h>
++
++static void __init *lis331dl_platform_data(void *info)
 +{
-+	struct spi_board_info spi_info;
-+	void *pdata = NULL;
++	static short intr2nd_pdata;
++	struct i2c_board_info *i2c_info = info;
++	int intr = get_gpio_by_name("accel_int");
++	int intr2nd = get_gpio_by_name("accel_2");
 +
-+	memset(&spi_info, 0, sizeof(spi_info));
-+	strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
-+	spi_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
-+	spi_info.bus_num = pentry->host_num;
-+	spi_info.chip_select = pentry->addr;
-+	spi_info.max_speed_hz = pentry->max_freq;
-+	pr_debug("SPI bus=%d, name=%16.16s, irq=0x%2x, max_freq=%d, cs=%d\n",
-+		spi_info.bus_num,
-+		spi_info.modalias,
-+		spi_info.irq,
-+		spi_info.max_speed_hz,
-+		spi_info.chip_select);
-+
-+	pdata = dev->get_platform_data(&spi_info);
-+
-+	spi_info.platform_data = pdata;
-+	if (dev->delay)
-+		intel_scu_spi_device_register(&spi_info);
-+	else
-+		spi_register_board_info(&spi_info, 1);
-+}
-+
-+static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
-+					struct devs_id *dev)
-+{
-+	struct i2c_board_info i2c_info;
-+	void *pdata = NULL;
-+
-+	memset(&i2c_info, 0, sizeof(i2c_info));
-+	strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
-+	i2c_info.irq = ((pentry->irq == (u8)0xff) ? 0 : pentry->irq);
-+	i2c_info.addr = pentry->addr;
-+	pr_debug("I2C bus = %d, name = %16.16s, irq = 0x%2x, addr = 0x%x\n",
-+		pentry->host_num,
-+		i2c_info.type,
-+		i2c_info.irq,
-+		i2c_info.addr);
-+	pdata = dev->get_platform_data(&i2c_info);
-+	i2c_info.platform_data = pdata;
-+
-+	if (dev->delay)
-+		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
-+	else
-+		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
-+}
-+
-+static struct devs_id __init *get_device_id(u8 type, char *name)
-+{
-+	struct devs_id *dev = device_ids;
-+
-+	if (device_ids == NULL)
++	if (intr == -1 || intr2nd == -1)
 +		return NULL;
 +
-+	while (dev->name[0]) {
-+		if (dev->type == type &&
-+			!strncmp(dev->name, name, SFI_NAME_LEN)) {
-+			return dev;
-+		}
-+		dev++;
-+	}
++	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
 +
++	return &intr2nd_pdata;
++}
++
++static const struct devs_id lis331dl_dev_id __initconst = {
++	.name = "i2c_accel",
++	.type = SFI_DEV_TYPE_I2C,
++	.get_platform_data = &lis331dl_platform_data,
++};
++
++sfi_device(lis331dl_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max3111.c b/arch/x86/platform/intel-mid/device_libs/platform_max3111.c
+new file mode 100644
+index 0000000..afd1df9
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_max3111.c
+@@ -0,0 +1,35 @@
++/*
++ * platform_max3111.c: max3111 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/gpio.h>
++#include <linux/spi/spi.h>
++#include <asm/intel-mid.h>
++
++static void __init *max3111_platform_data(void *info)
++{
++	struct spi_board_info *spi_info = info;
++	int intr = get_gpio_by_name("max3111_int");
++
++	spi_info->mode = SPI_MODE_0;
++	if (intr == -1)
++		return NULL;
++	spi_info->irq = intr + INTEL_MID_IRQ_OFFSET;
 +	return NULL;
 +}
 +
-+static int __init sfi_parse_devs(struct sfi_table_header *table)
++static const struct devs_id max3111_dev_id __initconst = {
++	.name = "spi_max3111",
++	.type = SFI_DEV_TYPE_SPI,
++	.get_platform_data = &max3111_platform_data,
++};
++
++sfi_device(max3111_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max7315.c b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
+new file mode 100644
+index 0000000..94ade10
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
+@@ -0,0 +1,79 @@
++/*
++ * platform_max7315.c: max7315 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/platform_data/pca953x.h>
++#include <asm/intel-mid.h>
++
++#define MAX7315_NUM 2
++
++static void __init *max7315_platform_data(void *info)
 +{
-+	struct sfi_table_simple *sb;
-+	struct sfi_device_table_entry *pentry;
-+	struct devs_id *dev = NULL;
-+	int num, i;
-+	int ioapic;
-+	struct io_apic_irq_attr irq_attr;
++	static struct pca953x_platform_data max7315_pdata[MAX7315_NUM];
++	static int nr;
++	struct pca953x_platform_data *max7315 = &max7315_pdata[nr];
++	struct i2c_board_info *i2c_info = info;
++	int gpio_base, intr;
++	char base_pin_name[SFI_NAME_LEN + 1];
++	char intr_pin_name[SFI_NAME_LEN + 1];
 +
-+	sb = (struct sfi_table_simple *)table;
-+	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_device_table_entry);
-+	pentry = (struct sfi_device_table_entry *)sb->pentry;
-+
-+	for (i = 0; i < num; i++, pentry++) {
-+		int irq = pentry->irq;
-+
-+		if (irq != (u8)0xff) { /* native RTE case */
-+			/* these SPI2 devices are not exposed to system as PCI
-+			 * devices, but they have separate RTE entry in IOAPIC
-+			 * so we have to enable them one by one here
-+			 */
-+			ioapic = mp_find_ioapic(irq);
-+			irq_attr.ioapic = ioapic;
-+			irq_attr.ioapic_pin = irq;
-+			irq_attr.trigger = 1;
-+			irq_attr.polarity = 1;
-+			io_apic_set_pci_routing(NULL, irq, &irq_attr);
-+		} else
-+			irq = 0; /* No irq */
-+
-+		dev = get_device_id(pentry->type, pentry->name);
-+
-+		if ((dev == NULL) || (dev->get_platform_data == NULL))
-+			continue;
-+
-+		if (dev->device_handler) {
-+			dev->device_handler(pentry, dev);
-+		} else {
-+			switch (pentry->type) {
-+			case SFI_DEV_TYPE_IPC:
-+				sfi_handle_ipc_dev(pentry, dev);
-+				break;
-+			case SFI_DEV_TYPE_SPI:
-+				sfi_handle_spi_dev(pentry, dev);
-+				break;
-+			case SFI_DEV_TYPE_I2C:
-+				sfi_handle_i2c_dev(pentry, dev);
-+				break;
-+			case SFI_DEV_TYPE_UART:
-+			case SFI_DEV_TYPE_HSI:
-+			default:
-+				break;
-+			}
-+		}
++	if (nr == MAX7315_NUM) {
++		pr_err("too many max7315s, we only support %d\n",
++				MAX7315_NUM);
++		return NULL;
 +	}
-+	return 0;
++	/* we have several max7315 on the board, we only need load several
++	 * instances of the same pca953x driver to cover them
++	 */
++	strcpy(i2c_info->type, "max7315");
++	if (nr++) {
++		sprintf(base_pin_name, "max7315_%d_base", nr);
++		sprintf(intr_pin_name, "max7315_%d_int", nr);
++	} else {
++		strcpy(base_pin_name, "max7315_base");
++		strcpy(intr_pin_name, "max7315_int");
++	}
++
++	gpio_base = get_gpio_by_name(base_pin_name);
++	intr = get_gpio_by_name(intr_pin_name);
++
++	if (gpio_base == -1)
++		return NULL;
++	max7315->gpio_base = gpio_base;
++	if (intr != -1) {
++		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++		max7315->irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
++	} else {
++		i2c_info->irq = -1;
++		max7315->irq_base = -1;
++	}
++	return max7315;
 +}
 +
-+static int __init intel_mid_platform_init(void)
++static const struct devs_id max7315_dev_id __initconst = {
++	.name = "i2c_max7315",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++	.get_platform_data = &max7315_platform_data,
++};
++
++static const struct devs_id max7315_2_dev_id __initconst = {
++	.name = "i2c_max7315_2",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++	.get_platform_data = &max7315_platform_data,
++};
++
++sfi_device(max7315_dev_id);
++sfi_device(max7315_2_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
+new file mode 100644
+index 0000000..dd28d63
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
+@@ -0,0 +1,36 @@
++/*
++ * platform_mpu3050.c: mpu3050 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <asm/intel-mid.h>
++
++static void *mpu3050_platform_data(void *info)
 +{
-+	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
-+	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
++	struct i2c_board_info *i2c_info = info;
++	int intr = get_gpio_by_name("mpu3050_int");
++
++	if (intr == -1)
++		return NULL;
++
++	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++	return NULL;
++}
++
++static const struct devs_id mpu3050_dev_id __initconst = {
++	.name = "mpu3050",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++	.get_platform_data = &mpu3050_platform_data,
++};
++
++sfi_device(mpu3050_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic.c b/arch/x86/platform/intel-mid/device_libs/platform_msic.c
+new file mode 100644
+index 0000000..9f4a775
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic.c
+@@ -0,0 +1,87 @@
++/*
++ * platform_msic.c: MSIC platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel_scu_ipc.h>
++#include <asm/intel-mid.h>
++#include "platform_msic.h"
++
++struct intel_msic_platform_data msic_pdata;
++
++static struct resource msic_resources[] = {
++	{
++		.start	= INTEL_MSIC_IRQ_PHYS_BASE,
++		.end	= INTEL_MSIC_IRQ_PHYS_BASE + 64 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device msic_device = {
++	.name		= "intel_msic",
++	.id		= -1,
++	.dev		= {
++		.platform_data	= &msic_pdata,
++	},
++	.num_resources	= ARRAY_SIZE(msic_resources),
++	.resource	= msic_resources,
++};
++
++static int msic_scu_status_change(struct notifier_block *nb,
++				  unsigned long code, void *data)
++{
++	if (code == SCU_DOWN) {
++		platform_device_unregister(&msic_device);
++		return 0;
++	}
++
++	return platform_device_register(&msic_device);
++}
++
++static int __init msic_init(void)
++{
++	static struct notifier_block msic_scu_notifier = {
++		.notifier_call	= msic_scu_status_change,
++	};
++
++	/*
++	 * We need to be sure that the SCU IPC is ready before MSIC device
++	 * can be registered.
++	 */
++	if (intel_mid_has_msic())
++		intel_scu_notifier_add(&msic_scu_notifier);
++
 +	return 0;
 +}
-+arch_initcall(intel_mid_platform_init);
++arch_initcall(msic_init);
++
++/*
++ * msic_generic_platform_data - sets generic platform data for the block
++ * @info: pointer to the SFI device table entry for this block
++ * @block: MSIC block
++ *
++ * Function sets IRQ number from the SFI table entry for given device to
++ * the MSIC platform data.
++ */
++void *msic_generic_platform_data(void *info, enum intel_msic_block block)
++{
++	struct sfi_device_table_entry *entry = info;
++
++	BUG_ON(block < 0 || block >= INTEL_MSIC_BLOCK_LAST);
++	msic_pdata.irq[block] = entry->irq;
++
++	return NULL;
++}
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic.h b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
+new file mode 100644
+index 0000000..917eb56
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
+@@ -0,0 +1,19 @@
++/*
++ * platform_msic.h: MSIC platform data header file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#ifndef _PLATFORM_MSIC_H_
++#define _PLATFORM_MSIC_H_
++
++extern struct intel_msic_platform_data msic_pdata;
++
++extern void *msic_generic_platform_data(void *info,
++			enum intel_msic_block block) __attribute__((weak));
++#endif
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
+new file mode 100644
+index 0000000..2962939
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
+@@ -0,0 +1,47 @@
++/*
++ * platform_msic_audio.c: MSIC audio platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void *msic_audio_platform_data(void *info)
++{
++	struct platform_device *pdev;
++
++	pdev = platform_device_register_simple("sst-platform", -1, NULL, 0);
++
++	if (IS_ERR(pdev)) {
++		pr_err("failed to create audio platform device\n");
++		return NULL;
++	}
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_AUDIO);
++}
++
++static const struct devs_id msic_audio_dev_id __initconst = {
++	.name = "msic_audio",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_audio_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_audio_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
+new file mode 100644
+index 0000000..f446c33
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
+@@ -0,0 +1,37 @@
++/*
++ * platform_msic_battery.c: MSIC battery platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void __init *msic_battery_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
++}
++
++static const struct devs_id msic_battery_dev_id __initconst = {
++	.name = "msic_battery",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_battery_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_battery_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
+new file mode 100644
+index 0000000..2a4f7b1
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
+@@ -0,0 +1,48 @@
++/*
++ * platform_msic_gpio.c: MSIC GPIO platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/sfi.h>
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void __init *msic_gpio_platform_data(void *info)
++{
++	static struct intel_msic_gpio_pdata msic_gpio_pdata;
++
++	int gpio = get_gpio_by_name("msic_gpio_base");
++
++	if (gpio < 0)
++		return NULL;
++
++	msic_gpio_pdata.gpio_base = gpio;
++	msic_pdata.gpio = &msic_gpio_pdata;
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
++}
++
++static const struct devs_id msic_gpio_dev_id __initconst = {
++	.name = "msic_gpio",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_gpio_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_gpio_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
+new file mode 100644
+index 0000000..6497111
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
+@@ -0,0 +1,49 @@
++/*
++ * platform_msic_ocd.c: MSIC OCD platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/sfi.h>
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void __init *msic_ocd_platform_data(void *info)
++{
++	static struct intel_msic_ocd_pdata msic_ocd_pdata;
++	int gpio;
++
++	gpio = get_gpio_by_name("ocd_gpio");
++
++	if (gpio < 0)
++		return NULL;
++
++	msic_ocd_pdata.gpio = gpio;
++	msic_pdata.ocd = &msic_ocd_pdata;
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_OCD);
++}
++
++static const struct devs_id msic_ocd_dev_id __initconst = {
++	.name = "msic_ocd",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_ocd_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_ocd_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
+new file mode 100644
+index 0000000..83a3459
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
+@@ -0,0 +1,36 @@
++/*
++ * platform_msic_power_btn.c: MSIC power btn platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/sfi.h>
++#include <linux/init.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void __init *msic_power_btn_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
++}
++
++static const struct devs_id msic_power_btn_dev_id __initconst = {
++	.name = "msic_power_btn",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_power_btn_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_power_btn_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
+new file mode 100644
+index 0000000..a351878
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
+@@ -0,0 +1,37 @@
++/*
++ * platform_msic_thermal.c: msic_thermal platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/input.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/intel_msic.h>
++#include <asm/intel-mid.h>
++
++#include "platform_msic.h"
++#include "platform_ipc.h"
++
++static void __init *msic_thermal_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_THERMAL);
++}
++
++static const struct devs_id msic_thermal_dev_id __initconst = {
++	.name = "msic_thermal",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &msic_thermal_platform_data,
++	.device_handler = &ipc_device_handler,
++};
++
++sfi_device(msic_thermal_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
+new file mode 100644
+index 0000000..d87182a
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
+@@ -0,0 +1,54 @@
++/*
++ * platform_pmic_gpio.c: PMIC GPIO platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/scatterlist.h>
++#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++#include <linux/intel_pmic_gpio.h>
++#include <asm/intel-mid.h>
++
++#include "platform_ipc.h"
++
++static void __init *pmic_gpio_platform_data(void *info)
++{
++	static struct intel_pmic_gpio_platform_data pmic_gpio_pdata;
++	int gpio_base = get_gpio_by_name("pmic_gpio_base");
++
++	if (gpio_base == -1)
++		gpio_base = 64;
++	pmic_gpio_pdata.gpio_base = gpio_base;
++	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
++	pmic_gpio_pdata.gpiointr = 0xffffeff8;
++
++	return &pmic_gpio_pdata;
++}
++
++static const struct devs_id pmic_gpio_spi_dev_id __initconst = {
++	.name = "pmic_gpio",
++	.type = SFI_DEV_TYPE_SPI,
++	.delay = 1,
++	.get_platform_data = &pmic_gpio_platform_data,
++};
++
++static const struct devs_id pmic_gpio_ipc_dev_id __initconst = {
++	.name = "pmic_gpio",
++	.type = SFI_DEV_TYPE_IPC,
++	.delay = 1,
++	.get_platform_data = &pmic_gpio_platform_data,
++	.device_handler = &ipc_device_handler
++};
++
++sfi_device(pmic_gpio_spi_dev_id);
++sfi_device(pmic_gpio_ipc_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
+new file mode 100644
+index 0000000..740fc75
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
+@@ -0,0 +1,36 @@
++/*
++ * platform_tc35876x.c: tc35876x platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/gpio.h>
++#include <linux/i2c/tc35876x.h>
++#include <asm/intel-mid.h>
++
++/*tc35876x DSI_LVDS bridge chip and panel platform data*/
++static void *tc35876x_platform_data(void *data)
++{
++	static struct tc35876x_platform_data pdata;
++
++	/* gpio pins set to -1 will not be used by the driver */
++	pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
++	pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
++	pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
++
++	return &pdata;
++}
++
++static const struct devs_id tc35876x_dev_id __initconst = {
++	.name = "i2c_disp_brig",
++	.type = SFI_DEV_TYPE_I2C,
++	.get_platform_data = &tc35876x_platform_data,
++};
++
++sfi_device(tc35876x_dev_id);
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
+new file mode 100644
+index 0000000..22881c9
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
+@@ -0,0 +1,57 @@
++/*
++ * platform_tca6416.c: tca6416 platform data initilization file
++ *
++ * (C) Copyright 2013 Intel Corporation
++ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/platform_data/pca953x.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <asm/intel-mid.h>
++
++#define TCA6416_NAME	"tca6416"
++#define TCA6416_BASE	"tca6416_base"
++#define TCA6416_INTR	"tca6416_int"
++
++static void *tca6416_platform_data(void *info)
++{
++	static struct pca953x_platform_data tca6416;
++	struct i2c_board_info *i2c_info = info;
++	int gpio_base, intr;
++	char base_pin_name[SFI_NAME_LEN + 1];
++	char intr_pin_name[SFI_NAME_LEN + 1];
++
++	strcpy(i2c_info->type, TCA6416_NAME);
++	strcpy(base_pin_name, TCA6416_BASE);
++	strcpy(intr_pin_name, TCA6416_INTR);
++
++	gpio_base = get_gpio_by_name(base_pin_name);
++	intr = get_gpio_by_name(intr_pin_name);
++
++	if (gpio_base == -1)
++		return NULL;
++	tca6416.gpio_base = gpio_base;
++	if (intr != -1) {
++		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
++	} else {
++		i2c_info->irq = -1;
++		tca6416.irq_base = -1;
++	}
++	return &tca6416;
++}
++
++static const struct devs_id tca6416_dev_id __initconst = {
++	.name = "tca6416",
++	.type = SFI_DEV_TYPE_I2C,
++	.delay = 1,
++	.get_platform_data = &tca6416_platform_data,
++};
++
++sfi_device(tca6416_dev_id);
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 4091569..523a1c8 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -61,8 +61,6 @@ enum intel_mid_timer_options intel_mid_timer_options;
+ enum intel_mid_cpu_type __intel_mid_cpu_chip;
+ EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
+ 
+-static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
+-			struct devs_id *dev);
+ static void intel_mid_power_off(void)
+ {
+ }
+@@ -213,420 +211,3 @@ static inline int __init setup_x86_intel_mid_timer(char *arg)
+ }
+ __setup("x86_intel_mid_timer=", setup_x86_intel_mid_timer);
+ 
+-/* the offset for the mapping of global gpio pin to irq */
+-#define INTEL_MID_IRQ_OFFSET 0x100
+-
+-static void __init *pmic_gpio_platform_data(void *info)
+-{
+-	static struct intel_pmic_gpio_platform_data pmic_gpio_pdata;
+-	int gpio_base = get_gpio_by_name("pmic_gpio_base");
+-
+-	if (gpio_base == -1)
+-		gpio_base = 64;
+-	pmic_gpio_pdata.gpio_base = gpio_base;
+-	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-	pmic_gpio_pdata.gpiointr = 0xffffeff8;
+-
+-	return &pmic_gpio_pdata;
+-}
+-
+-static void __init *max3111_platform_data(void *info)
+-{
+-	struct spi_board_info *spi_info = info;
+-	int intr = get_gpio_by_name("max3111_int");
+-
+-	spi_info->mode = SPI_MODE_0;
+-	if (intr == -1)
+-		return NULL;
+-	spi_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	return NULL;
+-}
+-
+-/* we have multiple max7315 on the board ... */
+-#define MAX7315_NUM 2
+-static void __init *max7315_platform_data(void *info)
+-{
+-	static struct pca953x_platform_data max7315_pdata[MAX7315_NUM];
+-	static int nr;
+-	struct pca953x_platform_data *max7315 = &max7315_pdata[nr];
+-	struct i2c_board_info *i2c_info = info;
+-	int gpio_base, intr;
+-	char base_pin_name[SFI_NAME_LEN + 1];
+-	char intr_pin_name[SFI_NAME_LEN + 1];
+-
+-	if (nr == MAX7315_NUM) {
+-		pr_err("too many max7315s, we only support %d\n",
+-				MAX7315_NUM);
+-		return NULL;
+-	}
+-	/* we have several max7315 on the board, we only need load several
+-	 * instances of the same pca953x driver to cover them
+-	 */
+-	strcpy(i2c_info->type, "max7315");
+-	if (nr++) {
+-		sprintf(base_pin_name, "max7315_%d_base", nr);
+-		sprintf(intr_pin_name, "max7315_%d_int", nr);
+-	} else {
+-		strcpy(base_pin_name, "max7315_base");
+-		strcpy(intr_pin_name, "max7315_int");
+-	}
+-
+-	gpio_base = get_gpio_by_name(base_pin_name);
+-	intr = get_gpio_by_name(intr_pin_name);
+-
+-	if (gpio_base == -1)
+-		return NULL;
+-	max7315->gpio_base = gpio_base;
+-	if (intr != -1) {
+-		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-		max7315->irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-	} else {
+-		i2c_info->irq = -1;
+-		max7315->irq_base = -1;
+-	}
+-	return max7315;
+-}
+-
+-static void *tca6416_platform_data(void *info)
+-{
+-	static struct pca953x_platform_data tca6416;
+-	struct i2c_board_info *i2c_info = info;
+-	int gpio_base, intr;
+-	char base_pin_name[SFI_NAME_LEN + 1];
+-	char intr_pin_name[SFI_NAME_LEN + 1];
+-
+-	strcpy(i2c_info->type, "tca6416");
+-	strcpy(base_pin_name, "tca6416_base");
+-	strcpy(intr_pin_name, "tca6416_int");
+-
+-	gpio_base = get_gpio_by_name(base_pin_name);
+-	intr = get_gpio_by_name(intr_pin_name);
+-
+-	if (gpio_base == -1)
+-		return NULL;
+-	tca6416.gpio_base = gpio_base;
+-	if (intr != -1) {
+-		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-	} else {
+-		i2c_info->irq = -1;
+-		tca6416.irq_base = -1;
+-	}
+-	return &tca6416;
+-}
+-
+-static void *mpu3050_platform_data(void *info)
+-{
+-	struct i2c_board_info *i2c_info = info;
+-	int intr = get_gpio_by_name("mpu3050_int");
+-
+-	if (intr == -1)
+-		return NULL;
+-
+-	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	return NULL;
+-}
+-
+-static void __init *emc1403_platform_data(void *info)
+-{
+-	static short intr2nd_pdata;
+-	struct i2c_board_info *i2c_info = info;
+-	int intr = get_gpio_by_name("thermal_int");
+-	int intr2nd = get_gpio_by_name("thermal_alert");
+-
+-	if (intr == -1 || intr2nd == -1)
+-		return NULL;
+-
+-	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
+-
+-	return &intr2nd_pdata;
+-}
+-
+-static void __init *lis331dl_platform_data(void *info)
+-{
+-	static short intr2nd_pdata;
+-	struct i2c_board_info *i2c_info = info;
+-	int intr = get_gpio_by_name("accel_int");
+-	int intr2nd = get_gpio_by_name("accel_2");
+-
+-	if (intr == -1 || intr2nd == -1)
+-		return NULL;
+-
+-	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
+-
+-	return &intr2nd_pdata;
+-}
+-
+-static void __init *no_platform_data(void *info)
+-{
+-	return NULL;
+-}
+-
+-static struct resource msic_resources[] = {
+-	{
+-		.start	= INTEL_MSIC_IRQ_PHYS_BASE,
+-		.end	= INTEL_MSIC_IRQ_PHYS_BASE + 64 - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-};
+-
+-static struct intel_msic_platform_data msic_pdata;
+-
+-static struct platform_device msic_device = {
+-	.name		= "intel_msic",
+-	.id		= -1,
+-	.dev		= {
+-		.platform_data	= &msic_pdata,
+-	},
+-	.num_resources	= ARRAY_SIZE(msic_resources),
+-	.resource	= msic_resources,
+-};
+-
+-static inline bool intel_mid_has_msic(void)
+-{
+-	return intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL;
+-}
+-
+-static int msic_scu_status_change(struct notifier_block *nb,
+-				  unsigned long code, void *data)
+-{
+-	if (code == SCU_DOWN) {
+-		platform_device_unregister(&msic_device);
+-		return 0;
+-	}
+-
+-	return platform_device_register(&msic_device);
+-}
+-
+-static int __init msic_init(void)
+-{
+-	static struct notifier_block msic_scu_notifier = {
+-		.notifier_call	= msic_scu_status_change,
+-	};
+-
+-	/*
+-	 * We need to be sure that the SCU IPC is ready before MSIC device
+-	 * can be registered.
+-	 */
+-	if (intel_mid_has_msic())
+-		intel_scu_notifier_add(&msic_scu_notifier);
+-
+-	return 0;
+-}
+-arch_initcall(msic_init);
+-
+-/*
+- * msic_generic_platform_data - sets generic platform data for the block
+- * @info: pointer to the SFI device table entry for this block
+- * @block: MSIC block
+- *
+- * Function sets IRQ number from the SFI table entry for given device to
+- * the MSIC platform data.
+- */
+-static void *msic_generic_platform_data(void *info, enum intel_msic_block block)
+-{
+-	struct sfi_device_table_entry *entry = info;
+-
+-	BUG_ON(block < 0 || block >= INTEL_MSIC_BLOCK_LAST);
+-	msic_pdata.irq[block] = entry->irq;
+-
+-	return no_platform_data(info);
+-}
+-
+-static void *msic_battery_platform_data(void *info)
+-{
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
+-}
+-
+-static void *msic_gpio_platform_data(void *info)
+-{
+-	static struct intel_msic_gpio_pdata pdata;
+-	int gpio = get_gpio_by_name("msic_gpio_base");
+-
+-	if (gpio < 0)
+-		return NULL;
+-
+-	pdata.gpio_base = gpio;
+-	msic_pdata.gpio = &pdata;
+-
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
+-}
+-
+-static void *msic_audio_platform_data(void *info)
+-{
+-	struct platform_device *pdev;
+-
+-	pdev = platform_device_register_simple("sst-platform", -1, NULL, 0);
+-	if (IS_ERR(pdev)) {
+-		pr_err("failed to create audio platform device\n");
+-		return NULL;
+-	}
+-
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_AUDIO);
+-}
+-
+-static void *msic_power_btn_platform_data(void *info)
+-{
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
+-}
+-
+-static void *msic_ocd_platform_data(void *info)
+-{
+-	static struct intel_msic_ocd_pdata pdata;
+-	int gpio = get_gpio_by_name("ocd_gpio");
+-
+-	if (gpio < 0)
+-		return NULL;
+-
+-	pdata.gpio = gpio;
+-	msic_pdata.ocd = &pdata;
+-
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_OCD);
+-}
+-
+-static void *msic_thermal_platform_data(void *info)
+-{
+-	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_THERMAL);
+-}
+-
+-/* tc35876x DSI-LVDS bridge chip and panel platform data */
+-static void *tc35876x_platform_data(void *data)
+-{
+-	static struct tc35876x_platform_data pdata;
+-
+-	/* gpio pins set to -1 will not be used by the driver */
+-	pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
+-	pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
+-	pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
+-
+-	return &pdata;
+-}
+-
+-static const struct devs_id __initconst device_ids[] = {
+-	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data, NULL},
+-	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data, NULL},
+-	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data, &ipc_device_handler},
+-	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data, NULL},
+-	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
+-	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
+-	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data, NULL},
+-	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data, NULL},
+-	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data, NULL},
+-	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data, &ipc_device_handler},
+-	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data, NULL},
+-	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data, NULL},
+-
+-	/* MSIC subdevices */
+-	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data, &ipc_device_handler},
+-	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data, &ipc_device_handler},
+-	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data, &ipc_device_handler},
+-	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data, &ipc_device_handler},
+-	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data, &ipc_device_handler},
+-	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data, &ipc_device_handler},
+-	{ 0 }
+-};
+-
+-static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
+-				struct devs_id *dev)
+-{
+-	struct platform_device *pdev;
+-	void *pdata = NULL;
+-	static struct resource res __initdata = {
+-		.name = "IRQ",
+-		.flags = IORESOURCE_IRQ,
+-	};
+-
+-	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
+-		pentry->name, pentry->irq);
+-
+-	/*
+-	 * We need to call platform init of IPC devices to fill misc_pdata
+-	 * structure. It will be used in msic_init for initialization.
+-	 */
+-	if (dev != NULL)
+-		pdata = dev->get_platform_data(pentry);
+-
+-	/*
+-	 * On Medfield the platform device creation is handled by the MSIC
+-	 * MFD driver so we don't need to do it here.
+-	 */
+-	if (intel_mid_has_msic())
+-		return;
+-
+-	pdev = platform_device_alloc(pentry->name, 0);
+-	if (pdev == NULL) {
+-		pr_err("out of memory for SFI platform device '%s'.\n",
+-			pentry->name);
+-		return;
+-	}
+-	res.start = pentry->irq;
+-	platform_device_add_resources(pdev, &res, 1);
+-
+-	pdev->dev.platform_data = pdata;
+-	intel_scu_device_register(pdev);
+-}
+-
+-
+-/*
+- * we will search these buttons in SFI GPIO table (by name)
+- * and register them dynamically. Please add all possible
+- * buttons here, we will shrink them if no GPIO found.
+- */
+-static struct gpio_keys_button gpio_button[] = {
+-	{KEY_POWER,		-1, 1, "power_btn",	EV_KEY, 0, 3000},
+-	{KEY_PROG1,		-1, 1, "prog_btn1",	EV_KEY, 0, 20},
+-	{KEY_PROG2,		-1, 1, "prog_btn2",	EV_KEY, 0, 20},
+-	{SW_LID,		-1, 1, "lid_switch",	EV_SW,  0, 20},
+-	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 0, 20},
+-	{KEY_VOLUMEDOWN,	-1, 1, "vol_down",	EV_KEY, 0, 20},
+-	{KEY_CAMERA,		-1, 1, "camera_full",	EV_KEY, 0, 20},
+-	{KEY_CAMERA_FOCUS,	-1, 1, "camera_half",	EV_KEY, 0, 20},
+-	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw1",	EV_SW,  0, 20},
+-	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
+-};
+-
+-static struct gpio_keys_platform_data intel_mid_gpio_keys = {
+-	.buttons	= gpio_button,
+-	.rep		= 1,
+-	.nbuttons	= -1, /* will fill it after search */
+-};
+-
+-static struct platform_device pb_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.dev		= {
+-		.platform_data	= &intel_mid_gpio_keys,
+-	},
+-};
+-
+-/*
+- * Shrink the non-existent buttons, register the gpio button
+- * device if there is some
+- */
+-static int __init pb_keys_init(void)
+-{
+-	struct gpio_keys_button *gb = gpio_button;
+-	int i, num, good = 0;
+-
+-	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
+-	for (i = 0; i < num; i++) {
+-		gb[i].gpio = get_gpio_by_name(gb[i].desc);
+-		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
+-					gb[i].gpio);
+-		if (gb[i].gpio == -1)
+-			continue;
+-
+-		if (i != good)
+-			gb[good] = gb[i];
+-		good++;
+-	}
+-
+-	if (good) {
+-		intel_mid_gpio_keys.nbuttons = good;
+-		return platform_device_register(&pb_device);
+-	}
+-	return 0;
+-}
+-late_initcall(pb_keys_init);
+\ No newline at end of file
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 3f1c171..c84c1ca 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -42,7 +42,6 @@
+ #include <asm/intel_scu_ipc.h>
+ #include <asm/apb_timer.h>
+ #include <asm/reboot.h>
+-#include "intel_mid_weak_decls.h"
+ 
+ #define	SFI_SIG_OEM0	"OEM0"
+ #define MAX_IPCDEVS	24
+@@ -403,19 +402,20 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
+ 		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
+ }
+ 
++extern struct devs_id *const __x86_intel_mid_dev_start[],
++		      *const __x86_intel_mid_dev_end[];
++
+ static struct devs_id __init *get_device_id(u8 type, char *name)
+ {
+-	struct devs_id *dev = device_ids;
+-
+-	if (device_ids == NULL)
+-		return NULL;
++	struct devs_id *const *dev_table;
+ 
+-	while (dev->name[0]) {
++	for (dev_table = __x86_intel_mid_dev_start;
++			dev_table < __x86_intel_mid_dev_end; dev_table++) {
++		struct devs_id *dev = *dev_table;
+ 		if (dev->type == type &&
+ 			!strncmp(dev->name, name, SFI_NAME_LEN)) {
+ 			return dev;
+ 		}
+-		dev++;
+ 	}
+ 
+ 	return NULL;
+diff --git a/include/linux/sfi.h b/include/linux/sfi.h
+index fe81791..d9b436f 100644
+--- a/include/linux/sfi.h
++++ b/include/linux/sfi.h
+@@ -59,6 +59,9 @@
+ #ifndef _LINUX_SFI_H
+ #define _LINUX_SFI_H
+ 
++#include <linux/init.h>
++#include <linux/types.h>
++
+ /* Table signatures reserved by the SFI specification */
+ #define SFI_SIG_SYST		"SYST"
+ #define SFI_SIG_FREQ		"FREQ"
