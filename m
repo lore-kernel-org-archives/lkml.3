@@ -1,166 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab3JQN7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 09:59:47 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62748 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3JQN7n (ORCPT
+	id S1756560Ab3JQN7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 09:59:55 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:47142 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756499Ab3JQN7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 09:59:43 -0400
+	Thu, 17 Oct 2013 09:59:53 -0400
+Date: Thu, 17 Oct 2013 15:59:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] x86: Remove WARN_ON(in_nmi()) from vmalloc_fault
+Message-ID: <20131017135941.GC28963@localhost.localdomain>
+References: <20131015163906.342d8ffa@gandalf.local.home>
+ <20131016114036.GB12773@localhost.localdomain>
+ <20131016084518.44eaf61a@gandalf.local.home>
+ <20131016130856.GE12773@localhost.localdomain>
+ <20131016193632.GH4553@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1380131111-21708-1-git-send-email-khalid.aziz@oracle.com>
-References: <1380131111-21708-1-git-send-email-khalid.aziz@oracle.com>
-Date: Thu, 17 Oct 2013 06:59:41 -0700
-X-Google-Sender-Auth: _R4mURR9xHjfftBKUbrcOKASHNY
-Message-ID: <CA+5PVA6MN2M8n4cPik1QJH=HtNMoMZYJmHu13w0p3s=4C4Cgfg@mail.gmail.com>
-Subject: Re: [PATCH] scsi: BusLogic: Fix an oops when intializing multimaster adapter
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Jej B <James.Bottomley@hansenpartnership.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Khalid Aziz <khalid@gonehiking.org>,
-        Bojan Smojver <bojan@rexursive.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016193632.GH4553@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 10:45 AM, Khalid Aziz <khalid.aziz@oracle.com> wrote:
-> This fixes an oops caused by buslogic driver when initializing a BusLogic
-> MultiMaster adapter. Initialization code used scope of a variable
-> incorrectly which created a NULL pointer. Oops message is below:
->
-> BUG: unable to handle kernel NULL pointer dereference at 0000000c
-> IP: [<c150c137>] blogic_init_mm_probeinfo.isra.17+0x20a/0x583
-> *pde = 00000000
-> Oops: 002 [#1] PREEMPT SMP
-> Modules linked in:
-> CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.11.1.puz1 #1
-> Hardware name:    /Canterwood, BIOS 6.00 PG 05/16/2003
-> task: f7050000 ti: f7054000 task.ti: f7054000
-> EIP: 0060:[<c150c137>] EFLAGS: 00010246 CPU:1
-> EIP is at blogic_init_mm_probeinfo.isra.17+0x20a/0x583
-> EAX: 00000013 EBX: 00000000 ECX: 00000000 EDX: f8001000
-> ESI: f71cb800 EDI: f7388000 EBP: 00007800 ESP: f7055c84
->  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> CR0: 8005003b CR2: 0000000c CR3: 0154f000 CR4: 000007d0
-> Stack:
->  0000001c 00000000 c11a59f6 f7055c98 00008130 ffffffff ffffffff 00000000
->  00000003 00000000 00000000 00000000 00000013 f8001000 00000001 000003d0
->  00000000 00000000 00000000 c14e3f84 f78803c8 00000000 f738c000 000000e9
-> Call Trace:
->  [<c11a59f6>] ? pci_get_subsys+0x33/0x38
->  [<c150c4fb>] ? blogic_init_probeinfo_list+0x4b/0x19e
->  [<c108d593>] ? __alloc_pages_nodemask+0xe3/0x623
->  [<c108d593>] ? __alloc_pages_nodemask+0xe3/0x623
->  [<c10fb99e>] ? sysfs_link_sibling+0x61/0x8d
->  [<c10b0519>] ? kmem_cache_alloc+0x8b/0xb5
->  [<c150cce5>] ? blogic_init+0xa1/0x10e8
->  [<c10fc0a8>] ? sysfs_add_one+0x10/0x9d
->  [<c10fc18a>] ? sysfs_addrm_finish+0x12/0x85
->  [<c10fca37>] ? sysfs_do_create_link_sd+0x9d/0x1b4
->  [<c117c272>] ? blk_register_queue+0x69/0xb3
->  [<c10fcb68>] ? sysfs_create_link+0x1a/0x2c
->  [<c1181a07>] ? add_disk+0x1a1/0x3c7
->  [<c138737b>] ? klist_next+0x60/0xc3
->  [<c122cc3a>] ? scsi_dh_detach+0x68/0x68
->  [<c1213e36>] ? bus_for_each_dev+0x51/0x61
->  [<c1000356>] ? do_one_initcall+0x22/0x12c
->  [<c10f3688>] ? __proc_create+0x8c/0xba
->  [<c150cc44>] ? blogic_setup+0x5f6/0x5f6
->  [<c14e94aa>] ? repair_env_string+0xf/0x4d
->  [<c14e949b>] ? do_early_param+0x71/0x71
->  [<c103efaa>] ? parse_args+0x21f/0x33d
->  [<c14e9a54>] ? kernel_init_freeable+0xdf/0x17d
->  [<c14e949b>] ? do_early_param+0x71/0x71
->  [<c1388b64>] ? kernel_init+0x8/0xc0
->  [<c1392222>] ? ret_from_kernel_thread+0x6/0x28
->  [<c1392227>] ? ret_from_kernel_thread+0x1b/0x28
->  [<c1388b5c>] ? rest_init+0x6c/0x6c
-> Code: 89 44 24 10 0f b6 44 24 3d 89 44 24 0c c7 44 24 08 00 00 00 00 c7 44 24 04 38 62 46 c1 c7 04 24 02 00 00 00 e8 78 13 d2 ff 31 db <89> 6b 0c b0 20 89 ea ee
->  c7 44 24 08 04 00 00 00 8d 44 24 4c 89
-> EIP: [<c150c137>] blogic_init_mm_probeinfo.isra.17+0x20a/0x583 SS:ESP 0068:f7055c84
-> CR2: 000000000000000c
-> ---[ end trace 17f45f5196d40487 ]---
-> Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
->
-> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-> Cc: <stable@vger.kernel.org> # 3.11.x
-> Cc: Khalid Aziz <khalid@gonehiking.org>
-> Reported-by: Pierre Uszynski <pierre@rahul.net>
-> Tested-by: Pierre Uszynski <pierre@rahul.net>
+On Wed, Oct 16, 2013 at 12:36:32PM -0700, Paul E. McKenney wrote:
+> On Wed, Oct 16, 2013 at 03:08:57PM +0200, Frederic Weisbecker wrote:
+> > On Wed, Oct 16, 2013 at 08:45:18AM -0400, Steven Rostedt wrote:
+> > > On Wed, 16 Oct 2013 13:40:37 +0200
+> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > 
+> > > > On Tue, Oct 15, 2013 at 04:39:06PM -0400, Steven Rostedt wrote:
+> > > > > Since the NMI iretq nesting has been fixed, there's no reason that
+> > > > > an NMI handler can not take a page fault for vmalloc'd code. No locks
+> > > > > are taken in that code path, and the software now handles nested NMIs
+> > > > > when the fault re-enables NMIs on iretq.
+> > > > > 
+> > > > > Not only that, if the vmalloc_fault() WARN_ON_ONCE() is hit, and that
+> > > > > warn on triggers a vmalloc fault for some reason, then we can go into
+> > > > > an infinite loop (the WARN_ON_ONCE() does the WARN() before updating
+> > > > > the variable to make it happen "once").
+> > > > > 
+> > > > > Reported-by: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+> > > > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > > > 
+> > > > Thanks! For now we probably indeed want this patch. But I hope it's only
+> > > > for the short term.
+> > > 
+> > > Why?
+> > > 
+> > > > 
+> > > > I still think that allowing faults in NMIs is very nasty, as we expect NMIs to never
+> > > > be disturbed.
+> > > 
+> > > We do faults (well, breakpoints really) in NMI to enable tracing.
+> > > 
+> > > > I'm not even sure if that interacts correctly with the rcu_nmi_enter()
+> > > > and preempt_count & NMI_MASK things. Not sure how perf is ready for that either (now
+> > > > hardware events can be interrupted by fault trace events).
+> > > 
+> > > I'm a bit confused. What doesn't interact correctly with
+> > > rcu_nmi_enter()?
+> > 
+> > Faults can call rcu_user_exit() / rcu_user_enter(). This is not supposed to happen
+> > between rcu_nmi_enter() and rcu_nmi_exit(). rdtp->dynticks would be incremented in the
+> > wrong way.
+> 
+> I can attest to this!  NMIs check for being nested within
+> process/irq-based non-idle sojourns, but not the other way around.
+> The result is that RCU will be ignoring you during that time, and not
+> even disabling interrupts will save you.  It will check rdtp->dynticks,
+> see that its value is even, and register a quiescent state on behalf of
+> the hapless CPU.
 
-We had a user report an issue starting VMWare guests using BusLogic
-with the 3.11 kernel in Fedora.  They tested a kernel build based on
-3.11.5 plus this patch and it fixes their issue.  Details here:
+Fortunately, we are avoiding this with the in_interrupt() check on user_enter()
+and user_exit(). Their goal is precisely to deal with traps/faults happening on
+interrupts :)
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1015558
+> 
+> > Ah but we have an in_interrupt() check in context_tracking_user_enter() that protects
+> > us against that.
+> 
+> Here you are relying on the exception being treated as an interrupt,
+> correct?
 
-You can add a Tested-by: Bojan Smojver <bojan@rexursive.com> if you'd like.
-
-josh
-
-> ---
->  drivers/scsi/BusLogic.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
-> index feab3a5..757eb07 100644
-> --- a/drivers/scsi/BusLogic.c
-> +++ b/drivers/scsi/BusLogic.c
-> @@ -696,7 +696,7 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
->         while ((pci_device = pci_get_device(PCI_VENDOR_ID_BUSLOGIC,
->                                         PCI_DEVICE_ID_BUSLOGIC_MULTIMASTER,
->                                         pci_device)) != NULL) {
-> -               struct blogic_adapter *adapter = adapter;
-> +               struct blogic_adapter *host_adapter = adapter;
->                 struct blogic_adapter_info adapter_info;
->                 enum blogic_isa_ioport mod_ioaddr_req;
->                 unsigned char bus;
-> @@ -744,9 +744,9 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
->                    known and enabled, note that the particular Standard ISA I/O
->                    Address should not be probed.
->                  */
-> -               adapter->io_addr = io_addr;
-> -               blogic_intreset(adapter);
-> -               if (blogic_cmd(adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
-> +               host_adapter->io_addr = io_addr;
-> +               blogic_intreset(host_adapter);
-> +               if (blogic_cmd(host_adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
->                                 &adapter_info, sizeof(adapter_info)) ==
->                                 sizeof(adapter_info)) {
->                         if (adapter_info.isa_port < 6)
-> @@ -762,7 +762,7 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
->                    I/O Address assigned at system initialization.
->                  */
->                 mod_ioaddr_req = BLOGIC_IO_DISABLE;
-> -               blogic_cmd(adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
-> +               blogic_cmd(host_adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
->                                 sizeof(mod_ioaddr_req), NULL, 0);
->                 /*
->                    For the first MultiMaster Host Adapter enumerated,
-> @@ -779,12 +779,12 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
->
->                         fetch_localram.offset = BLOGIC_AUTOSCSI_BASE + 45;
->                         fetch_localram.count = sizeof(autoscsi_byte45);
-> -                       blogic_cmd(adapter, BLOGIC_FETCH_LOCALRAM,
-> +                       blogic_cmd(host_adapter, BLOGIC_FETCH_LOCALRAM,
->                                         &fetch_localram, sizeof(fetch_localram),
->                                         &autoscsi_byte45,
->                                         sizeof(autoscsi_byte45));
-> -                       blogic_cmd(adapter, BLOGIC_GET_BOARD_ID, NULL, 0, &id,
-> -                                       sizeof(id));
-> +                       blogic_cmd(host_adapter, BLOGIC_GET_BOARD_ID, NULL, 0,
-> +                                       &id, sizeof(id));
->                         if (id.fw_ver_digit1 == '5')
->                                 force_scan_order =
->                                         autoscsi_byte45.force_scan_order;
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>From an RCU point of view yeah. In these cases the exception is either protected under
+rcu_irq_* and rcu_nmi* APIs, depending on where it happened.
