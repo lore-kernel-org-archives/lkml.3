@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3JQOHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 10:07:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49172 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755352Ab3JQOHB (ORCPT
+	id S1756642Ab3JQOHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 10:07:45 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56101 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756375Ab3JQOHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 10:07:01 -0400
-Date: Thu, 17 Oct 2013 15:06:59 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Christian Daudt <bcm@fixthebug.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [RESEND PATCH v2 5/6] ARM: dts: Specify clocks for timer on
- bcm11351
-Message-ID: <20131017140659.GF24056@e106331-lin.cambridge.arm.com>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
- <1381960030-1640-6-git-send-email-tim.kryger@linaro.org>
+	Thu, 17 Oct 2013 10:07:43 -0400
+Date: Thu, 17 Oct 2013 15:07:39 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        grant.likely@secretlab.ca, roy.franz@linaro.org, msalter@redhat.com
+Subject: Re: [PATCH v2 2/3] arm: Add [U]EFI runtime services support
+Message-ID: <20131017140739.GI10834@console-pimps.org>
+References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
+ <1380799481-5470-3-git-send-email-leif.lindholm@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381960030-1640-6-git-send-email-tim.kryger@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1380799481-5470-3-git-send-email-leif.lindholm@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-> index 193659c..39c1395 100644
-> --- a/arch/arm/boot/dts/bcm11351.dtsi
-> +++ b/arch/arm/boot/dts/bcm11351.dtsi
-> @@ -95,7 +95,7 @@
->  		compatible = "brcm,kona-timer";
->  		reg = <0x35006000 0x1000>;
->  		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> -		clock-frequency = <32768>;
-> +		clocks = <&hub_timer_clk>;
+On Thu, 03 Oct, at 12:24:40PM, Leif Lindholm wrote:
+> +/*
+> + * If you need to (temporarily) support buggy firmware.
+> + */
+> +#define KEEP_BOOT_SERVICES_REGIONS
 
-This should probably be after the code change that enables support for a
-clocks property.
+Have you seen firmware that requires this? I'm just curious more than
+anything else.
 
-Thanks,
-Mark.
+> +/*
+> + * Returns 1 if 'facility' is enabled, 0 otherwise.
+> + */
+> +int efi_enabled(int facility)
+> +{
+> +	return test_bit(facility, &arm_efi_facility) != 0;
+> +}
+> +EXPORT_SYMBOL(efi_enabled);
+
+This should move to drivers/firmware/efi/efi.c. Let me write a patch
+that moves the x86 stuff out of arch/x86 and means you can get rid of
+this hunk.
+
+> +/*
+> + * Called explicitly from init/mm.c
+> + */
+
+That's init/main.c.
+
+> +void __init efi_enter_virtual_mode(void)
+> +{
+> +	efi_status_t status;
+> +
+> +	if (!efi_enabled(EFI_BOOT)) {
+> +		pr_info("EFI services will not be available.\n");
+> +		return;
+
+This is dead code as PATCH 3 does,
+
+diff --git a/init/main.c b/init/main.c
+index af310af..ec6d76e 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -875,6 +875,10 @@ static noinline void __init
+kernel_init_freeable(void)
+	smp_prepare_cpus(setup_max_cpus);
+
+	do_pre_smp_initcalls();
++
++	if (IS_ENABLED(CONFIG_ARM) && efi_enabled(EFI_BOOT))
++		efi_enter_virtual_mode();
++
+
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
