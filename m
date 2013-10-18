@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3JRLDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:03:15 -0400
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:47906 "HELO
-	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752009Ab3JRLDO (ORCPT
+	id S1753381Ab3JRLEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:04:53 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47080 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab3JRLEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:03:14 -0400
+	Fri, 18 Oct 2013 07:04:51 -0400
+Message-ID: <526115AE.3040405@linux.vnet.ibm.com>
+Date: Fri, 18 Oct 2013 16:34:14 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131018103117.GA3296@mudshark.cambridge.arm.com>
-References: <1382090789-18177-1-git-send-email-vkale@apm.com>
-	<20131018103117.GA3296@mudshark.cambridge.arm.com>
-Date: Fri, 18 Oct 2013 16:33:13 +0530
-Message-ID: <CAPrCYkcFBL5Rxf9z9L5PHULk_oSZX9ANBaG8dxyzGD_xhMeGpw@mail.gmail.com>
-Subject: Re: [PATCH] genirq: error reporting for non-percpu interrupt in request_percpu_irq()
-From: Vinayak Kale <vkale@apm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Chen Gong <gong.chen@linux.intel.com>
+CC: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, m.chehab@samsung.com
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com> <20131015165435.GA2777@naverao1-tp.ibm.com> <20131016095030.GA8954@gchen.bj.intel.com> <20131016104904.GD13608@pd.tnic>
+In-Reply-To: <20131016104904.GD13608@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101811-6102-0000-0000-0000045CD861
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On 10/16/2013 04:19 PM, Borislav Petkov wrote:
+> Btw, I don't know what's the problem but when I hit reply-to-all to your
+> emails, mutt drops your email address from the To: and makes the CC:
+> list become the To: list. Strange.
 
+I'm seeing the same thing. Looking at the headers, Chen Gong's email 
+includes a Mail-Follow-Up field which could be the problem.
 
-On Fri, Oct 18, 2013 at 4:01 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Fri, Oct 18, 2013 at 11:06:29AM +0100, Vinayak Kale wrote:
->> Return a separate error code when a non-percpu interrupt is passed to
->> request_percpu_irq().
->>
->> Suggested-by: Will Deacon <will.deacon@arm.com>
->> Signed-off-by: Vinayak Kale <vkale@apm.com>
->> ---
->>  kernel/irq/manage.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
->> index 514bcfd..c2713ae 100644
->> --- a/kernel/irq/manage.c
->> +++ b/kernel/irq/manage.c
->> @@ -1671,10 +1671,12 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
->>               return -EINVAL;
->>
->>       desc = irq_to_desc(irq);
->> -     if (!desc || !irq_settings_can_request(desc) ||
->> -         !irq_settings_is_per_cpu_devid(desc))
->> +     if (!desc || !irq_settings_can_request(desc))
->>               return -EINVAL;
->>
->> +     if (!irq_settings_is_per_cpu_devid(desc))
->> +             return -EPERM;
->
-> <bikeshedding> I reckon -ENODEV is clearer here. </bikeshedding>
+- Naveen
 
-I looked at the issue as "operation not allowed since interrupt is
-non-percpu" and I found below comment for EPERM in
-'include/uapi/asm-generic/errno-base.h' . So thought this error code
-could be more fitting.
-
-#define EPERM            1      /* Operation not permitted */
-
->
-> Also, there's a counterpart to this code in request_threaded_irq, where I
-> think we should do something similar.
-
-So in request_threaded_irq, we would still keep the WARN_ON for percpu
-interrupt and return a different error code. Is my understanding
-correct?
