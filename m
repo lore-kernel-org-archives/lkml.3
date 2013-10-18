@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3JRUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 16:48:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38887 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab3JRUsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 16:48:07 -0400
-Date: Fri, 18 Oct 2013 22:48:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: =?iso-8859-1?Q?P=E9ter_Andr=E1s_Felv=E9gi?= <petschy@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] udf: fix for pathetic mount times in case of invalid
- file system
-Message-ID: <20131018204804.GA32562@quack.suse.cz>
-References: <CAG3eYYSRpBUcSMSbxXTKCFtm1BiRACVvFd77nVb641QYQZWHPQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG3eYYSRpBUcSMSbxXTKCFtm1BiRACVvFd77nVb641QYQZWHPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754981Ab3JRUsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 16:48:30 -0400
+Received: from smtprelay0185.hostedemail.com ([216.40.44.185]:44279 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754581Ab3JRUs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 16:48:29 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:968:973:988:989:1260:1345:1437:1534:1541:1711:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:4419:4605:5007:6261:10004:10026:10848:11026:11658:11914:12043:12517:12519:12555:12679:12683:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bulb32_2c8f0851f8e07
+X-Filterd-Recvd-Size: 2529
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] net: Remove extern from function prototypes
+Date: Fri, 18 Oct 2013 13:48:21 -0700
+Message-Id: <cover.1382129045.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 18-10-13 20:07:44, Péter András Felvégi wrote:
-> From: Peter A. Felvegi <petschy@gmail.com>
-> 
-> The UDF driver was not strict enough about checking the IDs in the
-> VSDs when mounting, which resulted in reading through all the sectors
-> of the block device in some unfortunate cases. Eg, trying to mount my
-> uninitialized 200G SSD partition (all 0xFF bytes) took ~350 minutes to
-> fail, because the code expected some of the valid IDs or a zero byte.
-> During this, the mount couldn't be killed, sync from the cmdline
-> blocked, and the machine froze into the shutdown. Valid filesystems
-> (extX, btrfs, ntfs) were rejected by the mere accident of having a
-> zero byte at just the right place in some of their sectors, close
-> enough to the beginning not to generate excess I/O. The fix adds a
-> hard limit on the VSD sector offset, adds the two missing VSD IDs, and
-> stops scanning when encountering an invalid ID. Also replaced the
-> magic number 32768 with a more meaningful #define, and supressed the
-> bogus message about failing to read the first sector if no UDF fs was
-> detected.
-  Thanks. I've merged the patch into my tree.
+Remove the remainder of extern function prototypes from net/.../*.h files.
 
-								Honza
-> 
-> Signed-off-by: Peter A. Felvegi <petschy@gmail.com>
-> ---
-> The fix was developed for 3.9.4, and applies to 3.12-rc3, too.
-> 
-> patch v2: edited the code so that added/changed lines are not longer than
-> 80 chars. sending the patch as an attachment, as gmail messes it up
-> otherwise.
+Joe Perches (4):
+  net: 8021q/bluetooth/bridge/can/ceph: Remove extern from function prototypes
+  net: dccp: Remove extern from function prototypes
+  net: ipv4/ipv6: Remove extern from function prototypes
+  net: misc: Remove extern from function prototypes
 
+ net/8021q/vlan.h                    |  28 ++--
+ net/bluetooth/hidp/hidp.h           |   4 +-
+ net/bridge/br_private.h             | 299 +++++++++++++++++-------------------
+ net/bridge/br_private_stp.h         |  24 +--
+ net/can/af_can.h                    |   6 +-
+ net/ceph/auth_none.h                |   2 +-
+ net/ceph/auth_x.h                   |   2 +-
+ net/ceph/crypto.h                   |  48 +++---
+ net/dccp/ackvec.h                   |  21 ++-
+ net/dccp/ccid.h                     |  18 +--
+ net/dccp/ccids/lib/loss_interval.h  |   8 +-
+ net/dccp/ccids/lib/packet_history.h |  25 ++-
+ net/dccp/ccids/lib/tfrc.h           |  22 +--
+ net/dccp/dccp.h                     | 186 +++++++++++-----------
+ net/dccp/feat.h                     |  26 ++--
+ net/ipv4/fib_lookup.h               |  26 ++--
+ net/ipv4/tcp_vegas.h                |  10 +-
+ net/ipv4/udp_impl.h                 |  36 ++---
+ net/ipv6/udp_impl.h                 |  41 +++--
+ net/irda/irnet/irnet.h              |  15 +-
+ net/l2tp/l2tp_core.h                |  57 ++++---
+ net/mac80211/rate.h                 |  12 +-
+ net/netfilter/nf_internals.h        |  28 ++--
+ net/rds/rds.h                       |   2 +-
+ net/rxrpc/ar-internal.h             | 150 +++++++++---------
+ net/tipc/core.h                     |  28 ++--
+ net/wimax/wimax-internal.h          |  18 +--
+ net/wireless/core.h                 |   6 +-
+ net/wireless/sysfs.h                |   4 +-
+ net/xfrm/xfrm_hash.h                |   4 +-
+ 30 files changed, 553 insertions(+), 603 deletions(-)
 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.1.2.459.gbcd45b4.dirty
+
