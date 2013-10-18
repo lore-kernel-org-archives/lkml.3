@@ -1,103 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3JRP5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:57:31 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:63432 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab3JRP53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:57:29 -0400
-Message-ID: <52615A64.9040803@gmail.com>
-Date: Fri, 18 Oct 2013 10:57:24 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756524Ab3JRP5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:57:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756485Ab3JRP5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:57:40 -0400
+Date: Fri, 18 Oct 2013 17:50:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Martin Cermak <mcermak@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 6/6] uprobes: Teach uprobe_copy_process() to handle
+	CLONE_VFORK
+Message-ID: <20131018155028.GA15050@redhat.com>
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Michael Bohan <mbohan@codeaurora.org>, Guenter Roeck <linux@roeck-us.net>,
-        David Daney <ddaney@caviumnetworks.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, ralf@linux-mips.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        david.daney@cavium.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] of/lib: Export fdt routines to modules
-References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org> <525F2397.40203@caviumnetworks.com> <20131017002731.GA22830@codeaurora.org> <525F6D83.1050808@roeck-us.net> <20131017235132.GA6241@codeaurora.org> <52608457.5040609@roeck-us.net> <20131018025405.GA3722@codeaurora.org> <33103C16-6472-4AAE-ADB8-50807CC96C85@antoniou-consulting.com>
-In-Reply-To: <33103C16-6472-4AAE-ADB8-50807CC96C85@antoniou-consulting.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131018154947.GA15002@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2013 08:28 AM, Pantelis Antoniou wrote:
-> Hi Michael,
-> 
-> On Oct 18, 2013, at 5:54 AM, Michael Bohan wrote:
-> 
->> On Thu, Oct 17, 2013 at 05:44:07PM -0700, Guenter Roeck wrote:
->>> On 10/17/2013 04:51 PM, Michael Bohan wrote:
->>>> On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
->>>>> Still, what prevents you from unflattening it and just using the
->>>>> normal device tree functions as David suggested ?
->>>>
->>>> I'm assuming you're suggesting to use of_fdt_unflatten_tree()?
->>>
->>> Yes, that was the idea.
->>>
->>>> That's an interesting thought. I was planning to scan the fdt
->>>> only once and populate my own structures, but I suppose I could
->>>> use the of_* APIs equivalently.
->>>>
->>>> It seems there are some problems though.  of_fdt_unflatten_tree()
->>>> does not return errors, and so for the purposes of my driver it
->>>> would not be sufficient to detect an invalid firmware image.
->>>>
->>> It does so, at least partially. If there is an error, it won't set
->>> the nodes pointer. Granted, that is not perfect, but it is at least
->>> a start. Ultimately, I considered it 'good enough' for my purpose
->>> (for devicetree overlays - see [1] below), as any missing mandatory
->>> properties or nodes are detected later when trying to actually read
->>> the properties. In my case, I also have a couple of validation
->>> properties to ensure that the overlay is acceptable (specifically
->>> I use 'compatible' and 'assembly-ids', but that is really a detail).
->>
->> That's certainly better than nothing, but I think it would be
->> useful to make a distinction between a malformed fdt and a fdt
->> that's simply missing the right information. Without error
->> codes, I think we lose this aspect.
->>
->>>> Would people entertain changing this API
->>>> (and implicitly __unflatten_device_tree) to return errors? I'm
->>>> guessing the reason it's coded that way is because the normal
->>>> usecase is 'system boot', at which time errors aren't that
->>>> meaningful.
->>>>
->>>> Also, there's no way to free the memory that was allocated from
->>>> the unflatten process. May I add one?
->>>>
->>>
->>> The patchset submitted by Pantelis Antoniou to add support for
->>> devicetree overlays adds this and other related functionality.
->>> See [1], specifically the patch titled "OF: Introduce utility
->>> helper functions". Not sure where that is going, though.
->>> It may need some cleanup to be accepted upstream.
->>> Copying Pantelis for comments.
->>> Guenter
->>>
->>> [1] https://lkml.org/lkml/2013/1/4/276
->>
->> Thanks. So it seems that Pantelis's __of_free_tree() is what I'm
->> looking for.
->>
-> 
-> I guess it's time for another try to getting it in?
-> 
-> DT maintainers, which one of you will want to review?
+uprobe_copy_process() does nothing if the child shares ->mm with
+the forking process, but there is a special case: CLONE_VFORK.
+In this case it would be more correct to do dup_utask() but avoid
+dup_xol(). This is not that important, the child should not unwind
+its stack too much, this can corrupt the parent's stack, but at
+least we need this to allow to ret-probe __vfork() itself.
 
-This falls in Grant's and my plate since we are talking kernel DT
-support code rather than bindings. Unflattening is definitely the right
-direction to go here.
+Note: in theory, it would be better to check task_pt_regs(p)->sp
+instead of CLONE_VFORK, we need to dup_utask() if and only if the
+child can return from the function called by the parent. But this
+needs the arch-dependant helper, and I think that nobody actually
+does clone(same_stack, CLONE_VM).
 
-Rob
+Cc: stable@vger.kernel.org # 3.9+
+Reported-by: Martin Cermak <mcermak@redhat.com>
+Reported-by: David Smith <dsmith@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/uprobes.h |    4 ++--
+ kernel/events/uprobes.c |   10 ++++++++--
+ kernel/fork.c           |    2 +-
+ 3 files changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 06f28be..13a7f13 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -117,7 +117,7 @@ extern void uprobe_start_dup_mmap(void);
+ extern void uprobe_end_dup_mmap(void);
+ extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
+ extern void uprobe_free_utask(struct task_struct *t);
+-extern void uprobe_copy_process(struct task_struct *t);
++extern void uprobe_copy_process(struct task_struct *t, unsigned long flags);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+ extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+ extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+@@ -174,7 +174,7 @@ static inline unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
+ static inline void uprobe_free_utask(struct task_struct *t)
+ {
+ }
+-static inline void uprobe_copy_process(struct task_struct *t)
++static inline void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ {
+ }
+ static inline void uprobe_clear_state(struct mm_struct *mm)
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 098b401..78cf8a4 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1415,7 +1415,7 @@ static void dup_xol_work(struct callback_head *work)
+ /*
+  * Called in context of a new clone/fork from copy_process.
+  */
+-void uprobe_copy_process(struct task_struct *t)
++void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 	struct mm_struct *mm = current->mm;
+@@ -1424,7 +1424,10 @@ void uprobe_copy_process(struct task_struct *t)
+ 
+ 	t->utask = NULL;
+ 
+-	if (mm == t->mm || !utask || !utask->return_instances)
++	if (!utask || !utask->return_instances)
++		return;
++
++	if (mm == t->mm && !(flags & CLONE_VFORK))
+ 		return;
+ 
+ 	if (dup_utask(t, utask))
+@@ -1435,6 +1438,9 @@ void uprobe_copy_process(struct task_struct *t)
+ 	if (!area)
+ 		return uprobe_warn(t, "dup xol area");
+ 
++	if (mm == t->mm)
++		return;
++
+ 	/* TODO: move it into the union in uprobe_task */
+ 	work = kmalloc(sizeof(*work), GFP_KERNEL);
+ 	if (!work)
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d3603b8..8531609 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1489,7 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	perf_event_fork(p);
+ 
+ 	trace_task_newtask(p, clone_flags);
+-	uprobe_copy_process(p);
++	uprobe_copy_process(p, clone_flags);
+ 
+ 	return p;
+ 
+-- 
+1.5.5.1
 
