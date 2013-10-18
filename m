@@ -1,113 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab3JRHpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 03:45:53 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:42095 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3JRHpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 03:45:52 -0400
-Date: Fri, 18 Oct 2013 00:45:26 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        khilman@linaro.org
-Subject: Re: linux-next: Tree for Oct 17
-Message-ID: <20131018074526.GA30578@quad.lixom.net>
-References: <20131018003847.GH2443@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131018003847.GH2443@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752281Ab3JRHq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 03:46:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36890 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab3JRHqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 03:46:24 -0400
+Date: Fri, 18 Oct 2013 18:45:52 +1100
+From: NeilBrown <neilb@suse.de>
+To: Balaji T K <balajitk@ti.com>
+Cc: Andreas Fenkart <afenkart@gmail.com>, Chris Ball <cjb@laptop.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        <zonque@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] mmc: omap_hsmmc: Remux pins to support SDIO
+ interrupt on AM335x
+Message-ID: <20131018184552.1c65117d@notabene.brown>
+In-Reply-To: <5260E374.6050804@ti.com>
+References: <1380971830-21492-1-git-send-email-afenkart@gmail.com>
+	<1380971830-21492-4-git-send-email-afenkart@gmail.com>
+	<20131018172053.70cf2c2b@notabene.brown>
+	<5260E374.6050804@ti.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/HqFK.ZmhUn3b7+9jrSjaGRm"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 01:38:47AM +0100, Mark Brown wrote:
-> Hi all,
-> 
-> I've uploaded today's linux-next tree to the master branch of the
-> repository below:
-> 
->         git://gitorious.org/thierryreding/linux-next.git > 
-> A next-20131017 tag is also provided for convenience.
-> 
-> One new conflict today but otherwise uneventful.  x86_64 allmodconfigs
-> build after each merge but no other build tests were done.
+--Sig_/HqFK.ZmhUn3b7+9jrSjaGRm
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Fri, 18 Oct 2013 12:59:56 +0530 Balaji T K <balajitk@ti.com> wrote:
 
-I'm seeing a fairly large fallout on boot testing. See
-http://lists.linaro.org/pipermail/kernel-build-reports/2013-October/000719.html
-for full list (I need to start providing longer backlogs for failures, the top
-of the oopses is lost in the email).
+> On Friday 18 October 2013 11:50 AM, NeilBrown wrote:
+> > On Sat,  5 Oct 2013 13:17:09 +0200 Andreas Fenkart <afenkart@gmail.com>=
+ wrote:
+> >
+> >> The am335x can't detect pending cirq in PM runtime suspend.
+> >> This patch reconfigures dat1 as a GPIO before going to suspend.
+> >> SDIO interrupts are detected with the GPIO, while in runtime
+> >> suspend, standard detection of the module block otherwise.
+> >>
+> >> Signed-off-by: Andreas Fenkart <afenkart@gmail.com>
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b=
+/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> >> index 1136e6b..146f3ad 100644
+> >> --- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> >> +++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> >> @@ -21,8 +21,11 @@ ti,non-removable: non-removable slot (like eMMC)
+> >>   ti,needs-special-reset: Requires a special softreset sequence
+> >>   ti,needs-special-hs-handling: HSMMC IP needs special setting for han=
+dling High Speed
+> >>   ti,quirk-swakup-missing: SOC missing the swakeup line, will not dete=
+ct
+> >> -SDIO irq while in suspend. Fallback to polling. Affected chips are
+> >> -am335x,
+> >> +SDIO irq while in suspend. The workaround is to reconfigure the dat1 =
+line as a
+> >> +GPIO upon suspend. Beyond this option and the GPIO config, you also n=
+eed to set
+> >> +named pinctrl states "default", "active" and "idle ", see example bel=
+ow.  The
+> >> +MMC driver will then then toggle between default and idle during the =
+runtime
+> >> +Affected chips are am335x,
+> >>
+> >>                               ------
+> >>                               | PRCM |
+> >> @@ -49,3 +52,24 @@ Example:
+> >>   		vmmc-supply =3D <&vmmc>; /* phandle to regulator node */
+> >>   		ti,non-removable;
+> >>   	};
+> >> +
+> >> +[am335x with with gpio for sdio irq]
+> >> +
+> >> +	mmc1_cirq_pin: pinmux_cirq_pin {
+> >> +		pinctrl-single,pins =3D <
+> >> +			0x0f8 0x3f	/* MMC0_DAT1 as GPIO2_28 */
+> >> +		>;
+> >> +	};
+> >> +
+> >> +	mmc1: mmc@48060000 {
+> >> +		ti,non-removable;
+> >> +		bus-width =3D <4>;
+> >> +		vmmc-supply =3D <&ldo2_reg>;
+> >> +		vmmc_aux-supply =3D <&vmmc>;
+> >> +	        ti,quirk-swakeup-missing;
+> >> +		pinctrl-names =3D "default", "active", "idle";
+> >> +		pinctrl-0 =3D <&mmc1_pins>;
+> >> +		pinctrl-1 =3D <&mmc1_pins>;
+> >> +		pinctrl-2 =3D <&mmc1_cirq_pin>;
+> >> +		ti,cirq-gpio =3D <&gpio3 28 0>;
+> >> +	};
+> >
+> >
+> > hi,
+> >   I've been trying to get SD irq to work on my  OMAP3 DM3730.
+> > I seems to need the magic to catch interrupts while FCLK is off, as
+> > the only way I can get it to work at the moment is to keep FCLK on.
+> >
+> > I discovered your patch and tried it out, but it doesn't seem to work f=
+or me.
+> >
+> > I have a Libertas WIFI chip attached to the second mmc (which is someti=
+mes
+> > called mmc1, and sometimes mmc2 - very confusing!).
+> > I added:
+> > 	mmc2_cirq_pin: pinmux_cirq_pin {
+> > 		pinctrl-single,pins =3D <
+> > 			0x012e (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC2_DAT1 as GPIO5_5 */
+> > 		>;
+> > 	};
+> >
+> > and
+> >
+> > &mmc2 {
+> > 	ti,quirk-swakeup-missing;
+> > 	pinctrl-names =3D "default", "active", "idle";
+> > 	pinctrl-0 =3D <&mmc2_pins>;
+> > 	pinctrl-1 =3D <&mmc2_pins>;
+> > 	pinctrl-2 =3D <&mmc2_cirq_pin>;
+> > 	ti,cirq-gpio =3D <&gpio5 5 0>; /* GPIO133 =3D 128+5 */
+> > };
+> >
+> > to my dts file but it doesn't make any apparent difference.
+> >
+> > Any idea what I might be doing wrong?
+> > (the base kernel I am applying patches to is from 8th Oct,
+> >   commit 0e7a3ed04f0cd4311096d691888f88569310ee6c)
+> >
+> > BTW,
+> >   - with the default polling, I get about 1Mb/sec with iperf
+> >   - with sd-irq enabled and FCLK kept on the whole time, I get 4Mb/sec
+> >   - with sd-irq enable, FCLK kept on, and the 5ms polling also
+> >     running, I get over 5Mb/sec!
+> > Still much less than the 40Mb/sec that I would like to get...
+> >
+> (removing svenkatr@ti.com)
+>=20
+> Hi,
+>=20
+> Can you check if you have bus-width property set ?
+> 	bus-width =3D <4>;
+>=20
+>
+Yes I do.
+as well as the settings above I have:
 
-For example, on dove (SolidRun Cubox) I see:
-
-[    0.707248] Unable to handle kernel NULL pointer dereference at virtual address 00000054
-[    0.715297] pgd = c0004000
-[    0.717984] [00000054] *pgd=00000000
-[    0.721548] Internal error: Oops: 5 [#1] ARM
-[    0.725794] Modules linked in:
-[    0.728841] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc5-next-20131017 #1
-[    0.736114] task: ef035c00 ti: ef036000 task.ti: ef036000
-[    0.741497] PC is at kfree+0x54/0xc4
-[    0.745063] LR is at ata_host_register+0x3c/0x290
-[    0.749741] pc : [<c008ad28>]    lr : [<c023e168>]    psr: 40000193
-[    0.749741] sp : ef037da8  ip : 00000034  fp : 00000000
-[    0.761159] r10: 00000000  r9 : ef061810  r8 : c0519fc8
-[    0.766353] r7 : c0519fc8  r6 : a0000113  r5 : ffffffff  r4 : ef1c9dd0
-[    0.772850] r3 : c0fc8fe0  r2 : c07c9000  r1 : 40000000  r0 : 00000000
-[    0.779349] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    0.786708] Control: 10c5387d  Table: 00004019  DAC: 00000015
-[    0.792428] Process swapper (pid: 1, stack limit = 0xef036248)
-[    0.798234] Stack: (0xef037da8 to 0xef038000)
-[    0.957218] [<c008ad28>] (kfree+0x54/0xc4) from [<c023e168>] (ata_host_register+0x3c/0x290)
-[    0.965542] [<c023e168>] (ata_host_register+0x3c/0x290) from [<c023e498>] (ata_host_activate+0xdc/0x118)
-[    0.974992] [<c023e498>] (ata_host_activate+0xdc/0x118) from [<c0251130>] (mv_platform_probe+0x2dc/0x36c)
-[    0.984527] [<c0251130>] (mv_platform_probe+0x2dc/0x36c) from [<c021b6c4>] (platform_drv_probe+0x18/0x48)
-[    0.994051] [<c021b6c4>] (platform_drv_probe+0x18/0x48) from [<c0219e88>] (really_probe+0x74/0x1fc)
-[    1.003062] [<c0219e88>] (really_probe+0x74/0x1fc) from [<c021a0fc>] (__driver_attach+0x98/0x9c)
-[    1.011804] [<c021a0fc>] (__driver_attach+0x98/0x9c) from [<c02186cc>] (bus_for_each_dev+0x60/0x94)
-[    1.020808] [<c02186cc>] (bus_for_each_dev+0x60/0x94) from [<c0219728>] (bus_add_driver+0x148/0x1f0)
-[    1.029898] [<c0219728>] (bus_add_driver+0x148/0x1f0) from [<c021a700>] (driver_register+0x78/0xf8)
-[    1.038911] [<c021a700>] (driver_register+0x78/0xf8) from [<c04e2ed0>] (mv_init+0x30/0x50)
-[    1.047144] [<c04e2ed0>] (mv_init+0x30/0x50) from [<c000877c>] (do_one_initcall+0x100/0x14c)
-[    1.055557] [<c000877c>] (do_one_initcall+0x100/0x14c) from [<c04cead4>] (kernel_init_freeable+0x120/0x1c0)
-[    1.065259] [<c04cead4>] (kernel_init_freeable+0x120/0x1c0) from [<c038fe30>] (kernel_init+0x8/0x158)
-[    1.074441] [<c038fe30>] (kernel_init+0x8/0x158) from [<c000e0b8>] (ret_from_fork+0x14/0x3c)
-[    1.082841] Code: e0823283 e3110902 1593301c e593001c (e5904054)
+	vmmc-supply =3D <&vaux4>;
+	bus-width =3D <4>;
+	ti,non-removable;
+	cap-power-off-card;
 
 
-I bisected it down to commit 55acc602faae7c10e53acdca0c70f4936c2539c6, which
-is really weird. That is:
+vaux4 is from a twl4030 and powers the wifi chip.
+'cap-power-off-card' I added support for myself to so the card would power
+off when not in use.
 
-commit 55acc602faae7c10e53acdca0c70f4936c2539c6
-Merge: e32face ba6857b
-Author:     Mark Brown <broonie@linaro.org>
-AuthorDate: Thu Oct 17 23:55:55 2013 +0100
-Commit:     Mark Brown <broonie@linaro.org>
-CommitDate: Thu Oct 17 23:55:55 2013 +0100
+Thanks,
+NeilBrown
 
-    Merge remote-tracking branch 'driver-core/driver-core-next'
-    
-    Conflicts:
-        include/linux/netdevice.h
+--Sig_/HqFK.ZmhUn3b7+9jrSjaGRm
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-But there isn't anything controversial in the merge commit.
+iQIVAwUBUmDnPTnsnt1WYoG5AQIxRg//Ydrldz3H2v7xltx8IUe0h2b66/HbTZJr
+gTgJE5KxLeiLajAQPr5Rvm+ohAzWrdkyYnLjA+vAmOI2JA0cCwn9jJ9PDyov5CcH
+he2lscxDzxrXz7Ae7JxRPWYDQwlvMkQbNDE+BTuUZCCg4PGxPP4lvyGJRGIc32Fh
++o8mr+99UHCREjA79gi7tol913mzoCHU5hSfkV/jCz4lURcn2rMrrmMsc+0Ie54e
+WVRRM2ZBDYyWvzLobcd558oy3dSJmuSO1SLah0TtdSyfodDfFapnyn1rVGPL9Uc0
+0PYnD2vBC7Vd1xZ/EPbcSf25CY3kUC52u0ukvJ8rp494ZbSvdLsK/PKWQX9t2yTe
+Jpw6WYHHSOweDjHXO4C30E+qoa904zuQqCmVhda3utawIySeOxWLG9kbW1OFJI+w
+0ixBQGYLFE5CoR3nw45/EWvCUGf/w0PDcNKM9mTfbeBhjNXbzdB6MO1acjRn2ba+
+3pM949IMpc8CHBpIgzleYw7Hw7CuEe4zCBylQKZrkII4wDYQ4lQpcH49rINbw3l3
+2R7RUgRB8PzSTC7hb7DMpH4O4XnywKIaGlUT00GL1eaeFC30WdjIk2IkvYTVZOjR
+lYBTRCecccTP+AdSOcoWsZBQqGbx7N4gOP0t9niPMYPj5lKSCFT9T/q1EvHRGxrd
+fEXC8MZrZxk=
+=G1I7
+-----END PGP SIGNATURE-----
 
-I tried checking out either side of that merge, and they both boot
-fine. I redid the merge myself, and I get no delta compared to your
-merge and I still get the same failure.
-
-I've got more failures than dove, I'll try bisecting a few of the others
-in the morning (it's late here), hopefully they will help indicate what's
-actually going wrong. I'm guessing something just happens to move around
-enough to expose a different problem once the two branches are merged.
-
-
--Olof
- 
+--Sig_/HqFK.ZmhUn3b7+9jrSjaGRm--
