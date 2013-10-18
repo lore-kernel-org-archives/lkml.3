@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3JRSHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 14:07:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30489 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126Ab3JRSHO convert rfc822-to-8bit (ORCPT
+	id S1756821Ab3JRSHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 14:07:47 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58308 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126Ab3JRSHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 14:07:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,524,1378882800"; 
-   d="scan'208";a="413369529"
-Message-ID: <1382119610.30870.4.camel@smile>
-Subject: Re: [PATCH v2 01/13] dmatest: make driver unmap also source buffers
- by itself
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com, dave.jiang@intel.com,
-        t.figa@samsung.com, kyungmin.park@samsung.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
-Date: Fri, 18 Oct 2013 21:06:50 +0300
-In-Reply-To: <1382117733-16720-2-git-send-email-b.zolnierkie@samsung.com>
-References: <1382117733-16720-1-git-send-email-b.zolnierkie@samsung.com>
-	 <1382117733-16720-2-git-send-email-b.zolnierkie@samsung.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
+	Fri, 18 Oct 2013 14:07:45 -0400
+MIME-Version: 1.0
+Date: Fri, 18 Oct 2013 20:07:44 +0200
+Message-ID: <CAG3eYYSRpBUcSMSbxXTKCFtm1BiRACVvFd77nVb641QYQZWHPQ@mail.gmail.com>
+Subject: [PATCH v2] udf: fix for pathetic mount times in case of invalid file system
+From: =?UTF-8?B?UMOpdGVyIEFuZHLDoXMgRmVsdsOpZ2k=?= <petschy@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001a11c28688a963b304e907cf71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-18 at 19:35 +0200, Bartlomiej Zolnierkiewicz wrote:
-> Make the driver DMA unmap also source buffers by itself
-> (currently it DMA unmaps only destination buffers) as
-> a preparation for introducing generic 'ummap' data.
-> 
-> Cc: Dan Williams <djbw@fb.com>
+--001a11c28688a963b304e907cf71
+Content-Type: text/plain; charset=UTF-8
 
-I think you may update Dan's address.
+From: Peter A. Felvegi <petschy@gmail.com>
 
+The UDF driver was not strict enough about checking the IDs in the
+VSDs when mounting, which resulted in reading through all the sectors
+of the block device in some unfortunate cases. Eg, trying to mount my
+uninitialized 200G SSD partition (all 0xFF bytes) took ~350 minutes to
+fail, because the code expected some of the valid IDs or a zero byte.
+During this, the mount couldn't be killed, sync from the cmdline
+blocked, and the machine froze into the shutdown. Valid filesystems
+(extX, btrfs, ntfs) were rejected by the mere accident of having a
+zero byte at just the right place in some of their sectors, close
+enough to the beginning not to generate excess I/O. The fix adds a
+hard limit on the VSD sector offset, adds the two missing VSD IDs, and
+stops scanning when encountering an invalid ID. Also replaced the
+magic number 32768 with a more meaningful #define, and supressed the
+bogus message about failing to read the first sector if no UDF fs was
+detected.
 
-I assume you run exactly this module to test your DMA drivers.
-If so, please take my
-Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Peter A. Felvegi <petschy@gmail.com>
+---
+The fix was developed for 3.9.4, and applies to 3.12-rc3, too.
 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: Dave Jiang <dave.jiang@intel.com>
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/dma/dmatest.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-> index 92f796c..f4a2a25 100644
-> --- a/drivers/dma/dmatest.c
-> +++ b/drivers/dma/dmatest.c
-> @@ -597,11 +597,10 @@ static int dmatest_func(void *data)
->  	set_user_nice(current, 10);
->  
->  	/*
-> -	 * src buffers are freed by the DMAEngine code with dma_unmap_single()
-> -	 * dst buffers are freed by ourselves below
-> +	 * src and dst buffers are freed by ourselves below
->  	 */
-> -	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT
-> -	      | DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SRC_UNMAP_SINGLE;
-> +	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT |
-> +		DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP;
->  
->  	while (!kthread_should_stop()
->  	       && !(params->iterations && total_tests >= params->iterations)) {
-> @@ -750,7 +749,8 @@ static int dmatest_func(void *data)
->  			continue;
->  		}
->  
-> -		/* Unmap by myself (see DMA_COMPL_SKIP_DEST_UNMAP above) */
-> +		/* Unmap by myself */
-> +		unmap_src(dev->dev, dma_srcs, len, src_cnt);
->  		unmap_dst(dev->dev, dma_dsts, params->buf_size, dst_cnt);
->  
->  		error_count = 0;
+patch v2: edited the code so that added/changed lines are not longer than
+80 chars. sending the patch as an attachment, as gmail messes it up
+otherwise.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+--001a11c28688a963b304e907cf71
+Content-Type: application/octet-stream; name="udf.patch"
+Content-Disposition: attachment; filename="udf.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hmxq8kkr0
+
+ZGlmZiAtLWdpdCBhL2ZzL3VkZi9zdXBlci5jIGIvZnMvdWRmL3N1cGVyLmMKaW5kZXggOWFjNDA1
+Ny4uNGNjMTQwOCAxMDA2NDQKLS0tIGEvZnMvdWRmL3N1cGVyLmMKKysrIGIvZnMvdWRmL3N1cGVy
+LmMKQEAgLTc2LDYgKzc2LDkgQEAKIAogI2RlZmluZSBVREZfREVGQVVMVF9CTE9DS1NJWkUgMjA0
+OAogCisjZGVmaW5lIFZTRF9GSVJTVF9TRUNUT1JfT0ZGU0VUCQkzMjc2OAorI2RlZmluZSBWU0Rf
+TUFYX1NFQ1RPUl9PRkZTRVQJCTB4ODAwMDAwCisKIGVudW0geyBVREZfTUFYX0xJTktTID0gMHhm
+ZmZmIH07CiAKIC8qIFRoZXNlIGFyZSB0aGUgIm1lYXQiIC0gZXZlcnl0aGluZyBlbHNlIGlzIHN0
+dWZmaW5nICovCkBAIC02NzIsNyArNjc1LDcgQEAgb3V0X3VubG9jazoKIHN0YXRpYyBsb2ZmX3Qg
+dWRmX2NoZWNrX3ZzZChzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiKQogewogCXN0cnVjdCB2b2xTdHJ1
+Y3REZXNjICp2c2QgPSBOVUxMOwotCWxvZmZfdCBzZWN0b3IgPSAzMjc2ODsKKwlsb2ZmX3Qgc2Vj
+dG9yID0gVlNEX0ZJUlNUX1NFQ1RPUl9PRkZTRVQ7CiAJaW50IHNlY3RvcnNpemU7CiAJc3RydWN0
+IGJ1ZmZlcl9oZWFkICpiaCA9IE5VTEw7CiAJaW50IG5zcjAyID0gMDsKQEAgLTY5MCw4ICs2OTMs
+MTggQEAgc3RhdGljIGxvZmZfdCB1ZGZfY2hlY2tfdnNkKHN0cnVjdCBzdXBlcl9ibG9jayAqc2Ip
+CiAJdWRmX2RlYnVnKCJTdGFydGluZyBhdCBzZWN0b3IgJXUgKCVsZCBieXRlIHNlY3RvcnMpXG4i
+LAogCQkgICh1bnNpZ25lZCBpbnQpKHNlY3RvciA+PiBzYi0+c19ibG9ja3NpemVfYml0cyksCiAJ
+CSAgc2ItPnNfYmxvY2tzaXplKTsKLQkvKiBQcm9jZXNzIHRoZSBzZXF1ZW5jZSAoaWYgYXBwbGlj
+YWJsZSkgKi8KLQlmb3IgKDsgIW5zcjAyICYmICFuc3IwMzsgc2VjdG9yICs9IHNlY3RvcnNpemUp
+IHsKKwkvKiBQcm9jZXNzIHRoZSBzZXF1ZW5jZSAoaWYgYXBwbGljYWJsZSkuIFRoZSBoYXJkIGxp
+bWl0IG9uIHRoZSBzZWN0b3IKKwkgKiBvZmZzZXQgaXMgYXJiaXRyYXJ5LCBob3BlZnVsbHkgbGFy
+Z2UgZW5vdWdoIHNvIHRoYXQgYWxsIHZhbGlkIFVERgorCSAqIGZpbGVzeXN0ZW1zIHdpbGwgYmUg
+cmVjb2duaXNlZC4gVGhlcmUgaXMgbm8gbWVudGlvbiBvZiBhbiB1cHBlcgorCSAqIGJvdW5kIHRv
+IHRoZSBzaXplIG9mIHRoZSB2b2x1bWUgcmVjb2duaXRpb24gYXJlYSBpbiB0aGUgc3RhbmRhcmQu
+CisJICogIFRoZSBsaW1pdCB3aWxsIHByZXZlbnQgdGhlIGNvZGUgdG8gcmVhZCBhbGwgdGhlIHNl
+Y3RvcnMgb2YgYQorCSAqIHNwZWNpYWxseSBjcmFmdGVkIGltYWdlIChsaWtlIGEgYmx1cmF5IGRp
+c2MgZnVsbCBvZiBDRDAwMSBzZWN0b3JzKSwKKwkgKiBwb3RlbnRpYWxseSBjYXVzaW5nIG1pbnV0
+ZXMgb3IgZXZlbiBob3VycyBvZiB1bmludGVycnVwdGlibGUgSS9PCisJICogYWN0aXZpdHkuIFRo
+aXMgYWN0dWFsbHkgaGFwcGVuZWQgd2l0aCB1bmluaXRpYWxpc2VkIFNTRCBwYXJ0aXRpb25zCisJ
+ICogKGFsbCAweEZGKSBiZWZvcmUgdGhlIGNoZWNrIGZvciB0aGUgbGltaXQgYW5kIGFsbCB2YWxp
+ZCBJRHMgd2VyZQorCSAqIGFkZGVkICovCisJZm9yICg7ICFuc3IwMiAmJiAhbnNyMDMgJiYgc2Vj
+dG9yIDwgVlNEX01BWF9TRUNUT1JfT0ZGU0VUOworCSAgICAgc2VjdG9yICs9IHNlY3RvcnNpemUp
+IHsKIAkJLyogUmVhZCBhIGJsb2NrICovCiAJCWJoID0gdWRmX3RyZWFkKHNiLCBzZWN0b3IgPj4g
+c2ItPnNfYmxvY2tzaXplX2JpdHMpOwogCQlpZiAoIWJoKQpAQCAtNzAxLDEwICs3MTQsNyBAQCBz
+dGF0aWMgbG9mZl90IHVkZl9jaGVja192c2Qoc3RydWN0IHN1cGVyX2Jsb2NrICpzYikKIAkJdnNk
+ID0gKHN0cnVjdCB2b2xTdHJ1Y3REZXNjICopKGJoLT5iX2RhdGEgKwogCQkJCQkgICAgICAoc2Vj
+dG9yICYgKHNiLT5zX2Jsb2Nrc2l6ZSAtIDEpKSk7CiAKLQkJaWYgKHZzZC0+c3RkSWRlbnRbMF0g
+PT0gMCkgewotCQkJYnJlbHNlKGJoKTsKLQkJCWJyZWFrOwotCQl9IGVsc2UgaWYgKCFzdHJuY21w
+KHZzZC0+c3RkSWRlbnQsIFZTRF9TVERfSURfQ0QwMDEsCisJCWlmICghc3RybmNtcCh2c2QtPnN0
+ZElkZW50LCBWU0RfU1REX0lEX0NEMDAxLAogCQkJCSAgICBWU0RfU1REX0lEX0xFTikpIHsKIAkJ
+CXN3aXRjaCAodnNkLT5zdHJ1Y3RUeXBlKSB7CiAJCQljYXNlIDA6CkBAIC03NDAsNiArNzUwLDE3
+IEBAIHN0YXRpYyBsb2ZmX3QgdWRmX2NoZWNrX3ZzZChzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiKQog
+CQllbHNlIGlmICghc3RybmNtcCh2c2QtPnN0ZElkZW50LCBWU0RfU1REX0lEX05TUjAzLAogCQkJ
+CSAgICBWU0RfU1REX0lEX0xFTikpCiAJCQluc3IwMyA9IHNlY3RvcjsKKwkJZWxzZSBpZiAoIXN0
+cm5jbXAodnNkLT5zdGRJZGVudCwgVlNEX1NURF9JRF9CT09UMiwKKwkJCQkgICAgVlNEX1NURF9J
+RF9MRU4pKQorCQkJOyAvKiBub3RoaW5nICovCisJCWVsc2UgaWYgKCFzdHJuY21wKHZzZC0+c3Rk
+SWRlbnQsIFZTRF9TVERfSURfQ0RXMDIsCisJCQkJICAgIFZTRF9TVERfSURfTEVOKSkKKwkJCTsg
+Lyogbm90aGluZyAqLworCQllbHNlIHsKKwkJCS8qIGludmFsaWQgaWQgOiBlbmQgb2Ygdm9sdW1l
+IHJlY29nbml0aW9uIGFyZWEgKi8KKwkJCWJyZWxzZShiaCk7CisJCQlicmVhazsKKwkJfQogCQli
+cmVsc2UoYmgpOwogCX0KIApAQCAtNzQ3LDcgKzc2OCw4IEBAIHN0YXRpYyBsb2ZmX3QgdWRmX2No
+ZWNrX3ZzZChzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiKQogCQlyZXR1cm4gbnNyMDM7CiAJZWxzZSBp
+ZiAobnNyMDIpCiAJCXJldHVybiBuc3IwMjsKLQllbHNlIGlmIChzZWN0b3IgLSAoc2JpLT5zX3Nl
+c3Npb24gPDwgc2ItPnNfYmxvY2tzaXplX2JpdHMpID09IDMyNzY4KQorCWVsc2UgaWYgKCFiaCAm
+JiBzZWN0b3IgLSAoc2JpLT5zX3Nlc3Npb24gPDwgc2ItPnNfYmxvY2tzaXplX2JpdHMpID09CisJ
+CQlWU0RfRklSU1RfU0VDVE9SX09GRlNFVCkKIAkJcmV0dXJuIC0xOwogCWVsc2UKIAkJcmV0dXJu
+IDA7CkBAIC0xMjM5LDYgKzEyNjEsOSBAQCBzdGF0aWMgaW50IHVkZl9sb2FkX3BhcnRkZXNjKHN0
+cnVjdCBzdXBlcl9ibG9jayAqc2IsIHNlY3Rvcl90IGJsb2NrKQogCSAqIFBIWVNJQ0FMIHBhcnRp
+dGlvbnMgYXJlIGFscmVhZHkgc2V0IHVwCiAJICovCiAJdHlwZTFfaWR4ID0gaTsKKyNpZmRlZiBV
+REZGU19ERUJVRworCW1hcCA9IE5VTEw7IC8qIHN1cHJlc3MgJ21heWJlIHVzZWQgdW5pbml0aWFs
+aXplZCcgd2FybmluZyAqLworI2VuZGlmCiAJZm9yIChpID0gMDsgaSA8IHNiaS0+c19wYXJ0aXRp
+b25zOyBpKyspIHsKIAkJbWFwID0gJnNiaS0+c19wYXJ0bWFwc1tpXTsKIApAQCAtMTgxOSw3ICsx
+ODQ0LDkgQEAgc3RhdGljIGludCB1ZGZfbG9hZF92cnMoc3RydWN0IHN1cGVyX2Jsb2NrICpzYiwg
+c3RydWN0IHVkZl9vcHRpb25zICp1b3B0LAogCQkJcmV0dXJuIDA7CiAJCX0KIAkJaWYgKG5zcl9v
+ZmYgPT0gLTEpCi0JCQl1ZGZfZGVidWcoIkZhaWxlZCB0byByZWFkIGJ5dGUgMzI3NjguIEFzc3Vt
+aW5nIG9wZW4gZGlzYy4gU2tpcHBpbmcgdmFsaWRpdHkgY2hlY2tcbiIpOworCQkJdWRmX2RlYnVn
+KCJGYWlsZWQgdG8gcmVhZCBzZWN0b3IgYXQgb2Zmc2V0ICVkLiAiCisJCQkJICAiQXNzdW1pbmcg
+b3BlbiBkaXNjLiBTa2lwcGluZyB2YWxpZGl0eSAiCisJCQkJICAiY2hlY2tcbiIsIFZTRF9GSVJT
+VF9TRUNUT1JfT0ZGU0VUKTsKIAkJaWYgKCFzYmktPnNfbGFzdF9ibG9jaykKIAkJCXNiaS0+c19s
+YXN0X2Jsb2NrID0gdWRmX2dldF9sYXN0X2Jsb2NrKHNiKTsKIAl9IGVsc2Ugewo=
+--001a11c28688a963b304e907cf71--
