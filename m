@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3JRRmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 13:42:13 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56296 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756517Ab3JRRmK (ORCPT
+	id S1756876Ab3JRRoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 13:44:07 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:39734 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756783Ab3JRRoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 13:42:10 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lan Tianyu <lantianyu1986@gmail.com>, Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
-Date: Fri, 18 Oct 2013 19:54:02 +0200
-Message-ID: <3170486.zy96d8TsUF@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52613209.3000104@intel.com>
-References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <4249062.PmvqKh0Nrz@vostro.rjw.lan> <52613209.3000104@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 18 Oct 2013 13:44:03 -0400
+Message-ID: <5261735A.1000504@gmail.com>
+Date: Fri, 18 Oct 2013 19:43:54 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Andrew Lunn <andrew@lunn.ch>, Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: kirkwood: remove lagacy clk workarounds
+References: <1382097253-15624-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131018144741.GL22434@titan.lakedaemon.net> <20131018161743.GA29595@localhost> <52616F81.8060504@gmail.com>
+In-Reply-To: <52616F81.8060504@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 18, 2013 09:05:13 PM Lan Tianyu wrote:
-> On 10/17/2013 07:38 PM, Rafael J. Wysocki wrote:
-> >>>>>>> Unfortunately, I don't see how we can fix this race in a
-> >>>>>>> satisfactory way and I'm starting to think that the whole
-> >>>>>>> resuming of dependent devices may be a bad idea.
-> >>>>>>>
-> >>>>>>> IIRC, the original concern was that devices may end up in
-> >>>>>>> D0-uninitialized if we don't do that, but then whoever
-> >>>>>>> turned the power resource on will probably turn if off at
-> >>>>>>> one point anyway, so they will be in that state
-> >>>>>>> temporarily.  In other words, in addition to the fact
-> >>>>>>> that this is racy, there even is no reason to do it.
-> >>>>>>>
-> >>>>>>> I'll send a patch to rip off that stuff later today.
-> >>>
-> >>> Currently, dropping it should be the better choice but I think we
-> >>> still need to resolve the D0-uninitialized problem, right?
-> > Why do you think it is a problem in the first place?  Those devices
-> > will not be accessed while in that state (unless there's a bug
-> > somewhere).
-> >
-> 
-> Yes, those devices will not be accessed but they will continue to stay
-> D0-uninitiallized without any users before next resume and suspend. PM
-> core and device driver still think they are in the lower power state.
-> 
-> At this point, it seems these devices should be put into lower power
-> state(E.G D3hot) than D0-uninitiallized.
-> 
-> E.G, two devices share one power resource. After they are suspended and
-> power resource turns off, one device is resumed and power resource turns
-> on. The other device will remain D0-uninitallized until there are resume
-> and suspend for it.
+On 10/18/2013 07:27 PM, Sebastian Hesselbarth wrote:
+> On 10/18/2013 06:17 PM, Ezequiel Garcia wrote:
+>> On Fri, Oct 18, 2013 at 10:47:41AM -0400, Jason Cooper wrote:
+>>> On Fri, Oct 18, 2013 at 01:54:13PM +0200, Sebastian Hesselbarth wrote:
+>>>> With legacy devices converted to DT and a proper ethernet MAC
+>>>> workaround, we can now remove the clk workarounds for legacy
+>>>> devices. While at it, also cleanup the list of includes.
+>>>>
+>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>>> ---
+>>>> As a follow-up patch for latest mvebu PRs, this patch is based on
+>>>>   git://git.infradead.org/linux-mvebu.git tags/soc-3.13-2
+>>>>
+>>>> Cc: Jason Cooper <jason@lakedaemon.net>
+>>>> Cc: Andrew Lunn <andrew@lunn.ch>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: Kevin Hilman <khilman@linaro.org>
+>>>> Cc: linux-arm-kernel@lists.infradead.org
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> ---
+>>>>   arch/arm/mach-kirkwood/board-dt.c |   42
+>>>> ++----------------------------------
+>>>>   1 files changed, 3 insertions(+), 39 deletions(-)
+>>>
+>>> Applied to mvebu/soc
+>>>
+>>
+>> Weird: I've tried to do this clean-up myself and my usual tests with
+>> network
+>> built as a module failed somehow. Maybe I missed something and did
+>> something
+>> stupid?
+>
+> Ezequiel,
+>
+> you need commits
+> b5d82db net: mv643xx_eth: fix missing device_node for port devices
+> f564412 net: mv643xx_eth: fix orphaned statistics timer crash
+> 041b4dd net: mv643xx_eth: update statistics timer from timer context only
+>
+> from git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+>
+> Those are the three net driver fixes and have not yet been pulled into
+> mainline linux.
+>
+> Can you re-test with those three applied (or you can just merge in
+> above master)? I am compiling right now and will report.
 
-That's not correct.  If the device that has been resumed is now suspended
-again, that will cause the power resource to go off again and the other
-device will not stay in D0-uninitialized.
+With mvebu/for-next and net/master merged in,
+modular mvmdio and mv643xx_eth on Kirkwood Dockstar:
 
-> It may consume more power than lowest power state it can reach at that point.
+Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail>
 
-I don't see a compelling case for that.  The only situation of interest is
-if A and B share a power resource, they both are suspended to start with, so
-the power resource is off, and then A is resumed and not suspended again for
-a relatively long time.  In that case B *may* be in D0-uninitialized although
-it could go into D3hot if it were resumed and suspended.  Now there's a
-question of timing, because the resume and suspend of B is only beneficial
-if it would stay in D0-uninitialized long enough and we can't say in advance
-when A is going to be suspended again.  Moreover, we don't really know what
-state B is in, because "power restored" need not automatically mean "clock
-enabled" etc. for various kinds of devices.
+IOW, works. I hope you can confirm this, too.
 
-I think the whole problem is highly theoretical and really only affects PCI
-where "power restored" pretty much means "reset".  And I am yet to see a system
-where it actually matters.
+Sebastian
 
-Thanks!
+Log follows:
+---
+Uncompressing Linux... done, booting the kernel.
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.12.0-rc3-00388-g863cf23 (hesselba@nijin) 
+(gcc version 4.3.5 (Debian 4.3.5-4) ) #26 PREEMPT Fri Oct 18 19:30:40 
+CEST 2013
+[    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), 
+cr=00053977
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] Machine: Marvell Kirkwood (Flattened Device Tree), model: 
+Seagate FreeAgent Dockstar
+...
+[    0.165779] [Firmware Info]: 
+/ocp@f1000000/ethernet-controller@72000/ethernet0-port@0: 
+local-mac-address is not set
+...
+root@cosmo:~# insmod mvmdio.ko
+[  206.994283] libphy: orion_mdio_bus: probed
+root@cosmo:~# insmod mv643xx_eth.ko
+[  210.725345] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+[  211.748687] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC 
+address 02:50:43:19:fd:e2
+[  214.599588] mv643xx_eth_port mv643xx_eth_port.0 eth0: link up, 1000 
+Mb/s, full duplex, flow control disabled
+...
+root@cosmo:~# dhclient eth0
+...
+RTNETLINK answers: File exists 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+root@cosmo:~# ifconfig 
+
+eth0      Link encap:Ethernet  HWaddr 02:50:43:19:fd:e2 
+
+           inet addr:192.168.1.54  Bcast:192.168.1.255  Mask:255.255.255.0
+           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+           RX packets:17 errors:0 dropped:0 overruns:0 frame:0
+           TX packets:30 errors:0 dropped:0 overruns:0 carrier:0
+           collisions:0 txqueuelen:1000
+           RX bytes:2822 (2.7 KiB)  TX bytes:4049 (3.9 KiB)
+           Interrupt:29
+
