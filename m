@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab3JROXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:23:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754378Ab3JROXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:23:33 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, l.flis@cyfronet.pl
-Subject: [PATCH] block: properly stack underlying max_segment_size to DM device
-Date: Fri, 18 Oct 2013 10:23:26 -0400
-Message-Id: <1382106206-4459-1-git-send-email-snitzer@redhat.com>
+	id S1754927Ab3JROZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:25:19 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:36509 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab3JROZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 10:25:17 -0400
+Message-ID: <526144C9.4080004@gmail.com>
+Date: Fri, 18 Oct 2013 08:25:13 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 19/19] perf tools: allow non-matching sample types
+References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-20-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1382099356-4918-20-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
-(65536) even if the underlying device(s) have a larger value -- this is
-due to blk_stack_limits() using min_not_zero() when stacking the
-max_segment_size limit.
+On 10/18/13 6:29 AM, Adrian Hunter wrote:
+> For kernels that do not support PERF_SAMPLE_IDENTIFIER,
+> sample types need not be identical to determine
+> the sample id from the event.  Only the position
+> of the sample id needs to be the same.
+>
+> Compatible sample types are ones in which the bits
+> defined by PERF_COMPAT_MASK are the same.
+> 'perf_evlist__config()' forces sample types to be
+> compatible on that basis.
 
-# cat /sys/block/sda/queue/max_segment_size
-1073741824
+Arnaldo and I have discussed adding callchain handling to perf-trace. To 
+do that we only need stack data (including IP) for one event -- eg, 
+raw_syscalls:sys_enter. That means raw_syscalls:sys_enter and 
+raw_syscalls:sys_exit will have different attributes set - including 
+ones in the MASK.
 
-# cat /sys/block/dm-0/queue/max_segment_size
-before patch:
-65536
-
-after patch:
-1073741824
-
-Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org # v3.3+
----
- block/blk-settings.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index c50ecf0..29f28bb 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -143,6 +143,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
- 	/* Inherit limits from component devices */
- 	lim->discard_zeroes_data = 1;
- 	lim->max_segments = USHRT_MAX;
-+	lim->max_segment_size = UINT_MAX;
- 	lim->max_hw_sectors = UINT_MAX;
- 	lim->max_sectors = UINT_MAX;
- 	lim->max_write_same_sectors = UINT_MAX;
--- 
-1.7.4.4
+David
 
