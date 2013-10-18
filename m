@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3JRO2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:28:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52690 "EHLO mx2.suse.de"
+	id S1755459Ab3JRO2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:28:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52685 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab3JRO1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:27:31 -0400
+	id S1754327Ab3JRO1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 10:27:30 -0400
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -13,196 +13,254 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiri Kosina <jkosina@suse.cz>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 4/6] x86: modify ftrace function using the new int3-based framework
-Date: Fri, 18 Oct 2013 16:27:23 +0200
-Message-Id: <1382106445-31468-5-git-send-email-pmladek@suse.cz>
+Subject: [PATCH 3/6] x86: allow to modify more instructions in one text_poke_bp call
+Date: Fri, 18 Oct 2013 16:27:22 +0200
+Message-Id: <1382106445-31468-4-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit fd4363fff3d9 (x86: Introduce int3 (breakpoint)-based instruction
-patching) uses the same technique that has been used in ftrace since 08d636b
-("ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine")
+When trying to use text_poke_bp in dynamic ftrace, the process
+was significantly slower than the original code. For example,
+I tried to modify the ftrace function, enable, and disable the
+tracer in a cycle. With 9 different trace functions and 500
+cycles, I got these times:
 
-It would be great to use the new generic implementation and clean up the x86
-ftrace code a bit.
+	original code:			with text_poke_bp:
 
-Let's start with ftrace_modify_code. It does basically the same as text_poke_bp.
-In addition, it checks whether the replaced code is the expected one to avoid
-problems with modules. The checking code can be split from
-ftrace_modify_code_direct.
+	real    19m51.667s		real    33m29.456s
+	user    0m0.004s		user    0m0.008s
+	sys     0m27.124s		sys     0m27.620s
 
-Note that we do not longer need to set modifying_ftrace_code in
-ftrace_update_ftrace_func. The int3 interupt will be handled by
-poke_int3_handler.
+It turned out that most of the extra time was spent in the call:
+
+	on_each_cpu(do_sync_core, NULL, 1)
+
+It is needed to reset the speculative queue of decoded instructions
+on each CPU. It is relatively expensive operation. The original code
+reduced the usage by patching all instructions in parallel.
+
+If we want to share the code and keep the effectivity, we need to
+extend text_poke_bp and allow to modify more instructions at once as well.
+It might be useful in more situations, for example, in arch_optimize_kprobes.
+
+Note that the list of modified addresses has to be sorted. Otherwise,
+the int3 handler would be too slow.
+
+Also note that "addr" and "handler" are arays of pointers (IPs). While "opcode"
+is a plain array of bytes, new instructions of the same length. text_poke_bp
+might be used to patch different length of instructions but there will
+be the same type of intructions for each call. It would be waste of memory
+if we pass instructions via an array of pointers.
+
+Finally, the list of handlers is optional. ftrace and jump labels
+pretend that there are nops. Hence. the int3 handler could calculate
+the next IP address from the lenght of the patched instruction.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- arch/x86/kernel/ftrace.c | 105 ++++++++++++++++++++---------------------------
- 1 file changed, 45 insertions(+), 60 deletions(-)
+ arch/x86/include/asm/alternative.h |  3 +-
+ arch/x86/kernel/alternative.c      | 74 ++++++++++++++++++++++++++++++--------
+ arch/x86/kernel/jump_label.c       |  3 +-
+ arch/x86/kernel/kprobes/opt.c      |  8 ++---
+ 4 files changed, 67 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 42a392a..f96dbcc 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -52,6 +52,33 @@ union ftrace_code_union {
- 	} __attribute__((packed));
- };
- 
-+/*
-+ * Note: Due to modules and __init, code can
-+ *  disappear and change, we need to protect against faulting
-+ *  as well as code changing. We do this by using the
-+ *  probe_kernel_* functions.
-+ */
-+static int
-+ftrace_check_code(unsigned long ip, unsigned const char *expected)
-+{
-+	unsigned char actual[MCOUNT_INSN_SIZE];
-+
-+	if (probe_kernel_read(actual, (void *)ip, MCOUNT_INSN_SIZE))
-+		return -EFAULT;
-+
-+	if (memcmp(actual, expected, MCOUNT_INSN_SIZE) != 0) {
-+		WARN_ONCE(1,
-+			  "ftrace check failed: %x %x%x%x%x vs. %x %x%x%x%x\n",
-+			  actual[0],
-+			  actual[1], actual[2], actual[3], actual[4],
-+			  expected[0],
-+			  expected[1], expected[2], expected[3], expected[4]);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int ftrace_calc_offset(long ip, long addr)
- {
- 	return (int)(addr - ip);
-@@ -103,28 +130,12 @@ static int
- ftrace_modify_code_direct(unsigned long ip, unsigned const char *old_code,
- 		   unsigned const char *new_code)
- {
--	unsigned char replaced[MCOUNT_INSN_SIZE];
--
--	/*
--	 * Note: Due to modules and __init, code can
--	 *  disappear and change, we need to protect against faulting
--	 *  as well as code changing. We do this by using the
--	 *  probe_kernel_* functions.
--	 *
--	 * No real locking needed, this code is run through
--	 * kstop_machine, or before SMP starts.
--	 */
--
--	/* read the text we want to modify */
--	if (probe_kernel_read(replaced, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
-+	int ret;
- 
--	/* Make sure it is what we expect it to be */
--	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
--		return -EINVAL;
-+	ret = ftrace_check_code(ip, old_code);
- 
- 	/* replace the text with the new text */
--	if (do_ftrace_mod_code(ip, new_code))
-+	if (!ret && do_ftrace_mod_code(ip, new_code))
- 		return -EPERM;
- 
- 	sync_core();
-@@ -132,6 +143,21 @@ ftrace_modify_code_direct(unsigned long ip, unsigned const char *old_code,
- 	return 0;
- }
- 
-+static int
-+ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
-+		   unsigned const char *new_code)
-+{
-+	int ret;
-+
-+	ret = ftrace_check_code(ip, old_code);
-+
-+	/* replace the text with the new text */
-+	if (!ret)
-+		text_poke_bp((void **)&ip, new_code, MCOUNT_INSN_SIZE, 1, NULL);
-+
-+	return ret;
-+}
-+
- int ftrace_make_nop(struct module *mod,
- 		    struct dyn_ftrace *rec, unsigned long addr)
- {
-@@ -202,10 +228,6 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 0a3f9c9..9038f32 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -226,6 +226,7 @@ extern void *text_poke_early(void *addr, const void *opcode, size_t len);
   */
- atomic_t modifying_ftrace_code __read_mostly;
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
+ extern int poke_int3_handler(struct pt_regs *regs);
+-extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
++extern void *text_poke_bp(void *addr[], const void *opcode, size_t len,
++			  unsigned int count, void *handler[]);
  
--static int
--ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
--		   unsigned const char *new_code);
--
- /*
-  * Should never be called:
-  *  As it is only called by __ftrace_replace_code() which is called by
-@@ -230,9 +252,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
- 	new = ftrace_call_replace(ip, (unsigned long)func);
- 
--	/* See comment above by declaration of modifying_ftrace_code */
--	atomic_inc(&modifying_ftrace_code);
--
- 	ret = ftrace_modify_code(ip, old, new);
- 
- 	/* Also update the regs callback function */
-@@ -243,8 +262,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 		ret = ftrace_modify_code(ip, old, new);
- 	}
- 
--	atomic_dec(&modifying_ftrace_code);
--
- 	return ret;
+ #endif /* _ASM_X86_ALTERNATIVE_H */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 13cae15..0eb8250 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -4,6 +4,7 @@
+ #include <linux/sched.h>
+ #include <linux/mutex.h>
+ #include <linux/list.h>
++#include <linux/bsearch.h>
+ #include <linux/stringify.h>
+ #include <linux/kprobes.h>
+ #include <linux/mm.h>
+@@ -644,32 +645,61 @@ static void run_sync(void)
  }
  
-@@ -609,38 +626,6 @@ void ftrace_replace_code(int enable)
- 	}
- }
+ static bool bp_patching_in_progress;
+-static void *bp_int3_handler, *bp_int3_addr;
++static void **bp_int3_handler, **bp_int3_addr;
++static size_t bp_int3_len;		/* length of the modified instruction */
++static unsigned int bp_int3_count;	/* number of modified instructions */
++
++static int poke_int3_cmp(const void *a, const void *b)
++{
++	unsigned long key = (unsigned long)a;
++	unsigned long addr = *(unsigned long *)b;
++
++	return key - addr;
++}
  
--static int
--ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
--		   unsigned const char *new_code)
--{
--	int ret;
--
--	ret = add_break(ip, old_code);
--	if (ret)
--		goto out;
--
--	run_sync();
--
--	ret = add_update_code(ip, new_code);
--	if (ret)
--		goto fail_update;
--
--	run_sync();
--
--	ret = ftrace_write(ip, new_code, 1);
--	if (ret) {
--		ret = -EPERM;
--		goto out;
--	}
--	run_sync();
-- out:
--	return ret;
--
-- fail_update:
--	probe_kernel_write((void *)ip, &old_code[0], 1);
--	goto out;
--}
--
- void arch_ftrace_update_code(int command)
+ int poke_int3_handler(struct pt_regs *regs)
  {
- 	/* See comment above by declaration of modifying_ftrace_code */
++	void *found;
++	unsigned long index;
++
+ 	/* bp_patching_in_progress */
+ 	smp_rmb();
+ 
+ 	if (likely(!bp_patching_in_progress))
+ 		return 0;
+ 
+-	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
++	if (user_mode_vm(regs))
++		return 0;
++
++	/* search if this address should be handled here */
++	found = bsearch((void *)(regs->ip - 1), bp_int3_addr, bp_int3_count,
++			sizeof(*bp_int3_addr), poke_int3_cmp);
++
++	if (!found)
+ 		return 0;
+ 
+ 	/* set up the specified breakpoint handler */
+-	regs->ip = (unsigned long) bp_int3_handler;
++	if (bp_int3_handler) {
++		/* handler is on the same index as the found address */
++		index = (void**)found - bp_int3_addr;
++		regs->ip = (unsigned long)*(bp_int3_handler + index);
++	} else {
++		/* just skip the instruction if the handler is not defined */
++		regs->ip += bp_int3_len - 1;
++	}
+ 
+ 	return 1;
+-
+ }
+ 
+ /**
+  * text_poke_bp() -- update instructions on live kernel on SMP
+- * @addr:	address to patch
+- * @opcode:	opcode of new instruction
++ * @addr:	addresses to patch
++ * @opcode:	opcodes of new instructions
+  * @len:	length to copy
+- * @handler:	address to jump to when the temporary breakpoint is hit
++ * @count:	number of patched addresses
++ * @handler:	addresses to jump to when the temporary breakpoint is hit;
++ *		the value is optional; if the array is NULL, it jupms right
++ *		after the related instruction
+  *
+  * Modify multi-byte instruction by using int3 breakpoint on SMP.
+  * We completely avoid stop_machine() here, and achieve the
+@@ -686,13 +716,19 @@ int poke_int3_handler(struct pt_regs *regs)
+  *
+  * Note: must be called under text_mutex.
+  */
+-void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
++void *text_poke_bp(void *addr[], const void *opcode, size_t len,
++			   unsigned int count, void *handler[])
+ {
+ 	unsigned char int3 = 0xcc;
++	const void *op;
++	unsigned int i;
+ 
++	bp_int3_addr = addr;
++	bp_int3_len = len;
++	bp_int3_count = count;
+ 	bp_int3_handler = handler;
+-	bp_int3_addr = (u8 *)addr + sizeof(int3);
+ 	bp_patching_in_progress = true;
++
+ 	/*
+ 	 * Corresponding read barrier in int3 notifier for
+ 	 * making sure the in_progress flags is correctly ordered wrt.
+@@ -700,15 +736,21 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	 */
+ 	smp_wmb();
+ 
+-	text_poke_part(addr, &int3, sizeof(int3));
++	/* add interupts */
++	for (i = 0; i < count; i++)
++		text_poke_part(addr[i], &int3, sizeof(int3));
+ 
+ 	run_sync();
+ 
+ 	if (len - sizeof(int3) > 0) {
+ 		/* patch all but the first byte */
+-		text_poke_part((char *)addr + sizeof(int3),
+-			       (const char *) opcode + sizeof(int3),
+-			       len - sizeof(int3));
++		op = opcode + sizeof(int3);
++		for (i = 0; i < count; i++) {
++			text_poke_part(addr[i] + sizeof(int3), op,
++				       len - sizeof(int3));
++			op += len;
++		}
++
+ 		/*
+ 		 * According to Intel, this core syncing is very likely
+ 		 * not necessary and we'd be safe even without it. But
+@@ -718,7 +760,11 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	}
+ 
+ 	/* patch the first byte */
+-	text_poke_part(addr, opcode, sizeof(int3));
++	op = opcode;
++	for (i = 0; i < count; i++) {
++		text_poke_part(addr[i], op, sizeof(int3));
++		op += len;
++	}
+ 
+ 	run_sync();
+ 
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index ee11b7d..b472d4f 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -87,8 +87,7 @@ static void __jump_label_transform(struct jump_entry *entry,
+ 	if (poker)
+ 		(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
+ 	else
+-		text_poke_bp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE,
+-			     (void *)entry->code + JUMP_LABEL_NOP_SIZE);
++		text_poke_bp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE, 1, NULL);
+ }
+ 
+ void arch_jump_label_transform(struct jump_entry *entry,
+diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+index 898160b..b08e8df 100644
+--- a/arch/x86/kernel/kprobes/opt.c
++++ b/arch/x86/kernel/kprobes/opt.c
+@@ -390,8 +390,8 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
+ 		insn_buf[0] = RELATIVEJUMP_OPCODE;
+ 		*(s32 *)(&insn_buf[1]) = rel;
+ 
+-		text_poke_bp(op->kp.addr, insn_buf, RELATIVEJUMP_SIZE,
+-			     op->optinsn.insn);
++		text_poke_bp((void **)&(op->kp.addr), insn_buf, RELATIVEJUMP_SIZE, 1,
++			     (void **)&(op->optinsn.insn));
+ 
+ 		list_del_init(&op->list);
+ 	}
+@@ -405,8 +405,8 @@ void __kprobes arch_unoptimize_kprobe(struct optimized_kprobe *op)
+ 	/* Set int3 to first byte for kprobes */
+ 	insn_buf[0] = BREAKPOINT_INSTRUCTION;
+ 	memcpy(insn_buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
+-	text_poke_bp(op->kp.addr, insn_buf, RELATIVEJUMP_SIZE,
+-		     op->optinsn.insn);
++	text_poke_bp((void **)&(op->kp.addr), insn_buf, RELATIVEJUMP_SIZE, 1,
++		     (void **)&(op->optinsn.insn));
+ }
+ 
+ /*
 -- 
 1.8.4
 
