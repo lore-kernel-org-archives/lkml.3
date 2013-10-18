@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab3JRSjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 14:39:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56702 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3JRSja (ORCPT
+	id S1756962Ab3JRSks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 14:40:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47912 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755976Ab3JRSkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 14:39:30 -0400
-Message-ID: <52618060.1060804@codeaurora.org>
-Date: Fri, 18 Oct 2013 11:39:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 18 Oct 2013 14:40:46 -0400
+Date: Fri, 18 Oct 2013 19:38:04 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>, Michael Bohan <mbohan@codeaurora.org>
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "david.daney@cavium.com" <david.daney@cavium.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH] of/lib: Export fdt routines to modules
+Message-ID: <20131018183804.GA8546@e106331-lin.cambridge.arm.com>
+References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+ <525F2397.40203@caviumnetworks.com>
+ <20131017002731.GA22830@codeaurora.org>
+ <525F6D83.1050808@roeck-us.net>
+ <20131017235132.GA6241@codeaurora.org>
+ <52608457.5040609@roeck-us.net>
 MIME-Version: 1.0
-To: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-CC: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] hwrng: msm: Add PRNG support for MSM SoC's
-References: <1381846278-9529-1-git-send-email-svarbanov@mm-sol.com> <1381846278-9529-3-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1381846278-9529-3-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52608457.5040609@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/13 07:11, Stanimir Varbanov wrote:
-> This adds a driver for hardware random number generator present
-> on Qualcomm MSM SoC's.
->
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
+Hi all,
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Guenter, thanks for adding devicetree to Cc.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+On Fri, Oct 18, 2013 at 01:44:07AM +0100, Guenter Roeck wrote:
+> On 10/17/2013 04:51 PM, Michael Bohan wrote:
+> > On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
+> >> On 10/16/2013 05:27 PM, Michael Bohan wrote:
+> >>> My motivation is actually to use the fdt format as a firmware.
+> >>> I have a requirement to express driver metadata that's loadable
+> >> >from the filesystem. This data is not reasonable to place in the
+> >>> system Device Tree, since it's application specific and does not
+> >>> actually describe hardware. The fact that the format chosen is
+> >>> 'flattened device tree' is merely just a coincidence.
 
+Michael, could you elaborate on using the fdt format "as a firmware" and
+what driver metadata you need to be loadable from the filesystem?
+
+How are you intending to pass the DT to the kernel from userspace?
+
+Given that you mention this is application-specific configuration, why
+is using sysfs attributes or some other sort of filesystem interaction
+not appropriate?
+
+Thanks,
+Mark.
