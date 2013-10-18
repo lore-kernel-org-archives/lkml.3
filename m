@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3JRUsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 16:48:45 -0400
-Received: from smtprelay0093.hostedemail.com ([216.40.44.93]:51552 "EHLO
+	id S1755290Ab3JRUsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 16:48:35 -0400
+Received: from smtprelay0176.hostedemail.com ([216.40.44.176]:58814 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755330Ab3JRUsh (ORCPT
+	by vger.kernel.org with ESMTP id S1753379Ab3JRUsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 16:48:37 -0400
+	Fri, 18 Oct 2013 16:48:32 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:327:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2894:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:4321:4385:4605:5007:6119:6261:7875:7903:7904:8603:8660:9592:10004:10026:10848:11026:11233:11473:11658:11914:12043:12291:12294:12296:12438:12517:12519:12555:12683:13148:13161:13229:13230:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: robin37_2de05c3247033
-X-Filterd-Recvd-Size: 24830
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:327:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2895:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:4250:4321:4385:4605:5007:6261:7903:9010:9592:10004:10026:10848:11026:11233:11473:11658:11914:12043:12291:12294:12296:12438:12484:12517:12519:12555:12683:13161:13229:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: song30_2cf33cbf74712
+X-Filterd-Recvd-Size: 28688
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] net: misc: Remove extern from function prototypes
-Date: Fri, 18 Oct 2013 13:48:25 -0700
-Message-Id: <b03139ad9a2cf94a6ad8834f70d7ba592fcf5fa4.1382129045.git.joe@perches.com>
+Subject: [PATCH 1/4] net: 8021q/bluetooth/bridge/can/ceph: Remove extern from function prototypes
+Date: Fri, 18 Oct 2013 13:48:22 -0700
+Message-Id: <f0c49d4d49f5e2bd8e75ff323f35cb83f7f31439.1382129045.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1382129045.git.joe@perches.com>
 References: <cover.1382129045.git.joe@perches.com>
@@ -34,576 +34,604 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/irda/irnet/irnet.h       |  15 ++---
- net/l2tp/l2tp_core.h         |  57 +++++++++-------
- net/mac80211/rate.h          |  12 ++--
- net/netfilter/nf_internals.h |  28 ++++----
- net/rds/rds.h                |   2 +-
- net/rxrpc/ar-internal.h      | 150 ++++++++++++++++++++-----------------------
- net/tipc/core.h              |  28 ++++----
- net/wimax/wimax-internal.h   |  18 +++---
- net/wireless/core.h          |   6 +-
- net/wireless/sysfs.h         |   4 +-
- net/xfrm/xfrm_hash.h         |   4 +-
- 11 files changed, 157 insertions(+), 167 deletions(-)
+ net/8021q/vlan.h            |  28 ++---
+ net/bluetooth/hidp/hidp.h   |   4 +-
+ net/bridge/br_private.h     | 299 ++++++++++++++++++++------------------------
+ net/bridge/br_private_stp.h |  24 ++--
+ net/can/af_can.h            |   6 +-
+ net/ceph/auth_none.h        |   2 +-
+ net/ceph/auth_x.h           |   2 +-
+ net/ceph/crypto.h           |  48 ++++---
+ 8 files changed, 194 insertions(+), 219 deletions(-)
 
-diff --git a/net/irda/irnet/irnet.h b/net/irda/irnet/irnet.h
-index 564eb0b..8d65bb9 100644
---- a/net/irda/irnet/irnet.h
-+++ b/net/irda/irnet/irnet.h
-@@ -509,16 +509,11 @@ typedef struct irnet_ctrl_channel
-  */
- 
- /* -------------------------- IRDA PART -------------------------- */
--extern int
--	irda_irnet_create(irnet_socket *);	/* Initialise a IrNET socket */
--extern int
--	irda_irnet_connect(irnet_socket *);	/* Try to connect over IrDA */
--extern void
--	irda_irnet_destroy(irnet_socket *);	/* Teardown  a IrNET socket */
--extern int
--	irda_irnet_init(void);		/* Initialise IrDA part of IrNET */
--extern void
--	irda_irnet_cleanup(void);	/* Teardown IrDA part of IrNET */
-+int irda_irnet_create(irnet_socket *);	/* Initialise an IrNET socket */
-+int irda_irnet_connect(irnet_socket *);	/* Try to connect over IrDA */
-+void irda_irnet_destroy(irnet_socket *);	/* Teardown an IrNET socket */
-+int irda_irnet_init(void);		/* Initialise IrDA part of IrNET */
-+void irda_irnet_cleanup(void);		/* Teardown IrDA part of IrNET */
- 
- /**************************** VARIABLES ****************************/
- 
-diff --git a/net/l2tp/l2tp_core.h b/net/l2tp/l2tp_core.h
-index 6f251cb..1ee9f69 100644
---- a/net/l2tp/l2tp_core.h
-+++ b/net/l2tp/l2tp_core.h
-@@ -238,29 +238,40 @@ out:
- 	return tunnel;
+diff --git a/net/8021q/vlan.h b/net/8021q/vlan.h
+index ba5983f..a2caf00 100644
+--- a/net/8021q/vlan.h
++++ b/net/8021q/vlan.h
+@@ -196,12 +196,12 @@ static inline u32 vlan_get_ingress_priority(struct net_device *dev,
  }
  
--extern struct sock *l2tp_tunnel_sock_lookup(struct l2tp_tunnel *tunnel);
--extern void l2tp_tunnel_sock_put(struct sock *sk);
--extern struct l2tp_session *l2tp_session_find(struct net *net, struct l2tp_tunnel *tunnel, u32 session_id);
--extern struct l2tp_session *l2tp_session_find_nth(struct l2tp_tunnel *tunnel, int nth);
--extern struct l2tp_session *l2tp_session_find_by_ifname(struct net *net, char *ifname);
--extern struct l2tp_tunnel *l2tp_tunnel_find(struct net *net, u32 tunnel_id);
--extern struct l2tp_tunnel *l2tp_tunnel_find_nth(struct net *net, int nth);
--
--extern int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32 peer_tunnel_id, struct l2tp_tunnel_cfg *cfg, struct l2tp_tunnel **tunnelp);
--extern void l2tp_tunnel_closeall(struct l2tp_tunnel *tunnel);
--extern int l2tp_tunnel_delete(struct l2tp_tunnel *tunnel);
--extern struct l2tp_session *l2tp_session_create(int priv_size, struct l2tp_tunnel *tunnel, u32 session_id, u32 peer_session_id, struct l2tp_session_cfg *cfg);
--extern void __l2tp_session_unhash(struct l2tp_session *session);
--extern int l2tp_session_delete(struct l2tp_session *session);
--extern void l2tp_session_free(struct l2tp_session *session);
--extern void l2tp_recv_common(struct l2tp_session *session, struct sk_buff *skb, unsigned char *ptr, unsigned char *optr, u16 hdrflags, int length, int (*payload_hook)(struct sk_buff *skb));
--extern int l2tp_session_queue_purge(struct l2tp_session *session);
--extern int l2tp_udp_encap_recv(struct sock *sk, struct sk_buff *skb);
--
--extern int l2tp_xmit_skb(struct l2tp_session *session, struct sk_buff *skb, int hdr_len);
--
--extern int l2tp_nl_register_ops(enum l2tp_pwtype pw_type, const struct l2tp_nl_cmd_ops *ops);
--extern void l2tp_nl_unregister_ops(enum l2tp_pwtype pw_type);
-+struct sock *l2tp_tunnel_sock_lookup(struct l2tp_tunnel *tunnel);
-+void l2tp_tunnel_sock_put(struct sock *sk);
-+struct l2tp_session *l2tp_session_find(struct net *net,
-+				       struct l2tp_tunnel *tunnel,
-+				       u32 session_id);
-+struct l2tp_session *l2tp_session_find_nth(struct l2tp_tunnel *tunnel, int nth);
-+struct l2tp_session *l2tp_session_find_by_ifname(struct net *net, char *ifname);
-+struct l2tp_tunnel *l2tp_tunnel_find(struct net *net, u32 tunnel_id);
-+struct l2tp_tunnel *l2tp_tunnel_find_nth(struct net *net, int nth);
-+
-+int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id,
-+		       u32 peer_tunnel_id, struct l2tp_tunnel_cfg *cfg,
-+		       struct l2tp_tunnel **tunnelp);
-+void l2tp_tunnel_closeall(struct l2tp_tunnel *tunnel);
-+int l2tp_tunnel_delete(struct l2tp_tunnel *tunnel);
-+struct l2tp_session *l2tp_session_create(int priv_size,
-+					 struct l2tp_tunnel *tunnel,
-+					 u32 session_id, u32 peer_session_id,
-+					 struct l2tp_session_cfg *cfg);
-+void __l2tp_session_unhash(struct l2tp_session *session);
-+int l2tp_session_delete(struct l2tp_session *session);
-+void l2tp_session_free(struct l2tp_session *session);
-+void l2tp_recv_common(struct l2tp_session *session, struct sk_buff *skb,
-+		      unsigned char *ptr, unsigned char *optr, u16 hdrflags,
-+		      int length, int (*payload_hook)(struct sk_buff *skb));
-+int l2tp_session_queue_purge(struct l2tp_session *session);
-+int l2tp_udp_encap_recv(struct sock *sk, struct sk_buff *skb);
-+
-+int l2tp_xmit_skb(struct l2tp_session *session, struct sk_buff *skb,
-+		  int hdr_len);
-+
-+int l2tp_nl_register_ops(enum l2tp_pwtype pw_type,
-+			 const struct l2tp_nl_cmd_ops *ops);
-+void l2tp_nl_unregister_ops(enum l2tp_pwtype pw_type);
- 
- /* Session reference counts. Incremented when code obtains a reference
-  * to a session.
-diff --git a/net/mac80211/rate.h b/net/mac80211/rate.h
-index 5dedc56..505bc0d 100644
---- a/net/mac80211/rate.h
-+++ b/net/mac80211/rate.h
-@@ -144,8 +144,8 @@ void rate_control_deinitialize(struct ieee80211_local *local);
- 
- /* Rate control algorithms */
- #ifdef CONFIG_MAC80211_RC_PID
--extern int rc80211_pid_init(void);
--extern void rc80211_pid_exit(void);
-+int rc80211_pid_init(void);
-+void rc80211_pid_exit(void);
+ #ifdef CONFIG_VLAN_8021Q_GVRP
+-extern int vlan_gvrp_request_join(const struct net_device *dev);
+-extern void vlan_gvrp_request_leave(const struct net_device *dev);
+-extern int vlan_gvrp_init_applicant(struct net_device *dev);
+-extern void vlan_gvrp_uninit_applicant(struct net_device *dev);
+-extern int vlan_gvrp_init(void);
+-extern void vlan_gvrp_uninit(void);
++int vlan_gvrp_request_join(const struct net_device *dev);
++void vlan_gvrp_request_leave(const struct net_device *dev);
++int vlan_gvrp_init_applicant(struct net_device *dev);
++void vlan_gvrp_uninit_applicant(struct net_device *dev);
++int vlan_gvrp_init(void);
++void vlan_gvrp_uninit(void);
  #else
- static inline int rc80211_pid_init(void)
- {
-@@ -157,8 +157,8 @@ static inline void rc80211_pid_exit(void)
+ static inline int vlan_gvrp_request_join(const struct net_device *dev) { return 0; }
+ static inline void vlan_gvrp_request_leave(const struct net_device *dev) {}
+@@ -212,12 +212,12 @@ static inline void vlan_gvrp_uninit(void) {}
  #endif
  
- #ifdef CONFIG_MAC80211_RC_MINSTREL
--extern int rc80211_minstrel_init(void);
--extern void rc80211_minstrel_exit(void);
-+int rc80211_minstrel_init(void);
-+void rc80211_minstrel_exit(void);
+ #ifdef CONFIG_VLAN_8021Q_MVRP
+-extern int vlan_mvrp_request_join(const struct net_device *dev);
+-extern void vlan_mvrp_request_leave(const struct net_device *dev);
+-extern int vlan_mvrp_init_applicant(struct net_device *dev);
+-extern void vlan_mvrp_uninit_applicant(struct net_device *dev);
+-extern int vlan_mvrp_init(void);
+-extern void vlan_mvrp_uninit(void);
++int vlan_mvrp_request_join(const struct net_device *dev);
++void vlan_mvrp_request_leave(const struct net_device *dev);
++int vlan_mvrp_init_applicant(struct net_device *dev);
++void vlan_mvrp_uninit_applicant(struct net_device *dev);
++int vlan_mvrp_init(void);
++void vlan_mvrp_uninit(void);
  #else
- static inline int rc80211_minstrel_init(void)
- {
-@@ -170,8 +170,8 @@ static inline void rc80211_minstrel_exit(void)
- #endif
+ static inline int vlan_mvrp_request_join(const struct net_device *dev) { return 0; }
+ static inline void vlan_mvrp_request_leave(const struct net_device *dev) {}
+@@ -229,8 +229,8 @@ static inline void vlan_mvrp_uninit(void) {}
  
- #ifdef CONFIG_MAC80211_RC_MINSTREL_HT
--extern int rc80211_minstrel_ht_init(void);
--extern void rc80211_minstrel_ht_exit(void);
-+int rc80211_minstrel_ht_init(void);
-+void rc80211_minstrel_ht_exit(void);
- #else
- static inline int rc80211_minstrel_ht_init(void)
- {
-diff --git a/net/netfilter/nf_internals.h b/net/netfilter/nf_internals.h
-index 3deec99..61a3c92 100644
---- a/net/netfilter/nf_internals.h
-+++ b/net/netfilter/nf_internals.h
-@@ -13,26 +13,20 @@
+ extern const char vlan_fullname[];
+ extern const char vlan_version[];
+-extern int vlan_netlink_init(void);
+-extern void vlan_netlink_fini(void);
++int vlan_netlink_init(void);
++void vlan_netlink_fini(void);
  
+ extern struct rtnl_link_ops vlan_link_ops;
  
- /* core.c */
--extern unsigned int nf_iterate(struct list_head *head,
--				struct sk_buff *skb,
--				unsigned int hook,
--				const struct net_device *indev,
--				const struct net_device *outdev,
--				struct nf_hook_ops **elemp,
--				int (*okfn)(struct sk_buff *),
--				int hook_thresh);
-+unsigned int nf_iterate(struct list_head *head, struct sk_buff *skb,
-+			unsigned int hook, const struct net_device *indev,
-+			const struct net_device *outdev,
-+			struct nf_hook_ops **elemp,
-+			int (*okfn)(struct sk_buff *), int hook_thresh);
- 
- /* nf_queue.c */
--extern int nf_queue(struct sk_buff *skb,
--		    struct nf_hook_ops *elem,
--		    u_int8_t pf, unsigned int hook,
--		    struct net_device *indev,
--		    struct net_device *outdev,
--		    int (*okfn)(struct sk_buff *),
--		    unsigned int queuenum);
--extern int __init netfilter_queue_init(void);
-+int nf_queue(struct sk_buff *skb, struct nf_hook_ops *elem, u_int8_t pf,
-+	     unsigned int hook, struct net_device *indev,
-+	     struct net_device *outdev, int (*okfn)(struct sk_buff *),
-+	     unsigned int queuenum);
-+int __init netfilter_queue_init(void);
- 
- /* nf_log.c */
--extern int __init netfilter_log_init(void);
-+int __init netfilter_log_init(void);
- 
- #endif
-diff --git a/net/rds/rds.h b/net/rds/rds.h
-index ec1d731..48f8ffc 100644
---- a/net/rds/rds.h
-+++ b/net/rds/rds.h
-@@ -749,7 +749,7 @@ void rds_atomic_send_complete(struct rds_message *rm, int wc_status);
- int rds_cmsg_atomic(struct rds_sock *rs, struct rds_message *rm,
- 		    struct cmsghdr *cmsg);
- 
--extern void __rds_put_mr_final(struct rds_mr *mr);
-+void __rds_put_mr_final(struct rds_mr *mr);
- static inline void rds_mr_put(struct rds_mr *mr)
- {
- 	if (atomic_dec_and_test(&mr->r_refcount))
-diff --git a/net/rxrpc/ar-internal.h b/net/rxrpc/ar-internal.h
-index a693aca..5f43675 100644
---- a/net/rxrpc/ar-internal.h
-+++ b/net/rxrpc/ar-internal.h
-@@ -426,17 +426,16 @@ extern struct workqueue_struct *rxrpc_workqueue;
- /*
-  * ar-accept.c
-  */
--extern void rxrpc_accept_incoming_calls(struct work_struct *);
--extern struct rxrpc_call *rxrpc_accept_call(struct rxrpc_sock *,
--					    unsigned long);
--extern int rxrpc_reject_call(struct rxrpc_sock *);
-+void rxrpc_accept_incoming_calls(struct work_struct *);
-+struct rxrpc_call *rxrpc_accept_call(struct rxrpc_sock *, unsigned long);
-+int rxrpc_reject_call(struct rxrpc_sock *);
- 
- /*
-  * ar-ack.c
-  */
--extern void __rxrpc_propose_ACK(struct rxrpc_call *, u8, __be32, bool);
--extern void rxrpc_propose_ACK(struct rxrpc_call *, u8, __be32, bool);
--extern void rxrpc_process_call(struct work_struct *);
-+void __rxrpc_propose_ACK(struct rxrpc_call *, u8, __be32, bool);
-+void rxrpc_propose_ACK(struct rxrpc_call *, u8, __be32, bool);
-+void rxrpc_process_call(struct work_struct *);
- 
- /*
-  * ar-call.c
-@@ -445,19 +444,18 @@ extern struct kmem_cache *rxrpc_call_jar;
- extern struct list_head rxrpc_calls;
- extern rwlock_t rxrpc_call_lock;
- 
--extern struct rxrpc_call *rxrpc_get_client_call(struct rxrpc_sock *,
--						struct rxrpc_transport *,
--						struct rxrpc_conn_bundle *,
--						unsigned long, int, gfp_t);
--extern struct rxrpc_call *rxrpc_incoming_call(struct rxrpc_sock *,
--					      struct rxrpc_connection *,
--					      struct rxrpc_header *, gfp_t);
--extern struct rxrpc_call *rxrpc_find_server_call(struct rxrpc_sock *,
--						 unsigned long);
--extern void rxrpc_release_call(struct rxrpc_call *);
--extern void rxrpc_release_calls_on_socket(struct rxrpc_sock *);
--extern void __rxrpc_put_call(struct rxrpc_call *);
--extern void __exit rxrpc_destroy_all_calls(void);
-+struct rxrpc_call *rxrpc_get_client_call(struct rxrpc_sock *,
-+					 struct rxrpc_transport *,
-+					 struct rxrpc_conn_bundle *,
-+					 unsigned long, int, gfp_t);
-+struct rxrpc_call *rxrpc_incoming_call(struct rxrpc_sock *,
-+				       struct rxrpc_connection *,
-+				       struct rxrpc_header *, gfp_t);
-+struct rxrpc_call *rxrpc_find_server_call(struct rxrpc_sock *, unsigned long);
-+void rxrpc_release_call(struct rxrpc_call *);
-+void rxrpc_release_calls_on_socket(struct rxrpc_sock *);
-+void __rxrpc_put_call(struct rxrpc_call *);
-+void __exit rxrpc_destroy_all_calls(void);
- 
- /*
-  * ar-connection.c
-@@ -465,19 +463,16 @@ extern void __exit rxrpc_destroy_all_calls(void);
- extern struct list_head rxrpc_connections;
- extern rwlock_t rxrpc_connection_lock;
- 
--extern struct rxrpc_conn_bundle *rxrpc_get_bundle(struct rxrpc_sock *,
--						  struct rxrpc_transport *,
--						  struct key *,
--						  __be16, gfp_t);
--extern void rxrpc_put_bundle(struct rxrpc_transport *,
--			     struct rxrpc_conn_bundle *);
--extern int rxrpc_connect_call(struct rxrpc_sock *, struct rxrpc_transport *,
--			      struct rxrpc_conn_bundle *, struct rxrpc_call *,
--			      gfp_t);
--extern void rxrpc_put_connection(struct rxrpc_connection *);
--extern void __exit rxrpc_destroy_all_connections(void);
--extern struct rxrpc_connection *rxrpc_find_connection(struct rxrpc_transport *,
--						      struct rxrpc_header *);
-+struct rxrpc_conn_bundle *rxrpc_get_bundle(struct rxrpc_sock *,
-+					   struct rxrpc_transport *,
-+					   struct key *, __be16, gfp_t);
-+void rxrpc_put_bundle(struct rxrpc_transport *, struct rxrpc_conn_bundle *);
-+int rxrpc_connect_call(struct rxrpc_sock *, struct rxrpc_transport *,
-+		       struct rxrpc_conn_bundle *, struct rxrpc_call *, gfp_t);
-+void rxrpc_put_connection(struct rxrpc_connection *);
-+void __exit rxrpc_destroy_all_connections(void);
-+struct rxrpc_connection *rxrpc_find_connection(struct rxrpc_transport *,
-+					       struct rxrpc_header *);
- extern struct rxrpc_connection *
- rxrpc_incoming_connection(struct rxrpc_transport *, struct rxrpc_header *,
- 			  gfp_t);
-@@ -485,15 +480,15 @@ rxrpc_incoming_connection(struct rxrpc_transport *, struct rxrpc_header *,
- /*
-  * ar-connevent.c
-  */
--extern void rxrpc_process_connection(struct work_struct *);
--extern void rxrpc_reject_packet(struct rxrpc_local *, struct sk_buff *);
--extern void rxrpc_reject_packets(struct work_struct *);
-+void rxrpc_process_connection(struct work_struct *);
-+void rxrpc_reject_packet(struct rxrpc_local *, struct sk_buff *);
-+void rxrpc_reject_packets(struct work_struct *);
- 
- /*
-  * ar-error.c
-  */
--extern void rxrpc_UDP_error_report(struct sock *);
--extern void rxrpc_UDP_error_handler(struct work_struct *);
-+void rxrpc_UDP_error_report(struct sock *);
-+void rxrpc_UDP_error_handler(struct work_struct *);
- 
- /*
-  * ar-input.c
-@@ -501,18 +496,17 @@ extern void rxrpc_UDP_error_handler(struct work_struct *);
- extern unsigned long rxrpc_ack_timeout;
- extern const char *rxrpc_pkts[];
- 
--extern void rxrpc_data_ready(struct sock *, int);
--extern int rxrpc_queue_rcv_skb(struct rxrpc_call *, struct sk_buff *, bool,
--			       bool);
--extern void rxrpc_fast_process_packet(struct rxrpc_call *, struct sk_buff *);
-+void rxrpc_data_ready(struct sock *, int);
-+int rxrpc_queue_rcv_skb(struct rxrpc_call *, struct sk_buff *, bool, bool);
-+void rxrpc_fast_process_packet(struct rxrpc_call *, struct sk_buff *);
- 
- /*
-  * ar-local.c
-  */
- extern rwlock_t rxrpc_local_lock;
--extern struct rxrpc_local *rxrpc_lookup_local(struct sockaddr_rxrpc *);
--extern void rxrpc_put_local(struct rxrpc_local *);
--extern void __exit rxrpc_destroy_all_locals(void);
-+struct rxrpc_local *rxrpc_lookup_local(struct sockaddr_rxrpc *);
-+void rxrpc_put_local(struct rxrpc_local *);
-+void __exit rxrpc_destroy_all_locals(void);
- 
- /*
-  * ar-key.c
-@@ -520,31 +514,29 @@ extern void __exit rxrpc_destroy_all_locals(void);
- extern struct key_type key_type_rxrpc;
- extern struct key_type key_type_rxrpc_s;
- 
--extern int rxrpc_request_key(struct rxrpc_sock *, char __user *, int);
--extern int rxrpc_server_keyring(struct rxrpc_sock *, char __user *, int);
--extern int rxrpc_get_server_data_key(struct rxrpc_connection *, const void *,
--				     time_t, u32);
-+int rxrpc_request_key(struct rxrpc_sock *, char __user *, int);
-+int rxrpc_server_keyring(struct rxrpc_sock *, char __user *, int);
-+int rxrpc_get_server_data_key(struct rxrpc_connection *, const void *, time_t,
-+			      u32);
- 
- /*
-  * ar-output.c
-  */
- extern int rxrpc_resend_timeout;
- 
--extern int rxrpc_send_packet(struct rxrpc_transport *, struct sk_buff *);
--extern int rxrpc_client_sendmsg(struct kiocb *, struct rxrpc_sock *,
--				struct rxrpc_transport *, struct msghdr *,
--				size_t);
--extern int rxrpc_server_sendmsg(struct kiocb *, struct rxrpc_sock *,
--				struct msghdr *, size_t);
-+int rxrpc_send_packet(struct rxrpc_transport *, struct sk_buff *);
-+int rxrpc_client_sendmsg(struct kiocb *, struct rxrpc_sock *,
-+			 struct rxrpc_transport *, struct msghdr *, size_t);
-+int rxrpc_server_sendmsg(struct kiocb *, struct rxrpc_sock *, struct msghdr *,
-+			 size_t);
- 
- /*
-  * ar-peer.c
-  */
--extern struct rxrpc_peer *rxrpc_get_peer(struct sockaddr_rxrpc *, gfp_t);
--extern void rxrpc_put_peer(struct rxrpc_peer *);
--extern struct rxrpc_peer *rxrpc_find_peer(struct rxrpc_local *,
--					  __be32, __be16);
--extern void __exit rxrpc_destroy_all_peers(void);
-+struct rxrpc_peer *rxrpc_get_peer(struct sockaddr_rxrpc *, gfp_t);
-+void rxrpc_put_peer(struct rxrpc_peer *);
-+struct rxrpc_peer *rxrpc_find_peer(struct rxrpc_local *, __be32, __be16);
-+void __exit rxrpc_destroy_all_peers(void);
- 
- /*
-  * ar-proc.c
-@@ -556,38 +548,36 @@ extern const struct file_operations rxrpc_connection_seq_fops;
- /*
-  * ar-recvmsg.c
-  */
--extern void rxrpc_remove_user_ID(struct rxrpc_sock *, struct rxrpc_call *);
--extern int rxrpc_recvmsg(struct kiocb *, struct socket *, struct msghdr *,
--			 size_t, int);
-+void rxrpc_remove_user_ID(struct rxrpc_sock *, struct rxrpc_call *);
-+int rxrpc_recvmsg(struct kiocb *, struct socket *, struct msghdr *, size_t,
-+		  int);
- 
- /*
-  * ar-security.c
-  */
--extern int rxrpc_register_security(struct rxrpc_security *);
--extern void rxrpc_unregister_security(struct rxrpc_security *);
--extern int rxrpc_init_client_conn_security(struct rxrpc_connection *);
--extern int rxrpc_init_server_conn_security(struct rxrpc_connection *);
--extern int rxrpc_secure_packet(const struct rxrpc_call *, struct sk_buff *,
--			       size_t, void *);
--extern int rxrpc_verify_packet(const struct rxrpc_call *, struct sk_buff *,
--			       u32 *);
--extern void rxrpc_clear_conn_security(struct rxrpc_connection *);
-+int rxrpc_register_security(struct rxrpc_security *);
-+void rxrpc_unregister_security(struct rxrpc_security *);
-+int rxrpc_init_client_conn_security(struct rxrpc_connection *);
-+int rxrpc_init_server_conn_security(struct rxrpc_connection *);
-+int rxrpc_secure_packet(const struct rxrpc_call *, struct sk_buff *, size_t,
-+			void *);
-+int rxrpc_verify_packet(const struct rxrpc_call *, struct sk_buff *, u32 *);
-+void rxrpc_clear_conn_security(struct rxrpc_connection *);
- 
- /*
-  * ar-skbuff.c
-  */
--extern void rxrpc_packet_destructor(struct sk_buff *);
-+void rxrpc_packet_destructor(struct sk_buff *);
- 
- /*
-  * ar-transport.c
-  */
--extern struct rxrpc_transport *rxrpc_get_transport(struct rxrpc_local *,
--						   struct rxrpc_peer *,
--						   gfp_t);
--extern void rxrpc_put_transport(struct rxrpc_transport *);
--extern void __exit rxrpc_destroy_all_transports(void);
--extern struct rxrpc_transport *rxrpc_find_transport(struct rxrpc_local *,
--						    struct rxrpc_peer *);
-+struct rxrpc_transport *rxrpc_get_transport(struct rxrpc_local *,
-+					    struct rxrpc_peer *, gfp_t);
-+void rxrpc_put_transport(struct rxrpc_transport *);
-+void __exit rxrpc_destroy_all_transports(void);
-+struct rxrpc_transport *rxrpc_find_transport(struct rxrpc_local *,
-+					     struct rxrpc_peer *);
- 
- /*
-  * debug tracing
-diff --git a/net/tipc/core.h b/net/tipc/core.h
-index be72f8c..94895d4 100644
---- a/net/tipc/core.h
-+++ b/net/tipc/core.h
-@@ -90,21 +90,21 @@ extern int tipc_random __read_mostly;
- /*
-  * Routines available to privileged subsystems
-  */
--extern int tipc_core_start_net(unsigned long);
--extern int  tipc_handler_start(void);
--extern void tipc_handler_stop(void);
--extern int  tipc_netlink_start(void);
--extern void tipc_netlink_stop(void);
--extern int  tipc_socket_init(void);
--extern void tipc_socket_stop(void);
--extern int tipc_sock_create_local(int type, struct socket **res);
--extern void tipc_sock_release_local(struct socket *sock);
--extern int tipc_sock_accept_local(struct socket *sock,
--				  struct socket **newsock, int flags);
-+int tipc_core_start_net(unsigned long);
-+int tipc_handler_start(void);
-+void tipc_handler_stop(void);
-+int tipc_netlink_start(void);
-+void tipc_netlink_stop(void);
-+int tipc_socket_init(void);
-+void tipc_socket_stop(void);
-+int tipc_sock_create_local(int type, struct socket **res);
-+void tipc_sock_release_local(struct socket *sock);
-+int tipc_sock_accept_local(struct socket *sock, struct socket **newsock,
-+			   int flags);
- 
- #ifdef CONFIG_SYSCTL
--extern int tipc_register_sysctl(void);
--extern void tipc_unregister_sysctl(void);
-+int tipc_register_sysctl(void);
-+void tipc_unregister_sysctl(void);
- #else
- #define tipc_register_sysctl() 0
- #define tipc_unregister_sysctl()
-@@ -201,6 +201,6 @@ static inline struct tipc_msg *buf_msg(struct sk_buff *skb)
- 	return (struct tipc_msg *)skb->data;
- }
- 
--extern struct sk_buff *tipc_buf_acquire(u32 size);
-+struct sk_buff *tipc_buf_acquire(u32 size);
- 
- #endif
-diff --git a/net/wimax/wimax-internal.h b/net/wimax/wimax-internal.h
-index 1e743d2..5dcd9c0 100644
---- a/net/wimax/wimax-internal.h
-+++ b/net/wimax/wimax-internal.h
-@@ -63,11 +63,11 @@ void __wimax_state_set(struct wimax_dev *wimax_dev, enum wimax_st state)
- {
- 	wimax_dev->state = state;
- }
--extern void __wimax_state_change(struct wimax_dev *, enum wimax_st);
-+void __wimax_state_change(struct wimax_dev *, enum wimax_st);
- 
- #ifdef CONFIG_DEBUG_FS
--extern int wimax_debugfs_add(struct wimax_dev *);
--extern void wimax_debugfs_rm(struct wimax_dev *);
-+int wimax_debugfs_add(struct wimax_dev *);
-+void wimax_debugfs_rm(struct wimax_dev *);
- #else
- static inline int wimax_debugfs_add(struct wimax_dev *wimax_dev)
- {
-@@ -76,13 +76,13 @@ static inline int wimax_debugfs_add(struct wimax_dev *wimax_dev)
- static inline void wimax_debugfs_rm(struct wimax_dev *wimax_dev) {}
- #endif
- 
--extern void wimax_id_table_add(struct wimax_dev *);
--extern struct wimax_dev *wimax_dev_get_by_genl_info(struct genl_info *, int);
--extern void wimax_id_table_rm(struct wimax_dev *);
--extern void wimax_id_table_release(void);
-+void wimax_id_table_add(struct wimax_dev *);
-+struct wimax_dev *wimax_dev_get_by_genl_info(struct genl_info *, int);
-+void wimax_id_table_rm(struct wimax_dev *);
-+void wimax_id_table_release(void);
- 
--extern int wimax_rfkill_add(struct wimax_dev *);
--extern void wimax_rfkill_rm(struct wimax_dev *);
-+int wimax_rfkill_add(struct wimax_dev *);
-+void wimax_rfkill_rm(struct wimax_dev *);
- 
- extern struct genl_family wimax_gnl_family;
- extern struct genl_multicast_group wimax_gnl_mcg;
-diff --git a/net/wireless/core.h b/net/wireless/core.h
-index b43efac..74beff1 100644
---- a/net/wireless/core.h
-+++ b/net/wireless/core.h
-@@ -234,10 +234,10 @@ struct cfg80211_beacon_registration {
+diff --git a/net/bluetooth/hidp/hidp.h b/net/bluetooth/hidp/hidp.h
+index 9e6cc35..ab52414 100644
+--- a/net/bluetooth/hidp/hidp.h
++++ b/net/bluetooth/hidp/hidp.h
+@@ -182,7 +182,7 @@ struct hidp_session {
  };
  
- /* free object */
--extern void cfg80211_dev_free(struct cfg80211_registered_device *rdev);
-+void cfg80211_dev_free(struct cfg80211_registered_device *rdev);
+ /* HIDP init defines */
+-extern int __init hidp_init_sockets(void);
+-extern void __exit hidp_cleanup_sockets(void);
++int __init hidp_init_sockets(void);
++void __exit hidp_cleanup_sockets(void);
  
--extern int cfg80211_dev_rename(struct cfg80211_registered_device *rdev,
--			       char *newname);
-+int cfg80211_dev_rename(struct cfg80211_registered_device *rdev,
-+			char *newname);
- 
- void ieee80211_set_bitrate_flags(struct wiphy *wiphy);
- 
-diff --git a/net/wireless/sysfs.h b/net/wireless/sysfs.h
-index 65acbeb..b533ed7 100644
---- a/net/wireless/sysfs.h
-+++ b/net/wireless/sysfs.h
-@@ -1,8 +1,8 @@
- #ifndef __WIRELESS_SYSFS_H
- #define __WIRELESS_SYSFS_H
- 
--extern int wiphy_sysfs_init(void);
--extern void wiphy_sysfs_exit(void);
-+int wiphy_sysfs_init(void);
-+void wiphy_sysfs_exit(void);
- 
- extern struct class ieee80211_class;
- 
-diff --git a/net/xfrm/xfrm_hash.h b/net/xfrm/xfrm_hash.h
-index 716502a..0622d31 100644
---- a/net/xfrm/xfrm_hash.h
-+++ b/net/xfrm/xfrm_hash.h
-@@ -130,7 +130,7 @@ static inline unsigned int __addr_hash(const xfrm_address_t *daddr,
- 	return h & hmask;
+ #endif /* __HIDP_H */
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index efb57d9..767c4da 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -344,10 +344,9 @@ static inline int br_is_root_bridge(const struct net_bridge *br)
  }
  
--extern struct hlist_head *xfrm_hash_alloc(unsigned int sz);
--extern void xfrm_hash_free(struct hlist_head *n, unsigned int sz);
-+struct hlist_head *xfrm_hash_alloc(unsigned int sz);
-+void xfrm_hash_free(struct hlist_head *n, unsigned int sz);
+ /* br_device.c */
+-extern void br_dev_setup(struct net_device *dev);
+-extern void br_dev_delete(struct net_device *dev, struct list_head *list);
+-extern netdev_tx_t br_dev_xmit(struct sk_buff *skb,
+-			       struct net_device *dev);
++void br_dev_setup(struct net_device *dev);
++void br_dev_delete(struct net_device *dev, struct list_head *list);
++netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev);
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+ static inline void br_netpoll_send_skb(const struct net_bridge_port *p,
+ 				       struct sk_buff *skb)
+@@ -358,8 +357,8 @@ static inline void br_netpoll_send_skb(const struct net_bridge_port *p,
+ 		netpoll_send_skb(np, skb);
+ }
  
- #endif /* _XFRM_HASH_H */
+-extern int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp);
+-extern void br_netpoll_disable(struct net_bridge_port *p);
++int br_netpoll_enable(struct net_bridge_port *p, gfp_t gfp);
++void br_netpoll_disable(struct net_bridge_port *p);
+ #else
+ static inline void br_netpoll_send_skb(const struct net_bridge_port *p,
+ 				       struct sk_buff *skb)
+@@ -377,116 +376,99 @@ static inline void br_netpoll_disable(struct net_bridge_port *p)
+ #endif
+ 
+ /* br_fdb.c */
+-extern int br_fdb_init(void);
+-extern void br_fdb_fini(void);
+-extern void br_fdb_flush(struct net_bridge *br);
+-extern void br_fdb_changeaddr(struct net_bridge_port *p,
+-			      const unsigned char *newaddr);
+-extern void br_fdb_change_mac_address(struct net_bridge *br, const u8 *newaddr);
+-extern void br_fdb_cleanup(unsigned long arg);
+-extern void br_fdb_delete_by_port(struct net_bridge *br,
+-				  const struct net_bridge_port *p, int do_all);
+-extern struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
+-						 const unsigned char *addr,
+-						 __u16 vid);
+-extern int br_fdb_test_addr(struct net_device *dev, unsigned char *addr);
+-extern int br_fdb_fillbuf(struct net_bridge *br, void *buf,
+-			  unsigned long count, unsigned long off);
+-extern int br_fdb_insert(struct net_bridge *br,
+-			 struct net_bridge_port *source,
+-			 const unsigned char *addr,
+-			 u16 vid);
+-extern void br_fdb_update(struct net_bridge *br,
+-			  struct net_bridge_port *source,
+-			  const unsigned char *addr,
+-			  u16 vid);
+-extern int fdb_delete_by_addr(struct net_bridge *br, const u8 *addr, u16 vid);
+-
+-extern int br_fdb_delete(struct ndmsg *ndm, struct nlattr *tb[],
+-			 struct net_device *dev,
+-			 const unsigned char *addr);
+-extern int br_fdb_add(struct ndmsg *nlh, struct nlattr *tb[],
+-		      struct net_device *dev,
+-		      const unsigned char *addr,
+-		      u16 nlh_flags);
+-extern int br_fdb_dump(struct sk_buff *skb,
+-		       struct netlink_callback *cb,
+-		       struct net_device *dev,
+-		       int idx);
++int br_fdb_init(void);
++void br_fdb_fini(void);
++void br_fdb_flush(struct net_bridge *br);
++void br_fdb_changeaddr(struct net_bridge_port *p, const unsigned char *newaddr);
++void br_fdb_change_mac_address(struct net_bridge *br, const u8 *newaddr);
++void br_fdb_cleanup(unsigned long arg);
++void br_fdb_delete_by_port(struct net_bridge *br,
++			   const struct net_bridge_port *p, int do_all);
++struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
++					  const unsigned char *addr, __u16 vid);
++int br_fdb_test_addr(struct net_device *dev, unsigned char *addr);
++int br_fdb_fillbuf(struct net_bridge *br, void *buf, unsigned long count,
++		   unsigned long off);
++int br_fdb_insert(struct net_bridge *br, struct net_bridge_port *source,
++		  const unsigned char *addr, u16 vid);
++void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
++		   const unsigned char *addr, u16 vid);
++int fdb_delete_by_addr(struct net_bridge *br, const u8 *addr, u16 vid);
++
++int br_fdb_delete(struct ndmsg *ndm, struct nlattr *tb[],
++		  struct net_device *dev, const unsigned char *addr);
++int br_fdb_add(struct ndmsg *nlh, struct nlattr *tb[], struct net_device *dev,
++	       const unsigned char *addr, u16 nlh_flags);
++int br_fdb_dump(struct sk_buff *skb, struct netlink_callback *cb,
++		struct net_device *dev, int idx);
+ 
+ /* br_forward.c */
+-extern void br_deliver(const struct net_bridge_port *to,
+-		struct sk_buff *skb);
+-extern int br_dev_queue_push_xmit(struct sk_buff *skb);
+-extern void br_forward(const struct net_bridge_port *to,
++void br_deliver(const struct net_bridge_port *to, struct sk_buff *skb);
++int br_dev_queue_push_xmit(struct sk_buff *skb);
++void br_forward(const struct net_bridge_port *to,
+ 		struct sk_buff *skb, struct sk_buff *skb0);
+-extern int br_forward_finish(struct sk_buff *skb);
+-extern void br_flood_deliver(struct net_bridge *br, struct sk_buff *skb,
+-			     bool unicast);
+-extern void br_flood_forward(struct net_bridge *br, struct sk_buff *skb,
+-			     struct sk_buff *skb2, bool unicast);
++int br_forward_finish(struct sk_buff *skb);
++void br_flood_deliver(struct net_bridge *br, struct sk_buff *skb, bool unicast);
++void br_flood_forward(struct net_bridge *br, struct sk_buff *skb,
++		      struct sk_buff *skb2, bool unicast);
+ 
+ /* br_if.c */
+-extern void br_port_carrier_check(struct net_bridge_port *p);
+-extern int br_add_bridge(struct net *net, const char *name);
+-extern int br_del_bridge(struct net *net, const char *name);
+-extern void br_net_exit(struct net *net);
+-extern int br_add_if(struct net_bridge *br,
+-	      struct net_device *dev);
+-extern int br_del_if(struct net_bridge *br,
+-	      struct net_device *dev);
+-extern int br_min_mtu(const struct net_bridge *br);
+-extern netdev_features_t br_features_recompute(struct net_bridge *br,
+-	netdev_features_t features);
++void br_port_carrier_check(struct net_bridge_port *p);
++int br_add_bridge(struct net *net, const char *name);
++int br_del_bridge(struct net *net, const char *name);
++void br_net_exit(struct net *net);
++int br_add_if(struct net_bridge *br, struct net_device *dev);
++int br_del_if(struct net_bridge *br, struct net_device *dev);
++int br_min_mtu(const struct net_bridge *br);
++netdev_features_t br_features_recompute(struct net_bridge *br,
++					netdev_features_t features);
+ 
+ /* br_input.c */
+-extern int br_handle_frame_finish(struct sk_buff *skb);
+-extern rx_handler_result_t br_handle_frame(struct sk_buff **pskb);
++int br_handle_frame_finish(struct sk_buff *skb);
++rx_handler_result_t br_handle_frame(struct sk_buff **pskb);
+ 
+ /* br_ioctl.c */
+-extern int br_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
+-extern int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *arg);
++int br_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
++int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd,
++			     void __user *arg);
+ 
+ /* br_multicast.c */
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+ extern unsigned int br_mdb_rehash_seq;
+-extern int br_multicast_rcv(struct net_bridge *br,
+-			    struct net_bridge_port *port,
+-			    struct sk_buff *skb);
+-extern struct net_bridge_mdb_entry *br_mdb_get(struct net_bridge *br,
+-					       struct sk_buff *skb, u16 vid);
+-extern void br_multicast_add_port(struct net_bridge_port *port);
+-extern void br_multicast_del_port(struct net_bridge_port *port);
+-extern void br_multicast_enable_port(struct net_bridge_port *port);
+-extern void br_multicast_disable_port(struct net_bridge_port *port);
+-extern void br_multicast_init(struct net_bridge *br);
+-extern void br_multicast_open(struct net_bridge *br);
+-extern void br_multicast_stop(struct net_bridge *br);
+-extern void br_multicast_deliver(struct net_bridge_mdb_entry *mdst,
+-				 struct sk_buff *skb);
+-extern void br_multicast_forward(struct net_bridge_mdb_entry *mdst,
+-				 struct sk_buff *skb, struct sk_buff *skb2);
+-extern int br_multicast_set_router(struct net_bridge *br, unsigned long val);
+-extern int br_multicast_set_port_router(struct net_bridge_port *p,
+-					unsigned long val);
+-extern int br_multicast_toggle(struct net_bridge *br, unsigned long val);
+-extern int br_multicast_set_querier(struct net_bridge *br, unsigned long val);
+-extern int br_multicast_set_hash_max(struct net_bridge *br, unsigned long val);
+-extern struct net_bridge_mdb_entry *br_mdb_ip_get(
+-				struct net_bridge_mdb_htable *mdb,
+-				struct br_ip *dst);
+-extern struct net_bridge_mdb_entry *br_multicast_new_group(struct net_bridge *br,
+-				struct net_bridge_port *port, struct br_ip *group);
+-extern void br_multicast_free_pg(struct rcu_head *head);
+-extern struct net_bridge_port_group *br_multicast_new_port_group(
+-				struct net_bridge_port *port,
+-				struct br_ip *group,
+-				struct net_bridge_port_group __rcu *next,
+-				unsigned char state);
+-extern void br_mdb_init(void);
+-extern void br_mdb_uninit(void);
+-extern void br_mdb_notify(struct net_device *dev, struct net_bridge_port *port,
+-			  struct br_ip *group, int type);
++int br_multicast_rcv(struct net_bridge *br, struct net_bridge_port *port,
++		     struct sk_buff *skb);
++struct net_bridge_mdb_entry *br_mdb_get(struct net_bridge *br,
++					struct sk_buff *skb, u16 vid);
++void br_multicast_add_port(struct net_bridge_port *port);
++void br_multicast_del_port(struct net_bridge_port *port);
++void br_multicast_enable_port(struct net_bridge_port *port);
++void br_multicast_disable_port(struct net_bridge_port *port);
++void br_multicast_init(struct net_bridge *br);
++void br_multicast_open(struct net_bridge *br);
++void br_multicast_stop(struct net_bridge *br);
++void br_multicast_deliver(struct net_bridge_mdb_entry *mdst,
++			  struct sk_buff *skb);
++void br_multicast_forward(struct net_bridge_mdb_entry *mdst,
++			  struct sk_buff *skb, struct sk_buff *skb2);
++int br_multicast_set_router(struct net_bridge *br, unsigned long val);
++int br_multicast_set_port_router(struct net_bridge_port *p, unsigned long val);
++int br_multicast_toggle(struct net_bridge *br, unsigned long val);
++int br_multicast_set_querier(struct net_bridge *br, unsigned long val);
++int br_multicast_set_hash_max(struct net_bridge *br, unsigned long val);
++struct net_bridge_mdb_entry *
++br_mdb_ip_get(struct net_bridge_mdb_htable *mdb, struct br_ip *dst);
++struct net_bridge_mdb_entry *
++br_multicast_new_group(struct net_bridge *br, struct net_bridge_port *port,
++		       struct br_ip *group);
++void br_multicast_free_pg(struct rcu_head *head);
++struct net_bridge_port_group *
++br_multicast_new_port_group(struct net_bridge_port *port, struct br_ip *group,
++			    struct net_bridge_port_group __rcu *next,
++			    unsigned char state);
++void br_mdb_init(void);
++void br_mdb_uninit(void);
++void br_mdb_notify(struct net_device *dev, struct net_bridge_port *port,
++		   struct br_ip *group, int type);
+ 
+ #define mlock_dereference(X, br) \
+ 	rcu_dereference_protected(X, lockdep_is_held(&br->multicast_lock))
+@@ -591,22 +573,21 @@ static inline void br_mdb_uninit(void)
+ 
+ /* br_vlan.c */
+ #ifdef CONFIG_BRIDGE_VLAN_FILTERING
+-extern bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+-			       struct sk_buff *skb, u16 *vid);
+-extern bool br_allowed_egress(struct net_bridge *br,
+-			      const struct net_port_vlans *v,
+-			      const struct sk_buff *skb);
+-extern struct sk_buff *br_handle_vlan(struct net_bridge *br,
+-				      const struct net_port_vlans *v,
+-				      struct sk_buff *skb);
+-extern int br_vlan_add(struct net_bridge *br, u16 vid, u16 flags);
+-extern int br_vlan_delete(struct net_bridge *br, u16 vid);
+-extern void br_vlan_flush(struct net_bridge *br);
+-extern int br_vlan_filter_toggle(struct net_bridge *br, unsigned long val);
+-extern int nbp_vlan_add(struct net_bridge_port *port, u16 vid, u16 flags);
+-extern int nbp_vlan_delete(struct net_bridge_port *port, u16 vid);
+-extern void nbp_vlan_flush(struct net_bridge_port *port);
+-extern bool nbp_vlan_find(struct net_bridge_port *port, u16 vid);
++bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
++			struct sk_buff *skb, u16 *vid);
++bool br_allowed_egress(struct net_bridge *br, const struct net_port_vlans *v,
++		       const struct sk_buff *skb);
++struct sk_buff *br_handle_vlan(struct net_bridge *br,
++			       const struct net_port_vlans *v,
++			       struct sk_buff *skb);
++int br_vlan_add(struct net_bridge *br, u16 vid, u16 flags);
++int br_vlan_delete(struct net_bridge *br, u16 vid);
++void br_vlan_flush(struct net_bridge *br);
++int br_vlan_filter_toggle(struct net_bridge *br, unsigned long val);
++int nbp_vlan_add(struct net_bridge_port *port, u16 vid, u16 flags);
++int nbp_vlan_delete(struct net_bridge_port *port, u16 vid);
++void nbp_vlan_flush(struct net_bridge_port *port);
++bool nbp_vlan_find(struct net_bridge_port *port, u16 vid);
+ 
+ static inline struct net_port_vlans *br_get_vlan_info(
+ 						const struct net_bridge *br)
+@@ -727,9 +708,9 @@ static inline u16 br_get_pvid(const struct net_port_vlans *v)
+ 
+ /* br_netfilter.c */
+ #ifdef CONFIG_BRIDGE_NETFILTER
+-extern int br_netfilter_init(void);
+-extern void br_netfilter_fini(void);
+-extern void br_netfilter_rtable_init(struct net_bridge *);
++int br_netfilter_init(void);
++void br_netfilter_fini(void);
++void br_netfilter_rtable_init(struct net_bridge *);
+ #else
+ #define br_netfilter_init()	(0)
+ #define br_netfilter_fini()	do { } while(0)
+@@ -737,43 +718,39 @@ extern void br_netfilter_rtable_init(struct net_bridge *);
+ #endif
+ 
+ /* br_stp.c */
+-extern void br_log_state(const struct net_bridge_port *p);
+-extern struct net_bridge_port *br_get_port(struct net_bridge *br,
+-					   u16 port_no);
+-extern void br_init_port(struct net_bridge_port *p);
+-extern void br_become_designated_port(struct net_bridge_port *p);
++void br_log_state(const struct net_bridge_port *p);
++struct net_bridge_port *br_get_port(struct net_bridge *br, u16 port_no);
++void br_init_port(struct net_bridge_port *p);
++void br_become_designated_port(struct net_bridge_port *p);
+ 
+-extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
+-extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
+-extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
+-extern int br_set_max_age(struct net_bridge *br, unsigned long x);
++void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
++int br_set_forward_delay(struct net_bridge *br, unsigned long x);
++int br_set_hello_time(struct net_bridge *br, unsigned long x);
++int br_set_max_age(struct net_bridge *br, unsigned long x);
+ 
+ 
+ /* br_stp_if.c */
+-extern void br_stp_enable_bridge(struct net_bridge *br);
+-extern void br_stp_disable_bridge(struct net_bridge *br);
+-extern void br_stp_set_enabled(struct net_bridge *br, unsigned long val);
+-extern void br_stp_enable_port(struct net_bridge_port *p);
+-extern void br_stp_disable_port(struct net_bridge_port *p);
+-extern bool br_stp_recalculate_bridge_id(struct net_bridge *br);
+-extern void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *a);
+-extern void br_stp_set_bridge_priority(struct net_bridge *br,
+-				       u16 newprio);
+-extern int br_stp_set_port_priority(struct net_bridge_port *p,
+-				    unsigned long newprio);
+-extern int br_stp_set_path_cost(struct net_bridge_port *p,
+-				unsigned long path_cost);
+-extern ssize_t br_show_bridge_id(char *buf, const struct bridge_id *id);
++void br_stp_enable_bridge(struct net_bridge *br);
++void br_stp_disable_bridge(struct net_bridge *br);
++void br_stp_set_enabled(struct net_bridge *br, unsigned long val);
++void br_stp_enable_port(struct net_bridge_port *p);
++void br_stp_disable_port(struct net_bridge_port *p);
++bool br_stp_recalculate_bridge_id(struct net_bridge *br);
++void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *a);
++void br_stp_set_bridge_priority(struct net_bridge *br, u16 newprio);
++int br_stp_set_port_priority(struct net_bridge_port *p, unsigned long newprio);
++int br_stp_set_path_cost(struct net_bridge_port *p, unsigned long path_cost);
++ssize_t br_show_bridge_id(char *buf, const struct bridge_id *id);
+ 
+ /* br_stp_bpdu.c */
+ struct stp_proto;
+-extern void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
+-		       struct net_device *dev);
++void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
++		struct net_device *dev);
+ 
+ /* br_stp_timer.c */
+-extern void br_stp_timer_init(struct net_bridge *br);
+-extern void br_stp_port_timer_init(struct net_bridge_port *p);
+-extern unsigned long br_timer_value(const struct timer_list *timer);
++void br_stp_timer_init(struct net_bridge *br);
++void br_stp_port_timer_init(struct net_bridge_port *p);
++unsigned long br_timer_value(const struct timer_list *timer);
+ 
+ /* br.c */
+ #if IS_ENABLED(CONFIG_ATM_LANE)
+@@ -782,23 +759,23 @@ extern int (*br_fdb_test_addr_hook)(struct net_device *dev, unsigned char *addr)
+ 
+ /* br_netlink.c */
+ extern struct rtnl_link_ops br_link_ops;
+-extern int br_netlink_init(void);
+-extern void br_netlink_fini(void);
+-extern void br_ifinfo_notify(int event, struct net_bridge_port *port);
+-extern int br_setlink(struct net_device *dev, struct nlmsghdr *nlmsg);
+-extern int br_dellink(struct net_device *dev, struct nlmsghdr *nlmsg);
+-extern int br_getlink(struct sk_buff *skb, u32 pid, u32 seq,
+-		      struct net_device *dev, u32 filter_mask);
++int br_netlink_init(void);
++void br_netlink_fini(void);
++void br_ifinfo_notify(int event, struct net_bridge_port *port);
++int br_setlink(struct net_device *dev, struct nlmsghdr *nlmsg);
++int br_dellink(struct net_device *dev, struct nlmsghdr *nlmsg);
++int br_getlink(struct sk_buff *skb, u32 pid, u32 seq, struct net_device *dev,
++	       u32 filter_mask);
+ 
+ #ifdef CONFIG_SYSFS
+ /* br_sysfs_if.c */
+ extern const struct sysfs_ops brport_sysfs_ops;
+-extern int br_sysfs_addif(struct net_bridge_port *p);
+-extern int br_sysfs_renameif(struct net_bridge_port *p);
++int br_sysfs_addif(struct net_bridge_port *p);
++int br_sysfs_renameif(struct net_bridge_port *p);
+ 
+ /* br_sysfs_br.c */
+-extern int br_sysfs_addbr(struct net_device *dev);
+-extern void br_sysfs_delbr(struct net_device *dev);
++int br_sysfs_addbr(struct net_device *dev);
++void br_sysfs_delbr(struct net_device *dev);
+ 
+ #else
+ 
+diff --git a/net/bridge/br_private_stp.h b/net/bridge/br_private_stp.h
+index 0c0fe36..2fe910c 100644
+--- a/net/bridge/br_private_stp.h
++++ b/net/bridge/br_private_stp.h
+@@ -51,19 +51,19 @@ static inline int br_is_designated_port(const struct net_bridge_port *p)
+ 
+ 
+ /* br_stp.c */
+-extern void br_become_root_bridge(struct net_bridge *br);
+-extern void br_config_bpdu_generation(struct net_bridge *);
+-extern void br_configuration_update(struct net_bridge *);
+-extern void br_port_state_selection(struct net_bridge *);
+-extern void br_received_config_bpdu(struct net_bridge_port *p,
+-				    const struct br_config_bpdu *bpdu);
+-extern void br_received_tcn_bpdu(struct net_bridge_port *p);
+-extern void br_transmit_config(struct net_bridge_port *p);
+-extern void br_transmit_tcn(struct net_bridge *br);
+-extern void br_topology_change_detection(struct net_bridge *br);
++void br_become_root_bridge(struct net_bridge *br);
++void br_config_bpdu_generation(struct net_bridge *);
++void br_configuration_update(struct net_bridge *);
++void br_port_state_selection(struct net_bridge *);
++void br_received_config_bpdu(struct net_bridge_port *p,
++			     const struct br_config_bpdu *bpdu);
++void br_received_tcn_bpdu(struct net_bridge_port *p);
++void br_transmit_config(struct net_bridge_port *p);
++void br_transmit_tcn(struct net_bridge *br);
++void br_topology_change_detection(struct net_bridge *br);
+ 
+ /* br_stp_bpdu.c */
+-extern void br_send_config_bpdu(struct net_bridge_port *, struct br_config_bpdu *);
+-extern void br_send_tcn_bpdu(struct net_bridge_port *);
++void br_send_config_bpdu(struct net_bridge_port *, struct br_config_bpdu *);
++void br_send_tcn_bpdu(struct net_bridge_port *);
+ 
+ #endif
+diff --git a/net/can/af_can.h b/net/can/af_can.h
+index 1dccb4c..6de58b4 100644
+--- a/net/can/af_can.h
++++ b/net/can/af_can.h
+@@ -108,9 +108,9 @@ struct s_pstats {
+ extern struct dev_rcv_lists can_rx_alldev_list;
+ 
+ /* function prototypes for the CAN networklayer procfs (proc.c) */
+-extern void can_init_proc(void);
+-extern void can_remove_proc(void);
+-extern void can_stat_update(unsigned long data);
++void can_init_proc(void);
++void can_remove_proc(void);
++void can_stat_update(unsigned long data);
+ 
+ /* structures and variables from af_can.c needed in proc.c for reading */
+ extern struct timer_list can_stattimer;    /* timer for statistics update */
+diff --git a/net/ceph/auth_none.h b/net/ceph/auth_none.h
+index ed7d088..059a3ce 100644
+--- a/net/ceph/auth_none.h
++++ b/net/ceph/auth_none.h
+@@ -23,7 +23,7 @@ struct ceph_auth_none_info {
+ 	struct ceph_none_authorizer au;   /* we only need one; it's static */
+ };
+ 
+-extern int ceph_auth_none_init(struct ceph_auth_client *ac);
++int ceph_auth_none_init(struct ceph_auth_client *ac);
+ 
+ #endif
+ 
+diff --git a/net/ceph/auth_x.h b/net/ceph/auth_x.h
+index c5a058d..65ee720 100644
+--- a/net/ceph/auth_x.h
++++ b/net/ceph/auth_x.h
+@@ -45,7 +45,7 @@ struct ceph_x_info {
+ 	struct ceph_x_authorizer auth_authorizer;
+ };
+ 
+-extern int ceph_x_init(struct ceph_auth_client *ac);
++int ceph_x_init(struct ceph_auth_client *ac);
+ 
+ #endif
+ 
+diff --git a/net/ceph/crypto.h b/net/ceph/crypto.h
+index 3572dc5..d149822 100644
+--- a/net/ceph/crypto.h
++++ b/net/ceph/crypto.h
+@@ -20,34 +20,32 @@ static inline void ceph_crypto_key_destroy(struct ceph_crypto_key *key)
+ 		kfree(key->key);
+ }
+ 
+-extern int ceph_crypto_key_clone(struct ceph_crypto_key *dst,
+-				 const struct ceph_crypto_key *src);
+-extern int ceph_crypto_key_encode(struct ceph_crypto_key *key,
+-				  void **p, void *end);
+-extern int ceph_crypto_key_decode(struct ceph_crypto_key *key,
+-				  void **p, void *end);
+-extern int ceph_crypto_key_unarmor(struct ceph_crypto_key *key, const char *in);
++int ceph_crypto_key_clone(struct ceph_crypto_key *dst,
++			  const struct ceph_crypto_key *src);
++int ceph_crypto_key_encode(struct ceph_crypto_key *key, void **p, void *end);
++int ceph_crypto_key_decode(struct ceph_crypto_key *key, void **p, void *end);
++int ceph_crypto_key_unarmor(struct ceph_crypto_key *key, const char *in);
+ 
+ /* crypto.c */
+-extern int ceph_decrypt(struct ceph_crypto_key *secret,
+-			void *dst, size_t *dst_len,
+-			const void *src, size_t src_len);
+-extern int ceph_encrypt(struct ceph_crypto_key *secret,
+-			void *dst, size_t *dst_len,
+-			const void *src, size_t src_len);
+-extern int ceph_decrypt2(struct ceph_crypto_key *secret,
+-			void *dst1, size_t *dst1_len,
+-			void *dst2, size_t *dst2_len,
+-			const void *src, size_t src_len);
+-extern int ceph_encrypt2(struct ceph_crypto_key *secret,
+-			 void *dst, size_t *dst_len,
+-			 const void *src1, size_t src1_len,
+-			 const void *src2, size_t src2_len);
+-extern int ceph_crypto_init(void);
+-extern void ceph_crypto_shutdown(void);
++int ceph_decrypt(struct ceph_crypto_key *secret,
++		 void *dst, size_t *dst_len,
++		 const void *src, size_t src_len);
++int ceph_encrypt(struct ceph_crypto_key *secret,
++		 void *dst, size_t *dst_len,
++		 const void *src, size_t src_len);
++int ceph_decrypt2(struct ceph_crypto_key *secret,
++		  void *dst1, size_t *dst1_len,
++		  void *dst2, size_t *dst2_len,
++		  const void *src, size_t src_len);
++int ceph_encrypt2(struct ceph_crypto_key *secret,
++		  void *dst, size_t *dst_len,
++		  const void *src1, size_t src1_len,
++		  const void *src2, size_t src2_len);
++int ceph_crypto_init(void);
++void ceph_crypto_shutdown(void);
+ 
+ /* armor.c */
+-extern int ceph_armor(char *dst, const char *src, const char *end);
+-extern int ceph_unarmor(char *dst, const char *src, const char *end);
++int ceph_armor(char *dst, const char *src, const char *end);
++int ceph_unarmor(char *dst, const char *src, const char *end);
+ 
+ #endif
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
