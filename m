@@ -1,210 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab3JROme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:42:34 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37948 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab3JROmc (ORCPT
+	id S1755308Ab3JROoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:44:10 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55349 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3JROoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:42:32 -0400
-Subject: [PATCH v3 0/3] Perf support to SDT markers
+	Fri, 18 Oct 2013 10:44:07 -0400
+Subject: [PATCH v3 1/3] SDT markers listing by perf:
 To: linux-kernel@vger.kernel.org
 From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
 Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
         hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
         systemtap@sourceware.org, namhyung@kernel.org,
         masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com
-Date: Fri, 18 Oct 2013 20:12:24 +0530
-Message-ID: <20131018143714.10452.83494.stgit@hemant-fedora>
+Date: Fri, 18 Oct 2013 20:14:00 +0530
+Message-ID: <20131018144231.10452.65885.stgit@hemant-fedora>
+In-Reply-To: <20131018143714.10452.83494.stgit@hemant-fedora>
+References: <20131018143714.10452.83494.stgit@hemant-fedora>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101814-3864-0000-0000-00000A9BAA97
+x-cbid: 13101814-4790-0000-0000-00000ADFB006
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset helps in probing dtrace style markers(SDT) present in user space
-applications through perf. Notes/markers are placed at important places by the
-developers. They have a negligible overhead when not enabled. We can enable
-them and probe at these places and find some important information like the
-arguments' values, etc.
+This patch will enable perf to list all the sdt markers present
+in an elf file. The markers are present in the .note.stapsdt section
+of the elf. We can traverse through this section and collect the
+required info about the markers.
+We can use '-M/--markers' with perf to view the SDT notes.
 
-How to add SDT markers into user applications:
-We need to have this header sys/sdt.h present.
-sys/sdt.h used is version 3.
-If not present, install systemtap-sdt-devel package (for fedora-18).
+Currently, the sdt notes which have their semaphores enabled, are being
+ignored silently. But, they will be supported soon.
 
-A very simple example to show this :
-$ cat user_app.c
+Wrapping this inside #ifdef LIBELF_SUPPORT pair is not required,
+because, if NO_LIBELF = 1, then 'probe' command of perf is itself disabled.
 
-#include <sys/sdt.h>
+Usage:
+perf probe --markers -x /lib64/libc.so.6
 
-void main () {
-       /* ... */
-       /*
-        * user_app is the provider name
-        * test_probe is the marker name
-        */
-       STAP_PROBE(user_app, test_mark);
-       /* ... */
-}
+Output :
+%libc:setjmp
+%libc:longjmp
+%libc:longjmp_target
+%libc:lll_futex_wake
+%libc:lll_lock_wait_private
+%libc:longjmp
+%libc:longjmp_target
+%libc:lll_futex_wake
 
-$ gcc user_app.c
-$ perf probe -M -x ./a.out
-%user_app:test_mark
-
-A different example to show the same :
-- Create a file with .d extension and mention the probe names in it with
-provider name and marker name.
-
-$ cat probes.d
-provider user_app {
-         probe foo_start();
-             probe fun_start();
-};
-
-- Now create the probes.h and probes.o file :
-$ dtrace -C -h -s probes.d -o probes.h
-$ dtrace -C -G -s probes.d -o probes.o
-
-- A program using the markers:
-
-$ cat user_app.c
-
-#include <stdio.h>
-#include "probes.h"
-
-void foo(void)
-{
-        USER_APP_FOO_START();
-        printf("This is foo\n");
-}
-
-void fun(void)
-{
-        USER_APP_FUN_START();
-        printf("Inside fun\n");
-}
-int main(void)
-{
-        printf("In main\n");
-        foo();
-        fun();
-        return 0;
-}
-
-- Compile it and also provide probes.o file to linker:
-$ gcc user_app.c probes.o -o user_app
-
-- Now use perf to list the markers in the app:
-# perf probe --markers -x ./user_app
-
-%user_app:foo_start
-%user_app:fun_start
-
-- And  then use perf probe to add a probe point :
-
-# perf probe -x ./user_app -a '%user_app:foo_start'
-
-Added new event :
-event = foo_start      (on 0x530)
-
-You can now use it on all perf tools such as :
-
-     perf record -e probe_user:foo_start -aR sleep 1
-
-# perf record -e probe_user:foo_start -aR ./user_app
-In main
-This is foo
-Inside fun
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.235 MB perf.data (~10279 samples) ]
-
-- Then use perf tools to analyze it.
-# perf report --stdio
-
-# ========
-# captured on: Tue Sep  3 16:19:55 2013
-# hostname : hemant-fedora
-# os release : 3.11.0-rc3+
-# perf version : 3.9.4-200.fc18.x86_64
-# arch : x86_64
-# nrcpus online : 2
-# nrcpus avail : 2
-# cpudesc : QEMU Virtual CPU version 1.2.2
-# cpuid : GenuineIntel,6,2,3
-# total memory : 2051912 kBIf these are not enabled, they are present in the \
-ELF as nop.
-
-# cmdline : /usr/bin/perf record -e probe_user:foo_start -aR ./user_app
-# event : name = probe_user:foo_start, type = 2, config = 0x38e, config1
-= 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0,
-excl_guest = 1, precise_ip = 0
-# HEADER_CPU_TOPOLOGY info available, use -I to display
-# HEADER_NUMA_TOPOLOGY info available, use -I to display
-# pmu mappings: software = 1, tracepoint = 2, breakpoint = 5
-# ========
-#
-# Samples: 1  of event 'probe_user:foo_start'
-# Event count (approx.): 1
-#
-# Overhead   Command  Shared Object   Symbol
-# ........  ........  .............  .......
-#
-   100.00%  user_app  user_app       [.] foo
-
-
-#
-# (For a higher level overview, try: perf report --sort comm,dso)
-#
-
-This link shows an example of marker probing with Systemtap:
-https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
-
-Also, this link provides important info regarding SDT notes:
-http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
-
-- Markers in binaries :
-These SDT markers are present in the ELF in the section named
-".note.stapsdt".
-Here, the name of the marker, its provider, type, location, base
-address, semaphore address.
-We can retrieve these values using the members name_off and desc_off in
-Nhdr structure. If these are not enabled, they are present in the ELF as nop.
-
-All the above info is moved in sdt-probes.txt file present in the Documentation
-directory in tools/perf/.
-
-Changes since last version:
-- Added suggested changes by Masami and Namhyung.
-- Fixed some bugs.
-- Removed some redundancies.
-- Updated with error codes.
-- Rebased it to latest kernel tip.
-
-TODO:
-- Recognizing arguments and support to probe on them.
+Signed-off-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
 ---
+ tools/perf/builtin-probe.c    |   41 ++++++++
+ tools/perf/util/probe-event.c |   35 +++++++
+ tools/perf/util/probe-event.h |    1 
+ tools/perf/util/symbol-elf.c  |  211 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h      |   18 +++
+ 5 files changed, 304 insertions(+), 2 deletions(-)
 
-Hemant Kumar (3):
-      SDT markers listing by perf:
-      Support for perf to probe into SDT markers:
-      Documentation regarding perf/sdt
-
-
- tools/perf/Documentation/perf-probe.txt |   17 ++
- tools/perf/Documentation/sdt-probes.txt |  184 ++++++++++++++++++++
- tools/perf/builtin-probe.c              |   45 +++++
- tools/perf/util/probe-event.c           |  134 +++++++++++++-
- tools/perf/util/probe-event.h           |    3 
- tools/perf/util/symbol-elf.c            |  291 +++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h                |   21 ++
- 7 files changed, 681 insertions(+), 14 deletions(-)
- create mode 100644 tools/perf/Documentation/sdt-probes.txt
-
--- 
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 89acc17..2450613 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -55,6 +55,8 @@ static struct {
+ 	bool show_funcs;
+ 	bool mod_events;
+ 	bool uprobes;
++	bool exec;
++	bool sdt;
+ 	int nevents;
+ 	struct perf_probe_event events[MAX_PROBES];
+ 	struct strlist *dellist;
+@@ -171,8 +173,10 @@ static int opt_set_target(const struct option *opt, const char *str,
+ 	int ret = -ENOENT;
+ 
+ 	if  (str && !params.target) {
+-		if (!strcmp(opt->long_name, "exec"))
++		if (!strcmp(opt->long_name, "exec")) {
+ 			params.uprobes = true;
++			params.exec = true;
++		}
+ #ifdef HAVE_DWARF_SUPPORT
+ 		else if (!strcmp(opt->long_name, "module"))
+ 			params.uprobes = false;
+@@ -325,6 +329,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     opt_set_filter),
+ 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
+ 			"target executable name or path", opt_set_target),
++	OPT_BOOLEAN('M', "markers", &params.sdt, "Show proba-able sdt notes"),
+ 	OPT_END()
+ 	};
+ 	int ret;
+@@ -347,7 +352,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		params.max_probe_points = MAX_PROBES;
+ 
+ 	if ((!params.nevents && !params.dellist && !params.list_events &&
+-	     !params.show_lines && !params.show_funcs))
++	     !params.show_lines && !params.show_funcs && !params.sdt))
+ 		usage_with_options(probe_usage, options);
+ 
+ 	/*
+@@ -355,6 +360,38 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	 */
+ 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+ 
++	if (params.sdt) {
++		if (params.show_lines) {
++			pr_err("Error: Don't use --markers with --lines.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (params.show_vars) {
++			pr_err("Error: Don't use --markers with --vars.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (params.show_funcs) {
++			pr_err("Error: Don't use --markers with --funcs.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (params.mod_events) {
++			pr_err("Error: Don't use --markers with --add/--del.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (!params.exec) {
++			pr_err("Error: Always use --exec with --markers.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (!params.target) {
++			pr_err("Error: Please specify a target binary!\n");
++			usage_with_options(probe_usage, options);
++		}
++		ret = show_sdt_notes(params.target);
++		if (ret < 0) {
++			pr_err("  Error : Failed to find SDT markers in %s !"
++			       " (%d)\n", params.target, ret);
++		}
++		return ret;
++	}
+ 	if (params.list_events) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --list with --add/--del.\n");
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 779b2da..c228fe6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1909,6 +1909,18 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	return ret;
+ }
+ 
++static void cleanup_sdt_note_list(struct list_head *sdt_notes)
++{
++	struct sdt_note *tmp, *pos;
++
++	list_for_each_entry_safe(pos, tmp, sdt_notes, note_list) {
++		list_del(&pos->note_list);
++		free(pos->name);
++		free(pos->provider);
++		free(pos);
++	}
++}
++
+ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+ 					  int max_tevs, const char *target)
+@@ -2372,3 +2384,26 @@ out:
+ 		free(name);
+ 	return ret;
+ }
++
++static void display_sdt_note_info(struct list_head *start)
++{
++	struct sdt_note *pos;
++
++	list_for_each_entry(pos, start, note_list) {
++		printf("%%%s:%s\n", pos->provider, pos->name);
++	}
++}
++
++int show_sdt_notes(const char *target)
++{
++	int ret;
++	LIST_HEAD(sdt_notes);
++
++	ret = get_sdt_note_list(&sdt_notes, target);
++	if (!list_empty(&sdt_notes)) {
++		if (!ret)
++			display_sdt_note_info(&sdt_notes);
++		cleanup_sdt_note_list(&sdt_notes);
++	}
++	return ret;
++}
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index f9f3de8..32de5a3 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -133,6 +133,7 @@ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			       struct strfilter *filter, bool externs);
+ extern int show_available_funcs(const char *module, struct strfilter *filter,
+ 				bool user);
++int show_sdt_notes(const char *target);
+ 
+ /* Maximum index number of event-name postfix */
+ #define MAX_EVENT_INDEX	1024
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index eed0b96..828ecad 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -1613,6 +1613,217 @@ void kcore_extract__delete(struct kcore_extract *kce)
+ 	unlink(kce->extract_filename);
+ }
+ 
++/*
++ * Populate the name, type, offset in the SDT note structure and
++ * ignore the argument fields (for now)
++ */
++static int populate_sdt_note(Elf **elf, const char *data, size_t len, int type,
++			     struct sdt_note **note)
++{
++	const char *provider, *name;
++	struct sdt_note *tmp = NULL;
++	int ret = -1;
++
++	/*
++	 * Three addresses need to be obtained :
++	 * Marker location, address of base section and semaphore location
++	 */
++	union {
++		Elf64_Addr a64[3];
++		Elf32_Addr a32[3];
++	} buf;
++
++	/*
++	 * dst and src are required for translation from file to memory
++	 * representation
++	 */
++	Elf_Data dst = {
++		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
++		.d_size = gelf_fsize((*elf), ELF_T_ADDR, 3, EV_CURRENT),
++		.d_off = 0, .d_align = 0
++	};
++
++	Elf_Data src = {
++		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
++		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
++		.d_align = 0
++	};
++
++	/* Check the type of each of the notes */
++	if (type != SDT_NOTE_TYPE)
++		goto out_err;
++
++	tmp = (struct sdt_note *)zalloc(sizeof(struct sdt_note));
++	if (tmp == NULL) {
++		ret = -ENOMEM;
++		goto out_err;
++	}
++	INIT_LIST_HEAD(&tmp->note_list);
++
++	if (len < dst.d_size + 3)
++		goto out_free_note;
++
++	/* Translation from file representation to memory representation */
++	if (gelf_xlatetom(*elf, &dst, &src,
++			  elf_getident(*elf, NULL)[EI_DATA]) == NULL)
++		pr_debug("gelf_xlatetom : %s", elf_errmsg(-1));
++
++	/* Populate the fields of sdt_note */
++	provider = data + dst.d_size;
++
++	name = (const char *)memchr(provider, '\0', data + len - provider);
++	if (name++ == NULL)
++		goto out_free_note;
++	tmp->provider = strdup(provider);
++	if (!tmp->provider) {
++		ret = -ENOMEM;
++		goto out_free_note;
++	}
++	tmp->name = strdup(name);
++	if (!tmp->name) {
++		ret = -ENOMEM;
++		goto out_free_prov;
++	}
++
++	/* Obtain the addresses and ignore notes with semaphores set*/
++	if (gelf_getclass(*elf) == ELFCLASS32) {
++		if (buf.a32[2] != 0)
++			goto out_free_name;
++		tmp->addr.a32[0] = buf.a32[0];
++		tmp->addr.a32[1] = buf.a32[1];
++		tmp->addr.a32[2] = buf.a32[2];
++		tmp->bit32 = true;
++	} else {
++		if (buf.a64[2] != 0)
++			goto out_free_name;
++		tmp->addr.a64[0] = buf.a64[0];
++		tmp->addr.a64[1] = buf.a64[1];
++		tmp->addr.a64[2] = buf.a64[2];
++		tmp->bit32 = false;
++	}
++	*note = tmp;
++	return 0;
++
++out_free_name:
++	free(tmp->name);
++out_free_prov:
++	free(tmp->provider);
++out_free_note:
++	free(tmp);
++out_err:
++	return ret;
++}
++
++static int construct_sdt_notes_list(Elf *elf, struct list_head *sdt_notes)
++{
++	GElf_Ehdr ehdr;
++	Elf_Scn *scn = NULL;
++	Elf_Data *data;
++	GElf_Shdr shdr;
++	size_t shstrndx;
++	size_t next;
++	GElf_Nhdr nhdr;
++	size_t name_off, desc_off, offset;
++	struct sdt_note *tmp = NULL;
++	int ret = 0, val = 0;
++
++	if (gelf_getehdr(elf, &ehdr) == NULL) {
++		ret = -EBADF;
++		pr_debug("Can't get elf header!");
++		goto out_ret;
++	}
++	if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
++		ret = -EBADF;
++		pr_debug("getshdrstrndx failed\n");
++		goto out_ret;
++	}
++
++	/*
++	 * Look for section type = SHT_NOTE, flags = no SHF_ALLOC
++	 * and name = .note.stapsdt
++	 */
++	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN, NULL);
++	if (!scn) {
++		ret = -ENOENT;
++		pr_debug("Can't get section .note.stapsdt\n");
++		goto out_ret;
++	}
++	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC)) {
++		ret = -ENOENT;
++		goto out_ret;
++	}
++
++	data = elf_getdata(scn, NULL);
++
++	/* Get the SDT notes */
++	for (offset = 0; (next = gelf_getnote(data, offset, &nhdr, &name_off,
++					      &desc_off)) > 0; offset = next) {
++		if (nhdr.n_namesz == sizeof(SDT_NOTE_NAME) &&
++		    !memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
++			    sizeof(SDT_NOTE_NAME))) {
++			val = populate_sdt_note(&elf, ((data->d_buf) + desc_off),
++						nhdr.n_descsz, nhdr.n_type,
++						&tmp);
++			if (!val)
++				list_add_tail(&tmp->note_list, sdt_notes);
++			if (val == -ENOMEM) {
++				ret = -ENOMEM;
++				goto out_ret;
++			}
++		}
++	}
++	if (!sdt_notes)
++		ret = -ENOENT;
++
++out_ret:
++	return ret;
++}
++
++static int sdt_err(int val, const char *target)
++{
++	switch (-val) {
++	case 0:
++		break;
++	case ENOENT:
++		/* Absence of SDT markers isn't an error */
++		val = 0;
++		printf("%s : No SDT markers found!\n", target);
++		break;
++	case EBADF:
++		pr_err("%s : Bad file name\n", target);
++		break;
++	default:
++		pr_err("%s\n", strerror(val));
++	}
++	return val;
++}
++
++int get_sdt_note_list(struct list_head *head, const char *target)
++{
++	Elf *elf;
++	int fd, ret;
++
++	fd = open(target, O_RDONLY);
++	if (fd < 0) {
++		pr_err("%s : %s\n", target, strerror(errno));
++		return -errno;
++	}
++
++	symbol__elf_init();
++	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
++	if (!elf) {
++		ret = -EBADF;
++		pr_debug("%s : %s\n", target, elf_errmsg(elf_errno()));
++		goto out_close;
++	}
++	ret = construct_sdt_notes_list(elf, head);
++	elf_end(elf);
++
++out_close:
++	close(fd);
++	return sdt_err(ret, target);
++}
++
+ void symbol__elf_init(void)
+ {
+ 	elf_version(EV_CURRENT);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 07de8fe..b78397b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -198,6 +198,17 @@ struct symsrc {
+ #endif
+ };
+ 
++struct sdt_note {
++	char *name;
++	char *provider;
++	bool bit32;                 /* 32 or 64 bit flag */
++	union {
++		Elf64_Addr a64[3];
++		Elf32_Addr a32[3];
++	} addr;
++	struct list_head note_list;
++};
++
+ void symsrc__destroy(struct symsrc *ss);
+ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 		 enum dso_binary_type type);
+@@ -273,4 +284,11 @@ void kcore_extract__delete(struct kcore_extract *kce);
+ int kcore_copy(const char *from_dir, const char *to_dir);
+ int compare_proc_modules(const char *from, const char *to);
+ 
++/* Specific to SDT notes */
++int get_sdt_note_list(struct list_head *head, const char *target);
++
++#define SDT_NOTE_TYPE 3
++#define SDT_NOTE_SCN ".note.stapsdt"
++#define SDT_NOTE_NAME "stapsdt"
++
+ #endif /* __PERF_SYMBOL */
 
