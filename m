@@ -1,357 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab3JRNqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:46:45 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37123 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3JRNqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:46:43 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, andrew@lunn.ch
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH] cpufreq: create per policy rwsem instead of per CPU cpu_policy_rwsem
-Date: Fri, 18 Oct 2013 19:10:15 +0530
-Message-Id: <b2f8d731c817a5bd72842095d18eab81a63a6de4.1382103344.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1755286Ab3JRNsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:48:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754244Ab3JRNsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 09:48:04 -0400
+Date: Fri, 18 Oct 2013 09:47:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: MAX_LOCKDEP_CHAINS too low! (sysfs?)
+Message-ID: <20131018134752.GA31269@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg Kroah-Hartman <greg@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have per-CPU cpu_policy_rwsem for cpufreq core, but we never use
-all of them. We always use rwsem of policy->cpu and so we can
-actually make this rwsem per policy instead.
+BUG: MAX_LOCKDEP_CHAINS too low!
+turning off the locking correctness validator.
+Please attach the output of /proc/lock_stat to the bug report
+CPU: 1 PID: 2102862 Comm: trinity-main Not tainted 3.12.0-rc5+ #27
+Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+ ffffffff82427e90 ffff88006f9cd938 ffffffff816db90c 000000000104c014
+ ffff88006f9cda00 ffffffff810c40cd ffffffff810bf11e ffff88006f9cd970
+ ffffffff810bf645 ffff8800c9ee1550 ffff88012a000a18 00007fffce3189e8
+Call Trace:
+ [<ffffffff816db90c>] dump_stack+0x4e/0x82
+ [<ffffffff810c40cd>] __lock_acquire+0x1b6d/0x1bd0
+ [<ffffffff810bf11e>] ? put_lock_stats.isra.28+0xe/0x40
+ [<ffffffff810bf645>] ? lock_release_holdtime.part.29+0xe5/0x160
+ [<ffffffff810d04f2>] ? __module_text_address+0x12/0x60
+ [<ffffffff810d4b1f>] ? is_module_text_address+0x2f/0x60
+ [<ffffffff8106e580>] ? __kernel_text_address+0x50/0x70
+ [<ffffffff81006507>] ? print_context_stack+0x87/0xf0
+ [<ffffffff810c48d3>] lock_acquire+0x93/0x1e0
+ [<ffffffff816d95d7>] ? get_partial_node.isra.41+0x49/0x20a
+ [<ffffffff816e4441>] _raw_spin_lock+0x41/0x80
+ [<ffffffff816d95d7>] ? get_partial_node.isra.41+0x49/0x20a
+ [<ffffffff816d95d7>] get_partial_node.isra.41+0x49/0x20a
+ [<ffffffff810c13b7>] ? check_usage_backwards+0x87/0x150
+ [<ffffffff816d9918>] __slab_alloc+0x180/0x4dd
+ [<ffffffff810c1330>] ? print_shortest_lock_dependencies+0x1d0/0x1d0
+ [<ffffffff81249ea8>] ? sysfs_open_file+0xb8/0x230
+ [<ffffffff810bf086>] ? __lock_is_held+0x56/0x80
+ [<ffffffff811a304c>] kmem_cache_alloc_trace+0x2dc/0x3a0
+ [<ffffffff81249ea8>] ? sysfs_open_file+0xb8/0x230
+ [<ffffffff81249ea8>] sysfs_open_file+0xb8/0x230
+ [<ffffffff811c129b>] do_dentry_open+0x25b/0x310
+ [<ffffffff812dfcbc>] ? security_inode_permission+0x1c/0x30
+ [<ffffffff81249df0>] ? sysfs_schedule_callback+0x1e0/0x1e0
+ [<ffffffff811c1399>] finish_open+0x49/0x60
+ [<ffffffff811d3af4>] do_last+0x5b4/0x1200
+ [<ffffffff811d480e>] path_openat+0xce/0x6b0
+ [<ffffffff8100b324>] ? native_sched_clock+0x24/0x80
+ [<ffffffff811d5577>] do_filp_open+0x47/0xa0
+ [<ffffffff811e4daf>] ? __alloc_fd+0xaf/0x200
+ [<ffffffff811c2829>] do_sys_open+0x139/0x220
+ [<ffffffff81010b95>] ? syscall_trace_enter+0x155/0x2a0
+ [<ffffffff811c292e>] SyS_open+0x1e/0x20
+ [<ffffffff816ed9e4>] tracesys+0xdd/0xe2
 
-This patch does this change. With this change other tricky situations
-are also avoided now, like which lock to take while we are changing
-policy->cpu, etc.
 
-Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+/proc/lock_stat is at http://www.codemonkey.org.uk/junk/locks-2013-10-18.txt
 
-I thought I should send it formally as well. Though Andrew hasn't given his
-tested by until now. Rebased over your bleeding-edge branch.
+Probably not going to get time to dig into this before kernel summit,
+but posting in case it's something obvious..
 
- drivers/cpufreq/cpufreq.c | 110 +++++++++++++---------------------------------
- include/linux/cpufreq.h   |  14 ++++++
- 2 files changed, 45 insertions(+), 79 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index ec391d7..3f03dcb 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -48,47 +48,6 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
- 
- /*
-- * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-- * all cpufreq/hotplug/workqueue/etc related lock issues.
-- *
-- * The rules for this semaphore:
-- * - Any routine that wants to read from the policy structure will
-- *   do a down_read on this semaphore.
-- * - Any routine that will write to the policy structure and/or may take away
-- *   the policy altogether (eg. CPU hotplug), will hold this lock in write
-- *   mode before doing so.
-- *
-- * Additional rules:
-- * - Governor routines that can be called in cpufreq hotplug path should not
-- *   take this sem as top level hotplug notifier handler takes this.
-- * - Lock should not be held across
-- *     __cpufreq_governor(data, CPUFREQ_GOV_STOP);
-- */
--static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
--
--#define lock_policy_rwsem(mode, cpu)					\
--static void lock_policy_rwsem_##mode(int cpu)				\
--{									\
--	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
--	BUG_ON(!policy);						\
--	down_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
--}
--
--lock_policy_rwsem(read, cpu);
--lock_policy_rwsem(write, cpu);
--
--#define unlock_policy_rwsem(mode, cpu)					\
--static void unlock_policy_rwsem_##mode(int cpu)				\
--{									\
--	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
--	BUG_ON(!policy);						\
--	up_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
--}
--
--unlock_policy_rwsem(read, cpu);
--unlock_policy_rwsem(write, cpu);
--
--/*
-  * rwsem to guarantee that cpufreq driver module doesn't unload during critical
-  * sections
-  */
-@@ -683,14 +642,14 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 	if (!down_read_trylock(&cpufreq_rwsem))
- 		return -EINVAL;
- 
--	lock_policy_rwsem_read(policy->cpu);
-+	down_read(&policy->rwsem);
- 
- 	if (fattr->show)
- 		ret = fattr->show(policy, buf);
- 	else
- 		ret = -EIO;
- 
--	unlock_policy_rwsem_read(policy->cpu);
-+	up_read(&policy->rwsem);
- 	up_read(&cpufreq_rwsem);
- 
- 	return ret;
-@@ -711,14 +670,14 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 	if (!down_read_trylock(&cpufreq_rwsem))
- 		goto unlock;
- 
--	lock_policy_rwsem_write(policy->cpu);
-+	down_write(&policy->rwsem);
- 
- 	if (fattr->store)
- 		ret = fattr->store(policy, buf, count);
- 	else
- 		ret = -EIO;
- 
--	unlock_policy_rwsem_write(policy->cpu);
-+	up_write(&policy->rwsem);
- 
- 	up_read(&cpufreq_rwsem);
- unlock:
-@@ -895,7 +854,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 		}
- 	}
- 
--	lock_policy_rwsem_write(policy->cpu);
-+	down_write(&policy->rwsem);
- 
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 
-@@ -903,7 +862,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 	per_cpu(cpufreq_cpu_data, cpu) = policy;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--	unlock_policy_rwsem_write(policy->cpu);
-+	up_write(&policy->rwsem);
- 
- 	if (has_target) {
- 		if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
-@@ -950,6 +909,8 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
- 		goto err_free_cpumask;
- 
- 	INIT_LIST_HEAD(&policy->policy_list);
-+	init_rwsem(&policy->rwsem);
-+
- 	return policy;
- 
- err_free_cpumask:
-@@ -972,19 +933,12 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
- 	if (WARN_ON(cpu == policy->cpu))
- 		return;
- 
--	/*
--	 * Take direct locks as lock_policy_rwsem_write wouldn't work here.
--	 * Also lock for last cpu is enough here as contention will happen only
--	 * after policy->cpu is changed and after it is changed, other threads
--	 * will try to acquire lock for new cpu. And policy is already updated
--	 * by then.
--	 */
--	down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
-+	down_write(&policy->rwsem);
- 
- 	policy->last_cpu = policy->cpu;
- 	policy->cpu = cpu;
- 
--	up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
-+	up_write(&policy->rwsem);
- 
- 	cpufreq_frequency_table_update_policy_cpu(policy);
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-@@ -1176,9 +1130,9 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
- 	if (ret) {
- 		pr_err("%s: Failed to move kobj: %d", __func__, ret);
- 
--		lock_policy_rwsem_write(old_cpu);
-+		down_write(&policy->rwsem);
- 		cpumask_set_cpu(old_cpu, policy->cpus);
--		unlock_policy_rwsem_write(old_cpu);
-+		up_write(&policy->rwsem);
- 
- 		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
- 					"cpufreq");
-@@ -1229,9 +1183,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 			policy->governor->name, CPUFREQ_NAME_LEN);
- #endif
- 
--	lock_policy_rwsem_read(cpu);
-+	down_read(&policy->rwsem);
- 	cpus = cpumask_weight(policy->cpus);
--	unlock_policy_rwsem_read(cpu);
-+	up_read(&policy->rwsem);
- 
- 	if (cpu != policy->cpu) {
- 		if (!frozen)
-@@ -1271,12 +1225,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- 		return -EINVAL;
- 	}
- 
--	lock_policy_rwsem_write(cpu);
-+	down_write(&policy->rwsem);
- 	cpus = cpumask_weight(policy->cpus);
- 
- 	if (cpus > 1)
- 		cpumask_clear_cpu(cpu, policy->cpus);
--	unlock_policy_rwsem_write(cpu);
-+	up_write(&policy->rwsem);
- 
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
-@@ -1291,10 +1245,10 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- 		}
- 
- 		if (!frozen) {
--			lock_policy_rwsem_read(cpu);
-+			down_read(&policy->rwsem);
- 			kobj = &policy->kobj;
- 			cmp = &policy->kobj_unregister;
--			unlock_policy_rwsem_read(cpu);
-+			up_read(&policy->rwsem);
- 			kobject_put(kobj);
- 
- 			/*
-@@ -1474,19 +1428,22 @@ static unsigned int __cpufreq_get(unsigned int cpu)
-  */
- unsigned int cpufreq_get(unsigned int cpu)
- {
-+	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
- 	unsigned int ret_freq = 0;
- 
- 	if (cpufreq_disabled() || !cpufreq_driver)
- 		return -ENOENT;
- 
-+	BUG_ON(!policy);
-+
- 	if (!down_read_trylock(&cpufreq_rwsem))
- 		return 0;
- 
--	lock_policy_rwsem_read(cpu);
-+	down_read(&policy->rwsem);
- 
- 	ret_freq = __cpufreq_get(cpu);
- 
--	unlock_policy_rwsem_read(cpu);
-+	up_read(&policy->rwsem);
- 	up_read(&cpufreq_rwsem);
- 
- 	return ret_freq;
-@@ -1710,11 +1667,11 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
- {
- 	int ret = -EINVAL;
- 
--	lock_policy_rwsem_write(policy->cpu);
-+	down_write(&policy->rwsem);
- 
- 	ret = __cpufreq_driver_target(policy, target_freq, relation);
- 
--	unlock_policy_rwsem_write(policy->cpu);
-+	up_write(&policy->rwsem);
- 
- 	return ret;
- }
-@@ -1945,10 +1902,10 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
- 			/* end old governor */
- 			if (policy->governor) {
- 				__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
--				unlock_policy_rwsem_write(new_policy->cpu);
-+				up_write(&policy->rwsem);
- 				__cpufreq_governor(policy,
- 						CPUFREQ_GOV_POLICY_EXIT);
--				lock_policy_rwsem_write(new_policy->cpu);
-+				down_write(&policy->rwsem);
- 			}
- 
- 			/* start new governor */
-@@ -1957,10 +1914,10 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
- 				if (!__cpufreq_governor(policy, CPUFREQ_GOV_START)) {
- 					failed = 0;
- 				} else {
--					unlock_policy_rwsem_write(new_policy->cpu);
-+					up_write(&policy->rwsem);
- 					__cpufreq_governor(policy,
- 							CPUFREQ_GOV_POLICY_EXIT);
--					lock_policy_rwsem_write(new_policy->cpu);
-+					down_write(&policy->rwsem);
- 				}
- 			}
- 
-@@ -2006,7 +1963,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 		goto no_policy;
- 	}
- 
--	lock_policy_rwsem_write(cpu);
-+	down_write(&policy->rwsem);
- 
- 	pr_debug("updating policy for CPU %u\n", cpu);
- 	memcpy(&new_policy, policy, sizeof(*policy));
-@@ -2033,7 +1990,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 
- 	ret = cpufreq_set_policy(policy, &new_policy);
- 
--	unlock_policy_rwsem_write(cpu);
-+	up_write(&policy->rwsem);
- 
- 	cpufreq_cpu_put(policy);
- no_policy:
-@@ -2190,14 +2147,9 @@ EXPORT_SYMBOL_GPL(cpufreq_unregister_driver);
- 
- static int __init cpufreq_core_init(void)
- {
--	int cpu;
--
- 	if (cpufreq_disabled())
- 		return -ENODEV;
- 
--	for_each_possible_cpu(cpu)
--		init_rwsem(&per_cpu(cpu_policy_rwsem, cpu));
--
- 	cpufreq_global_kobject = kobject_create();
- 	BUG_ON(!cpufreq_global_kobject);
- 	register_syscore_ops(&cpufreq_syscore_ops);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 0aba2a6c..6b457d0 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -85,6 +85,20 @@ struct cpufreq_policy {
- 	struct list_head        policy_list;
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
-+
-+	/*
-+	 * The rules for this semaphore:
-+	 * - Any routine that wants to read from the policy structure will
-+	 *   do a down_read on this semaphore.
-+	 * - Any routine that will write to the policy structure and/or may take away
-+	 *   the policy altogether (eg. CPU hotplug), will hold this lock in write
-+	 *   mode before doing so.
-+	 *
-+	 * Additional rules:
-+	 * - Lock should not be held across
-+	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
-+	 */
-+	struct rw_semaphore	rwsem;
- };
- 
- /* Only for ACPI */
--- 
-1.7.12.rc2.18.g61b472e
+	Dave
 
