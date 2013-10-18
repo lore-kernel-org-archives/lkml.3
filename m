@@ -1,140 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab3JRHak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 03:30:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59171 "EHLO arroyo.ext.ti.com"
+	id S1752186Ab3JRHbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 03:31:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56618 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab3JRHai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 03:30:38 -0400
-Message-ID: <5260E374.6050804@ti.com>
-Date: Fri, 18 Oct 2013 12:59:56 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1751188Ab3JRHbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 03:31:10 -0400
+Message-ID: <5260E3B5.2010900@ti.com>
+Date: Fri, 18 Oct 2013 10:31:01 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Andreas Fenkart <afenkart@gmail.com>, Chris Ball <cjb@laptop.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        <zonque@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] mmc: omap_hsmmc: Remux pins to support SDIO interrupt
- on AM335x
-References: <1380971830-21492-1-git-send-email-afenkart@gmail.com> <1380971830-21492-4-git-send-email-afenkart@gmail.com> <20131018172053.70cf2c2b@notabene.brown>
-In-Reply-To: <20131018172053.70cf2c2b@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: <tj@kernel.org>, <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v2 1/2] ata: ahci_platform: Manage SATA PHY
+References: <1381923773-10596-1-git-send-email-rogerq@ti.com> <1381923773-10596-2-git-send-email-rogerq@ti.com> <1896416.QtZRH9T0D7@amdc1032>
+In-Reply-To: <1896416.QtZRH9T0D7@amdc1032>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 October 2013 11:50 AM, NeilBrown wrote:
-> On Sat,  5 Oct 2013 13:17:09 +0200 Andreas Fenkart <afenkart@gmail.com> wrote:
->
->> The am335x can't detect pending cirq in PM runtime suspend.
->> This patch reconfigures dat1 as a GPIO before going to suspend.
->> SDIO interrupts are detected with the GPIO, while in runtime
->> suspend, standard detection of the module block otherwise.
+On 10/17/2013 04:57 PM, Bartlomiej Zolnierkiewicz wrote:
+> 
+> Hi,
+> 
+> On Wednesday, October 16, 2013 02:42:52 PM Roger Quadros wrote:
+>> From: Balaji T K <balajitk@ti.com>
 >>
->> Signed-off-by: Andreas Fenkart <afenkart@gmail.com>
+>> Some platforms have a PHY hooked up to the
+>> SATA controller. The PHY needs to be initialized
+>> and powered up for SATA to work. We do that
+>> using the PHY framework.
 >>
->> diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
->> index 1136e6b..146f3ad 100644
->> --- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
->> +++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
->> @@ -21,8 +21,11 @@ ti,non-removable: non-removable slot (like eMMC)
->>   ti,needs-special-reset: Requires a special softreset sequence
->>   ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
->>   ti,quirk-swakup-missing: SOC missing the swakeup line, will not detect
->> -SDIO irq while in suspend. Fallback to polling. Affected chips are
->> -am335x,
->> +SDIO irq while in suspend. The workaround is to reconfigure the dat1 line as a
->> +GPIO upon suspend. Beyond this option and the GPIO config, you also need to set
->> +named pinctrl states "default", "active" and "idle ", see example below.  The
->> +MMC driver will then then toggle between default and idle during the runtime
->> +Affected chips are am335x,
+>> [Roger Q] Cleaned up.
 >>
->>                               ------
->>                               | PRCM |
->> @@ -49,3 +52,24 @@ Example:
->>   		vmmc-supply = <&vmmc>; /* phandle to regulator node */
->>   		ti,non-removable;
->>   	};
+>> CC: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  .../devicetree/bindings/ata/ahci-platform.txt      |    3 +-
+>>  drivers/ata/ahci.h                                 |    2 ++
+>>  drivers/ata/ahci_platform.c                        |   29 +++++++++++++++++++-
+>>  3 files changed, 32 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+>> index 89de156..c8a6cea 100644
+>> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
+>> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+>> @@ -4,7 +4,8 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+>>  Each SATA controller should have its own node.
+>>  
+>>  Required properties:
+>> -- compatible        : compatible list, contains "snps,spear-ahci"
+>> +- compatible        : compatible list, contains "snps,spear-ahci",
+>> +			snps,exynos5440-ahci or "snps,dwc-ahci"
+> 
+> minor nit:
+> s/snps,exynos5440-ahci/"snps,exynos5440-ahci"/
+
+OK.
+> 
+>>  - interrupts        : <interrupt mapping for SATA IRQ>
+>>  - reg               : <registers mapping>
+>>  
+>> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+>> index 1145637..94484cb 100644
+>> --- a/drivers/ata/ahci.h
+>> +++ b/drivers/ata/ahci.h
+>> @@ -37,6 +37,7 @@
+>>  
+>>  #include <linux/clk.h>
+>>  #include <linux/libata.h>
+>> +#include <linux/phy/phy.h>
+>>  
+>>  /* Enclosure Management Control */
+>>  #define EM_CTRL_MSG_TYPE              0x000f0000
+>> @@ -322,6 +323,7 @@ struct ahci_host_priv {
+>>  	u32			em_buf_sz;	/* EM buffer size in byte */
+>>  	u32			em_msg_type;	/* EM message type */
+>>  	struct clk		*clk;		/* Only for platforms supporting clk */
+>> +	struct phy		*phy;		/* If platforms use phy */
+> 
+> minor nit:
+> s/If platforms use phy/If platform uses PHY/
+
+Right.
+
+> 
+>>  	void			*plat_data;	/* Other platform data */
+>>  };
+>>  
+>> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+>> index 2daaee0..5a0f1418 100644
+>> --- a/drivers/ata/ahci_platform.c
+>> +++ b/drivers/ata/ahci_platform.c
+>> @@ -141,6 +141,21 @@ static int ahci_probe(struct platform_device *pdev)
+>>  		}
+>>  	}
+>>  
+>> +	hpriv->phy = devm_phy_get(dev, "sata-phy");
+>> +	if (IS_ERR(hpriv->phy)) {
+>> +		dev_dbg(dev, "can't get sata-phy\n");
+>> +		/* return only if -EPROBE_DEFER */
+>> +		if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
+>> +			rc = -EPROBE_DEFER;
+>> +			goto disable_unprepare_clk;
+>> +		}
+>> +	}
 >> +
->> +[am335x with with gpio for sdio irq]
+>> +	if (!IS_ERR(hpriv->phy)) {
+>> +		phy_init(hpriv->phy);
+>> +		phy_power_on(hpriv->phy);
+>> +	}
 >> +
->> +	mmc1_cirq_pin: pinmux_cirq_pin {
->> +		pinctrl-single,pins = <
->> +			0x0f8 0x3f	/* MMC0_DAT1 as GPIO2_28 */
->> +		>;
->> +	};
+>>  	/*
+>>  	 * Some platforms might need to prepare for mmio region access,
+>>  	 * which could be done in the following init call. So, the mmio
+>> @@ -150,7 +165,7 @@ static int ahci_probe(struct platform_device *pdev)
+>>  	if (pdata && pdata->init) {
+>>  		rc = pdata->init(dev, hpriv->mmio);
+>>  		if (rc)
+>> -			goto disable_unprepare_clk;
+>> +			goto disable_phy;
+>>  	}
+>>  
+>>  	ahci_save_initial_config(dev, hpriv,
+>> @@ -220,6 +235,12 @@ static int ahci_probe(struct platform_device *pdev)
+>>  pdata_exit:
+>>  	if (pdata && pdata->exit)
+>>  		pdata->exit(dev);
+>> +disable_phy:
+>> +	if (!IS_ERR(hpriv->phy)) {
+>> +		phy_power_off(hpriv->phy);
+>> +		phy_exit(hpriv->phy);
+>> +	}
 >> +
->> +	mmc1: mmc@48060000 {
->> +		ti,non-removable;
->> +		bus-width = <4>;
->> +		vmmc-supply = <&ldo2_reg>;
->> +		vmmc_aux-supply = <&vmmc>;
->> +	        ti,quirk-swakeup-missing;
->> +		pinctrl-names = "default", "active", "idle";
->> +		pinctrl-0 = <&mmc1_pins>;
->> +		pinctrl-1 = <&mmc1_pins>;
->> +		pinctrl-2 = <&mmc1_cirq_pin>;
->> +		ti,cirq-gpio = <&gpio3 28 0>;
->> +	};
->
->
-> hi,
->   I've been trying to get SD irq to work on my  OMAP3 DM3730.
-> I seems to need the magic to catch interrupts while FCLK is off, as
-> the only way I can get it to work at the moment is to keep FCLK on.
->
-> I discovered your patch and tried it out, but it doesn't seem to work for me.
->
-> I have a Libertas WIFI chip attached to the second mmc (which is sometimes
-> called mmc1, and sometimes mmc2 - very confusing!).
-> I added:
-> 	mmc2_cirq_pin: pinmux_cirq_pin {
-> 		pinctrl-single,pins = <
-> 			0x012e (PIN_INPUT_PULLUP | MUX_MODE4)	/* MMC2_DAT1 as GPIO5_5 */
-> 		>;
-> 	};
->
-> and
->
-> &mmc2 {
-> 	ti,quirk-swakeup-missing;
-> 	pinctrl-names = "default", "active", "idle";
-> 	pinctrl-0 = <&mmc2_pins>;
-> 	pinctrl-1 = <&mmc2_pins>;
-> 	pinctrl-2 = <&mmc2_cirq_pin>;
-> 	ti,cirq-gpio = <&gpio5 5 0>; /* GPIO133 = 128+5 */
-> };
->
-> to my dts file but it doesn't make any apparent difference.
->
-> Any idea what I might be doing wrong?
-> (the base kernel I am applying patches to is from 8th Oct,
->   commit 0e7a3ed04f0cd4311096d691888f88569310ee6c)
->
-> BTW,
->   - with the default polling, I get about 1Mb/sec with iperf
->   - with sd-irq enabled and FCLK kept on the whole time, I get 4Mb/sec
->   - with sd-irq enable, FCLK kept on, and the 5ms polling also
->     running, I get over 5Mb/sec!
-> Still much less than the 40Mb/sec that I would like to get...
->
-(removing svenkatr@ti.com)
+>>  disable_unprepare_clk:
+>>  	if (!IS_ERR(hpriv->clk))
+>>  		clk_disable_unprepare(hpriv->clk);
+>> @@ -238,6 +259,11 @@ static void ahci_host_stop(struct ata_host *host)
+>>  	if (pdata && pdata->exit)
+>>  		pdata->exit(dev);
+>>  
+>> +	if (!IS_ERR(hpriv->phy)) {
+>> +		phy_power_off(hpriv->phy);
+>> +		phy_exit(hpriv->phy);
+>> +	}
+>> +
+>>  	if (!IS_ERR(hpriv->clk)) {
+>>  		clk_disable_unprepare(hpriv->clk);
+>>  		clk_put(hpriv->clk);
+>> @@ -328,6 +354,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+> 
+> Shouldn't phy_power_off/on also be used in ahci_suspend() and ahci_resume()?
 
-Hi,
+I think so. Maybe even phy_exit and phy_init?
 
-Can you check if you have bus-width property set ?
-	bus-width = <4>;
+> 
+>>  static const struct of_device_id ahci_of_match[] = {
+>>  	{ .compatible = "snps,spear-ahci", },
+>>  	{ .compatible = "snps,exynos5440-ahci", },
+>> +	{ .compatible = "snps,dwc-ahci", },
+> 
+> This change together with ahci-platform.txt one should be in a separate patch.
 
-Thanks and Regards,
-Balaji T K
+Agreed.
 
-> Thanks,
-> NeilBrown
->
+> 
+>>  	{},
+>>  };
+>>  MODULE_DEVICE_TABLE(of, ahci_of_match);
 
+cheers,
+-roger
