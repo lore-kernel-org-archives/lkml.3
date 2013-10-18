@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab3JRWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:39:09 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52369 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757226Ab3JRWjI (ORCPT
+	id S1757530Ab3JRWk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:40:56 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:50505 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757492Ab3JRWkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:39:08 -0400
-Message-ID: <5261B887.3010705@linaro.org>
-Date: Fri, 18 Oct 2013 15:39:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev
- doesn't exist
-References: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com> <526018C6.5070604@linaro.org> <52608AE7.30100@gmail.com>
-In-Reply-To: <52608AE7.30100@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Oct 2013 18:40:55 -0400
+From: Felipe Pena <felipensp@gmail.com>
+To: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH] thinkpad-acpi: Fix wrong assignment
+Date: Fri, 18 Oct 2013 19:41:07 -0300
+Message-Id: <1382136067-3888-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 06:12 PM, KOSAKI Motohiro wrote:
-> (10/17/13 1:05 PM), John Stultz wrote:
->> On 10/14/2013 02:33 PM, kosaki.motohiro@gmail.com wrote:
->>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>
->>> Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora
->>> Rawhide
->>> on ARM. (http://bugs.ruby-lang.org/issues/9008)
->>>
->>> Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
->>> RTC device is present) intruduced to return ENOTSUPP when
->>> clock_get{time,res} can't find a RTC device. However it is incorrect.
->>>
->>> Posix and Linux man pages agree that clock_gettime and clock_getres
->>> should return EINVAL if clk_id argument is invalid. This is significant
->>> different from timer_create API.
->>>
->>> This patch fixes it.
->>
->> Hrm... So I feel like there is a difference here. The clockid for
->> CLOCK_BOOTTIME_ALARM and CLOCK_REALTIME_ALARM are both valid.
->>
->> Its just that they're not supported on this specific hardware because it
->> apparently lacks a RTC that has told the system it can be used as a
->> wakeup device (Its actually quite likely on the hardware that the RTC
->> can be a wakeup device, but that the driver is probably setting the
->> wakeup flag after the RTC registered - so there is probably a driver bug
->> here too).
->>
->> So I feel like in this case EINVAL isn't quite right.  I'll admit it is
->> somewhat new behavior, because we haven't had any clockids before that
->> were dependent on the particular hardware, they either existed in a
->> kernel verison or didn't.
->>
->> Would updating the manpage be a better route?
->
-> Nope.
->
-> ENOTSUPP is not exported to userland. ENOTSUP (single P) and EOPNOTSUP is
-> valid errno (and they are same on linux), but ENOTSUPP is a kernel
-> internal specific.
->
-> Moreover, I completely disagree your position. Both
-> CLOCK_REALTIME_ALARM unsupported
-> kernel and ARM which doesn't support RTC should use the same error
-> because application
-> need the same fallback.
+In the thermal_init function when checking for thinkpad_id.ec_model,
+the 'ta2' variable is being OR'd when acpi_ec_read call succeeds,
+on fail it is setting 0 to 'ta1' variable instead.
 
-Ok. You're right. The technicality that the clockid is valid but
-unsupported isn't really useful to the applications, since the effect is
-the same.
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ drivers/platform/x86/thinkpad_acpi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What is the urgency on this? As the issue has been around since 3.0, is
-it ok if it gets queued for 3.13 and marked for stable, or does it need
-to land in 3.12?
-
-thanks
--john
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 03ca6c1..ac6f938 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -5730,7 +5730,7 @@ static int __init thermal_init(struct ibm_init_struct *iibm)
+ 			if (acpi_ec_read(TP_EC_THERMAL_TMP8 + i, &t)) {
+ 				ta2 |= t;
+ 			} else {
+-				ta1 = 0;
++				ta2 = 0;
+ 				break;
+ 			}
+ 		}
+--
+1.7.10.4
 
