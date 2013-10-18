@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab3JRPqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:46:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52700 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab3JRPqP (ORCPT
+	id S1756312Ab3JRPq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:46:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41402 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113Ab3JRPq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:46:15 -0400
-Date: Fri, 18 Oct 2013 09:46:10 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, l.flis@cyfronet.pl
-Subject: Re: [PATCH] block: properly stack underlying max_segment_size to DM
- device
-Message-ID: <20131018154610.GA9304@kernel.dk>
-References: <1382106206-4459-1-git-send-email-snitzer@redhat.com>
+	Fri, 18 Oct 2013 11:46:56 -0400
+Date: Fri, 18 Oct 2013 16:46:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 Resend 29/34] cpufreq: sa11x0: Convert to light
+	weight ->target_index() routine
+Message-ID: <20131018154644.GC25034@n2100.arm.linux.org.uk>
+References: <cover.1382104514.git.viresh.kumar@linaro.org> <fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382106206-4459-1-git-send-email-snitzer@redhat.com>
+In-Reply-To: <fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18 2013, Mike Snitzer wrote:
-> Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
-> (65536) even if the underlying device(s) have a larger value -- this is
-> due to blk_stack_limits() using min_not_zero() when stacking the
-> max_segment_size limit.
+On Fri, Oct 18, 2013 at 07:29:52PM +0530, Viresh Kumar wrote:
+> This patch converts existing .target() to newly defined light weight
+> .target_index() routine for this driver.
 > 
-> # cat /sys/block/sda/queue/max_segment_size
-> 1073741824
+> CPUFreq core will call cpufreq_frequency_table_target() before calling this
+> routine and will pass index to it.
 > 
-> # cat /sys/block/dm-0/queue/max_segment_size
-> before patch:
-> 65536
+> Some existing routines are no more required and so are removed now.
 > 
-> after patch:
-> 1073741824
-> 
-> Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> Cc: stable@vger.kernel.org # v3.3+
-> ---
->  block/blk-settings.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/block/blk-settings.c b/block/blk-settings.c
-> index c50ecf0..29f28bb 100644
-> --- a/block/blk-settings.c
-> +++ b/block/blk-settings.c
-> @@ -143,6 +143,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
->  	/* Inherit limits from component devices */
->  	lim->discard_zeroes_data = 1;
->  	lim->max_segments = USHRT_MAX;
-> +	lim->max_segment_size = UINT_MAX;
->  	lim->max_hw_sectors = UINT_MAX;
->  	lim->max_sectors = UINT_MAX;
->  	lim->max_write_same_sectors = UINT_MAX;
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-Thanks, applied for 3.13.
-
--- 
-Jens Axboe
-
+I think I acked this patch.  Please ensure that my ack appears on all
+that I did ack, thanks.
