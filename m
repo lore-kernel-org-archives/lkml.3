@@ -1,126 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3JRP5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:57:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28659 "EHLO mx1.redhat.com"
+	id S1756547Ab3JRP5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:57:49 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:13955 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756485Ab3JRP5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:57:40 -0400
-Date: Fri, 18 Oct 2013 17:50:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/6] uprobes: Teach uprobe_copy_process() to handle
-	CLONE_VFORK
-Message-ID: <20131018155028.GA15050@redhat.com>
+	id S1756529Ab3JRP5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:57:47 -0400
+X-IronPort-AV: E=Sophos;i="4.93,523,1378857600"; 
+   d="scan'208";a="65046946"
+Date: Fri, 18 Oct 2013 16:56:47 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
+        <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v8 01/19] arm: make SWIOTLB available
+In-Reply-To: <1382031814-8782-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1310181652310.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131018154947.GA15002@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe_copy_process() does nothing if the child shares ->mm with
-the forking process, but there is a special case: CLONE_VFORK.
-In this case it would be more correct to do dup_utask() but avoid
-dup_xol(). This is not that important, the child should not unwind
-its stack too much, this can corrupt the parent's stack, but at
-least we need this to allow to ret-probe __vfork() itself.
+Russell,
+this is the last ARM patch of the series that needs review.
 
-Note: in theory, it would be better to check task_pt_regs(p)->sp
-instead of CLONE_VFORK, we need to dup_utask() if and only if the
-child can return from the function called by the parent. But this
-needs the arch-dependant helper, and I think that nobody actually
-does clone(same_stack, CLONE_VM).
+It is just adding three new static inlines needed by SWIOTLB and
+IOMMU_HELPER.
 
-Cc: stable@vger.kernel.org # 3.9+
-Reported-by: Martin Cermak <mcermak@redhat.com>
-Reported-by: David Smith <dsmith@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/uprobes.h |    4 ++--
- kernel/events/uprobes.c |   10 ++++++++--
- kernel/fork.c           |    2 +-
- 3 files changed, 11 insertions(+), 5 deletions(-)
+If you are OK with the patch I am going to add the lot to linux-next via
+the Xen tree.
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 06f28be..13a7f13 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -117,7 +117,7 @@ extern void uprobe_start_dup_mmap(void);
- extern void uprobe_end_dup_mmap(void);
- extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
- extern void uprobe_free_utask(struct task_struct *t);
--extern void uprobe_copy_process(struct task_struct *t);
-+extern void uprobe_copy_process(struct task_struct *t, unsigned long flags);
- extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
- extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
- extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
-@@ -174,7 +174,7 @@ static inline unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
- static inline void uprobe_free_utask(struct task_struct *t)
- {
- }
--static inline void uprobe_copy_process(struct task_struct *t)
-+static inline void uprobe_copy_process(struct task_struct *t, unsigned long flags)
- {
- }
- static inline void uprobe_clear_state(struct mm_struct *mm)
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 098b401..78cf8a4 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1415,7 +1415,7 @@ static void dup_xol_work(struct callback_head *work)
- /*
-  * Called in context of a new clone/fork from copy_process.
-  */
--void uprobe_copy_process(struct task_struct *t)
-+void uprobe_copy_process(struct task_struct *t, unsigned long flags)
- {
- 	struct uprobe_task *utask = current->utask;
- 	struct mm_struct *mm = current->mm;
-@@ -1424,7 +1424,10 @@ void uprobe_copy_process(struct task_struct *t)
- 
- 	t->utask = NULL;
- 
--	if (mm == t->mm || !utask || !utask->return_instances)
-+	if (!utask || !utask->return_instances)
-+		return;
-+
-+	if (mm == t->mm && !(flags & CLONE_VFORK))
- 		return;
- 
- 	if (dup_utask(t, utask))
-@@ -1435,6 +1438,9 @@ void uprobe_copy_process(struct task_struct *t)
- 	if (!area)
- 		return uprobe_warn(t, "dup xol area");
- 
-+	if (mm == t->mm)
-+		return;
-+
- 	/* TODO: move it into the union in uprobe_task */
- 	work = kmalloc(sizeof(*work), GFP_KERNEL);
- 	if (!work)
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d3603b8..8531609 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1489,7 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	perf_event_fork(p);
- 
- 	trace_task_newtask(p, clone_flags);
--	uprobe_copy_process(p);
-+	uprobe_copy_process(p, clone_flags);
- 
- 	return p;
- 
--- 
-1.5.5.1
-
+On Thu, 17 Oct 2013, Stefano Stabellini wrote:
+> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> provided by lib/iommu_helper.c.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> CC: will.deacon@arm.com
+> CC: linux@arm.linux.org.uk
+> 
+> 
+> Changes in v8:
+> - use __phys_to_pfn and __pfn_to_phys.
+> 
+> Changes in v7:
+> - dma_mark_clean: empty implementation;
+> - in dma_capable use coherent_dma_mask if dma_mask hasn't been
+>   allocated.
+> 
+> Changes in v6:
+> - check for dev->dma_mask being NULL in dma_capable.
+> 
+> Changes in v5:
+> - implement dma_mark_clean using dmac_flush_range.
+> 
+> Changes in v3:
+> - dma_capable: do not treat dma_mask as a limit;
+> - remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
+> ---
+>  arch/arm/Kconfig                   |    6 +++++
+>  arch/arm/include/asm/dma-mapping.h |   37 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index ba412e0..c0bfb33 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1832,6 +1832,12 @@ config CC_STACKPROTECTOR
+>  	  neutralized via a kernel panic.
+>  	  This feature requires gcc version 4.2 or above.
+>  
+> +config SWIOTLB
+> +	def_bool y
+> +
+> +config IOMMU_HELPER
+> +	def_bool SWIOTLB
+> +
+>  config XEN_DOM0
+>  	def_bool y
+>  	depends on XEN
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 5b579b9..01b5a3d 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -10,6 +10,7 @@
+>  
+>  #include <asm-generic/dma-coherent.h>
+>  #include <asm/memory.h>
+> +#include <asm/cacheflush.h>
+>  
+>  #define DMA_ERROR_CODE	(~0)
+>  extern struct dma_map_ops arm_dma_ops;
+> @@ -86,6 +87,42 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+>  }
+>  #endif
+>  
+> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	unsigned int offset = paddr & ~PAGE_MASK;
+> +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> +}
+> +
+> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> +{
+> +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> +}
+> +
+> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> +{
+> +	u64 limit, mask;
+> +	
+> +	if (dev->dma_mask)
+> +		mask = *dev->dma_mask;
+> +	else 
+> +		mask = dev->coherent_dma_mask;
+> +
+> +	if (mask == 0)
+> +		return 0;
+> +
+> +	limit = (mask + 1) & ~mask;
+> +	if (limit && size > limit)
+> +		return 0;
+> +
+> +	if ((addr | (addr + size - 1)) & ~mask)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> +static inline void dma_mark_clean(void *addr, size_t size) { }
+> +
+>  /*
+>   * DMA errors are defined by all-bits-set in the DMA address.
+>   */
+> -- 
+> 1.7.2.5
+> 
