@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab3JRMAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:00:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38392 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab3JRMAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:00:46 -0400
-Message-ID: <526122C4.4090702@ti.com>
-Date: Fri, 18 Oct 2013 15:00:04 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: <bcousson@baylibre.com>
-CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <kishon@ti.com>, <bigeasy@linutronix.de>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Stefan Roese <sr@denx.de>
-Subject: Re: [PATCH] ARM: dts: omap3-beagle: Adapt USB OTG to generic PHY
- framework
-References: <1381142810-14541-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1381142810-14541-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753775Ab3JRMA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:00:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56067 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753721Ab3JRMAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:00:55 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+        janne.karhunen@gmail.com, geert@linux-m68k.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH v2] init: make init failures more explicit
+Date: Fri, 18 Oct 2013 14:00:33 +0200
+Message-Id: <1382097633-10166-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+This patch proposes to make init failures more explicit.
 
-Could you please include this one for 3.13?
-Without this OTG port will be broken for beagle. Thanks.
+Before this, the "No init found" message didn't help much.
+It could sometimes be misleading and actually mean
+"No *working* init found".
 
-cheers,
--roger
+This message could hide many different issues:
+- no init program candidates found at all
+- some init program candidates exist but can't be executed
+  (missing execute permissions, failed to load shared libraries,
+  executable compiled for an unknown architecture...)
 
-On 10/07/2013 01:46 PM, Roger Quadros wrote:
-> The generic PHY framewrok expects different properties than the
-> old USB PHY framework. Supply those properties.
-> 
-> Fixes USB OTG port on beagle after the Generic PHY framework was
-> merged in greg/usb-next. [1]
-> 
-> [1] - https://lkml.org/lkml/2013/9/27/581
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/omap3-beagle.dts |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-> index 7669c16..fa532aa 100644
-> --- a/arch/arm/boot/dts/omap3-beagle.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle.dts
-> @@ -173,6 +173,8 @@
->  &usb_otg_hs {
->  	interface-type = <0>;
->  	usb-phy = <&usb2_phy>;
-> +	phys = <&usb2_phy>;
-> +	phy-names = "usb2-phy";
->  	mode = <3>;
->  	power = <50>;
->  };
-> 
+This patch notifies the kernel user when a candidate init program is
+found but can't be executed. The error code is displayed, to quickly
+find the root cause. "No init found" is also replaced by
+"No working init found", which is more correct.
+
+This will help embedded Linux developers (especially the new comers),
+regularly making and debugging new root filesystems.
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ init/main.c | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f..3662767 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -811,6 +811,20 @@ static int run_init_process(const char *init_filename)
+ 		(const char __user *const __user *)envp_init);
+ }
+ 
++static int try_to_run_init_process(const char *init_filename)
++{
++	int ret;
++
++	ret = run_init_process(init_filename);
++
++	if (ret && ret != -ENOENT) {
++		pr_err("Starting init: %s exists but couldn't execute it (error: %d - see errno-base.h and errno.h)\n",
++		       init_filename, ret);
++	}
++
++	return ret;
++}
++
+ static noinline void __init kernel_init_freeable(void);
+ 
+ static int __ref kernel_init(void *unused)
+@@ -843,13 +857,13 @@ static int __ref kernel_init(void *unused)
+ 		pr_err("Failed to execute %s.  Attempting defaults...\n",
+ 			execute_command);
+ 	}
+-	if (!run_init_process("/sbin/init") ||
+-	    !run_init_process("/etc/init") ||
+-	    !run_init_process("/bin/init") ||
+-	    !run_init_process("/bin/sh"))
++	if (!try_to_run_init_process("/sbin/init") ||
++	    !try_to_run_init_process("/etc/init") ||
++	    !try_to_run_init_process("/bin/init") ||
++	    !try_to_run_init_process("/bin/sh"))
+ 		return 0;
+ 
+-	panic("No init found.  Try passing init= option to kernel. "
++	panic("No working init found.  Try passing init= option to kernel. "
+ 	      "See Linux Documentation/init.txt for guidance.");
+ }
+ 
+-- 
+1.8.1.2
 
