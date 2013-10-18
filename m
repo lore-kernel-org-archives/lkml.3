@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137Ab3JRGY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 02:24:57 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:56899 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3JRGYz (ORCPT
+	id S1751021Ab3JRG3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 02:29:13 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:53882 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3JRG3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 02:24:55 -0400
-Date: Fri, 18 Oct 2013 08:24:52 +0200
+	Fri, 18 Oct 2013 02:29:11 -0400
+Date: Fri, 18 Oct 2013 08:29:08 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, resend] x86-64: don't track CPU model data that is used
- by 32-bit code only
-Message-ID: <20131018062452.GB14264@gmail.com>
-References: <525E989602000078000FB740@nat28.tlf.novell.com>
+To: Jan Beulich <JBeulich@suse.com>, John Stultz <john.stultz@linaro.org>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: honor ACPI FADT flag indicating absence of a CMOS
+ RTC
+Message-ID: <20131018062908.GD14264@gmail.com>
+References: <525E969E02000078000FB710@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525E989602000078000FB740@nat28.tlf.novell.com>
+In-Reply-To: <525E969E02000078000FB710@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,200 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Jan Beulich <JBeulich@suse.com> wrote:
 
-> struct cpu_dev's c_models is only ever set inside CONFIG_X86_32
-> conditionals (or code that's being built for 32-bit only), so there's
-> no use of reserving the (empty) space for the model names in a 64-bit
-> kernel.
-> 
-> Similarly, c_size_cache is only used in the #else of a CONFIG_X86_64
-> conditional, so reserving space for (and in one case even initializing)
-> that field is pointless for 64-bit kernels too.
-> 
-> While moving both fields to the end of the structure, I also noticed
-> that
-> - the c_models array size was one too small, potentially causing
->   table_lookup_model() to return garbage on Intel CPUs (intel.c's
->   instance was lacking the sentinel with family being zero), so the
->   patch bumps that by one,
-> - c_models' vendor sub-field was unused (and anyway redundant with
->   the base structure's c_x86_vendor field), so the patch deletes it.
-> 
+> We shouldn't be creating a corresponding platform device in that case.
+
+There's a sad lack of context in the changelog, how was it found, does 
+this address any problem/bug observed in practice, etc?
+
 > Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> ---
->  arch/x86/kernel/cpu/amd.c     |    2 +-
->  arch/x86/kernel/cpu/centaur.c |    6 ++++--
->  arch/x86/kernel/cpu/common.c  |    4 +++-
->  arch/x86/kernel/cpu/cpu.h     |   16 +++++++---------
->  arch/x86/kernel/cpu/intel.c   |    8 ++++----
->  arch/x86/kernel/cpu/umc.c     |    2 +-
->  6 files changed, 20 insertions(+), 18 deletions(-)
 > 
-> --- 3.12-rc5/arch/x86/kernel/cpu/amd.c
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/amd.c
-> @@ -824,7 +824,7 @@ static const struct cpu_dev amd_cpu_dev 
->  	.c_ident	= { "AuthenticAMD" },
->  #ifdef CONFIG_X86_32
->  	.c_models = {
-> -		{ .vendor = X86_VENDOR_AMD, .family = 4, .model_names =
-> +		{ .family = 4, .model_names =
->  		  {
->  			  [3] = "486 DX/2",
->  			  [7] = "486 DX/2-WB",
-> --- 3.12-rc5/arch/x86/kernel/cpu/centaur.c
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/centaur.c
-> @@ -468,10 +468,10 @@ static void init_centaur(struct cpuinfo_
->  #endif
->  }
+> ---
+>  arch/x86/kernel/rtc.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> --- 3.12-rc5/arch/x86/kernel/rtc.c
+> +++ 3.12-rc5-x86-ACPI-no-RTC/arch/x86/kernel/rtc.c
+> @@ -192,6 +192,11 @@ static __init int add_rtc_cmos(void)
+>  	if (mrst_identify_cpu())
+>  		return -ENODEV;
 >  
-> +#ifdef CONFIG_X86_32
->  static unsigned int
->  centaur_size_cache(struct cpuinfo_x86 *c, unsigned int size)
->  {
-> -#ifdef CONFIG_X86_32
->  	/* VIA C3 CPUs (670-68F) need further shifting. */
->  	if ((c->x86 == 6) && ((c->x86_model == 7) || (c->x86_model == 8)))
->  		size >>= 8;
-> @@ -484,16 +484,18 @@ centaur_size_cache(struct cpuinfo_x86 *c
->  	if ((c->x86 == 6) && (c->x86_model == 9) &&
->  				(c->x86_mask == 1) && (size == 65))
->  		size -= 1;
-> -#endif
->  	return size;
->  }
+> +#ifdef CONFIG_ACPI
+> +	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC)
+> +		return -ENODEV;
 > +#endif
->  
->  static const struct cpu_dev centaur_cpu_dev = {
->  	.c_vendor	= "Centaur",
->  	.c_ident	= { "CentaurHauls" },
->  	.c_early_init	= early_init_centaur,
->  	.c_init		= init_centaur,
-> +#ifdef CONFIG_X86_32
->  	.c_size_cache	= centaur_size_cache,
-> +#endif
->  	.c_x86_vendor	= X86_VENDOR_CENTAUR,
->  };
->  
-> --- 3.12-rc5/arch/x86/kernel/cpu/common.c
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/common.c
-> @@ -346,6 +346,7 @@ static void filter_cpuid_features(struct
->  /* Look up CPU names by table lookup. */
->  static const char *table_lookup_model(struct cpuinfo_x86 *c)
->  {
-> +#ifdef CONFIG_X86_32
->  	const struct cpu_model_info *info;
->  
->  	if (c->x86_model >= 16)
-> @@ -356,11 +357,12 @@ static const char *table_lookup_model(st
->  
->  	info = this_cpu->c_models;
->  
-> -	while (info && info->family) {
-> +	while (info->family) {
->  		if (info->family == c->x86)
->  			return info->model_names[c->x86_model];
->  		info++;
->  	}
-> +#endif
->  	return NULL;		/* Not found */
->  }
->  
-> --- 3.12-rc5/arch/x86/kernel/cpu/cpu.h
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/cpu.h
-> @@ -1,12 +1,6 @@
->  #ifndef ARCH_X86_CPU_H
->  #define ARCH_X86_CPU_H
->  
-> -struct cpu_model_info {
-> -	int		vendor;
-> -	int		family;
-> -	const char	*model_names[16];
-> -};
-> -
->  /* attempt to consolidate cpu attributes */
->  struct cpu_dev {
->  	const char	*c_vendor;
-> @@ -14,15 +8,19 @@ struct cpu_dev {
->  	/* some have two possibilities for cpuid string */
->  	const char	*c_ident[2];
->  
-> -	struct		cpu_model_info c_models[4];
-> -
->  	void            (*c_early_init)(struct cpuinfo_x86 *);
->  	void		(*c_bsp_init)(struct cpuinfo_x86 *);
->  	void		(*c_init)(struct cpuinfo_x86 *);
->  	void		(*c_identify)(struct cpuinfo_x86 *);
->  	void		(*c_detect_tlb)(struct cpuinfo_x86 *);
-> -	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
->  	int		c_x86_vendor;
-> +#ifdef CONFIG_X86_32
-> +	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
-> +	struct cpu_model_info {
-> +		int		family;
-> +		const char	*model_names[16];
-> +	}		c_models[5];
-> +#endif
->  };
->  
->  struct _tlb_table {
-> --- 3.12-rc5/arch/x86/kernel/cpu/intel.c
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/intel.c
-> @@ -666,7 +666,7 @@ static const struct cpu_dev intel_cpu_de
->  	.c_ident	= { "GenuineIntel" },
->  #ifdef CONFIG_X86_32
->  	.c_models = {
-> -		{ .vendor = X86_VENDOR_INTEL, .family = 4, .model_names =
-> +		{ .family = 4, .model_names =
->  		  {
->  			  [0] = "486 DX-25/33",
->  			  [1] = "486 DX-50",
-> @@ -679,7 +679,7 @@ static const struct cpu_dev intel_cpu_de
->  			  [9] = "486 DX/4-WB"
->  		  }
->  		},
-> -		{ .vendor = X86_VENDOR_INTEL, .family = 5, .model_names =
-> +		{ .family = 5, .model_names =
->  		  {
->  			  [0] = "Pentium 60/66 A-step",
->  			  [1] = "Pentium 60/66",
-> @@ -690,7 +690,7 @@ static const struct cpu_dev intel_cpu_de
->  			  [8] = "Mobile Pentium MMX"
->  		  }
->  		},
-> -		{ .vendor = X86_VENDOR_INTEL, .family = 6, .model_names =
-> +		{ .family = 6, .model_names =
->  		  {
->  			  [0] = "Pentium Pro A-step",
->  			  [1] = "Pentium Pro",
-> @@ -704,7 +704,7 @@ static const struct cpu_dev intel_cpu_de
->  			  [11] = "Pentium III (Tualatin)",
->  		  }
->  		},
-> -		{ .vendor = X86_VENDOR_INTEL, .family = 15, .model_names =
-> +		{ .family = 15, .model_names =
->  		  {
->  			  [0] = "Pentium 4 (Unknown)",
->  			  [1] = "Pentium 4 (Willamette)",
-> --- 3.12-rc5/arch/x86/kernel/cpu/umc.c
-> +++ 3.12-rc5-x86-cpu-32bit-only-pieces/arch/x86/kernel/cpu/umc.c
-> @@ -12,7 +12,7 @@ static const struct cpu_dev umc_cpu_dev 
->  	.c_vendor	= "UMC",
->  	.c_ident	= { "UMC UMC UMC" },
->  	.c_models = {
-> -		{ .vendor = X86_VENDOR_UMC, .family = 4, .model_names =
-> +		{ .family = 4, .model_names =
->  		  {
->  			  [1] = "U5D",
->  			  [2] = "U5S",
 
-So I'm not totally convinced about this as it increases the #ifdef count - 
-that's why I didn't pick up the earlier submission.
-
-But I guess we could do it if you do one more cleanup: please rename it 
-all to ->legacy_model_names, ->legacy_cache_size, etc., to make sure it's 
-apparent at first sight that this is an old, secondary identification 
-mechanism for pre-sane-CPUID CPUs.
-
-Also maybe describe the fields in a comment line as well.
+It might also be prudent to emit a KERN_INFO line telling that we don't 
+create the device - so that people who suddenly see unexpected breakage or 
+change in behavior have a chance to see what we've done?
 
 Thanks,
 
