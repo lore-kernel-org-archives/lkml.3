@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3JRWwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:52:19 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:45291 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3JRWwN (ORCPT
+	id S1757495Ab3JRW5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:57:20 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:59780
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754832Ab3JRW5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:52:13 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clocksource: Do not drop unheld reference on device node
-Date: Sat, 19 Oct 2013 00:49:48 +0200
-Message-Id: <1382136588-15320-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	Fri, 18 Oct 2013 18:57:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zcb8kz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1382137030.7979.914.camel@snotra.buserror.net>
+Subject: Re: [v5][PATCH 3/6] book3e/kgdb: update thread's dbcr0
+From: Scott Wood <scottwood@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Oct 2013 17:57:10 -0500
+In-Reply-To: <1371724110-8250-4-git-send-email-tiejun.chen@windriver.com>
+References: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
+	 <1371724110-8250-4-git-send-email-tiejun.chen@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booting a recent kernel on ARM with OF_DYNAMIC enabled, the kernel
-warns about the following:
+On Thu, 2013-06-20 at 18:28 +0800, Tiejun Chen wrote:
+> gdb always need to generate a single step properly to invoke
+> a kgdb state. But with lazy interrupt, book3e can't always
+> trigger a debug exception with a single step since the current
+> is blocked for handling those pending exception, then we miss
+> that expected dbcr configuration at last to generate a debug
+> exception.
 
-	[    0.000000] ERROR: Bad of_node_put() on /timer@50004600
-	[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131017-00077-gedfd827-dirty #406
-	[    0.000000] [<c0015b68>] (unwind_backtrace+0x0/0xf4) from [<c00117e4>] (show_stack+0x10/0x14)
-	[    0.000000] [<c00117e4>] (show_stack+0x10/0x14) from [<c055f734>] (dump_stack+0x9c/0xc8)
-	[    0.000000] [<c055f734>] (dump_stack+0x9c/0xc8) from [<c03b47d4>] (of_node_release+0x90/0x9c)
-	[    0.000000] [<c03b47d4>] (of_node_release+0x90/0x9c) from [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4)
-	[    0.000000] [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4) from [<c07887c8>] (clocksource_of_init+0x60/0x70)
-	[    0.000000] [<c07887c8>] (clocksource_of_init+0x60/0x70) from [<c076e99c>] (start_kernel+0x1f4/0x33c)
-	[    0.000000] [<c076e99c>] (start_kernel+0x1f4/0x33c) from [<80008074>] (0x80008074)
+What do you mean by "the current is blocked"?  Could you explain more
+clearly what lazy EE has to do with MSR_DE and DBCR0?
 
-This is caused by clocksource_of_init() dropping a reference on the
-device node that it never took. The reference taken by the loop is
-implicitly dropped on subsequent iterations. See the implementation of
-and the comment on top of the of_find_matching_node_and_match()
-function for reference (no pun intended).
+> So here we also update thread's dbcr0 to make sure the current
+> can go back with that missed dbcr0 configuration.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  arch/powerpc/kernel/kgdb.c |   13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+> index c1eef24..55409ac 100644
+> --- a/arch/powerpc/kernel/kgdb.c
+> +++ b/arch/powerpc/kernel/kgdb.c
+> @@ -410,7 +410,7 @@ int kgdb_arch_handle_exception(int vector, int signo, int err_code,
+>  			       struct pt_regs *linux_regs)
+>  {
+>  	char *ptr = &remcom_in_buffer[1];
+> -	unsigned long addr;
+> +	unsigned long addr, dbcr0;
+>  
+>  	switch (remcom_in_buffer[0]) {
+>  		/*
+> @@ -427,8 +427,15 @@ int kgdb_arch_handle_exception(int vector, int signo, int err_code,
+>  		/* set the trace bit if we're stepping */
+>  		if (remcom_in_buffer[0] == 's') {
+>  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
+> -			mtspr(SPRN_DBCR0,
+> -			      mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
+> +			dbcr0 = mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM;
+> +			mtspr(SPRN_DBCR0, dbcr0);
+> +#ifdef CONFIG_PPC_BOOK3E_64
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/clocksource/clksrc-of.c | 1 -
- 1 file changed, 1 deletion(-)
+This could as well be "CONFIG_PPC64" -- CONFIG_PPC_ADV_DEBUG_REGS
+implies booke or 40x.  Lazy EE is a CONFIG_PPC64 thing, not specifically
+CONFIG_PPC_BOOK3E_64.
 
-diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-index 35639cf4..b9ddd9e 100644
---- a/drivers/clocksource/clksrc-of.c
-+++ b/drivers/clocksource/clksrc-of.c
-@@ -35,6 +35,5 @@ void __init clocksource_of_init(void)
- 
- 		init_func = match->data;
- 		init_func(np);
--		of_node_put(np);
- 	}
- }
--- 
-1.8.4
+> +			/* With lazy interrut we have to update thread dbcr0 here
+
+s/interrut/interrupts/
+
+> +			 * to make sure we can set debug properly at last to invoke
+> +			 * kgdb again to work well.
+> +			 */
+> +			current->thread.dbcr0 = dbcr0;
+> +#endif
+>  			linux_regs->msr |= MSR_DE;
+>  #else
+>  			linux_regs->msr |= MSR_SE;
+
+Hmm, what happens here if we enable KGDB on booke without
+CONFIG_PPC_ADV_DEBUG_REGS?  Kconfig doesn't appear to prevent it.
+
+-Scott
+
+
 
