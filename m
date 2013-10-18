@@ -1,39 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab3JRLEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:04:53 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47080 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3JRLEv (ORCPT
+	id S1753435Ab3JRLGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:06:46 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:58247 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3JRLGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:04:51 -0400
-Message-ID: <526115AE.3040405@linux.vnet.ibm.com>
-Date: Fri, 18 Oct 2013 16:34:14 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Chen Gong <gong.chen@linux.intel.com>
-CC: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, m.chehab@samsung.com
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com> <20131015165435.GA2777@naverao1-tp.ibm.com> <20131016095030.GA8954@gchen.bj.intel.com> <20131016104904.GD13608@pd.tnic>
-In-Reply-To: <20131016104904.GD13608@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101811-6102-0000-0000-0000045CD861
+	Fri, 18 Oct 2013 07:06:44 -0400
+From: Majunath Goudar <csmanjuvijay@gmail.com>
+To: csmanjuvijay@gmail.com
+Cc: Greg KH <greg@kroah.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH V3 3/6]  USB: OHCI: Properly handle ohci-s3c2410 suspend
+Date: Fri, 18 Oct 2013 16:36:13 +0530
+Message-Id: <1382094376-31016-4-git-send-email-csmanjuvijay@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1382094376-31016-1-git-send-email-csmanjuvijay@gmail.com>
+References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
+ <1382094376-31016-1-git-send-email-csmanjuvijay@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 04:19 PM, Borislav Petkov wrote:
-> Btw, I don't know what's the problem but when I hit reply-to-all to your
-> emails, mutt drops your email address from the To: and makes the CC:
-> list become the To: list. Strange.
+Suspend scenario in case of ohci-s3c2410 glue was not
+properly handled as it was not suspending generic part
+of ohci controller. Alan Stern suggested, properly handle
+ohci-s3c2410 suspend scenario.
 
-I'm seeing the same thing. Looking at the headers, Chen Gong's email 
-includes a Mail-Follow-Up field which could be the problem.
+Calling explicitly the ohci_suspend()
+routine in ohci_hcd_s3c2410_drv_suspend() will ensure
+proper handling of suspend scenario.
 
-- Naveen
+Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+---
+V2->V3:
+      -No changes.
+      As a build failure on "ep93xx proper suspend patch" and Linaro
+      id bounced. Rewrote this patch on top of latest Greg usb-next
+      branch. This patch not gives any build error. Patch is required
+      for ohci-s3c2410 proper suspending as Alan mentioned.
+
+      Initially when I wrote this patch I was working in Linaro, now
+      I am not part of Linaro that is why Linaro id is bouncing. Sending
+      this patch from personal mail id.
+
+V1->V2:
+      -No changes.
+       Due to the build failure on ep93xx reverted this patch.
+       This patch is needed as Alan Stern suggestion.
+
+ drivers/usb/host/ohci-s3c2410.c |   21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/usb/host/ohci-s3c2410.c b/drivers/usb/host/ohci-s3c2410.c
+index be3429e..b5bf9b7 100644
+--- a/drivers/usb/host/ohci-s3c2410.c
++++ b/drivers/usb/host/ohci-s3c2410.c
+@@ -426,28 +426,15 @@ static int ohci_hcd_s3c2410_drv_remove(struct platform_device *pdev)
+ static int ohci_hcd_s3c2410_drv_suspend(struct device *dev)
+ {
+ 	struct usb_hcd *hcd = dev_get_drvdata(dev);
+-	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	unsigned long flags;
++	bool do_wakeup = device_may_wakeup(dev);
+ 	int rc = 0;
+ 
+-	/*
+-	 * Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
+-	 * the spinlock to properly synchronize with possible pending
+-	 * RH suspend or resume activity.
+-	 */
+-	spin_lock_irqsave(&ohci->lock, flags);
+-	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
+-
+-	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
++	rc = ohci_suspend(hcd, do_wakeup);
++	if (rc)
++		return rc;
+ 
+ 	s3c2410_stop_hc(pdev);
+-bail:
+-	spin_unlock_irqrestore(&ohci->lock, flags);
+ 
+ 	return rc;
+ }
+-- 
+1.7.9.5
 
