@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3JRXtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 19:49:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48735 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3JRXtW (ORCPT
+	id S1753462Ab3JRXz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 19:55:28 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:47540
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753029Ab3JRXz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 19:49:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+fanWoUdRS6zbEASwiQUAI
-Date: Fri, 18 Oct 2013 16:49:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "pinctl-single.c" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 17 (pinctrl-single.c)
-Message-ID: <20131018234914.GV15154@atomide.com>
-References: <20131018003847.GH2443@sirena.org.uk>
- <5261792C.7030203@infradead.org>
- <CACRpkdaz22N8-9Rg8vR=KGOEL5P6sZm6Hh5PT4Uq381+QmPs7g@mail.gmail.com>
- <20131018233951.GU15154@atomide.com>
- <5261C72D.1090302@infradead.org>
+	Fri, 18 Oct 2013 19:55:27 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI936eI1432I168aJzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1382140519.7979.936.camel@snotra.buserror.net>
+Subject: Re: [v5][PATCH 1/6] powerpc/book3e: load critical/machine/debug
+ exception stack
+From: Scott Wood <scottwood@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Oct 2013 18:55:19 -0500
+In-Reply-To: <1371724110-8250-2-git-send-email-tiejun.chen@windriver.com>
+References: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
+	 <1371724110-8250-2-git-send-email-tiejun.chen@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5261C72D.1090302@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Randy Dunlap <rdunlap@infradead.org> [131018 16:41]:
-> On 10/18/13 16:39, Tony Lindgren wrote:
-> > 
-> > Looks like we need a little bit of arch specific handling
-> > with the generic IRQ. Fix the issue with an ifdef the
-> > same way as other drivers do.
-> > 
-> > ARM needs things set to IRQF_VALID, which also then sets
-> > noprobe. Others seem to use just irq_set_noprobe().
-> > 
-> > Otherwise we can get:
-> > 
-> > drivers/pinctrl/pinctrl-single.c: In function 'pcs_irqdomain_map':
-> > drivers/pinctrl/pinctrl-single.c:1750:2: error: implicit declaration of function 'set_irq_flags' [-Werror=implicit-function-declaration]
+On Thu, 2013-06-20 at 18:28 +0800, Tiejun Chen wrote:
+> We always alloc critical/machine/debug check exceptions. This is
+> different from the normal exception. So we should load these exception
+> stack properly like we did for booke.
 > 
-> Did you address this error?  I don't see a fix for it...
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  arch/powerpc/kernel/exceptions-64e.S |   49 +++++++++++++++++++++++++++++++---
+>  1 file changed, 46 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
+> index 4b23119..4d8e57f 100644
+> --- a/arch/powerpc/kernel/exceptions-64e.S
+> +++ b/arch/powerpc/kernel/exceptions-64e.S
+> @@ -36,6 +36,37 @@
+>   */
+>  #define	SPECIAL_EXC_FRAME_SIZE	INT_FRAME_SIZE
+>  
+> +/* only on book3e */
+> +#define DBG_STACK_BASE		dbgirq_ctx
+> +#define MC_STACK_BASE		mcheckirq_ctx
+> +#define CRIT_STACK_BASE		critirq_ctx
+> +
+> +#ifdef CONFIG_RELOCATABLE
+> +#define LOAD_STACK_BASE(reg, level)			\
+> +	tovirt(r2,r2);					\
+> +	LOAD_REG_ADDR(reg, level##_STACK_BASE);
 
-Yes set_irq_flags() is defined for ARM archs in
-arch/arm/include/asm/hw_irq.h which is included from
-include/linux/irq.h as <asm/hw_irq.h>. So the ifdef
-below takes care of that too.
+Where does r2 come from here, where does it get used, and why do we need
+tovirt() on book3e?
 
-> > +#ifdef CONFIG_ARM
-> > +	set_irq_flags(irq, IRQF_VALID);
-> > +#else
-> > +	irq_set_noprobe(irq);
-> > +#endif
+-Scott
 
-Regards,
 
-Tony
+
