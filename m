@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3JRBj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:39:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:51084 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab3JRBj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:39:27 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH net V2 1/2] virtio-net: don't respond to cpu hotplug notifier if we're not ready
-In-Reply-To: <20131017050710.GA12141@redhat.com>
-References: <1381807139-3450-1-git-send-email-jasowang@redhat.com> <8738o0aj9u.fsf@rustcorp.com.au> <20131017050710.GA12141@redhat.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 18 Oct 2013 11:30:15 +1030
-Message-ID: <87d2n3s89s.fsf@rustcorp.com.au>
+	id S1755677Ab3JRBlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:41:14 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5461 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753313Ab3JRBlN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 21:41:13 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
+        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>,
+        "Gu, Youcai 1 (EXT)" <Youcai1.Gu@sonymobile.com>,
+        "Alevoor, Raghavendra 2" <Raghavendra.Alevoor@sonymobile.com>
+Date: Fri, 18 Oct 2013 09:41:09 +0800
+Subject: RE: BUG report about ipt_do_table( )
+Thread-Topic: BUG report about ipt_do_table( )
+Thread-Index: Ac7LJXD1SQkKs49CQX6jBKijFcj5DQAfaUzg
+Message-ID: <35FD53F367049845BC99AC72306C23D101592A7054D7@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
+ <20131010094824.GF3817@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
+ <20131010110309.GA6199@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B5@CNBJMBX05.corpusers.net>
+ <20131010141841.GF6199@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B6@CNBJMBX05.corpusers.net>
+ <20131011110247.GF14732@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971BB@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D101592A7054D3@CNBJMBX05.corpusers.net>
+ <20131017104123.GH18765@mudshark.cambridge.arm.com>
+In-Reply-To: <20131017104123.GH18765@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> On Thu, Oct 17, 2013 at 09:57:41AM +1030, Rusty Russell wrote:
->> Jason Wang <jasowang@redhat.com> writes:
->> > We're trying to re-configure the affinity unconditionally in cpu hotplug
->> > callback. This may lead the issue during resuming from s3/s4 since
->> >
->> > - virt queues haven't been allocated at that time.
->> > - it's unnecessary since thaw method will re-configure the affinity.
->> >
->> > Fix this issue by checking the config_enable and do nothing is we're not ready.
->> >
->> > The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
->> > (virtio-net: reset virtqueue affinity when doing cpu hotplug).
->> >
->> > Cc: Rusty Russell <rusty@rustcorp.com.au>
->> > Cc: Michael S. Tsirkin <mst@redhat.com>
->> > Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->> > Acked-by: Michael S. Tsirkin <mst@redhat.com>
->> > Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->> > Signed-off-by: Jason Wang <jasowang@redhat.com>
->> > ---
->> > The patch is need for 3.8 and above.
->> 
->> Please put 'CC: stable@kernel.org # 3.8+' in the commit.
->
-> Not if this is going in through the net tree.
+hi   Will
 
-WTF?  Wow, there really *is* an FAQ: https://lwn.net/Articles/561669/
+yes, of course .
 
-DaveM is the best maintainer I've ever known, but I abhor the idea that
-every subsystem has its own incompatible variant on workflow and style.
+by the way, could you send me your delivered commit link after you submit ?
 
-Asking people to express 'CC: stable' in words is error-prone; if Dave
-wants to filter it, he's quite capable.
+Thanks
 
-Rusty.
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Thursday, October 17, 2013 6:41 PM
+To: Wang, Yalin
+Cc: 'linux-arm-msm-owner@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; Peng, Arthur; Zhang, Bojie; Gu, Youcai 1 (EXT); Alevoor, Raghavendra 2
+Subject: Re: BUG report about ipt_do_table( )
+
+On Thu, Oct 17, 2013 at 02:51:34AM +0100, Wang, Yalin wrote:
+> Hi  Will,
+
+Hello,
+
+> I am happy to notify that our stability test has passed, And this 
+> Crash don't happen again, So seems this patch work now .
+
+Great!
+
+> We has merged it into our release SW .
+> Could I know if this patch will be delivered into kernel Mainline by 
+> you ?
+
+Sure, can I add your tested-by please?
+
+Will
