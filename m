@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3JRTwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:52:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54765 "EHLO
+	id S1757599Ab3JRTwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:52:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757575Ab3JRTwm (ORCPT
+	with ESMTP id S1754473Ab3JRTwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Oct 2013 15:52:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        wojciech kapuscinski <wojtask9@wp.pl>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 09/11] drm/radeon: fix hw contexts for SUMO2 asics
-Date: Fri, 18 Oct 2013 12:53:38 -0700
-Message-Id: <20131018195049.702863161@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 08/11] watchdog: ts72xx_wdt: locking bug in ioctl
+Date: Fri, 18 Oct 2013 12:53:37 -0700
+Message-Id: <20131018195049.636546455@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131018195049.069623827@linuxfoundation.org>
 References: <20131018195049.069623827@linuxfoundation.org>
@@ -27,33 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: wojciech kapuscinski <wojtask9@wp.pl>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 50b8f5aec04ebec7dbdf2adb17220b9148c99e63 upstream.
+commit 8612ed0d97abcf1c016d34755b7cf2060de71963 upstream.
 
-They have 4 rather than 8.
+Calling the WDIOC_GETSTATUS & WDIOC_GETBOOTSTATUS and twice will cause a
+interruptible deadlock.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=63599
-
-Signed-off-by: wojciech kapuscinski <wojtask9@wp.pl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/watchdog/ts72xx_wdt.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1912,7 +1912,7 @@ static void evergreen_gpu_init(struct ra
- 		rdev->config.evergreen.sx_max_export_size = 256;
- 		rdev->config.evergreen.sx_max_export_pos_size = 64;
- 		rdev->config.evergreen.sx_max_export_smx_size = 192;
--		rdev->config.evergreen.max_hw_contexts = 8;
-+		rdev->config.evergreen.max_hw_contexts = 4;
- 		rdev->config.evergreen.sq_num_cf_insts = 2;
+--- a/drivers/watchdog/ts72xx_wdt.c
++++ b/drivers/watchdog/ts72xx_wdt.c
+@@ -310,7 +310,8 @@ static long ts72xx_wdt_ioctl(struct file
  
- 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
+ 	case WDIOC_GETSTATUS:
+ 	case WDIOC_GETBOOTSTATUS:
+-		return put_user(0, p);
++		error = put_user(0, p);
++		break;
+ 
+ 	case WDIOC_KEEPALIVE:
+ 		ts72xx_wdt_kick(wdt);
 
 
