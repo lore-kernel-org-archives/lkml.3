@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3JRQRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 12:17:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57772 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756164Ab3JRQRa (ORCPT
+	id S1756467Ab3JRQST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 12:18:19 -0400
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.99]:61401
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756399Ab3JRQSR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 12:17:30 -0400
-Date: Fri, 18 Oct 2013 13:17:44 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: kirkwood: remove lagacy clk workarounds
-Message-ID: <20131018161743.GA29595@localhost>
-References: <1382097253-15624-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20131018144741.GL22434@titan.lakedaemon.net>
+	Fri, 18 Oct 2013 12:18:17 -0400
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131018144741.GL22434@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Kredit-Angebot
+To: Recipients <chand008@Prashant191.onmicrosoft.com>
+From: Chandran Prashant <chand008@Prashant191.onmicrosoft.com>
+Date: Fri, 18 Oct 2013 17:18:03 +0100
+Reply-To: <prashant@hotellos.nl>
+Message-ID: <c705c1e3-5586-44d2-9dec-dbed3cc319c7@DB3PR07MB170.eurprd07.prod.outlook.com>
+X-Originating-IP: [213.205.241.120]
+X-ClientProxiedBy: AMSPR02CA009.eurprd02.prod.outlook.com (10.242.87.147) To
+ DB3PR07MB170.eurprd07.prod.outlook.com (10.242.132.148)
+X-Forefront-PRVS: 00032065B2
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(83072001)(74366001)(69226001)(50466002)(76576001)(46102001)(76176001)(81342001)(76796001)(76786001)(53256004)(79102001)(63696002)(47776003)(325944007)(51856001)(54356001)(42186004)(74316001)(81542001)(74706001)(23756003)(56816003)(85306002)(74876001)(77096001)(59766001)(77982001)(74502001)(43066001)(80976001)(19580405001)(83322001)(19580395003)(50986001)(47976001)(49866001)(47736001)(4396001)(81816001)(76482001)(66066001)(74662001)(33646001)(31686002)(81686001)(54316002)(47446002)(56776001)(80022001)(65816001)(62346009)(84732001);DIR:OUT;SFP:1501;SCL:5;SRVR:DB3PR07MB170;H:[192.168.1.162];CLIP:213.205.241.120;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:de;
+X-OriginatorOrg: Prashant191.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 10:47:41AM -0400, Jason Cooper wrote:
-> On Fri, Oct 18, 2013 at 01:54:13PM +0200, Sebastian Hesselbarth wrote:
-> > With legacy devices converted to DT and a proper ethernet MAC
-> > workaround, we can now remove the clk workarounds for legacy
-> > devices. While at it, also cleanup the list of includes.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > As a follow-up patch for latest mvebu PRs, this patch is based on
-> >  git://git.infradead.org/linux-mvebu.git tags/soc-3.13-2
-> > 
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  arch/arm/mach-kirkwood/board-dt.c |   42 ++----------------------------------
-> >  1 files changed, 3 insertions(+), 39 deletions(-)
-> 
-> Applied to mvebu/soc
-> 
+Guten Tag,
 
-Weird: I've tried to do this clean-up myself and my usual tests with network
-built as a module failed somehow. Maybe I missed something and did something
-stupid?
+Sind Sie ein Business-Mann oder Frau? Sind Sie in irgendeiner finanziellen Schlamassel oder benötigen Sie Fonds zu starten Ihr eigenes Geschäft? Sie benötigen Darlehen, um Ihre Schulden zu begleichen oder zahlen Sie Ihre Rechnungen oder starten Sie ein nettes Geschäft?
 
-Of course, I'll re-try and let you all know...
--- 
-Ezequiel GarcÃ­a, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Haben Sie einen niedrigen Kredit-Score und Sie finden es schwer zu Kapital Darlehen von lokalen Banken / andere Finanzinstitute erhalten? Sie benötigen einen Kredit oder eine Finanzierung aus irgendeinem Grund, wie:
+
+a) persönliche Darlehen, Business Expansion,
+b) Business Start-up, Bildung,
+c) Schuldenkonsolidierung,
+d) Hard Money Loans
+e) Venture Capital
+f) Home Loans
+g) Darlehen aus irgendeinem Grund!
+
+
+Wir bieten Darlehen zu niedrigen Zinssatz von 2% und ohne Bonitätsprüfung, aber Unsere Methode bietet Ihnen die Möglichkeit, die Höhe des Darlehens nötig angeben und auch die Dauer Sie sich leisten können, das gibt Ihnen eine echte Chance, die Mittel erhalten Sie kaufen möchten! Wenn Sie interessiert sind, kontaktieren Sie uns bitte sofort, unsere E-Mail an: chand01@qq.com
+
+Mit freundlichen Grüßen
+Herr Prashant Chandran
