@@ -1,96 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3JRNoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:44:44 -0400
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:55037 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754562Ab3JRNom (ORCPT
+	id S1754725Ab3JRNpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:45:13 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15799 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab3JRNpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:44:42 -0400
-Message-ID: <1382103862.3394.46.camel@linaro1.home>
-Subject: Re: [PATCH v4 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Oct 2013 14:44:22 +0100
-In-Reply-To: <20131018085638.GA2858@mudshark.cambridge.arm.com>
-References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>
-	 <1381990781-27814-3-git-send-email-liuj97@gmail.com>
-	 <20131017113826.GJ18765@mudshark.cambridge.arm.com>
-	 <1382023441.19506.66.camel@linaro1.home>
-	 <20131018085638.GA2858@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
+	Fri, 18 Oct 2013 09:45:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 18 Oct 2013 06:45:11 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 1/7] clk: tegra: Add support for PLLSS
+Date: Fri, 18 Oct 2013 16:44:58 +0300
+Message-ID: <1382103904-6398-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1382103904-6398-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1382103904-6398-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-18 at 09:56 +0100, Will Deacon wrote:
-> Hi Tixy,
-> 
-> On Thu, Oct 17, 2013 at 04:24:01PM +0100, Jon Medhurst (Tixy) wrote:
-> > On Thu, 2013-10-17 at 12:38 +0100, Will Deacon wrote:
-> > > On Thu, Oct 17, 2013 at 07:19:35AM +0100, Jiang Liu wrote:
-> > > > +	/*
-> > > > +	 * Execute __aarch64_insn_patch_text() on every online CPU,
-> > > > +	 * which ensure serialization among all online CPUs.
-> > > > +	 */
-> > > > +	return stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
-> > > > +}
-> > > 
-> > > Whoa, whoa, whoa! The comment here is wrong -- we only run the patching on
-> > > *one* CPU, which is the right thing to do. However, the arch/arm/ call to
-> > > stop_machine in kprobes does actually run the patching code on *all* the
-> > > online cores (including the cache flushing!). I think this is to work around
-> > > cores without hardware cache maintenance broadcasting, but that could easily
-> > > be called out specially (like we do in patch.c) and the flushing could be
-> > > separated from the patching too.
-> > [...]
-> > 
-> > For code modifications done in 32bit ARM kprobes (and ftrace) I'm not
-> > sure we ever actually resolved the possible cache flushing issues. If
-> > there was specific reasons for flushing on all cores I can't remember
-> > them, sorry. I have a suspicion that doing so was a case of sticking
-> > with what the code was already doing, and flushing on all cores seemed
-> > safest to guard against problems we hadn't thought about.
-> 
-> [...]
-> 
-> > Sorry, I don't think I've added much light on things here have I?
-> 
-> I think you missed the bit I was confused about :) Flushing the cache on
-> each core is necessary if cache_ops_need_broadcast, so I can understand why
-> you'd have code to do that. The bit I don't understand is that you actually
-> patch the instruction on each core too!
+Tegra124 introduces a new PLL type, PLLSS. Add support for it.
 
-This is only happens when removing a kprobe with __arch_disarm_kprobe().
-We can't just use the intelligent patch_text() function there because we
-want to always force stop machine to be used as this prevents the case
-where a CPU a hits the probe, starts executing it's handler then another
-CPU whips away the probe from under it.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-pll.c |  123 ++++++++++++++++++++++++++++++++++++++++++-
+ drivers/clk/tegra/clk.h     |    5 ++
+ 2 files changed, 126 insertions(+), 2 deletions(-)
 
-That explains why we use stop_machine, but not why all CPU's must modify
-the instruction. I think it's a case of just that it's simpler to do
-that unconditionally rather than add extra code for the
-cache_ops_need_broadcast() case. I mean, stop_machine() is a sledge
-hammer, which stalls the whole system until the next scheduler tick, and
-then gets every CPU to busy wait, so there's not much incentive to try
-and optimise the code to avoid a memory write + cacheline flush on each
-core.
-
-This reminds me, I'm sure I heard rumours quite some time ago that Paul
-McKenney was thinking of trying to do away with stop_machine...?
-
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index 0550a43..7d775a9 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -137,6 +137,36 @@
+ #define PMC_SATA_PWRGT_PLLE_IDDQ_VALUE BIT(5)
+ #define PMC_SATA_PWRGT_PLLE_IDDQ_SWCTL BIT(4)
+ 
++#define PLLSS_MISC_KCP		0
++#define PLLSS_MISC_KVCO		0
++#define PLLSS_MISC_SETUP	0
++#define PLLSS_EN_SDM		0
++#define PLLSS_EN_SSC		0
++#define PLLSS_EN_DITHER2	0
++#define PLLSS_EN_DITHER		1
++#define PLLSS_SDM_RESET		0
++#define PLLSS_CLAMP		0
++#define PLLSS_SDM_SSC_MAX	0
++#define PLLSS_SDM_SSC_MIN	0
++#define PLLSS_SDM_SSC_STEP	0
++#define PLLSS_SDM_DIN		0
++#define PLLSS_MISC_DEFAULT ((PLLSS_MISC_KCP << 25) | \
++			    (PLLSS_MISC_KVCO << 24) | \
++			    PLLSS_MISC_SETUP)
++#define PLLSS_CFG_DEFAULT ((PLLSS_EN_SDM << 31) | \
++			   (PLLSS_EN_SSC << 30) | \
++			   (PLLSS_EN_DITHER2 << 29) | \
++			   (PLLSS_EN_DITHER << 28) | \
++			   (PLLSS_SDM_RESET) << 27 | \
++			   (PLLSS_CLAMP << 22))
++#define PLLSS_CTRL1_DEFAULT \
++			((PLLSS_SDM_SSC_MAX << 16) | PLLSS_SDM_SSC_MIN)
++#define PLLSS_CTRL2_DEFAULT \
++			((PLLSS_SDM_SSC_STEP << 16) | PLLSS_SDM_DIN)
++#define PLLSS_LOCK_OVERRIDE	BIT(24)
++#define PLLSS_REF_SRC_SEL_SHIFT	25
++#define PLLSS_REF_SRC_SEL_MASK	(3 << PLLSS_REF_SRC_SEL_SHIFT)
++
+ #define pll_readl(offset, p) readl_relaxed(p->clk_base + offset)
+ #define pll_readl_base(p) pll_readl(p->params->base_reg, p)
+ #define pll_readl_misc(p) pll_readl(p->params->misc_reg, p)
+@@ -762,7 +792,7 @@ const struct clk_ops tegra_clk_plle_ops = {
+ 	.enable = clk_plle_enable,
+ };
+ 
+-#ifdef CONFIG_ARCH_TEGRA_114_SOC
++#if defined(CONFIG_ARCH_TEGRA_114_SOC) || defined(CONFIG_ARCH_TEGRA_124_SOC)
+ 
+ static int _pll_fixed_mdiv(struct tegra_clk_pll_params *pll_params,
+ 			   unsigned long parent_rate)
+@@ -1403,7 +1433,7 @@ struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
+ 	return clk;
+ }
+ 
+-#ifdef CONFIG_ARCH_TEGRA_114_SOC
++#if defined(CONFIG_ARCH_TEGRA_114_SOC) || defined(CONFIG_ARCH_TEGRA_124_SOC)
+ const struct clk_ops tegra_clk_pllxc_ops = {
+ 	.is_enabled = clk_pll_is_enabled,
+ 	.enable = clk_pll_iddq_enable,
+@@ -1698,3 +1728,92 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 	return clk;
+ }
+ #endif
++
++#ifdef CONFIG_ARCH_TEGRA_124_SOC
++const struct clk_ops tegra_clk_pllss_ops = {
++	.is_enabled = clk_pll_is_enabled,
++	.enable = clk_pll_iddq_enable,
++	.disable = clk_pll_iddq_disable,
++	.recalc_rate = clk_pll_recalc_rate,
++	.round_rate = clk_pll_ramp_round_rate,
++	.set_rate = clk_pllxc_set_rate,
++};
++
++struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
++				void __iomem *clk_base, unsigned long flags,
++				struct tegra_clk_pll_params *pll_params,
++				spinlock_t *lock)
++{
++	struct tegra_clk_pll *pll;
++	struct clk *clk, *parent;
++	struct tegra_clk_pll_freq_table cfg;
++	unsigned long parent_rate;
++	u32 val;
++	int i;
++
++	if (!pll_params->div_nmp)
++		return ERR_PTR(-EINVAL);
++
++	parent = __clk_lookup(parent_name);
++	if (IS_ERR(parent)) {
++		WARN(1, "parent clk %s of %s must be registered first\n",
++			name, parent_name);
++		return ERR_PTR(-EINVAL);
++	}
++
++	pll_params->flags = TEGRA_PLL_HAS_LOCK_ENABLE | TEGRA_PLL_USE_LOCK;
++	pll = _tegra_init_pll(clk_base, NULL, pll_params, lock);
++	if (IS_ERR(pll))
++		return ERR_CAST(pll);
++
++	val = pll_readl_base(pll);
++	val &= ~PLLSS_REF_SRC_SEL_MASK;
++	pll_writel_base(val, pll);
++
++	parent_rate = __clk_get_rate(parent);
++
++	pll_params->vco_min = _clip_vco_min(pll_params->vco_min, parent_rate);
++
++	/* initialize PLL to minimum rate */
++
++	cfg.m = _pll_fixed_mdiv(pll_params, parent_rate);
++	cfg.n = cfg.m * pll_params->vco_min / parent_rate;
++
++	for (i = 0; pll_params->pdiv_tohw[i].pdiv; i++)
++		;
++	if (!i) {
++		kfree(pll);
++		return ERR_PTR(-EINVAL);
++	}
++
++	cfg.p = pll_params->pdiv_tohw[i-1].hw_val;
++
++	_update_pll_mnp(pll, &cfg);
++
++	pll_writel_misc(PLLSS_MISC_DEFAULT, pll);
++	pll_writel(PLLSS_CFG_DEFAULT, pll_params->ext_misc_reg[0], pll);
++	pll_writel(PLLSS_CTRL1_DEFAULT, pll_params->ext_misc_reg[1], pll);
++	pll_writel(PLLSS_CTRL1_DEFAULT, pll_params->ext_misc_reg[2], pll);
++
++	val = pll_readl_base(pll);
++	if (val & PLL_BASE_ENABLE) {
++		if (val & BIT(pll_params->iddq_bit_idx)) {
++			WARN(1, "%s is on but IDDQ set\n", name);
++			kfree(pll);
++			return ERR_PTR(-EINVAL);
++		}
++	} else
++		val |= BIT(pll_params->iddq_bit_idx);
++
++	val &= ~PLLSS_LOCK_OVERRIDE;
++	pll_writel_base(val, pll);
++
++	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
++					&tegra_clk_pllss_ops);
++
++	if (IS_ERR(clk))
++		kfree(pll);
++
++	return clk;
++}
++#endif
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 05abfc5..7f110ac 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -298,6 +298,11 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 				struct tegra_clk_pll_params *pll_params,
+ 				spinlock_t *lock);
+ 
++struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
++			   void __iomem *clk_base, unsigned long flags,
++			   struct tegra_clk_pll_params *pll_params,
++			   spinlock_t *lock);
++
+ /**
+  * struct tegra_clk_pll_out - PLL divider down clock
+  *
 -- 
-Tixy
+1.7.7.rc0.72.g4b5ea.dirty
 
