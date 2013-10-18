@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab3JRLyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:54:11 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:62335 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab3JRLxx (ORCPT
+	id S1753566Ab3JRLyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:54:09 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:57876 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab3JRLxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:53:53 -0400
+	Fri, 18 Oct 2013 07:53:51 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org,
         pjt@google.com, Morten.Rasmussen@arm.com, cmetcalf@tilera.com,
@@ -16,9 +16,9 @@ Cc: rjw@sisk.pl, paulmck@linux.vnet.ibm.com, corbet@lwn.net,
         tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
         amit.kucheria@linaro.org, l.majewski@samsung.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC][PATCH v5 07/14] sched: get CPU's activity statistic
-Date: Fri, 18 Oct 2013 13:52:20 +0200
-Message-Id: <1382097147-30088-7-git-send-email-vincent.guittot@linaro.org>
+Subject: [RFC][PATCH v5 06/14] sched: create a new field with available capacity
+Date: Fri, 18 Oct 2013 13:52:19 +0200
+Message-Id: <1382097147-30088-6-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
 References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
@@ -26,97 +26,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Monitor the activity level of each group of each sched_domain level. The
-activity is the amount of cpu_power that is currently used on a CPU. We use
-the runnable_avg_sum and _period to evaluate this activity level. In the
-special use case where the CPU is fully loaded by more than 1 task, the
-activity level is set above the cpu_power in order to reflect the overload of
-The cpu
+This new field power_available reflects the available capacity of a CPU
+unlike the cpu_power which reflects the current capacity.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ kernel/sched/fair.c  |   14 +++++++++++---
+ kernel/sched/sched.h |    3 ++-
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index db9b871..7e26f65 100644
+index 5568980..db9b871 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -179,6 +179,11 @@ void sched_init_granularity(void)
+@@ -4584,15 +4584,19 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 	if (!power)
+ 		power = 1;
+ 
++	cpu_rq(cpu)->cpu_available = power;
++	sdg->sgp->power_available = power;
++
+ 	cpu_rq(cpu)->cpu_power = power;
+ 	sdg->sgp->power = power;
++
  }
  
- #ifdef CONFIG_SMP
-+static unsigned long available_of(int cpu)
-+{
-+	return cpu_rq(cpu)->cpu_available;
-+}
+ void update_group_power(struct sched_domain *sd, int cpu)
+ {
+ 	struct sched_domain *child = sd->child;
+ 	struct sched_group *group, *sdg = sd->groups;
+-	unsigned long power;
++	unsigned long power, available;
+ 	unsigned long interval;
+ 
+ 	interval = msecs_to_jiffies(sd->balance_interval);
+@@ -4604,7 +4608,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 		return;
+ 	}
+ 
+-	power = 0;
++	power = available = 0;
+ 
+ 	if (child->flags & SD_OVERLAP) {
+ 		/*
+@@ -4614,6 +4618,8 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 
+ 		for_each_cpu(cpu, sched_group_cpus(sdg))
+ 			power += power_of(cpu);
++			available += available_of(cpu);
 +
- #ifdef CONFIG_SCHED_PACKING_TASKS
- /*
-  * Save the id of the optimal CPU that should be used to pack small tasks
-@@ -3549,6 +3554,22 @@ done:
- 	return target;
+ 	} else  {
+ 		/*
+ 		 * !SD_OVERLAP domains can assume that child groups
+@@ -4623,11 +4629,13 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 		group = child->groups;
+ 		do {
+ 			power += group->sgp->power;
++			available += group->sgp->power_available;
+ 			group = group->next;
+ 		} while (group != child->groups);
+ 	}
+ 
+-	sdg->sgp->power_orig = sdg->sgp->power = power;
++	sdg->sgp->power_orig = sdg->sgp->power_available = available;
++	sdg->sgp->power = power;
  }
  
-+static int get_cpu_activity(int cpu)
-+{
-+	struct rq *rq = cpu_rq(cpu);
-+	u32 sum = rq->avg.runnable_avg_sum;
-+	u32 period = rq->avg.runnable_avg_period;
-+
-+	sum = min(sum, period);
-+
-+	if (sum == period) {
-+		u32 overload = rq->nr_running > 1 ? 1 : 0;
-+		return available_of(cpu) + overload;
-+	}
-+
-+	return (sum * available_of(cpu)) / period;
-+}
-+
  /*
-  * sched_balance_self: balance the current task (running on cpu) in domains
-  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-@@ -4430,6 +4451,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long load_per_task;
- 	unsigned long group_power;
-+	unsigned long group_activity; /* Total activity of the group */
- 	unsigned int sum_nr_running; /* Nr tasks running in the group */
- 	unsigned int group_capacity;
- 	unsigned int idle_cpus;
-@@ -4446,6 +4468,7 @@ struct sd_lb_stats {
- 	struct sched_group *busiest;	/* Busiest group in this sd */
- 	struct sched_group *local;	/* Local group in this sd */
- 	unsigned long total_load;	/* Total load of all groups in sd */
-+	unsigned long total_activity;  /* Total activity of all groups in sd */
- 	unsigned long total_pwr;	/* Total power of all groups in sd */
- 	unsigned long avg_load;	/* Average load across all groups in sd */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 22e3f1d..d5a4ec0 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -459,6 +459,7 @@ struct rq {
+ 	struct sched_domain *sd;
  
-@@ -4465,6 +4488,7 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
- 		.busiest = NULL,
- 		.local = NULL,
- 		.total_load = 0UL,
-+		.total_activity = 0UL,
- 		.total_pwr = 0UL,
- 		.busiest_stat = {
- 			.avg_load = 0UL,
-@@ -4771,6 +4795,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		}
+ 	unsigned long cpu_power;
++	unsigned long cpu_available;
  
- 		sgs->group_load += load;
-+		sgs->group_activity += get_cpu_activity(i);
- 		sgs->sum_nr_running += nr_running;
- 		sgs->sum_weighted_load += weighted_cpuload(i);
- 		if (idle_cpu(i))
-@@ -4894,6 +4919,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 
- 		/* Now, start updating sd_lb_stats */
- 		sds->total_load += sgs->group_load;
-+		sds->total_activity += sgs->group_activity;
- 		sds->total_pwr += sgs->group_power;
- 
- 		if (!local_group && update_sd_pick_busiest(env, sds, sg, sgs)) {
+ 	unsigned char idle_balance;
+ 	/* For active balancing */
+@@ -603,7 +604,7 @@ struct sched_group_power {
+ 	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
+ 	 * single CPU.
+ 	 */
+-	unsigned int power, power_orig;
++	unsigned int power, power_orig, power_available;
+ 	unsigned long next_update;
+ 	/*
+ 	 * Number of busy cpus in this group.
 -- 
 1.7.9.5
 
