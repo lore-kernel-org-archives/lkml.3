@@ -1,210 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab3JRGFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 02:05:08 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:54455 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3JRGFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 02:05:06 -0400
-Date: Fri, 18 Oct 2013 08:05:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 4/3] x86/vdso: Optimize setup_additional_pages()
-Message-ID: <20131018060501.GA3411@gmail.com>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
- <1382057438-3306-4-git-send-email-davidlohr@hp.com>
+	id S1751301Ab3JRGJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 02:09:28 -0400
+Received: from ozlabs.org ([203.10.76.45]:47185 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924Ab3JRGJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 02:09:27 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Krzysztof Mazur <krzysiek@podlesie.net>, Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] init: fix in-place parameter modification regression
+In-Reply-To: <20131014125001.GA6015@shrek.podlesie.net>
+References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net> <1381750442.3247.48.camel@hornet> <20131014125001.GA6015@shrek.podlesie.net>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 18 Oct 2013 14:20:38 +1030
+Message-ID: <87wqlbjkz5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382057438-3306-4-git-send-email-davidlohr@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Krzysztof Mazur <krzysiek@podlesie.net> writes:
+> On Mon, Oct 14, 2013 at 12:34:02PM +0100, Pawel Moll wrote:
+>> So, assuming that it is actually legal to modify static_command_line in
+>> __setup()-s (and I must say I have rather mixed feelings about it ;-),
+>
+> I also have mixed feelings about that, but the parse_args() already
+> does that, because some characters are replaced with '\0' to split
+> command line into separate strings. The ubd driver does the same
+> to split parameter into two strings.
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+Back when there was almost no parameter parsing support, everyone got
+used to keeping pointers into the original.  Making everyone kstrdup()
+seems like gratuitous churn which is likely to make more bugs.
 
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -154,12 +154,17 @@ static int setup_additional_pages(struct linux_binprm *bprm,
->  				  unsigned size)
->  {
->  	struct mm_struct *mm = current->mm;
-> +	struct vm_area_struct *vma;
->  	unsigned long addr;
->  	int ret;
->  
->  	if (!vdso_enabled)
->  		return 0;
->  
-> +	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
-> +	if (unlikely(!vma))
-> +		return -ENOMEM;
-> +
->  	down_write(&mm->mmap_sem);
->  	addr = vdso_addr(mm->start_stack, size);
->  	addr = get_unmapped_area(NULL, addr, size, 0, 0);
-> @@ -173,14 +178,17 @@ static int setup_additional_pages(struct linux_binprm *bprm,
->  	ret = install_special_mapping(mm, addr, size,
->  				      VM_READ|VM_EXEC|
->  				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
-> -				      pages);
-> +				      pages, &vma);
->  	if (ret) {
->  		current->mm->context.vdso = NULL;
->  		goto up_fail;
->  	}
->  
-> +	up_write(&mm->mmap_sem);
-> +	return ret;
->  up_fail:
->  	up_write(&mm->mmap_sem);
-> +	kmem_cache_free(vm_area_cachep, vma);
->  	return ret;
->  }
->  
+Your fix means __setup() gets treated specially, in that only it can
+mangle the command line.  That makes sense.  But it introduces another
+regression: normal parsing functions can't keep pointers, since that's
+now __initdata.
 
-1)
+There are two possible solutions:
+(1) Audit all __setup to make sure they copy if they want to mangle.
+    There are about 750 of them, but many are trivial.
+(2) alloc_bootmem() a third commandline for parsing.
 
-Beyond the simplification that Linus suggested, why not introduce a new 
-function, named 'install_special_mapping_vma()' or so, and convert 
-architectures one by one, without pressure to get it all done (and all 
-correct) in a single patch?
+Now, many functions of form __setup("XXX=") should be turned into
+module_param anyway.
 
-2)
+I suggest we do (2) for the moment, and start sweeping through cleaning
+up __setup() in the longer term.
 
-I don't see the justification: this code gets executed in exec() where a 
-new mm has just been allocated. There's only a single user of the mm and 
-thus the critical section width of mmap_sem is more or less irrelevant.
-
-mmap_sem critical section size only matters for codepaths that threaded 
-programs can hit.
-
-3)
-
-But, if we do all that, a couple of other (micro-)optimizations are 
-possible in setup_additional_pages() as well:
-
- - vdso_addr(), which is actually much _more_ expensive than kmalloc() 
-   because on most distros it will call into the RNG, can also be done 
-   outside the mmap_sem.
-
- - the error paths can all be merged and the common case can be made 
-   fall-through.
-
- - use 'mm' consistently instead of repeating 'current->mm'
-
- - set 'mm->context.vdso' only once we know it's all a success, and do it 
-   outside the lock
-
- - add a few comments about which operations are locked, which unlocked, 
-   and why. Please double check the assumptions I documented there.
-
-See the diff attached below. (Totally untested and all that.)
-
-Also note that I think, in theory, if exec() guaranteed the privacy and 
-single threadedness of the new mm, we could probably do _all_ of this 
-unlocked. Right now I don't think this is guaranteed: ptrace() users might 
-look up the new PID and might interfere on the MM via 
-PTRACE_PEEK*/PTRACE_POKE*.
-
-( Furthermore, /proc/ might also give early access to aspects of the mm - 
-  although no manipulation of the mm is possible there. )
-
-If such privacy of the new mm was guaranteed then that would also remove 
-the need to move the allocation out of install_special_mapping().
-
-But, I don't think it all matters, due to #2 - and your changes actively 
-complicate setup_pages(), which makes this security sensitive code a bit 
-more fragile. We can still do it out of sheer principle, I just don't see 
-where it's supposed to help scale better.
-
-Thanks,
-
-	Ingo
-
- arch/x86/vdso/vma.c | 40 +++++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 431e875..c590387 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -157,30 +157,44 @@ static int setup_additional_pages(struct linux_binprm *bprm,
- 	unsigned long addr;
- 	int ret;
- 
--	if (!vdso_enabled)
-+	if (unlikely(!vdso_enabled))
- 		return 0;
- 
--	down_write(&mm->mmap_sem);
-+	/*
-+	 * Do this outside the MM lock - we are in exec() with a new MM,
-+	 * nobody else can use these fields of the mm:
-+	 */
- 	addr = vdso_addr(mm->start_stack, size);
--	addr = get_unmapped_area(NULL, addr, size, 0, 0);
--	if (IS_ERR_VALUE(addr)) {
--		ret = addr;
--		goto up_fail;
--	}
- 
--	current->mm->context.vdso = (void *)addr;
-+	/*
-+	 * This must be done under the MM lock - there might be parallel
-+	 * accesses to this mm, such as ptrace().
-+	 *
-+	 * [ This could be further optimized if exec() reliably inhibited
-+	 *   all early access to the mm. ]
-+	 */
-+	down_write(&mm->mmap_sem);
-+	addr = get_unmapped_area(NULL, addr, size, 0, 0);
-+	if (IS_ERR_VALUE(addr))
-+		goto up_fail_addr;
- 
- 	ret = install_special_mapping(mm, addr, size,
- 				      VM_READ|VM_EXEC|
- 				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
- 				      pages);
--	if (ret) {
--		current->mm->context.vdso = NULL;
--		goto up_fail;
--	}
-+	up_write(&mm->mmap_sem);
-+	if (ret)
-+		goto fail;
- 
--up_fail:
-+	mm->context.vdso = (void *)addr;
-+	return ret;
-+
-+up_fail_addr:
-+	ret = addr;
- 	up_write(&mm->mmap_sem);
-+fail:
-+	mm->context.vdso = NULL;
-+
- 	return ret;
- }
- 
+Cheers,
+Rusty.
