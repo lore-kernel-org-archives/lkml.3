@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab3JRHlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 03:41:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47039 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3JRHlX (ORCPT
+	id S1752096Ab3JRHmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 03:42:15 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51684 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3JRHmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 03:41:23 -0400
-Message-ID: <5260E606.2030903@ti.com>
-Date: Fri, 18 Oct 2013 13:10:54 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 18 Oct 2013 03:42:14 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Roger Quadros <rogerq@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Co?= =?ISO-8859-1?Q?usson?= 
-	<bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-References: <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <20131010160018.GA29913@atomide.com> <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com> <20131010162015.GC29913@atomide.com> <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com> <5257BD3E.5000707@ti.com> <CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com> <20131011154352.GO29913@atomide.com> <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com> <20131011160146.GR29913@atomide.com>
-In-Reply-To: <20131011160146.GR29913@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <172f2b40c29a29a470215c14250a559e@biophys.uni-duesseldorf.de>
+References: <1382080184-19115-1-git-send-email-geert@linux-m68k.org>
+	<172f2b40c29a29a470215c14250a559e@biophys.uni-duesseldorf.de>
+Date: Fri, 18 Oct 2013 09:42:12 +0200
+X-Google-Sender-Auth: pkDmgPGCMMJbNdSk6bzYbH4u574
+Message-ID: <CAMuHMdVPnyRhfGjpMraMrwhxwy9_mSfm=ouDEnYm2YJMzhhZ_Q@mail.gmail.com>
+Subject: Re: [PATCH] m68k/atari: Call paging_init() before nf_init()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 October 2013 09:31 PM, Tony Lindgren wrote:
-> * Linus Walleij <linus.walleij@linaro.org> [131011 09:05]:
->> On Fri, Oct 11, 2013 at 5:43 PM, Tony Lindgren <tony@atomide.com> wrote:
->>> * Linus Walleij <linus.walleij@linaro.org> [131011 03:40]:
->>>> On Fri, Oct 11, 2013 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
->>>>
->>>>> The register handling is fine. But how do we deal with resource handling?
->>>>> e.g. the block that has the deep-core registers might need to be clocked or powered
->>>>> before the registers can be accessed.
->>>>
->>>> Yeah I saw this in the code there.
->>>>
->>>> In this case it seems syscon-type regmap access can be used to
->>>> read/write the registers, so maybe the pin controller also need to
->>>>   get a handle on some clock etc?
->>>
->>> Uhh, let's not go there.. The resource availability needs to be
->>> handled transparently in regmap code and the reg provider hardware
->>> module driver using runtime PM.
->>
->> OK we can surely discuss this with broonie, it makes sense to
->> have regmap be able to do its deed transparently.
->
-> Yes I think so too. Sounds like we need callbacks for the runtime PM
-> checks to the "register provider" driver. Hwo knows, maybe those
-> features are there already :)
->
+On Fri, Oct 18, 2013 at 9:29 AM, Michael Schmitz
+<schmitz@biophys.uni-duesseldorf.de> wrote:
+> does your fiddling with memory blocks in bootinfo now result in kernels
+> being possible to boot in FastRAM?
 
-Hi Tony,
+No, I only played with the start address of ST-RAM.
 
-Any conclusion on using regmap for omap control module non-mux registers ?
+Probably you can run a kernel in FastRAM with some minor tweaks if
+you remove the ST-RAM block from the bootinfo, but then you loose
+(at least) atafb :-)
 
-Thanks and Regards,
-Balaji T K
+With the DISCONTIGMEM memory model, the kernel must be stored in the
+first memory block. As ST-RAM is before FastRAM in memory, you cannot
+have the kernel in FastRAM without losing ST-RAM (as main memory ---
+you can still e.g. ioremap() it for atafb, and use the rest of it as
+swap through
+a block device like z2ram. This is basically what we do on Amiga with Chip RAM
+and Z2 RAM).
+
+With the SPARSEMEM memory model, you should be able to store the kernel
+in FastRAM and have ST-RAM, too.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
