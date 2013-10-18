@@ -1,173 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab3JRIZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 04:25:06 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:52158 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3JRIY7 (ORCPT
+	id S1752252Ab3JRI3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 04:29:14 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:47155 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab3JRI3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 04:24:59 -0400
-Date: Fri, 18 Oct 2013 10:22:36 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        khilman@linaro.org
-Subject: Re: linux-next: Tree for Oct 17
-Message-ID: <20131018082236.GA25694@ulmo.nvidia.com>
-References: <20131018003847.GH2443@sirena.org.uk>
- <20131018074526.GA30578@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
-Content-Disposition: inline
-In-Reply-To: <20131018074526.GA30578@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Oct 2013 04:29:07 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-70-5260f151accb
+Message-id: <5260F14F.2060603@samsung.com>
+Date: Fri, 18 Oct 2013 12:29:03 +0400
+From: Tarek Dakhran <t.dakhran@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+MIME-version: 1.0
+To: Dave Martin <Dave.Martin@arm.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Naour Romain <romain.naour@openwide.fr>,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>
+Subject: Re: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
+References: <20131017154640.GF2442@localhost.localdomain>
+In-reply-to: <20131017154640.GF2442@localhost.localdomain>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t/xK7qBHxOCDF40cVhMWneAyWLeZ1mL
+	prl7GC3mHznHavH/0WtWi3OvVjJa9C64ymax6fE1VouFbUtYLC7vmsNmMeP8PiaL25d5LZZe
+	v8hk8XTCRTaLCdPXslgcXgE0aN3L6SwWW352MFq8OtjGYrF501Rmi6kzfrA7iHqsmbeG0aOl
+	uYfNY8HnK+wef1e9YPZYufwLm8er1TNZPe5c28Pm8e7cOXaPzUvqPV5dY/Ho27KK0WP7tXnM
+	Hp83yXlsnBsawBfFZZOSmpNZllqkb5fAlXFi+3GmglfRFTMvbWRpYPzk0cXIySEhYCKxYO4M
+	NghbTOLCvfVANheHkMBSRokdC84yQTgfGCW+77gG5HBw8ApoSczcywzSwCKgKnHm7nRmkDCb
+	gLbElh1eIGFRgTCJo00/WUFsXgFBiR+T77GA2CIC/hLNL/+BjWQWOMoqsePqVnaQhLCAh8SK
+	Z3/BZgoJWErMmdsMFucUsJL4f+MeI4jNLGAtsXLSNihbXmLzmrfMExgFZiHZMQtJ2SwkZQsY
+	mVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihETwlx2Mi49ZHWIU4GBU4uE98C0+SIg1say4
+	MvcQowQHs5II79c3CUFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGJktTsjILvv5ojdYm3tqWfPU
+	L0EilgxmJ6t3W1h2MtZ+Pvrq8/1Kjwc5xzSXzpr7bp3CvxmbV+iauNxjq/pTWJLuP3u73arJ
+	i0982vqMZcvya2UTGbiPC0698chXX2t+3+meG/9O/pwlvEDaWq9McdL5c58euEhNSE/c4HLw
+	ydE5bLziR36Hna1VYinOSDTUYi4qTgQASi4/Jr4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 17.10.2013 19:46, Dave Martin wrote:
+> On Mon, Oct 14, 2013 at 07:08:24PM +0400, Vyacheslav Tyrtov wrote:
+>> From: Tarek Dakhran <t.dakhran@samsung.com>
+>>
+>> Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
+>> This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
+>>
+>> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+>> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/Makefile |   2 +
+>>   arch/arm/mach-exynos/edcs.c   | 270 ++++++++++++++++++++++++++++++++++++++++++
+>>   2 files changed, 272 insertions(+)
+>>   create mode 100644 arch/arm/mach-exynos/edcs.c
+>>
+>> diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
+>> index 5369615..ba6efdb 100644
+>> --- a/arch/arm/mach-exynos/Makefile
+>> +++ b/arch/arm/mach-exynos/Makefile
+>> @@ -34,3 +34,5 @@ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
+>>   
+>>   obj-$(CONFIG_MACH_EXYNOS4_DT)		+= mach-exynos4-dt.o
+>>   obj-$(CONFIG_MACH_EXYNOS5_DT)		+= mach-exynos5-dt.o
+>> +
+>> +obj-$(CONFIG_SOC_EXYNOS5410)		+= edcs.o
+>> diff --git a/arch/arm/mach-exynos/edcs.c b/arch/arm/mach-exynos/edcs.c
+>> new file mode 100644
+>> index 0000000..e304bd9
+>> --- /dev/null
+>> +++ b/arch/arm/mach-exynos/edcs.c
+>> @@ -0,0 +1,270 @@
+>> +/*
+>> + * arch/arm/mach-exynos/edcs.c - exynos dual cluster power management support
+>> + *
+>> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+>> + * Author: Tarek Dakhran <t.dakhran@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * EDCS(exynos dual cluster support) for Exynos5410 SoC.
+>> + */
+>> +
+[snip]
+>> +#define EDCS_CORE_STATUS(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x4)
+>> +#define EDCS_CORE_OPTION(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x8)
+>> +
+>> +#define REG_CPU_STATE_ADDR0		(S5P_VA_SYSRAM_NS + 0x28)
+> Is there any reason why S5P_VA_SYSRAM_NS needs to be a static mapping?
+What do you mean by "static mapping"?
+>
+>> +#define REG_CPU_STATE_ADDR(_nr)		(REG_CPU_STATE_ADDR0 +	\
+>> +						 _nr * EDCS_CPUS_PER_CLUSTER)
+>> +
+>> +static arch_spinlock_t edcs_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+>> +
+>> +static int edcs_use_count[EDCS_CPUS_PER_CLUSTER][EDCS_CLUSTERS];
+>> +static int core_count[EDCS_CLUSTERS];
+>> +
+>> +static void exynos_core_power_control(unsigned int cpu, unsigned int cluster,
+>> +				bool enable)
+>> +{
+>> +	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
+>> +	int value = enable ? S5P_CORE_LOCAL_PWR_EN : 0;
+>> +
+>> +	if ((__raw_readl(EDCS_CORE_STATUS(offset)) & 0x3) != value)
+>> +		__raw_writel(value, EDCS_CORE_CONFIGURATION(offset));
+> I think you need to replace all the __raw_readl() / __raw_writel() calls
+> in this file with readl_relaxed() / writel_relaxed().
+>
+> This ensures little-endian byte order, so that BE8 kernels will work.
+>
+Will be done.
+>> +}
+>> +
+>> +static void exynos_core_power_up(unsigned int cpu, unsigned int cluster)
+>> +{
+>> +	exynos_core_power_control(cpu, cluster, true);
+>> +}
+[snip]
+>> +
+>> +	edcs_use_count[cpu][cluster]++;
+>> +	if (edcs_use_count[cpu][cluster] == 1) {
+>> +		++core_count[cluster];
+>> +		set_boot_flag(cpu, 0x2);
+> 0x2 looks like a magic number.  Can we have a #define for that?
+Will be done.
+> If the boot flag is read by the inbound CPU or by a peripheral then
+> there are memory ordering issues to take into account.  Otherwise, can't
+> the inbound CPU come online and race with the write to the boot flag?
+Inbound CPU doesn't write the boot flag.
+> What is the memory type of REG_STATE_ADDR()?
+Same type as S5P_VA_SYSRAM_NS.
+This 4K region is mapped as follows:
 
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+static struct map_desc exynos5410_iodesc[] __initdata = {
+	{
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS5410_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	},
+};
 
-On Fri, Oct 18, 2013 at 12:45:26AM -0700, Olof Johansson wrote:
-> On Fri, Oct 18, 2013 at 01:38:47AM +0100, Mark Brown wrote:
-> > Hi all,
-> >=20
-> > I've uploaded today's linux-next tree to the master branch of the
-> > repository below:
-> >=20
-> >         git://gitorious.org/thierryreding/linux-next.git >=20
-> > A next-20131017 tag is also provided for convenience.
-> >=20
-> > One new conflict today but otherwise uneventful.  x86_64 allmodconfigs
-> > build after each merge but no other build tests were done.
->=20
-> Hi,
->=20
-> I'm seeing a fairly large fallout on boot testing. See
-> http://lists.linaro.org/pipermail/kernel-build-reports/2013-October/00071=
-9.html
-> for full list (I need to start providing longer backlogs for failures, th=
-e top
-> of the oopses is lost in the email).
->=20
-> For example, on dove (SolidRun Cubox) I see:
->=20
-> [    0.707248] Unable to handle kernel NULL pointer dereference at virtua=
-l address 00000054
-> [    0.715297] pgd =3D c0004000
-> [    0.717984] [00000054] *pgd=3D00000000
-> [    0.721548] Internal error: Oops: 5 [#1] ARM
-> [    0.725794] Modules linked in:
-> [    0.728841] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc5-next-20=
-131017 #1
-> [    0.736114] task: ef035c00 ti: ef036000 task.ti: ef036000
-> [    0.741497] PC is at kfree+0x54/0xc4
-> [    0.745063] LR is at ata_host_register+0x3c/0x290
-> [    0.749741] pc : [<c008ad28>]    lr : [<c023e168>]    psr: 40000193
-> [    0.749741] sp : ef037da8  ip : 00000034  fp : 00000000
-> [    0.761159] r10: 00000000  r9 : ef061810  r8 : c0519fc8
-> [    0.766353] r7 : c0519fc8  r6 : a0000113  r5 : ffffffff  r4 : ef1c9dd0
-> [    0.772850] r3 : c0fc8fe0  r2 : c07c9000  r1 : 40000000  r0 : 00000000
-> [    0.779349] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segm=
-ent kernel
-> [    0.786708] Control: 10c5387d  Table: 00004019  DAC: 00000015
-> [    0.792428] Process swapper (pid: 1, stack limit =3D 0xef036248)
-> [    0.798234] Stack: (0xef037da8 to 0xef038000)
-> [    0.957218] [<c008ad28>] (kfree+0x54/0xc4) from [<c023e168>] (ata_host=
-_register+0x3c/0x290)
-> [    0.965542] [<c023e168>] (ata_host_register+0x3c/0x290) from [<c023e49=
-8>] (ata_host_activate+0xdc/0x118)
-> [    0.974992] [<c023e498>] (ata_host_activate+0xdc/0x118) from [<c025113=
-0>] (mv_platform_probe+0x2dc/0x36c)
-> [    0.984527] [<c0251130>] (mv_platform_probe+0x2dc/0x36c) from [<c021b6=
-c4>] (platform_drv_probe+0x18/0x48)
-> [    0.994051] [<c021b6c4>] (platform_drv_probe+0x18/0x48) from [<c0219e8=
-8>] (really_probe+0x74/0x1fc)
-> [    1.003062] [<c0219e88>] (really_probe+0x74/0x1fc) from [<c021a0fc>] (=
-__driver_attach+0x98/0x9c)
-> [    1.011804] [<c021a0fc>] (__driver_attach+0x98/0x9c) from [<c02186cc>]=
- (bus_for_each_dev+0x60/0x94)
-> [    1.020808] [<c02186cc>] (bus_for_each_dev+0x60/0x94) from [<c0219728>=
-] (bus_add_driver+0x148/0x1f0)
-> [    1.029898] [<c0219728>] (bus_add_driver+0x148/0x1f0) from [<c021a700>=
-] (driver_register+0x78/0xf8)
-> [    1.038911] [<c021a700>] (driver_register+0x78/0xf8) from [<c04e2ed0>]=
- (mv_init+0x30/0x50)
-> [    1.047144] [<c04e2ed0>] (mv_init+0x30/0x50) from [<c000877c>] (do_one=
-_initcall+0x100/0x14c)
-> [    1.055557] [<c000877c>] (do_one_initcall+0x100/0x14c) from [<c04cead4=
->] (kernel_init_freeable+0x120/0x1c0)
-> [    1.065259] [<c04cead4>] (kernel_init_freeable+0x120/0x1c0) from [<c03=
-8fe30>] (kernel_init+0x8/0x158)
-> [    1.074441] [<c038fe30>] (kernel_init+0x8/0x158) from [<c000e0b8>] (re=
-t_from_fork+0x14/0x3c)
-> [    1.082841] Code: e0823283 e3110902 1593301c e593001c (e5904054)
->=20
->=20
-> I bisected it down to commit 55acc602faae7c10e53acdca0c70f4936c2539c6, wh=
-ich
-> is really weird. That is:
->=20
-> commit 55acc602faae7c10e53acdca0c70f4936c2539c6
-> Merge: e32face ba6857b
-> Author:     Mark Brown <broonie@linaro.org>
-> AuthorDate: Thu Oct 17 23:55:55 2013 +0100
-> Commit:     Mark Brown <broonie@linaro.org>
-> CommitDate: Thu Oct 17 23:55:55 2013 +0100
->=20
->     Merge remote-tracking branch 'driver-core/driver-core-next'
->    =20
->     Conflicts:
->         include/linux/netdevice.h
->=20
->=20
-> But there isn't anything controversial in the merge commit.
->=20
-> I tried checking out either side of that merge, and they both boot
-> fine. I redid the merge myself, and I get no delta compared to your
-> merge and I still get the same failure.
->=20
-> I've got more failures than dove, I'll try bisecting a few of the others
-> in the morning (it's late here), hopefully they will help indicate what's
-> actually going wrong. I'm guessing something just happens to move around
-> enough to expose a different problem once the two branches are merged.
 
-Looking at that oops it seems like host is actually NULL when kfree() is
-called in ata_host_register(). That seems to only happen when freeing up
-any of the unused ports, which is strange in itself because Cubox seems
-to only register a single one. Also if host is indeed NULL, then things
-should go haywire much sooner.
+>> +		exynos_core_power_up(cpu, cluster);
+>> +	} else if (edcs_use_count[cpu][cluster] != 2) {
+>> +		/*
+>> +		 * The only possible values are:
+>> +		 * 0 = CPU down
+>> +		 * 1 = CPU (still) up
+>> +		 * 2 = CPU requested to be up before it had a chance
+>> +		 *     to actually make itself down.
+>> +		 * Any other value is a bug.
+>> +		 */
+>> +		BUG();
+>> +	}
+>> +
+>> +	arch_spin_unlock(&edcs_lock);
+>> +	local_irq_enable();
+>> +
+>> +	return 0;
+>> +}
+>> +static void exynos_power_down(void)
+>> +{
+>> +	unsigned int mpidr, cpu, cluster;
+>> +	bool last_man = false, skip_wfi = false;
+>> +
+>> +	mpidr = read_cpuid_mpidr();
+>> +	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+>> +	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
+>> +
+>> +	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
+>> +	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
+>> +
+>> +	__mcpm_cpu_going_down(cpu, cluster);
+>> +
+>> +	arch_spin_lock(&edcs_lock);
+>> +	BUG_ON(__mcpm_cluster_state(cluster) != CLUSTER_UP);
+>> +	edcs_use_count[cpu][cluster]--;
+>> +	if (edcs_use_count[cpu][cluster] == 0) {
+>> +		--core_count[cluster];
+>> +		if (core_count[cluster] == 0)
+>> +			last_man = true;
+>> +	} else if (edcs_use_count[cpu][cluster] == 1) {
+>> +		/*
+>> +		 * A power_up request went ahead of us.
+>> +		 * Even if we do not want to shut this CPU down,
+>> +		 * the caller expects a certain state as if the WFI
+>> +		 * was aborted.  So let's continue with cache cleaning.
+>> +		 */
+>> +		skip_wfi = true;
+>> +	} else
+>> +		BUG();
+> For TC2, Lorenzo discovered need to disable the GIC CPU interface, so
+> that no suprious wakeups can happen once the power controller is
+> configured to power the CPU down.
+>
+> The problem is that a spurious wakeup can trigger a race in the power
+> controller when the last man powers down, where the power controller
+> continues to wait for the cluster to power down, but it never happens.
+>
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/200917.html
+> ([PATCH v2] arm: vexpress: tc2: fix hotplug/idle/kexec race on cluster power down)
+>
+>
+> This might not be a problem for Exynos5410 -- it depends on the way the
+> power control logic works.
+>
+> On the other hand, disabling the GIC CPU interface here is cheap to do,
+> even if it's not really needed.
+>
+>> +
+>> +	if (last_man && __mcpm_outbound_enter_critical(cpu, cluster)) {
+>> +		arch_spin_unlock(&edcs_lock);
+>> +
+>> +		if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A15) {
+>> +			/*
+>> +			 * On the Cortex-A15 we need to disable
+>> +			 * L2 prefetching before flushing the cache.
+>> +			 */
+>> +			asm volatile(
+>> +			"mcr	p15, 1, %0, c15, c0, 3\n\t"
+>> +			"isb\n\t"
+>> +			"dsb"
+>> +			: : "r" (0x400));
+>> +		}
+>> +
+>> +		/*
+>> +		 * We need to disable and flush the whole (L1 and L2) cache.
+>> +		 * Let's do it in the safest possible way i.e. with
+>> +		 * no memory access within the following sequence
+>> +		 * including the stack.
+>> +		 *
+>> +		 * Note: fp is preserved to the stack explicitly prior doing
+>> +		 * this since adding it to the clobber list is incompatible
+>> +		 * with having CONFIG_FRAME_POINTER=y.
+>> +		 */
+>> +		asm volatile(
+>> +		"str	fp, [sp, #-4]!\n\t"
+>> +		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
+>> +		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
+>> +		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
+>> +		"isb\n\t"
+>> +		"bl	v7_flush_dcache_all\n\t"
+>> +		"clrex\n\t"
+>> +		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
+>> +		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
+>> +		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
+>> +		"isb\n\t"
+>> +		"dsb\n\t"
+>> +		"ldr	fp, [sp], #4"
+>> +		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+>> +			"r9", "r10", "lr", "memory");
+> For these code sequences, please take a look at
+>
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205085.html
+> [PATCH] ARM: cacheflush: consolidate single-CPU ARMv7 cache disabling code
+>
+> The aim is to consolidate on a macro that can be shared between
+> backends.
+Will be done right after Nicolases patch will be applied to the mainline.
+>
+>> +
+>> +		cci_disable_port_by_cpu(mpidr);
+>> +
+>> +		__mcpm_outbound_leave_critical(cluster, CLUSTER_DOWN);
+>> +
+>> +	} else {
+>> +		arch_spin_unlock(&edcs_lock);
+>> +		/*
+>> +			* We need to disable and flush only the L1 cache.
+>> +			* Let's do it in the safest possible way as above.
+>> +		*/
+>> +		asm volatile(
+>> +		"str	fp, [sp, #-4]!\n\t"
+>> +		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
+>> +		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
+>> +		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
+>> +		"isb\n\t"
+>> +		"bl	v7_flush_dcache_louis\n\t"
+>> +		"clrex\n\t"
+>> +		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
+>> +		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
+>> +		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
+>> +		"isb\n\t"
+>> +		"dsb\n\t"
+>> +		"ldr	fp, [sp], #4"
+>> +		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+>> +		      "r9", "r10", "lr", "memory");
+>> +
+>> +	}
+>> +	__mcpm_cpu_down(cpu, cluster);
+>> +
+>> +	if (!skip_wfi) {
+>> +		exynos_core_power_down(cpu, cluster);
+>> +		wfi();
+>> +	}
+>> +}
+>> +
+>> +static const struct mcpm_platform_ops exynos_power_ops = {
+>> +	.power_up	= exynos_power_up,
+>> +	.power_down	= exynos_power_down,
+>> +};
+>> +
+>> +static void __init edcs_data_init(void)
+>> +{
+>> +	unsigned int mpidr, cpu, cluster;
+>> +
+>> +	mpidr = read_cpuid_mpidr();
+>> +	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+>> +	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
+>> +
+>> +	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
+>> +	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
+>> +	edcs_use_count[cpu][cluster] = 1;
+>> +	++core_count[cluster];
+>> +}
+>> +
+>> +/*
+>> + * Enable cluster-level coherency, in preparation for turning on the MMU.
+>> + */
+>> +static void __naked edcs_power_up_setup(unsigned int affinity_level)
+>> +{
+>> +	asm volatile ("\n"
+>> +	"b	cci_enable_port_for_self");
+>> +}
+>> +
+>> +static int __init edcs_init(void)
+>> +{
+>> +	int ret;
+>> +	struct device_node *node;
+>> +
+>> +	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
+>> +	if (!node)
+>> +		return -ENODEV;
+>> +
+>> +	if (!cci_probed())
+>> +		return -ENODEV;
+>> +
+>> +	/*
+>> +	 * Future entries into the kernel can now go
+>> +	 * through the cluster entry vectors.
+>> +	 */
+>> +	__raw_writel(virt_to_phys(mcpm_entry_point),
+>> +				S5P_VA_SYSRAM_NS + 0x1c);
+> It would me more readable to have a #define to describe what
+> S5P_VA_SYSRAM_NS + 0x1c is.
+Will be done.
+> Also, what is the memory type of S5P_VA_SYSRAM_NS?  How is the entry
+> point address value read?  Does the inbound CPU's boot ROM or firmware
+> read it?
+The former (i.e. boot ROM reads it).
+> If it is read via some non-coherent side-channel, or if S5P_VA_SYSRAM_NS
+> is mapped as normal memory then we would need some explicit
+> synchronisation, but I suspect this is not the case (?)
+>
+> Cheers
+> ---Dave
+>
+>> +
+>> +	edcs_data_init();
+>> +	mcpm_smp_set_ops();
+>> +
+>> +	ret = mcpm_platform_register(&exynos_power_ops);
+>> +	if (!ret) {
+>> +		mcpm_sync_init(edcs_power_up_setup);
+>> +		pr_info("EDCS power management initialized\n");
+>> +	}
+>> +	return ret;
+>> +}
+>> +
+>> +early_initcall(edcs_init);
+>> -- 
+>> 1.8.1.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Looks like you won't easily find out what's going on here unless you get
-into it somewhat deeper and perhaps trace what exactly fails and why the
-NULL pointer is even there in the first place.
+Thanks for your comments.
 
-Thierry
-
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSYO/MAAoJEN0jrNd/PrOhG4gQAI7CYAgF33ClhA/feXohRZp2
-aYz0pyggcGkr3N4vY8TKiiUuPhElU6LfNgio7aK79LSxipca52X6aCSMFFoavcgD
-viN0lybCiZpOwvxHV9dD0ePFdLW2zA/cYYWaMimfqIvHHG9O2E6UYNy3WM2cj322
-hps1uoRbS0gMCfOSIhRwB0gckWKFaYN3s3Wour863BIqVxxmzzirz1u4ET4LBtw6
-RhhgpKTuZ9t61kr6rgKxbbk2joInVGUXuOc7cuPnrWyYNCuYg2Yz6F8G5iOSeMgn
-qPlUGNBqq8Md/rfwKqOFBxoYb+l7eQfDhn9s1beZTNiwk72Grg6UKr7e7jTetE8N
-4791EQ3R7ypbXT6fKoddjOo7GP7Wdot0dF/edvFfICS3Azt/9q5FZwN+Qse0UjW6
-D3O+inD9lBsv5CktKJa3dsGyidzxStUEGAgpIqjj26G+dM3UnpfBzrRqOy85uo7Y
-Ao2gXz1n/XtNmi7ZhPWJBB1KY5MN9WQ5bq3lOTwo74oPJ5X7eafwc7W2MtSRGAgA
-cVEWH+IwdsFbhBowG/EfZmdNDkEywrZwJ9kMnha7dpILyodPWRNmFXjuG7n8jmFO
-tk0I6489/KpJk+GehhjMJ3cznvKZgiJEWT5pXLKvNrqraZiqfWIMLqyqOoqWxOaU
-wwgf/3mrNH0UdyylDZzQ
-=Cejq
------END PGP SIGNATURE-----
-
---BXVAT5kNtrzKuDFl--
+Sincerely yours,
+     Tarek Dakhran
