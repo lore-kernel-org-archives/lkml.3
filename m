@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab3JRJ1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:27:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61767 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab3JRJ1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:27:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,521,1378882800"; 
-   d="scan'208";a="418855304"
-From: Haicheng Li <haicheng.li@linux.intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>
-Subject: [PATCH 2/2] f2fs: no need to check other dirty_segmap when the seg has been found
-Date: Fri, 18 Oct 2013 17:24:08 +0800
-Message-Id: <1382088248-10615-2-git-send-email-haicheng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1382088248-10615-1-git-send-email-haicheng.li@linux.intel.com>
-References: <1382088248-10615-1-git-send-email-haicheng.li@linux.intel.com>
+	id S1752884Ab3JRJ2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:28:08 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:40375 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3JRJ2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 05:28:05 -0400
+Message-ID: <1382088475.16935.4.camel@phoenix>
+Subject: Build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected
+From: Axel Lin <axel.lin@ingics.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Date: Fri, 18 Oct 2013 17:27:55 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because one dirty seg can only be mapped to one dirty_type. Otherwise, it's a bug.
+Hi Michael,
 
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
----
- fs/f2fs/segment.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+I got below build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected.
+Also got the same build error if CONFIG_PROVE_LOCKING is selected.
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 862fef3..5ff0524 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -79,9 +79,13 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
- 		enum dirty_type t = DIRTY_HOT_DATA;
- 
- 		/* clear all the bitmaps */
--		for (; t <= DIRTY_COLD_NODE; t++)
--			if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
-+		for (; t <= DIRTY_COLD_NODE; t++) {
-+			if (test_and_clear_bit(segno,
-+						dirty_i->dirty_segmap[t])) {
- 				dirty_i->nr_dirty[t]--;
-+				break;
-+			}
-+		}
- 
- 		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
- 			clear_bit(GET_SECNO(sbi, segno),
--- 
-1.7.9.5
+Seems this issue is introduced by commit 662bbcb2747c2
+"mm, sched: Allow uaccess in atomic with pagefault_disable()".
+
+arch/arm/kernel/built-in.o: In function `arch_ptrace':
+arch/arm/kernel/ptrace.c:852: undefined reference to `might_fault'
+arch/arm/kernel/built-in.o: In function `restore_sigframe':
+arch/arm/kernel/signal.c:173: undefined reference to `might_fault'
+arch/arm/kernel/signal.c:174: undefined reference to `might_fault'
+arch/arm/kernel/signal.c:175: undefined reference to `might_fault'
+arch/arm/kernel/signal.c:176: undefined reference to `might_fault'
+arch/arm/kernel/built-in.o:arch/arm/kernel/signal.c:177: more undefined references to `might_fault' follow
+make: *** [vmlinux] Error 1
+
+Regards,
+Axel
 
