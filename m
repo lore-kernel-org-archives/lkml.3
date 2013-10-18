@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab3JRXY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 19:24:57 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:48771 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757406Ab3JRXYz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 19:24:55 -0400
-X-ASG-Debug-ID: 1382138694-0421b56d433cb70001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Message-ID: <20131018232447.4917.74376@localhost.localdomain>
-From: Chris Mason <chris.mason@fusionio.com>
-User-Agent: alot/0.3.4
-Subject: [GIT PULL] Btrfs
-Date: Fri, 18 Oct 2013 19:24:47 -0400
-X-ASG-Orig-Subj: [GIT PULL] Btrfs
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: UNKNOWN[10.101.1.40]
-X-Barracuda-Start-Time: 1382138694
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.141579
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1757717Ab3JRX11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 19:27:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757376Ab3JRX10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 19:27:26 -0400
+Date: Fri, 18 Oct 2013 11:46:08 -0400
+Message-Id: <201310181546.r9IFk8VO018241@ib.usersys.redhat.com>
+From: Doug Ledford <dledford@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: 1381790982.16896.7.camel@joe-AO722
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2013-10-14 at 22:49 -0700, Joe Perches wrote:
+> On Mon, 2013-10-14 at 15:44 -0700, Eric Dumazet wrote:
+>> On Mon, 2013-10-14 at 15:37 -0700, Joe Perches wrote:
+>> > On Mon, 2013-10-14 at 15:18 -0700, Eric Dumazet wrote:
+>> > > attached patch brings much better results
+>> > > 
+>> > > lpq83:~# ./netperf -H 7.7.8.84 -l 10 -Cc
+>> > > MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 7.7.8.84 () port 0 AF_INET
+>> > > Recv   Send    Send                          Utilization       Service Demand
+>> > > Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+>> > > Size   Size    Size     Time     Throughput  local    remote   local   remote
+>> > > bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
+>> > > 
+>> > >  87380  16384  16384    10.00      8043.82   2.32     5.34     0.566   1.304  
+>> > > 
+>> > > diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
+>> > []
+>> > > @@ -68,7 +68,8 @@ static unsigned do_csum(const unsigned char *buff, unsigned len)
+>> > >  			zero = 0;
+>> > >  			count64 = count >> 3;
+>> > >  			while (count64) { 
+>> > > -				asm("addq 0*8(%[src]),%[res]\n\t"
+>> > > +				asm("prefetch 5*64(%[src])\n\t"
+>> > 
+>> > Might the prefetch size be too big here?
+>> 
+>> To be effective, you need to prefetch well ahead of time.
+> 
+> No doubt.
+> 
+>> 5*64 seems common practice (check arch/x86/lib/copy_page_64.S)
+> 
+> 5 cachelines for some processors seems like a lot.
+> 
+> Given you've got a test rig, maybe you could experiment
+> with 2 and increase it until it doesn't get better.
 
-My for-linus branch has a one line fix:
+You have a fundamental misunderstanding of the prefetch operation.  The 5*64
+in the above asm statment does not mean a size, it is an index, with %[src]
+as the base pointer.  So it is saying to go to address %[src] + 5*64 and
+prefetch there.  The prefetch size itself is always a cache line.  Once the
+address is known, whatever cacheline holds that address is the cacheline we
+will prefetch.  Your size concerns have no meaning.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
-
-Sage hit a deadlock with ceph on btrfs, and Josef tracked it down to a
-regression in our initial rc1 pull.  When doing nocow writes we were
-sometimes starting a transaction with locks held.
-
-Josef Bacik (1) commits (+1/-0):
-    Btrfs: release path before starting transaction in can_nocow_extent
-
-Total: (1) commits (+1/-0)
-
- fs/btrfs/inode.c | 1 +
- 1 file changed, 1 insertion(+)
