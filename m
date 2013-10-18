@@ -1,154 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137Ab3JRHHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 03:07:07 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:33554 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3JRHHF (ORCPT
+	id S1751522Ab3JRHJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 03:09:51 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:53080 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3JRHJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 03:07:05 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>, <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] drivers/vga: check decodes for vgaarb lock/unlock
-Date: Fri, 18 Oct 2013 15:07:28 +0800
-Message-Id: <1382080048-13760-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Fri, 18 Oct 2013 03:09:49 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k/atari: Call paging_init() before nf_init()
+Date: Fri, 18 Oct 2013 09:09:44 +0200
+Message-Id: <1382080184-19115-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug that X windows system may use an invalid decodes iostat
-on the VGA Arbiter device when lock and unlock. this may cause system
-crash. So we must validate the value of iostat.
+nf_init() uses virt_to_phys(), which depends on m68k_memoffset being set and
+module_fixup() having been called, but this is only done in paging_init().
+Hence call paging_init() before nf_init().
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+This went unnoticed, as virt_to_phys() is a no-op on Atari, unless you start
+fiddling with the memory blocks in the bootinfo manually.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/gpu/vga/vgaarb.c | 55 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 37 insertions(+), 18 deletions(-)
+ arch/m68k/kernel/setup_mm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index af02597..4772367 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -906,8 +906,9 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 	struct vga_arb_private *priv = file->private_data;
- 	struct vga_arb_user_card *uc = NULL;
- 	struct pci_dev *pdev;
-+	struct vga_device *vgadev = NULL;
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 99cfe0577ad0..5b8ec4d5f8e8 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -348,12 +348,12 @@ void __init setup_arch(char **cmdline_p)
+ 		panic("No configuration setup");
+ 	}
  
--	unsigned int io_state;
-+	unsigned int io_state = 0;
- 
- 	char *kbuf, *curr_pos;
- 	size_t remaining = count;
-@@ -927,6 +928,19 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 	curr_pos = kbuf;
- 	kbuf[count] = '\0';	/* Just to make sure... */
- 
-+	pdev = priv->target;
-+	if (priv->target == NULL) {
-+		pr_debug("No device found");
-+		ret_val = -ENODEV;
-+		goto done;
-+	}
-+	vgadev = vgadev_find(pdev);
-+	if (vgadev == NULL) {
-+		pr_debug("Could not find vga device for %s", pci_name(pdev));
-+		ret_val = -ENODEV;
-+		goto done;
-+	}
++	paging_init();
 +
- 	if (strncmp(curr_pos, "lock ", 5) == 0) {
- 		curr_pos += 5;
- 		remaining -= 5;
-@@ -937,14 +951,15 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
--		if (io_state == VGA_RSRC_NONE) {
-+		if ((vgadev->owns & io_state) != io_state) {
-+			pr_debug("iostate (%x and %x ) do not match",
-+				io_state, vgadev->owns);
-+
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
+ #ifdef CONFIG_NATFEAT
+ 	nf_init();
+ #endif
+ 
+-	paging_init();
 -
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
-+		if (io_state == VGA_RSRC_NONE) {
-+			ret_val = -EPROTO;
- 			goto done;
- 		}
- 
-@@ -969,14 +984,21 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 
- 		pr_debug("client 0x%p called 'unlock'\n", priv);
- 
--		if (strncmp(curr_pos, "all", 3) == 0)
-+		if (strncmp(curr_pos, "all", 3) == 0) {
- 			io_state = VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM;
--		else {
-+		} else {
- 			if (!vga_str_to_iostate
- 			    (curr_pos, remaining, &io_state)) {
- 				ret_val = -EPROTO;
- 				goto done;
- 			}
-+			if ((vgadev->owns & io_state) != io_state) {
-+				pr_debug("iostate (%x and %x ) do not match",
-+					io_state, vgadev->owns);
-+
-+				ret_val = -EPROTO;
-+				goto done;
-+			}
- 			/* TODO: Add this?
- 			   if (io_state == VGA_RSRC_NONE) {
- 			   ret_val = -EPROTO;
-@@ -985,11 +1007,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			  */
- 		}
- 
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
--			goto done;
--		}
- 		for (i = 0; i < MAX_USER_CARDS; i++) {
- 			if (priv->cards[i].pdev == pdev)
- 				uc = &priv->cards[i];
-@@ -1029,6 +1046,13 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
-+		if ((vgadev->owns & io_state) != io_state) {
-+			pr_debug("iostate (%x and %x ) do not match",
-+				io_state, vgadev->owns);
-+
-+			ret_val = -EPROTO;
-+			goto done;
-+		}
- 		/* TODO: Add this?
- 		   if (io_state == VGA_RSRC_NONE) {
- 		   ret_val = -EPROTO;
-@@ -1036,11 +1060,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 		   }
- 		 */
- 
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
--			goto done;
--		}
- 
- 		if (vga_tryget(pdev, io_state)) {
- 			/* Update the client's locks lists... */
+ #ifndef CONFIG_SUN3
+ 	for (i = 1; i < m68k_num_memory; i++)
+ 		free_bootmem_node(NODE_DATA(i), m68k_memory[i].addr,
 -- 
-1.8.4.rc3
+1.7.9.5
 
