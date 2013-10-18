@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab3JRTxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:53:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54754 "EHLO
+	id S932201Ab3JRTxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:53:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757570Ab3JRTwl (ORCPT
+	with ESMTP id S1755048Ab3JRTwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:52:41 -0400
+	Fri, 18 Oct 2013 15:52:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [ 07/11] parisc: fix interruption handler to respect pagefault_disable()
-Date: Fri, 18 Oct 2013 12:53:36 -0700
-Message-Id: <20131018195049.569779370@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [ 06/11] KVM: PPC: Book3S HV: Fix typo in saving DSCR
+Date: Fri, 18 Oct 2013 12:53:35 -0700
+Message-Id: <20131018195049.502885156@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131018195049.069623827@linuxfoundation.org>
 References: <20131018195049.069623827@linuxfoundation.org>
@@ -26,55 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 59b33f148cc08fb33cbe823fca1e34f7f023765e upstream.
+commit cfc860253abd73e1681696c08ea268d33285a2c4 upstream.
 
-Running an "echo t > /proc/sysrq-trigger" crashes the parisc kernel.  The
-problem is, that in print_worker_info() we try to read the workqueue info via
-the probe_kernel_read() functions which use pagefault_disable() to avoid
-crashes like this:
-    probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
-    probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
-    probe_kernel_read(name, wq->name, sizeof(name) - 1);
+This fixes a typo in the code that saves the guest DSCR (Data Stream
+Control Register) into the kvm_vcpu_arch struct on guest exit.  The
+effect of the typo was that the DSCR value was saved in the wrong place,
+so changes to the DSCR by the guest didn't persist across guest exit
+and entry, and some host kernel memory got corrupted.
 
-The problem here is, that the first probe_kernel_read(&pwq) might return zero
-in pwq and as such the following probe_kernel_reads() try to access contents of
-the page zero which is read protected and generate a kernel segfault.
-
-With this patch we fix the interruption handler to call parisc_terminate()
-directly only if pagefault_disable() was not called (in which case
-preempt_count()==0).  Otherwise we hand over to the pagefault handler which
-will try to look up the faulting address in the fixup tables.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin  <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/traps.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -810,14 +810,14 @@ void notrace handle_interruption(int cod
- 	else {
- 
- 	    /*
--	     * The kernel should never fault on its own address space.
-+	     * The kernel should never fault on its own address space,
-+	     * unless pagefault_disable() was called before.
- 	     */
- 
--	    if (fault_space == 0) 
-+	    if (fault_space == 0 && !in_atomic())
- 	    {
- 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
- 		parisc_terminate("Kernel Fault", regs, code, fault_address);
--	
- 	    }
- 	}
+--- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
++++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+@@ -935,7 +935,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ BEGIN_FTR_SECTION
+ 	mfspr	r8, SPRN_DSCR
+ 	ld	r7, HSTATE_DSCR(r13)
+-	std	r8, VCPU_DSCR(r7)
++	std	r8, VCPU_DSCR(r9)
+ 	mtspr	SPRN_DSCR, r7
+ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
  
 
 
