@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab3JRWWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:22:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22491 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757065Ab3JRWWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:22:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,525,1378882800"; 
-   d="scan'208";a="395174294"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
- platform
-Thread-Topic: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
- platform
-Thread-Index: AQHOy92NO8Ykl3Pixk2WuH27ZgvdfZn621sAgAAEVACAAAzW0IAAgtiA//+ZORA=
-Date: Fri, 18 Oct 2013 22:22:26 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D41FD3@ORSMSX106.amr.corp.intel.com>
-References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
- <1382084624-10857-5-git-send-email-gong.chen@linux.intel.com>
- <52612BA4.2060906@linux.vnet.ibm.com> <20131018125326.GC1007@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31D41E37@ORSMSX106.amr.corp.intel.com>
- <20131018212741.GA26049@pd.tnic>
-In-Reply-To: <20131018212741.GA26049@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1757368Ab3JRW1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:27:41 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:35008 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab3JRW1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 18:27:39 -0400
+Message-ID: <5261B5D6.2020002@lwfinger.net>
+Date: Fri, 18 Oct 2013 17:27:34 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
+To: Felipe Pena <felipensp@gmail.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>
+CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers: net: wireless: rtlwifi: Fix wrong assignment
+References: <1382134538-3719-1-git-send-email-felipensp@gmail.com>
+In-Reply-To: <1382134538-3719-1-git-send-email-felipensp@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9IMMsk7021010
 
-@@ -154,6 +154,10 @@ void mce_log(struct mce *mce)
- 	/* Emit the trace record: */
- 	trace_mce_record(mce);
- 
-+	if (mce_ext_err_print)
-+		if (mce_ext_err_print(NULL, m.extcpu, i))
-+			return;
-+
- 	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
- 	if (ret == NOTIFY_STOP)
- 		return;
+On 10/18/2013 05:15 PM, Felipe Pena wrote:
+> There is a typo in the struct member name on assignment when checking
+> rtlphy->current_chan_bw == HT_CHANNEL_WIDTH_20_40, the check uses pwrgroup_ht40
+> for bound limit and uses pwrgroup_ht20 when assigning instead.
+>
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8192se/rf.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+> index 5061f1d..92d38ab 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+> @@ -265,7 +265,7 @@ static void _rtl92s_get_txpower_writeval_byregulatory(struct ieee80211_hw *hw,
+>   				    rtlefuse->pwrgroup_ht40
+>   				    [RF90_PATH_A][chnl - 1]) {
+>   					pwrdiff_limit[i] =
+> -					  rtlefuse->pwrgroup_ht20
+> +					  rtlefuse->pwrgroup_ht40
+>   					  [RF90_PATH_A][chnl - 1];
+>   				}
+>   			} else {
 
-If we move mce_ext_err_print() this far ... then it's only one line further down
-to have it be part of the x86_mce_decoder_chain as suggested by Naveen.
+Good catch. There is only one problem - by convention we skip 
+drivers/net/wireless in the subject. That would probably be OK, but you are 
+missing the rtl8192se part, which needs to be there. I suggest that you use the 
+subject "rtlwifi: rtl8192de: Fix wrong assignment".
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Larry
+
+
