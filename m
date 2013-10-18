@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab3JSGn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 02:43:59 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:12827 "EHLO
+	id S1751941Ab3JSGpv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 02:45:51 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:13398 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750944Ab3JSGn5 (ORCPT
+	by vger.kernel.org with ESMTP id S1750960Ab3JSGpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 02:43:57 -0400
+	Sat, 19 Oct 2013 02:45:49 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,9 +16,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 21/29] qla2xxx: Make use of pcim_enable_msix_range() interface
-Date: Fri, 18 Oct 2013 19:12:21 +0200
-Message-Id: <5476e68f2f260f7c5d14cf0fa27d0f2406decd49.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 29/29] vmxnet3: Make use of pcim_enable_msix_range() interface
+Date: Fri, 18 Oct 2013 19:12:29 +0200
+Message-Id: <75788c5da384b16633fdab43d37a277aa92f38fd.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
 References: <cover.1382103786.git.agordeev@redhat.com>
@@ -28,53 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/scsi/qla2xxx/qla_isr.c |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c |   40 +++++++++---------------------------
+ 1 files changed, 10 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index df1b30b..3238a0ac 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -2836,27 +2836,23 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
- 	for (i = 0; i < ha->msix_count; i++)
- 		entries[i].entry = i;
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index d33802c..e552d2b 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2735,39 +2735,19 @@ vmxnet3_read_mac_addr(struct vmxnet3_adapter *adapter, u8 *mac)
+  */
  
--	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--	if (ret) {
--		if (ret < MIN_MSIX_COUNT)
--			goto msix_failed;
+ static int
+-vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
+-			     int vectors)
++vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter, int vectors)
+ {
+-	int err = -EINVAL, vector_threshold;
+-	vector_threshold = VMXNET3_LINUX_MIN_MSIX_VECT;
 -
-+	ret = pcim_enable_msix_range(ha->pdev,
-+				     entries, ha->msix_count, MIN_MSIX_COUNT);
-+	if (ret < 0) {
-+		ql_log(ql_log_fatal, vha, 0x00c7,
-+		    "MSI-X: Failed to enable support, "
-+		    "giving   up -- %d/%d.\n",
-+		    ha->msix_count, ret);
-+		goto msix_out;
-+	}
-+	if (ret < ha->msix_count) {
- 		ql_log(ql_log_warn, vha, 0x00c6,
- 		    "MSI-X: Failed to enable support "
- 		    "-- %d/%d\n Retry with %d vectors.\n",
- 		    ha->msix_count, ret, ret);
--		ha->msix_count = ret;
--		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--		if (ret) {
--msix_failed:
--			ql_log(ql_log_fatal, vha, 0x00c7,
--			    "MSI-X: Failed to enable support, "
--			    "giving   up -- %d/%d.\n",
--			    ha->msix_count, ret);
--			goto msix_out;
+-	while (vectors >= vector_threshold) {
+-		err = pci_enable_msix(adapter->pdev, adapter->intr.msix_entries,
+-				      vectors);
+-		if (!err) {
+-			adapter->intr.num_intrs = vectors;
+-			return 0;
+-		} else if (err < 0) {
+-			dev_err(&adapter->netdev->dev,
+-				   "Failed to enable MSI-X, error: %d\n", err);
+-			return err;
+-		} else if (err < vector_threshold) {
+-			dev_info(&adapter->pdev->dev,
+-				 "Number of MSI-Xs which can be allocated "
+-				 "is lower than min threshold required.\n");
+-			return -ENOSPC;
+-		} else {
+-			/* If fails to enable required number of MSI-x vectors
+-			 * try enabling minimum number of vectors required.
+-			 */
+-			dev_err(&adapter->netdev->dev,
+-				"Failed to enable %d MSI-X, trying %d instead\n",
+-				    vectors, vector_threshold);
+-			vectors = vector_threshold;
 -		}
--		ha->max_rsp_queues = ha->msix_count - 1;
++	vectors = pcim_enable_msix_range(adapter->pdev,
++					 adapter->intr.msix_entries, vectors,
++					 VMXNET3_LINUX_MIN_MSIX_VECT);
++	if (vectors < 0) {
++		dev_err(&adapter->netdev->dev,
++			"Failed to enable MSI-X, error: %d\n", vectors);
++		return vectors;
  	}
-+	ha->msix_count = ret;
-+	ha->max_rsp_queues = ha->msix_count - 1;
- 	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
- 				ha->msix_count, GFP_KERNEL);
- 	if (!ha->msix_entries) {
+ 
+-	return err;
++	adapter->intr.num_intrs = vectors;
++	return 0;
+ }
+ 
+ 
 -- 
 1.7.7.6
 
