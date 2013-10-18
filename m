@@ -1,285 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3JRJuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:50:37 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:12115 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751961Ab3JRJuf (ORCPT
+	id S1752851Ab3JRJvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:51:24 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24300 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3JRJvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:50:35 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Neil Zhang <zhangwm@marvell.com>,
+	Fri, 18 Oct 2013 05:51:22 -0400
+X-AuditID: cbfee68e-b7f486d0000040b6-08-526104901434
+Message-id: <52610493.1000909@samsung.com>
+Date: Fri, 18 Oct 2013 18:51:15 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+MIME-version: 1.0
+To: James Hogan <james.hogan@imgtec.com>,
+        Doug Anderson <dianders@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Fri, 18 Oct 2013 02:50:24 -0700
-Subject: RE: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-Thread-Topic: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-Thread-Index: Ac7GW1Eq27AdMp+8S66HQxTbZByyBAFjBqRA
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF788@SC-VEXCH4.marvell.com>
-References: <1381479838-7794-1-git-send-email-zhangwm@marvell.com>
- <1381479838-7794-3-git-send-email-zhangwm@marvell.com>
-In-Reply-To: <1381479838-7794-3-git-send-email-zhangwm@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-18_03:2013-10-18,2013-10-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310180016
+Subject: Re: [PATCH 2/2] mmc: dw_mmc: Protect read-modify-write of INTMASK with
+ a lock
+References: <1381876762-10892-1-git-send-email-dianders@chromium.org>
+ <1381876762-10892-3-git-send-email-dianders@chromium.org>
+ <525E611A.6070708@imgtec.com>
+ <CAD=FV=V4OPOjs=4cvXOomt1UnzUdw5VApkNAX2ERKZ46DC6_gg@mail.gmail.com>
+ <CAAG0J98c6eA_c2McSvFcQUMUfPy-DgdHi7Te1tZqpT8XjjMQvw@mail.gmail.com>
+In-reply-to: <CAAG0J98c6eA_c2McSvFcQUMUfPy-DgdHi7Te1tZqpT8XjjMQvw@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsWyRsSkSHcCS2KQwe97MhaP1yxmsngwbxub
+	xbytR1kttr/eyGZxdtlBNotXR34wWbyb94LZ4vKuOWwWR/73M1qcuv6ZzeLJmZmMFh/uX2S2
+	WLXrD6MDr8fshossHjtn3WX36Nl5htHj0JW1jB5XTjSxekxeeJHZo2/LKkaPz5vkAjiiuGxS
+	UnMyy1KL9O0SuDL29VkXHJWqaJm9hbmBsV20i5GTQ0LAROLsz4NsELaYxIV764FsLg4hgaWM
+	Emc/vmSDKdq/8RcrRGIRo8T1XyuYIZzXjBIH/r4Cq+IV0JJY9GcuI4jNIqAqsbOthQXEZhPQ
+	kdj+7ThTFyMHh6hAiMS3CTkQ5YISPybfAysREfCXWPxlAdgCZoFTzBJvOg+xgySEBSIklh+b
+	zA6xbD2TxKUd39hABnEKBEscOQI2iBlo/v7WaWwQtrzE5jVvmSGunskhcWupPcQ9AhLfJh9i
+	AWmVEJCV2HQAqkRS4uCKGywTGMVmITlpFpKps5BMXcDIvIpRNLUguaA4Kb3ISK84Mbe4NC9d
+	Lzk/dxMjMJ5P/3vWt4Px5gHrQ4zJQCsnMkuJJucD00FeSbyhsZmRhamJqbGRuaUZacJK4rxq
+	LdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg3BRSF9z7dvjgx5NG9rE3e07mtKiec3PdI
+	iLGhwPLRglNiPb0CbTMmzP/cf7orT3+aeJpR1eLl3xgulnLN2mZzK2HZNJtpL3RYVrXK8uje
+	8svW69zK0H5Q5ewrjuSo6IjHSYyXk0wswwT9CqaXLn/dKc/VmD7/5zJh1V/MGwpnV2wUXhDG
+	K6nEUpyRaKjFXFScCABZO/iI/QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd0JLIlBBi0fhCwer1nMZPFg3jY2
+	i3lbj7JabH+9kc3i7LKDbBavjvxgsng37wWzxeVdc9gsjvzvZ7Q4df0zm8WTMzMZLT7cv8hs
+	sWrXH0YHXo/ZDRdZPHbOusvu0bPzDKPHoStrGT2unGhi9Zi88CKzR9+WVYwenzfJBXBENTDa
+	ZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAdraRQlphT
+	ChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM2NdnXXBUqqJl9hbmBsZ20S5GTg4J
+	AROJ/Rt/sULYYhIX7q1n62Lk4hASWMQocf3XCmYI5zWjxIG/r9hAqngFtCQW/ZnLCGKzCKhK
+	7GxrYQGx2QR0JLZ/O87UxcjBISoQIvFtQg5EuaDEj8n3wEpEBPwlFn9ZwAoyk1ngFLPEm85D
+	7CAJYYEIieXHJrNDLFvPJHFpxzc2kEGcAsESR46ADWIGmr+/dRobhC0vsXnNW+YJjAKzkOyY
+	haRsFpKyBYzMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC08Uz6R2MqxosDjEKcDAq8fAe
+	+BYfJMSaWFZcmXuIUYKDWUmE9/nfhCAh3pTEyqrUovz4otKc1OJDjMnAEJjILCWanA9MZXkl
+	8YbGJmZGlkbmhhZGxuakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwKh99tbzMMkrN/ap
+	SL6alhrRXCHFtSNM3+bSjoh3m2W8X3z6tD7py1Z/7Y3bO1gXhgg3+N7J/3IsZX9KkciB9XtS
+	72a4X1h46BPLywvTGCQ7VzW6nNkakxzNlHDZ5UK0aKHS5WK5M/9+mTNevVmcd2DNEiHfM/eK
+	F0zgT9x5Pezo68dfm4KVftcpsRRnJBpqMRcVJwIAbxaldVsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9I9ohIZ015979
 
-Ping ?
+On 10/17/2013 05:23 AM, James Hogan wrote:
+> Hi Doug,
+> 
+> On 16 October 2013 17:43, Doug Anderson <dianders@chromium.org> wrote:
+>> On Wed, Oct 16, 2013 at 2:49 AM, James Hogan <james.hogan@imgtec.com> wrote:
+>>>> We can't just use the standard host->lock since that lock is not irq
+>>>> safe and mmc_signal_sdio_irq() (called from interrupt context) calls
+>>>> dw_mci_enable_sdio_irq().  Add a new irq-safe lock to protect INTMASK.
+>>>>
+>>>> An alternate solution to this is to punt mmc_signal_sdio_irq() to the
+>>>> tasklet and then protect INTMASK modifications by the standard host
+>>>> lock.  This seemed like a bit more of a high-latency change.
+>>>
+>>> A probably lighter-weight alternative to that alternative is to just
+>>> make the existing lock irq safe. Has this been considered?
+>>>
+>>> I'm not entirely convinced it's worth having a separate lock rather than
+>>> changing the existing one, but the patch still appears to be correct, so:
+>>> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+>>
+>> I did look at that alternate solution and rejected it, but am happy to
+>> send that up if people think it's better.  Here's why I rejected it:
+>>
+>> 1. It looks like someone has gone through quite a bit of work to _not_
+>> grab the existing lock in the IRQ handler.  The IRQ handler always
+>> pushes all real work over to the tasklet.  I can only assume that they
+>> did this for some good reason and I'd hate to switch it without
+>> knowing for sure why.
+>>
+>> 2. We might have performance problems if we blindly changed the
+>> existing code to an IRQ-safe spinlock.  We hold the existing
+>> "host->lock" spinlock for the entire duration of
+>> dw_mci_tasklet_func().  That's a pretty intense chunk of code, full of
+>> nested loops (some with 500ms timeouts!), mdelay(20) calls to handle
+>> some errors, etc.  I say "might" because I think that the expected
+>> case is that code runs pretty quickly.  I ran some brief tests on one
+>> system and saw a worst case time of 170us and an common case time of
+>> ~10us.  Are we OK with having interrupts disabled for that long?  Are
+>> we OK with having the dw_mci interrupt handler potentially spin on a
+>> spinlock for that long?
+>>
+> 
+> Fair enough, I'm convinced now. That code did look pretty heavy when I
+> looked at it too.
+> 
+>>
+>> I don't think it would be terrible to look at reworking the way that
+>> dw_mmc handles interrupts, but that seems pretty major.
+Yes, Reworking is pretty major.
+but if we need to rework, i think we can rework it in future.
+> 
+> Yeh, I suppose at least the potentially large delays are all for
+> exceptional cases, so it's not a critical problem.
+> 
+>> BTW: is the cost of an extra lock actually that high?
+> 
+> I don't know tbh. In this case the spinlock usage doesn't appear to
+> actually overlap.
+> 
+>> ...or are you talking the cost in terms of code complexity?
+> 
+> In this case it'd only be a space and code complexity thing I think. I
+> suppose in some cases the benefit of finer-grained locking is probably
+> pretty marginal, but there's a good case for it here. It might be
+> worth renaming the lock to irq_lock or something like that so it's
+> clear it doesn't have to protect only for INTMASK in the future - up
+> to you.
+It seems good that use the irq_lock than intmask_lock. (It's just naming)
+> 
+> Cheers
+> James
+> 
 
-> -----Original Message-----
-> From: Neil Zhang [mailto:zhangwm@marvell.com]
-> Sent: 2013ƒÍ10‘¬11»’ 16:24
-> To: linux-kernel@vger.kernel.org
-> Cc: haojian.zhuang@gmail.com; tglx@linutronix.de; Neil Zhang
-> Subject: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-> 
-> Some of the Marvell SoCs use GIC as its interrupt controller,and ICU only used as
-> wakeup logic. When AP subsystem is powered off, GIC will lose its context, the
-> PMU will need ICU to wakeup the AP subsystem.
-> So add wakeup entry for such kind of usage.
-> 
-> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> ---
->  .../devicetree/bindings/arm/mrvl/intc.txt          |   14 ++-
->  drivers/irqchip/irq-mmp.c                          |  124
-> ++++++++++++++++++++
->  include/linux/irqchip/mmp.h                        |   13 ++
->  3 files changed, 150 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> index 8b53273..4180928 100644
-> --- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> +++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> @@ -2,7 +2,7 @@
-> 
->  Required properties:
->  - compatible : Should be "mrvl,mmp-intc", "mrvl,mmp2-intc" or
-> -  "mrvl,mmp2-mux-intc"
-> +  "mrvl,mmp2-mux-intc", "mrvl,mmp-intc-wakeupgen"
->  - reg : Address and length of the register set of the interrupt controller.
->    If the interrupt controller is intc, address and length means the range
->    of the whold interrupt controller. If the interrupt controller is mux-intc, @@
-> -15,6 +15,9 @@ Required properties:
->  - interrupt-controller : Identifies the node as an interrupt controller.
->  - #interrupt-cells : Specifies the number of cells needed to encode an
->    interrupt source.
-> +- mrvl,intc-gbl-mask : Specifies the address and value for global mask
-> +in the
-> +  interrupt controller.
-> +- mrvl,intc-for-cp : Specifies the irqs that will be routed to cp
->  - mrvl,intc-nr-irqs : Specifies the number of interrupts in the interrupt
->    controller.
->  - mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear MFP edge @@
-> -39,6 +42,15 @@ Example:
->  		mrvl,intc-nr-irqs = <2>;
->  	};
-> 
-> +     intc: wakeupgen@d4282000 {
-> +		compatible = "mrvl,mmp-intc-wakeupgen";
-> +		reg = <0xd4282000 0x1000>;
-> +		mrvl,intc-nr-irqs = <64>;
-> +		mrvl,intc-gbl-mask = <0x114 0x3
-> +		                      0x144 0x3>;
-> +		mrvl,intc-for-cp = <0 31 32>;
-> +     };
-> +
->  * Marvell Orion Interrupt controller
-> 
->  Required properties
-> diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c index
-> 470c5de..445a00c 100644
-> --- a/drivers/irqchip/irq-mmp.c
-> +++ b/drivers/irqchip/irq-mmp.c
-> @@ -16,6 +16,8 @@
->  #include <linux/init.h>
->  #include <linux/irq.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/irqchip/mmp.h>
-> +#include <linux/irqchip/arm-gic.h>
->  #include <linux/io.h>
->  #include <linux/ioport.h>
->  #include <linux/of_address.h>
-> @@ -58,6 +60,8 @@ struct mmp_intc_conf {  static void __iomem
-> *mmp_icu_base;  static struct icu_chip_data icu_data[MAX_ICU_NR];  static
-> int max_icu_nr;
-> +static u32 irq_for_cp[64];
-> +static u32 irq_for_cp_nr;	/* How many irqs will be routed to cp */
-> 
->  extern void mmp2_clear_pmic_int(void);
-> 
-> @@ -123,6 +127,50 @@ static void icu_unmask_irq(struct irq_data *d)
->  	}
->  }
-> 
-> +static int irq_ignore_wakeup(struct icu_chip_data *data, int hwirq) {
-> +	int i;
-> +
-> +	if (hwirq < 0 || hwirq >= data->nr_irqs)
-> +		return 1;
-> +
-> +	for (i = 0; i < irq_for_cp_nr; i++)
-> +		if (irq_for_cp[i] == hwirq)
-> +			return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +static void icu_mask_irq_wakeup(struct irq_data *d) {
-> +	struct icu_chip_data *data = &icu_data[0];
-> +	int hwirq = d->hwirq - data->virq_base;
-> +	u32 r;
-> +
-> +	if (irq_ignore_wakeup(data, hwirq))
-> +		return;
-> +
-> +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
-> +	r &= ~data->conf_mask;
-> +	r |= data->conf_disable;
-> +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
-> +
-> +static void icu_unmask_irq_wakeup(struct irq_data *d) {
-> +	struct icu_chip_data *data = &icu_data[0];
-> +	int hwirq = d->irq - data->virq_base;
-> +	u32 r;
-> +
-> +	if (irq_ignore_wakeup(data, hwirq))
-> +		return;
-> +
-> +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
-> +	r &= ~data->conf_mask;
-> +	r |= data->conf_enable;
-> +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
-> +
->  struct irq_chip icu_irq_chip = {
->  	.name		= "icu_irq",
->  	.irq_mask	= icu_mask_irq,
-> @@ -491,5 +539,81 @@ err:
->  	irq_domain_remove(icu_data[i].domain);
->  	return -EINVAL;
->  }
-> +
-> +void __init mmp_of_wakeup_init(void)
-> +{
-> +	struct device_node *node;
-> +	const __be32 *wakeup_reg;
-> +	const __be32 *cp_irq_reg;
-> +	int ret, nr_irqs;
-> +	int size, i = 0;
-> +	int irq;
-> +
-> +	node = of_find_compatible_node(NULL, NULL,
-> "mrvl,mmp-intc-wakeupgen");
-> +	if (!node) {
-> +		pr_err("Failed to find interrupt controller in arch-mmp\n");
-> +		return;
-> +	}
-> +
-> +	mmp_icu_base = of_iomap(node, 0);
-> +	if (!mmp_icu_base) {
-> +		pr_err("Failed to get interrupt controller register\n");
-> +		return;
-> +	}
-> +
-> +	ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
-> +	if (ret) {
-> +		pr_err("Not found mrvl,intc-nr-irqs property\n");
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Config all the interrupt source be able to interrupt the cpu 0,
-> +	 * in IRQ mode, with priority 0 as masked by default.
-> +	 */
-> +	for (irq = 0; irq < nr_irqs; irq++)
-> +		__raw_writel(ICU_IRQ_CPU0_MASKED, mmp_icu_base + (irq << 2));
-> +
-> +	/* ICU is only used as wake up logic
-> +	  * disable the global irq/fiq in icu for all cores.
-> +	  */
-> +	wakeup_reg = of_get_property(node, "mrvl,intc-gbl-mask", &size);
-> +	if (!wakeup_reg) {
-> +		pr_err("Not found mrvl,intc-gbl-mask property\n");
-> +		return;
-> +	}
-> +
-> +	size /= sizeof(*wakeup_reg);
-> +	while (i < size) {
-> +		unsigned offset, val;
-> +
-> +		offset = be32_to_cpup(wakeup_reg + i++);
-> +		val = be32_to_cpup(wakeup_reg + i++);
-> +		writel_relaxed(val, mmp_icu_base + offset);
-> +	}
-> +
-> +	/* Get the irq lines and ignore irqs */
-> +	cp_irq_reg = of_get_property(node, "mrvl,intc-for-cp", &size);
-> +	if (!cp_irq_reg)
-> +		return;
-> +
-> +	irq_for_cp_nr = size / sizeof(*cp_irq_reg);
-> +	for (i = 0; i < irq_for_cp_nr; i++) {
-> +		irq_for_cp[i] = be32_to_cpup(cp_irq_reg + i);
-> +		__raw_writel(ICU_CONF_SEAGULL, mmp_icu_base + (irq_for_cp[i]
-> << 2));
-> +	}
-> +
-> +	icu_data[0].conf_enable = mmp_conf.conf_enable;
-> +	icu_data[0].conf_disable = mmp_conf.conf_disable;
-> +	icu_data[0].conf_mask = mmp_conf.conf_mask;
-> +	icu_data[0].nr_irqs = nr_irqs;
-> +	icu_data[0].virq_base = 32;
-> +
-> +	gic_arch_extn.irq_mask = icu_mask_irq_wakeup;
-> +	gic_arch_extn.irq_unmask = icu_unmask_irq_wakeup;
-> +
-> +	return;
-> +}
-> +
->  IRQCHIP_DECLARE(mmp2_mux_intc, "mrvl,mmp2-mux-intc",
-> mmp2_mux_of_init);  #endif diff --git a/include/linux/irqchip/mmp.h
-> b/include/linux/irqchip/mmp.h index c78a892..93b05ad 100644
-> --- a/include/linux/irqchip/mmp.h
-> +++ b/include/linux/irqchip/mmp.h
-> @@ -1,6 +1,19 @@
->  #ifndef	__IRQCHIP_MMP_H
->  #define	__IRQCHIP_MMP_H
-> 
-> +#define ICU_CONF_CPU3      (1 << 9)
-> +#define ICU_CONF_CPU2      (1 << 8)
-> +#define ICU_CONF_CPU1      (1 << 7)
-> +#define ICU_CONF_CPU0      (1 << 6)
-> +#define ICU_CONF_AP(n)     (1 << (6 + (n & 0x3)))
-> +#define ICU_CONF_AP_MASK   (0xF << 6)
-> +#define ICU_CONF_SEAGULL   (1 << 5)
-> +#define ICU_CONF_IRQ_FIQ   (1 << 4)
-> +#define ICU_CONF_PRIO(n)   (n & 0xF)
-> +
-> +#define ICU_IRQ_CPU0_MASKED    (ICU_CONF_IRQ_FIQ |
-> ICU_CONF_CPU0)
-> +
->  extern struct irq_chip icu_irq_chip;
-> 
-> +extern void __init mmp_of_wakeup_init(void);
->  #endif	/* __IRQCHIP_MMP_H */
-> --
-> 1.7.9.5
-
-Best Regards,
-Neil Zhang
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
