@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3JRDK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 23:10:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39638 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3JRDK4 (ORCPT
+	id S1756397Ab3JRDey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 23:34:54 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:24528 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3JRDex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 23:10:56 -0400
-Message-ID: <5260A6B0.4070509@infradead.org>
-Date: Thu, 17 Oct 2013 20:10:40 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 17 Oct 2013 23:34:53 -0400
+Message-ID: <5260AB8A.2060505@huawei.com>
+Date: Fri, 18 Oct 2013 11:31:22 +0800
+From: "Jiang Liu (Gerry)" <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Xie XiuQi <xiexiuqi@huawei.com>, Jiri Kosina <trivial@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] irq: Fix some trivial typos in comments
-References: <52608AB1.1010307@huawei.com> <52608AE4.9060304@huawei.com>
-In-Reply-To: <52608AE4.9060304@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jiang Liu <liuj97@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        "Catalin Marinas" <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] arm64, jump label: optimize jump label implementation
+References: <1381893492-7135-1-git-send-email-liuj97@gmail.com> <1381893492-7135-7-git-send-email-liuj97@gmail.com> <20131016114608.GH5403@mudshark.cambridge.arm.com> <525EC8D1.7000900@gmail.com> <20131017093944.GB18765@mudshark.cambridge.arm.com> <525FF6E0.7070000@gmail.com> <20131017112713.2638910f@gandalf.local.home>
+In-Reply-To: <20131017112713.2638910f@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.76.110]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/13 18:12, Xie XiuQi wrote:
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> ---
->  kernel/irq/chip.c   |    2 +-
->  kernel/irq/manage.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index a3bb14f..dc04c16 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -214,7 +214,7 @@ void irq_enable(struct irq_desc *desc)
->  }
-> 
->  /**
-> - * irq_disable - Mark interupt disabled
-> + * irq_disable - Mark interrupt disabled
->   * @desc:	irq descriptor which should be disabled
->   *
->   * If the chip does not implement the irq_disable callback, we
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 514bcfd..6394a3c 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -786,7 +786,7 @@ irq_forced_thread_fn(struct irq_desc *desc, struct irqaction *action)
->  }
-> 
->  /*
-> - * Interrupts explicitely requested as threaded interupts want to be
-> + * Interrupts explicitely requested as threaded interrupts want to be
 
-                 explicitly
-
->   * preemtible - many of them need to sleep and wait for slow busses to
->   * complete.
->   */
-> 
+On 2013/10/17 23:27, Steven Rostedt wrote:
+> On Thu, 17 Oct 2013 22:40:32 +0800
+> Jiang Liu <liuj97@gmail.com> wrote:
+>
+>
+>>>>> You could make the code more concise by limiting your patching ability to
+>>>>> branch immediates. Then a nop is simply a branch to the next instruction (I
+>>>>> doubt any modern CPUs will choke on this, whereas the architecture requires
+>>>>> a NOP to take time).
+>>>> I guess a NOP should be more effecient than a "B #4" on real CPUs:)
+>>>
+>>> Well, I was actually questioning that. A NOP *has* to take time (the
+>>> architecture prevents implementations from discaring it) whereas a static,
+>>> unconditional branch will likely be discarded early on by CPUs with even
+>>> simple branch prediction logic.
+>> I naively thought "NOP" is cheaper than a "B" :(
+>> Will use a "B #1" to replace "NOP".
+>>
+>
+> Really?? What's the purpose of a NOP then? It seems to me that an
+> architecture is broken if a NOP is slower than a static branch.
+>
+> -- Steve
+Hi Steve and Will,
+	I have discussed this with one of our chip design members.
+He thinks "NOP" should be better than "B #1" because jump instruction
+is one of the most complex instructions for microarchitecture, which
+may stall the pipeline. And NOP should be friendly enough for all
+microarchitectures. So I will keep the "NOP" version.
+Thanks!
+Gerry
 
 
--- 
-~Randy
