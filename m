@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab3JRNsH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:48:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab3JRNsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:48:04 -0400
-Date: Fri, 18 Oct 2013 09:47:52 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: MAX_LOCKDEP_CHAINS too low! (sysfs?)
-Message-ID: <20131018134752.GA31269@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <greg@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754540Ab3JROAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:00:10 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:34231 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab3JROAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 10:00:08 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 00/34] CPUFreq Cleanup Part III
+Date: Fri, 18 Oct 2013 19:29:23 +0530
+Message-Id: <cover.1382104514.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: MAX_LOCKDEP_CHAINS too low!
-turning off the locking correctness validator.
-Please attach the output of /proc/lock_stat to the bug report
-CPU: 1 PID: 2102862 Comm: trinity-main Not tainted 3.12.0-rc5+ #27
-Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
- ffffffff82427e90 ffff88006f9cd938 ffffffff816db90c 000000000104c014
- ffff88006f9cda00 ffffffff810c40cd ffffffff810bf11e ffff88006f9cd970
- ffffffff810bf645 ffff8800c9ee1550 ffff88012a000a18 00007fffce3189e8
-Call Trace:
- [<ffffffff816db90c>] dump_stack+0x4e/0x82
- [<ffffffff810c40cd>] __lock_acquire+0x1b6d/0x1bd0
- [<ffffffff810bf11e>] ? put_lock_stats.isra.28+0xe/0x40
- [<ffffffff810bf645>] ? lock_release_holdtime.part.29+0xe5/0x160
- [<ffffffff810d04f2>] ? __module_text_address+0x12/0x60
- [<ffffffff810d4b1f>] ? is_module_text_address+0x2f/0x60
- [<ffffffff8106e580>] ? __kernel_text_address+0x50/0x70
- [<ffffffff81006507>] ? print_context_stack+0x87/0xf0
- [<ffffffff810c48d3>] lock_acquire+0x93/0x1e0
- [<ffffffff816d95d7>] ? get_partial_node.isra.41+0x49/0x20a
- [<ffffffff816e4441>] _raw_spin_lock+0x41/0x80
- [<ffffffff816d95d7>] ? get_partial_node.isra.41+0x49/0x20a
- [<ffffffff816d95d7>] get_partial_node.isra.41+0x49/0x20a
- [<ffffffff810c13b7>] ? check_usage_backwards+0x87/0x150
- [<ffffffff816d9918>] __slab_alloc+0x180/0x4dd
- [<ffffffff810c1330>] ? print_shortest_lock_dependencies+0x1d0/0x1d0
- [<ffffffff81249ea8>] ? sysfs_open_file+0xb8/0x230
- [<ffffffff810bf086>] ? __lock_is_held+0x56/0x80
- [<ffffffff811a304c>] kmem_cache_alloc_trace+0x2dc/0x3a0
- [<ffffffff81249ea8>] ? sysfs_open_file+0xb8/0x230
- [<ffffffff81249ea8>] sysfs_open_file+0xb8/0x230
- [<ffffffff811c129b>] do_dentry_open+0x25b/0x310
- [<ffffffff812dfcbc>] ? security_inode_permission+0x1c/0x30
- [<ffffffff81249df0>] ? sysfs_schedule_callback+0x1e0/0x1e0
- [<ffffffff811c1399>] finish_open+0x49/0x60
- [<ffffffff811d3af4>] do_last+0x5b4/0x1200
- [<ffffffff811d480e>] path_openat+0xce/0x6b0
- [<ffffffff8100b324>] ? native_sched_clock+0x24/0x80
- [<ffffffff811d5577>] do_filp_open+0x47/0xa0
- [<ffffffff811e4daf>] ? __alloc_fd+0xaf/0x200
- [<ffffffff811c2829>] do_sys_open+0x139/0x220
- [<ffffffff81010b95>] ? syscall_trace_enter+0x155/0x2a0
- [<ffffffff811c292e>] SyS_open+0x1e/0x20
- [<ffffffff816ed9e4>] tracesys+0xdd/0xe2
+As Part II is already in your linux-next branch, I am sending Part III for
+inclusion in bleeding-edge.
 
+This is oriented around a light weight ->target_index() routine. CPUFreq
+notifications would be moved to CPUFreq core in the next patchset that I will
+send, as you suggested not to merge multiple series together.. Although both of
+them are oriented towards a light weight ->target_index() routine.
 
-/proc/lock_stat is at http://www.codemonkey.org.uk/junk/locks-2013-10-18.txt
+This is rebased over your bleeding-edge branch + "cpufreq: create per policy
+rwsem instead of per CPU cpu_policy_rwsem"..
 
-Probably not going to get time to dig into this before kernel summit,
-but posting in case it's something obvious..
+Thanks.
 
-	Dave
+Viresh Kumar (34):
+  cpufreq: Implement light weight ->target_index() routine
+  cpufreq: acpi: Convert to light weight ->target_index() routine
+  cpufreq: arm_big_little: Convert to light weight ->target_index()
+    routine
+  cpufreq: at32ap: Convert to light weight ->target_index() routine
+  cpufreq: blackfin: Convert to light weight ->target_index() routine
+  cpufreq: cpu0: Convert to light weight ->target_index() routine
+  cpufreq: cris: Convert to light weight ->target_index() routine
+  cpufreq: davinci: Convert to light weight ->target_index() routine
+  cpufreq: dbx500: Convert to light weight ->target_index() routine
+  cpufreq: e_powersaver: Convert to light weight ->target_index()
+    routine
+  cpufreq: elanfreq: Convert to light weight ->target_index() routine
+  cpufreq: exynos: Convert to light weight ->target_index() routine
+  cpufreq: ia64: Convert to light weight ->target_index() routine
+  cpufreq: imx6q: Convert to light weight ->target_index() routine
+  cpufreq: kirkwood: Convert to light weight ->target_index() routine
+  cpufreq: longhaul: Convert to light weight ->target_index() routine
+  cpufreq: loongson2: Convert to light weight ->target_index() routine
+  cpufreq: maple: Convert to light weight ->target_index() routine
+  cpufreq: omap: Convert to light weight ->target_index() routine
+  cpufreq: p4: Convert to light weight ->target_index() routine
+  cpufreq: pasemi: Convert to light weight ->target_index() routine
+  cpufreq: pmac32: Convert to light weight ->target_index() routine
+  cpufreq: powernow: Convert to light weight ->target_index() routine
+  cpufreq: ppc: Convert to light weight ->target_index() routine
+  cpufreq: pxa: Convert to light weight ->target_index() routine
+  cpufreq: s3c2416: Convert to light weight ->target_index() routine
+  cpufreq: s3c64xx: Convert to light weight ->target_index() routine
+  cpufreq: s5pv210: Convert to light weight ->target_index() routine
+  cpufreq: sa11x0: Convert to light weight ->target_index() routine
+  cpufreq: sc520: Convert to light weight ->target_index() routine
+  cpufreq: sparc: Convert to light weight ->target_index() routine
+  cpufreq: SPEAr: Convert to light weight ->target_index() routine
+  cpufreq: speedstep: Convert to light weight ->target_index() routine
+  cpufreq: tegra: Convert to light weight ->target_index() routine
+
+ Documentation/cpu-freq/cpu-drivers.txt | 27 ++++++++++------
+ Documentation/cpu-freq/governors.txt   |  4 +--
+ arch/arm/mach-sa1100/generic.c         | 20 ------------
+ arch/arm/mach-sa1100/generic.h         |  2 --
+ drivers/cpufreq/acpi-cpufreq.c         | 21 ++++---------
+ drivers/cpufreq/arm_big_little.c       | 17 +++-------
+ drivers/cpufreq/at32ap-cpufreq.c       | 23 +++-----------
+ drivers/cpufreq/blackfin-cpufreq.c     | 17 +++-------
+ drivers/cpufreq/cpufreq-cpu0.c         | 17 ++--------
+ drivers/cpufreq/cpufreq.c              | 57 +++++++++++++++++++++++++++-------
+ drivers/cpufreq/cris-artpec3-cpufreq.c | 18 ++---------
+ drivers/cpufreq/cris-etraxfs-cpufreq.c | 17 ++--------
+ drivers/cpufreq/davinci-cpufreq.c      | 16 ++--------
+ drivers/cpufreq/dbx500-cpufreq.c       | 16 ++--------
+ drivers/cpufreq/e_powersaver.c         | 17 ++--------
+ drivers/cpufreq/elanfreq.c             | 34 ++------------------
+ drivers/cpufreq/exynos-cpufreq.c       | 21 ++-----------
+ drivers/cpufreq/exynos5440-cpufreq.c   | 21 +++----------
+ drivers/cpufreq/ia64-acpi-cpufreq.c    | 21 ++-----------
+ drivers/cpufreq/imx6q-cpufreq.c        | 17 ++--------
+ drivers/cpufreq/kirkwood-cpufreq.c     | 19 ++----------
+ drivers/cpufreq/longhaul.c             | 13 ++------
+ drivers/cpufreq/loongson2_cpufreq.c    | 21 +++----------
+ drivers/cpufreq/maple-cpufreq.c        | 16 +++-------
+ drivers/cpufreq/omap-cpufreq.c         | 31 ++----------------
+ drivers/cpufreq/p4-clockmod.c          | 18 +++--------
+ drivers/cpufreq/pasemi-cpufreq.c       | 12 ++-----
+ drivers/cpufreq/pmac32-cpufreq.c       | 12 ++-----
+ drivers/cpufreq/pmac64-cpufreq.c       | 17 +++-------
+ drivers/cpufreq/powernow-k6.c          | 35 +++------------------
+ drivers/cpufreq/powernow-k7.c          | 22 +++----------
+ drivers/cpufreq/powernow-k8.c          | 24 +++++---------
+ drivers/cpufreq/ppc-corenet-cpufreq.c  | 15 +++------
+ drivers/cpufreq/ppc_cbe_cpufreq.c      | 12 ++-----
+ drivers/cpufreq/pxa2xx-cpufreq.c       | 13 ++------
+ drivers/cpufreq/pxa3xx-cpufreq.c       | 17 ++--------
+ drivers/cpufreq/s3c2416-cpufreq.c      | 17 +++-------
+ drivers/cpufreq/s3c64xx-cpufreq.c      | 18 +++--------
+ drivers/cpufreq/s5pv210-cpufreq.c      | 54 +++++++++-----------------------
+ drivers/cpufreq/sa1100-cpufreq.c       | 24 +++-----------
+ drivers/cpufreq/sa1110-cpufreq.c       | 26 +++-------------
+ drivers/cpufreq/sc520_freq.c           | 19 ++----------
+ drivers/cpufreq/sparc-us2e-cpufreq.c   | 21 ++-----------
+ drivers/cpufreq/sparc-us3-cpufreq.c    | 23 ++------------
+ drivers/cpufreq/spear-cpufreq.c        | 12 +++----
+ drivers/cpufreq/speedstep-centrino.c   | 27 +++++-----------
+ drivers/cpufreq/speedstep-ich.c        | 24 ++++----------
+ drivers/cpufreq/speedstep-smi.c        | 20 +++---------
+ drivers/cpufreq/tegra-cpufreq.c        | 12 ++-----
+ include/linux/cpufreq.h                |  4 ++-
+ 50 files changed, 242 insertions(+), 759 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
