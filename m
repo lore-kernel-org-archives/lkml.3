@@ -1,104 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3JRAvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 20:51:39 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:47132 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab3JRAuw (ORCPT
+	id S1754385Ab3JRAvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 20:51:33 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:55016 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3JRAvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 20:50:52 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH 2/3] mm/mlock: prepare params outside critical region
-Date: Thu, 17 Oct 2013 17:50:37 -0700
-Message-Id: <1382057438-3306-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	Thu, 17 Oct 2013 20:51:00 -0400
+Date: Fri, 18 Oct 2013 02:50:57 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH net-next v3 3/9] static_key: WARN on usage before
+ jump_label_init was called
+Message-ID: <20131018005057.GL2592@two.firstfloor.org>
+References: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org>
+ <1381987923-1524-4-git-send-email-hannes@stressinduktion.org>
+ <20131017171940.173bab09@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131017171940.173bab09@gandalf.local.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All mlock related syscalls prepare lock limits, lengths and
-start parameters with the mmap_sem held. Move this logic
-outside of the critical region. For the case of mlock, continue
-incrementing the amount already locked by mm->locked_vm with
-the rwsem taken.
+On Thu, Oct 17, 2013 at 05:19:40PM -0400, Steven Rostedt wrote:
+> On Thu, 17 Oct 2013 07:31:57 +0200
+> Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
+> 
+> > Based on a patch from Andi Kleen.
+> 
+> I'm fine with the patch, but the change log needs a lot more work.
+> Like, why is this needed?  I know, but does anyone else?
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
----
- mm/mlock.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+Or just merge the orininal patch. While being less verbose
+in the warning it had a full changelog.
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d480cd6..aa7de13 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -689,19 +689,21 @@ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
- 
- 	lru_add_drain_all();	/* flush pagevec */
- 
--	down_write(&current->mm->mmap_sem);
- 	len = PAGE_ALIGN(len + (start & ~PAGE_MASK));
- 	start &= PAGE_MASK;
- 
--	locked = len >> PAGE_SHIFT;
--	locked += current->mm->locked_vm;
--
- 	lock_limit = rlimit(RLIMIT_MEMLOCK);
- 	lock_limit >>= PAGE_SHIFT;
-+	locked = len >> PAGE_SHIFT;
-+
-+	down_write(&current->mm->mmap_sem);
-+
-+	locked += current->mm->locked_vm;
- 
- 	/* check against resource limits */
- 	if ((locked <= lock_limit) || capable(CAP_IPC_LOCK))
- 		error = do_mlock(start, len, 1);
-+
- 	up_write(&current->mm->mmap_sem);
- 	if (!error)
- 		error = __mm_populate(start, len, 0);
-@@ -712,11 +714,13 @@ SYSCALL_DEFINE2(munlock, unsigned long, start, size_t, len)
- {
- 	int ret;
- 
--	down_write(&current->mm->mmap_sem);
- 	len = PAGE_ALIGN(len + (start & ~PAGE_MASK));
- 	start &= PAGE_MASK;
-+
-+	down_write(&current->mm->mmap_sem);
- 	ret = do_mlock(start, len, 0);
- 	up_write(&current->mm->mmap_sem);
-+
- 	return ret;
- }
- 
-@@ -761,12 +765,12 @@ SYSCALL_DEFINE1(mlockall, int, flags)
- 	if (flags & MCL_CURRENT)
- 		lru_add_drain_all();	/* flush pagevec */
- 
--	down_write(&current->mm->mmap_sem);
--
- 	lock_limit = rlimit(RLIMIT_MEMLOCK);
- 	lock_limit >>= PAGE_SHIFT;
- 
- 	ret = -ENOMEM;
-+	down_write(&current->mm->mmap_sem);
-+
- 	if (!(flags & MCL_CURRENT) || (current->mm->total_vm <= lock_limit) ||
- 	    capable(CAP_IPC_LOCK))
- 		ret = do_mlockall(flags);
--- 
-1.8.1.4
-
+-Andi
