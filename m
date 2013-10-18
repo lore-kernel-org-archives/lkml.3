@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab3JRX3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 19:29:21 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:58634 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3JRX3U (ORCPT
+	id S1757825Ab3JRX32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 19:29:28 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58013 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757798Ab3JRX3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 19:29:20 -0400
-From: "Victor N. Ramos Mello" <victornrm@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Victor N. Ramos Mello" <victornrm@gmail.com>
-Subject: [PATCH v2] drivers: clk: sunxi: Fix memory leakage in clk-sunxi.c
-Date: Fri, 18 Oct 2013 20:27:51 -0300
-Message-Id: <1382138871-9366-1-git-send-email-victornrm@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 18 Oct 2013 19:29:25 -0400
+Message-ID: <5261C450.1000204@linaro.org>
+Date: Fri, 18 Oct 2013 16:29:20 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        kosaki.motohiro@gmail.com
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, fweisbec@gmail.com
+Subject: Re: [PATCH] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev
+ doesn't exist
+References: <1381786396-1818-1-git-send-email-kosaki.motohiro@gmail.com> <526018C6.5070604@linaro.org> <52608AE7.30100@gmail.com> <5261B887.3010705@linaro.org> <5261C040.5050000@jp.fujitsu.com>
+In-Reply-To: <5261C040.5050000@jp.fujitsu.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Victor N. Ramos Mello" <victornrm@gmail.com>
+On 10/18/2013 04:12 PM, KOSAKI Motohiro wrote:
+> On 10/18/2013 6:39 PM, John Stultz wrote:
+>> On 10/17/2013 06:12 PM, KOSAKI Motohiro wrote:
+>>> (10/17/13 1:05 PM), John Stultz wrote:
+>>>> On 10/14/2013 02:33 PM, kosaki.motohiro@gmail.com wrote:
+>>>>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>>
+>>>>> Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora
+>>>>> Rawhide
+>>>>> on ARM. (http://bugs.ruby-lang.org/issues/9008)
+>>>>>
+>>>>> Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+>>>>> RTC device is present) intruduced to return ENOTSUPP when
+>>>>> clock_get{time,res} can't find a RTC device. However it is incorrect.
+>>>>>
+>>>>> Posix and Linux man pages agree that clock_gettime and clock_getres
+>>>>> should return EINVAL if clk_id argument is invalid. This is significant
+>>>>> different from timer_create API.
+>>>>>
+>>>>> This patch fixes it.
+>>>> Hrm... So I feel like there is a difference here. The clockid for
+>>>> CLOCK_BOOTTIME_ALARM and CLOCK_REALTIME_ALARM are both valid.
+>>>>
+>>>> Its just that they're not supported on this specific hardware because it
+>>>> apparently lacks a RTC that has told the system it can be used as a
+>>>> wakeup device (Its actually quite likely on the hardware that the RTC
+>>>> can be a wakeup device, but that the driver is probably setting the
+>>>> wakeup flag after the RTC registered - so there is probably a driver bug
+>>>> here too).
+>>>>
+>>>> So I feel like in this case EINVAL isn't quite right.  I'll admit it is
+>>>> somewhat new behavior, because we haven't had any clockids before that
+>>>> were dependent on the particular hardware, they either existed in a
+>>>> kernel verison or didn't.
+>>>>
+>>>> Would updating the manpage be a better route?
+>>> Nope.
+>>>
+>>> ENOTSUPP is not exported to userland. ENOTSUP (single P) and EOPNOTSUP is
+>>> valid errno (and they are same on linux), but ENOTSUPP is a kernel
+>>> internal specific.
+>>>
+>>> Moreover, I completely disagree your position. Both
+>>> CLOCK_REALTIME_ALARM unsupported
+>>> kernel and ARM which doesn't support RTC should use the same error
+>>> because application
+>>> need the same fallback.
+>> Ok. You're right. The technicality that the clockid is valid but
+>> unsupported isn't really useful to the applications, since the effect is
+>> the same.
+>>
+>> What is the urgency on this? As the issue has been around since 3.0, is
+>> it ok if it gets queued for 3.13 and marked for stable, or does it need
+>> to land in 3.12?
+> 3.13 is OK to me.
 
-Fix a possible memory leak in sun4i_osc_clk_setup().
-Moved clock-frequency check to save superfluous allocation.
+Ok. Applied to my 3.13 queue.
 
-Signed-off-by: Victor N. Ramos Mello <victornrm@gmail.com>
----
- drivers/clk/sunxi/clk-sunxi.c |   28 +++++++++++++++++-----------
- 1 files changed, 17 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 34ee69f..9dcf43e 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -38,18 +38,16 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
- 	const char *clk_name = node->name;
- 	u32 rate;
- 
-+	if (of_property_read_u32(node, "clock-frequency", &rate))
-+		return;
-+
- 	/* allocate fixed-rate and gate clock structs */
- 	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
- 	if (!fixed)
- 		return;
- 	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
--	if (!gate) {
--		kfree(fixed);
--		return;
--	}
--
--	if (of_property_read_u32(node, "clock-frequency", &rate))
--		return;
-+	if (!gate)
-+		goto err_free_fixed;
- 
- 	/* set up gate and fixed rate properties */
- 	gate->reg = of_iomap(node, 0);
-@@ -64,10 +62,18 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
- 			&gate->hw, &clk_gate_ops,
- 			CLK_IS_ROOT);
- 
--	if (!IS_ERR(clk)) {
--		of_clk_add_provider(node, of_clk_src_simple_get, clk);
--		clk_register_clkdev(clk, clk_name, NULL);
--	}
-+	if (IS_ERR(clk))
-+		goto err_free_gate;
-+
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, clk_name, NULL);
-+
-+	return;
-+
-+err_free_gate:
-+	kfree(gate);
-+err_free_fixed:
-+	kfree(fixed);
- }
- CLK_OF_DECLARE(sun4i_osc, "allwinner,sun4i-osc-clk", sun4i_osc_clk_setup);
- 
--- 
-1.7.5.4
+thanks
+-john
 
