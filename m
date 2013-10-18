@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab3JRNXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:23:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43141 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab3JRNXD (ORCPT
+	id S1754718Ab3JRNZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:25:33 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1398 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab3JRNZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:23:03 -0400
-Date: Fri, 18 Oct 2013 09:22:57 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Tim Kryger <tim.kryger@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "patches@linaro.org" <patches@linaro.org>,
+	Fri, 18 Oct 2013 09:25:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 18 Oct 2013 06:25:31 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RESEND PATCH v2 6/6] mmc: sdhci-bcm-kona: Add basic use of
- clocks
-Message-ID: <20131018132257.GG2721@beef>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
- <1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
- <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 01/15] ARM: tegra30: add missing CLK IDs
+Date: Fri, 18 Oct 2013 16:25:05 +0300
+Message-ID: <1382102719-5531-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 03:13:09PM +0100, Mark Rutland wrote:
-> On Wed, Oct 16, 2013 at 10:47:10PM +0100, Tim Kryger wrote:
-> > +	/* Get and enable the external clock */
-> > +	kona_dev->external_clk = devm_clk_get(dev, NULL);
-> > +	if (IS_ERR(kona_dev->external_clk)) {
-> > +		dev_err(dev, "Failed to get external clock\n");
-> > +		ret = PTR_ERR(kona_dev->external_clk);
-> > +		goto err_pltfm_free;
-> 
-> This seems like a pretty clear breakage of existing DTBs.
-> 
-> Why?
+The Tegra30 clock bindings lack few IDs for audio and clk_out muxes.
 
-Normal kernel incremental development. The notion of breaking DTBs is
-pretty much incompatible with the long-standing tradition of developing
-kernel support in an incremental fashion.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ include/dt-bindings/clock/tegra30-car.h |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-In this case, the bootloader available on these boards has had clocks
-and regulators enabled for all the drivers currently upstream. This
-allowed development of the sdhci driver (and others) independent of having
-the common clk driver and PMU/regulator drivers ready. That's been especially
-important given the flux that the common clk framework is in with regards
-to bindings.
+diff --git a/include/dt-bindings/clock/tegra30-car.h b/include/dt-bindings/clock/tegra30-car.h
+index e40fae8..2244582 100644
+--- a/include/dt-bindings/clock/tegra30-car.h
++++ b/include/dt-bindings/clock/tegra30-car.h
+@@ -260,6 +260,14 @@
+ /* 298 */
+ /* 299 */
+ #define TEGRA30_CLK_CLK_OUT_1_MUX 300
+-#define TEGRA30_CLK_CLK_MAX 301
++#define TEGRA30_CLK_CLK_OUT_2_MUX 301
++#define TEGRA30_CLK_CLK_OUT_3_MUX 302
++#define TEGRA30_CLK_AUDIO0_MUX 303
++#define TEGRA30_CLK_AUDIO1_MUX 304
++#define TEGRA30_CLK_AUDIO2_MUX 305
++#define TEGRA30_CLK_AUDIO3_MUX 306
++#define TEGRA30_CLK_AUDIO4_MUX 307
++#define TEGRA30_CLK_SPDIF_MUX 308
++#define TEGRA30_CLK_CLK_MAX 309
+ 
+ #endif	/* _DT_BINDINGS_CLOCK_TEGRA30_CAR_H */
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-Are you suggesting that the required clock needs to be made logically
-optional in the code to retain backward compatbility?
-
--Matt
