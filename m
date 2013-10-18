@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314Ab3JRJT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:19:27 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:36871 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab3JRJT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:19:26 -0400
-Date: Fri, 18 Oct 2013 11:19:21 +0200
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] init: fix in-place parameter modification regression
-Message-ID: <20131018091921.GA7301@shrek.podlesie.net>
-References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net>
- <1381750442.3247.48.camel@hornet>
- <20131014125001.GA6015@shrek.podlesie.net>
- <87wqlbjkz5.fsf@rustcorp.com.au>
+	id S1752574Ab3JRJVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:21:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59823 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752448Ab3JRJVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 05:21:13 -0400
+Date: Fri, 18 Oct 2013 11:20:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com
+Cc: joe@perches.com, naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com,
+        arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/9] Extended H/W error log driver
+Message-ID: <20131018092054.GB1007@pd.tnic>
+References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87wqlbjkz5.fsf@rustcorp.com.au>
+In-Reply-To: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 02:20:38PM +1030, Rusty Russell wrote:
-> Back when there was almost no parameter parsing support, everyone got
-> used to keeping pointers into the original.  Making everyone kstrdup()
-> seems like gratuitous churn which is likely to make more bugs.
-> 
-> Your fix means __setup() gets treated specially, in that only it can
-> mangle the command line.  That makes sense.  But it introduces another
-> regression: normal parsing functions can't keep pointers, since that's
-> now __initdata.
-> 
-> There are two possible solutions:
-> (1) Audit all __setup to make sure they copy if they want to mangle.
->     There are about 750 of them, but many are trivial.
-> (2) alloc_bootmem() a third commandline for parsing.
-> 
-> Now, many functions of form __setup("XXX=") should be turned into
-> module_param anyway.
-> 
-> I suggest we do (2) for the moment, and start sweeping through cleaning
-> up __setup() in the longer term.
-> 
+On Fri, Oct 18, 2013 at 04:23:35AM -0400, Chen, Gong wrote:
+> OK, this is the 3rd version. Hope it is the last one :-).
 
-Yes, the buffer cannot be __initdata. I'm sending an updated patch.
+It looks ok to me so far, I'm guessing Tony you're picking this up or
+should I?
 
+> this version just updates some minors places and apply some Ack/Review
+> information. In this version I remove the last patch for trace
+> interface. Maybe it is time to build a new RAS trace interface to
+> integrate all RAS related error report interfaces now.
 
-However, keeping pointers to buffer, that will be reinitialized
-in next initcall parameters parsing pass, might cause some race
-conditions.
+Yeah, let's start small here by moving the CREATE_TRACE_POINTS macro
+definition to something like arch/x86/ras/core.c and work slowly up from
+there. We have ras_event.h for tracepoints already.
 
-Thanks,
-Krzysiek
+Thanks.
 
--- >8 --
-Subject: [PATCH v2] init: fix in-place parameter modification regression
-
-Before commit 026cee0086fe1df4cf74691cf273062cc769617d
-("params: <level>_initcall-like kernel parameters") the __setup
-parameter parsing code could modify parameter in the
-static_command_line buffer and such modifications were kept. After
-that commit such modifications are destroyed during per-initcall level
-parameter parsing because the same static_command_line buffer is used
-and only parameters for appropriate initcall level are parsed.
-
-That change broke at least parsing "ubd" parameter in the ubd driver
-when the COW file is used.
-
-Now the separate buffer is used for per-initcall parameter parsing.
-
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
- init/main.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/init/main.c b/init/main.c
-index 63d3e8f..c093b5c 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -132,6 +132,8 @@ char __initdata boot_command_line[COMMAND_LINE_SIZE];
- char *saved_command_line;
- /* Command line for parameter parsing */
- static char *static_command_line;
-+/* Command line for per-initcall parameter parsing */
-+static char *initcall_command_line;
- 
- static char *execute_command;
- static char *ramdisk_execute_command;
-@@ -348,6 +350,7 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
- static void __init setup_command_line(char *command_line)
- {
- 	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
-+	initcall_command_line = alloc_bootmem(strlen (boot_command_line)+1);
- 	static_command_line = alloc_bootmem(strlen (command_line)+1);
- 	strcpy (saved_command_line, boot_command_line);
- 	strcpy (static_command_line, command_line);
-@@ -745,9 +748,9 @@ static void __init do_initcall_level(int level)
- 	extern const struct kernel_param __start___param[], __stop___param[];
- 	initcall_t *fn;
- 
--	strcpy(static_command_line, saved_command_line);
-+	strcpy(initcall_command_line, saved_command_line);
- 	parse_args(initcall_level_names[level],
--		   static_command_line, __start___param,
-+		   initcall_command_line, __start___param,
- 		   __stop___param - __start___param,
- 		   level, level,
- 		   &repair_env_string);
 -- 
-1.8.4.1.635.g55556a5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
