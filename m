@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3JRPgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:36:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56054 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753998Ab3JRPgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:36:53 -0400
-Date: Fri, 18 Oct 2013 17:36:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joonas Saarinen <jza@saunalahti.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD Bobcat cpufreq
-Message-ID: <20131018153650.GE1007@pd.tnic>
-References: <26801338.9419821382109781265.JavaMail.jza@saunalahti.fi>
+	id S1756389Ab3JRPmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:42:04 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:58103 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3JRPmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:42:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <26801338.9419821382109781265.JavaMail.jza@saunalahti.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+ <CAErSpo5+xbgTfBrQdP36PRfOFpQcdeSgOEBFFDCfZoqoAsch5g@mail.gmail.com> <1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 18 Oct 2013 09:41:40 -0600
+Message-ID: <CAErSpo5MPkySEb+tURxjh+f8p8xTi=Mnuj1W5g2=TAoXFDZ2Qg@mail.gmail.com>
+Subject: Re: [ 3.8.y.z extended stable ] Linux 3.8.13.11 stable review
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 06:23:01PM +0300, Joonas Saarinen wrote:
-> Borislav Petkov [bp@alien8.de] wrote:
-> >You can also try turbostat in tools/power/x86/turbostat/
-> >
-> ># ./turbostat -i 1
-> 
-> We might be on to something. With work pinned on one core:
-> 
-> cor CPU   GHz  TSC
->        1.16 1.00
->  0   0 1.17 1.00
->  1   1 0.80 1.00
-> 
-> When both cores are occupied:
-> 
-> cor CPU   GHz  TSC
->        1.00 1.00
->  0   0 1.00 1.00
->  1   1 1.00 1.00
-> 
-> In this case both cores are limited to 1GHz, but it might be intentional
-> to avoid overheating.
+On Thu, Oct 17, 2013 at 7:30 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Thu, 2013-10-10 at 11:37 -0600, Bjorn Helgaas wrote:
+>> On Thu, Oct 10, 2013 at 9:40 AM, Kamal Mostafa <kamal@canonical.com> wrote:
+>> > This is the start of the review cycle for the Linux 3.8.13.11 stable kernel.
+>>
+>> Would anybody be interested in adding some sort of "stable" tag to the
+>> subject lines of stable backport patches, e.g.,  instead of:
+>>
+>>   [PATCH 001/104] htb: fix sign extension bug
+>>
+>> something like:
+>>
+>>   [STABLE 3.8.13.11 001/104] htb: fix sign extension bug
+>>
+>> I don't mind having the stable patches on LKML, but it would be nice
+>> if it were easier to distinguish stable backports from new patches.  I
+>> know the patches are nicely threaded behind this message, but some
+>> readers don't really pay attention to that.
+>
+> I agree that some distinction is needed, but I'm not convinced about
+> that precise format.  I don't think it's worth including version
+> components after the stable base version e.g. 3.2.  And I think that
+> including the version is a big enough clue that this is for a stable
+> branch and not mainline.
+>
+> So I've changed my review script to put a subject prefix of 'PATCH 3.2'
+> before the patch number (and similarly in the cover letter).  But if
+> there's consensus that a more explicit tag is wanted then I'll follow
+> that.
 
-That's the boosting algorithm - the more parts of the silicon consume
-power, the more it gets spread out amongst them so that each one of them
-gets a smaller amount of the remaining power up to the TDP which is
-available for consumption.
+Selfishly, I would just like something gmail can filter on.  I've seen
+an "X-Extended-Stable: 3.8" header, which would be perfect, except
+that I can't figure out how to create a gmail filter for random
+headers.  So I was hoping for something stable-specific in the subject
+line, but that's just to compensate for gmail's limitations.
 
-Also, AFAICT, on those machines the boosting algorithm involves the GPU
-so that it boosts too. This might be the reason why you don't see 1.33
-GHz with one of the cores.
-
-> So there is some turbo functionality indeed. The frequency shown by
-> turbostat is still a bit off the target, not sure if there is any
-> actual problem though.
-
-Yeah, see above.
-
-I think all is fine with your box :)
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Bjorn
