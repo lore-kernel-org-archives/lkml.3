@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3JRKby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 06:31:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37905 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752788Ab3JRKbx (ORCPT
+	id S1753023Ab3JRKm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 06:42:59 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:46578 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab3JRKm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 06:31:53 -0400
-Date: Fri, 18 Oct 2013 11:31:18 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Vinayak Kale <vkale@apm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [PATCH] genirq: error reporting for non-percpu interrupt in
- request_percpu_irq()
-Message-ID: <20131018103117.GA3296@mudshark.cambridge.arm.com>
-References: <1382090789-18177-1-git-send-email-vkale@apm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382090789-18177-1-git-send-email-vkale@apm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Oct 2013 06:42:57 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sachin.kamat@linaro.org,
+        "SangYoung, Son" <hello.son@samsung.com>
+Subject: [PATCH 1/1] mfd: max77693: Include linux/of.h header
+Date: Fri, 18 Oct 2013 16:11:57 +0530
+Message-Id: <1382092917-31252-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 11:06:29AM +0100, Vinayak Kale wrote:
-> Return a separate error code when a non-percpu interrupt is passed to
-> request_percpu_irq().
-> 
-> Suggested-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> ---
->  kernel/irq/manage.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 514bcfd..c2713ae 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -1671,10 +1671,12 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
->  		return -EINVAL;
->  
->  	desc = irq_to_desc(irq);
-> -	if (!desc || !irq_settings_can_request(desc) ||
-> -	    !irq_settings_is_per_cpu_devid(desc))
-> +	if (!desc || !irq_settings_can_request(desc))
->  		return -EINVAL;
->  
-> +	if (!irq_settings_is_per_cpu_devid(desc))
-> +		return -EPERM;
+'of_match_ptr' is defined in linux/of.h. Include it explicitly to
+avoid build breakage in the future.
 
-<bikeshedding> I reckon -ENODEV is clearer here. </bikeshedding>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: SangYoung, Son <hello.son@samsung.com>
+---
+ drivers/mfd/max77693.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Also, there's a counterpart to this code in request_threaded_irq, where I
-think we should do something similar.
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 4d81ed2..9f92463 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -28,6 +28,7 @@
+ #include <linux/i2c.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
++#include <linux/of.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/mutex.h>
+ #include <linux/mfd/core.h>
+-- 
+1.7.9.5
 
-Will
