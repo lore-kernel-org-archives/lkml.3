@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757570Ab3JRAjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 20:39:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41988 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3JRAjJ (ORCPT
+	id S1752809Ab3JRAoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 20:44:19 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61468 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3JRAoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 20:39:09 -0400
-Date: Fri, 18 Oct 2013 01:38:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20131018003847.GH2443@sirena.org.uk>
+	Thu, 17 Oct 2013 20:44:17 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52608457.5040609@roeck-us.net>
+Date: Thu, 17 Oct 2013 17:44:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sGAnhWvQjEzjNQQq"
-Content-Disposition: inline
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Oct 17
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Michael Bohan <mbohan@codeaurora.org>
+CC: David Daney <ddaney@caviumnetworks.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, ralf@linux-mips.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        david.daney@cavium.com, linux-arm-msm@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH] of/lib: Export fdt routines to modules
+References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org> <525F2397.40203@caviumnetworks.com> <20131017002731.GA22830@codeaurora.org> <525F6D83.1050808@roeck-us.net> <20131017235132.GA6241@codeaurora.org>
+In-Reply-To: <20131017235132.GA6241@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/17/2013 04:51 PM, Michael Bohan wrote:
+> On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
+>> On 10/16/2013 05:27 PM, Michael Bohan wrote:
+>>> My motivation is actually to use the fdt format as a firmware.
+>>> I have a requirement to express driver metadata that's loadable
+>> >from the filesystem. This data is not reasonable to place in the
+>>> system Device Tree, since it's application specific and does not
+>>> actually describe hardware. The fact that the format chosen is
+>>> 'flattened device tree' is merely just a coincidence.
+>>>
+>> Still, what prevents you from unflattening it and just using the
+>> normal device tree functions as David suggested ?
+>
+> I'm assuming you're suggesting to use of_fdt_unflatten_tree()?
 
---sGAnhWvQjEzjNQQq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, that was the idea.
 
-Hi all,
+> That's an interesting thought. I was planning to scan the fdt
+> only once and populate my own structures, but I suppose I could
+> use the of_* APIs equivalently.
+>
+> It seems there are some problems though.  of_fdt_unflatten_tree()
+> does not return errors, and so for the purposes of my driver it
+> would not be sufficient to detect an invalid firmware image.
+>
+It does so, at least partially. If there is an error, it won't set
+the nodes pointer. Granted, that is not perfect, but it is at least
+a start. Ultimately, I considered it 'good enough' for my purpose
+(for devicetree overlays - see [1] below), as any missing mandatory
+properties or nodes are detected later when trying to actually read
+the properties. In my case, I also have a couple of validation
+properties to ensure that the overlay is acceptable (specifically
+I use 'compatible' and 'assembly-ids', but that is really a detail).
 
-I've uploaded today's linux-next tree to the master branch of the
-repository below:
+> Would people entertain changing this API
+> (and implicitly __unflatten_device_tree) to return errors? I'm
+> guessing the reason it's coded that way is because the normal
+> usecase is 'system boot', at which time errors aren't that
+> meaningful.
+>
+> Also, there's no way to free the memory that was allocated from
+> the unflatten process. May I add one?
+>
 
-        git://gitorious.org/thierryreding/linux-next.git
+The patchset submitted by Pantelis Antoniou to add support for
+devicetree overlays adds this and other related functionality.
+See [1], specifically the patch titled "OF: Introduce utility
+helper functions". Not sure where that is going, though.
+It may need some cleanup to be accepted upstream.
+Copying Pantelis for comments.
 
-A next-20131017 tag is also provided for convenience.
+I also updated the devicetree discussion list address to get comments
+from the experts.
 
-One new conflict today but otherwise uneventful.  x86_64 allmodconfigs
-build after each merge but no other build tests were done.
+Thanks,
+Guenter
 
---sGAnhWvQjEzjNQQq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[1] https://lkml.org/lkml/2013/1/4/276
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSYIMTAAoJELSic+t+oim9kq4QAIcvedgnMyGGXYRgZR+HRSPW
-VSZW19cX1Q2l6WPccnCT+ePq5w6aBAh3WzYphcrNiS1BjrCYWEV1lL59w+seOHEo
-o7u/cwuu16oeRLmKLnT7SPx5INg2fM0W1QT7nQTtMTaIHOr8rg0qVKnT3SqEzfmv
-hCOzGjHnZDLaKczq1OkiG5R9gkWCYErXlHRmljzTnbYjGry448P/DCUiuVZO81l5
-+C14lXxr+kcTj261L/EJWx2qM1MeuiR30qI7OUULVGuR5jMY6qAqosZl6F8j5YFW
-d5dl1bo1Uyp8vF1HbeU21/jphL8qKRg2+vYNqEg0NghnlRodpHUW0yH/qchNmC8q
-DNQDqIDrHfUnPkZbUsCFnGmHWbbvXtYGDUrBku3QlrK1Ws5+RyTMc4sIt4VrDgfh
-UR/Wl28W9nZoybGmEeythcwXYukCxcAiKRixHUwKzjIPnHFZxlwizRbL34By2RRj
-Dgi8HIiaPF6GyxIfXfn4Kr+wUwb/qw2WicoHO0V3Ou1ooOPsV74LIZ7xABfBY3es
-Crva38aYUrS5erVY8xyo8IUtmF9u8ltfg0kfMH4E2smlmXTCiW0NyFBpefM+zj1r
-GhEZTo3NNlu5vWVHtei6sInDdlNlbEi3EfLG5EtlBxWoZecHPn0vS82/icBXXOZK
-h4W1b1ClbRLl853M7R8J
-=K6Hm
------END PGP SIGNATURE-----
-
---sGAnhWvQjEzjNQQq--
