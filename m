@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3JRCyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 22:54:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50810 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab3JRCyL (ORCPT
+	id S1756350Ab3JRDK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 23:10:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39638 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755849Ab3JRDK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 22:54:11 -0400
-Date: Thu, 17 Oct 2013 19:54:06 -0700
-From: Michael Bohan <mbohan@codeaurora.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, ralf@linux-mips.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        david.daney@cavium.com, linux-arm-msm@vger.kernel.org,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH] of/lib: Export fdt routines to modules
-Message-ID: <20131018025405.GA3722@codeaurora.org>
-References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
- <525F2397.40203@caviumnetworks.com>
- <20131017002731.GA22830@codeaurora.org>
- <525F6D83.1050808@roeck-us.net>
- <20131017235132.GA6241@codeaurora.org>
- <52608457.5040609@roeck-us.net>
+	Thu, 17 Oct 2013 23:10:56 -0400
+Message-ID: <5260A6B0.4070509@infradead.org>
+Date: Thu, 17 Oct 2013 20:10:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52608457.5040609@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Xie XiuQi <xiexiuqi@huawei.com>, Jiri Kosina <trivial@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] irq: Fix some trivial typos in comments
+References: <52608AB1.1010307@huawei.com> <52608AE4.9060304@huawei.com>
+In-Reply-To: <52608AE4.9060304@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 05:44:07PM -0700, Guenter Roeck wrote:
-> On 10/17/2013 04:51 PM, Michael Bohan wrote:
-> >On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
-> >>Still, what prevents you from unflattening it and just using the
-> >>normal device tree functions as David suggested ?
-> >
-> >I'm assuming you're suggesting to use of_fdt_unflatten_tree()?
+On 10/17/13 18:12, Xie XiuQi wrote:
+> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+> ---
+>  kernel/irq/chip.c   |    2 +-
+>  kernel/irq/manage.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Yes, that was the idea.
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index a3bb14f..dc04c16 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -214,7 +214,7 @@ void irq_enable(struct irq_desc *desc)
+>  }
 > 
-> >That's an interesting thought. I was planning to scan the fdt
-> >only once and populate my own structures, but I suppose I could
-> >use the of_* APIs equivalently.
-> >
-> >It seems there are some problems though.  of_fdt_unflatten_tree()
-> >does not return errors, and so for the purposes of my driver it
-> >would not be sufficient to detect an invalid firmware image.
-> >
-> It does so, at least partially. If there is an error, it won't set
-> the nodes pointer. Granted, that is not perfect, but it is at least
-> a start. Ultimately, I considered it 'good enough' for my purpose
-> (for devicetree overlays - see [1] below), as any missing mandatory
-> properties or nodes are detected later when trying to actually read
-> the properties. In my case, I also have a couple of validation
-> properties to ensure that the overlay is acceptable (specifically
-> I use 'compatible' and 'assembly-ids', but that is really a detail).
-
-That's certainly better than nothing, but I think it would be
-useful to make a distinction between a malformed fdt and a fdt
-that's simply missing the right information. Without error
-codes, I think we lose this aspect.
-
-> >Would people entertain changing this API
-> >(and implicitly __unflatten_device_tree) to return errors? I'm
-> >guessing the reason it's coded that way is because the normal
-> >usecase is 'system boot', at which time errors aren't that
-> >meaningful.
-> >
-> >Also, there's no way to free the memory that was allocated from
-> >the unflatten process. May I add one?
-> >
+>  /**
+> - * irq_disable - Mark interupt disabled
+> + * irq_disable - Mark interrupt disabled
+>   * @desc:	irq descriptor which should be disabled
+>   *
+>   * If the chip does not implement the irq_disable callback, we
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 514bcfd..6394a3c 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -786,7 +786,7 @@ irq_forced_thread_fn(struct irq_desc *desc, struct irqaction *action)
+>  }
 > 
-> The patchset submitted by Pantelis Antoniou to add support for
-> devicetree overlays adds this and other related functionality.
-> See [1], specifically the patch titled "OF: Introduce utility
-> helper functions". Not sure where that is going, though.
-> It may need some cleanup to be accepted upstream.
-> Copying Pantelis for comments.
-> Guenter
+>  /*
+> - * Interrupts explicitely requested as threaded interupts want to be
+> + * Interrupts explicitely requested as threaded interrupts want to be
+
+                 explicitly
+
+>   * preemtible - many of them need to sleep and wait for slow busses to
+>   * complete.
+>   */
 > 
-> [1] https://lkml.org/lkml/2013/1/4/276
 
-Thanks. So it seems that Pantelis's __of_free_tree() is what I'm
-looking for.
-
-Mike
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+~Randy
