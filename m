@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab3JRTvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:51:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54681 "EHLO
+	id S1755793Ab3JRT5Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:57:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab3JRTvs (ORCPT
+	with ESMTP id S1754558Ab3JRTvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:51:48 -0400
+	Fri, 18 Oct 2013 15:51:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 1/7] random: run random_int_secret_init() run after all late_initcalls
-Date: Fri, 18 Oct 2013 12:52:48 -0700
-Message-Id: <20131018195036.125557594@linuxfoundation.org>
+        wojciech kapuscinski <wojtask9@wp.pl>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 6/7] drm/radeon: fix hw contexts for SUMO2 asics
+Date: Fri, 18 Oct 2013 12:52:53 -0700
+Message-Id: <20131018195036.460516171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131018195036.020644622@linuxfoundation.org>
 References: <20131018195036.020644622@linuxfoundation.org>
@@ -26,67 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: wojciech kapuscinski <wojtask9@wp.pl>
 
-commit 47d06e532e95b71c0db3839ebdef3fe8812fca2c upstream.
+commit 50b8f5aec04ebec7dbdf2adb17220b9148c99e63 upstream.
 
-The some platforms (e.g., ARM) initializes their clocks as
-late_initcalls for some unknown reason.  So make sure
-random_int_secret_init() is run after all of the late_initcalls are
-run.
+They have 4 rather than 8.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=63599
+
+Signed-off-by: wojciech kapuscinski <wojtask9@wp.pl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c  |    3 +--
- include/linux/random.h |    1 +
- init/main.c            |    2 ++
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1435,12 +1435,11 @@ ctl_table random_table[] = {
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1749,7 +1749,7 @@ static void evergreen_gpu_init(struct ra
+ 		rdev->config.evergreen.sx_max_export_size = 256;
+ 		rdev->config.evergreen.sx_max_export_pos_size = 64;
+ 		rdev->config.evergreen.sx_max_export_smx_size = 192;
+-		rdev->config.evergreen.max_hw_contexts = 8;
++		rdev->config.evergreen.max_hw_contexts = 4;
+ 		rdev->config.evergreen.sq_num_cf_insts = 2;
  
- static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
- 
--static int __init random_int_secret_init(void)
-+int random_int_secret_init(void)
- {
- 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
- 	return 0;
- }
--late_initcall(random_int_secret_init);
- 
- /*
-  * Get a random word for internal kernel use only. Similar to urandom but
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -56,6 +56,7 @@ extern void add_interrupt_randomness(int
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
-+extern int random_int_secret_init(void);
- 
- #ifndef MODULE
- extern const struct file_operations random_fops, urandom_fops;
---- a/init/main.c
-+++ b/init/main.c
-@@ -68,6 +68,7 @@
- #include <linux/shmem_fs.h>
- #include <linux/slab.h>
- #include <linux/perf_event.h>
-+#include <linux/random.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -717,6 +718,7 @@ static void __init do_basic_setup(void)
- 	init_irq_proc();
- 	do_ctors();
- 	do_initcalls();
-+	random_int_secret_init();
- }
- 
- static void __init do_pre_smp_initcalls(void)
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
 
 
