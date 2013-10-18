@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3JRLHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:07:06 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56878 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab3JRLHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:07:01 -0400
-Message-ID: <52611637.3080505@linux.vnet.ibm.com>
-Date: Fri, 18 Oct 2013 16:36:31 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753228Ab3JRLPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:15:47 -0400
+Received: from mail.us.es ([193.147.175.20]:47070 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970Ab3JRLPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 07:15:45 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98/17969. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
+ Processed in 1.935414 secs); 18 Oct 2013 11:15:42 -0000
+X-Spam-ASN: AS12715 188.78.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Fri, 18 Oct 2013 13:15:36 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] netfilter: fix ordering of jumpstack allocation and
+ table update
+Message-ID: <20131018111536.GA11132@localhost>
+References: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com> <20131015181723.GC2777@naverao1-tp.ibm.com> <20131016013902.GB6898@gchen.bj.intel.com> <525FD631.5080109@linux.vnet.ibm.com>
-In-Reply-To: <525FD631.5080109@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101811-1618-0000-0000-000004D30514
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gong,
-This mail seems to have missed copying you given the header issues.
+On Thu, Oct 17, 2013 at 02:24:33PM +0100, Will Deacon wrote:
+> During kernel stability testing on an SMP ARMv7 system, Yalin Wang
+> reported the following panic from the netfilter code:
+> 
+>   1fe0: 0000001c 5e2d3b10 4007e779 4009e110 60000010 00000032 ff565656 ff545454
+>   [<c06c48dc>] (ipt_do_table+0x448/0x584) from [<c0655ef0>] (nf_iterate+0x48/0x7c)
+>   [<c0655ef0>] (nf_iterate+0x48/0x7c) from [<c0655f7c>] (nf_hook_slow+0x58/0x104)
+>   [<c0655f7c>] (nf_hook_slow+0x58/0x104) from [<c0683bbc>] (ip_local_deliver+0x88/0xa8)
+>   [<c0683bbc>] (ip_local_deliver+0x88/0xa8) from [<c0683718>] (ip_rcv_finish+0x418/0x43c)
+>   [<c0683718>] (ip_rcv_finish+0x418/0x43c) from [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598)
+>   [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598) from [<c062b314>] (process_backlog+0x84/0x158)
+>   [<c062b314>] (process_backlog+0x84/0x158) from [<c062de84>] (net_rx_action+0x70/0x1dc)
+>   [<c062de84>] (net_rx_action+0x70/0x1dc) from [<c0088230>] (__do_softirq+0x11c/0x27c)
+>   [<c0088230>] (__do_softirq+0x11c/0x27c) from [<c008857c>] (do_softirq+0x44/0x50)
+>   [<c008857c>] (do_softirq+0x44/0x50) from [<c0088614>] (local_bh_enable_ip+0x8c/0xd0)
+>   [<c0088614>] (local_bh_enable_ip+0x8c/0xd0) from [<c06b0330>] (inet_stream_connect+0x164/0x298)
+>   [<c06b0330>] (inet_stream_connect+0x164/0x298) from [<c061d68c>] (sys_connect+0x88/0xc8)
+>   [<c061d68c>] (sys_connect+0x88/0xc8) from [<c000e340>] (ret_fast_syscall+0x0/0x30)
+>   Code: 2a000021 e59d2028 e59de01c e59f011c (e7824103)
+>   ---[ end trace da227214a82491bd ]---
+>   Kernel panic - not syncing: Fatal exception in interrupt
+> 
+> This comes about because CPU1 is executing xt_replace_table in response
+> to a setsockopt syscall, resulting in:
+> 
+> 	ret = xt_jumpstack_alloc(newinfo);
+> 		--> newinfo->jumpstack = kzalloc(size, GFP_KERNEL);
+> 
+> 	[...]
+> 
+> 	table->private = newinfo;
+> 	newinfo->initial_entries = private->initial_entries;
+> 
+> Meanwhile, CPU0 is handling the network receive path and ends up in
+> ipt_do_table, resulting in:
+> 
+> 	private = table->private;
+> 
+> 	[...]
+> 
+> 	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+> 
+> On weakly ordered memory architectures, the writes to table->private
+> and newinfo->jumpstack from CPU1 can be observed out of order by CPU0.
+> Furthermore, on architectures which don't respect ordering of address
+> dependencies (i.e. Alpha), the reads from CPU0 can also be re-ordered.
+> 
+> This patch adds an smp_wmb() before the assignment to table->private
+> (which is essentially publishing newinfo) to ensure that all writes to
+> newinfo will be observed before plugging it into the table structure.
+> A dependent-read barrier is also added on the consumer side, to ensure
+> the same ordering requirement are also respected there.
 
-Thanks,
-Naveen
+We also need fixes for net/ipv6/netfilter/ip6_tables.c and
+net/ipv4/netfilter/arp_tables.c as well. Could you extend this patch
+and resend?
 
-On 10/17/2013 05:51 PM, Naveen N. Rao wrote:
-> On 10/16/2013 07:09 AM, Chen Gong wrote:
->> On Tue, Oct 15, 2013 at 11:47:23PM +0530, Naveen N. Rao wrote:
->>> Date: Tue, 15 Oct 2013 23:47:23 +0530
->>> From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
->>> To: "Chen, Gong" <gong.chen@linux.intel.com>
->>> Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
->>>   linux-acpi@vger.kernel.org
->>> Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
->>> User-Agent: Mutt/1.5.21 (2010-09-15)
->>>
->>> On 2013/10/11 02:32AM, Chen Gong wrote:
->>>> To satisfy the necessary of following patches and make related
->>>> definition
->>>> more clear, update some definitions about CPER. No functional changes.
->>>>
->>>> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
->>>> ---
->>>>   drivers/acpi/apei/apei-internal.h | 12 ++++-----
->>>>   drivers/acpi/apei/cper.c          | 46
->>>> ++++++++++++++++-----------------
->>>>   drivers/acpi/apei/ghes.c          | 54
->>>> +++++++++++++++++++--------------------
->>>>   include/acpi/actbl1.h             | 14 +++++-----
->>>>   include/acpi/ghes.h               |  2 +-
->>>>   5 files changed, 64 insertions(+), 64 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/apei/apei-internal.h
->>>> b/drivers/acpi/apei/apei-internal.h
->>>> index f220d64..21ba34a 100644
->>>> --- a/drivers/acpi/apei/apei-internal.h
->>>> +++ b/drivers/acpi/apei/apei-internal.h
->>>> @@ -122,11 +122,11 @@ struct dentry;
->>>>   struct dentry *apei_get_debugfs_dir(void);
->>>>
->>>>   #define apei_estatus_for_each_section(estatus, section)            \
->>>> -    for (section = (struct acpi_hest_generic_data *)(estatus +
->>>> 1);    \
->>>> +    for (section = (struct acpi_generic_data *)(estatus + 1);    \
->>>
->>> This is a good one to rename, though I wonder if acpi_generic_error_data
->>> is more appropriate?
->>>
->>>>            (void *)section - (void *)estatus <
->>>> estatus->data_length;    \
->>>>            section = (void *)(section+1) + section->error_data_length)
->>>>
->>>> -static inline u32 apei_estatus_len(struct acpi_hest_generic_status
->>>> *estatus)
->>>> +static inline u32 cper_estatus_len(struct acpi_generic_status
->>>> *estatus)
->>>
->>> Not sure I understand the rationale for these changes - we are still
->>> dealing with ACPI/APEI generic error status/data structures. So, why
->>> the cper_ prefix?
->>>
->>
->> Because CPER is not APEI specific, beside APEI, some others like eMCA
->> needs this.
->
-> Right, but even the document you point to refers to these structures as
-> what they are: ACPI Generic error status/data. Clearly, CPER is an
-> incorrect prefix here since CPER/UEFI does *not* seem to have the same
-> structure format.
->
->
-> Regards,
-> Naveen
-
+Thanks!
