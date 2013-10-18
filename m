@@ -1,103 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3JRLqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:46:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59602 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751793Ab3JRLqx (ORCPT
+	id S1753381Ab3JRLxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:53:51 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:45986 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3JRLxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:46:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] PM / Hibernate: Use bool for boolean fields of struct snapshot_data
-Date: Fri, 18 Oct 2013 13:58:45 +0200
-Message-ID: <3456387.pM1vmRfZ0X@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 18 Oct 2013 07:53:47 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org,
+        pjt@google.com, Morten.Rasmussen@arm.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, alex.shi@intel.com, preeti@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org
+Cc: rjw@sisk.pl, paulmck@linux.vnet.ibm.com, corbet@lwn.net,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, l.majewski@samsung.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [RFC][PATCH v5 03/14] sched: define pack buddy CPUs
+Date: Fri, 18 Oct 2013 13:52:16 +0200
+Message-Id: <1382097147-30088-3-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+During the creation of sched_domain, we define a pack buddy CPU for each CPU
+when one is available. We want to pack at all levels where a group of CPUs can
+be power gated independently from others.
+On a system that can't power gate a group of CPUs independently, the flag is
+set at all sched_domain level and the buddy is set to -1. This is the default
+behavior for all architectures.
 
-The snapshot_data structure used internally by the hibernate user
-space interface code in user.c has three char fields that are used
-to store boolean values.  Change their data type to bool and use
-true and false instead of 1 and 0, respectively, in assignments
-involving those fields.
+On a dual clusters / dual cores system which can power gate each core and
+cluster independently, the buddy configuration will be :
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+      | Cluster 0   | Cluster 1   |
+      | CPU0 | CPU1 | CPU2 | CPU3 |
+-----------------------------------
+buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+
+If the cores in a cluster can't be power gated independently, the buddy
+configuration becomes:
+
+      | Cluster 0   | Cluster 1   |
+      | CPU0 | CPU1 | CPU2 | CPU3 |
+-----------------------------------
+buddy | CPU0 | CPU1 | CPU0 | CPU0 |
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/power/user.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ kernel/sched/core.c  |    1 +
+ kernel/sched/fair.c  |   70 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h |    5 ++++
+ 3 files changed, 76 insertions(+)
 
-Index: linux-pm/kernel/power/user.c
-===================================================================
---- linux-pm.orig/kernel/power/user.c
-+++ linux-pm/kernel/power/user.c
-@@ -36,9 +36,9 @@ static struct snapshot_data {
- 	struct snapshot_handle handle;
- 	int swap;
- 	int mode;
--	char frozen;
--	char ready;
--	char platform_support;
-+	bool frozen;
-+	bool ready;
-+	bool platform_support;
- 	bool free_bitmaps;
- } snapshot_state;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 735e964..0bf5f4d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5184,6 +5184,7 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+ 	rcu_assign_pointer(rq->sd, sd);
+ 	destroy_sched_domains(tmp, cpu);
  
-@@ -93,9 +93,9 @@ static int snapshot_open(struct inode *i
- 	if (error)
- 		atomic_inc(&snapshot_device_available);
++	update_packing_domain(cpu);
+ 	update_top_cache_domain(cpu);
+ }
  
--	data->frozen = 0;
--	data->ready = 0;
--	data->platform_support = 0;
-+	data->frozen = false;
-+	data->ready = false;
-+	data->platform_support = false;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 11cd136..5547831 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -178,6 +178,76 @@ void sched_init_granularity(void)
+ 	update_sysctl();
+ }
  
-  Unlock:
- 	unlock_system_sleep();
-@@ -229,7 +229,7 @@ static long snapshot_ioctl(struct file *
- 		if (error)
- 			thaw_processes();
- 		else
--			data->frozen = 1;
-+			data->frozen = true;
++#ifdef CONFIG_SMP
++#ifdef CONFIG_SCHED_PACKING_TASKS
++/*
++ * Save the id of the optimal CPU that should be used to pack small tasks
++ * The value -1 is used when no buddy has been found
++ */
++DEFINE_PER_CPU(int, sd_pack_buddy);
++
++/*
++ * Look for the best buddy CPU that can be used to pack small tasks
++ * We make the assumption that it doesn't wort to pack on CPU that share the
++ * same powerline. We look for the 1st sched_domain without the
++ * SD_SHARE_POWERDOMAIN flag. Then we look for the sched_group with the lowest
++ * power per core based on the assumption that their power efficiency is
++ * better
++ */
++void update_packing_domain(int cpu)
++{
++	struct sched_domain *sd;
++	int id = -1;
++
++	sd = highest_flag_domain(cpu, SD_SHARE_POWERDOMAIN);
++	if (!sd)
++		sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
++	else
++		sd = sd->parent;
++
++	while (sd && (sd->flags & SD_LOAD_BALANCE)
++		&& !(sd->flags & SD_SHARE_POWERDOMAIN)) {
++		struct sched_group *sg = sd->groups;
++		struct sched_group *pack = sg;
++		struct sched_group *tmp;
++
++		/*
++		 * The sched_domain of a CPU points on the local sched_group
++		 * and this CPU of this local group is a good candidate
++		 */
++		id = cpu;
++
++		/* loop the sched groups to find the best one */
++		for (tmp = sg->next; tmp != sg; tmp = tmp->next) {
++			if (tmp->sgp->power * pack->group_weight >
++					pack->sgp->power * tmp->group_weight)
++				continue;
++
++			if ((tmp->sgp->power * pack->group_weight ==
++					pack->sgp->power * tmp->group_weight)
++			 && (cpumask_first(sched_group_cpus(tmp)) >= id))
++				continue;
++
++			/* we have found a better group */
++			pack = tmp;
++
++			/* Take the 1st CPU of the new group */
++			id = cpumask_first(sched_group_cpus(pack));
++		}
++
++		/* Look for another CPU than itself */
++		if (id != cpu)
++			break;
++
++		sd = sd->parent;
++	}
++
++	pr_debug("CPU%d packing on CPU%d\n", cpu, id);
++	per_cpu(sd_pack_buddy, cpu) = id;
++}
++#endif /* CONFIG_SCHED_PACKING_TASKS */
++#endif /* CONFIG_SMP */
++
+ #if BITS_PER_LONG == 32
+ # define WMULT_CONST	(~0UL)
+ #else
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b3c5653..22e3f1d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1022,6 +1022,11 @@ extern void update_group_power(struct sched_domain *sd, int cpu);
  
- 		break;
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+ extern void idle_balance(int this_cpu, struct rq *this_rq);
++#ifdef CONFIG_SCHED_PACKING_TASKS
++extern void update_packing_domain(int cpu);
++#else
++static inline void update_packing_domain(int cpu) {};
++#endif
  
-@@ -240,7 +240,7 @@ static long snapshot_ioctl(struct file *
- 		free_basic_memory_bitmaps();
- 		data->free_bitmaps = false;
- 		thaw_processes();
--		data->frozen = 0;
-+		data->frozen = false;
- 		break;
- 
- 	case SNAPSHOT_CREATE_IMAGE:
-@@ -270,7 +270,7 @@ static long snapshot_ioctl(struct file *
- 	case SNAPSHOT_FREE:
- 		swsusp_free();
- 		memset(&data->handle, 0, sizeof(struct snapshot_handle));
--		data->ready = 0;
-+		data->ready = false;
- 		/*
- 		 * It is necessary to thaw kernel threads here, because
- 		 * SNAPSHOT_CREATE_IMAGE may be invoked directly after
-@@ -334,7 +334,7 @@ static long snapshot_ioctl(struct file *
- 		 * PM_HIBERNATION_PREPARE
- 		 */
- 		error = suspend_devices_and_enter(PM_SUSPEND_MEM);
--		data->ready = 0;
-+		data->ready = false;
- 		break;
- 
- 	case SNAPSHOT_PLATFORM_SUPPORT:
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
+-- 
+1.7.9.5
 
