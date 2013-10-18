@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab3JRODd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:03:33 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:33340 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3JRODa (ORCPT
+	id S1755991Ab3JRODl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:03:41 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:50545 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab3JRODi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:03:30 -0400
+	Fri, 18 Oct 2013 10:03:38 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
         Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V2 Resend 26/34] cpufreq: s3c2416: Convert to light weight ->target_index() routine
-Date: Fri, 18 Oct 2013 19:29:49 +0530
-Message-Id: <169ad15eec7006763101a9cce526ee489f457df7.1382104515.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 27/34] cpufreq: s3c64xx: Convert to light weight ->target_index() routine
+Date: Fri, 18 Oct 2013 19:29:50 +0530
+Message-Id: <5aee7290ead2f319d523ecdc99912b1ce99890c9.1382104515.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1382104514.git.viresh.kumar@linaro.org>
 References: <cover.1382104514.git.viresh.kumar@linaro.org>
@@ -34,58 +34,52 @@ routine and will pass index to it.
 Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/s3c2416-cpufreq.c | 17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/cpufreq/s3c64xx-cpufreq.c | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/s3c2416-cpufreq.c b/drivers/cpufreq/s3c2416-cpufreq.c
-index 26a35d1..4188acc 100644
---- a/drivers/cpufreq/s3c2416-cpufreq.c
-+++ b/drivers/cpufreq/s3c2416-cpufreq.c
-@@ -217,24 +217,15 @@ static int s3c2416_cpufreq_leave_dvs(struct s3c2416_data *s3c_freq, int idx)
+diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
+index 4616173..8bdcf32 100644
+--- a/drivers/cpufreq/s3c64xx-cpufreq.c
++++ b/drivers/cpufreq/s3c64xx-cpufreq.c
+@@ -63,26 +63,16 @@ static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
  }
  
- static int s3c2416_cpufreq_set_target(struct cpufreq_policy *policy,
+ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
 -				      unsigned int target_freq,
 -				      unsigned int relation)
 +				      unsigned int index)
  {
- 	struct s3c2416_data *s3c_freq = &s3c2416_cpufreq;
- 	struct cpufreq_freqs freqs;
- 	int idx, ret, to_dvs = 0;
+ 	int ret;
 -	unsigned int i;
+ 	struct cpufreq_freqs freqs;
+ 	struct s3c64xx_dvfs *dvfs;
  
- 	mutex_lock(&cpufreq_lock);
- 
--	pr_debug("cpufreq: to %dKHz, relation %d\n", target_freq, relation);
--
--	ret = cpufreq_frequency_table_target(policy, s3c_freq->freq_table,
+-	ret = cpufreq_frequency_table_target(policy, s3c64xx_freq_table,
 -					     target_freq, relation, &i);
 -	if (ret != 0)
--		goto out;
+-		return ret;
 -
--	idx = s3c_freq->freq_table[i].driver_data;
-+	idx = s3c_freq->freq_table[index].driver_data;
+ 	freqs.old = clk_get_rate(armclk) / 1000;
+-	freqs.new = s3c64xx_freq_table[i].frequency;
++	freqs.new = s3c64xx_freq_table[index].frequency;
+ 	freqs.flags = 0;
+-	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[i].driver_data];
+-
+-	if (freqs.old == freqs.new)
+-		return 0;
++	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[index].driver_data];
  
- 	if (idx == SOURCE_HCLK)
- 		to_dvs = 1;
-@@ -256,7 +247,7 @@ static int s3c2416_cpufreq_set_target(struct cpufreq_policy *policy,
- 	 */
- 	freqs.new = (s3c_freq->is_dvs && !to_dvs)
- 				? clk_get_rate(s3c_freq->hclk) / 1000
--				: s3c_freq->freq_table[i].frequency;
-+				: s3c_freq->freq_table[index].frequency;
+ 	pr_debug("Transition %d-%dkHz\n", freqs.old, freqs.new);
  
- 	pr_debug("cpufreq: Transition %d-%dkHz\n", freqs.old, freqs.new);
- 
-@@ -505,7 +496,7 @@ err_hclk:
- static struct cpufreq_driver s3c2416_cpufreq_driver = {
+@@ -254,7 +244,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver s3c64xx_cpufreq_driver = {
  	.flags          = 0,
  	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= s3c2416_cpufreq_set_target,
-+	.target_index	= s3c2416_cpufreq_set_target,
- 	.get		= s3c2416_cpufreq_get_speed,
- 	.init		= s3c2416_cpufreq_driver_init,
- 	.name		= "s3c2416",
+-	.target		= s3c64xx_cpufreq_set_target,
++	.target_index	= s3c64xx_cpufreq_set_target,
+ 	.get		= s3c64xx_cpufreq_get_speed,
+ 	.init		= s3c64xx_cpufreq_driver_init,
+ 	.name		= "s3c",
 -- 
 1.7.12.rc2.18.g61b472e
 
