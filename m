@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3JRJg5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:36:57 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:42155 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab3JRJgz (ORCPT
+	id S1752843Ab3JRJim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:38:42 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59396 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab3JRJil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:36:55 -0400
+	Fri, 18 Oct 2013 05:38:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131016092310.GD19112@lee--X1>
-References: <1381871640-22262-1-git-send-email-linus.walleij@linaro.org>
-	<20131016092310.GD19112@lee--X1>
-Date: Fri, 18 Oct 2013 11:36:54 +0200
-Message-ID: <CACRpkdZ1oZuJWA+S4hY0VDYaGi19Rcn=xSYYUDak7xc+iXB4fA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] mfd: tc3589x: detect the precise version
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1382086049-14386-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1382086049-14386-1-git-send-email-michael.opdenacker@free-electrons.com>
+Date: Fri, 18 Oct 2013 12:31:43 +0300
+Message-ID: <CAE=NcraZ2pQa0tT2Xh1jXDrebUexhpAf5W4cxrv3e2YyD8Ot-w@mail.gmail.com>
+Subject: Re: [PATCH] init: make init failures more explicit
+From: Janne Karhunen <janne.karhunen@gmail.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: akpm@linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-embedded@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 11:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Tue, 15 Oct 2013, Linus Walleij wrote:
+On Fri, Oct 18, 2013 at 11:47 AM, Michael Opdenacker
+<michael.opdenacker@free-electrons.com> wrote:
 
->>  static const struct i2c_device_id tc3589x_id[] = {
->> -     { "tc3589x", 24 },
->> +     { "tc35890", TC3589X_TC35890 },
->> +     { "tc35892", TC3589X_TC35892 },
->> +     { "tc35893", TC3589X_TC35893 },
->> +     { "tc35894", TC3589X_TC35894 },
->> +     { "tc35895", TC3589X_TC35895 },
->> +     { "tc35896", TC3589X_TC35896 },
->> +     { "tc3589x", TC3589X_UNKNOWN },
->>       { }
->>  };
->>  MODULE_DEVICE_TABLE(i2c, tc3589x_id);
+> This patch proposes to make init failures more explicit.
 >
-> This is an awful lot of code for what we're trying to achieve.
+> Before this, the "No init found" message didn't help much.
+> It could sometimes be misleading and actually mean
+> "No *working* init found".
 
-I am not only trying to achive setting the number of GPIOs right,
-I want the system to be aware of exactly which version of the chip
-it is dealing with because they all have subtle differences, and
-people will run into this in the future when adding more features.
-http://www.toshiba-components.com/mobile/data/General_Presentation_IO_Expander_www_Jan_2012.pdf
-See table on p.14 for example.
+Heh, I was just looking at similar thing, except in my case dumping
+out the execve error code would be the key (now I'm getting -ENOEXEC
+back from init exec for no obvious reason). In case something like
+this is getting merged I'd appreciate -errno dump as well.
 
->   1. I guess that other OSes will need to capture the same
->   information, so wouldn't it be prudant to do so via a DT property?
->   That way it's just a one or two liner.
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f..56fb84a 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -815,6 +815,8 @@ static noinline void __init kernel_init_freeable(void);
 
-This patch is not about Device Tree. It is about probing from
-the device name.
+ static int __ref kernel_init(void *unused)
+ {
++       int err;
++
+        kernel_init_freeable();
+        /* need to finish all async __init code before freeing the memory */
+        async_synchronize_full();
+@@ -826,9 +828,11 @@ static int __ref kernel_init(void *unused)
+        flush_delayed_fput();
 
->   2. As we're only using .driver_data for num_gpio at this time, just
->   place them in tc3589x_id as you have done for tc3589x.
+        if (ramdisk_execute_command) {
+-               if (!run_init_process(ramdisk_execute_command))
++               err = run_init_process(ramdisk_execute_command);
++               if (!err)
+                        return 0;
+-               pr_err("Failed to execute %s\n", ramdisk_execute_command);
++               pr_err("Failed to execute %s, error: %d\n",
++                       ramdisk_execute_command, err);
+        }
 
-This doesn't scale to the other pecularities that differ and I
-then just push the problem onto the next person dealing with
-this chip.
+        /*
+@@ -838,10 +842,12 @@ static int __ref kernel_init(void *unused)
+         * trying to recover a really broken machine.
+         */
+        if (execute_command) {
+-               if (!run_init_process(execute_command))
++               err = run_init_process(execute_command);
++               if (!err)
+                        return 0;
+-               pr_err("Failed to execute %s.  Attempting defaults...\n",
+-                       execute_command);
++               pr_err("Failed to execute %s, error: %d\n",
++                       execute_command, err);
++               pr_err("Attempting defaults...\n");
+        }
+        if (!run_init_process("/sbin/init") ||
+            !run_init_process("/etc/init") ||
 
->   3. Again, as all of this extra code is only used for pulling out
->   num_gpio, group the devices by num_gpio:
->
->> +     switch (id->driver_data) {
->> +     case TC3589X_TC35893:
->> +     case TC3589X_TC35895:
->> +     case TC3589X_TC35896:
->> +             tc3589x->num_gpio = 20;
->> +             break;
->> +     case TC3589X_TC35890:
->> +     case TC3589X_TC35892:
->> +     case TC3589X_TC35894:
->> +     case TC3589X_UNKNOWN:
->> +     default:
->> +             tc3589x->num_gpio = 24;
->> +             break;
->> +     }
 
-This I can do. The switch tree can then be extended as need
-be in the future.
 
-Yours,
-Linus Walleij
+
+-- 
+Janne
