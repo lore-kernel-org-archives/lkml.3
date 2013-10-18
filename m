@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3JRBa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:30:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28230 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab3JRBaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:30:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,518,1378882800"; 
-   d="scan'208";a="418709601"
-Subject: Re: [PATCH] n_gsm: race between ld close and gsmtty open
-From: channing <chao.bi@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org
-In-Reply-To: <20131017171441.GA27850@kroah.com>
-References: <1381980550.19582.8.camel@bichao>
-	 <20131017171441.GA27850@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Oct 2013 09:59:23 +0800
-Message-ID: <1382061563.19582.23.camel@bichao>
+	id S1755081Ab3JRBao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:30:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58640 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754496Ab3JRBal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 21:30:41 -0400
+Message-ID: <1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 3.8.y.z extended stable ] Linux 3.8.13.11 stable review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Date: Fri, 18 Oct 2013 02:30:31 +0100
+In-Reply-To: <CAErSpo5+xbgTfBrQdP36PRfOFpQcdeSgOEBFFDCfZoqoAsch5g@mail.gmail.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+	 <CAErSpo5+xbgTfBrQdP36PRfOFpQcdeSgOEBFFDCfZoqoAsch5g@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ygFl47AUzDrW4ZcJ/aRK"
+X-Mailer: Evolution 3.8.5-2 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-17 at 10:14 -0700, Greg KH wrote:
-> On Thu, Oct 17, 2013 at 11:29:10AM +0800, channing wrote:
-> > 
-> > ttyA has ld associated to n_gsm, when ttyA is closing, it triggers
-> > to release gsmttyB's ld data dlci[B], then race would happen if gsmttyB
-> > is opening in parallel.
-> > 
-> > Here are some of race cases we found recently in test:
-> 
-> Are these still an issue with 3.12-rc4?  Lots of pty rework has gone
-> into there that should help to resolve some of these problems.
-> 
 
-Hi Greg,
-I viewed 3.12-rc4 and IMHO it still has this issue, Please correct me if I'm wrong.
-This patch was based on 3.12-rc4, following is version info of my code base:
+--=-ygFl47AUzDrW4ZcJ/aRK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-linux/Makefile:
-VERSION = 3
-PATCHLEVEL = 12
-SUBLEVEL = 0
-EXTRAVERSION = -rc4
+On Thu, 2013-10-10 at 11:37 -0600, Bjorn Helgaas wrote:
+> On Thu, Oct 10, 2013 at 9:40 AM, Kamal Mostafa <kamal@canonical.com> wrot=
+e:
+> > This is the start of the review cycle for the Linux 3.8.13.11 stable ke=
+rnel.
+>=20
+> Would anybody be interested in adding some sort of "stable" tag to the
+> subject lines of stable backport patches, e.g.,  instead of:
+>=20
+>   [PATCH 001/104] htb: fix sign extension bug
+>=20
+> something like:
+>=20
+>   [STABLE 3.8.13.11 001/104] htb: fix sign extension bug
+>=20
+> I don't mind having the stable patches on LKML, but it would be nice
+> if it were easier to distinguish stable backports from new patches.  I
+> know the patches are nicely threaded behind this message, but some
+> readers don't really pay attention to that.
 
-And this version of patch has one line not correct, I updated it in another mail 
-with title "[PATCH v2]n_gsm:...", would you please check?
+I agree that some distinction is needed, but I'm not convinced about
+that precise format.  I don't think it's worth including version
+components after the stable base version e.g. 3.2.  And I think that
+including the version is a big enough clue that this is for a stable
+branch and not mainline.
 
-thanks a lot,
-chao
+So I've changed my review script to put a subject prefix of 'PATCH 3.2'
+before the patch number (and similarly in the cover letter).  But if
+there's consensus that a more explicit tag is wanted then I'll follow
+that.
 
+Ben.
+
+--=20
+Ben Hutchings
+Horngren's Observation:
+                   Among economists, the real world is often a special case=
+.
+
+--=-ygFl47AUzDrW4ZcJ/aRK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIVAwUAUmCPN+e/yOyVhhEJAQry/w//WpRCUFuAIlxSNPxqlg+O7kAqG0dNz+DP
+fP6rjEgvnDplTyWwQvGsASUKIARZrjGbTfK5kTRd+UyrT+WhGPWwoPOwxucpwGgD
+ieU2dT4hsTcbJdC7HMBP9fKPtw94oqjTKByuLQkgXh+r7rtJCqWxVNtJJIjUcLWZ
+IxxquQpFABOjs2+NqgsU2iUMC8UidDul3n46K3QAlgr7O1J7JOsqDmM7JR/1ur2n
+37m3KCWXJYtvWjzeHf4i4fq7YAvskwTZuh9JRenSDekOTTyJQK6SQI4eG4V+vYhV
+gB8iRclfIWxjuU4FF7n5CLk+lCcXSXVGN45kMWdPkvjJxcAtilzYYkBQ0fPndRB9
+jTWN23t/Heo7smbVHso93epv6s+yY3YC+7q01e7oIdAPO27nkBxQpNx4GNk/0/hv
+VWrloIAP1AtV19/rVpwqpw8Iu/mw4gbRXYq2fFfMC8Pw0YQOB5EjAf6MRc89G/+Q
+q2C78jcqAyyYUduAfrNh6Iaz9cICqlflinMDe8fZJb5oe0PNO93fTg1IfHkHgSKQ
+gFjsrhph3l2YYf56BO6DWbsmnByvN4YqdtrCdt2SyBquWoufyL+eewDr/gbbp9Dt
+7TzPcV8xSKFye47ktHzfWUHFrQ4EzqrzCHGpfPDB+tOjWGuyJR6vByPh5xoTz5ut
+9owo4VZ7/Qw=
+=EVZb
+-----END PGP SIGNATURE-----
+
+--=-ygFl47AUzDrW4ZcJ/aRK--
