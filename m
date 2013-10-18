@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab3JRUXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 16:23:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58140 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3JRUXb (ORCPT
+	id S1755082Ab3JRUZQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 16:25:16 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:41051 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3JRUZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 16:23:31 -0400
-Date: Fri, 18 Oct 2013 16:23:29 -0400 (EDT)
-Message-Id: <20131018.162329.1919694379284940208.davem@davemloft.net>
-To: stephen@networkplumber.org
-Cc: rdunlap@infradead.org, lve@guap.ru, thierry.reding@gmail.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        broonie@kernel.org, netdev@vger.kernel.org, jhs@mojatatu.com
-Subject: Re: [PATCH net-next] em_ipset: use dev_net() accessor
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131016172934.7913a297@nehalam.linuxnetplumber.net>
-References: <20131016153949.5f2257b4@nehalam.linuxnetplumber.net>
-	<525F2D7D.7010708@infradead.org>
-	<20131016172934.7913a297@nehalam.linuxnetplumber.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 18 Oct 2013 13:23:31 -0700 (PDT)
+	Fri, 18 Oct 2013 16:25:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131017140659.GF24056@e106331-lin.cambridge.arm.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	<1381960030-1640-6-git-send-email-tim.kryger@linaro.org>
+	<20131017140659.GF24056@e106331-lin.cambridge.arm.com>
+Date: Fri, 18 Oct 2013 13:25:12 -0700
+Message-ID: <CAAYSxho6shrzABy+G-Q8djcVMjxE4nvcoHUkGBDgwU8X0A0zFQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 5/6] ARM: dts: Specify clocks for timer on bcm11351
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <stephen@networkplumber.org>
-Date: Wed, 16 Oct 2013 17:29:34 -0700
+On Thu, Oct 17, 2013 at 7:06 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+>> index 193659c..39c1395 100644
+>> --- a/arch/arm/boot/dts/bcm11351.dtsi
+>> +++ b/arch/arm/boot/dts/bcm11351.dtsi
+>> @@ -95,7 +95,7 @@
+>>               compatible = "brcm,kona-timer";
+>>               reg = <0x35006000 0x1000>;
+>>               interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+>> -             clock-frequency = <32768>;
+>> +             clocks = <&hub_timer_clk>;
+>
+> This should probably be after the code change that enables support for a
+> clocks property.
+>
+> Thanks,
+> Mark.
 
-> Randy found that if network namespace not enabled then
-> nd_net does not exist and would cause compilation failure.
-> 
-> This is handled correctly by using the dev_net() macro.
-> 
-> Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+This is already the case.
 
-Applied, thanks everyone.
+The driver change is patch 4 and this dts change is patch 5 of the series.
