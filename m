@@ -1,123 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab3JRPNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:13:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54930 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755128Ab3JRPNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:13:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,523,1378882800"; 
-   d="scan'208";a="413297483"
-Date: Fri, 18 Oct 2013 09:13:49 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Matias Bjorling <m@bjorling.me>
-cc: axboe@kernel.dk, willy@linux.intel.com, keith.busch@intel.com,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: Re: [PATCH 3/3] NVMe: Convert to blk-mq
-In-Reply-To: <1382102062-22270-4-git-send-email-m@bjorling.me>
-Message-ID: <alpine.LRH.2.03.1310180837140.4763@AMR>
-References: <1382102062-22270-1-git-send-email-m@bjorling.me> <1382102062-22270-4-git-send-email-m@bjorling.me>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1756102Ab3JRPOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:14:40 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:47600 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab3JRPOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:14:38 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <Pine.LNX.4.64.1310181632160.9158@axis700.grange>
+References: <Pine.LNX.4.64.1310181632160.9158@axis700.grange>
+Date: Fri, 18 Oct 2013 08:14:36 -0700
+Message-ID: <CAGa+x86+qfWBou2jkEjz10ix95m89cxnyyFOPwryF27YezeoPw@mail.gmail.com>
+Subject: Re: [BUILD BROKEN] Current Linus' master and -next don't build for imx_v6_v7_defconfig
+From: Kevin Hilman <khilman@linaro.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Oct 2013, Matias Bjorling wrote:
-> The nvme driver implements itself as a bio-based driver. This primarily
-> because of high lock congestion for high-performance nvm devices. To
-> remove the congestion within the traditional block layer, a multi-queue
-> block layer is being implemented.
->
-> This patch converts the current bio-based approach to work with the
-> request-based approach found in the multi-queue block layer. This means
-> that bio responsibility is moved from the driver, into the block layer.
-> In return the block layer packs request structures and submit them to
-> the nvme  according to the features/limits of nvme hardware.
->
-> The patch consists of:
-> * Initialization of multi-queue data structures
-> * Conversion of bio function call into request function calls.
-> * Separate cmdid patchs for admin and normal queues.
-> * Bio splits according to NOT_VIRT_MERGEABLE are assumed to be handled
->   by blk-mq.
-> * Uses the timeout framework blk-mq where possible.
->
-> Signed-off-by: Matias Bjorling <m@bjorling.me>
-> ---
-> drivers/block/nvme-core.c | 765 +++++++++++++++++++++++-----------------------
-> drivers/block/nvme-scsi.c |  39 +--
-> include/linux/nvme.h      |   7 +-
-> 3 files changed, 385 insertions(+), 426 deletions(-)
->
-> diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-> index e99a30a..36bf45c 100644
-> --- a/drivers/block/nvme-core.c
-> +++ b/drivers/block/nvme-core.c
+On Fri, Oct 18, 2013 at 7:59 AM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
 
-[snip]
-
-> -static void nvme_start_io_acct(struct bio *bio)
-> +static void nvme_start_io_acct(struct request *rq)
-> {
-> -	struct gendisk *disk = bio->bi_bdev->bd_disk;
-> -	const int rw = bio_data_dir(bio);
-> +	struct gendisk *disk = rq->rq_disk;
-> +	const int rw = rq_data_dir(rq);
-> 	int cpu = part_stat_lock();
-> 	part_round_stats(cpu, &disk->part0);
-> 	part_stat_inc(cpu, &disk->part0, ios[rw]);
-> -	part_stat_add(cpu, &disk->part0, sectors[rw], bio_sectors(bio));
-> +	part_stat_add(cpu, &disk->part0, sectors[rw], blk_rq_sectors(rq));
-> 	part_inc_in_flight(&disk->part0, rw);
-> 	part_stat_unlock();
-> }
+> On current Linus' tree as of 04919af as well as -next since 16.10, IIRC,
+> compilation is broken for i.MX3*, including the default
+> imx_v6_v7_defconfig. The toolchain used is
 >
-> -static void nvme_end_io_acct(struct bio *bio, unsigned long start_time)
-> +static void nvme_end_io_acct(struct request *rq, unsigned long start_time)
-> {
-> -	struct gendisk *disk = bio->bi_bdev->bd_disk;
-> -	const int rw = bio_data_dir(bio);
-> +	struct gendisk *disk = rq->rq_disk;
-> +	const int rw = rq_data_dir(rq);
-> 	unsigned long duration = jiffies - start_time;
-> 	int cpu = part_stat_lock();
-> 	part_stat_add(cpu, &disk->part0, ticks[rw], duration);
-> @@ -342,23 +370,26 @@ static void nvme_end_io_acct(struct bio *bio, unsigned long start_time)
-> 	part_stat_unlock();
-> }
+> arm-none-linux-gnueabi-gcc (Sourcery CodeBench Lite 2012.09-64) 4.7.2
 
-I think you can remove the io accounting, right? These were added here
-because the diskstats are not updated in the block layer for bio-based
-block drivers.
+Just for another data point, I'm not seeing this in my builds
+(arm-linux-gnueabi-gcc (Ubuntu/Linaro 4.7.2-1ubuntu1) 4.7.2) and we're
+not seeing this in Olof's autobuilds either for latest mainline[1] or
+latest next-thierry[2].  I belive Olof is using vanilla gcc 4.8.1.
 
-> @@ -715,32 +606,47 @@ static int nvme_submit_bio_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
-> 		dma_dir = DMA_FROM_DEVICE;
-> 	}
->
-> -	result = nvme_map_bio(nvmeq, iod, bio, dma_dir, psegs);
-> -	if (result <= 0)
-> +	if (nvme_map_rq(nvmeq, iod, rq, dma_dir))
-> 		goto free_cmdid;
-> -	length = result;
->
-> -	cmnd->rw.command_id = cmdid;
-> +	length = blk_rq_bytes(rq);
-> +
-> +	cmnd->rw.command_id = rq->tag;
+Kevin
 
-The command ids have to be unique on a submission queue. Since each
-namespace's blk-mq has its own 'tags' used as command ids here but share
-submission queues, what's stopping the tags for commands sent to namespace
-1 from clashing with tags for namespace 2?
-
-I think this would work better if one blk-mq was created per device
-rather than namespace. It would fix the tag problem above and save a
-lot of memory potentially wasted on millions of requests allocated that
-can't be used.
-
-Do you know how/if this is planned to work with scsi? Will there be one
-blk-mq per LUN or per host controller?
+[1] http://lists.linaro.org/pipermail/kernel-build-reports/2013-October/000721.html
+[2] http://lists.linaro.org/pipermail/kernel-build-reports/2013-October/000718.html
