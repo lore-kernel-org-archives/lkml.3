@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3JRMRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:17:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56939 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab3JRMRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:17:44 -0400
-Date: Fri, 18 Oct 2013 14:10:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] rcusync: Introduce struct rcu_sync_ops
-Message-ID: <20131018121015.GA24753@redhat.com>
-References: <20131008102505.404025673@infradead.org> <20131008103830.291708447@infradead.org> <525F4653.809@cn.fujitsu.com> <20131017154228.GL4553@linux.vnet.ibm.com> <52608D88.6010807@cn.fujitsu.com>
+	id S1753472Ab3JRMSf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:18:35 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10317 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab3JRMSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:18:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 18 Oct 2013 05:14:02 -0700
+Date: Fri, 18 Oct 2013 15:18:29 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 03/15] clk: tegra: common periph_clk_enb_refcnt and
+ clks
+Message-ID: <20131018121829.GA25591@tbergstrom-lnx.Nvidia.com>
+References: <1382013526-12800-1-git-send-email-pdeschrijver@nvidia.com>
+ <1382013526-12800-4-git-send-email-pdeschrijver@nvidia.com>
+ <CAL1qeaFrm50m0a3csY=04MNQENM_DY5fgBrq5bdsm8dHnLj1gA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <52608D88.6010807@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAL1qeaFrm50m0a3csY=04MNQENM_DY5fgBrq5bdsm8dHnLj1gA@mail.gmail.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18, Lai Jiangshan wrote:
->
-> On 10/17/2013 11:42 PM, Paul E. McKenney wrote:
-> > On Thu, Oct 17, 2013 at 10:07:15AM +0800, Lai Jiangshan wrote:
-> >> On 10/08/2013 06:25 PM, Peter Zijlstra wrote:
-> >>> From: Oleg Nesterov <oleg@redhat.com>
-> >>>
-> >>> Add the new struct rcu_sync_ops which holds sync/call methods, and
-> >>> turn the function pointers in rcu_sync_struct into an array of struct
-> >>> rcu_sync_ops.
-> >>
-> >> Hi, Paul
-> >>
-> >> I think this work should be done in rcupdate.[ch] side by introducing
-> >> struct rcu_flavor.
+On Fri, Oct 18, 2013 at 12:26:20AM +0200, Andrew Bresticker wrote:
+> Hi Peter,
+> 
+> >  static void __init tegra30_clock_init(struct device_node *np)
+> >  {
+> >         struct device_node *node;
+> > -       int i;
 > >
-> > I -do- have on my list to add an rcutorture test for rcu_sync, but
-> > what do you have in mind by adding struct rcu_flavor?  I am guessing
-> > that you do not mean to try to create an rcu_state and a set of
->
-> No.
-> The thing what I need is just as same as Oleg Nesterov implemented.
-> It is just a structure with several function pointers for different RCU variants.
-> But it would be better if we implement in rcupdate.[ch],
-> and name it to struct rcu_flavor like the URCU.
->
-> After we have struct rcu_flavor, we can replace the following code
-> to a pointer to struct rcu_flavor.
->
-> struct rcu_state:
-> 	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
-> 		     void (*func)(struct rcu_head *head));
->
-> struct rcu_torture_ops {
-> 	int (*readlock)(void);
-> 	void (*readunlock)(int idx);
-> 	void (*sync)(void);
-> 	void (*exp_sync)(void);
-> 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
-> 	void (*cb_barrier)(void);
-> };
+> >         clk_base = of_iomap(np, 0);
+> >         if (!clk_base) {
+> > @@ -1916,8 +1910,11 @@ static void __init tegra30_clock_init(struct device_node *np)
+> >                 BUG();
+> >         }
+> >
+> > -       if (tegra_clk_set_periph_banks(5) < 0)
+> > +       clks = tegra_clk_init(clk_max, 5);
+> > +       if (!clks) {
+> > +               WARN_ON(1);
+> 
+> Really minor nit: it seems strange that we WARN here for t30, but not
+> for t114 or t20.
 
-Yes, probably. But it is not clear how/when this rcu_sync will be merged.
-(I hope it will be merged anyway, if nothing else I'll resend these patches
- for percpu_rw_semaphore with other updates in percpu-rwsem.c).
+There used to be a warning for all 3, but I removed it and apparently forgot
+t30.
 
-Until then, perhaps you can add rcu_flavor/whatever in rcupdate.* ? Then
-rcu_sync can be triviallly updated to use the ops we have in rcupdate.
-And rcutorture.c of course.
+Cheers,
 
-IOW, I think that this should be a separate change, before or after
-rcu_sync.
-
-Oleg.
-
+Peter.
