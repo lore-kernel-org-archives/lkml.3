@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3JRP4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:56:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890Ab3JRPz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:55:58 -0400
-Date: Fri, 18 Oct 2013 11:55:33 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Hong Zhiguo <honkiko@gmail.com>
-Cc: tj@kernel.org, cgroups@vger.kernel.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
-Subject: Re: [PATCH v3] blk-throttle: simplify logic by token bucket algorithm
-Message-ID: <20131018155532.GD2277@redhat.com>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
- <1382012272-26170-1-git-send-email-zhiguohong@tencent.com>
+	id S1755021Ab3JRP4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:56:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47504 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab3JRP4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:56:23 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Kamal Mostafa <kamal@canonical.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable\@vger.kernel.org" <stable@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 3.8.y.z extended stable ] Linux 3.8.13.11 stable review
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+	<CAErSpo5+xbgTfBrQdP36PRfOFpQcdeSgOEBFFDCfZoqoAsch5g@mail.gmail.com>
+	<1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
+	<CAErSpo5MPkySEb+tURxjh+f8p8xTi=Mnuj1W5g2=TAoXFDZ2Qg@mail.gmail.com>
+Date: Fri, 18 Oct 2013 16:56:19 +0100
+In-Reply-To: <CAErSpo5MPkySEb+tURxjh+f8p8xTi=Mnuj1W5g2=TAoXFDZ2Qg@mail.gmail.com>
+	(Bjorn Helgaas's message of "Fri, 18 Oct 2013 09:41:40 -0600")
+Message-ID: <87ob6mwp24.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382012272-26170-1-git-send-email-zhiguohong@tencent.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 08:17:52PM +0800, Hong Zhiguo wrote:
+Bjorn Helgaas <bhelgaas@google.com> writes:
 
-[..]
-> @@ -852,41 +710,30 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
->  				 unsigned long *wait)
->  {
->  	bool rw = bio_data_dir(bio);
-> -	u64 bytes_allowed, extra_bytes, tmp;
-> -	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
-> -
-> -	jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
-> -
-> -	/* Slice has just started. Consider one slice interval */
-> -	if (!jiffy_elapsed)
-> -		jiffy_elapsed_rnd = throtl_slice;
-> +	u64 extra_bytes, token;
-> +	unsigned long jiffy_wait;
->  
-> -	jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
-> +	token = (u64)tg->bps[rw] * (jiffies - tg->last_dispatch[rw]);
-> +	do_div(token, HZ);
-> +	token += tg->bytes_token[rw];
->  
-> -	tmp = tg->bps[rw] * jiffy_elapsed_rnd;
-> -	do_div(tmp, HZ);
-> -	bytes_allowed = tmp;
-> +	/* trim the token if the group is idle */
-> +	if (!tg->service_queue.nr_queued[rw] && token > THROTL_BURST_BYTES)
-> +		token = THROTL_BURST_BYTES;
+> On Thu, Oct 17, 2013 at 7:30 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> On Thu, 2013-10-10 at 11:37 -0600, Bjorn Helgaas wrote:
+>>> On Thu, Oct 10, 2013 at 9:40 AM, Kamal Mostafa <kamal@canonical.com> wrote:
+>>> > This is the start of the review cycle for the Linux 3.8.13.11 stable kernel.
+>>>
+>>> Would anybody be interested in adding some sort of "stable" tag to the
+>>> subject lines of stable backport patches, e.g.,  instead of:
+>>>
+>>>   [PATCH 001/104] htb: fix sign extension bug
+>>>
+>>> something like:
+>>>
+>>>   [STABLE 3.8.13.11 001/104] htb: fix sign extension bug
+>>>
+>>> I don't mind having the stable patches on LKML, but it would be nice
+>>> if it were easier to distinguish stable backports from new patches.  I
+>>> know the patches are nicely threaded behind this message, but some
+>>> readers don't really pay attention to that.
+>>
+>> I agree that some distinction is needed, but I'm not convinced about
+>> that precise format.  I don't think it's worth including version
+>> components after the stable base version e.g. 3.2.  And I think that
+>> including the version is a big enough clue that this is for a stable
+>> branch and not mainline.
+>>
+>> So I've changed my review script to put a subject prefix of 'PATCH 3.2'
+>> before the patch number (and similarly in the cover letter).  But if
+>> there's consensus that a more explicit tag is wanted then I'll follow
+>> that.
+>
+> Selfishly, I would just like something gmail can filter on.  I've seen
+> an "X-Extended-Stable: 3.8" header, which would be perfect, except
+> that I can't figure out how to create a gmail filter for random
+> headers.  So I was hoping for something stable-specific in the subject
+> line, but that's just to compensate for gmail's limitations.
+>
+> Bjorn
 
-I think same logic need to be applied to iops too?
+I don't really mind changing the scripts we're currently using to make
+life easier for filtering, although I would expect that the extra
+'X-Extended-Stable' header would do the job (this was the reason we
+added it in the first place).
 
-Also, how does it work in case of hierarchy? IIUC, when bio is being
-propogated upwards, we first add it to the parent, and then later
-update dispatch time which will in turn call tg_with_in_bps_limit().
+Since the only header that can be parsed is the 'Subject:', it's just
+a matter of agreeing on the format (personally, I don't have any
+strong opinion on this).
 
-So by the time you come here after bio propogation, bio is already
-on service queue and it will be entitiled to *unlimited* idle tokens.
-
-On the flip side, we can't do blind truncation of idle tokens in
-parent group. Reason being that once bio got queued in child group,
-effectively it should be subjected to parent's limits too right now
-and not necessarily when it climbs up the tree. 
-
-To solve this problem I had put following patch.
-
-commit 32ee5bc4787dfbdb280b4d81a338dcdd55918c1e
-Author: Vivek Goyal <vgoyal@redhat.com>
-Date:   Tue May 14 13:52:38 2013 -0700
-
-    blk-throttle: Account for child group's start time in parent while bio
-climb
-
-
-Above solution was not perfect but seemed like reasonable approximation.
-We might have to do something similar. I think we can keep track of time
-when an bio starts waiting in a group (gets to head of list) and then
-when that bio is dispatched, pass that time to parent group. Now
-parent can give more tokens to bio based on wait time start as passed
-by children.
-
-For example say Twaitstart is the time a bio started waiting on the head
-of queue of a group. Say Tidle is time when parent became idle. Now when
-child passes this bio to parent, it will also pass Twaitstart to parent.
-When it comes time for token calculation, parent can do following.
-
-If (time_after(Twaitstart, Tidle) 
-	start_time = Twaitstart;
-else
-	start_time = Tidle;
-
-token_eligibility = (jiffies - start_time) * rate;
-
-This is far from perfect, but it should work reasonably.
-
-Thanks
-Vivek
+Cheers,
+-- 
+Luis
