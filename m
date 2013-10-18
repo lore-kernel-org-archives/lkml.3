@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3JRK7a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 06:59:30 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:44145 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab3JRK72 (ORCPT
+	id S1753262Ab3JRLCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:02:35 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:64407 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab3JRLCd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 06:59:28 -0400
-Date: Fri, 18 Oct 2013 12:59:23 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, John Stultz <john.stultz@linaro.org>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: honor ACPI FADT flag indicating absence of a CMOS
- RTC
-Message-ID: <20131018105923.GB17696@gmail.com>
-References: <525E969E02000078000FB710@nat28.tlf.novell.com>
- <20131018062908.GD14264@gmail.com>
- <5261015702000078000FBFA1@nat28.tlf.novell.com>
+	Fri, 18 Oct 2013 07:02:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5261015702000078000FBFA1@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGG-pURzhHWMHN8u4YKCNsc1UKyGJQC5tBfFhWNkrOC_o6zsJg@mail.gmail.com>
+References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
+	<20131017224605.2e1d4bab@gandalf.local.home>
+	<CAGG-pURzhHWMHN8u4YKCNsc1UKyGJQC5tBfFhWNkrOC_o6zsJg@mail.gmail.com>
+Date: Fri, 18 Oct 2013 08:02:32 -0300
+Message-ID: <CAGG-pUSSeuaSMiOiTxQtgy84UZXq-VqOhSYyusi0XHJDbt=wJg@mail.gmail.com>
+Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
+ refactors code
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: kernel-br <kernel-br@googlegroups.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/10/18 Geyslan Gregório Bem <geyslan@gmail.com>:
+> 2013/10/17 Steven Rostedt <rostedt@goodmis.org>:
+>> On Thu, 17 Oct 2013 22:44:56 -0300
+>> "Geyslan G. Bem" <geyslan@gmail.com> wrote:
+>>
+>>> Restructures function logic conditions testing 'tracing_open_generic'
+>>> return before the others. It avoids: unnecessary trace_array_get and
+>>> kzalloc when tracing is disabled; and fix the possible 'dir'
+>>> assignment after freeing it.
+>>>
+>>> Centralizes the exiting, ensuring the 'trace_array_put' on error,
+>>> in accordance to Coding Style, Chapter 7.
+>>>
+>>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>>> ---
+>>>  kernel/trace/trace_events.c | 22 ++++++++++++----------
+>>>  1 file changed, 12 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+>>> index 368a4d5..8232362 100644
+>>> --- a/kernel/trace/trace_events.c
+>>> +++ b/kernel/trace/trace_events.c
+>>> @@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
+>>>       struct trace_array *tr = inode->i_private;
+>>>       int ret;
+>>>
+>>> -     if (trace_array_get(tr) < 0)
+>>> -             return -ENODEV;
+>>> +     ret = tracing_open_generic(inode, filp);
+>>> +     if (ret)
+>>> +             return ret;
+>>> +
+>>> +     ret = trace_array_get(tr);
+>>> +     if (ret)
+>>> +             return ret;
+>>
+>> Hmm,
+>>
+>> I'm thinking of just nuking the tracing_open_generic() here. The only
+>> thing it does here is the tracing_disabled check. The assignment of
+>> inode->i_private to filp->private_data is pointless as it just
+>> reassigns it anyway.
+>>
+>> We could add a tracing_is_disabled() function to test instead.
+>
+> Nice, I can do it.
+>
+> Questions:
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+I realized that here not:
+>
+> 1267 static const struct file_operations ftrace_enable_fops = {
+> 1268         .open = tracing_open_generic,
+> ...
+> 1286 static const struct file_operations ftrace_event_filter_fops = {
+> 1287         .open = tracing_open_generic,
+> ...
+> 1317 static const struct file_operations ftrace_show_header_fops = {
+> 1318         .open = tracing_open_generic,
 
-> >>> On 18.10.13 at 08:29, Ingo Molnar <mingo@kernel.org> wrote:
-> > * Jan Beulich <JBeulich@suse.com> wrote:
-> > 
-> >> We shouldn't be creating a corresponding platform device in that case.
-> > 
-> > There's a sad lack of context in the changelog, how was it found, does 
-> > this address any problem/bug observed in practice, etc?
-> 
-> This was a result from code review in Xen hypervisor code in the context 
-> of ACPI 5 work there, which lead me to check whether Linux would honor 
-> that flag. No known issue in practice so far. Once the below got 
-> clarified, I can certainly extend the description in an eventual 
-> resubmission (albeit I would have though that fixing the not honoring of 
-> a firmware flag should speak for itself).
+Tell me about this other case:
+>
+> Are that structures in same case? Their 'open' can be replaced to the
+> new 'tracing_is_disabled()?
+>
+> I think that 'subsystem_open()' can be also refactored to use the
+> about to rise 'tracing_is_disabled()'. Am I right?
+> 1096         ret = tracing_open_generic(inode, filp);
 
-I thought we've been through this before, firmware related changes never 
-'speak for themselves'!
-
-The quality and effect of firmware flags varies wildly (sometimes they are 
-good and avoid problems, sometimes they are crap and cause problems) and 
-it's important to know the full context.
-
-So in this area there's no such thing as being overly verbose in a 
-changelog.
-
-> >> +#ifdef CONFIG_ACPI
-> >> +	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC)
-> >> +		return -ENODEV;
-> >> +#endif
-> > 
-> > It might also be prudent to emit a KERN_INFO line telling that we don't 
-> > create the device - so that people who suddenly see unexpected breakage or 
-> > change in behavior have a chance to see what we've done?
-> 
-> There are so many other -ENODEV return paths here which don't
-> emit messages that this seemed inappropriate, the more that a
-> message _is_ being issued if the platform RTC device does get
-> registered (and hence one could judge by the message
-> disappearing between before and after the patch got applied).
-
-I'm trying to be conservative and protect users against potential bad side 
-effects of such a change. It's routine. We can mark it as temporary and 
-zap it a few kernel releases later.
-
-Thanks,
-
-	Ingo
+Regards,
+-- Geyslan
+>
+>>
+>> -- Steve
+>>
+>>>
+>>>       /* Make a temporary dir that has no system but points to tr */
+>>>       dir = kzalloc(sizeof(*dir), GFP_KERNEL);
+>>>       if (!dir) {
+>>> -             trace_array_put(tr);
+>>> -             return -ENOMEM;
+>>> +             ret = -ENOMEM;
+>>> +             goto err_dir;
+>>>       }
+>>>
+>>>       dir->tr = tr;
+>>>
+>>> -     ret = tracing_open_generic(inode, filp);
+>>> -     if (ret < 0) {
+>>> -             trace_array_put(tr);
+>>> -             kfree(dir);
+>>> -     }
+>>> -
+>>>       filp->private_data = dir;
+>>> +     return 0;
+>>>
+>>> +err_dir:
+>>> +     trace_array_put(tr);
+>>>       return ret;
+>>>  }
+>>>
+>>
