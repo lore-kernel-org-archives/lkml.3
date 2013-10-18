@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab3JRNPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:15:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60932 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab3JRNOq (ORCPT
+	id S1754574Ab3JRNSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:18:17 -0400
+Received: from host.colocrossing.com ([192.3.19.164]:37984 "EHLO
+	smtp6.taoqindao.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3JRNSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:14:46 -0400
-From: Matias Bjorling <m@bjorling.me>
-To: axboe@kernel.dk, willy@linux.intel.com, keith.busch@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
-        Matias Bjorling <m@bjorling.me>
-Subject: [PATCH 2/3] NVMe: Extract admin queue size
-Date: Fri, 18 Oct 2013 15:14:21 +0200
-Message-Id: <1382102062-22270-3-git-send-email-m@bjorling.me>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382102062-22270-1-git-send-email-m@bjorling.me>
-References: <1382102062-22270-1-git-send-email-m@bjorling.me>
+	Fri, 18 Oct 2013 09:18:16 -0400
+Date: Fri, 18 Oct 2013 21:18:13 +0800
+From: "Iris" <china_supplier6@smtp6.taoqindao.com>
+Reply-To: alina@tjdekay.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re:HDPE LDPE PVC
+Message-ID: <201310182118130464218@smtp6.taoqindao.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9IDIN8Q017229
 
-The queue size of the admin queue should be defined as a constant for use in
-multiple places.
+Dear Sir,
 
-Signed-off-by: Matias Bjorling <m@bjorling.me>
----
- drivers/block/nvme-core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Good day!
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index da52092..e99a30a 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -44,6 +44,7 @@
- #include <asm-generic/io-64-nonatomic-lo-hi.h>
- 
- #define NVME_Q_DEPTH 1024
-+#define NVME_ADMIN_Q_DEPTH 64
- #define SQ_SIZE(depth)		(depth * sizeof(struct nvme_command))
- #define CQ_SIZE(depth)		(depth * sizeof(struct nvme_completion))
- #define NVME_MINORS 64
-@@ -1264,7 +1265,7 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
- 
- 	nvmeq = dev->queues[0];
- 	if (!nvmeq) {
--		nvmeq = nvme_alloc_queue(dev, 0, 64, 0);
-+		nvmeq = nvme_alloc_queue(dev, 0, NVME_ADMIN_Q_DEPTH, 0);
- 		if (!nvmeq)
- 			return -ENOMEM;
- 		dev->queues[0] = nvmeq;
--- 
-1.8.1.2
+We had dealing plastic raw materials for many years . And supplied high quality different grade HDPE/LDPE/PP/PET to our old and new customers.
+  
+Should any of the items be of interest to you, please let me know. We shall be glad to give you our lowest quotations upon receipt of your detailed requirements.
 
+Thanks,
+Iris
+Email: iris20111207@hotmail.com
+Skype:iris.song12ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
