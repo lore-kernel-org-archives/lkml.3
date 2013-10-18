@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3JRBNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:13:06 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:59475 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab3JRBND (ORCPT
+	id S1754997Ab3JRBNv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:13:51 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50196 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3JRBNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:13:03 -0400
-Message-ID: <52608B0B.8060208@huawei.com>
-Date: Fri, 18 Oct 2013 09:12:43 +0800
+	Thu, 17 Oct 2013 21:13:50 -0400
+Message-ID: <52608B3A.7050808@huawei.com>
+Date: Fri, 18 Oct 2013 09:13:30 +0800
 From: Xie XiuQi <xiexiuqi@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ CC: Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <john.stultz@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] mm: Fix some trivial typos in comments
+Subject: [PATCH 3/3] timekeeping: Fix some trivial typos in comments
 References: <52608AB1.1010307@huawei.com>
 In-Reply-To: <52608AB1.1010307@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
@@ -32,22 +32,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
 ---
- mm/slub.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/time/timekeeping.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index c3eb3d3..c9aa8d4 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -955,7 +955,7 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
- 	kmemleak_free_recursive(x, s->flags);
-
- 	/*
--	 * Trouble is that we may no longer disable interupts in the fast path
-+	 * Trouble is that we may no longer disable interrupts in the fast path
- 	 * So in order to make the debug calls that expect irqs to be
- 	 * disabled we need to disable interrupts temporarily.
- 	 */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 947ba25..3abf534 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1613,9 +1613,10 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+  * ktime_get_update_offsets - hrtimer helper
+  * @offs_real:	pointer to storage for monotonic -> realtime offset
+  * @offs_boot:	pointer to storage for monotonic -> boottime offset
++ * @offs_tai:	pointer to storage for monotonic -> clock tai offset
+  *
+  * Returns current monotonic time and updates the offsets
+- * Called from hrtimer_interupt() or retrigger_next_event()
++ * Called from hrtimer_interrupt() or retrigger_next_event()
+  */
+ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot,
+ 							ktime_t *offs_tai)
 -- 
 1.7.7
 
