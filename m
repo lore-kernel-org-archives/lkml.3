@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab3JRVFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 17:05:17 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:33322 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab3JRVFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 17:05:15 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: kernel-br@googlegroups.com
-Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/2] tracing: fix referencing after memory freeing and refactors code
-Date: Fri, 18 Oct 2013 17:59:42 -0300
-Message-Id: <1382129982-9668-2-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382129982-9668-1-git-send-email-geyslan@gmail.com>
-References: <1382129982-9668-1-git-send-email-geyslan@gmail.com>
+	id S1754848Ab3JRVOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 17:14:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4420 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752543Ab3JRVOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 17:14:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,525,1378882800"; 
+   d="scan'208";a="395149872"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com, x86@kernel.org
+Cc: sathyanarayanan.kuppuswamy@linux.intel.com, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH 0/3] Add maintainers + Clovertrail support to Intel Mid
+Date: Fri, 18 Oct 2013 14:18:47 -0700
+Message-Id: <1382131130-10903-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 'system_tr_open()':
-Fix possible 'dir' assignment after freeing it.
+This is the next series of patches to add initial support to more Intel Mid
+platforms. This time is Clovertrail. Next it will be Merrifield.
 
-In both functions:
-Restructures logic conditions testing 'tracing_is_disabled()'
-return before the others tests.
-Centralizes the exiting in accordance to Coding Style, Chapter 7.
+This patch set:
+1. adds maintainers to Intel Mid architecture
+2. moves Medfield code to its own file
+3. adds Clovertrail support to Intel Mid
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- kernel/trace/trace_events.c | 46 +++++++++++++++++++++++----------------------
- 1 file changed, 24 insertions(+), 22 deletions(-)
+David Cohen (2):
+  MAINTAINERS: INTEL MID SOC: add maintainers
+  x86: intel-mid: move Medfield code out of intel-mid.c core file
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 368a4d5..0f56ebf 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1060,7 +1060,10 @@ static int subsystem_open(struct inode *inode, struct file *filp)
- 	struct event_subsystem *system = NULL;
- 	struct ftrace_subsystem_dir *dir = NULL; /* Initialize for gcc */
- 	struct trace_array *tr;
--	int ret;
-+	int ret = -ENODEV;
-+
-+	if (tracing_is_disabled())
-+		return ret;
- 
- 	/* Make sure the system still exists */
- 	mutex_lock(&trace_types_lock);
-@@ -1082,23 +1085,21 @@ static int subsystem_open(struct inode *inode, struct file *filp)
- 	mutex_unlock(&trace_types_lock);
- 
- 	if (!system)
--		return -ENODEV;
-+		return ret;
- 
- 	/* Some versions of gcc think dir can be uninitialized here */
- 	WARN_ON(!dir);
- 
- 	/* Still need to increment the ref count of the system */
--	if (trace_array_get(tr) < 0) {
--		put_system(dir);
--		return -ENODEV;
--	}
-+	ret = trace_array_get(tr);
-+	if (ret)
-+		goto err_get;
- 
--	ret = tracing_open_generic(inode, filp);
--	if (ret < 0) {
--		trace_array_put(tr);
--		put_system(dir);
--	}
-+	filp->private_data = dir;
-+	return 0;
- 
-+err_get:
-+	put_system(dir);
- 	return ret;
- }
- 
-@@ -1106,28 +1107,29 @@ static int system_tr_open(struct inode *inode, struct file *filp)
- {
- 	struct ftrace_subsystem_dir *dir;
- 	struct trace_array *tr = inode->i_private;
--	int ret;
-+	int ret = -ENODEV;
- 
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
-+	if (tracing_is_disabled())
-+		return ret;
-+
-+	ret = trace_array_get(tr);
-+	if (ret)
-+		return ret;
- 
- 	/* Make a temporary dir that has no system but points to tr */
- 	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
- 	if (!dir) {
--		trace_array_put(tr);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_dir;
- 	}
- 
- 	dir->tr = tr;
- 
--	ret = tracing_open_generic(inode, filp);
--	if (ret < 0) {
--		trace_array_put(tr);
--		kfree(dir);
--	}
--
- 	filp->private_data = dir;
-+	return 0;
- 
-+err_dir:
-+	trace_array_put(tr);
- 	return ret;
- }
- 
+Kuppuswamy Sathyanarayanan (1):
+  x86: intel-mid: add Clovertrail platform support
+
+ MAINTAINERS                                        |  9 +++
+ arch/x86/include/asm/intel-mid.h                   | 46 ++++++++++++-
+ arch/x86/platform/intel-mid/Makefile               |  4 +-
+ arch/x86/platform/intel-mid/intel-mid.c            | 60 ++++++++---------
+ arch/x86/platform/intel-mid/intel_mid_weak_decls.h | 18 ++++++
+ arch/x86/platform/intel-mid/mfld.c                 | 75 ++++++++++++++++++++++
+ 6 files changed, 178 insertions(+), 34 deletions(-)
+ create mode 100644 arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+ create mode 100644 arch/x86/platform/intel-mid/mfld.c
+
 -- 
-1.8.4
+1.8.4.rc3
 
