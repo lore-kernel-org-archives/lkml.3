@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3JRMbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:31:24 -0400
+	id S1754674Ab3JRMdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:33:17 -0400
 Received: from mga09.intel.com ([134.134.136.24]:2346 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab3JRMbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:31:21 -0400
+	id S1754004Ab3JRMam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:30:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
-   d="scan'208";a="394936743"
+   d="scan'208";a="394936451"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 19/19] perf tools: allow non-matching sample types
-Date: Fri, 18 Oct 2013 15:29:16 +0300
-Message-Id: <1382099356-4918-20-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 09/19] perf tools: Fix 32-bit cross build
+Date: Fri, 18 Oct 2013 15:29:06 +0300
+Message-Id: <1382099356-4918-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
 References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
@@ -28,113 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For kernels that do not support PERF_SAMPLE_IDENTIFIER,
-sample types need not be identical to determine
-the sample id from the event.  Only the position
-of the sample id needs to be the same.
-
-Compatible sample types are ones in which the bits
-defined by PERF_COMPAT_MASK are the same.
-'perf_evlist__config()' forces sample types to be
-compatible on that basis.
+Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
+was not passed around.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/event.h  | 16 ++++++++++++++++
- tools/perf/util/evlist.c | 25 +++++++++++++++++++++++++
- tools/perf/util/evlist.h |  1 +
- tools/perf/util/record.c |  5 ++++-
- 4 files changed, 46 insertions(+), 1 deletion(-)
+ tools/perf/Makefile.perf                  | 2 +-
+ tools/perf/config/Makefile                | 4 ++--
+ tools/perf/config/feature-checks/Makefile | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 752709c..ca0689c 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -78,6 +78,22 @@ struct throttle_event {
- /* perf sample has 16 bits size limit */
- #define PERF_SAMPLE_MAX_SIZE (1 << 16)
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index c873e03..699cdb7 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -706,7 +706,7 @@ $(LIB_FILE): $(LIB_OBJS)
+ TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
  
-+/*
-+ * Events have compatible sample types if the following bits all have the same
-+ * value.  This is because the order of sample members is fixed.  For sample
-+ * events the order is: PERF_SAMPLE_IP, PERF_SAMPLE_TID, PERF_SAMPLE_TIME,
-+ * PERF_SAMPLE_ADDR, PERF_SAMPLE_ID.  For non-sample events the sample members
-+ * are accessed in reverse order.  The order is: PERF_SAMPLE_ID,
-+ * PERF_SAMPLE_STREAM_ID, PERF_SAMPLE_CPU.  PERF_SAMPLE_IDENTIFIER is added for
-+ * completeness but it should not be used with PERF_SAMPLE_ID.  Sample types
-+ * that include PERF_SAMPLE_IDENTIFIER are always compatible.
-+ */
-+#define PERF_COMPAT_MASK				\
-+	(PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |	\
-+	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |	\
-+	 PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |	\
-+	 PERF_SAMPLE_CPU  | PERF_SAMPLE_IDENTIFIER)
-+
- struct sample_event {
- 	struct perf_event_header        header;
- 	u64 array[];
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index ffcccdd..04c3fc8 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -87,6 +87,31 @@ static void perf_evlist__update_id_pos(struct perf_evlist *evlist)
- 	perf_evlist__set_id_pos(evlist);
- }
+ $(LIBTRACEEVENT): $(TE_SOURCES)
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
  
-+/**
-+ * perf_evlist__make_sample_types_compatible - make sample types compatible.
-+ * @evlist: selected event list
-+ *
-+ * Events with compatible sample types all have the same id_pos and is_pos.
-+ * This can be achieved by matching the bits of PERF_COMPAT_MASK.
-+ */
-+void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+	u64 compat = 0;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		evsel->attr.sample_type |= compat;
-+		evsel->sample_size =
-+			__perf_evsel__sample_size(evsel->attr.sample_type);
-+		perf_evsel__calc_id_pos(evsel);
-+	}
-+
-+	perf_evlist__set_id_pos(evlist);
-+}
-+
- static void perf_evlist__purge(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *pos, *n;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 7f8f1ae..8c5cdb9 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -94,6 +94,7 @@ int perf_evlist__open(struct perf_evlist *evlist);
- void perf_evlist__close(struct perf_evlist *evlist);
+ $(LIBTRACEEVENT)-clean:
+ 	$(call QUIET_CLEAN, libtraceevent)
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index c516d6b..c94a06b 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -92,7 +92,7 @@ endif
  
- void perf_evlist__set_id_pos(struct perf_evlist *evlist);
-+void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist);
- bool perf_can_sample_identifier(void);
- void perf_evlist__config(struct perf_evlist *evlist,
- 			 struct perf_record_opts *opts);
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 18d73aa..6e01bf2 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -104,5 +104,8 @@ void perf_evlist__config(struct perf_evlist *evlist,
- 			perf_evsel__set_sample_id(evsel, use_sample_identifier);
- 	}
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
  
--	perf_evlist__set_id_pos(evlist);
-+	if (use_sample_identifier)
-+		perf_evlist__set_id_pos(evlist);
-+	else
-+		perf_evlist__make_sample_types_compatible(evlist);
- }
+ feature_set = $(eval $(feature_set_code))
+@@ -169,7 +169,7 @@ ifeq ($(feature-all), 1)
+   #
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 452b67c..353c00c 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -31,7 +31,7 @@ CC := $(CC) -MD
+ 
+ all: $(FILES)
+ 
+-BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
++BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ 
+ ###############################
+ 
 -- 
 1.7.11.7
 
