@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab3JRGJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 02:09:28 -0400
-Received: from ozlabs.org ([203.10.76.45]:47185 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab3JRGJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 02:09:27 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Krzysztof Mazur <krzysiek@podlesie.net>, Pawel Moll <pawel.moll@arm.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] init: fix in-place parameter modification regression
-In-Reply-To: <20131014125001.GA6015@shrek.podlesie.net>
-References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net> <1381750442.3247.48.camel@hornet> <20131014125001.GA6015@shrek.podlesie.net>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 18 Oct 2013 14:20:38 +1030
-Message-ID: <87wqlbjkz5.fsf@rustcorp.com.au>
+	id S1751503Ab3JRGJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 02:09:35 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62105 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3JRGJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 02:09:33 -0400
+Date: Fri, 18 Oct 2013 08:09:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com
+Subject: Re: [PATCH v10 00/12] rework arch/x86/platform/[mrst => intel-mid]
+Message-ID: <20131018060929.GB3411@gmail.com>
+References: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Mazur <krzysiek@podlesie.net> writes:
-> On Mon, Oct 14, 2013 at 12:34:02PM +0100, Pawel Moll wrote:
->> So, assuming that it is actually legal to modify static_command_line in
->> __setup()-s (and I must say I have rather mixed feelings about it ;-),
->
-> I also have mixed feelings about that, but the parse_args() already
-> does that, because some characters are replaced with '\0' to split
-> command line into separate strings. The ubd driver does the same
-> to split parameter into two strings.
 
-Back when there was almost no parameter parsing support, everyone got
-used to keeping pointers into the original.  Making everyone kstrdup()
-seems like gratuitous churn which is likely to make more bugs.
+* David Cohen <david.a.cohen@linux.intel.com> wrote:
 
-Your fix means __setup() gets treated specially, in that only it can
-mangle the command line.  That makes sense.  But it introduces another
-regression: normal parsing functions can't keep pointers, since that's
-now __initdata.
+> David Cohen (3):
+>   intel-mid: sfi: allow struct devs_id.get_platform_data to be NULL
+>   x86: intel-mid: add section for sfi device table
+>   intel_mid: move board related codes to their own platform_<device>.*
+>     files
+> 
+> Fengguang Wu (1):
+>   pci: intel_mid: return true/false in function returning bool
+> 
+> Kuppuswamy Sathyanarayanan (8):
+>   mrst: Fixed printk/pr_* related issues
+>   mrst: Fixed indentation issues
+>   intel_mid: Renamed *mrst* to *intel_mid*
+>   intel_mid: Renamed *mrst* to *intel_mid*
+>   intel_mid: Refactored sfi_parse_devs() function
+>   intel_mid: Added custom device_handler support
+>   intel_mid: Added custom handler for ipc devices
+>   intel_mid: Moved SFI related code to sfi.c
 
-There are two possible solutions:
-(1) Audit all __setup to make sure they copy if they want to mangle.
-    There are about 750 of them, but many are trivial.
-(2) alloc_bootmem() a third commandline for parsing.
+Btw., when submitting a series _please_ harmonize the patch titles.
 
-Now, many functions of form __setup("XXX=") should be turned into
-module_param anyway.
+1)
 
-I suggest we do (2) for the moment, and start sweeping through cleaning
-up __setup() in the longer term.
+Verbs should be present tense, i.e.:
 
-Cheers,
-Rusty.
+->   intel_mid: Renamed *mrst* to *intel_mid*
+->   intel_mid: Renamed *mrst* to *intel_mid*
++>   intel_mid: Rename *mrst* to *intel_mid*
++>   intel_mid: Rename *mrst* to *intel_mid*
+
+2)
+
+Use consistent capitalization:
+
+->   pci: intel_mid: return true/false in function returning bool
++>   pci: intel_mid: Return true/false in function returning bool
+
+3)
+
+Use standard, consistent subsystem prefixes:
+
+->   x86: intel-mid: add section for sfi device table
+->   intel_mid: Renamed *mrst* to *intel_mid*
++>    x86/intel-mid: Add section for sfi device table
++>    x86/intel/mid: Rename *mrst* to *intel_mid*
+
+etc.
+
+Thanks,
+
+	Ingo
