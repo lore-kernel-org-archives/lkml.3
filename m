@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab3JRMbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:31:13 -0400
+	id S1754512Ab3JRMbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:31:21 -0400
 Received: from mga09.intel.com ([134.134.136.24]:2346 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393Ab3JRMbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:31:10 -0400
+	id S1754490Ab3JRMbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:31:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
-   d="scan'208";a="394936620"
+   d="scan'208";a="394936693"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/19] perf tools: factor out duplicated evlist mmap code
-Date: Fri, 18 Oct 2013 15:29:13 +0300
-Message-Id: <1382099356-4918-17-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 18/19] perf record: add an option to force per-cpu mmaps
+Date: Fri, 18 Oct 2013 15:29:15 +0300
+Message-Id: <1382099356-4918-19-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
 References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
@@ -28,123 +28,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same code is used in perf_evlist__mmap_per_cpu()
-and perf_evlist__mmap_per_thread().  Factor it out
-into a separate function perf_evlist__mmap_per_evsel().
+By default, when tasks are specified (i.e. -p, -t
+or -u options) per-thread mmaps are created.  Add
+an option to override that and force per-cpu mmaps.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evlist.c | 73 ++++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 37 deletions(-)
+ tools/perf/Documentation/perf-record.txt | 6 ++++++
+ tools/perf/builtin-record.c              | 2 ++
+ tools/perf/util/evlist.c                 | 4 +++-
+ tools/perf/util/evsel.c                  | 4 ++--
+ tools/perf/util/target.h                 | 1 +
+ 5 files changed, 14 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index f10ab63..2ea6685 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -189,6 +189,12 @@ abort events and some memory events in precise mode on modern Intel CPUs.
+ --transaction::
+ Record transaction flags for transaction related events.
+ 
++--force-per-cpu::
++Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
++-t or -u options) per-thread mmaps are created.  This option overrides that and
++forces per-cpu mmaps.  A side-effect of that is that inheritance is
++automatically enabled.  Add the -i option also to disable inheritance.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d269dfa..fb09430 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -890,6 +890,8 @@ const struct option record_options[] = {
+ 		    "sample by weight (on special events only)"),
+ 	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
+ 		    "sample transaction flags (special events only)"),
++	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
++		    "force the use of per-cpu mmaps"),
+ 	OPT_END()
+ };
+ 
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a4529af..18784dc 100644
+index 18784dc..ffcccdd 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -609,9 +609,36 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 	return 0;
- }
+@@ -791,7 +791,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ 	if (evlist->threads == NULL)
+ 		return -1;
  
--static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
-+				       int prot, int mask, int cpu, int thread,
-+				       int *output)
- {
- 	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		int fd = FD(evsel, cpu, thread);
-+
-+		if (*output == -1) {
-+			*output = fd;
-+			if (__perf_evlist__mmap(evlist, idx, prot, mask,
-+						*output) < 0)
-+				return -1;
-+		} else {
-+			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, *output) != 0)
-+				return -1;
-+		}
-+
-+		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-+		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
-+			return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot,
-+				     int mask)
-+{
- 	int cpu, thread;
- 	int nr_cpus = cpu_map__nr(evlist->cpus);
- 	int nr_threads = thread_map__nr(evlist->threads);
-@@ -621,23 +648,9 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 		int output = -1;
- 
- 		for (thread = 0; thread < nr_threads; thread++) {
--			list_for_each_entry(evsel, &evlist->entries, node) {
--				int fd = FD(evsel, cpu, thread);
--
--				if (output == -1) {
--					output = fd;
--					if (__perf_evlist__mmap(evlist, cpu,
--								prot, mask, output) < 0)
--						goto out_unmap;
--				} else {
--					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
--						goto out_unmap;
--				}
--
--				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--				    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
--					goto out_unmap;
--			}
-+			if (perf_evlist__mmap_per_evsel(evlist, cpu, prot, mask,
-+							cpu, thread, &output))
-+				goto out_unmap;
+-	if (perf_target__has_task(target))
++	if (target->force_per_cpu)
++		evlist->cpus = cpu_map__new(target->cpu_list);
++	else if (perf_target__has_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
+ 		evlist->cpus = cpu_map__dummy_new();
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index e09c7e6..f1839b0 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -645,7 +645,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
  		}
  	}
  
-@@ -649,9 +662,9 @@ out_unmap:
- 	return -1;
- }
+-	if (perf_target__has_cpu(&opts->target))
++	if (perf_target__has_cpu(&opts->target) || opts->target.force_per_cpu)
+ 		perf_evsel__set_sample_bit(evsel, CPU);
  
--static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot,
-+					int mask)
- {
--	struct perf_evsel *evsel;
- 	int thread;
- 	int nr_threads = thread_map__nr(evlist->threads);
+ 	if (opts->period)
+@@ -653,7 +653,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
  
-@@ -659,23 +672,9 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	for (thread = 0; thread < nr_threads; thread++) {
- 		int output = -1;
+ 	if (!perf_missing_features.sample_id_all &&
+ 	    (opts->sample_time || !opts->no_inherit ||
+-	     perf_target__has_cpu(&opts->target)))
++	     perf_target__has_cpu(&opts->target) || opts->target.force_per_cpu))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
  
--		list_for_each_entry(evsel, &evlist->entries, node) {
--			int fd = FD(evsel, 0, thread);
--
--			if (output == -1) {
--				output = fd;
--				if (__perf_evlist__mmap(evlist, thread,
--							prot, mask, output) < 0)
--					goto out_unmap;
--			} else {
--				if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
--					goto out_unmap;
--			}
--
--			if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--			    perf_evlist__id_add_fd(evlist, evsel, 0, thread, fd) < 0)
--				goto out_unmap;
--		}
-+		if (perf_evlist__mmap_per_evsel(evlist, thread, prot, mask, 0,
-+						thread, &output))
-+			goto out_unmap;
- 	}
+ 	if (opts->raw_samples) {
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index a4be857..6d7efbd 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -12,6 +12,7 @@ struct perf_target {
+ 	uid_t	     uid;
+ 	bool	     system_wide;
+ 	bool	     uses_mmap;
++	bool	     force_per_cpu;
+ };
  
- 	return 0;
+ enum perf_target_errno {
 -- 
 1.7.11.7
 
