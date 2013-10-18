@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3JRBlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:41:14 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5461 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753313Ab3JRBlN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:41:13 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'linux-arm-msm-owner@vger.kernel.org'" 
-	<linux-arm-msm-owner@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
-        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>,
-        "Gu, Youcai 1 (EXT)" <Youcai1.Gu@sonymobile.com>,
-        "Alevoor, Raghavendra 2" <Raghavendra.Alevoor@sonymobile.com>
-Date: Fri, 18 Oct 2013 09:41:09 +0800
-Subject: RE: BUG report about ipt_do_table( )
-Thread-Topic: BUG report about ipt_do_table( )
-Thread-Index: Ac7LJXD1SQkKs49CQX6jBKijFcj5DQAfaUzg
-Message-ID: <35FD53F367049845BC99AC72306C23D101592A7054D7@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
- <20131010094824.GF3817@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
- <20131010110309.GA6199@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B5@CNBJMBX05.corpusers.net>
- <20131010141841.GF6199@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971B6@CNBJMBX05.corpusers.net>
- <20131011110247.GF14732@mudshark.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D1014D1A0971BB@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D101592A7054D3@CNBJMBX05.corpusers.net>
- <20131017104123.GH18765@mudshark.cambridge.arm.com>
-In-Reply-To: <20131017104123.GH18765@mudshark.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755519Ab3JRBt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:49:27 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:46208 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579Ab3JRBt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Oct 2013 21:49:26 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] tracing: fix referencing after memory freeing and refactors code
+Date: Thu, 17 Oct 2013 22:44:56 -0300
+Message-Id: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi   Will
+Restructures function logic conditions testing 'tracing_open_generic'
+return before the others. It avoids: unnecessary trace_array_get and
+kzalloc when tracing is disabled; and fix the possible 'dir'
+assignment after freeing it.
 
-yes, of course .
+Centralizes the exiting, ensuring the 'trace_array_put' on error,
+in accordance to Coding Style, Chapter 7.
 
-by the way, could you send me your delivered commit link after you submit ?
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ kernel/trace/trace_events.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-Thanks
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 368a4d5..8232362 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
+ 	struct trace_array *tr = inode->i_private;
+ 	int ret;
+ 
+-	if (trace_array_get(tr) < 0)
+-		return -ENODEV;
++	ret = tracing_open_generic(inode, filp);
++	if (ret)
++		return ret;
++
++	ret = trace_array_get(tr);
++	if (ret)
++		return ret;
+ 
+ 	/* Make a temporary dir that has no system but points to tr */
+ 	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
+ 	if (!dir) {
+-		trace_array_put(tr);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_dir;
+ 	}
+ 
+ 	dir->tr = tr;
+ 
+-	ret = tracing_open_generic(inode, filp);
+-	if (ret < 0) {
+-		trace_array_put(tr);
+-		kfree(dir);
+-	}
+-
+ 	filp->private_data = dir;
++	return 0;
+ 
++err_dir:
++	trace_array_put(tr);
+ 	return ret;
+ }
+ 
+-- 
+1.8.4
 
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: Thursday, October 17, 2013 6:41 PM
-To: Wang, Yalin
-Cc: 'linux-arm-msm-owner@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; Peng, Arthur; Zhang, Bojie; Gu, Youcai 1 (EXT); Alevoor, Raghavendra 2
-Subject: Re: BUG report about ipt_do_table( )
-
-On Thu, Oct 17, 2013 at 02:51:34AM +0100, Wang, Yalin wrote:
-> Hi  Will,
-
-Hello,
-
-> I am happy to notify that our stability test has passed, And this 
-> Crash don't happen again, So seems this patch work now .
-
-Great!
-
-> We has merged it into our release SW .
-> Could I know if this patch will be delivered into kernel Mainline by 
-> you ?
-
-Sure, can I add your tested-by please?
-
-Will
