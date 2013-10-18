@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3JRLVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:21:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25234 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab3JRLVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:21:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,521,1378882800"; 
-   d="scan'208";a="376579272"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: linx.z.chen@intel.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cpw@sgi.com,
-        kirill.shutemov@linux.intel.com, linux-mm@kvack.org,
-        yanmin_zhang@linux.intel.com, shuox.liu@intel.com,
-        linx.z.chen@intel.com
-In-Reply-To: <1382084117-25599-1-git-send-email-linx.z.chen@intel.com>
-References: <1382084117-25599-1-git-send-email-linx.z.chen@intel.com>
-Subject: RE: [PATCH] mm/pagewalk.c: Fix walk_page_range access wrong PTEs
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131018112042.AD31EE0090@blue.fi.intel.com>
-Date: Fri, 18 Oct 2013 14:20:42 +0300 (EEST)
+	id S1753344Ab3JRLXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:23:39 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:38347 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab3JRLXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 07:23:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1382030498-23465-1-git-send-email-acourbot@nvidia.com>
+References: <1382030498-23465-1-git-send-email-acourbot@nvidia.com>
+Date: Fri, 18 Oct 2013 13:23:36 +0200
+Message-ID: <CACRpkdYx07Kfs6zOQmTg2cTSmEmsGgP=7wMCSG_30NW=dfYRPQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] New descriptor-based GPIO interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linx.z.chen@ wrote:
-> From: Chen LinX <linx.z.chen@intel.com>
-> 
-> When walk_page_range walk a memory map's page tables, it'll skip VM_PFNMAP area,
-> then variable 'next' will to assign to vma->vm_end, it maybe larger than 'end'.
-> In next loop, 'addr' will be larger than 'next'. Then in /proc/XXXX/pagemap file
-> reading procedure, the 'addr' will growing forever in pagemap_pte_range,
-> pte_to_pagemap_entry will access wrong pte.
-> 
-> [   93.387934] BUG: Bad page map in process procrank  pte:8437526f pmd:785de067
-> [   93.387936] addr:9108d000 vm_flags:00200073 anon_vma:f0d99020 mapping:  (null) index:9108d
-> [   93.387938] CPU: 1 PID: 4974 Comm: procrank Tainted: G    B   W  O 3.10.1+ #1
-> [   93.387942]  f0d983c8 f0d983c8 e8271e48 c281ef4b e8271e84 c20ee794 c2a3f150 9108d000
-> [   93.387946]  00200073 f0d99020 00000000 0009108d e8342d90 8437526f 0009108d 00000000
-> [   93.387950]  00000000 00084375 fffa4234 e8271e98 c20ef836 00000000 e8271f28 f0d983c8
-> [   93.387951] Call Trace:
-> [   93.387953]  [<c281ef4b>] dump_stack+0x16/0x18
-> [   93.387956]  [<c20ee794>] print_bad_pte+0x114/0x1b0
-> [   93.387959]  [<c20ef836>] vm_normal_page+0x56/0x60
-> [   93.387961]  [<c21594ba>] pagemap_pte_range+0x17a/0x1d0
-> [   93.387963]  [<c2159340>] ? m_next+0x70/0x70
-> [   93.387966]  [<c20fc60e>] walk_page_range+0x19e/0x2c0
-> [   93.387969]  [<c20432c4>] ? ptrace_may_access+0x24/0x40
-> [   93.387971]  [<c2159a4e>] pagemap_read+0x16e/0x200
-> [   93.387973]  [<c2159340>] ? m_next+0x70/0x70
-> [   93.387976]  [<c2158be0>] ? quota_send_warning+0x1f0/0x1f0
-> [   93.387979]  [<c2158c30>] ? pagemap_pte_hole+0x50/0x50
-> [   93.387981]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
-> [   93.387984]  [<c210c534>] vfs_read+0x84/0x150
-> [   93.387986]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
-> [   93.387988]  [<c210c77a>] SyS_read+0x4a/0x80
-> [   93.387991]  [<c28267c8>] syscall_call+0x7/0xb
-> [   93.387996]  [<c2820000>] ? e1000_regdump+0x6f/0x37c
-> [  102.866190]  [<c259fcd3>] ? cpuidle_idle_call+0x93/0x1b0
-> [  102.872124]  [<c28297fa>] ? atomic_notifier_call_chain+0x1a/0x20
-> [  102.878834]  [<c2008478>] ? arch_cpu_idle+0x8/0x20
-> [  102.884183]  [<c207950d>] ? cpu_startup_entry+0x4d/0x1b0
-> [  102.890116]  [<c280ecbd>] ? rest_init+0x5d/0x60
-> [  102.895174]  [<c2b989f8>] ? start_kernel+0x31b/0x321
-> [  102.900717]  [<c2b98512>] ? repair_env_string+0x51/0x51
-> [  102.906551]  [<c2b98356>] ? i386_start_kernel+0x12c/0x12f
-> 
-> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-> Signed-off-by: Chen LinX <linx.z.chen@intel.com>
+On Thu, Oct 17, 2013 at 7:21 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Looks reasonable for me.
+> Hi Linus,
+>
+> This version should merge as-is in your tree (I hope!). A patch for
+> documentation will follow soon.
+>
+> Changes since v2:
+> - rebased on top of Linus' for-next branch
+> - exported new gpiod_(un)lock_as_irq() functions in driver.h
+> - squashed a fix for a compilation error
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Thanks, let's see if I can get this into v3.13, right now it's
+unclear if I'll dare to do this. These do not apply right off
+as it requires the late fixes to the gpiod code which currently
+are in Torvalds' tree and on my fixes branch, so I'll merge in
+v3.12-rc6 as it arrives, and then attempt to apply this on
+top, but I don't know if I dare to do this so late.
 
--- 
- Kirill A. Shutemov
+The outage of linux-next also contributes to this situation.
+
+We might have to take this as the first thing after the merge
+window and targeted for v3.14.
+
+Yours,
+Linus Walleij
