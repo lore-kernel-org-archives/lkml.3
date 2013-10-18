@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3JRBNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:13:51 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:50196 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3JRBNu (ORCPT
+	id S1755193Ab3JRBQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:16:57 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:42163 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3JRBQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:13:50 -0400
-Message-ID: <52608B3A.7050808@huawei.com>
-Date: Fri, 18 Oct 2013 09:13:30 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jiri Kosina <trivial@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] timekeeping: Fix some trivial typos in comments
-References: <52608AB1.1010307@huawei.com>
-In-Reply-To: <52608AB1.1010307@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+	Thu, 17 Oct 2013 21:16:56 -0400
+Date: Fri, 18 Oct 2013 03:16:55 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH net-next v3 3/9] static_key: WARN on usage before jump_label_init was called
+Message-ID: <20131018011655.GG18135@order.stressinduktion.org>
+Mail-Followup-To: Andi Kleen <andi@firstfloor.org>,
+	Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>
+References: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org> <1381987923-1524-4-git-send-email-hannes@stressinduktion.org> <20131017171940.173bab09@gandalf.local.home> <20131018005057.GL2592@two.firstfloor.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131018005057.GL2592@two.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- kernel/time/timekeeping.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On Fri, Oct 18, 2013 at 02:50:57AM +0200, Andi Kleen wrote:
+> On Thu, Oct 17, 2013 at 05:19:40PM -0400, Steven Rostedt wrote:
+> > On Thu, 17 Oct 2013 07:31:57 +0200
+> > Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
+> > 
+> > > Based on a patch from Andi Kleen.
+> > 
+> > I'm fine with the patch, but the change log needs a lot more work.
+> > Like, why is this needed?  I know, but does anyone else?
+> 
+> Or just merge the orininal patch. While being less verbose
+> in the warning it had a full changelog.
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 947ba25..3abf534 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1613,9 +1613,10 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
-  * ktime_get_update_offsets - hrtimer helper
-  * @offs_real:	pointer to storage for monotonic -> realtime offset
-  * @offs_boot:	pointer to storage for monotonic -> boottime offset
-+ * @offs_tai:	pointer to storage for monotonic -> clock tai offset
-  *
-  * Returns current monotonic time and updates the offsets
-- * Called from hrtimer_interupt() or retrigger_next_event()
-+ * Called from hrtimer_interrupt() or retrigger_next_event()
-  */
- ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot,
- 							ktime_t *offs_tai)
--- 
-1.7.7
+I don't care that much which patch gets merged but I just want to
+point out another difference: I added WARN_ONs on code paths without
+architecture support for static_keys to help developers on platforms
+without support for that.
 
+Greetings,
 
+  Hannes
 
