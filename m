@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab3JRLPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:15:47 -0400
-Received: from mail.us.es ([193.147.175.20]:47070 "EHLO mail.us.es"
+	id S1753214Ab3JRLVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:21:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25234 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab3JRLPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:15:45 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98/17969. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
- Processed in 1.935414 secs); 18 Oct 2013 11:15:42 -0000
-X-Spam-ASN: AS12715 188.78.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 18 Oct 2013 13:15:36 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] netfilter: fix ordering of jumpstack allocation and
- table update
-Message-ID: <20131018111536.GA11132@localhost>
-References: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752970Ab3JRLVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 07:21:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,521,1378882800"; 
+   d="scan'208";a="376579272"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: linx.z.chen@intel.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cpw@sgi.com,
+        kirill.shutemov@linux.intel.com, linux-mm@kvack.org,
+        yanmin_zhang@linux.intel.com, shuox.liu@intel.com,
+        linx.z.chen@intel.com
+In-Reply-To: <1382084117-25599-1-git-send-email-linx.z.chen@intel.com>
+References: <1382084117-25599-1-git-send-email-linx.z.chen@intel.com>
+Subject: RE: [PATCH] mm/pagewalk.c: Fix walk_page_range access wrong PTEs
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131018112042.AD31EE0090@blue.fi.intel.com>
+Date: Fri, 18 Oct 2013 14:20:42 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 02:24:33PM +0100, Will Deacon wrote:
-> During kernel stability testing on an SMP ARMv7 system, Yalin Wang
-> reported the following panic from the netfilter code:
+linx.z.chen@ wrote:
+> From: Chen LinX <linx.z.chen@intel.com>
 > 
->   1fe0: 0000001c 5e2d3b10 4007e779 4009e110 60000010 00000032 ff565656 ff545454
->   [<c06c48dc>] (ipt_do_table+0x448/0x584) from [<c0655ef0>] (nf_iterate+0x48/0x7c)
->   [<c0655ef0>] (nf_iterate+0x48/0x7c) from [<c0655f7c>] (nf_hook_slow+0x58/0x104)
->   [<c0655f7c>] (nf_hook_slow+0x58/0x104) from [<c0683bbc>] (ip_local_deliver+0x88/0xa8)
->   [<c0683bbc>] (ip_local_deliver+0x88/0xa8) from [<c0683718>] (ip_rcv_finish+0x418/0x43c)
->   [<c0683718>] (ip_rcv_finish+0x418/0x43c) from [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598)
->   [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598) from [<c062b314>] (process_backlog+0x84/0x158)
->   [<c062b314>] (process_backlog+0x84/0x158) from [<c062de84>] (net_rx_action+0x70/0x1dc)
->   [<c062de84>] (net_rx_action+0x70/0x1dc) from [<c0088230>] (__do_softirq+0x11c/0x27c)
->   [<c0088230>] (__do_softirq+0x11c/0x27c) from [<c008857c>] (do_softirq+0x44/0x50)
->   [<c008857c>] (do_softirq+0x44/0x50) from [<c0088614>] (local_bh_enable_ip+0x8c/0xd0)
->   [<c0088614>] (local_bh_enable_ip+0x8c/0xd0) from [<c06b0330>] (inet_stream_connect+0x164/0x298)
->   [<c06b0330>] (inet_stream_connect+0x164/0x298) from [<c061d68c>] (sys_connect+0x88/0xc8)
->   [<c061d68c>] (sys_connect+0x88/0xc8) from [<c000e340>] (ret_fast_syscall+0x0/0x30)
->   Code: 2a000021 e59d2028 e59de01c e59f011c (e7824103)
->   ---[ end trace da227214a82491bd ]---
->   Kernel panic - not syncing: Fatal exception in interrupt
+> When walk_page_range walk a memory map's page tables, it'll skip VM_PFNMAP area,
+> then variable 'next' will to assign to vma->vm_end, it maybe larger than 'end'.
+> In next loop, 'addr' will be larger than 'next'. Then in /proc/XXXX/pagemap file
+> reading procedure, the 'addr' will growing forever in pagemap_pte_range,
+> pte_to_pagemap_entry will access wrong pte.
 > 
-> This comes about because CPU1 is executing xt_replace_table in response
-> to a setsockopt syscall, resulting in:
+> [   93.387934] BUG: Bad page map in process procrank  pte:8437526f pmd:785de067
+> [   93.387936] addr:9108d000 vm_flags:00200073 anon_vma:f0d99020 mapping:  (null) index:9108d
+> [   93.387938] CPU: 1 PID: 4974 Comm: procrank Tainted: G    B   W  O 3.10.1+ #1
+> [   93.387942]  f0d983c8 f0d983c8 e8271e48 c281ef4b e8271e84 c20ee794 c2a3f150 9108d000
+> [   93.387946]  00200073 f0d99020 00000000 0009108d e8342d90 8437526f 0009108d 00000000
+> [   93.387950]  00000000 00084375 fffa4234 e8271e98 c20ef836 00000000 e8271f28 f0d983c8
+> [   93.387951] Call Trace:
+> [   93.387953]  [<c281ef4b>] dump_stack+0x16/0x18
+> [   93.387956]  [<c20ee794>] print_bad_pte+0x114/0x1b0
+> [   93.387959]  [<c20ef836>] vm_normal_page+0x56/0x60
+> [   93.387961]  [<c21594ba>] pagemap_pte_range+0x17a/0x1d0
+> [   93.387963]  [<c2159340>] ? m_next+0x70/0x70
+> [   93.387966]  [<c20fc60e>] walk_page_range+0x19e/0x2c0
+> [   93.387969]  [<c20432c4>] ? ptrace_may_access+0x24/0x40
+> [   93.387971]  [<c2159a4e>] pagemap_read+0x16e/0x200
+> [   93.387973]  [<c2159340>] ? m_next+0x70/0x70
+> [   93.387976]  [<c2158be0>] ? quota_send_warning+0x1f0/0x1f0
+> [   93.387979]  [<c2158c30>] ? pagemap_pte_hole+0x50/0x50
+> [   93.387981]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
+> [   93.387984]  [<c210c534>] vfs_read+0x84/0x150
+> [   93.387986]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
+> [   93.387988]  [<c210c77a>] SyS_read+0x4a/0x80
+> [   93.387991]  [<c28267c8>] syscall_call+0x7/0xb
+> [   93.387996]  [<c2820000>] ? e1000_regdump+0x6f/0x37c
+> [  102.866190]  [<c259fcd3>] ? cpuidle_idle_call+0x93/0x1b0
+> [  102.872124]  [<c28297fa>] ? atomic_notifier_call_chain+0x1a/0x20
+> [  102.878834]  [<c2008478>] ? arch_cpu_idle+0x8/0x20
+> [  102.884183]  [<c207950d>] ? cpu_startup_entry+0x4d/0x1b0
+> [  102.890116]  [<c280ecbd>] ? rest_init+0x5d/0x60
+> [  102.895174]  [<c2b989f8>] ? start_kernel+0x31b/0x321
+> [  102.900717]  [<c2b98512>] ? repair_env_string+0x51/0x51
+> [  102.906551]  [<c2b98356>] ? i386_start_kernel+0x12c/0x12f
 > 
-> 	ret = xt_jumpstack_alloc(newinfo);
-> 		--> newinfo->jumpstack = kzalloc(size, GFP_KERNEL);
-> 
-> 	[...]
-> 
-> 	table->private = newinfo;
-> 	newinfo->initial_entries = private->initial_entries;
-> 
-> Meanwhile, CPU0 is handling the network receive path and ends up in
-> ipt_do_table, resulting in:
-> 
-> 	private = table->private;
-> 
-> 	[...]
-> 
-> 	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
-> 
-> On weakly ordered memory architectures, the writes to table->private
-> and newinfo->jumpstack from CPU1 can be observed out of order by CPU0.
-> Furthermore, on architectures which don't respect ordering of address
-> dependencies (i.e. Alpha), the reads from CPU0 can also be re-ordered.
-> 
-> This patch adds an smp_wmb() before the assignment to table->private
-> (which is essentially publishing newinfo) to ensure that all writes to
-> newinfo will be observed before plugging it into the table structure.
-> A dependent-read barrier is also added on the consumer side, to ensure
-> the same ordering requirement are also respected there.
+> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+> Signed-off-by: Chen LinX <linx.z.chen@intel.com>
 
-We also need fixes for net/ipv6/netfilter/ip6_tables.c and
-net/ipv4/netfilter/arp_tables.c as well. Could you extend this patch
-and resend?
+Looks reasonable for me.
 
-Thanks!
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+
+-- 
+ Kirill A. Shutemov
