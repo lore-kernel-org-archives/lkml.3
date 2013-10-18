@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab3JSG4s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 02:56:48 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:14372 "EHLO
+	id S1751279Ab3JSHDK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 03:03:10 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:14960 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751476Ab3JSG4q (ORCPT
+	by vger.kernel.org with ESMTP id S1750948Ab3JSHDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 02:56:46 -0400
+	Sat, 19 Oct 2013 03:03:08 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,9 +16,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 04/29] PCI/MSI/pSeries: Make quota traversing and requesting race-safe
-Date: Fri, 18 Oct 2013 19:12:04 +0200
-Message-Id: <663c95d5c7c6863f248886add511dab83f15dd18.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 09/29] PCI/MSI: Factor out pci_get_msi_cap() interface
+Date: Fri, 18 Oct 2013 19:12:09 +0200
+Message-Id: <85500e7239fcb104df091bbfa873eef8ae654772.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
 References: <cover.1382103786.git.agordeev@redhat.com>
@@ -26,110 +26,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Device drivers can use this interface to obtain maximum number
+of MSI interrupts the device supports and use that number i.e.
+in a following call to pci_enable_msi_block() interface.
+
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- arch/powerpc/platforms/pseries/msi.c |   24 ++++++++++++++++++++++--
- 1 files changed, 22 insertions(+), 2 deletions(-)
+ Documentation/PCI/MSI-HOWTO.txt |   15 +++++++++++++++
+ drivers/pci/msi.c               |   33 +++++++++++++++++++++------------
+ include/linux/pci.h             |    6 ++++++
+ 3 files changed, 42 insertions(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 009ec73..0e1d288 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -26,6 +26,8 @@ static int query_token, change_token;
- #define RTAS_CHANGE_MSIX_FN	4
- #define RTAS_CHANGE_32MSI_FN	5
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 845edb5..e7e3b20 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -169,6 +169,21 @@ on any interrupt for which it previously called request_irq().
+ Failure to do so results in a BUG_ON(), leaving the device with
+ MSI enabled and thus leaking its vector.
  
-+static DEFINE_MUTEX(rtas_quota_mutex);
++4.2.5 pci_get_msi_cap
 +
- /* RTAS Helpers */
- 
- static int rtas_change_msi(struct pci_dn *pdn, u32 func, u32 num_irqs)
-@@ -345,7 +347,9 @@ static int rtas_msi_check_device(struct pci_dev *pdev, int nvec, int type)
- 	if (rc)
- 		return rc;
- 
-+	mutex_lock(&rtas_quota_mutex);
- 	quota = msi_quota_for_device(pdev, nvec);
-+	mutex_unlock(&rtas_quota_mutex);
- 
- 	if (quota && quota < nvec)
- 		return quota;
-@@ -399,6 +403,7 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
- 	struct msi_msg msg;
- 	int nvec = nvec_in;
- 	int use_32bit_msi_hack = 0;
-+	int quota;
- 
- 	pdn = pci_get_pdn(pdev);
- 	if (!pdn)
-@@ -407,13 +412,21 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
- 	if (type == PCI_CAP_ID_MSIX && check_msix_entries(pdev))
- 		return -EINVAL;
- 
-+	mutex_lock(&rtas_quota_mutex);
++int pci_get_msi_cap(struct pci_dev *dev)
 +
-+	quota = msi_quota_for_device(pdev, nvec);
-+	if (quota && quota < nvec) {
-+		mutex_unlock(&rtas_quota_mutex);
-+		return quota;
-+	}
++This function could be used to retrieve the number of MSI vectors the
++device requested (via the Multiple Message Capable register). The MSI
++specification only allows the returned value to be a power of two,
++up to a maximum of 2^5 (32).
 +
- 	/*
- 	 * Firmware currently refuse any non power of two allocation
- 	 * so we round up if the quota will allow it.
- 	 */
- 	if (type == PCI_CAP_ID_MSIX) {
- 		int m = roundup_pow_of_two(nvec);
--		int quota = msi_quota_for_device(pdev, m);
-+		quota = msi_quota_for_device(pdev, m);
++If this function returns a negative number, it indicates the device is
++not capable of sending MSIs.
++
++If this function returns a positive number, it indicates the maximum
++number of MSI interrupt vectors that could be allocated.
++
+ 4.3 Using MSI-X
  
- 		if (quota >= m)
- 			nvec = m;
-@@ -433,8 +446,11 @@ again:
- 				 * We only want to run the 32 bit MSI hack below if
- 				 * the max bus speed is Gen2 speed
- 				 */
--				if (pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT)
-+				if (pdev->bus->max_bus_speed !=
-+				    PCIE_SPEED_5_0GT) {
-+					mutex_unlock(&rtas_quota_mutex);
- 					return rc;
-+				}
- 
- 				use_32bit_msi_hack = 1;
- 			}
-@@ -459,6 +475,7 @@ again:
- 			nvec = nvec_in;
- 			goto again;
- 		}
-+		mutex_unlock(&rtas_quota_mutex);
- 		pr_debug("rtas_msi: rtas_change_msi() failed\n");
- 		return rc;
- 	}
-@@ -467,6 +484,7 @@ again:
- 	list_for_each_entry(entry, &pdev->msi_list, list) {
- 		hwirq = rtas_query_irq_number(pdn, i++);
- 		if (hwirq < 0) {
-+			mutex_unlock(&rtas_quota_mutex);
- 			pr_debug("rtas_msi: error (%d) getting hwirq\n", hwirq);
- 			return hwirq;
- 		}
-@@ -474,6 +492,7 @@ again:
- 		virq = irq_create_mapping(NULL, hwirq);
- 
- 		if (virq == NO_IRQ) {
-+			mutex_unlock(&rtas_quota_mutex);
- 			pr_debug("rtas_msi: Failed mapping hwirq %d\n", hwirq);
- 			return -ENOSPC;
- 		}
-@@ -486,6 +505,7 @@ again:
- 		entry->msg = msg;
- 	}
- 
-+	mutex_unlock(&rtas_quota_mutex);
+ The MSI-X capability is much more flexible than the MSI capability.
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index fdae3a4..14dc4d1 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -795,6 +795,21 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
  	return 0;
  }
  
++int pci_get_msi_cap(struct pci_dev *dev)
++{
++	int ret;
++	u16 msgctl;
++
++	if (!dev->msi_cap)
++		return -EINVAL;
++
++	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
++	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++
++	return ret;
++}
++EXPORT_SYMBOL(pci_get_msi_cap);
++
+ /**
+  * pci_enable_msi_block - configure device's MSI capability structure
+  * @dev: device to configure
+@@ -811,13 +826,10 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ {
+ 	int status, maxvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap)
+-		return -EINVAL;
+-
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	maxvec = pci_get_msi_cap(dev);
++	if (maxvec < 0)
++		return maxvec;
+ 	if (nvec > maxvec)
+ 		return maxvec;
+ 
+@@ -842,13 +854,10 @@ EXPORT_SYMBOL(pci_enable_msi_block);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+ {
+ 	int ret, nvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap)
+-		return -EINVAL;
+-
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	ret = pci_get_msi_cap(dev);
++	if (ret < 0)
++		return ret;
+ 
+ 	if (maxvec)
+ 		*maxvec = ret;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index d6832de..df72084 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1146,6 +1146,11 @@ struct msix_entry {
+ 
+ 
+ #ifndef CONFIG_PCI_MSI
++static inline int pci_get_msi_cap(struct pci_dev *dev)
++{
++	return -ENOSYS;
++}
++
+ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ {
+ 	return -ENOSYS;
+@@ -1187,6 +1192,7 @@ static inline int pci_msi_enabled(void)
+ 	return 0;
+ }
+ #else
++int pci_get_msi_cap(struct pci_dev *dev);
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
 -- 
 1.7.7.6
 
