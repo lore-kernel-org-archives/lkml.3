@@ -1,55 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab3JRMae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:30:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48657 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab3JRMab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:30:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
-   d="scan'208";a="394936377"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/19] perf evsel: Add a debug print if perf_event_open fails
-Date: Fri, 18 Oct 2013 15:28:59 +0300
-Message-Id: <1382099356-4918-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754156Ab3JRMan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:30:43 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:39285 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925Ab3JRMaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:30:39 -0400
+Message-ID: <5261284D.4020506@st.com>
+Date: Fri, 18 Oct 2013 13:23:41 +0100
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] media: rc: OF: Add Generic bindings for remote-control
+References: <1380274391-26577-1-git-send-email-srinivas.kandagatla@st.com> <20130927113458.GB18672@e106331-lin.cambridge.arm.com> <20130927104719.6637368f@samsung.com> <20130930165125.GE22259@e106331-lin.cambridge.arm.com> <5255495A.6040704@st.com> <20131018113742.GF29779@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131018113742.GF29779@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a debug print (at verbose level 2) for each
-call to perf_event_open.  Add another debug print if
-the call fails, and print the error number.
+Thanks Mark,
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/evsel.c | 2 ++
- 1 file changed, 2 insertions(+)
+The blocking issue for st-rc driver is now closed.
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 291b18a..1bb4f19 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1052,6 +1052,8 @@ retry_open:
- 								     group_fd, flags);
- 			if (FD(evsel, cpu, thread) < 0) {
- 				err = -errno;
-+				pr_debug2("perf_event_open failed, error %d\n",
-+					  err);
- 				goto try_fallback;
- 			}
- 			set_rlimit = NO_CHANGE;
--- 
-1.7.11.7
+On 18/10/13 12:37, Mark Rutland wrote:
+>>
+>> Mauro C. had an option that this is not a real use-case and let's not
+>> overdesign the API, thinking on a possible scenario that may never happen.
+>>
+>> Do you still think that this use case should be considered in this
+>> discussion?
+> 
+> Given how simple a device we're attempting to describe, I'm not even
+> sure it makes sense to have a class of binding. We could leave this to
+> individual device bindings for the moment.
+
+Its clear.
+>>
+>> my_keymap: keymap {
+>> 	rc-keymap-name = "my-keymap";
+>> 	rc-codes	= 	<0x12, KEY_POWER,
+>> 				0x01, KEY_TV,
+>> 				0x15, KEY_DVD>;
+>> 		...
+>>  };
+>>
+>> my-rc-device {
+>> 	compatible = "my,rc-device";
+>> 	rc-keymap = <&my_keymap>;
+>> 	rx-mode  = "infrared";
+>> };
+> 
+> This may be ok, but we'll need to nail down the kaymap binding..
+
+Yes, If Mauro thinks that rc keymaps from device tree is good feature we
+can start a new discussion on this.
+
+>> == Remote control Keymaps ==
+>>
+>> properties:
+>> 	- rc-keymap-name: 	Should be the name of the keymap.
+>> 	- rc-keymaps:		Should be an array of pair of scan code and actual key
+>> code with first cell representing rc scan code and second cell
+>> representing actual keycode.
+> 
+> Is one cell always enough for any scan code (or any actual keycode)?
+> 
+> As the format of the scan code will be device-specific, should this be
+> under the node for the device? Are we likely to have multiple rc devices
+> in a single system that can share a keymap?
+
+I will let Mauro answer this.
+> 
+> What's the format of the actual keycode? What values are valid?
+> 
+>>
+>> example:
+>>
+>> my_keymap: keymap {
+>> 	rc-keymap-name = "my-keymap";
+>> 	rc-keymaps	= 	<0x12, KEY_POWER,
+>> 				0x01, KEY_TV,
+>> 				0x15, KEY_DVD>;
+>> 		...
+>>  };
+> 
+> Please bracket list entries individually (it makes it far easier for
+> humans to read arbitrary lists in dt, regardless of how consistent this
+> may be).
+> 
+> Also, commas shouldn't be between brackets, dtc will barf if they're
+> there.
+> 
+> So this should be something like:
+> 
+> 	rc-keymaps = <0x12 KEY_POWER>,
+> 	             <0x01 KEY_TV>,
+> 	             <0x15 KEY_DVD>;
+> 
+
+I agree this is much readable.
+
+>>
+>> my-rc-device {
+>> 	compatible = "my,rc-device";
+>> 	rc-keymap = <&my_keymap>;
+>> 	rx-mode  = "infrared";
+>> };
+> 
+> Thanks,
+> Mark.
+> 
+> 
 
