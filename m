@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3JRNlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:41:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13053 "EHLO mga02.intel.com"
+	id S1754624Ab3JRNnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:43:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31857 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753669Ab3JRNlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:41:20 -0400
+	id S1754462Ab3JRNnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 09:43:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
-   d="scan'208";a="394972383"
-Message-ID: <52613A1F.5000609@linux.intel.com>
-Date: Fri, 18 Oct 2013 06:39:43 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+   d="scan'208";a="376648919"
+Message-ID: <52613B0B.4050000@linux.intel.com>
+Date: Fri, 18 Oct 2013 06:43:39 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org,
-        sathyanarayanan.kuppuswamy@linux.intel.com
-Subject: Re: [PATCH v10 00/12] rework arch/x86/platform/[mrst => intel-mid]
-References: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com> <20131018060929.GB3411@gmail.com>
-In-Reply-To: <20131018060929.GB3411@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
+ kworker threads
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com> <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com> <20131014133356.GN3081@twins.programming.kicks-ass.net> <525C0A51.2080407@linux.intel.com> <20131017164038.GV31039@e103034-lin> <20131017165416.GW10651@twins.programming.kicks-ass.net> <52601BEE.5090500@linux.intel.com> <20131018084737.GX31039@e103034-lin>
+In-Reply-To: <20131018084737.GX31039@e103034-lin>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+>
+> We should be able to boil it down to a sequence on ARM as well. But it
+> means dropping cpufreq and looking at the clock framework.
+>
+> Are you still using the pre- and post-change notifiers on Intel, or can
+> they be ignored safely?
 
-On 10/17/2013 11:09 PM, Ingo Molnar wrote:
->
-> * David Cohen <david.a.cohen@linux.intel.com> wrote:
->
->> David Cohen (3):
->>    intel-mid: sfi: allow struct devs_id.get_platform_data to be NULL
->>    x86: intel-mid: add section for sfi device table
->>    intel_mid: move board related codes to their own platform_<device>.*
->>      files
->>
->> Fengguang Wu (1):
->>    pci: intel_mid: return true/false in function returning bool
->>
->> Kuppuswamy Sathyanarayanan (8):
->>    mrst: Fixed printk/pr_* related issues
->>    mrst: Fixed indentation issues
->>    intel_mid: Renamed *mrst* to *intel_mid*
->>    intel_mid: Renamed *mrst* to *intel_mid*
->>    intel_mid: Refactored sfi_parse_devs() function
->>    intel_mid: Added custom device_handler support
->>    intel_mid: Added custom handler for ipc devices
->>    intel_mid: Moved SFI related code to sfi.c
->
-> Btw., when submitting a series _please_ harmonize the patch titles.
->
-> 1)
->
-> Verbs should be present tense, i.e.:
->
-> ->   intel_mid: Renamed *mrst* to *intel_mid*
-> ->   intel_mid: Renamed *mrst* to *intel_mid*
-> +>   intel_mid: Rename *mrst* to *intel_mid*
-> +>   intel_mid: Rename *mrst* to *intel_mid*
->
-> 2)
->
-> Use consistent capitalization:
->
-> ->   pci: intel_mid: return true/false in function returning bool
-> +>   pci: intel_mid: Return true/false in function returning bool
->
-> 3)
->
-> Use standard, consistent subsystem prefixes:
->
-> ->   x86: intel-mid: add section for sfi device table
-> ->   intel_mid: Renamed *mrst* to *intel_mid*
-> +>    x86/intel-mid: Add section for sfi device table
-> +>    x86/intel/mid: Rename *mrst* to *intel_mid*
->
-> etc.
+we do not use change notifiers
+(since the hardware changes frequency independently of what "p state" we asked for
+frequently and in many very common conditions, even if anything depended on being notified on changes...
+it couldn't possibly work anyway)
 
-Thanks for the suggestion. I'll take care of it next time.
 
-Br, David Cohen
