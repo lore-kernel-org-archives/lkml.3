@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab3JRNaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:30:21 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47162 "EHLO
+	id S1755225Ab3JRNac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:30:32 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:52280 "EHLO
 	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab3JRNaT (ORCPT
+	with ESMTP id S1754213Ab3JRNa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:30:19 -0400
-Message-ID: <526137E5.3050803@gmail.com>
-Date: Fri, 18 Oct 2013 07:30:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 18 Oct 2013 09:30:29 -0400
+Message-ID: <526137F0.2060307@gmail.com>
+Date: Fri, 18 Oct 2013 22:30:24 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 07/19] perf script: Set up output options for in-stream
- attributes
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-8-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1382099356-4918-8-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: dm-devel@redhat.com
+CC: linux-kernel@vger.kernel.org
+Subject: dm-writeboost: unusual refcount on Raspberry Pi
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/13 6:29 AM, Adrian Hunter wrote:
-> Attributes (struct perf_event_attr) are recorded
-> separately in the perf.data file.  perf script uses
-> them to set up output options.  However attributes
-> can also be in the event stream, for example when
-> the input is a pipe (i.e. live mode).  This patch
-> makes perf script process in-stream attributes in
-> the same way as on-file attributes.
+Hi, all
 
-You have multiple changes in this patch -- expanding attribute 
-processing to set output options per the description above and you are 
-also making perf_script a stack variable. The latter should be a 
-separate patch.
+I am trying to run writeboost on a tiny ARM machine, Raspberry Pi.
+writeboost can compile without any error nor warning but
+it doesn't even start ctr.
 
-David
+What I do before running `dmsetup create` is
+# modprobe dm-mod
+# insmod dm-writeboost.ko
+
+After these two commands, lsmod looks insane.
+I suppose dm_writeboost module's refcount should be 0, not -1 (2147483647).
+Nonetheless, dmesg doesn't indicate anything at all.
+If I try to make a writeboost device after this,
+it hangs up the whole system.
+
+I have no idea what is happening in my system.
+If you know something about this, please help me.
+
+root@raspberrypi:~/dm-writeboost# lsmod
+Module                  Size  Used by
+dm_writeboost          34473  2147483647
+dm_mod                 72892  1 dm_writeboost
+snd_bcm2835            16432  0
+snd_pcm                77728  1 snd_bcm2835
+snd_page_alloc          5169  1 snd_pcm
+snd_seq                53482  0
+snd_seq_device          6462  1 snd_seq
+snd_timer              20110  2 snd_pcm,snd_seq
+snd                    58744  5 snd_bcm2835,snd_timer,snd_pcm,snd_seq,snd_seq_device
+arc4                    1684  2
+rt2800usb              14948  0
+rt2800lib              55431  1 rt2800usb
+rt2x00usb              11240  1 rt2800usb
+rt2x00lib              42342  3 rt2x00usb,rt2800lib,rt2800usb
+mac80211              273979  3 rt2x00lib,rt2x00usb,rt2800lib
+cfg80211              184390  2 mac80211,rt2x00lib
+rfkill                 18298  2 cfg80211
+crc_ccitt               1530  1 rt2800lib
+leds_gpio               2243  0
+led_class               3570  2 leds_gpio,rt2x00lib
+
+Akira
