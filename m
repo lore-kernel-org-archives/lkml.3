@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab3JRPJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:09:05 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:58257 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3JRPJB (ORCPT
+	id S1755816Ab3JRPM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:12:57 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:52065 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab3JRPM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:09:01 -0400
-Message-ID: <52614F01.8050209@gmail.com>
-Date: Fri, 18 Oct 2013 23:08:49 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 18 Oct 2013 11:12:56 -0400
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Will Deacon <will.deacon@arm.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-References: <1381990781-27814-1-git-send-email-liuj97@gmail.com>	 <1381990781-27814-3-git-send-email-liuj97@gmail.com>	 <20131017113826.GJ18765@mudshark.cambridge.arm.com>	 <1382023441.19506.66.camel@linaro1.home>	 <20131018085638.GA2858@mudshark.cambridge.arm.com> <1382103862.3394.46.camel@linaro1.home>
-In-Reply-To: <1382103862.3394.46.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <00000141c7cb668b-1e2528ea-ce87-4380-a0dd-e5be9384cd84-000000@email.amazonses.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com>
+	<00000141c7cb668b-1e2528ea-ce87-4380-a0dd-e5be9384cd84-000000@email.amazonses.com>
+Date: Sat, 19 Oct 2013 00:12:54 +0900
+Message-ID: <CAAmzW4Mzx0FWP6KK7gk88c07RP46WaA9i5DePnzSWt7XP6qQNw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] slab: restrict the number of objects in a slab
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2013 09:44 PM, Jon Medhurst (Tixy) wrote:
-> On Fri, 2013-10-18 at 09:56 +0100, Will Deacon wrote:
->> Hi Tixy,
->>
->> On Thu, Oct 17, 2013 at 04:24:01PM +0100, Jon Medhurst (Tixy) wrote:
->>> On Thu, 2013-10-17 at 12:38 +0100, Will Deacon wrote:
->>>> On Thu, Oct 17, 2013 at 07:19:35AM +0100, Jiang Liu wrote:
->>>>> +	/*
->>>>> +	 * Execute __aarch64_insn_patch_text() on every online CPU,
->>>>> +	 * which ensure serialization among all online CPUs.
->>>>> +	 */
->>>>> +	return stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
->>>>> +}
->>>>
->>>> Whoa, whoa, whoa! The comment here is wrong -- we only run the patching on
->>>> *one* CPU, which is the right thing to do. However, the arch/arm/ call to
->>>> stop_machine in kprobes does actually run the patching code on *all* the
->>>> online cores (including the cache flushing!). I think this is to work around
->>>> cores without hardware cache maintenance broadcasting, but that could easily
->>>> be called out specially (like we do in patch.c) and the flushing could be
->>>> separated from the patching too.
->>> [...]
->>>
->>> For code modifications done in 32bit ARM kprobes (and ftrace) I'm not
->>> sure we ever actually resolved the possible cache flushing issues. If
->>> there was specific reasons for flushing on all cores I can't remember
->>> them, sorry. I have a suspicion that doing so was a case of sticking
->>> with what the code was already doing, and flushing on all cores seemed
->>> safest to guard against problems we hadn't thought about.
->>
->> [...]
->>
->>> Sorry, I don't think I've added much light on things here have I?
->>
->> I think you missed the bit I was confused about :) Flushing the cache on
->> each core is necessary if cache_ops_need_broadcast, so I can understand why
->> you'd have code to do that. The bit I don't understand is that you actually
->> patch the instruction on each core too!
-> 
-> This is only happens when removing a kprobe with __arch_disarm_kprobe().
-> We can't just use the intelligent patch_text() function there because we
-> want to always force stop machine to be used as this prevents the case
-> where a CPU a hits the probe, starts executing it's handler then another
-> CPU whips away the probe from under it.
-> 
-> That explains why we use stop_machine, but not why all CPU's must modify
-> the instruction. I think it's a case of just that it's simpler to do
-> that unconditionally rather than add extra code for the
-> cache_ops_need_broadcast() case. I mean, stop_machine() is a sledge
-> hammer, which stalls the whole system until the next scheduler tick, and
-> then gets every CPU to busy wait, so there's not much incentive to try
-> and optimise the code to avoid a memory write + cacheline flush on each
-> core.
-> 
-> This reminds me, I'm sure I heard rumours quite some time ago that Paul
-> McKenney was thinking of trying to do away with stop_machine...?
-> 
-I remember McKenney has tried that, don't know about the progress now.
+2013/10/18 Christoph Lameter <cl@linux.com>:
+> n Thu, 17 Oct 2013, Joonsoo Kim wrote:
+>
+>> To prepare to implement byte sized index for managing the freelist
+>> of a slab, we should restrict the number of objects in a slab to be less
+>> or equal to 256, since byte only represent 256 different values.
+>> Setting the size of object to value equal or more than newly introduced
+>> SLAB_MIN_SIZE ensures that the number of objects in a slab is less or
+>> equal to 256 for a slab with 1 page.
+>
+> Ok so that results in a mininum size object size of 2^(12 - 8) = 2^4 ==
+> 16 bytes on x86. This is not true for order 1 pages (which SLAB also
+> supports) where we need 32 bytes.
+
+According to current slab size calculating logic, slab whose object size is
+less or equal to 16 bytes use only order 0 page. So there is no problem.
+
+> Problems may arise on PPC or IA64 where the page size may be larger than
+> 64K. With 64K we have a mininum size of 2^(16 - 8) = 256 bytes. For those
+> arches we may need 16 bit sized indexes. Maybe make that compile time
+> determined base on page size? > 64KByte results in 16 bit sized indexes?
+
+Okay. I will try it.
+
+> Otherwise I like this approach. Simplifies a lot and its very cache
+> friendly.
+
+Thanks.
