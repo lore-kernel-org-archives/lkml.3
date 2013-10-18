@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab3JSGVk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 02:21:40 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:11249 "EHLO
+	id S1752102Ab3JSGX2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 02:23:28 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:11306 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750944Ab3JSGVi (ORCPT
+	by vger.kernel.org with ESMTP id S1750985Ab3JSGX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 02:21:38 -0400
+	Sat, 19 Oct 2013 02:23:27 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,9 +16,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 27/29] vmxnet3: Return -ENOSPC when not enough MSI-X vectors available
-Date: Fri, 18 Oct 2013 19:12:27 +0200
-Message-Id: <b016b15d6671a3d759610972d5643472a057cdb6.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 17/29] megaraid: Make use of pcim_enable_msix() interface
+Date: Fri, 18 Oct 2013 19:12:17 +0200
+Message-Id: <857b0c2709f6f6ecf0ab1090fabba8c14c4b2d70.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
 References: <cover.1382103786.git.agordeev@redhat.com>
@@ -28,35 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 3518173..3df7f32 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2752,7 +2752,10 @@ vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
- 				   "Failed to enable MSI-X, error: %d\n", err);
- 			return err;
- 		} else if (err < vector_threshold) {
--			break;
-+			dev_info(&adapter->pdev->dev,
-+				 "Number of MSI-Xs which can be allocated "
-+				 "is lower than min threshold required.\n");
-+			return -ENOSPC;
- 		} else {
- 			/* If fails to enable required number of MSI-x vectors
- 			 * try enabling minimum number of vectors required.
-@@ -2764,9 +2767,6 @@ vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
- 		}
- 	}
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 3020921..e54c2e7 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3727,18 +3727,12 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 					     (unsigned int)num_online_cpus());
+ 		for (i = 0; i < instance->msix_vectors; i++)
+ 			instance->msixentry[i].entry = i;
+-		i = pci_enable_msix(instance->pdev, instance->msixentry,
+-				    instance->msix_vectors);
+-		if (i >= 0) {
+-			if (i) {
+-				if (!pci_enable_msix(instance->pdev,
+-						     instance->msixentry, i))
+-					instance->msix_vectors = i;
+-				else
+-					instance->msix_vectors = 0;
+-			}
+-		} else
++		i = pcim_enable_msix(instance->pdev, instance->msixentry,
++				     instance->msix_vectors);
++		if (i < 0)
+ 			instance->msix_vectors = 0;
++		else
++			instance->msix_vectors = i;
  
--	dev_info(&adapter->pdev->dev,
--		 "Number of MSI-X interrupts which can be allocated "
--		 "is lower than min threshold required.\n");
- 	return err;
- }
- 
+ 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
+ 			"<%d> MSIX vector,Online CPUs: <%d>,"
 -- 
 1.7.7.6
 
