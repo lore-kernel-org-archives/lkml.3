@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910Ab3JREsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 00:48:38 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:36083 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3JREsg (ORCPT
+	id S1751354Ab3JRFbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 01:31:37 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64536 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3JRFbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 00:48:36 -0400
-Message-ID: <5260BD8C.7000200@gmail.com>
-Date: Fri, 18 Oct 2013 12:48:12 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: rpurdie@rpsys.net, jg1.han@samsung.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
-References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com>
-In-Reply-To: <20131017071445.GA2502@ulmo.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Oct 2013 01:31:35 -0400
+X-AuditID: cbfee68e-b7f486d0000040b6-91-5260c7a3f53a
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Zhenzhong Duan '" <zhenzhong.duan@oracle.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'xen-devel'" <xen-devel@lists.xen.org>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'Feng Jin'" <joe.jin@oracle.com>,
+        "'Sucheta Chakraborty'" <sucheta.chakraborty@qlogic.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <525E32FC.3010604@oracle.com>
+In-reply-to: <525E32FC.3010604@oracle.com>
+Subject: Re: [PATCH 1/3] PCI: Refactor restore_msi_irqs - code movement
+Date: Fri, 18 Oct 2013 14:31:15 +0900
+Message-id: <000001cecbc3$43853e30$ca8fba90$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7KOX0IA3UN7ZouSSiYlK18ngnskgBiUaYQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t8zQ93FxxOCDBquS1ksacqwuLzwEqvF
+	o77njBbLFj9ltLi8aw6bxdl5x9ksLn06x2ix5ONiFovNPx+zOHB6LNhU6nF0928mj49Pb7F4
+	rPtygt2jb8sqRo/Pm+QC2KK4bFJSczLLUov07RK4Mo7efcRe8JilYv+ZS4wNjH+Zuxg5OSQE
+	TCQez77EBmGLSVy4tx7I5uIQEljGKPF0+0N2mKKJM3eyQySmM0r0/roE5fxilHhyo4UVpIpN
+	QE3iy5fDQAkODhGBKIlJx1hBapgFZjNJTN18HmydkICmxJ/JrWA2p4CWxPwpjWCrhQXcJY61
+	fmUCsVkEVCU+PbkMFucVsJU4eGMzlC0o8WPyPRYQmxmod/3O40wQtrzE5jVvmUH2SgioSzz6
+	qwsSFhEwktjz5ytUiYjEvhfvGCGeaeSQeHZSFWKVgMS3yYdYIFplJTYdgAaKpMTBFTdYJjBK
+	zEKyeBaSxbOQLJ6FZMMCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCFx3beD8eYB60OM
+	yUDrJzJLiSbnA9NCXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmp
+	xYcYmTg4pRoYW5m92Q9/ZJm3dMcBf/l/B14JCWlOqt7kxd+/4HfIpenPlddeXWWR+VLYbrJJ
+	5hetM1z3It7sZrz/dokdm8BWft6vE85d/s3JU1D60bCS867lHd5Cg/52vZVs7uYfCgLvXmYV
+	av9vf032h5ZGc0WjY8HzxOiNTo2+rw7nTE1I9f+0e+Npw+sNSizFGYmGWsxFxYkAUcocoQED	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jQd3FxxOCDHZMErNY0pRhcXnhJVaL
+	R33PGS2WLX7KaHF51xw2i7PzjrNZXPp0jtFiycfFLBabfz5mceD0WLCp1OPo7t9MHh+f3mLx
+	WPflBLtH35ZVjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynk
+	Jeam2iq5+AToumXmAB2lpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8w4
+	evcRe8Fjlor9Zy4xNjD+Ze5i5OSQEDCRmDhzJzuELSZx4d56ti5GLg4hgemMEr2/LrFDOL8Y
+	JZ7caGEFqWITUJP48uUwUIKDQ0QgSmLSMVaQGmaB2UwSUzefB5sqJKAp8WdyK5jNKaAlMX9K
+	IxuILSzgLnGs9SsTiM0ioCrx6cllsDivgK3EwRuboWxBiR+T77GA2MxAvet3HmeCsOUlNq95
+	ywyyV0JAXeLRX12QsIiAkcSeP1+hSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYk
+	FxQnpeca6RUn5haX5qXrJefnbmIEp41n0jsYVzVYHGIU4GBU4uE98C0+SIg1say4MvcQowQH
+	s5IIb/GShCAh3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemtLySeENjEzMjSyMzCyMTc3PS
+	hJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYJQIZT3+QGuOd1t/h9WzOr+lm52mKD+47HM2
+	g3FnXDhnayij4sySrOmlvL90GxZ7xip1iOZ5d0fmJyxonu10696iqWd6RWODDIyvlFalSmbx
+	fP7LGCh333SJYoHFHKZrpTOif1uYPG3/07Wl7vWBH5O//N4pe/r/rhlGOd8+GXP80j5s/Pvn
+	FCWW4oxEQy3mouJEAPdnvVpfAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 03:14 PM, Thierry Reding wrote:
-> On Thu, Oct 17, 2013 at 02:49:57PM +0800, Mark Zhang wrote:
->> Hi,
->>
->> This is the first time I send mail to linux-pwm, I didn't read through
->> the mails in this list, so if somebody already asked this question, I'm
->> sorry about that.
->>
->> I wanna set some fops in "struct platform_pwm_backlight_data". But the
->> currrent probe function in pwm_bl.c says:
->>
->> -------
->> if (!data) {
->> 	ret = pwm_backlight_parse_dt(&pdev->dev, &defdata);
->> 	if (ret < 0) {
->> 		dev_err(&pdev->dev, "failed to find platform data\n");
->> 		return ret;
->> 	}
->>
->> 	data = &defdata;
->> }
->> -------
->>
->> This looks like if we set the platform data for pwm backlight device,
->> "pwm_backlight_parse_dt" will never have a chance to be called, which
->> means the stuffs I defined in backlight DT node will be ignored.
->>
->> If I don't set the platform data for pwm backlight device, according to
->> the pwm_backlight_probe, I will never have a chance to set some fops
->> which I need(like "notify", "check_fb"...).
->>
->> So, what I suppose to do now? Maybe there is a way to set function
->> pointers in DT?
+On Wednesday, October 16, 2013 3:32 PM, Zhenzhong Duan wrote:
 > 
-> Perhaps you could describe in more detail what you need the functions
-> for.
+> Move default_restore_msi_irqs down to reference msi_mask_irq and msix_mask_irq.
 > 
+> This patch lays the groundwork for patch titled:
+> 'PCI: Refactor MSI/MSIX mask restore code to fix interrupt lost issue'
+> 
+> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Okay, I just want to set the "notify" function pointer in "struct
-platform_pwm_backlight_data", because I want to tune the brightness
-value before the pwm-bl sets the brightness to hardware. I don't know
-how to do that, unless we define the platform data explicitly.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-Mark
-> Generally you're not supposed to mix DT and platform data. Without more
-> info that's about all I can say.
-> 
-> Thierry
-> 
+It looks good. Also, I tested this patch on Exynos5440.
+
+Best regards,
+Jingoo Han
+
