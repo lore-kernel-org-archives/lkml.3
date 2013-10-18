@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab3JRBQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:16:57 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:42163 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab3JRBQ4 (ORCPT
+	id S1755421Ab3JRBRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 21:17:09 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:65250 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3JRBRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:16:56 -0400
-Date: Fri, 18 Oct 2013 03:16:55 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH net-next v3 3/9] static_key: WARN on usage before jump_label_init was called
-Message-ID: <20131018011655.GG18135@order.stressinduktion.org>
-Mail-Followup-To: Andi Kleen <andi@firstfloor.org>,
-	Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <1381987923-1524-1-git-send-email-hannes@stressinduktion.org> <1381987923-1524-4-git-send-email-hannes@stressinduktion.org> <20131017171940.173bab09@gandalf.local.home> <20131018005057.GL2592@two.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131018005057.GL2592@two.firstfloor.org>
+	Thu, 17 Oct 2013 21:17:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1382057438-3306-4-git-send-email-davidlohr@hp.com>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	<1382057438-3306-4-git-send-email-davidlohr@hp.com>
+Date: Thu, 17 Oct 2013 18:17:02 -0700
+X-Google-Sender-Auth: h6ldCpeK5ylhYTNvxIt1AnKd4dA
+Message-ID: <CA+55aFxjBoLYbRM5hsASsLWxXkmizVY6Th2niOz2x3GQQgU+ig@mail.gmail.com>
+Subject: Re: [PATCH 3/3] vdso: preallocate new vmas
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 02:50:57AM +0200, Andi Kleen wrote:
-> On Thu, Oct 17, 2013 at 05:19:40PM -0400, Steven Rostedt wrote:
-> > On Thu, 17 Oct 2013 07:31:57 +0200
-> > Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
-> > 
-> > > Based on a patch from Andi Kleen.
-> > 
-> > I'm fine with the patch, but the change log needs a lot more work.
-> > Like, why is this needed?  I know, but does anyone else?
-> 
-> Or just merge the orininal patch. While being less verbose
-> in the warning it had a full changelog.
+This seems somewhat insane:
 
-I don't care that much which patch gets merged but I just want to
-point out another difference: I added WARN_ONs on code paths without
-architecture support for static_keys to help developers on platforms
-without support for that.
+   int install_special_mapping(struct mm_struct *mm,
+                              unsigned long addr, unsigned long len,
+  +                           unsigned long vm_flags, struct page **pages,
+  +                           struct vm_area_struct **vma_prealloc)
+   {
+  +       int ret = 0;
+  +       struct vm_area_struct *vma = *vma_prealloc;
 
-Greetings,
+(removed the "old" lines to make it more readable).
 
-  Hannes
+Why pass in "struct vm_area_struct **vma_prealloc" when you could just
+pass in a plain and more readable "struct vm_area_struct *vma"?
 
+My *guess* is that you originally cleared the vma_prealloc thing if
+you used it, but in the patch you sent out you definitely don't (the
+_only_ use of that "vma_prealloc" is the line that loads the content
+into "vma", so this interface looks like it is some remnant of an
+earlier and more complicated patch?
+
+            Linus
