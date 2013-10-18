@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab3JRW64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:58:56 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:45242
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757522Ab3JRW6z (ORCPT
+	id S1757590Ab3JRXDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 19:03:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3JRXDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:58:55 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dI936eI1432I853kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1382137119.7979.916.camel@snotra.buserror.net>
-Subject: Re: [v5][PATCH 4/6] powerpc/book3e: support kgdb for kernel space
-From: Scott Wood <scottwood@freescale.com>
-To: Tiejun Chen <tiejun.chen@windriver.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Oct 2013 17:58:39 -0500
-In-Reply-To: <1371724110-8250-5-git-send-email-tiejun.chen@windriver.com>
-References: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
-	 <1371724110-8250-5-git-send-email-tiejun.chen@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	Fri, 18 Oct 2013 19:03:24 -0400
+Date: Fri, 18 Oct 2013 15:57:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
+Message-ID: <20131018225702.GA13090@kroah.com>
+References: <1381296747.2040.17.camel@joe-AO722>
+ <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
+ <CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
+ <CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 18:28 +0800, Tiejun Chen wrote:
-> Currently we need to skip this for supporting KGDB.
-
-Does it need to depend on CONFIG_KGDB?  Either you've fixed the "can't
-quite save properly" part, or you haven't.
-
--Scott
-
+On Fri, Oct 18, 2013 at 10:04:11AM -0700, Kevin Hilman wrote:
+> > A handful of boot panics on ARM platforms were bisected to point at
+> > the version of this commit that's in linux-next (commit
+> > 64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
+> > makes things happy again.
+> >
+> > Upon further digging, it seems that users of devres_alloc() are
+> > relying on the previous behavior of having the memory zero'd which is
+> > no longer the case after $SUBJECT patch.  The change below on top of
+> > -next makes these ARM boards happy again.
 > 
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> ---
->  arch/powerpc/kernel/exceptions-64e.S |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
-> index 07cf657..a286b51 100644
-> --- a/arch/powerpc/kernel/exceptions-64e.S
-> +++ b/arch/powerpc/kernel/exceptions-64e.S
-> @@ -639,11 +639,13 @@ kernel_dbg_exc:
->  	rfdi
->  
->  	/* Normal debug exception */
-> +1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
-> +#ifndef CONFIG_KGDB
->  	/* XXX We only handle coming from userspace for now since we can't
->  	 *     quite save properly an interrupted kernel state yet
->  	 */
-> -1:	andi.	r14,r11,MSR_PR;		/* check for userspace again */
->  	beq	kernel_dbg_exc;		/* if from kernel mode */
-> +#endif
->  
->  	/* Now we mash up things to make it look like we are coming on a
->  	 * normal exception
+> Oops, it should've fixed __devres_alloc() also.  Updated patch below.
 
+Can you send this in a format that I can apply it in?  It was whitespace
+damaged.
 
+thanks,
 
+greg k-h
