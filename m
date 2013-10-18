@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab3JRQAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 12:00:49 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26388 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab3JRQAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 12:00:47 -0400
-X-IronPort-AV: E=Sophos;i="4.93,523,1378857600"; 
-   d="scan'208";a="65048498"
-Date: Fri, 18 Oct 2013 16:59:47 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
-        <Ian.Campbell@citrix.com>, <will.deacon@arm.com>
-Subject: Re: [PATCH v8 08/19] arm/xen: get_dma_ops: return xen_dma_ops if we
- are running as xen_initial_domain
-In-Reply-To: <20131018154847.GD25034@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1310181658020.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-8-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310181319300.26077@kaball.uk.xensource.com> <20131018154246.GB25034@n2100.arm.linux.org.uk>
- <alpine.DEB.2.02.1310181643260.26077@kaball.uk.xensource.com> <20131018154847.GD25034@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756059Ab3JRQGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 12:06:21 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53486 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753369Ab3JRQGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 12:06:19 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18UyLHR9jHV0CDkouG4nAQS
+Date: Fri, 18 Oct 2013 09:06:15 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Balaji T K <balajitk@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Roger Quadros <rogerq@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
+Message-ID: <20131018160615.GM15154@atomide.com>
+References: <20131010162015.GC29913@atomide.com>
+ <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
+ <5257BD3E.5000707@ti.com>
+ <CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com>
+ <20131011154352.GO29913@atomide.com>
+ <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com>
+ <20131011160146.GR29913@atomide.com>
+ <5260E606.2030903@ti.com>
+ <20131018153541.GJ15154@atomide.com>
+ <52615AD4.7040306@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52615AD4.7040306@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Oct 2013, Russell King - ARM Linux wrote:
-> On Fri, Oct 18, 2013 at 04:46:00PM +0100, Stefano Stabellini wrote:
-> > On Fri, 18 Oct 2013, Russell King - ARM Linux wrote:
-> > > On Fri, Oct 18, 2013 at 01:22:18PM +0100, Stefano Stabellini wrote:
-> > > > Russell,
-> > > > are you OK with this patch?
-> > > 
-> > > Only concern is why the change is soo large.
-> > > 
-> > > > > -static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > > > > +static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
-> > > > >  {
-> > > > >  	if (dev && dev->archdata.dma_ops)
-> > > > >  		return dev->archdata.dma_ops;
-> > > > >  	return &arm_dma_ops;
-> > > > >  }
-> > > > >  
-> > > > > +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > > > > +{
-> > > > > +	if (xen_initial_domain())
-> > > > > +		return xen_dma_ops;
-> > > > > +	else
-> > > > > +		return __generic_dma_ops(dev);
-> > > > > +}
-> > > > > +
-> > > 
-> > > What's wrong with:
-> > > 
-> > >  static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > >  {
-> > > +	if (xen_initial_domain())
-> > > +		return xen_dma_ops;
-> > >  	if (dev && dev->archdata.dma_ops)
-> > >  		return dev->archdata.dma_ops;
-> > >  	return &arm_dma_ops;
-> > >  }
-> > 
-> > 
-> > xen_dma_ops functions might have to call back the native implementation.
-> > With the above there is no way for a xen_dma_ops function to get to
-> > archdata.dma_ops or arm_dma_ops.
-> > This is the reason why this patch introduces __generic_dma_ops.
+* Balaji T K <balajitk@ti.com> [131018 08:59]:
+> On Friday 18 October 2013 09:05 PM, Tony Lindgren wrote:
+> >* Balaji T K <balajitk@ti.com> [131018 00:41]:
+> >>
+> >>Any conclusion on using regmap for omap control module non-mux registers ?
+> >
+> >I don't think anybody has even started looking into a SCM driver
+> >yet considering there are tons of other issues to sort out.
+> >
+> >If you're thinking about implementing the MMC PBIAS driver, I would
+> >just implement it as a standalone driver. It seems that the PBIAS
+> >interface to the MMC driver can be just regulator framework.
+> >
+> Hi Tony,
 > 
-> Ah, that's fine then, but having that described in the commit message
-> would be useful.
-> 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> 
-> Thanks.
+> I am testing pbias regulator, Just thinking whether it should be
+> using regmap api or direct readl/writel
 
-Thank you. I'll add a note to the commit message.
+OK either or should work. It seems that can easily be changed
+later on though.
+ 
+> >Then when we have the SCM driver available, this driver can be
+> >updated to coordinate things with the core SCM driver.
+> 
+> Do you see regmap getting used for the SCM driver ?
+
+Yes eventually :)
+
+Tony
