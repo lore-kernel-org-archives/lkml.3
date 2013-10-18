@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab3JRJc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:32:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55349 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752009Ab3JRJc2 (ORCPT
+	id S1752773Ab3JRJg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:36:57 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:42155 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab3JRJgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:32:28 -0400
-Message-ID: <5261001D.3090909@free-electrons.com>
-Date: Fri, 18 Oct 2013 11:32:13 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 18 Oct 2013 05:36:55 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] init: make init failures more explicit
-References: <1382086049-14386-1-git-send-email-michael.opdenacker@free-electrons.com> <CAMuHMdWXWfGqw041pkOYKzLjQ05GfCcz9jOFQaPa=d_RwhOUcg@mail.gmail.com>
-In-Reply-To: <CAMuHMdWXWfGqw041pkOYKzLjQ05GfCcz9jOFQaPa=d_RwhOUcg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131016092310.GD19112@lee--X1>
+References: <1381871640-22262-1-git-send-email-linus.walleij@linaro.org>
+	<20131016092310.GD19112@lee--X1>
+Date: Fri, 18 Oct 2013 11:36:54 +0200
+Message-ID: <CACRpkdZ1oZuJWA+S4hY0VDYaGi19Rcn=xSYYUDak7xc+iXB4fA@mail.gmail.com>
+Subject: Re: [PATCH 2/5] mfd: tc3589x: detect the precise version
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Wed, Oct 16, 2013 at 11:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, 15 Oct 2013, Linus Walleij wrote:
 
-On 10/18/2013 11:23 AM, Geert Uytterhoeven wrote:
-> On Fri, Oct 18, 2013 at 10:47 AM, Michael Opdenacker
-> <michael.opdenacker@free-electrons.com> wrote:
->> +       if (ret && ret != -ENOENT) {
->> +               pr_err("Starting init: %s exists but couldn't execute it\n",
-> I think it makes sense to also print the value of ret here.
-> Apart from your -ENOEXEC case, peeking a bit around, it can be also be
-> -EINVAL, -ENOMEM (debug binary too big for small embedded system?),
-> -EACCES, -E2BIG, ...
-I agree. It would definitely make sense. I'll propose a new version.
+>>  static const struct i2c_device_id tc3589x_id[] = {
+>> -     { "tc3589x", 24 },
+>> +     { "tc35890", TC3589X_TC35890 },
+>> +     { "tc35892", TC3589X_TC35892 },
+>> +     { "tc35893", TC3589X_TC35893 },
+>> +     { "tc35894", TC3589X_TC35894 },
+>> +     { "tc35895", TC3589X_TC35895 },
+>> +     { "tc35896", TC3589X_TC35896 },
+>> +     { "tc3589x", TC3589X_UNKNOWN },
+>>       { }
+>>  };
+>>  MODULE_DEVICE_TABLE(i2c, tc3589x_id);
+>
+> This is an awful lot of code for what we're trying to achieve.
 
-Many thanks!
+I am not only trying to achive setting the number of GPIOs right,
+I want the system to be aware of exactly which version of the chip
+it is dealing with because they all have subtle differences, and
+people will run into this in the future when adding more features.
+http://www.toshiba-components.com/mobile/data/General_Presentation_IO_Expander_www_Jan_2012.pdf
+See table on p.14 for example.
 
-Cheers,
+>   1. I guess that other OSes will need to capture the same
+>   information, so wouldn't it be prudant to do so via a DT property?
+>   That way it's just a one or two liner.
 
-Michael.
+This patch is not about Device Tree. It is about probing from
+the device name.
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+>   2. As we're only using .driver_data for num_gpio at this time, just
+>   place them in tc3589x_id as you have done for tc3589x.
 
+This doesn't scale to the other pecularities that differ and I
+then just push the problem onto the next person dealing with
+this chip.
+
+>   3. Again, as all of this extra code is only used for pulling out
+>   num_gpio, group the devices by num_gpio:
+>
+>> +     switch (id->driver_data) {
+>> +     case TC3589X_TC35893:
+>> +     case TC3589X_TC35895:
+>> +     case TC3589X_TC35896:
+>> +             tc3589x->num_gpio = 20;
+>> +             break;
+>> +     case TC3589X_TC35890:
+>> +     case TC3589X_TC35892:
+>> +     case TC3589X_TC35894:
+>> +     case TC3589X_UNKNOWN:
+>> +     default:
+>> +             tc3589x->num_gpio = 24;
+>> +             break;
+>> +     }
+
+This I can do. The switch tree can then be extended as need
+be in the future.
+
+Yours,
+Linus Walleij
