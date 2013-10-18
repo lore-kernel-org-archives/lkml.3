@@ -1,127 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab3JRRg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 13:36:29 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:61656 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab3JRRgY (ORCPT
+	id S964792Ab3JRRgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 13:36:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:40581 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab3JRRgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 13:36:24 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-e7-526171977d48
+	Fri, 18 Oct 2013 13:36:39 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-f4-526171a636ae
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: dan.j.williams@intel.com
 Cc: vinod.koul@intel.com, dave.jiang@intel.com, t.figa@samsung.com,
         kyungmin.park@samsung.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        Dan Williams <djbw@fb.com>
-Subject: [PATCH v2 07/13] async_xor_val: convert to dmaengine_unmap_data
-Date: Fri, 18 Oct 2013 19:35:27 +0200
-Message-id: <1382117733-16720-8-git-send-email-b.zolnierkie@samsung.com>
+        Dan Williams <djbw@fb.com>, Jon Mason <jon.mason@intel.com>
+Subject: [PATCH v2 11/13] NTB: convert to dmaengine_unmap_data
+Date: Fri, 18 Oct 2013 19:35:31 +0200
+Message-id: <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1382117733-16720-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1382117733-16720-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jAd3phYlBBodmcFlsnLGe1WL61AuM
-	FiduNrJZbO5/wGZxtukNu8XlXXPYLG5f5rVYP+M1i8XLvv0sDpweLc09bB4Tm9+xeyze85LJ
-	o2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDL297EVzJesmPJwL0sD4yaRLkZODgkBE4mJUyYy
-	QdhiEhfurWfrYuTiEBJYxChxcm8zlNPFJPHx9WYWkCo2ASuJie2rGEFsEQEZiQ3/tzODFDEL
-	nGeUWH1gJVhCWMBD4sWnnWANLAKqEge+7AJbwQsU/7x6CiPEOnmJp/f72EBsTgFPiWn7loPZ
-	QkA15868ZJvAyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCgPZPewbiqweIQowAH
-	oxIPb4dNYpAQa2JZcWXuIUYJDmYlEd4yZ6AQb0piZVVqUX58UWlOavEhRmkOFiVx3oOt1oFC
-	AumJJanZqakFqUUwWSYOTqkGxqVa1koiZ5s2mn07zxt0urh1DuPnk59uRW1ewOh58155VHpV
-	4ZPk02Luh9dFlCi3/OeyfnGyzl5rd9V9g58J67+0XYvnEciQPZHx4o71/k0LrONqjsVaRYcf
-	tjhd6PXYx+rczmKePZN+lHicEXh1zkrUOpIh5H9Wnev7wzxWy/TX6rMmnxc6ocRSnJFoqMVc
-	VJwIABfdjH4wAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd1lhYlBBkvn81psnLGe1WL61AuM
+	FiduNrJZbO5/wGZx/Mc5douzTW/YLS7vmsNmcfsyr8X6Ga9ZLF727Wdx4PJoae5h85jY/I7d
+	Y/Gel0wefVtWMXp83iQXwBrFZZOSmpNZllqkb5fAldF49gFrwQ39ilnn/jA1MD5W72Lk5JAQ
+	MJE4NfsBO4QtJnHh3nq2LkYuDiGBRYwSK1t/sUI4XUwSDb8/MIFUsQlYSUxsX8UIYosIyEhs
+	+L+dGaSIWeADo8Tsn0+ZQRLCAnYSV68sZAWxWQRUJQ73vgNr5hXwlFjePJERYp28xNP7fWwg
+	NidQfNq+5WC2kICHxLkzL9kmMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcdM+k
+	dzCuarA4xCjAwajEw9thkxgkxJpYVlyZe4hRgoNZSYS3zBkoxJuSWFmVWpQfX1Sak1p8iFGa
+	g0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTE4RuG+x++dK4tdSmxu5ce1pd3OebV8Wp70
+	7YgD3+6y354kvXJ7w+a9fXudD8/cJvt4nWM/s7XNYf81V/iOzmxKcjF5f7TwZUJc8KX/TpZf
+	TbeUnmfeqZt3mDvII0Nj3pSesIe69n67Dc88MymS/XXToSHLku3iPDGNb+Fr//12X8NtccNu
+	3n8lluKMREMt5qLiRAC2Mo3NNgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <djbw@fb.com>
-
 Use the generic unmap object to unmap dma buffers.
 
+As NTB can be compiled without DMA_ENGINE support add
+stub functions to <linux/dmaengine.h> for dma_set_unmap(),
+dmaengine_get_unmap_data() and dmaengine_unmap_put().
+
+Cc: Dan Williams <djbw@fb.com>
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
 Cc: Dave Jiang <dave.jiang@intel.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
-[bzolnier: minor cleanups]
+Cc: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- crypto/async_tx/async_xor.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ drivers/ntb/ntb_transport.c | 63 +++++++++++++++++++++++++++++++++------------
+ include/linux/dmaengine.h   | 15 +++++++++++
+ 2 files changed, 61 insertions(+), 17 deletions(-)
 
-diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c
-index f092fa1..d2cc77d 100644
---- a/crypto/async_tx/async_xor.c
-+++ b/crypto/async_tx/async_xor.c
-@@ -275,18 +275,17 @@ async_xor_val(struct page *dest, struct page **src_list, unsigned int offset,
- 	struct dma_chan *chan = xor_val_chan(submit, dest, src_list, src_cnt, len);
- 	struct dma_device *device = chan ? chan->device : NULL;
- 	struct dma_async_tx_descriptor *tx = NULL;
--	dma_addr_t *dma_src = NULL;
-+	struct dmaengine_unmap_data *unmap = NULL;
+diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
+index 12a9e83..fc6bbf1 100644
+--- a/drivers/ntb/ntb_transport.c
++++ b/drivers/ntb/ntb_transport.c
+@@ -1034,7 +1034,7 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	struct dma_chan *chan = qp->dma_chan;
+ 	struct dma_device *device;
+ 	size_t pay_off, buff_off;
+-	dma_addr_t src, dest;
++	struct dmaengine_unmap_data *unmap;
+ 	dma_cookie_t cookie;
+ 	void *buf = entry->buf;
+ 	unsigned long flags;
+@@ -1054,27 +1054,41 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	if (!is_dma_copy_aligned(device, pay_off, buff_off, len))
+ 		goto err1;
  
- 	BUG_ON(src_cnt <= 1);
+-	dest = dma_map_single(device->dev, buf, len, DMA_FROM_DEVICE);
+-	if (dma_mapping_error(device->dev, dest))
++	unmap = dmaengine_get_unmap_data(device->dev, 2, GFP_NOIO);
++	if (!unmap)
+ 		goto err1;
  
--	if (submit->scribble)
--		dma_src = submit->scribble;
--	else if (sizeof(dma_addr_t) <= sizeof(struct page *))
--		dma_src = (dma_addr_t *) src_list;
-+	if (device)
-+		unmap = dmaengine_get_unmap_data(device->dev, src_cnt, GFP_NOIO);
+-	src = dma_map_single(device->dev, offset, len, DMA_TO_DEVICE);
+-	if (dma_mapping_error(device->dev, src))
++	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(offset),
++				      pay_off, len, DMA_TO_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[0]))
+ 		goto err2;
  
--	if (dma_src && device && src_cnt <= device->max_xor &&
-+	if (unmap && src_cnt <= device->max_xor &&
- 	    is_dma_xor_aligned(device, offset, 0, len)) {
--		unsigned long dma_prep_flags = 0;
-+		unsigned long dma_prep_flags = DMA_COMPL_SKIP_SRC_UNMAP |
-+					       DMA_COMPL_SKIP_DEST_UNMAP;
- 		int i;
- 
- 		pr_debug("%s: (async) len: %zu\n", __func__, len);
-@@ -295,11 +294,15 @@ async_xor_val(struct page *dest, struct page **src_list, unsigned int offset,
- 			dma_prep_flags |= DMA_PREP_INTERRUPT;
- 		if (submit->flags & ASYNC_TX_FENCE)
- 			dma_prep_flags |= DMA_PREP_FENCE;
--		for (i = 0; i < src_cnt; i++)
--			dma_src[i] = dma_map_page(device->dev, src_list[i],
--						  offset, len, DMA_TO_DEVICE);
- 
--		tx = device->device_prep_dma_xor_val(chan, dma_src, src_cnt,
-+		for (i = 0; i < src_cnt; i++) {
-+			unmap->addr[i] = dma_map_page(device->dev, src_list[i],
-+						      offset, len, DMA_TO_DEVICE);
-+			unmap->to_cnt++;
-+		}
-+		unmap->len = len;
+-	flags = DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SRC_UNMAP_SINGLE |
++	unmap->to_cnt = 1;
 +
-+		tx = device->device_prep_dma_xor_val(chan, unmap->addr, src_cnt,
- 						     len, result,
- 						     dma_prep_flags);
- 		if (unlikely(!tx)) {
-@@ -308,11 +311,11 @@ async_xor_val(struct page *dest, struct page **src_list, unsigned int offset,
- 			while (!tx) {
- 				dma_async_issue_pending(chan);
- 				tx = device->device_prep_dma_xor_val(chan,
--					dma_src, src_cnt, len, result,
-+					unmap->addr, src_cnt, len, result,
- 					dma_prep_flags);
- 			}
- 		}
--
-+		dma_set_unmap(tx, unmap);
- 		async_tx_submit(chan, tx, submit);
- 	} else {
- 		enum async_tx_flags flags_orig = submit->flags;
-@@ -334,6 +337,7 @@ async_xor_val(struct page *dest, struct page **src_list, unsigned int offset,
- 		async_tx_sync_epilog(submit);
- 		submit->flags = flags_orig;
- 	}
++	unmap->addr[1] = dma_map_page(device->dev, virt_to_page(buf),
++				      buff_off, len, DMA_FROM_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[1]))
++		goto err2;
++
++	unmap->from_cnt = 1;
++
++	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
+ 		DMA_PREP_INTERRUPT;
+-	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
++	txd = device->device_prep_dma_memcpy(chan, unmap->addr[1],
++					     unmap->addr[0], len, flags);
+ 	if (!txd)
+-		goto err3;
++		goto err2;
+ 
+ 	txd->callback = ntb_rx_copy_callback;
+ 	txd->callback_param = entry;
++	dma_set_unmap(txd, unmap);
+ 
+ 	cookie = dmaengine_submit(txd);
+ 	if (dma_submit_error(cookie))
+ 		goto err3;
+ 
++	dmaengine_unmap_put(unmap);
++
+ 	qp->last_cookie = cookie;
+ 
+ 	qp->rx_async++;
+@@ -1082,9 +1096,9 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	return;
+ 
+ err3:
+-	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err2:
+-	dma_unmap_single(device->dev, dest, len, DMA_FROM_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err1:
+ 	/* If the callbacks come out of order, the writing of the index to the
+ 	 * last completed will be out of order.  This may result in the
+@@ -1245,7 +1259,8 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+ 	struct dma_chan *chan = qp->dma_chan;
+ 	struct dma_device *device;
+ 	size_t dest_off, buff_off;
+-	dma_addr_t src, dest;
++	struct dmaengine_unmap_data *unmap;
++	dma_addr_t dest;
+ 	dma_cookie_t cookie;
+ 	void __iomem *offset;
+ 	size_t len = entry->len;
+@@ -1273,28 +1288,42 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+ 	if (!is_dma_copy_aligned(device, buff_off, dest_off, len))
+ 		goto err;
+ 
+-	src = dma_map_single(device->dev, buf, len, DMA_TO_DEVICE);
+-	if (dma_mapping_error(device->dev, src))
++	unmap = dmaengine_get_unmap_data(device->dev, 1, GFP_NOIO);
++	if (!unmap)
+ 		goto err;
+ 
+-	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_PREP_INTERRUPT;
+-	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
++	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(buf),
++				      buff_off, len, DMA_TO_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[0]))
++		goto err1;
++
++	unmap->to_cnt = 1;
++
++	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
++		DMA_PREP_INTERRUPT;
++	txd = device->device_prep_dma_memcpy(chan, dest, unmap->addr[0], len,
++					    flags);
+ 	if (!txd)
+ 		goto err1;
+ 
+ 	txd->callback = ntb_tx_copy_callback;
+ 	txd->callback_param = entry;
++	dma_set_unmap(txd, unmap);
+ 
+ 	cookie = dmaengine_submit(txd);
+ 	if (dma_submit_error(cookie))
+-		goto err1;
++		goto err2;
++
 +	dmaengine_unmap_put(unmap);
  
- 	return tx;
- }
+ 	dma_async_issue_pending(chan);
+ 	qp->tx_async++;
+ 
+ 	return;
++err2:
++	dmaengine_unmap_put(unmap);
+ err1:
+-	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err:
+ 	ntb_memcpy_tx(entry, offset);
+ 	qp->tx_memcpy++;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index dc98bc5..3782cdb 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -457,6 +457,7 @@ struct dma_async_tx_descriptor {
+ #endif
+ };
+ 
++#ifdef CONFIG_DMA_ENGINE
+ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+ 				 struct dmaengine_unmap_data *unmap)
+ {
+@@ -467,6 +468,20 @@ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+ struct dmaengine_unmap_data *
+ dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags);
+ void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap);
++#else
++static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
++				 struct dmaengine_unmap_data *unmap)
++{
++}
++static inline struct dmaengine_unmap_data *
++dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
++{
++	return NULL;
++}
++static inline void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap)
++{
++}
++#endif
+ 
+ static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
+ {
 -- 
 1.8.2.3
 
