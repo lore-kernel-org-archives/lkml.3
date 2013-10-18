@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3JRIig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 04:38:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60823 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3JRIid convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 04:38:33 -0400
-Date: Fri, 18 Oct 2013 09:38:39 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
- kworker threads
-Message-ID: <20131018083839.GW31039@e103034-lin>
-References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
- <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com>
- <20131014133356.GN3081@twins.programming.kicks-ass.net>
- <525C0A51.2080407@linux.intel.com>
- <20131017164038.GV31039@e103034-lin>
- <20131017165416.GW10651@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-In-Reply-To: <20131017165416.GW10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 18 Oct 2013 08:38:29.0746 (UTC) FILETIME=[6BD20520:01CECBDD]
-X-MC-Unique: 113101809383006601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752281Ab3JRIit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 04:38:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52104 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab3JRIil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 04:38:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,520,1378882800"; 
+   d="scan'208";a="394840257"
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: tony.luck@intel.com, bp@alien8.de, joe@perches.com,
+        naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com
+Cc: arozansk@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/9] Extended H/W error log driver
+Date: Fri, 18 Oct 2013 04:23:35 -0400
+Message-Id: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 05:54:16PM +0100, Peter Zijlstra wrote:
-> On Thu, Oct 17, 2013 at 05:40:38PM +0100, Morten Rasmussen wrote:
-> > On Mon, Oct 14, 2013 at 04:14:25PM +0100, Arjan van de Ven wrote:
-> > > On 10/14/2013 6:33 AM, Peter Zijlstra wrote:
-> > > > On Fri, Oct 11, 2013 at 06:19:14PM +0100, Morten Rasmussen wrote:
-> > > >> Removing power hints for kworker threads enables easier use of
-> > > >> workqueues in the power driver late callback. That would otherwise
-> > > >> lead to an endless loop unless it is prevented in the power driver.
-> > > >
-> > > > There's many kworker users; some of them actually consume lots of
-> > > > cputime. Therefore how did you come to the conclusion that excepting all
-> > > > users was the better choice of a little added complexity in the one
-> > > > place where it actually matters?
-> > > 
-> > > .. and likely only for a very few architectures
-> > > 
-> > > x86, and I suspect modern ARM, can change frequency synchronously.
-> > > (using an instruction or maybe two or three for ARM)
-> > 
-> > It should be possible to implement synchronous frequency changes on most
-> > modern ARM platforms. It is a bit more than a few instructions to change
-> > frequency though particularly for the current cpufreq drivers.
-> > 
-> > cpufreq drivers, like the one for ARM TC2, uses the clock framework to
-> > manage clocks. clk_set_rate() is allowed to sleep which won't work if we
-> > call it from scheduler context. The clock framework will need a look if
-> > it doesn't provide a very fast synchronous alternative to clk_set_rate()
-> > to change frequency and we want to use it for scheduler driven frequency
-> > scaling.
-> > 
-> > cpufreq has pre- and post-change notifiers so the current TC2 clock driver
-> > waits (yields) in its clk_set_rate() implementation until the change has
-> > happened to ensure that the post-change notifier happens at the right
-> > time. Since clk_set_rate() is allowed to sleep other tasks may be
-> > running while waiting for the change to complete. This may be true for
-> > other clock drivers as well.
-> > 
-> > AFAICT, there is no way to reuse the existing cpufreq drivers in a
-> > sensible way for scheduler driven frequency scaling. It should be
-> > possible to have very fast frequency changes on ARM but it is not the
-> > way it is currently done.
-> 
-> 
-> Note that you still have preemption disabled in your late callback from
-> finish_task_switch(). There's no way you can wait/yield/whatever from
-> there. Nor is that really sane.
+[PATCH v3 1/9] ACPI, APEI, CPER: Fix status check during error printing
+[PATCH v3 2/9] ACPI, CPER: Update cper info
+[PATCH v3 3/9] bitops: Introduce a more generic BITMASK macro
+[PATCH v3 4/9] ACPI, x86: Extended error log driver for x86 platform
+[PATCH v3 5/9] DMI: Parse memory device (type 17) in SMBIOS
+[PATCH v3 6/9] ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
+[PATCH v3 7/9] ACPI, APEI, CPER: Enhance memory reporting capability
+[PATCH v3 8/9] ACPI, APEI, CPER: Cleanup CPER memory error output format
+[PATCH v3 9/9] EDAC, GHES: Update ghes error record info
 
-No, that is what I have realized after messing around trying to call
-into cpufreq. It just won't work. A non-waiting/yielding/whatever driver
-is needed. There is no point in having the late callback it won't solve
-anything. 
+OK, this is the 3rd version. Hope it is the last one :-).
 
-> 
-> Just say no to the existing cruft ?
+this version just updates some minors places and apply some Ack/Review
+information. In this version I remove the last patch for trace interface.
+Maybe it is time to build a new RAS trace interface to integrate all
+RAS related error report interfaces now.
 
-That is the only way ahead I think. intel_pstate.c does it. I will into
-what it takes to do something similar on ARM TC2.
+new output format as below:
+
+dmesg output:
+
+[  498.485536] {1}Hardware error detected on CPU45
+[  498.485616] {1}It has been corrected by h/w and requires no further action
+[  498.485655] {1}event severity: corrected
+[  498.485660] {1} Error 0, type: corrected
+[  498.485681] {1}  section_type: memory error
+[  498.485686] {1}  physical_address: 0x000000207ff1a000
+[  498.485697] {1}  DIMM location: Memriser7 CHANNEL A DIMM 0
+[  498.485720] {2}Hardware error detected on CPU45
+[  498.485728] {2}It has been corrected by h/w and requires no further action
+[  498.485735] {2}event severity: corrected
+[  498.485740] {2} Error 0, type: corrected
+[  498.485748] {2}  section_type: memory error
 
