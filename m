@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab3JRVY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 17:24:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3JRVY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 17:24:26 -0400
-Date: Fri, 18 Oct 2013 14:25:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/11] 3.4.67-stable review
-Message-ID: <20131018212539.GC11128@kroah.com>
-References: <20131018195049.069623827@linuxfoundation.org>
- <20131018204917.GA21100@roeck-us.net>
+	id S1756831Ab3JRV0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 17:26:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18433 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754569Ab3JRV0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 17:26:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,525,1378882800"; 
+   d="scan'208";a="376815473"
+Message-ID: <5261A889.8080508@linux.intel.com>
+Date: Fri, 18 Oct 2013 14:30:49 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131018204917.GA21100@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Joe Perches <joe@perches.com>
+CC: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com, x86@kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] MAINTAINERS: INTEL MID SOC: add maintainers
+References: <1382131130-10903-1-git-send-email-david.a.cohen@linux.intel.com>  <1382131130-10903-2-git-send-email-david.a.cohen@linux.intel.com> <1382131306.2041.7.camel@joe-AO722>
+In-Reply-To: <1382131306.2041.7.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 01:49:17PM -0700, Guenter Roeck wrote:
-> On Fri, Oct 18, 2013 at 12:53:29PM -0700, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.4.67 release.
-> > There are 11 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Sun Oct 20 19:50:39 UTC 2013.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.67-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> Build results:
-> 	total: 103 pass: 89 skipped: 10 fail: 4
-> 
-> qemu tests all pass.
-> 
-> This matches the results seen with the previous 3.4 release, so everything
-> is as expected.
+On 10/18/2013 02:21 PM, Joe Perches wrote:
+> On Fri, 2013-10-18 at 14:18 -0700, David Cohen wrote:
+>> Low-power Intel MID SoC support is currently quite outdated.
+>> The code is meant for the old Moorestown platform and has not proper
+>> support for newer platforms like Medfield, Clovertrail, Merrifield, ...
+>>
+>> This patch adds official maintainers for such platforms in order to get
+>> things in a better shape from now on.
+>
+>  From MAINTAINERS:
+>
+> Note: For the hard of thinking, this list is meant to remain in alphabetical
+> order. If you could add yourselves to it in alphabetical order that would be
+> so much easier [Ed]
 
-Great, thanks for testing and letting me know.
+Thanks. Fixing it right now.
 
-greg k-h
+Br, David Cohen
+
