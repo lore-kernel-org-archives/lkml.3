@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab3JRWnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:43:40 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:48339
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757067Ab3JRWnj (ORCPT
+	id S1757605Ab3JRWoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:44:11 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:65505 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757067Ab3JRWoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:43:39 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1382136213.7979.908.camel@snotra.buserror.net>
-Subject: Re: [v5][PATCH 2/6] powerpc/book3e: store critical/machine/debug
- exception thread info
-From: Scott Wood <scottwood@freescale.com>
-To: Tiejun Chen <tiejun.chen@windriver.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Oct 2013 17:43:33 -0500
-In-Reply-To: <1371724110-8250-3-git-send-email-tiejun.chen@windriver.com>
-References: <1371724110-8250-1-git-send-email-tiejun.chen@windriver.com>
-	 <1371724110-8250-3-git-send-email-tiejun.chen@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	Fri, 18 Oct 2013 18:44:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmkGAFO4YVJ5LAy1/2dsb2JhbABagweDTLYghUaBIhd0giUBAQU6HCMQCAMOBgQJJQ8FJQMhE4gFwHAWj0AHhCkDmAiKQ4dFgWaBUig
+Date: Sat, 19 Oct 2013 09:44:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Rich Johnston <rjohnston@sgi.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
+        mtk.manpages@gmail.com, tytso@mit.edu, adilger.kernel@dilger.ca,
+        bpm@sgi.com, elder@kernel.org, hch@infradead.org,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH RESEND 4/7] xfsprogs: xfsio: add support
+ FALLOC_FL_COLLAPSE_RANGE for fallocate
+Message-ID: <20131018224404.GX4446@dastard>
+References: <1381090418-2829-1-git-send-email-linkinjeon@gmail.com>
+ <52616EC6.7030400@sgi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52616EC6.7030400@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-20 at 18:28 +0800, Tiejun Chen wrote:
-> We need to store thread info to these exception thread info like something
-> we already did for PPC32.
+On Fri, Oct 18, 2013 at 12:24:22PM -0500, Rich Johnston wrote:
+> This has been committed.
 > 
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> ---
->  arch/powerpc/kernel/exceptions-64e.S |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
+> Thanks
+> --Rich
 > 
-> diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
-> index 4d8e57f..07cf657 100644
-> --- a/arch/powerpc/kernel/exceptions-64e.S
-> +++ b/arch/powerpc/kernel/exceptions-64e.S
-> @@ -67,6 +67,18 @@
->  	std	r10,PACA_##level##_STACK(r13);
->  #endif
->  
-> +/* Store something to exception thread info */
-> +#define	BOOK3E_STORE_EXC_LEVEL_THEAD_INFO(type)					\
-> +	ld	r14,PACAKSAVE(r13);						\
-> +	CURRENT_THREAD_INFO(r14, r14);						\
-> +	CURRENT_THREAD_INFO(r15, r1);						\
-> +	ld	r10,TI_FLAGS(r14);		     				\
-> +	std	r10,TI_FLAGS(r15);			     			\
-> +	ld	r10,TI_PREEMPT(r14);		     				\
-> +	std	r10,TI_PREEMPT(r15);		     				\
-> +	ld	r10,TI_TASK(r14);			     			\
-> +	std	r10,TI_TASK(r15);
+> commit e64190f8440286a815060524777b435e06a7b364
+> Author: Namjae Jeon <namjae.jeon@samsung.com>
+> Date:   Sun Oct 6 20:13:38 2013 +0000
+> 
+>     [RESEND, 4/7] xfsprogs: xfsio: add support
+> FALLOC_FL_COLLAPSE_RANGE for fallocate
 
-Where is "type" used?
+Hi Rich,
 
-BTW, no need for a BOOK3E prefix for things local to this file.
+This isn't ready for being committed into xfsprogs. The kernel code
+is still under review, and until we actually have it in a tree to be
+merged int eh kernel, we shoul d't be making any userspace changes
+at all. Indeed, there's a chance (unlikely, but still there) that
+this code may still not end up in the kernel at all...
 
--Scott
+So, it's probably best right now to revert this patch until we have
+the fallocate API support merged into the kernel...
 
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
