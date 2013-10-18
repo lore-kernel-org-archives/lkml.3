@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3JRJVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:21:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59823 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab3JRJVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:21:13 -0400
-Date: Fri, 18 Oct 2013 11:20:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com
-Cc: joe@perches.com, naveen.n.rao@linux.vnet.ibm.com, m.chehab@samsung.com,
-        arozansk@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/9] Extended H/W error log driver
-Message-ID: <20131018092054.GB1007@pd.tnic>
-References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
+	id S1752639Ab3JRJXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:23:06 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:48315 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab3JRJXE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 05:23:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382086049-14386-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1382086049-14386-1-git-send-email-michael.opdenacker@free-electrons.com>
+Date: Fri, 18 Oct 2013 11:23:03 +0200
+X-Google-Sender-Auth: 6qnDbVMTVZhW9d6ytOyhBOQ9Ddg
+Message-ID: <CAMuHMdWXWfGqw041pkOYKzLjQ05GfCcz9jOFQaPa=d_RwhOUcg@mail.gmail.com>
+Subject: Re: [PATCH] init: make init failures more explicit
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 04:23:35AM -0400, Chen, Gong wrote:
-> OK, this is the 3rd version. Hope it is the last one :-).
+On Fri, Oct 18, 2013 at 10:47 AM, Michael Opdenacker
+<michael.opdenacker@free-electrons.com> wrote:
+> +       if (ret && ret != -ENOENT) {
+> +               pr_err("Starting init: %s exists but couldn't execute it\n",
 
-It looks ok to me so far, I'm guessing Tony you're picking this up or
-should I?
+I think it makes sense to also print the value of ret here.
+Apart from your -ENOEXEC case, peeking a bit around, it can be also be
+-EINVAL, -ENOMEM (debug binary too big for small embedded system?),
+-EACCES, -E2BIG, ...
 
-> this version just updates some minors places and apply some Ack/Review
-> information. In this version I remove the last patch for trace
-> interface. Maybe it is time to build a new RAS trace interface to
-> integrate all RAS related error report interfaces now.
+> +                      init_filename);
+> +       }
 
-Yeah, let's start small here by moving the CREATE_TRACE_POINTS macro
-definition to something like arch/x86/ras/core.c and work slowly up from
-there. We have ras_event.h for tracepoints already.
+Gr{oetje,eeting}s,
 
-Thanks.
+                        Geert
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
