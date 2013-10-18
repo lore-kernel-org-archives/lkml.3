@@ -1,258 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3JRM5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:57:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab3JRM5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:57:07 -0400
-From: Jerome Marchand <jmarchan@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, dave.hansen@intel.com
-Subject: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
-Date: Fri, 18 Oct 2013 14:56:59 +0200
-Message-Id: <1382101019-23563-2-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1382101019-23563-1-git-send-email-jmarchan@redhat.com>
-References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com>
+	id S1754069Ab3JRM60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:58:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45687 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab3JRM6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:58:24 -0400
+Date: Fri, 18 Oct 2013 13:58:14 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Vlad Yasevich <vyasevich@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131018125814.GL2443@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jQPBlZt6jIpLStwc"
+Content-Disposition: inline
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: linux-next: manual merge of the net-next tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v3:
- - rebase on 3.12-rc5
-Changes since v2:
- - updates documentation
-Changes since v1:
- - use overcommit_ratio_ppm instead of overcommit_kbytes
- - keep both variables in sync
 
-Some applications that run on HPC clusters are designed around the
-availability of RAM and the overcommit ratio is fine tuned to get the
-maximum usage of memory without swapping. With growing memory, the 1%
-of all RAM grain provided by overcommit_ratio has become too coarse
-for these workload (on a 2TB machine it represents no less than
-20GB).
+--jQPBlZt6jIpLStwc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch adds the new overcommit_ratio_ppm sysctl variable that
-allow to set overcommit ratio with a part per million precision.
-The old overcommit_ratio variable can still be used to set and read
-the ratio with a 1% precision. That way, overcommit_ratio interface
-isn't broken in any way that I can imagine.
+Today's linux-next merge of the next-next tree got a conflict in
+include/net/dst.h between e87b3998d (net: dst: provide accessor function
+to dst->xfrm) in the net tree and a4023dd01 (dst.h: Remove extern from
+function prototypes) in net-next.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- Documentation/sysctl/vm.txt            |   10 +++++
- Documentation/vm/overcommit-accounting |    7 ++--
- include/linux/mman.h                   |    6 ++--
- include/linux/sysctl.h                 |    2 +
- kernel/sysctl.c                        |   63 ++++++++++++++++++++++++++++++--
- mm/mmap.c                              |    2 +-
- mm/nommu.c                             |    2 +-
- 7 files changed, 81 insertions(+), 11 deletions(-)
+I've fixed up as below and can carry as required.
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 79a797e..a25943e 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -49,6 +49,7 @@ Currently, these files are in /proc/sys/vm:
- - oom_kill_allocating_task
- - overcommit_memory
- - overcommit_ratio
-+- overcommit_ratio_ppm
- - page-cluster
- - panic_on_oom
- - percpu_pagelist_fraction
-@@ -599,6 +600,15 @@ overcommit_ratio:
- When overcommit_memory is set to 2, the committed address
- space is not permitted to exceed swap plus this percentage
- of physical RAM.  See above.
-+If overcommit_ratio_ppm has been set, overcommit_ratio shows a
-+rounded value.
-+
-+==============================================================
-+
-+overcommit_ratio_ppm:
-+
-+Same as overcommit_ratio, but allows to set the ratio with a finer
-+grain (part per million).
- 
- ==============================================================
- 
-diff --git a/Documentation/vm/overcommit-accounting b/Documentation/vm/overcommit-accounting
-index 8eaa2fc..15b5ecb 100644
---- a/Documentation/vm/overcommit-accounting
-+++ b/Documentation/vm/overcommit-accounting
-@@ -14,8 +14,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- 2	-	Don't overcommit. The total address space commit
- 		for the system is not permitted to exceed swap + a
--		configurable percentage (default is 50) of physical RAM.
--		Depending on the percentage you use, in most situations
-+		configurable ratio (default is 50%) of physical RAM.
-+		Depending on the ratio you use, in most situations
- 		this means a process will not be killed while accessing
- 		pages but will receive errors on memory allocation as
- 		appropriate.
-@@ -26,7 +26,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- The overcommit policy is set via the sysctl `vm.overcommit_memory'.
- 
--The overcommit percentage is set via `vm.overcommit_ratio'.
-+The overcommit percentage is set via `vm.overcommit_ratio' or
-+`vm.overcommit_ratio_ppm'.
- 
- The current overcommit limit and amount committed are viewable in
- /proc/meminfo as CommitLimit and Committed_AS respectively.
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index d622d34..24f9c12 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -11,7 +11,7 @@
- #include <linux/swap.h>
- 
- extern int sysctl_overcommit_memory;
--extern int sysctl_overcommit_ratio;
-+extern int sysctl_overcommit_ratio_ppm;
- extern struct percpu_counter vm_committed_as;
- 
- #ifdef CONFIG_SMP
-@@ -96,7 +96,7 @@ calc_vm_flag_bits(unsigned long flags)
-  */
- static inline unsigned long vm_commit_limit()
- {
--	return ((totalram_pages - hugetlb_total_pages())
--		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-+	return ((u64) (totalram_pages - hugetlb_total_pages())
-+		* sysctl_overcommit_ratio_ppm / 100000) + total_swap_pages;
- }
- #endif /* _LINUX_MMAN_H */
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 14a8ff2..2e2389c 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -51,6 +51,8 @@ extern int proc_dointvec_userhz_jiffies(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
- extern int proc_dointvec_ms_jiffies(struct ctl_table *, int,
- 				    void __user *, size_t *, loff_t *);
-+extern int proc_dointvec_percent_ppm(struct ctl_table *, int,
-+				     void __user *, size_t *, loff_t *);
- extern int proc_doulongvec_minmax(struct ctl_table *, int,
- 				  void __user *, size_t *, loff_t *);
- extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b2f06f3..ecb22f4 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -96,7 +96,7 @@
- 
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
--extern int sysctl_overcommit_ratio;
-+extern int sysctl_overcommit_ratio_ppm;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1116,8 +1116,15 @@ static struct ctl_table vm_table[] = {
- 	},
- 	{
- 		.procname	= "overcommit_ratio",
--		.data		= &sysctl_overcommit_ratio,
--		.maxlen		= sizeof(sysctl_overcommit_ratio),
-+		.data		= &sysctl_overcommit_ratio_ppm,
-+		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_percent_ppm,
-+	},
-+	{
-+		.procname	= "overcommit_ratio_ppm",
-+		.data		= &sysctl_overcommit_ratio_ppm,
-+		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-@@ -2433,6 +2440,56 @@ int proc_dointvec_ms_jiffies(struct ctl_table *table, int write,
- 				do_proc_dointvec_ms_jiffies_conv, NULL);
- }
- 
-+static int do_proc_dointvec_percent_ppm_conv(bool *negp, unsigned long *lvalp,
-+					     int *valp,
-+					     int write, void *data)
-+{
-+	if (write) {
-+		unsigned long ppm = (*negp ? -*lvalp : *lvalp) * 10000;
-+
-+		if (ppm > INT_MAX)
-+			return 1;
-+		*valp = (int)ppm;
-+	} else {
-+		int val = *valp;
-+		unsigned long lval;
-+		if (val < 0) {
-+			*negp = true;
-+			lval = (unsigned long)-val;
-+		} else {
-+			*negp = false;
-+			lval = (unsigned long)val;
-+		}
-+		*lvalp = lval / 10000;
-+		if (lval % 10000 >= 5000)
-+			(*lvalp)++;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * proc_dointvec_percent_ppm - read a vector of integers as percent and convert it to ppm
-+ * @table: the sysctl table
-+ * @write: %TRUE if this is a write to the sysctl file
-+ * @buffer: the user buffer
-+ * @lenp: the size of the user buffer
-+ * @ppos: file position
-+ * @ppos: the current position in the file
-+ *
-+ * Reads/writes up to table->maxlen/sizeof(unsigned int) integer
-+ * values from/to the user buffer, treated as an ASCII string.
-+ * The values read are assumed to be in percents, and are converted
-+ * into parts per million.
-+ *
-+ * Returns 0 on success.
-+ */
-+int proc_dointvec_percent_ppm(struct ctl_table *table, int write,
-+			      void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	return do_proc_dointvec(table, write, buffer, lenp, ppos,
-+				do_proc_dointvec_percent_ppm_conv, NULL);
-+}
-+
- static int proc_do_cad_pid(struct ctl_table *table, int write,
- 			   void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7755953..3096d9d 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -85,7 +85,7 @@ pgprot_t vm_get_page_prot(unsigned long vm_flags)
- EXPORT_SYMBOL(vm_get_page_prot);
- 
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
--int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
-+int sysctl_overcommit_ratio_ppm __read_mostly = 500000;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
- unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-diff --git a/mm/nommu.c b/mm/nommu.c
-index d8a957b..cf10a9b 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -59,7 +59,7 @@ unsigned long max_mapnr;
- unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
--int sysctl_overcommit_ratio = 50; /* default is 50% */
-+int sysctl_overcommit_ratio_ppm = 500000; /* default is 50% */
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
- int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
--- 
-1.7.7.6
+diff --cc include/net/dst.h
+index 3c4c944,211dcf1..0000000
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@@ -479,22 -478,10 +478,22 @@@ static inline struct dst_entry *xfrm_lo
+  {
+  	return dst_orig;
+  }=20
+ +
+ +static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
+ +{
+ +	return NULL;
+ +}
+ +
+  #else
+- extern struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *d=
+st_orig,
+- 				     const struct flowi *fl, struct sock *sk,
+- 				     int flags);
++ struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *dst_orig,
++ 			      const struct flowi *fl, struct sock *sk,
++ 			      int flags);
+ +
+ +/* skb attached with this dst needs transformation if dst->xfrm is valid =
+*/
+ +static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
+ +{
+ +	return dst->xfrm;
+ +}
+  #endif
+ =20
+  #endif /* _NET_DST_H */
 
+--jQPBlZt6jIpLStwc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSYTBiAAoJELSic+t+oim9KTYQAIGjhZKJLoqZE9vJnzmMhTYT
+wgisleRj26gRmfA4Sq2IdiWx80SA7oKtEnZej0IV5Y8rFU/uXdTP6nMSl5chUyhI
+Ip1AHVqetBZwAgB8LFKZxYk0P29wrJmEq6q+iCrAzm5SYwKoZDtFDKtB1zJHG5Fs
+LVni0VwUlXxrrMFByzHkYbW3tLHGc9YlQZWVZw9LFwyMbVlcCxpHz72LCEIswA+g
+zXYWg83iUwXngqxAobKTqzcuR03vvxsLaee+qlkRWdrwDs+W53KcZRfzq6yE9M/E
+e3kLilDo6zQjD1EpOLgPzG1+I951OeApThOYirg89JX2IB0aj5IVb7WRWbQgSlnW
+ru0lqQ54XTuajFQQH658PGBbhW2mpSWqbAB5HhbuIthpQ7KJHmwi8t5u15R1/5tM
+p9L5g0DK/7FJV7hBh87cYiYer63Lgc43y4PWLcexS6r8JdMBjrzXnQOwb882qsg6
+oK33LuQwBoyxnOFckp4hDdTaa64O/sdqyHWk6Tnp7pejpO7zYBzrIFqKOTxUvwKx
+rOuLUb8li47UvBQOemBSV5WCAtIVoNm6/evjIZ0gl5CxMBVz9zWYwjuavPiKvzLU
+qSJK7y6drnn7eM3pN46bmbPgu0w/Uglqy7MFSDExpWXnu4wDP0LQu129p3pkG2El
+xMGP213lPGXsWvAZJV5k
+=Z5sp
+-----END PGP SIGNATURE-----
+
+--jQPBlZt6jIpLStwc--
