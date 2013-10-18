@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3JRBt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 21:49:27 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:46208 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab3JRBt0 (ORCPT
+	id S1755741Ab3JRCT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 22:19:58 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:48151 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755178Ab3JRCT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 21:49:26 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-Cc: kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] tracing: fix referencing after memory freeing and refactors code
-Date: Thu, 17 Oct 2013 22:44:56 -0300
-Message-Id: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 17 Oct 2013 22:19:57 -0400
+Date: Thu, 17 Oct 2013 22:19:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2 2/5] trace-cmd: Apply the trace-msg protocol for
+ communication between a server and clients
+Message-ID: <20131017221953.4bc6d43e@gandalf.local.home>
+In-Reply-To: <20130913020632.28927.18549.stgit@yunodevel>
+References: <20130913020627.28927.69090.stgit@yunodevel>
+	<20130913020632.28927.18549.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restructures function logic conditions testing 'tracing_open_generic'
-return before the others. It avoids: unnecessary trace_array_get and
-kzalloc when tracing is disabled; and fix the possible 'dir'
-assignment after freeing it.
+On Fri, 13 Sep 2013 11:06:32 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-Centralizes the exiting, ensuring the 'trace_array_put' on error,
-in accordance to Coding Style, Chapter 7.
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- kernel/trace/trace_events.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+> diff --git a/trace-msg.c b/trace-msg.c
+> new file mode 100644
+> index 0000000..cf82ff6
+> --- /dev/null
+> +++ b/trace-msg.c
+> @@ -0,0 +1,683 @@
+> +/*
+> + * trace-msg.c : define message protocol for communication between clients and
+> + *               a server
+> + *
+> + * Copyright (C) 2013 Hitachi, Ltd.
+> + * Created by Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License (not later!)
+> + *
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 368a4d5..8232362 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
- 	struct trace_array *tr = inode->i_private;
- 	int ret;
- 
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
-+	ret = tracing_open_generic(inode, filp);
-+	if (ret)
-+		return ret;
-+
-+	ret = trace_array_get(tr);
-+	if (ret)
-+		return ret;
- 
- 	/* Make a temporary dir that has no system but points to tr */
- 	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
- 	if (!dir) {
--		trace_array_put(tr);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_dir;
- 	}
- 
- 	dir->tr = tr;
- 
--	ret = tracing_open_generic(inode, filp);
--	if (ret < 0) {
--		trace_array_put(tr);
--		kfree(dir);
--	}
--
- 	filp->private_data = dir;
-+	return 0;
- 
-+err_dir:
-+	trace_array_put(tr);
- 	return ret;
- }
- 
--- 
-1.8.4
+BTW, as this can be used in a library, would be OK with re-licensing
+this as the LGPL v2.1?
 
+I try to keep all the helper C files as LGPL and the program files as
+GPL. I would have made all of trace-cmd LGPL, but there was some code I
+needed that was GPL, and I could only use it if I had the program as
+GPL code.
+
+-- Steve
+
+
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not,  see <http://www.gnu.org/licenses>
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + */
+> +
