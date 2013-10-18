@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab3JRIcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 04:32:14 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57245 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab3JRIcL (ORCPT
+	id S1752063Ab3JRIig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 04:38:36 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:60823 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3JRIid convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 04:32:11 -0400
-Message-ID: <5260F208.9000800@hitachi.com>
-Date: Fri, 18 Oct 2013 17:32:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 18 Oct 2013 04:38:33 -0400
+Date: Fri, 18 Oct 2013 09:38:39 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
+ kworker threads
+Message-ID: <20131018083839.GW31039@e103034-lin>
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
+ <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com>
+ <20131014133356.GN3081@twins.programming.kicks-ass.net>
+ <525C0A51.2080407@linux.intel.com>
+ <20131017164038.GV31039@e103034-lin>
+ <20131017165416.GW10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com, steve.capper@linaro.org,
-        nico@linaro.org, srikar@linux.vnet.ibm.com, rostedt@goodmis.org,
-        dsaxena@linaro.org, jiang.liu@huawei.com,
-        Vijaya.Kumar@caviumnetworks.com
-Subject: Re: [PATCH RFC v2 0/6] ARM64: Add kernel probes(Kprobes) support
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
-In-Reply-To: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131017165416.GW10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 18 Oct 2013 08:38:29.0746 (UTC) FILETIME=[6BD20520:01CECBDD]
+X-MC-Unique: 113101809383006601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/17 20:17), Sandeepa Prabhu wrote:
-> This patchset adds support for kernel probes(kprobes), jump probes(jprobes)
-> and return probes(kretprobes) support for ARM64.
+On Thu, Oct 17, 2013 at 05:54:16PM +0100, Peter Zijlstra wrote:
+> On Thu, Oct 17, 2013 at 05:40:38PM +0100, Morten Rasmussen wrote:
+> > On Mon, Oct 14, 2013 at 04:14:25PM +0100, Arjan van de Ven wrote:
+> > > On 10/14/2013 6:33 AM, Peter Zijlstra wrote:
+> > > > On Fri, Oct 11, 2013 at 06:19:14PM +0100, Morten Rasmussen wrote:
+> > > >> Removing power hints for kworker threads enables easier use of
+> > > >> workqueues in the power driver late callback. That would otherwise
+> > > >> lead to an endless loop unless it is prevented in the power driver.
+> > > >
+> > > > There's many kworker users; some of them actually consume lots of
+> > > > cputime. Therefore how did you come to the conclusion that excepting all
+> > > > users was the better choice of a little added complexity in the one
+> > > > place where it actually matters?
+> > > 
+> > > .. and likely only for a very few architectures
+> > > 
+> > > x86, and I suspect modern ARM, can change frequency synchronously.
+> > > (using an instruction or maybe two or three for ARM)
+> > 
+> > It should be possible to implement synchronous frequency changes on most
+> > modern ARM platforms. It is a bit more than a few instructions to change
+> > frequency though particularly for the current cpufreq drivers.
+> > 
+> > cpufreq drivers, like the one for ARM TC2, uses the clock framework to
+> > manage clocks. clk_set_rate() is allowed to sleep which won't work if we
+> > call it from scheduler context. The clock framework will need a look if
+> > it doesn't provide a very fast synchronous alternative to clk_set_rate()
+> > to change frequency and we want to use it for scheduler driven frequency
+> > scaling.
+> > 
+> > cpufreq has pre- and post-change notifiers so the current TC2 clock driver
+> > waits (yields) in its clk_set_rate() implementation until the change has
+> > happened to ensure that the post-change notifier happens at the right
+> > time. Since clk_set_rate() is allowed to sleep other tasks may be
+> > running while waiting for the change to complete. This may be true for
+> > other clock drivers as well.
+> > 
+> > AFAICT, there is no way to reuse the existing cpufreq drivers in a
+> > sensible way for scheduler driven frequency scaling. It should be
+> > possible to have very fast frequency changes on ARM but it is not the
+> > way it is currently done.
 > 
-> Kprobes mechanism make use of software breakpoint and single stepping
-> support available in ARM v8 kernel.
 > 
+> Note that you still have preemption disabled in your late callback from
+> finish_task_switch(). There's no way you can wait/yield/whatever from
+> there. Nor is that really sane.
 
-Thank you! This looks much better for me now. ;)
+No, that is what I have realized after messing around trying to call
+into cpufreq. It just won't work. A non-waiting/yielding/whatever driver
+is needed. There is no point in having the late callback it won't solve
+anything. 
 
-> This patchset make use of (and dependant upon) dynamic kernel patching 
-> feature published in patch series: https://lkml.org/lkml/2013/10/15/891
 > 
-> changes: v1 -> v2
->  1. Implemented review comments on v1
->  2. Debug montior hooks implementation is changed to use rwlocks
->     instead of rcu and spinlock.
+> Just say no to the existing cruft ?
 
-Eventually, we'd better reconsider using rcu there, or prohibit probing
-readlock related functions. For the first step, this will be good.
-
->  3. Enabled recursing in kprobes handler for kprobes re-enter support.
->  4. Re-split the patchset to seperate single-stepping, simulation and 
->     kretprobes features.
->  5. instruction simulation is made independent of 'struct kprobes'
->  6. Added 'Linaro Copyright' statements in new added files.
->  7. Used arm64 instead of aarch64 in file names and comments.
-> 
-> Tested on ARM v8 fast model with sample modules from: samples/kprobes/
-> 
-> Sandeepa Prabhu (6):
->   arm64: support single-step and breakpoint handler hooks
->   arm64: Kprobes with single stepping support
->   arm64: Kprobes instruction simulation support
->   arm64: Add kernel return probes support(kretprobes)
->   arm64: Enable kprobes support for arm64 platform
->   kprobes: Add cases for arm and arm64 in sample module
-> 
->  arch/arm64/Kconfig                      |   2 +
->  arch/arm64/configs/defconfig            |  20 +-
->  arch/arm64/include/asm/debug-monitors.h |  21 +
->  arch/arm64/include/asm/kprobes.h        |  60 +++
->  arch/arm64/include/asm/probes.h         |  50 +++
->  arch/arm64/include/asm/ptrace.h         |   6 +
->  arch/arm64/kernel/Makefile              |   2 +
->  arch/arm64/kernel/condn-helpers.c       | 120 ++++++
->  arch/arm64/kernel/debug-monitors.c      |  86 +++-
->  arch/arm64/kernel/entry.S               |   2 +
-
-
->  arch/arm64/kernel/kprobes-arm64.c       | 313 +++++++++++++++
->  arch/arm64/kernel/kprobes-arm64.h       |  30 ++
-
-One comment, this name looks a bit wired. Since it seems that these are
-for instruction decoding, can we merge it with probe-decode.h and
-rename it as probe-decode.{h,c}? When we implement uprobes, we still
-can expand it (add the decoding table for uprobes in the probe-decode.c).
-
->  arch/arm64/kernel/kprobes.c             | 682 ++++++++++++++++++++++++++++++++
->  arch/arm64/kernel/kprobes.h             |  30 ++
->  arch/arm64/kernel/probes-decode.h       | 110 ++++++
->  arch/arm64/kernel/simulate-insn.c       | 184 +++++++++
->  arch/arm64/kernel/simulate-insn.h       |  33 ++
->  arch/arm64/kernel/vmlinux.lds.S         |   1 +
->  samples/kprobes/kprobe_example.c        |  16 +
->  19 files changed, 1756 insertions(+), 12 deletions(-)
-
-BTW, is there any public git repository which has this series?
-
-Thank you again!
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+That is the only way ahead I think. intel_pstate.c does it. I will into
+what it takes to do something similar on ARM TC2.
 
