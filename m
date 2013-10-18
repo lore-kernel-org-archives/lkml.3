@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3JRWNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:13:38 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33807 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039Ab3JRWNh (ORCPT
+	id S1757371Ab3JRWQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:16:32 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:38361 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab3JRWQa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:13:37 -0400
-Date: Fri, 18 Oct 2013 17:12:35 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH 2/2] rsxx: Fix possible kernel panic with invalid config.
-Message-ID: <20131018221235.GC1278@oc6784271780.ibm.com>
+	Fri, 18 Oct 2013 18:16:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101822-6688-0000-0000-000002AB080E
+In-Reply-To: <CACz4_2c0vvM2HwotMZbz9WWGZbCBmWCD=LrFRAK7uxcGXH+smQ@mail.gmail.com>
+References: <20131015001826.GL3432@hippobay.mtv.corp.google.com>
+ <20131015110905.085B1E0090@blue.fi.intel.com> <CACz4_2cVZBxg88hqzOHpASN4e=hVYMTTQkXHssDjfXpcqACONw@mail.gmail.com>
+ <CACz4_2c0vvM2HwotMZbz9WWGZbCBmWCD=LrFRAK7uxcGXH+smQ@mail.gmail.com>
+From: Ning Qu <quning@google.com>
+Date: Fri, 18 Oct 2013 15:16:09 -0700
+Message-ID: <CACz4_2cGdGLs6PPT6ERf3dU32PRKh6Jr+6QTJA9kvOQP-uQP9g@mail.gmail.com>
+Subject: Re: [PATCH 11/12] mm, thp, tmpfs: enable thp page cache in tmpfs
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Hi, Kirill,
 
-This patch fixes a possible Kernel Panic on driver load if 
-the configuration on the card is messed up or not yet set.
-The driver could possible give a 32 bit unsigned all Fs to
-the kernel as the device's block size.
+I have reviewed the current migration code and seems huge page will
+get splitted during migration. Since our current split_huge_page
+handle file cache as well, it seems not a problem for us?
 
-Now we only write the block size to the kernel if the
-configuration from the card is valid.
+We just simply not removing the __GFP_MOVABLE flag? Anything else I am
+missing here?
 
-Also, driver version is being updated.
+Thanks!
+Best wishes,
+-- 
+Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
 
-
-diff -uprN -X linux-2.6.32-422.el6-vanilla/Documentation/dontdiff linux-2.6.32-422.el6-vanilla/drivers/block/rsxx/dev.c linux-2.6.32-422.el6/drivers/block/rsxx/dev.c
---- linux-2.6.32-422.el6-vanilla/drivers/block/rsxx/dev.c	2013-10-15 15:19:39.406674940 -0500
-+++ linux-2.6.32-422.el6/drivers/block/rsxx/dev.c	2013-10-18 13:40:30.943877311 -0500
-@@ -297,13 +297,15 @@ int rsxx_setup_dev(struct rsxx_cardinfo 
- 		return -ENOMEM;
- 	}
- 
--	blk_size = card->config.data.block_size;
-+	if (card->config_valid) {
-+		blk_size = card->config.data.block_size;
-+		blk_queue_dma_alignment(card->queue, blk_size - 1);
-+		blk_queue_logical_block_size(card->queue, blk_size);
-+	}
- 
- 	blk_queue_make_request(card->queue, rsxx_make_request);
- 	blk_queue_bounce_limit(card->queue, BLK_BOUNCE_ANY);
--	blk_queue_dma_alignment(card->queue, blk_size - 1);
- 	blk_queue_max_hw_sectors(card->queue, blkdev_max_hw_sectors);
--	blk_queue_logical_block_size(card->queue, blk_size);
- 	blk_queue_physical_block_size(card->queue, RSXX_HW_BLK_SIZE);
- 
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, card->queue);
-diff -uprN -X linux-2.6.32-422.el6-vanilla/Documentation/dontdiff linux-2.6.32-422.el6-vanilla/drivers/block/rsxx/rsxx_priv.h linux-2.6.32-422.el6/drivers/block/rsxx/rsxx_priv.h
---- linux-2.6.32-422.el6-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-10-18 13:21:36.219677235 -0500
-+++ linux-2.6.32-422.el6/drivers/block/rsxx/rsxx_priv.h	2013-10-18 13:40:30.952991256 -0500
-@@ -52,7 +52,7 @@ struct proc_cmd;
- #define RS70_PCI_REV_SUPPORTED	4
- 
- #define DRIVER_NAME "rsxx"
--#define DRIVER_VERSION "4.0.2.2510"
-+#define DRIVER_VERSION "4.0.3.2516"
- 
- /* Block size is 4096 */
- #define RSXX_HW_BLK_SHIFT		12
-
+On Fri, Oct 18, 2013 at 11:24 AM, Ning Qu <quning@google.com> wrote:
+> I guess this is the last review I have for this around, but not sure
+> what's the best solution right now.
+>
+> Kirill, do you think it's OK to just split the huge page when it will
+> be moved. Will look into how thp anon handle this situation.
+>
+> Then after this, I probably will post v2.
+>
+> Thanks!
+> Best wishes,
+> --
+> Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
+>
+>
+> On Tue, Oct 15, 2013 at 11:42 AM, Ning Qu <quning@google.com> wrote:
+>> I agree with this. It has been like this just for a quick proof, but I
+>> need to address this problem as soon as possible.
+>>
+>> Thanks!
+>> Best wishes,
+>> --
+>> Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
+>>
+>>
+>> On Tue, Oct 15, 2013 at 4:09 AM, Kirill A. Shutemov
+>> <kirill.shutemov@linux.intel.com> wrote:
+>>> Ning Qu wrote:
+>>>> Signed-off-by: Ning Qu <quning@gmail.com>
+>>>> ---
+>>>>  mm/Kconfig | 4 ++--
+>>>>  mm/shmem.c | 5 +++++
+>>>>  2 files changed, 7 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/mm/Kconfig b/mm/Kconfig
+>>>> index 562f12f..4d2f90f 100644
+>>>> --- a/mm/Kconfig
+>>>> +++ b/mm/Kconfig
+>>>> @@ -428,8 +428,8 @@ config TRANSPARENT_HUGEPAGE_PAGECACHE
+>>>>       help
+>>>>         Enabling the option adds support hugepages for file-backed
+>>>>         mappings. It requires transparent hugepage support from
+>>>> -       filesystem side. For now, the only filesystem which supports
+>>>> -       hugepages is ramfs.
+>>>> +       filesystem side. For now, the filesystems which support
+>>>> +       hugepages are: ramfs and tmpfs.
+>>>>
+>>>>  config CROSS_MEMORY_ATTACH
+>>>>       bool "Cross Memory Support"
+>>>> diff --git a/mm/shmem.c b/mm/shmem.c
+>>>> index 75c0ac6..50a3335 100644
+>>>> --- a/mm/shmem.c
+>>>> +++ b/mm/shmem.c
+>>>> @@ -1672,6 +1672,11 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
+>>>>                       break;
+>>>>               case S_IFREG:
+>>>>                       inode->i_mapping->a_ops = &shmem_aops;
+>>>> +                     /*
+>>>> +                      * TODO: make tmpfs pages movable
+>>>> +                      */
+>>>> +                     mapping_set_gfp_mask(inode->i_mapping,
+>>>> +                                          GFP_TRANSHUGE & ~__GFP_MOVABLE);
+>>>
+>>> Unlike ramfs, tmpfs pages are movable before transparent page cache
+>>> patchset.
+>>> Making tmpfs pages non-movable looks like a big regression to me. It need
+>>> to be fixed before proposing it upstream.
+>>>
+>>> --
+>>>  Kirill A. Shutemov
