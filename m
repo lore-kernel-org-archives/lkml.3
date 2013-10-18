@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab3JRXaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 19:30:07 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:61624 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab3JRXaE (ORCPT
+	id S1757627Ab3JRXcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 19:32:39 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:35268 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3JRXci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 19:30:04 -0400
+	Fri, 18 Oct 2013 19:32:38 -0400
+Message-ID: <5261C513.3050100@linaro.org>
+Date: Fri, 18 Oct 2013 16:32:35 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1382102719-5531-11-git-send-email-pdeschrijver@nvidia.com>
-References: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
-	<1382102719-5531-11-git-send-email-pdeschrijver@nvidia.com>
-Date: Fri, 18 Oct 2013 16:30:02 -0700
-X-Google-Sender-Auth: VHIe8gceKLZ-8kl6DaTU9aBey24
-Message-ID: <CAL1qeaGV7hUmFYZ1Gcent2GSL28OkYzp+_Z2UyaAbkrNJ-SvGg@mail.gmail.com>
-Subject: Re: [PATCH v5 10/15] clk: tegra: move audio clk to common file
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
+To: Xie XiuQi <xiexiuqi@huawei.com>, Jiri Kosina <trivial@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] timekeeping: Fix some trivial typos in comments
+References: <52608AB1.1010307@huawei.com> <52608B3A.7050808@huawei.com>
+In-Reply-To: <52608B3A.7050808@huawei.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 10/17/2013 06:13 PM, Xie XiuQi wrote:
+> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+> ---
+>  kernel/time/timekeeping.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 947ba25..3abf534 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1613,9 +1613,10 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+>   * ktime_get_update_offsets - hrtimer helper
+>   * @offs_real:	pointer to storage for monotonic -> realtime offset
+>   * @offs_boot:	pointer to storage for monotonic -> boottime offset
+> + * @offs_tai:	pointer to storage for monotonic -> clock tai offset
+>   *
+>   * Returns current monotonic time and updates the offsets
+> - * Called from hrtimer_interupt() or retrigger_next_event()
+> + * Called from hrtimer_interrupt() or retrigger_next_event()
+>   */
+>  ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot,
+>  							ktime_t *offs_tai)
 
-> +#define PLL_BASE_LOCK BIT(27)
-> +#define PLL_MISC_LOCK_ENABLE 18
+Even though its trivial, next time please add some sort of commit
+message, even if its redundent to the commit subject.
 
-It doesn't look like these are used anywhere.
+Queued in my 3.13 branch.
 
-> +static struct tegra_sync_source_initdata sync_source_clks[] __initdata = {
-> +       { .name = "spdif_in_sync", .rate = 24000000, .max_rate = 24000000, .clk_id = tegra_clk_spdif_in_sync},
+thanks
+-john
 
-It's a little weird that we have macros for audio_clks and
-audio2x_clks, but not for these.
-
-> +       /* PLLA */
-> +       dt_clk = tegra_lookup_dt_id(tegra_clk_pll_a, tegra_clks);
-> +       if (dt_clk) {
-> +               clk = tegra_clk_register_pll("pll_a", "pll_p_out1", clk_base,
-> +                               pmc_base, 0, pll_a_params, NULL);
-> +               clk_register_clkdev(clk, "pll_a", NULL);
-
-Won't tegra_register_devclks() take care of this since there's an
-entry for this in t114's devclks array?
-
-> +               *dt_clk = clk;
-> +       }
-> +
-> +       /* PLLA_OUT0 */
-> +       dt_clk = tegra_lookup_dt_id(tegra_clk_pll_a_out0, tegra_clks);
-> +       if (dt_clk) {
-> +               clk = tegra_clk_register_divider("pll_a_out0_div", "pll_a",
-> +                               clk_base + PLLA_OUT, 0, TEGRA_DIVIDER_ROUND_UP,
-> +                               8, 8, 1, NULL);
-> +               clk = tegra_clk_register_pll_out("pll_a_out0", "pll_a_out0_div",
-> +                               clk_base + PLLA_OUT, 1, 0, CLK_IGNORE_UNUSED |
-> +                               CLK_SET_RATE_PARENT, 0, NULL);
-> +               clk_register_clkdev(clk, "pll_a_out0", NULL);
-
-Ditto.
-
-Thanks,
-Andrew
