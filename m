@@ -1,104 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab3JRCqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 22:46:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:24584 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755783Ab3JRCqH (ORCPT
+	id S1756217Ab3JRCyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 22:54:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50810 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab3JRCyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 22:46:07 -0400
-Date: Thu, 17 Oct 2013 22:46:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Geyslan G. Bem" <geyslan@gmail.com>
-Cc: kernel-br@googlegroups.com, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org (open list),
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
- refactors code
-Message-ID: <20131017224605.2e1d4bab@gandalf.local.home>
-In-Reply-To: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 17 Oct 2013 22:54:11 -0400
+Date: Thu, 17 Oct 2013 19:54:06 -0700
+From: Michael Bohan <mbohan@codeaurora.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, ralf@linux-mips.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        david.daney@cavium.com, linux-arm-msm@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH] of/lib: Export fdt routines to modules
+Message-ID: <20131018025405.GA3722@codeaurora.org>
+References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+ <525F2397.40203@caviumnetworks.com>
+ <20131017002731.GA22830@codeaurora.org>
+ <525F6D83.1050808@roeck-us.net>
+ <20131017235132.GA6241@codeaurora.org>
+ <52608457.5040609@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52608457.5040609@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013 22:44:56 -0300
-"Geyslan G. Bem" <geyslan@gmail.com> wrote:
-
-> Restructures function logic conditions testing 'tracing_open_generic'
-> return before the others. It avoids: unnecessary trace_array_get and
-> kzalloc when tracing is disabled; and fix the possible 'dir'
-> assignment after freeing it.
+On Thu, Oct 17, 2013 at 05:44:07PM -0700, Guenter Roeck wrote:
+> On 10/17/2013 04:51 PM, Michael Bohan wrote:
+> >On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
+> >>Still, what prevents you from unflattening it and just using the
+> >>normal device tree functions as David suggested ?
+> >
+> >I'm assuming you're suggesting to use of_fdt_unflatten_tree()?
 > 
-> Centralizes the exiting, ensuring the 'trace_array_put' on error,
-> in accordance to Coding Style, Chapter 7.
+> Yes, that was the idea.
 > 
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-> ---
->  kernel/trace/trace_events.c | 22 ++++++++++++----------
->  1 file changed, 12 insertions(+), 10 deletions(-)
+> >That's an interesting thought. I was planning to scan the fdt
+> >only once and populate my own structures, but I suppose I could
+> >use the of_* APIs equivalently.
+> >
+> >It seems there are some problems though.  of_fdt_unflatten_tree()
+> >does not return errors, and so for the purposes of my driver it
+> >would not be sufficient to detect an invalid firmware image.
+> >
+> It does so, at least partially. If there is an error, it won't set
+> the nodes pointer. Granted, that is not perfect, but it is at least
+> a start. Ultimately, I considered it 'good enough' for my purpose
+> (for devicetree overlays - see [1] below), as any missing mandatory
+> properties or nodes are detected later when trying to actually read
+> the properties. In my case, I also have a couple of validation
+> properties to ensure that the overlay is acceptable (specifically
+> I use 'compatible' and 'assembly-ids', but that is really a detail).
+
+That's certainly better than nothing, but I think it would be
+useful to make a distinction between a malformed fdt and a fdt
+that's simply missing the right information. Without error
+codes, I think we lose this aspect.
+
+> >Would people entertain changing this API
+> >(and implicitly __unflatten_device_tree) to return errors? I'm
+> >guessing the reason it's coded that way is because the normal
+> >usecase is 'system boot', at which time errors aren't that
+> >meaningful.
+> >
+> >Also, there's no way to free the memory that was allocated from
+> >the unflatten process. May I add one?
+> >
 > 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 368a4d5..8232362 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
->  	struct trace_array *tr = inode->i_private;
->  	int ret;
->  
-> -	if (trace_array_get(tr) < 0)
-> -		return -ENODEV;
-> +	ret = tracing_open_generic(inode, filp);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = trace_array_get(tr);
-> +	if (ret)
-> +		return ret;
+> The patchset submitted by Pantelis Antoniou to add support for
+> devicetree overlays adds this and other related functionality.
+> See [1], specifically the patch titled "OF: Introduce utility
+> helper functions". Not sure where that is going, though.
+> It may need some cleanup to be accepted upstream.
+> Copying Pantelis for comments.
+> Guenter
+> 
+> [1] https://lkml.org/lkml/2013/1/4/276
 
-Hmm,
+Thanks. So it seems that Pantelis's __of_free_tree() is what I'm
+looking for.
 
-I'm thinking of just nuking the tracing_open_generic() here. The only
-thing it does here is the tracing_disabled check. The assignment of
-inode->i_private to filp->private_data is pointless as it just
-reassigns it anyway.
+Mike
 
-We could add a tracing_is_disabled() function to test instead.
-
--- Steve
-
->  
->  	/* Make a temporary dir that has no system but points to tr */
->  	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
->  	if (!dir) {
-> -		trace_array_put(tr);
-> -		return -ENOMEM;
-> +		ret = -ENOMEM;
-> +		goto err_dir;
->  	}
->  
->  	dir->tr = tr;
->  
-> -	ret = tracing_open_generic(inode, filp);
-> -	if (ret < 0) {
-> -		trace_array_put(tr);
-> -		kfree(dir);
-> -	}
-> -
->  	filp->private_data = dir;
-> +	return 0;
->  
-> +err_dir:
-> +	trace_array_put(tr);
->  	return ret;
->  }
->  
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
