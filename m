@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab3JRP6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:58:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58408 "EHLO mx1.redhat.com"
+	id S1756620Ab3JRP6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:58:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42982 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756059Ab3JRP6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:58:10 -0400
-Date: Fri, 18 Oct 2013 17:50:15 +0200
+	id S1756277Ab3JRP6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:58:32 -0400
+Date: Fri, 18 Oct 2013 17:50:11 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/6] uprobes: Introduce __create_xol_area()
-Message-ID: <20131018155015.GA15030@redhat.com>
+Subject: [PATCH v2 1/6] uprobes: Change the callsite of
+	uprobe_copy_process()
+Message-ID: <20131018155011.GA15023@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,119 +28,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation.
+Preparation for the next patches.
 
-Extract the code which actually allocates/installs the new area
-into the new helper, __create_xol_area().
+Move the callsite of uprobe_copy_process() in copy_process() down
+to the succesfull return. We do not care if copy_process() fails,
+uprobe_free_utask() won't be called in this case so the wrong
+->utask != NULL doesn't matter.
 
-While at it remove the unnecessary "ret = ENOMEM" and "ret = 0"
-in xol_add_vma(), they both have no effect.
+OTOH, with this change we know that copy_process() can't fail when
+uprobe_copy_process() is called, the new task should either return
+to user-mode or call do_exit(). This way uprobe_copy_process() can:
+
+	1. setup p->utask != NULL if necessary
+
+	2. setup uprobes_state.xol_area
+
+	3. use task_work_add(p)
+
+Also, move the definition of uprobe_copy_process() down so that it
+can see get_utask().
 
 Cc: stable@vger.kernel.org # 3.9+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   47 +++++++++++++++++++++++++----------------------
- 1 files changed, 25 insertions(+), 22 deletions(-)
+ kernel/events/uprobes.c |   16 ++++++++--------
+ kernel/fork.c           |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index db7a1dc..0e3e956 100644
+index ad8e1bd..db7a1dc 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1096,16 +1096,14 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+@@ -1345,14 +1345,6 @@ void uprobe_free_utask(struct task_struct *t)
  }
  
- /* Slot allocation for XOL */
--static int xol_add_vma(struct xol_area *area)
-+static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
- {
--	struct mm_struct *mm = current->mm;
- 	int ret = -EALREADY;
- 
- 	down_write(&mm->mmap_sem);
- 	if (mm->uprobes_state.xol_area)
- 		goto fail;
- 
--	ret = -ENOMEM;
- 	/* Try to map as high as possible, this is only a hint. */
- 	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
- 	if (area->vaddr & ~PAGE_MASK) {
-@@ -1120,28 +1118,17 @@ static int xol_add_vma(struct xol_area *area)
- 
- 	smp_wmb();	/* pairs with get_xol_area() */
- 	mm->uprobes_state.xol_area = area;
--	ret = 0;
-  fail:
- 	up_write(&mm->mmap_sem);
- 
- 	return ret;
- }
- 
--/*
-- * get_xol_area - Allocate process's xol_area if necessary.
-- * This area will be used for storing instructions for execution out of line.
-- *
-- * Returns the allocated area or NULL.
+ /*
+- * Called in context of a new clone/fork from copy_process.
 - */
--static struct xol_area *get_xol_area(void)
-+static struct xol_area *__create_xol_area(void)
- {
- 	struct mm_struct *mm = current->mm;
--	struct xol_area *area;
- 	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
+-void uprobe_copy_process(struct task_struct *t)
+-{
+-	t->utask = NULL;
+-}
 -
--	area = mm->uprobes_state.xol_area;
--	if (area)
--		goto ret;
-+	struct xol_area *area;
+-/*
+  * Allocate a uprobe_task object for the task if if necessary.
+  * Called when the thread hits a breakpoint.
+  *
+@@ -1368,6 +1360,14 @@ static struct uprobe_task *get_utask(void)
+ }
  
- 	area = kzalloc(sizeof(*area), GFP_KERNEL);
- 	if (unlikely(!area))
-@@ -1155,13 +1142,13 @@ static struct xol_area *get_xol_area(void)
- 	if (!area->page)
- 		goto free_bitmap;
- 
--	/* allocate first slot of task's xol_area for the return probes */
-+	init_waitqueue_head(&area->wq);
-+	/* Reserve the 1st slot for get_trampoline_vaddr() */
- 	set_bit(0, area->bitmap);
--	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
- 	atomic_set(&area->slot_count, 1);
--	init_waitqueue_head(&area->wq);
-+	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
- 
--	if (!xol_add_vma(area))
-+	if (!xol_add_vma(mm, area))
- 		return area;
- 
- 	__free_page(area->page);
-@@ -1170,9 +1157,25 @@ static struct xol_area *get_xol_area(void)
-  free_area:
- 	kfree(area);
-  out:
-+ 	return NULL;
+ /*
++ * Called in context of a new clone/fork from copy_process.
++ */
++void uprobe_copy_process(struct task_struct *t)
++{
++	t->utask = NULL;
 +}
 +
 +/*
-+ * get_xol_area - Allocate process's xol_area if necessary.
-+ * This area will be used for storing instructions for execution out of line.
-+ *
-+ * Returns the allocated area or NULL.
-+ */
-+static struct xol_area *get_xol_area(void)
-+{
-+	struct mm_struct *mm = current->mm;
-+	struct xol_area *area;
-+
-+	if (!mm->uprobes_state.xol_area)
-+		__create_xol_area();
-+
- 	area = mm->uprobes_state.xol_area;
-- ret:
--	smp_read_barrier_depends();     /* pairs with wmb in xol_add_vma() */
-+	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
- 	return area;
- }
+  * Current area->vaddr notion assume the trampoline address is always
+  * equal area->vaddr.
+  *
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 086fe73..d3603b8 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1373,7 +1373,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	INIT_LIST_HEAD(&p->pi_state_list);
+ 	p->pi_state_cache = NULL;
+ #endif
+-	uprobe_copy_process(p);
+ 	/*
+ 	 * sigaltstack should be cleared when sharing the same VM
+ 	 */
+@@ -1490,6 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	perf_event_fork(p);
+ 
+ 	trace_task_newtask(p, clone_flags);
++	uprobe_copy_process(p);
+ 
+ 	return p;
  
 -- 
 1.5.5.1
