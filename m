@@ -1,124 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab3JRWbW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:31:22 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:43881 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab3JRWbU convert rfc822-to-8bit (ORCPT
+	id S1757445Ab3JRWet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:34:49 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54824 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab3JRWes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:31:20 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Subject: RE: [PATCH v3] efivars,efi-pstore: Hold off deletion of sysfs entry
- until, the scan is completed
-Thread-Topic: [PATCH v3] efivars,efi-pstore: Hold off deletion of sysfs
- entry until, the scan is completed
-Thread-Index: AQHOxq/e4sZK5DM4RE6BnyVI+JE7Npn5LGGAgAHpKMA=
-Date: Fri, 18 Oct 2013 22:30:58 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443F0F2D6@USINDEM103.corp.hds.com>
-References: <52584373.3010202@hds.com>
- <20131017131821.GH10834@console-pimps.org>
-In-Reply-To: <20131017131821.GH10834@console-pimps.org>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Oct 2013 18:34:48 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Guillaume Gaudonville" <gaudonville@6wind.com>
+Cc: linux-kernel@vger.kernel.org, serge.hallyn@canonical.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, cmetcalf@tilera.com,
+        Guillaume Gaudonville <guillaume.gaudonville@6wind.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+References: <8738o1ovdi.fsf@xmission.com>
+	<1382107599-1028-1-git-send-email-guillaume.gaudonville@6wind.com>
+Date: Fri, 18 Oct 2013 15:34:35 -0700
+In-Reply-To: <1382107599-1028-1-git-send-email-guillaume.gaudonville@6wind.com>
+	(Guillaume Gaudonville's message of "Fri, 18 Oct 2013 16:46:39 +0200")
+Message-ID: <87y55qqkck.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-18_03:2013-10-18,2013-10-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310180124
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+SF852TEBHc0XkWD4bkqm6RayUNdGUkZw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0787]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Guillaume Gaudonville" <gaudonville@6wind.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC PATCH linux-next v2] ns: do not allocate a new nsproxy at each call
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
+"Guillaume Gaudonville" <gaudonville@6wind.com> writes:
 
-> It seems to me that because you're no longer dropping __efivars->lock
-> when reading from the EFI variable store, you actually don't need all
-> the ->scanning and ->deleting logic because anything that sets those
-> flags runs to completion while holding the lock.
+> Currently, at each call of setns system call a new nsproxy is allocated,
+> the old nsproxy namespaces are copied into the new one and the old nsproxy
+> is freed if the task was the only one to use it.
 
-The scanning and deleting logic is still needed.
-In case an entry(A) is found, the pointer is saved to psi->data.
-And efi_pstore_read() passes the entry(A) to a pstore filesystem by releasing  __efivars->lock.
+In principle this looks ok.  However you are not using rcu properly.
 
-And then, the pstore filesystem calls efi_pstore_read() again and the same entry(A), which is saved to
-psi->data, is used for re-scanning a sysfs-list.
-(That is why list_for_each_entry_safe_from () is used in efi_pstore_sysfs_entry_iter().)
+What you are doing is just far enough outside of normal rcu usage my
+brain refuses to think it through today.
 
-So, to protect the entry(A), the logic is needed because, in pstore filesystem,  __efivars->lock
-Is released. 
+Paul can you give us a hand?
 
-> Can't the patch be simplified to just allocating data.buf at the
-> beginning of efi_pstore_read()? 
+Specific code comments below.
 
-I think data.buf is simply allocated at the beginning of efi_pstore_read() with this patch v3.
-If you are not satisfied with it, could you please show me your pseudo code?
+It looks like what we really want for the pointer variables in nsproxy
+is an atomic pointer type.  We have something like that with
+ACCESS_ONCE.    Without a prebuilt idiom I am not thinking through this
+issue clearly right now.
 
->Also, it would be a good idea to
-> introduce a #define for the 1024 magic number, e.g.
-> 
-> #define EFIVARS_DATA_SIZE_MAX	1024
+Maybe you are right that we need to push the rcu protection down a
+level.  So we can have free reads and inexpensive writes.
 
-It is good idea. I can fix it.
+> It can creates large delays on hardware with large number of cpus since
+> to free a nsproxy a synchronize_rcu() call is done.
+>
+> When a task is the only one to use a nsproxy, only the task can do an action
+> that will make this nsproxy to be shared by another task or thread (fork,...).
+> So when the refcount of the nsproxy is equal to 1, we can simply update the
+> current nsproxy field without allocating a new one and freeing the old one.
+>
+> The install operations of each kind of namespace cannot fails, so there's no
+> need to check for an error and calling ops->install().
+>
+> However since we can have readers of the nsproxy that are not the current task,
+> we need to protect access to each namespace pointer in the nsproxy. This is
+> done by assigning it using rcu_assign_pointer() and when it is possible
+> that the reader is not the current task, read the pointer using
+> rcu_dereference().
+>
+> Finally the install function of each namespace type must be modified to ensure
+> that the refcount of the old namespace is released after the assignment in
+> nsproxy.
+>
+> On kernel 3.12-rc1, using a small application that does:
+>
+> - call setns on a first net namespace and open a socket,
+> - call setns on a second net namespace and open a socket,
+> - switch back to the first namespace and close the socket,
+> - switch back to the second namespace and close the socket,
 
-Seiji
+Note.  You don't need to switch namespaces for any operation except
+opening the socket.  Sockets are always fixed in a single network
+namespace.
 
-<snip>
-+/**
-+ * efi_pstore_read
-+ *
-+ * This function returns a size of NVRAM entry logged via efi_pstore_write().
-+ * The meaning and behavior of efi_pstore/pstore are as below.
-+ *
-+ * size > 0: Got data of an entry logged via efi_pstore_write() successfully,
-+ *           and pstore filesystem will continue reading subsequent entries.
-+ * size == 0: Entry was not logged via efi_pstore_write(),
-+ *            and efi_pstore driver will continue reading subsequent entries.
-+ * size < 0: Failed to get data of entry logging via efi_pstore_write(),
-+ *           and pstore will stop reading entry.
-+ */
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 			       int *count, struct timespec *timespec,
- 			       char **buf, bool *compressed,
- 			       struct pstore_info *psi)
- {
- 	struct pstore_read_data data;
-+	ssize_t size;
- 
- 	data.id = id;
- 	data.type = type;
-@@ -112,8 +216,17 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 	data.compressed = compressed;
- 	data.buf = buf;
- 
--	return __efivar_entry_iter(efi_pstore_read_func, &efivar_sysfs_list, &data,
--				   (struct efivar_entry **)&psi->data);
-+	*data.buf = kzalloc(1024, GFP_KERNEL);
-+	if (!*data.buf)
-+		return -ENOMEM;
-+
-+	efivar_entry_iter_begin();
-+	size = efi_pstore_sysfs_entry_iter(&data,
-+					   (struct efivar_entry **)&psi->data);
-+	efivar_entry_iter_end();
-+	if (size <= 0)
-+		kfree(*data.buf);
-+	return size;
- }
-<snip>
+Part of me wonders if this is the time to introduce the socketat system
+call I threatend people with a while ago that takes a netns file
+descriptor and gives you a socket in the specified namespace.
+
+> On an Intel Westmere with 24 logical cores at 3.33 GHz, it gives the
+> following results using the time command:
+>
+> - without the proposed patch:
+>
+>   root@blackcloudy:~# time ./test_x86
+>
+>   real    0m0.130s
+>   user    0m0.000s
+>   sys     0m0.000s
+>
+> - with the proposed patch:
+>
+>   root@blackcloudy:~# time ./test_x86
+>
+>   real    0m0.020s
+>   user    0m0.000s
+>   sys     0m0.000s
+>
+> Reported-by: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Guillaume Gaudonville <guillaume.gaudonville@6wind.com>
+> ---
+>
+> v2:
+>   - protect readers, by releasing namespaces refcount after updating the
+>     nsproxy pointer,
+>   - protect readers, by using rcu_assign_pointer() to affect nsproxy
+>     pointers,
+>   - readers need to use rcu_dereference() to access the namespace and
+>     must take a reference on it before leaving the rcu_read_lock section
+>     (this last part was already present),
+>   - do not add additional exit point in setns syscall.
+>
+> There are still 2 suspicious functions, nfs_server_list_open() and
+> nfs_volume_list_open(). They are accessing directly to the net_ns
+> like below:
+>
+> struct net *net = pid_ns->child_reaper->nsproxy->net_ns;
+>
+> It seems to me that currently they should access it under rcu_read_lock()
+> and using task_nsproxy(pid_ns->child_reaper). It looks like a bug, no?
+>
+> And then with this proposed patch they should access the netns through
+> a rcu_dereference and take a reference on the netns. I didn't
+> modify them for now, but if it is confirmed I can send a patch
+> fixing the first issue and then send a v3 of this proposed patch.
+>
+>  fs/namespace.c           |    9 +++++----
+>  fs/proc/proc_net.c       |    2 +-
+>  fs/proc_namespace.c      |    2 +-
+>  ipc/namespace.c          |    9 +++++----
+>  kernel/nsproxy.c         |   11 +++++++++++
+>  kernel/pid_namespace.c   |    7 ++++---
+>  kernel/utsname.c         |    9 +++++----
+>  net/core/net_namespace.c |   11 ++++++-----
+>  8 files changed, 38 insertions(+), 22 deletions(-)
+>
+
+[snip]
+
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index afc0456..4ad9f9f 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -255,6 +255,17 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>  	if (nstype && (ops->type != nstype))
+>  		goto out;
+>  
+> +	/*
+> +	 * If count == 1, only the current task can increment it,
+> +	 * by doing a fork for example so we can safely update the
+> +	 * current nsproxy pointers without allocate a new one,
+> +	 * update it and destroy the old one
+> +	 */
+> +	if (atomic_read(&tsk->nsproxy->count) == 1) {
+> +		err = ops->install(tsk->nsproxy, ei->ns);
+> +		goto out;
+> +	}
+
+Typically to modify something you would need a lock, and the barriers
+that implies.  We don't need a lock but I don't know if missing the
+barriers is a problem.
+
+> +
+>  	new_nsproxy = create_new_namespaces(0, tsk, current_user_ns(), tsk->fs);
+>  	if (IS_ERR(new_nsproxy)) {
+>  		err = PTR_ERR(new_nsproxy);
+
+[snip]
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index 80e271d..966d435 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -374,7 +374,7 @@ struct net *get_net_ns_by_pid(pid_t pid)
+>  		struct nsproxy *nsproxy;
+>  		nsproxy = task_nsproxy(tsk);
+>  		if (nsproxy)
+> -			net = get_net(nsproxy->net_ns);
+> +			net = get_net(rcu_dereference(nsproxy->net_ns));
+
+net_ns is not rcu protected so rcu_derference is misleading and wrong.
+Perhaps ACCESS_ONCE is what we want here.
+
+>  	}
+>  	rcu_read_unlock();
+>  	return net;
+
+[snip]
+
+> @@ -647,14 +647,15 @@ static void netns_put(void *ns)
+>  
+>  static int netns_install(struct nsproxy *nsproxy, void *ns)
+>  {
+> -	struct net *net = ns;
+> +	struct net *old_net, *net = ns;
+>  
+>  	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN) ||
+>  	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+> -	put_net(nsproxy->net_ns);
+> -	nsproxy->net_ns = get_net(net);
+> +	old_net = nsproxy->net_ns;
+> +	rcu_assign_pointer(nsproxy->net_ns, get_net(net));
+> +	put_net(old_net);
+
+The ordering of operations is correct.  rcu_assign_pointer
+is not correct because net_ns is not rcu protected.
+
+>  	return 0;
+>  }
