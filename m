@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab3JRNVD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:21:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56511 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab3JRNVA (ORCPT
+	id S1754255Ab3JRNXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:23:06 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43141 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab3JRNXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:21:00 -0400
-Date: Fri, 18 Oct 2013 06:20:47 -0700
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-aec58bafaf89279522c44ec8ca9211eabb2b6976@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dinggnu@gmail.com, keescook@chromium.org, md@google.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, dinggnu@gmail.com, md@google.com,
-        tglx@linutronix.de
-In-Reply-To: <20131016064314.GA2739@www.outflux.net>
-References: <20131016064314.GA2739@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/kaslr] x86/relocs: Add percpu fixup for GNU ld 2.23
-Git-Commit-ID: aec58bafaf89279522c44ec8ca9211eabb2b6976
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 Oct 2013 09:23:03 -0400
+Date: Fri, 18 Oct 2013 09:22:57 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Tim Kryger <tim.kryger@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND PATCH v2 6/6] mmc: sdhci-bcm-kona: Add basic use of
+ clocks
+Message-ID: <20131018132257.GG2721@beef>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+ <1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
+ <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 18 Oct 2013 06:20:54 -0700 (PDT)
+In-Reply-To: <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aec58bafaf89279522c44ec8ca9211eabb2b6976
-Gitweb:     http://git.kernel.org/tip/aec58bafaf89279522c44ec8ca9211eabb2b6976
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Tue, 15 Oct 2013 23:43:14 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Oct 2013 08:45:09 +0200
+On Thu, Oct 17, 2013 at 03:13:09PM +0100, Mark Rutland wrote:
+> On Wed, Oct 16, 2013 at 10:47:10PM +0100, Tim Kryger wrote:
+> > +	/* Get and enable the external clock */
+> > +	kona_dev->external_clk = devm_clk_get(dev, NULL);
+> > +	if (IS_ERR(kona_dev->external_clk)) {
+> > +		dev_err(dev, "Failed to get external clock\n");
+> > +		ret = PTR_ERR(kona_dev->external_clk);
+> > +		goto err_pltfm_free;
+> 
+> This seems like a pretty clear breakage of existing DTBs.
+> 
+> Why?
 
-x86/relocs: Add percpu fixup for GNU ld 2.23
+Normal kernel incremental development. The notion of breaking DTBs is
+pretty much incompatible with the long-standing tradition of developing
+kernel support in an incremental fashion.
 
-The GNU linker tries to put __per_cpu_load into the percpu area,
-resulting in a lack of its relocation. Force this symbol to be
-relocated. Seen starting with GNU ld 2.23 and later.
+In this case, the bootloader available on these boards has had clocks
+and regulators enabled for all the drivers currently upstream. This
+allowed development of the sdhci driver (and others) independent of having
+the common clk driver and PMU/regulator drivers ready. That's been especially
+important given the flux that the common clk framework is in with regards
+to bindings.
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Michael Davidson <md@google.com>
-Cc: Cong Ding <dinggnu@gmail.com>
-Link: http://lkml.kernel.org/r/20131016064314.GA2739@www.outflux.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/tools/relocs.c | 2 ++
- 1 file changed, 2 insertions(+)
+Are you suggesting that the required clock needs to be made logically
+optional in the code to retain backward compatbility?
 
-diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
-index 71a2533..11f9285 100644
---- a/arch/x86/tools/relocs.c
-+++ b/arch/x86/tools/relocs.c
-@@ -729,6 +729,7 @@ static void percpu_init(void)
-  *
-  * The GNU linker incorrectly associates:
-  *	__init_begin
-+ *	__per_cpu_load
-  *
-  * The "gold" linker incorrectly associates:
-  *	init_per_cpu__irq_stack_union
-@@ -738,6 +739,7 @@ static int is_percpu_sym(ElfW(Sym) *sym, const char *symname)
- {
- 	return (sym->st_shndx == per_cpu_shndx) &&
- 		strcmp(symname, "__init_begin") &&
-+		strcmp(symname, "__per_cpu_load") &&
- 		strncmp(symname, "init_per_cpu_", 13);
- }
- 
+-Matt
