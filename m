@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3JRP1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:27:24 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54132 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab3JRP1W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:27:22 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v5 7/7] jump_label: use defined macros instead of hard-coding for better readability
-Date: Fri, 18 Oct 2013 23:20:01 +0800
-Message-Id: <1382109602-27432-8-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
+	id S1756200Ab3JRP3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:29:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31971 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab3JRP3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:29:04 -0400
+Date: Fri, 18 Oct 2013 18:30:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected
+Message-ID: <20131018153048.GA25547@redhat.com>
+References: <1382088475.16935.4.camel@phoenix>
+ <20131018141202.GA24660@redhat.com>
+ <CAFRkauDwTBDbjs4+xba0-p_+2mX3tWAN0asUo-aG1ZYjRyaCrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFRkauDwTBDbjs4+xba0-p_+2mX3tWAN0asUo-aG1ZYjRyaCrg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Fri, Oct 18, 2013 at 10:21:16PM +0800, Axel Lin wrote:
+> 2013/10/18 Michael S. Tsirkin <mst@redhat.com>:
+> > On Fri, Oct 18, 2013 at 05:27:55PM +0800, Axel Lin wrote:
+> >> Hi Michael,
+> >>
+> >> I got below build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected.
+> >> Also got the same build error if CONFIG_PROVE_LOCKING is selected.
+> >>
+> >> Seems this issue is introduced by commit 662bbcb2747c2
+> >> "mm, sched: Allow uaccess in atomic with pagefault_disable()".
+> >>
+> >> arch/arm/kernel/built-in.o: In function `arch_ptrace':
+> >> arch/arm/kernel/ptrace.c:852: undefined reference to `might_fault'
+> >> arch/arm/kernel/built-in.o: In function `restore_sigframe':
+> >> arch/arm/kernel/signal.c:173: undefined reference to `might_fault'
+> >> arch/arm/kernel/signal.c:174: undefined reference to `might_fault'
+> >> arch/arm/kernel/signal.c:175: undefined reference to `might_fault'
+> >> arch/arm/kernel/signal.c:176: undefined reference to `might_fault'
+> >> arch/arm/kernel/built-in.o:arch/arm/kernel/signal.c:177: more undefined references to `might_fault' follow
+> >> make: *** [vmlinux] Error 1
+> >>
+> >> Regards,
+> >> Axel
+> >
+> > Can you send/upload your full .config please?
+> 
+> I patch the kernel to port it for an arm7tdmi SoC.
+> But I think you can easily reproduce it by simply
+> select ARM7TDMI cpu and then enable either
+> CONFIG_DEBUG_ATOMIC_SLEEP or CONFIG_PROVE_LOCKING.
+> 
+> Note, might_fault is implemented in mm/memory.c which is not built if
+> !CONFIG_MMU.
+> 
+> Regards,
+> Axel
 
-Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
-readability.
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
----
- include/linux/jump_label.h | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index a507907..6e54029 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -74,18 +74,21 @@ struct module;
- #include <linux/atomic.h>
- #ifdef HAVE_JUMP_LABEL
- 
--#define JUMP_LABEL_TRUE_BRANCH 1UL
-+#define JUMP_LABEL_TYPE_FALSE_BRANCH	0UL
-+#define JUMP_LABEL_TYPE_TRUE_BRANCH	1UL
-+#define JUMP_LABEL_TYPE_MASK		1UL
- 
- static
- inline struct jump_entry *jump_label_get_entries(struct static_key *key)
- {
- 	return (struct jump_entry *)((unsigned long)key->entries
--						& ~JUMP_LABEL_TRUE_BRANCH);
-+						& ~JUMP_LABEL_TYPE_MASK);
- }
- 
- static inline bool jump_label_get_branch_default(struct static_key *key)
- {
--	if ((unsigned long)key->entries & JUMP_LABEL_TRUE_BRANCH)
-+	if (((unsigned long)key->entries & JUMP_LABEL_TYPE_MASK) ==
-+	    JUMP_LABEL_TYPE_TRUE_BRANCH)
- 		return true;
- 	return false;
- }
-@@ -116,9 +119,11 @@ extern void static_key_slow_dec(struct static_key *key);
- extern void jump_label_apply_nops(struct module *mod);
- 
- #define STATIC_KEY_INIT_TRUE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
-+	{ .enabled = ATOMIC_INIT(1), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
- #define STATIC_KEY_INIT_FALSE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
-+	{ .enabled = ATOMIC_INIT(0), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
- 
- #else  /* !HAVE_JUMP_LABEL */
- 
--- 
-1.8.1.2
+Shouldn't might_fault return 0 if !CONFIG_MMU?
+No mmu->no fault ...
 
