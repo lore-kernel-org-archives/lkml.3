@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab3JRLGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:06:55 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40879 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab3JRLGx (ORCPT
+	id S1753549Ab3JRLHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:07:06 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56878 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3JRLHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:06:53 -0400
-From: Majunath Goudar <csmanjuvijay@gmail.com>
-To: csmanjuvijay@gmail.com
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH V3 5/6] USB: OHCI: Properly handle ohci-exynos suspend
-Date: Fri, 18 Oct 2013 16:36:15 +0530
-Message-Id: <1382094376-31016-6-git-send-email-csmanjuvijay@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1382094376-31016-1-git-send-email-csmanjuvijay@gmail.com>
-References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
- <1382094376-31016-1-git-send-email-csmanjuvijay@gmail.com>
+	Fri, 18 Oct 2013 07:07:01 -0400
+Message-ID: <52611637.3080505@linux.vnet.ibm.com>
+Date: Fri, 18 Oct 2013 16:36:31 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
+Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com> <20131015181723.GC2777@naverao1-tp.ibm.com> <20131016013902.GB6898@gchen.bj.intel.com> <525FD631.5080109@linux.vnet.ibm.com>
+In-Reply-To: <525FD631.5080109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101811-1618-0000-0000-000004D30514
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend scenario in case of ohci-exynos glue was not
-properly handled as it was not suspending generic part
-of ohci controller. Alan Stern suggested, properly handle
-ohci-exynos suspend scenario.
+Gong,
+This mail seems to have missed copying you given the header issues.
 
-Calling explicitly the ohci_suspend() routine in
-exynos_ohci_suspend() will ensure proper handling of suspend
-scenario.
+Thanks,
+Naveen
 
-Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
----
-V2->V3:
-      -No changes.
-      As a build failure on "ep93xx proper suspend patch"
-      and Linaro id bounced. Rewrote this patch on top of latest
-      Greg usb-next branch. This patch not gives any build error.
-      Patch is required for ohci-exynos proper suspending as Alan
-      mentioned.
-
-      Initially when I wrote this patch I was working in Linaro,
-      now I am not part of Linaro that is why Linaro id is bouncing.
-      Sending this patch from personal mail id.
-
-V1->V2:
-      -No changes.
-       Due to the build failure on ep93xx reverted this patch.
-       This patch is needed as Alan Stern suggestion.
-
- drivers/usb/host/ohci-exynos.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a87baed..4b5c8bd 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -192,23 +192,14 @@ static int exynos_ohci_suspend(struct device *dev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct platform_device *pdev = to_platform_device(dev);
-+	bool do_wakeup = device_may_wakeup(dev);
- 	unsigned long flags;
--	int rc = 0;
-+	int rc = ohci_suspend(hcd, do_wakeup);
- 
--	/*
--	 * Root hub was already suspended. Disable irq emission and
--	 * mark HW unaccessible, bail out if RH has been resumed. Use
--	 * the spinlock to properly synchronize with possible pending
--	 * RH suspend or resume activity.
--	 */
--	spin_lock_irqsave(&ohci->lock, flags);
--	if (ohci->rh_state != OHCI_RH_SUSPENDED &&
--			ohci->rh_state != OHCI_RH_HALTED) {
--		rc = -EINVAL;
--		goto fail;
--	}
-+	if (rc)
-+		return rc;
- 
--	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	spin_lock_irqsave(&ohci->lock, flags);
- 
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
-@@ -217,10 +208,9 @@ static int exynos_ohci_suspend(struct device *dev)
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
--fail:
- 	spin_unlock_irqrestore(&ohci->lock, flags);
- 
--	return rc;
-+	return 0;
- }
- 
- static int exynos_ohci_resume(struct device *dev)
--- 
-1.7.9.5
+On 10/17/2013 05:51 PM, Naveen N. Rao wrote:
+> On 10/16/2013 07:09 AM, Chen Gong wrote:
+>> On Tue, Oct 15, 2013 at 11:47:23PM +0530, Naveen N. Rao wrote:
+>>> Date: Tue, 15 Oct 2013 23:47:23 +0530
+>>> From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+>>> To: "Chen, Gong" <gong.chen@linux.intel.com>
+>>> Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+>>>   linux-acpi@vger.kernel.org
+>>> Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+>>> User-Agent: Mutt/1.5.21 (2010-09-15)
+>>>
+>>> On 2013/10/11 02:32AM, Chen Gong wrote:
+>>>> To satisfy the necessary of following patches and make related
+>>>> definition
+>>>> more clear, update some definitions about CPER. No functional changes.
+>>>>
+>>>> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+>>>> ---
+>>>>   drivers/acpi/apei/apei-internal.h | 12 ++++-----
+>>>>   drivers/acpi/apei/cper.c          | 46
+>>>> ++++++++++++++++-----------------
+>>>>   drivers/acpi/apei/ghes.c          | 54
+>>>> +++++++++++++++++++--------------------
+>>>>   include/acpi/actbl1.h             | 14 +++++-----
+>>>>   include/acpi/ghes.h               |  2 +-
+>>>>   5 files changed, 64 insertions(+), 64 deletions(-)
+>>>>
+>>>> diff --git a/drivers/acpi/apei/apei-internal.h
+>>>> b/drivers/acpi/apei/apei-internal.h
+>>>> index f220d64..21ba34a 100644
+>>>> --- a/drivers/acpi/apei/apei-internal.h
+>>>> +++ b/drivers/acpi/apei/apei-internal.h
+>>>> @@ -122,11 +122,11 @@ struct dentry;
+>>>>   struct dentry *apei_get_debugfs_dir(void);
+>>>>
+>>>>   #define apei_estatus_for_each_section(estatus, section)            \
+>>>> -    for (section = (struct acpi_hest_generic_data *)(estatus +
+>>>> 1);    \
+>>>> +    for (section = (struct acpi_generic_data *)(estatus + 1);    \
+>>>
+>>> This is a good one to rename, though I wonder if acpi_generic_error_data
+>>> is more appropriate?
+>>>
+>>>>            (void *)section - (void *)estatus <
+>>>> estatus->data_length;    \
+>>>>            section = (void *)(section+1) + section->error_data_length)
+>>>>
+>>>> -static inline u32 apei_estatus_len(struct acpi_hest_generic_status
+>>>> *estatus)
+>>>> +static inline u32 cper_estatus_len(struct acpi_generic_status
+>>>> *estatus)
+>>>
+>>> Not sure I understand the rationale for these changes - we are still
+>>> dealing with ACPI/APEI generic error status/data structures. So, why
+>>> the cper_ prefix?
+>>>
+>>
+>> Because CPER is not APEI specific, beside APEI, some others like eMCA
+>> needs this.
+>
+> Right, but even the document you point to refers to these structures as
+> what they are: ACPI Generic error status/data. Clearly, CPER is an
+> incorrect prefix here since CPER/UEFI does *not* seem to have the same
+> structure format.
+>
+>
+> Regards,
+> Naveen
 
