@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab3JRARw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Oct 2013 20:17:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40143 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab3JRARu (ORCPT
+	id S1755546Ab3JRASl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Oct 2013 20:18:41 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43945 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab3JRASj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Oct 2013 20:17:50 -0400
-Date: Fri, 18 Oct 2013 01:17:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20131018001744.GE2443@sirena.org.uk>
-References: <52607371.3060805@infradead.org>
+	Thu, 17 Oct 2013 20:18:39 -0400
+Date: Thu, 17 Oct 2013 19:18:32 -0500
+From: rkuo <rkuo@codeaurora.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
+        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, takata@linux-m32r.org,
+        geert@linux-m68k.org, james.hogan@imgtec.com, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org
+Subject: Re: [PATCH 09/29] hexagon: Use get_signal() signal_setup_done()
+Message-ID: <20131018001832.GA23216@codeaurora.org>
+References: <1381231942-4145-1-git-send-email-richard@nod.at>
+ <1381231942-4145-4-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="23Cox7P1v+d4VROS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52607371.3060805@infradead.org>
-X-Cookie: Time and tide wait for no man.
+In-Reply-To: <1381231942-4145-4-git-send-email-richard@nod.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] scripts/kernel-doc: make unknown function prototype a
- Warning instead of an Error
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 08, 2013 at 01:32:22PM +0200, Richard Weinberger wrote:
+> Use the more generic functions get_signal() signal_setup_done()
+> for signal delivery.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
---23Cox7P1v+d4VROS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the changes.  Compiled and tested briefly; the Hexagon part of
+this looks fine.
 
-On Thu, Oct 17, 2013 at 04:32:01PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
->=20
-> When scripts/kernel-doc cannot understand a function prototype,
-> it had been generating a fatal error and stopping immediately.
-> Make this a Warning instead of an Error and keep going.
+If you want to compile test, there are newer versions of the toolchain
+available here:
 
-Thanks!
+https://sourcery.mentor.com/GNUToolchain/release2568
 
---23Cox7P1v+d4VROS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIbBAEBAgAGBQJSYH4kAAoJELSic+t+oim9YxYP9i3siJgb+wdhTaoMEooyaLAd
-u15LzvKq3Hus2pnt2FkteG0qFJRRluMq2UySds21l6lYbItOateKCloNnfudCYFx
-bEvUCpgf3Bn2TKMVdJSjttbmZ1N7mLkIdXhot5JeTWzTCiBkbABkLcnuLvceVlcw
-hutkP7qo36Ow+QAbDjzl590jstLs3GNgsS4nJ3d0nTaeQ83cEVPulnQGdkz66lKg
-a6mETxlfM6WrqvHdhm+zDpqtk17IpTKTcVh6Ti0H62siR+7ZYKoTR/xnPhWNm+jS
-DK+tIA8Zv5lVQVTvWdBQ6YYZpmLjU0vKH/s4TywaQRw0a0bChNF49NRQN8n1eDhC
-wCzbhz0XqXaiyEaeD7T1Emd/XKT1gNdAazhn4nSfl88WEhEMtXNiiy77s0wRiqnC
-TLhLZHXvx7QdQBVTUFxgIYcbxu5EcQbXmB9ZoFiDgBoTTLwaP0dB7qtPZtL7hzwS
-Bj2n+866FKjsFGWcsEmjOG8U8FXDfofIHQUslwEVgfVsIcvLqdmvk88MMnRM5kFS
-Vxo2AzC7dJFS0BOkDOzMMoUsVZPj/y6fX1NePNqtttwk9TZFSpS40VJhQt7G1BSr
-SqXdi8oeKZKmvr784DHXeKeosM9BVQRZBq/R2x8I849GKIYqStcQTw43sghOyHBX
-ax5IJ6SROOfuy18Kltg=
-=DO0R
------END PGP SIGNATURE-----
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
---23Cox7P1v+d4VROS--
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
