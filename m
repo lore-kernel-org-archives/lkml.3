@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab3JRPmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:42:04 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:58103 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab3JRPmB (ORCPT
+	id S1756441Ab3JRPnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:43:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41394 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764Ab3JRPnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:42:01 -0400
+	Fri, 18 Oct 2013 11:43:06 -0400
+Date: Fri, 18 Oct 2013 16:42:46 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
+        Ian.Campbell@citrix.com, will.deacon@arm.com
+Subject: Re: [PATCH v8 08/19] arm/xen: get_dma_ops: return xen_dma_ops if
+	we are running as xen_initial_domain
+Message-ID: <20131018154246.GB25034@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-8-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310181319300.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
-References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
- <CAErSpo5+xbgTfBrQdP36PRfOFpQcdeSgOEBFFDCfZoqoAsch5g@mail.gmail.com> <1382059831.2794.18.camel@deadeye.wl.decadent.org.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 18 Oct 2013 09:41:40 -0600
-Message-ID: <CAErSpo5MPkySEb+tURxjh+f8p8xTi=Mnuj1W5g2=TAoXFDZ2Qg@mail.gmail.com>
-Subject: Re: [ 3.8.y.z extended stable ] Linux 3.8.13.11 stable review
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1310181319300.26077@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 7:30 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Thu, 2013-10-10 at 11:37 -0600, Bjorn Helgaas wrote:
->> On Thu, Oct 10, 2013 at 9:40 AM, Kamal Mostafa <kamal@canonical.com> wrote:
->> > This is the start of the review cycle for the Linux 3.8.13.11 stable kernel.
->>
->> Would anybody be interested in adding some sort of "stable" tag to the
->> subject lines of stable backport patches, e.g.,  instead of:
->>
->>   [PATCH 001/104] htb: fix sign extension bug
->>
->> something like:
->>
->>   [STABLE 3.8.13.11 001/104] htb: fix sign extension bug
->>
->> I don't mind having the stable patches on LKML, but it would be nice
->> if it were easier to distinguish stable backports from new patches.  I
->> know the patches are nicely threaded behind this message, but some
->> readers don't really pay attention to that.
->
-> I agree that some distinction is needed, but I'm not convinced about
-> that precise format.  I don't think it's worth including version
-> components after the stable base version e.g. 3.2.  And I think that
-> including the version is a big enough clue that this is for a stable
-> branch and not mainline.
->
-> So I've changed my review script to put a subject prefix of 'PATCH 3.2'
-> before the patch number (and similarly in the cover letter).  But if
-> there's consensus that a more explicit tag is wanted then I'll follow
-> that.
+On Fri, Oct 18, 2013 at 01:22:18PM +0100, Stefano Stabellini wrote:
+> Russell,
+> are you OK with this patch?
 
-Selfishly, I would just like something gmail can filter on.  I've seen
-an "X-Extended-Stable: 3.8" header, which would be perfect, except
-that I can't figure out how to create a gmail filter for random
-headers.  So I was hoping for something stable-specific in the subject
-line, but that's just to compensate for gmail's limitations.
+Only concern is why the change is soo large.
 
-Bjorn
+> > -static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+> > +static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
+> >  {
+> >  	if (dev && dev->archdata.dma_ops)
+> >  		return dev->archdata.dma_ops;
+> >  	return &arm_dma_ops;
+> >  }
+> >  
+> > +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+> > +{
+> > +	if (xen_initial_domain())
+> > +		return xen_dma_ops;
+> > +	else
+> > +		return __generic_dma_ops(dev);
+> > +}
+> > +
+
+What's wrong with:
+
+ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+ {
++	if (xen_initial_domain())
++		return xen_dma_ops;
+ 	if (dev && dev->archdata.dma_ops)
+ 		return dev->archdata.dma_ops;
+ 	return &arm_dma_ops;
+ }
+
