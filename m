@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3JRO1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:27:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52696 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab3JRO1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755075Ab3JRO1b (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 18 Oct 2013 10:27:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52677 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753765Ab3JRO1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 10:27:30 -0400
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -13,139 +13,76 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiri Kosina <jkosina@suse.cz>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 6/6] x86: enable/disable ftrace graph call using new int3-based framework
-Date: Fri, 18 Oct 2013 16:27:25 +0200
-Message-Id: <1382106445-31468-7-git-send-email-pmladek@suse.cz>
+Subject: [PATCH 2/6] x86: allow to call text_poke_bp during boot
+Date: Fri, 18 Oct 2013 16:27:21 +0200
+Message-Id: <1382106445-31468-3-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more change related to replacing the existing Int3-based framewok with
-the new generic function introduced by the commit fd4363fff3d9
-(x86: Introduce int3 (breakpoint)-based instruction patching)
+We would like to use text_poke_bp in ftrace. It might be called also during
+boot when the interupts are disabled. We need to enable them for syncing
+the cores on each CPU. Otherwise, there might be a deadlock, see the
+warning in "smp_call_function_many", kernel/smp.c:371.
 
-ftrace_enable_ftrace_graph_caller and ftrace_disable_ftrace_graph_caller
-modified the jump target directly without using the int3 guard. It worked
-because writing the address was an atomic operation.
-
-We do not really need to use the safe ftrace_modify_code here but it helps
-to remove another arch-specific code. The result is more consistent
-and better readable code which is might be worth the change.
+This change is taken from the current code in arch/x86/kernel/ftrace.c.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- arch/x86/kernel/ftrace.c | 63 +++++++++++-------------------------------------
- 1 file changed, 14 insertions(+), 49 deletions(-)
+ arch/x86/kernel/alternative.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index f3c5f3a..d550ce9 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -48,7 +48,7 @@ int ftrace_arch_code_modify_post_process(void)
- union ftrace_code_union {
- 	char code[MCOUNT_INSN_SIZE];
- 	struct {
--		char e8;
-+		char inst;
- 		int offset;
- 	} __attribute__((packed));
- };
-@@ -89,7 +89,7 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- {
- 	static union ftrace_code_union calc;
- 
--	calc.e8		= 0xe8;
-+	calc.inst	= 0xe8;
- 	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
- 	/*
-@@ -99,27 +99,11 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- 	return calc.code;
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index f714316..13cae15 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -629,6 +629,20 @@ static void do_sync_core(void *info)
+ 	sync_core();
  }
  
--static inline int
--within(unsigned long addr, unsigned long start, unsigned long end)
-+static void ftrace_jump_replace(union ftrace_code_union *calc,
-+				unsigned long ip, unsigned long addr)
- {
--	return addr >= start && addr < end;
--}
--
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
--{
--	/*
--	 * On x86_64, kernel text mappings are mapped read-only with
--	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
--	 * of the kernel text mapping to modify the kernel text.
--	 *
--	 * For 32bit kernels, these mappings are same and we can use
--	 * kernel identity mapping to modify code.
--	 */
--	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa_symbol(ip));
--
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	calc->inst	= 0xe9;
-+	calc->offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- }
++static void run_sync(void)
++{
++	int enable_irqs = irqs_disabled();
++
++	/* We may be called with interrupts disbled (on bootup). */
++	if (enable_irqs)
++		local_irq_enable();
++
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	if (enable_irqs)
++		local_irq_disable();
++}
++
+ static bool bp_patching_in_progress;
+ static void *bp_int3_handler, *bp_int3_addr;
  
- static const unsigned char *ftrace_nop_replace(void)
-@@ -375,45 +359,26 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
+@@ -688,7 +702,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
  
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
--{
--	unsigned char code[MCOUNT_INSN_SIZE];
--
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
--
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
--
--	*(int *)(&code[1]) = new_offset;
--
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
--
--	return 0;
--}
--
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
+ 	text_poke_part(addr, &int3, sizeof(int3));
  
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_stub));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_graph_caller));
+-	on_each_cpu(do_sync_core, NULL, 1);
++	run_sync();
  
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
+ 	if (len - sizeof(int3) > 0) {
+ 		/* patch all but the first byte */
+@@ -700,13 +714,13 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 		 * not necessary and we'd be safe even without it. But
+ 		 * better safe than sorry (plus there's not only Intel).
+ 		 */
+-		on_each_cpu(do_sync_core, NULL, 1);
++		run_sync();
+ 	}
  
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
+ 	/* patch the first byte */
+ 	text_poke_part(addr, opcode, sizeof(int3));
  
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_graph_caller));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_stub));
+-	on_each_cpu(do_sync_core, NULL, 1);
++	run_sync();
  
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
+ 	bp_patching_in_progress = false;
+ 	smp_wmb();
 -- 
 1.8.4
 
