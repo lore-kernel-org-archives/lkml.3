@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab3JRHhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 03:37:31 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49610 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3JRHha convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 18 Oct 2013 03:37:30 -0400
-Message-Id: <5261015702000078000FBFA1@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 18 Oct 2013 08:37:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@kernel.org>
-Cc: <mingo@elte.hu>, "John Stultz" <john.stultz@linaro.org>,
-        <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86: honor ACPI FADT flag indicating absence of a
- CMOS RTC
-References: <525E969E02000078000FB710@nat28.tlf.novell.com>
- <20131018062908.GD14264@gmail.com>
-In-Reply-To: <20131018062908.GD14264@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751801Ab3JRHlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 03:41:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47039 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab3JRHlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 03:41:23 -0400
+Message-ID: <5260E606.2030903@ti.com>
+Date: Fri, 18 Oct 2013 13:10:54 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Roger Quadros <rogerq@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Co?= =?ISO-8859-1?Q?usson?= 
+	<bcousson@baylibre.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
+References: <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <20131010160018.GA29913@atomide.com> <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com> <20131010162015.GC29913@atomide.com> <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com> <5257BD3E.5000707@ti.com> <CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com> <20131011154352.GO29913@atomide.com> <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com> <20131011160146.GR29913@atomide.com>
+In-Reply-To: <20131011160146.GR29913@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 18.10.13 at 08:29, Ingo Molnar <mingo@kernel.org> wrote:
-> * Jan Beulich <JBeulich@suse.com> wrote:
-> 
->> We shouldn't be creating a corresponding platform device in that case.
-> 
-> There's a sad lack of context in the changelog, how was it found, does 
-> this address any problem/bug observed in practice, etc?
+On Friday 11 October 2013 09:31 PM, Tony Lindgren wrote:
+> * Linus Walleij <linus.walleij@linaro.org> [131011 09:05]:
+>> On Fri, Oct 11, 2013 at 5:43 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>> * Linus Walleij <linus.walleij@linaro.org> [131011 03:40]:
+>>>> On Fri, Oct 11, 2013 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
+>>>>
+>>>>> The register handling is fine. But how do we deal with resource handling?
+>>>>> e.g. the block that has the deep-core registers might need to be clocked or powered
+>>>>> before the registers can be accessed.
+>>>>
+>>>> Yeah I saw this in the code there.
+>>>>
+>>>> In this case it seems syscon-type regmap access can be used to
+>>>> read/write the registers, so maybe the pin controller also need to
+>>>>   get a handle on some clock etc?
+>>>
+>>> Uhh, let's not go there.. The resource availability needs to be
+>>> handled transparently in regmap code and the reg provider hardware
+>>> module driver using runtime PM.
+>>
+>> OK we can surely discuss this with broonie, it makes sense to
+>> have regmap be able to do its deed transparently.
+>
+> Yes I think so too. Sounds like we need callbacks for the runtime PM
+> checks to the "register provider" driver. Hwo knows, maybe those
+> features are there already :)
+>
 
-This was a result from code review in Xen hypervisor code in
-the context of ACPI 5 work there, which lead me to check whether
-Linux would honor that flag. No known issue in practice so far.
-Once the below got clarified, I can certainly extend the description
-in an eventual resubmission (albeit I would have though that fixing
-the not honoring of a firmware flag should speak for itself).
+Hi Tony,
 
->> +#ifdef CONFIG_ACPI
->> +	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC)
->> +		return -ENODEV;
->> +#endif
-> 
-> It might also be prudent to emit a KERN_INFO line telling that we don't 
-> create the device - so that people who suddenly see unexpected breakage or 
-> change in behavior have a chance to see what we've done?
+Any conclusion on using regmap for omap control module non-mux registers ?
 
-There are so many other -ENODEV return paths here which don't
-emit messages that this seemed inappropriate, the more that a
-message _is_ being issued if the platform RTC device does get
-registered (and hence one could judge by the message
-disappearing between before and after the patch got applied).
-
-Jan
-
+Thanks and Regards,
+Balaji T K
