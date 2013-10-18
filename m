@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3JRVUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 17:20:14 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33161 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3JRVUL (ORCPT
+	id S1755701Ab3JRVVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 17:21:50 -0400
+Received: from smtprelay0018.hostedemail.com ([216.40.44.18]:42914 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752814Ab3JRVVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 17:20:11 -0400
-Message-ID: <5261A609.1020605@gmail.com>
-Date: Fri, 18 Oct 2013 16:20:09 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Michael Bohan <mbohan@codeaurora.org>
-CC: David Daney <ddaney@caviumnetworks.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, ralf@linux-mips.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        david.daney@cavium.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] of/lib: Export fdt routines to modules
-References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org> <525F2397.40203@caviumnetworks.com> <20131017002731.GA22830@codeaurora.org> <525F6D83.1050808@roeck-us.net> <20131017235132.GA6241@codeaurora.org> <52608457.5040609@roeck-us.net> <20131018025405.GA3722@codeaurora.org> <33103C16-6472-4AAE-ADB8-50807CC96C85@antoniou-consulting.com> <52615A64.9040803@gmail.com> <52616228.80002@caviumnetworks.com> <20131018193229.GA30141@codeaurora.org>
-In-Reply-To: <20131018193229.GA30141@codeaurora.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Oct 2013 17:21:49 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:7652:7809:9010:10004:10400:10848:11026:11232:11657:11658:11914:12043:12517:12519:12679:12740:13069:13180:13215:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tub98_2cc98e8631c3a
+X-Filterd-Recvd-Size: 2165
+Message-ID: <1382131306.2041.7.camel@joe-AO722>
+Subject: Re: [PATCH 1/3] MAINTAINERS: INTEL MID SOC: add maintainers
+From: Joe Perches <joe@perches.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com, x86@kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 18 Oct 2013 14:21:46 -0700
+In-Reply-To: <1382131130-10903-2-git-send-email-david.a.cohen@linux.intel.com>
+References: <1382131130-10903-1-git-send-email-david.a.cohen@linux.intel.com>
+	 <1382131130-10903-2-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2013 02:32 PM, Michael Bohan wrote:
-> On Fri, Oct 18, 2013 at 09:30:32AM -0700, David Daney wrote:
->> On 10/18/2013 08:57 AM, Rob Herring wrote:
->> [...]
->>>
->>> Unflattening is definitely the right
->>> direction to go here.
->>>
->>
->> I wonder if that is really true.
->>
->> The device tree in question is very short lived, and used to control
->> the configuration of some hardware device when loading the driver.
->>
->> The use of it is completely contained within a single driver (at
->> least that is my understanding), it is not information that needs to
->> be shared system wide.
+On Fri, 2013-10-18 at 14:18 -0700, David Cohen wrote:
+> Low-power Intel MID SoC support is currently quite outdated.
+> The code is meant for the old Moorestown platform and has not proper
+> support for newer platforms like Medfield, Clovertrail, Merrifield, ...
 > 
-> That's correct.
-> 
->> Given that it is a driver implementation issue, rather than making
->> things work nicely system wide, I don't think it really matters what
->> is done.
->>
->> It may be that the overhead of unflattening the tree and then
->> freeing it, is much greater than just extracting a few things from
->> the FDT.
-> 
-> Yes, this was my original thought as well. On the other hand,
-> having libfdt in the kernel does add a little extra bloat, and so
-> it seems a tradeoff from one-time runtime overhead to footprint.
-> 
->> That said, I don't really have a preference for what is done.  My
->> original questions were targeted at understanding this particular
->> use case.
-> 
-> My preference is probably straight libfdt calls, but if others
-> think that unpacking is a better solution, I'm able to go that
-> route as well. My only concern there is that we provide a means
-> to detect invalid dtb image (ex. handle error codes) and also
-> free the device_node allocations once the device is released.
+> This patch adds official maintainers for such platforms in order to get
+> things in a better shape from now on.
 
-I think we need to understand what you are putting in the DT first.
+>From MAINTAINERS:
 
-Given there are other desired uses like overlays which need to add the
-necessary loading and unflattening support, a common solution is likely
-more desirable.
+Note: For the hard of thinking, this list is meant to remain in alphabetical
+order. If you could add yourselves to it in alphabetical order that would be
+so much easier [Ed]
 
-Rob
+> diff --git a/MAINTAINERS b/MAINTAINERS
+
+> @@ -7570,6 +7570,15 @@ F:	arch/x86/platform/sfi/
+>  F:	drivers/sfi/
+>  F:	include/linux/sfi*.h
+>  
+> +LOW-POWER INTEL MID SOC SUPPORT
+> +M:	David Cohen <david.a.cohen@linux.intel.com>
+> +M:	Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+> +S:	Supported
+> +F:	arch/x86/platform/intel-mid/
+> +F:	arch/x86/pci/intel_mid_pci.c
+> +F:	arch/x86/include/asm/intel-mid.h
+> +F:	arch/x86/include/asm/intel_mid*.h
+> +
+>  SIMTEC EB110ATX (Chalice CATS)
+>  P:	Ben Dooks
+>  P:	Vincent Sanders <vince@simtec.co.uk>
+
 
