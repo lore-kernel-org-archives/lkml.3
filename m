@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab3JRN0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:26:15 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:12180 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab3JRN0L (ORCPT
+	id S1754987Ab3JRN0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:26:21 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1449 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab3JRN0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:26:11 -0400
+	Fri, 18 Oct 2013 09:26:16 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 18 Oct 2013 06:21:40 -0700
+	by hqnvupgp07.nvidia.com on Fri, 18 Oct 2013 06:26:16 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
@@ -17,9 +17,9 @@ CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>
-Subject: [PATCH v5 12/15] clk: tegra: move PMC, fixed clocks to common files
-Date: Fri, 18 Oct 2013 16:25:16 +0300
-Message-ID: <1382102719-5531-13-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v5 13/15] clk: tegra: introduce common gen4 super clock
+Date: Fri, 18 Oct 2013 16:25:17 +0300
+Message-ID: <1382102719-5531-14-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
@@ -30,39 +30,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce new files for fixed and PMC clocks common between several Tegra
-SoCs and move Tegra114 to this new infrastructure.
+Introduce a common function which performs super clock initialization for
+Tegra114 and beyond.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/Makefile          |    2 +
- drivers/clk/tegra/clk-tegra-fixed.c |  113 ++++++++++++++++++++++++++++++
- drivers/clk/tegra/clk-tegra-pmc.c   |  131 +++++++++++++++++++++++++++++++++++
- drivers/clk/tegra/clk-tegra114.c    |   68 +------------------
- drivers/clk/tegra/clk.h             |    7 ++
- 5 files changed, 254 insertions(+), 67 deletions(-)
- create mode 100644 drivers/clk/tegra/clk-tegra-fixed.c
- create mode 100644 drivers/clk/tegra/clk-tegra-pmc.c
+ drivers/clk/tegra/Makefile               |    1 +
+ drivers/clk/tegra/clk-tegra-super-gen4.c |  152 ++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk-tegra114.c         |   76 +---------------
+ drivers/clk/tegra/clk.h                  |    3 +
+ 4 files changed, 158 insertions(+), 74 deletions(-)
+ create mode 100644 drivers/clk/tegra/clk-tegra-super-gen4.c
 
 diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
-index 304ea5d..a02e9a9 100644
+index a02e9a9..2d83741 100644
 --- a/drivers/clk/tegra/Makefile
 +++ b/drivers/clk/tegra/Makefile
-@@ -8,6 +8,8 @@ obj-y					+= clk-pll-out.o
- obj-y					+= clk-super.o
- obj-y					+= clk-tegra-audio.o
+@@ -10,6 +10,7 @@ obj-y					+= clk-tegra-audio.o
  obj-y					+= clk-tegra-periph.o
-+obj-y					+= clk-tegra-pmc.o
-+obj-y					+= clk-tegra-fixed.o
+ obj-y					+= clk-tegra-pmc.o
+ obj-y					+= clk-tegra-fixed.o
++obj-y					+= clk-tegra-super-gen4.o
  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
  obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
-diff --git a/drivers/clk/tegra/clk-tegra-fixed.c b/drivers/clk/tegra/clk-tegra-fixed.c
+diff --git a/drivers/clk/tegra/clk-tegra-super-gen4.c b/drivers/clk/tegra/clk-tegra-super-gen4.c
 new file mode 100644
-index 0000000..32b264e
+index 0000000..dd1d3bd
 --- /dev/null
-+++ b/drivers/clk/tegra/clk-tegra-fixed.c
-@@ -0,0 +1,113 @@
++++ b/drivers/clk/tegra/clk-tegra-super-gen4.c
+@@ -0,0 +1,152 @@
 +/*
 + * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
 + *
@@ -92,338 +89,258 @@ index 0000000..32b264e
 +#include "clk.h"
 +#include "clk-id.h"
 +
-+#define OSC_CTRL			0x50
-+#define OSC_CTRL_OSC_FREQ_SHIFT		28
-+#define OSC_CTRL_PLL_REF_DIV_SHIFT	26
++#define PLLX_BASE 0xe0
++#define PLLX_MISC 0xe4
++#define PLLX_MISC2 0x514
++#define PLLX_MISC3 0x518
 +
-+int __init tegra_osc_clk_init(void __iomem *clk_base,
-+				struct tegra_clk *tegra_clks,
-+				unsigned long *input_freqs, int num,
-+				unsigned long *osc_freq,
-+				unsigned long *pll_ref_freq)
-+{
-+	struct clk *clk;
-+	struct clk **dt_clk;
-+	u32 val, pll_ref_div;
-+	unsigned osc_idx;
++#define PLL_BASE_LOCK BIT(27)
++#define PLL_MISC_LOCK_ENABLE 18
 +
-+	val = readl_relaxed(clk_base + OSC_CTRL);
-+	osc_idx = val >> OSC_CTRL_OSC_FREQ_SHIFT;
++#define CCLKG_BURST_POLICY 0x368
++#define CCLKLP_BURST_POLICY 0x370
++#define SCLK_BURST_POLICY 0x028
++#define SYSTEM_CLK_RATE 0x030
 +
-+	if (osc_idx < num)
-+		*osc_freq = input_freqs[osc_idx];
++static DEFINE_SPINLOCK(sysrate_lock);
 +
-+	if (!*osc_freq) {
-+		WARN_ON(1);
-+		return -EINVAL;
-+	}
++static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
++			       "pll_p", "pll_p_out2", "unused",
++			       "clk_32k", "pll_m_out1" };
 +
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m, tegra_clks);
-+	if (!dt_clk)
-+		return 0;
++static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
++					"pll_p", "pll_p_out4", "unused",
++					"unused", "pll_x" };
 +
-+	clk = clk_register_fixed_rate(NULL, "clk_m", NULL, CLK_IS_ROOT,
-+				      *osc_freq);
-+	*dt_clk = clk;
-+
-+	/* pll_ref */
-+	val = (val >> OSC_CTRL_PLL_REF_DIV_SHIFT) & 3;
-+	pll_ref_div = 1 << val;
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_ref, tegra_clks);
-+	if (!dt_clk)
-+		return 0;
-+
-+	clk = clk_register_fixed_factor(NULL, "pll_ref", "clk_m",
-+					CLK_SET_RATE_PARENT, 1, pll_ref_div);
-+	*dt_clk = clk;
-+
-+	if (pll_ref_freq)
-+		*pll_ref_freq = *osc_freq / pll_ref_div;
-+
-+	return 0;
-+}
-+
-+void __init tegra_fixed_clk_init(struct tegra_clk *tegra_clks)
-+{
-+	struct clk *clk;
-+	struct clk **dt_clk;
-+
-+	/* clk_32k */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_32k, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_rate(NULL, "clk_32k", NULL,
-+					CLK_IS_ROOT, 32768);
-+		clk_register_clkdev(clk, "clk_32k", NULL);
-+		*dt_clk = clk;
-+	}
-+
-+	/* clk_m_div2 */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div2, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
-+					CLK_SET_RATE_PARENT, 1, 2);
-+		clk_register_clkdev(clk, "clk_m_div2", NULL);
-+		*dt_clk = clk;
-+	}
-+
-+	/* clk_m_div4 */
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div4, tegra_clks);
-+	if (dt_clk) {
-+		clk = clk_register_fixed_factor(NULL, "clk_m_div4", "clk_m",
-+					CLK_SET_RATE_PARENT, 1, 4);
-+		clk_register_clkdev(clk, "clk_m_div4", NULL);
-+		*dt_clk = clk;
-+	}
-+}
-+
-diff --git a/drivers/clk/tegra/clk-tegra-pmc.c b/drivers/clk/tegra/clk-tegra-pmc.c
-new file mode 100644
-index 0000000..00e8275
---- /dev/null
-+++ b/drivers/clk/tegra/clk-tegra-pmc.c
-@@ -0,0 +1,131 @@
-+/*
-+ * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/clk/tegra.h>
-+
-+#include "clk.h"
-+#include "clk-id.h"
-+
-+#define PMC_CLK_OUT_CNTRL 0x1a8
-+#define PMC_DPD_PADS_ORIDE 0x1c
-+#define PMC_DPD_PADS_ORIDE_BLINK_ENB 20
-+#define PMC_CTRL 0
-+#define PMC_CTRL_BLINK_ENB 7
-+#define PMC_BLINK_TIMER 0x40
-+
-+struct pmc_clk_init_data {
-+	char *mux_name;
-+	char *gate_name;
-+	const char **parents;
-+	int num_parents;
-+	int mux_id;
-+	int gate_id;
-+	char *dev_name;
-+	u8 mux_shift;
-+	u8 gate_shift;
-+};
-+
-+#define PMC_CLK(_num, _mux_shift, _gate_shift)\
-+	{\
-+		.mux_name = "clk_out_" #_num "_mux",\
-+		.gate_name = "clk_out_" #_num,\
-+		.parents = clk_out ##_num ##_parents,\
-+		.num_parents = ARRAY_SIZE(clk_out ##_num ##_parents),\
-+		.mux_id = tegra_clk_clk_out_ ##_num ##_mux,\
-+		.gate_id = tegra_clk_clk_out_ ##_num,\
-+		.dev_name = "extern" #_num,\
-+		.mux_shift = _mux_shift,\
-+		.gate_shift = _gate_shift,\
-+	}
-+
-+static DEFINE_SPINLOCK(clk_out_lock);
-+
-+static const char *clk_out1_parents[] = { "clk_m", "clk_m_div2",
-+	"clk_m_div4", "extern1",
-+};
-+
-+static const char *clk_out2_parents[] = { "clk_m", "clk_m_div2",
-+	"clk_m_div4", "extern2",
-+};
-+
-+static const char *clk_out3_parents[] = { "clk_m", "clk_m_div2",
-+	"clk_m_div4", "extern3",
-+};
-+
-+static struct pmc_clk_init_data pmc_clks[] = {
-+	PMC_CLK(1, 6, 2),
-+	PMC_CLK(2, 14, 10),
-+	PMC_CLK(3, 22, 18),
-+};
-+
-+void __init tegra_pmc_clk_init(void __iomem *pmc_base,
++static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
++					 "pll_p", "pll_p_out4", "unused",
++					 "unused", "pll_x", "pll_x_out0" };
++static void __init tegra_sclk_init(void __iomem *clk_base,
 +				struct tegra_clk *tegra_clks)
 +{
 +	struct clk *clk;
 +	struct clk **dt_clk;
-+	int i;
 +
-+	for (i = 0; i < ARRAY_SIZE(pmc_clks); i++) {
-+		struct pmc_clk_init_data *data;
-+
-+		data = pmc_clks + i;
-+
-+		dt_clk = tegra_lookup_dt_id(data->mux_id, tegra_clks);
-+		if (!dt_clk)
-+			continue;
-+
-+		clk = clk_register_mux(NULL, data->mux_name, data->parents,
-+				data->num_parents, CLK_SET_RATE_NO_REPARENT,
-+				pmc_base + PMC_CLK_OUT_CNTRL, data->mux_shift,
-+				3, 0, &clk_out_lock);
++	/* SCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_sclk, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("sclk", sclk_parents,
++						ARRAY_SIZE(sclk_parents),
++						CLK_SET_RATE_PARENT,
++						clk_base + SCLK_BURST_POLICY,
++						0, 4, 0, 0, NULL);
 +		*dt_clk = clk;
-+
-+
-+		dt_clk = tegra_lookup_dt_id(data->gate_id, tegra_clks);
-+		if (!dt_clk)
-+			continue;
-+
-+		clk = clk_register_gate(NULL, data->gate_name, data->mux_name,
-+					0, pmc_base + PMC_CLK_OUT_CNTRL,
-+					data->gate_shift, 0, &clk_out_lock);
-+		*dt_clk = clk;
-+		clk_register_clkdev(clk, data->dev_name, data->gate_name);
 +	}
 +
-+	/* blink */
-+	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
-+				pmc_base + PMC_DPD_PADS_ORIDE,
-+				PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
++	/* HCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_hclk, tegra_clks);
++	if (dt_clk) {
++		clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
++				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0,
++				   &sysrate_lock);
++		clk = clk_register_gate(NULL, "hclk", "hclk_div",
++				CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
++				clk_base + SYSTEM_CLK_RATE,
++				7, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
++		*dt_clk = clk;
++	}
 +
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_blink, tegra_clks);
++	/* PCLK */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pclk, tegra_clks);
 +	if (!dt_clk)
 +		return;
 +
-+	clk = clk_register_gate(NULL, "blink", "blink_override", 0,
-+				pmc_base + PMC_CTRL,
-+				PMC_CTRL_BLINK_ENB, 0, NULL);
-+	clk_register_clkdev(clk, "blink", NULL);
++	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
++				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0,
++				   &sysrate_lock);
++	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT |
++				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
++				3, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
 +	*dt_clk = clk;
 +}
 +
++void __init tegra_super_clk_gen4_init(void __iomem *clk_base,
++				void __iomem *pmc_base,
++				struct tegra_clk *tegra_clks,
++				struct tegra_clk_pll_params *params)
++{
++	struct clk *clk;
++	struct clk **dt_clk;
++
++	/* CCLKG */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_cclk_g, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("cclk_g", cclk_g_parents,
++					ARRAY_SIZE(cclk_g_parents),
++					CLK_SET_RATE_PARENT,
++					clk_base + CCLKG_BURST_POLICY,
++					0, 4, 0, 0, NULL);
++		*dt_clk = clk;
++	}
++
++	/* CCLKLP */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_cclk_lp, tegra_clks);
++	if (dt_clk) {
++		clk = tegra_clk_register_super_mux("cclk_lp", cclk_lp_parents,
++					ARRAY_SIZE(cclk_lp_parents),
++					CLK_SET_RATE_PARENT,
++					clk_base + CCLKLP_BURST_POLICY,
++					0, 4, 8, 9, NULL);
++		*dt_clk = clk;
++	}
++
++	tegra_sclk_init(clk_base, tegra_clks);
++
++#if defined(CONFIG_ARCH_TEGRA_114_SOC) || defined(CONFIG_ARCH_TEGRA_124_SOC)
++	/* PLLX */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_x, tegra_clks);
++	if (!dt_clk)
++		return;
++
++	clk = tegra_clk_register_pllxc("pll_x", "pll_ref", clk_base,
++			pmc_base, CLK_IGNORE_UNUSED, params, NULL);
++	*dt_clk = clk;
++
++	/* PLLX_OUT0 */
++
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_x_out0, tegra_clks);
++	if (!dt_clk)
++		return;
++	clk = clk_register_fixed_factor(NULL, "pll_x_out0", "pll_x",
++					CLK_SET_RATE_PARENT, 1, 2);
++	*dt_clk = clk;
++#endif
++}
++
 diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 34b991b..8880b92 100644
+index 8880b92..e365b35 100644
 --- a/drivers/clk/tegra/clk-tegra114.c
 +++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -177,7 +177,6 @@ static DEFINE_SPINLOCK(pll_d_lock);
+@@ -121,9 +121,6 @@
+ #define PLLXC_SW_MAX_P			6
+ 
+ #define CCLKG_BURST_POLICY 0x368
+-#define CCLKLP_BURST_POLICY 0x370
+-#define SCLK_BURST_POLICY 0x028
+-#define SYSTEM_CLK_RATE 0x030
+ 
+ #define UTMIP_PLL_CFG2 0x488
+ #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
+@@ -177,7 +174,6 @@ static DEFINE_SPINLOCK(pll_d_lock);
  static DEFINE_SPINLOCK(pll_d2_lock);
  static DEFINE_SPINLOCK(pll_u_lock);
  static DEFINE_SPINLOCK(pll_re_lock);
--static DEFINE_SPINLOCK(clk_out_lock);
- static DEFINE_SPINLOCK(sysrate_lock);
+-static DEFINE_SPINLOCK(sysrate_lock);
  
  static struct div_nmp pllxc_nmp = {
-@@ -1198,71 +1197,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	.divm_shift = 0,
+@@ -1119,16 +1115,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	clk = clk_register_fixed_factor(NULL, "pll_m_ud", "pll_m",
+ 					CLK_SET_RATE_PARENT, 1, 1);
+ 
+-	/* PLLX */
+-	clk = tegra_clk_register_pllxc("pll_x", "pll_ref", clk_base,
+-			pmc, CLK_IGNORE_UNUSED, &pll_x_params, NULL);
+-	clks[TEGRA114_CLK_PLL_X] = clk;
+-
+-	/* PLLX_OUT0 */
+-	clk = clk_register_fixed_factor(NULL, "pll_x_out0", "pll_x",
+-					CLK_SET_RATE_PARENT, 1, 2);
+-	clks[TEGRA114_CLK_PLL_X_OUT0] = clk;
+-
+ 	/* PLLU */
+ 	val = readl(clk_base + pll_u_params.base_reg);
+ 	val &= ~BIT(24); /* disable PLLU_OVERRIDE */
+@@ -1197,65 +1183,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
  	clks[TEGRA114_CLK_PLL_E_OUT0] = clk;
  }
  
--static const char *clk_out1_parents[] = { "clk_m", "clk_m_div2",
--	"clk_m_div4", "extern1",
--};
+-static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
+-			       "pll_p", "pll_p_out2", "unused",
+-			       "clk_32k", "pll_m_out1" };
 -
--static const char *clk_out2_parents[] = { "clk_m", "clk_m_div2",
--	"clk_m_div4", "extern2",
--};
+-static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+-					"pll_p", "pll_p_out4", "unused",
+-					"unused", "pll_x" };
 -
--static const char *clk_out3_parents[] = { "clk_m", "clk_m_div2",
--	"clk_m_div4", "extern3",
--};
+-static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+-					 "pll_p", "pll_p_out4", "unused",
+-					 "unused", "pll_x", "pll_x_out0" };
 -
--static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
+-static void __init tegra114_super_clk_init(void __iomem *clk_base)
 -{
 -	struct clk *clk;
 -
--	/* clk_out_1 */
--	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
--			       ARRAY_SIZE(clk_out1_parents),
--			       CLK_SET_RATE_NO_REPARENT,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_1_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
--				&clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_1] = clk;
+-	/* CCLKG */
+-	clk = tegra_clk_register_super_mux("cclk_g", cclk_g_parents,
+-					ARRAY_SIZE(cclk_g_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + CCLKG_BURST_POLICY,
+-					0, 4, 0, 0, NULL);
+-	clks[TEGRA114_CLK_CCLK_G] = clk;
 -
--	/* clk_out_2 */
--	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
--			       ARRAY_SIZE(clk_out2_parents),
--			       CLK_SET_RATE_NO_REPARENT,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_2_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
--				&clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_2] = clk;
+-	/* CCLKLP */
+-	clk = tegra_clk_register_super_mux("cclk_lp", cclk_lp_parents,
+-					ARRAY_SIZE(cclk_lp_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + CCLKLP_BURST_POLICY,
+-					0, 4, 8, 9, NULL);
+-	clks[TEGRA114_CLK_CCLK_LP] = clk;
 -
--	/* clk_out_3 */
--	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
--			       ARRAY_SIZE(clk_out3_parents),
--			       CLK_SET_RATE_NO_REPARENT,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_3_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
--				&clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_3] = clk;
+-	/* SCLK */
+-	clk = tegra_clk_register_super_mux("sclk", sclk_parents,
+-					ARRAY_SIZE(sclk_parents),
+-					CLK_SET_RATE_PARENT,
+-					clk_base + SCLK_BURST_POLICY,
+-					0, 4, 0, 0, NULL);
+-	clks[TEGRA114_CLK_SCLK] = clk;
 -
--	/* blink */
--	/* clear the blink timer register to directly output clk_32k */
--	writel_relaxed(0, pmc_base + PMC_BLINK_TIMER);
--	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
--				pmc_base + PMC_DPD_PADS_ORIDE,
--				PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
--	clk = clk_register_gate(NULL, "blink", "blink_override", 0,
--				pmc_base + PMC_CTRL,
--				PMC_CTRL_BLINK_ENB, 0, NULL);
--	clks[TEGRA114_CLK_BLINK] = clk;
+-	/* HCLK */
+-	clk = clk_register_divider(NULL, "hclk_div", "sclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 4, 2, 0,
+-				   &sysrate_lock);
+-	clk = clk_register_gate(NULL, "hclk", "hclk_div", CLK_SET_RATE_PARENT |
+-				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
+-				7, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+-	clks[TEGRA114_CLK_HCLK] = clk;
 -
+-	/* PCLK */
+-	clk = clk_register_divider(NULL, "pclk_div", "hclk", 0,
+-				   clk_base + SYSTEM_CLK_RATE, 0, 2, 0,
+-				   &sysrate_lock);
+-	clk = clk_register_gate(NULL, "pclk", "pclk_div", CLK_SET_RATE_PARENT |
+-				CLK_IGNORE_UNUSED, clk_base + SYSTEM_CLK_RATE,
+-				3, CLK_GATE_SET_TO_DISABLE, &sysrate_lock);
+-	clks[TEGRA114_CLK_PCLK] = clk;
 -}
 -
- static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
- 			       "pll_p", "pll_p_out2", "unused",
- 			       "clk_32k", "pll_m_out1" };
-@@ -1611,7 +1545,7 @@ static void __init tegra114_clock_init(struct device_node *np)
- 	tegra114_pll_init(clk_base, pmc_base);
+ static __init void tegra114_periph_clk_init(void __iomem *clk_base,
+ 					    void __iomem *pmc_base)
+ {
+@@ -1546,7 +1473,8 @@ static void __init tegra114_clock_init(struct device_node *np)
  	tegra114_periph_clk_init(clk_base, pmc_base);
  	tegra_audio_clk_init(clk_base, pmc_base, tegra114_clks, &pll_a_params);
--	tegra114_pmc_clk_init(pmc_base);
-+	tegra_pmc_clk_init(pmc_base, tegra114_clks);
- 	tegra114_super_clk_init(clk_base);
+ 	tegra_pmc_clk_init(pmc_base, tegra114_clks);
+-	tegra114_super_clk_init(clk_base);
++	tegra_super_clk_gen4_init(clk_base, pmc_base, tegra114_clks,
++					&pll_x_params);
  
  	tegra_add_of_provider(np);
+ 	tegra_register_devclks(devclks, ARRAY_SIZE(devclks));
 diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 9ec6118..2d48817 100644
+index 2d48817..05abfc5 100644
 --- a/drivers/clk/tegra/clk.h
 +++ b/drivers/clk/tegra/clk.h
-@@ -604,6 +604,13 @@ void tegra_periph_clk_init(void __iomem *clk_base, void __iomem *pmc_base,
- 			struct tegra_clk *tegra_clks,
- 			struct tegra_clk_pll_params *pll_params);
+@@ -610,6 +610,9 @@ int tegra_osc_clk_init(void __iomem *clk_base, struct tegra_clk *tegra_clks,
+ 				unsigned long *input_freqs, int num,
+ 				unsigned long *osc_freq,
+ 				unsigned long *pll_ref_freq);
++void tegra_super_clk_gen4_init(void __iomem *clk_base,
++			void __iomem *pmc_base, struct tegra_clk *tegra_clks,
++			struct tegra_clk_pll_params *pll_params);
  
-+void tegra_pmc_clk_init(void __iomem *pmc_base, struct tegra_clk *tegra_clks);
-+void tegra_fixed_clk_init(struct tegra_clk *tegra_clks);
-+int tegra_osc_clk_init(void __iomem *clk_base, struct tegra_clk *tegra_clks,
-+				unsigned long *input_freqs, int num,
-+				unsigned long *osc_freq,
-+				unsigned long *pll_ref_freq);
-+
  void tegra114_clock_tune_cpu_trimmers_high(void);
  void tegra114_clock_tune_cpu_trimmers_low(void);
- void tegra114_clock_tune_cpu_trimmers_init(void);
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
