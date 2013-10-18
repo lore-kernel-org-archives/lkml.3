@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3JRQ5q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 12:57:46 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63372 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab3JRQ5o (ORCPT
+	id S1756716Ab3JRQ6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 12:58:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46055 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756688Ab3JRQ57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 12:57:44 -0400
+	Fri, 18 Oct 2013 12:57:59 -0400
+Date: Fri, 18 Oct 2013 17:57:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] netfilter: fix ordering of jumpstack allocation and
+ table update
+Message-ID: <20131018165749.GI3296@mudshark.cambridge.arm.com>
+References: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
+ <20131018111536.GA11132@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
-References: <1381296747.2040.17.camel@joe-AO722>
-	<20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
-Date: Fri, 18 Oct 2013 09:57:43 -0700
-Message-ID: <CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
-Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
-From: Kevin Hilman <khilman@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sangjung Woo <sangjung.woo@samsung.com>,
-        Olof Johansson <olof@lixom.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131018111536.GA11132@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 1:11 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 08 Oct 2013 22:32:27 -0700 Joe Perches <joe@perches.com> wrote:
->
->> Currently, devm_ managed memory only supports kzalloc.
->>
->> Convert the devm_kzalloc implementation to devm_kmalloc
->> and remove the complete memset to 0 but still set the
->> initial struct devres header and whatever padding before
->> data to 0.
->>
->> Add the other normal alloc variants as static inlines with
->> __GFP_ZERO added to the gfp flag where appropriate:
->>
->>       devm_kzalloc
->>       devm_kcalloc
->>       devm_kmalloc_array
->>
->> Add gfp.h to device.h for the newly added static inlines.
->>
->> ...
->>
->> --- a/drivers/base/devres.c
->> +++ b/drivers/base/devres.c
->> @@ -91,7 +91,8 @@ static __always_inline struct devres * alloc_dr(dr_release_t release,
->>       if (unlikely(!dr))
->>               return NULL;
->>
->> -     memset(dr, 0, tot_size);
->> +     memset(dr, 0, offsetof(struct devres, data));
->
-> Well, this does make some assumptions about devres layout.  It would
-> have been cleaner to do
->
->         memset(&dr.node, 0, sizeof(dr.node));
->
-> but whatever.
->
-> I made some changelog changes.
->
-> I agree that including devm_kmalloc_array() might be going a bit far
-> (it's the lack of devm_kmalloc which matters most).  But
-> devm_kmalloc_array() is inlined and is hence basically cost-free until
-> someone actually uses it.
+Hi Pablo,
 
-A handful of boot panics on ARM platforms were bisected to point at
-the version of this commit that's in linux-next (commit
-64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
-makes things happy again.
+On Fri, Oct 18, 2013 at 12:15:36PM +0100, Pablo Neira Ayuso wrote:
+> On Thu, Oct 17, 2013 at 02:24:33PM +0100, Will Deacon wrote:
+> > During kernel stability testing on an SMP ARMv7 system, Yalin Wang
+> > reported the following panic from the netfilter code:
 
-Upon further digging, it seems that users of devres_alloc() are
-relying on the previous behavior of having the memory zero'd which is
-no longer the case after $SUBJECT patch.  The change below on top of
--next makes these ARM boards happy again.
+[...]
 
-Kevin
+> > This patch adds an smp_wmb() before the assignment to table->private
+> > (which is essentially publishing newinfo) to ensure that all writes to
+> > newinfo will be observed before plugging it into the table structure.
+> > A dependent-read barrier is also added on the consumer side, to ensure
+> > the same ordering requirement are also respected there.
+> 
+> We also need fixes for net/ipv6/netfilter/ip6_tables.c and
+> net/ipv4/netfilter/arp_tables.c as well. Could you extend this patch
+> and resend?
 
-[1]
->From 16489e16c8efdda791e96bd591e455e7c7739f98 Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@linaro.org>
-Date: Fri, 18 Oct 2013 09:41:39 -0700
-Subject: [PATCH] devres: restore zeroing behavior of devres_alloc()
+Sure, I can try, but that's going to require a bit of time to sit down and
+look at the shared data, access order, dependencies etc. I'm currently
+preparing for Edinburgh, so it might be a while before I get a chance to
+extend this.
 
-commit 64c862a8 (devres: add kernel standard devm_k.alloc functions) changed
-the default behavior of alloc_dr() to no longer zero the allocated
-memory.  However,
-only the devm.k.alloc() function were modified to pass in __GFP_ZERO
-which leaves
-any users of devres_alloc() or __devres_alloc() with potentially wrong
-assumptions
-about memory being zero'd upon allocation.
-
-To fix, add __GFP_ZERO to devres_alloc() calls to preserve previous
-behavior of zero'ing memory upon allocation.
-
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- drivers/base/devres.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 37e67a2..e3fe8be 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -136,7 +136,7 @@ void * devres_alloc(dr_release_t release, size_t
-size, gfp_t gfp)
- {
-  struct devres *dr;
-
-- dr = alloc_dr(release, size, gfp);
-+ dr = alloc_dr(release, size, gfp | __GFP_ZERO);
-  if (unlikely(!dr))
-  return NULL;
-  return dr->data;
--- 
-1.8.3
+Will
