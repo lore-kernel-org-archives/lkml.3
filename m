@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3JRPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:48:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41406 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab3JRPs5 (ORCPT
+	id S1756426Ab3JRPv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:51:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47468 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab3JRPvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:48:57 -0400
-Date: Fri, 18 Oct 2013 16:48:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
-        Ian.Campbell@citrix.com, will.deacon@arm.com
-Subject: Re: [PATCH v8 08/19] arm/xen: get_dma_ops: return xen_dma_ops if
-	we are running as xen_initial_domain
-Message-ID: <20131018154847.GD25034@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-8-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310181319300.26077@kaball.uk.xensource.com> <20131018154246.GB25034@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310181643260.26077@kaball.uk.xensource.com>
+	Fri, 18 Oct 2013 11:51:25 -0400
+Message-ID: <526158F6.5010909@canonical.com>
+Date: Fri, 18 Oct 2013 17:51:18 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1310181643260.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ingo Molnar <mingo@kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: peterz@infradead.org, imirkin@alum.mit.edu, linux-kernel@vger.kernel.org,
+        daniel.vetter@ffwll.ch, robdclark@gmail.com
+Subject: Re: [PATCH for 3.12] mutex: Avoid gcc version dependent__builtin_constant_p()
+ usage.
+References: <201310171945.AGB17114.FSQVtHOJFOOFML@I-love.SAKURA.ne.jp> <20131017105243.GM2675@laptop.programming.kicks-ass.net> <525FC1DD.4030205@canonical.com> <20131017110215.GN2675@laptop.programming.kicks-ass.net> <201310182151.AGF16889.SQOFJOtVLFFMHO@I-love.SAKURA.ne.jp> <20131018131326.GA24572@gmail.com>
+In-Reply-To: <20131018131326.GA24572@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 04:46:00PM +0100, Stefano Stabellini wrote:
-> On Fri, 18 Oct 2013, Russell King - ARM Linux wrote:
-> > On Fri, Oct 18, 2013 at 01:22:18PM +0100, Stefano Stabellini wrote:
-> > > Russell,
-> > > are you OK with this patch?
-> > 
-> > Only concern is why the change is soo large.
-> > 
-> > > > -static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > > > +static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
-> > > >  {
-> > > >  	if (dev && dev->archdata.dma_ops)
-> > > >  		return dev->archdata.dma_ops;
-> > > >  	return &arm_dma_ops;
-> > > >  }
-> > > >  
-> > > > +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > > > +{
-> > > > +	if (xen_initial_domain())
-> > > > +		return xen_dma_ops;
-> > > > +	else
-> > > > +		return __generic_dma_ops(dev);
-> > > > +}
-> > > > +
-> > 
-> > What's wrong with:
-> > 
-> >  static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> >  {
-> > +	if (xen_initial_domain())
-> > +		return xen_dma_ops;
-> >  	if (dev && dev->archdata.dma_ops)
-> >  		return dev->archdata.dma_ops;
-> >  	return &arm_dma_ops;
-> >  }
-> 
-> 
-> xen_dma_ops functions might have to call back the native implementation.
-> With the above there is no way for a xen_dma_ops function to get to
-> archdata.dma_ops or arm_dma_ops.
-> This is the reason why this patch introduces __generic_dma_ops.
-
-Ah, that's fine then, but having that described in the commit message
-would be useful.
-
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
-Thanks.
+op 18-10-13 15:13, Ingo Molnar schreef:
+> * Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+>
+>> Peter Zijlstra wrote:
+>>> On Thu, Oct 17, 2013 at 12:54:21PM +0200, Maarten Lankhorst wrote:
+>>>> op 17-10-13 12:52, Peter Zijlstra schreef:
+>>>>> On Thu, Oct 17, 2013 at 07:45:29PM +0900, Tetsuo Handa wrote:
+>>>>>> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+>>>>>> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
+>>>>>> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+>>>>> So I completely forgot all about this, but wouldn't something like:
+>>>>>
+>>>>>  !(__builtin_constant_p(p) && p == NULL)
+>>>>>
+>>>>> Not also work and generate the same code?
+>>>>>
+>>>> See earlier discussion. It was already answered why that was undesirable. ;)
+>>> OK; I forgot if we covered that particular option.. I so hate this
+>>> patch; but I'm afraid we'll have to take it :-/
+>>>
+>> I see. Ingo, would you send this patch via your tree?
+>> Then, I'll post a patch for 3.11-stable which differs white spaces.
+> If it has Maarten's and PeterZ's Acked-by then sure.
+>
+> Thanks,
+>
+> 	Ingo
+>
+Acked. ;-)
