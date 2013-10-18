@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3JSGzA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 02:55:00 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:14325 "EHLO
+	id S1752266Ab3JSG4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 02:56:48 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:14372 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751027Ab3JSGy7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751476Ab3JSG4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 02:54:59 -0400
+	Sat, 19 Oct 2013 02:56:46 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,9 +16,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 08/29] PCI/MSI: Make pci_enable_msix() 'nvec' argument unsigned int
-Date: Fri, 18 Oct 2013 19:12:08 +0200
-Message-Id: <93e145deeb238ad805196762cae696d3ae67f812.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 04/29] PCI/MSI/pSeries: Make quota traversing and requesting race-safe
+Date: Fri, 18 Oct 2013 19:12:04 +0200
+Message-Id: <663c95d5c7c6863f248886add511dab83f15dd18.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
 References: <cover.1382103786.git.agordeev@redhat.com>
@@ -26,68 +26,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make pci_enable_msix() and pci_enable_msi_block() consistent
-with regard to the type of 'nvec' argument. Indeed, a number
-of vectors to allocate is a natural value, so make it unsigned.
-
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- Documentation/PCI/MSI-HOWTO.txt |    3 ++-
- drivers/pci/msi.c               |    3 ++-
- include/linux/pci.h             |    5 +++--
- 3 files changed, 7 insertions(+), 4 deletions(-)
+ arch/powerpc/platforms/pseries/msi.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index a091780..845edb5 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -190,7 +190,8 @@ same number.
+diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
+index 009ec73..0e1d288 100644
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -26,6 +26,8 @@ static int query_token, change_token;
+ #define RTAS_CHANGE_MSIX_FN	4
+ #define RTAS_CHANGE_32MSI_FN	5
  
- 4.3.1 pci_enable_msix
++static DEFINE_MUTEX(rtas_quota_mutex);
++
+ /* RTAS Helpers */
  
--int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
-+int pci_enable_msix(struct pci_dev *dev,
-+		    struct msix_entry *entries, unsigned int nvec)
+ static int rtas_change_msi(struct pci_dn *pdn, u32 func, u32 num_irqs)
+@@ -345,7 +347,9 @@ static int rtas_msi_check_device(struct pci_dev *pdev, int nvec, int type)
+ 	if (rc)
+ 		return rc;
  
- Calling this function asks the PCI subsystem to allocate 'nvec' MSIs.
- The 'entries' argument is a pointer to an array of msix_entry structs
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index bbe3d3d..fdae3a4 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -932,7 +932,8 @@ int pci_msix_table_size(struct pci_dev *dev)
-  * of irqs or MSI-X vectors available. Driver should use the returned value to
-  * re-send its request.
-  **/
--int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
-+int pci_enable_msix(struct pci_dev *dev,
-+		    struct msix_entry *entries, unsigned int nvec)
- {
- 	int status, nr_entries;
- 	int i, j;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5cfe54c..d6832de 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1167,7 +1167,7 @@ static inline int pci_msix_table_size(struct pci_dev *dev)
++	mutex_lock(&rtas_quota_mutex);
+ 	quota = msi_quota_for_device(pdev, nvec);
++	mutex_unlock(&rtas_quota_mutex);
+ 
+ 	if (quota && quota < nvec)
+ 		return quota;
+@@ -399,6 +403,7 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
+ 	struct msi_msg msg;
+ 	int nvec = nvec_in;
+ 	int use_32bit_msi_hack = 0;
++	int quota;
+ 
+ 	pdn = pci_get_pdn(pdev);
+ 	if (!pdn)
+@@ -407,13 +412,21 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
+ 	if (type == PCI_CAP_ID_MSIX && check_msix_entries(pdev))
+ 		return -EINVAL;
+ 
++	mutex_lock(&rtas_quota_mutex);
++
++	quota = msi_quota_for_device(pdev, nvec);
++	if (quota && quota < nvec) {
++		mutex_unlock(&rtas_quota_mutex);
++		return quota;
++	}
++
+ 	/*
+ 	 * Firmware currently refuse any non power of two allocation
+ 	 * so we round up if the quota will allow it.
+ 	 */
+ 	if (type == PCI_CAP_ID_MSIX) {
+ 		int m = roundup_pow_of_two(nvec);
+-		int quota = msi_quota_for_device(pdev, m);
++		quota = msi_quota_for_device(pdev, m);
+ 
+ 		if (quota >= m)
+ 			nvec = m;
+@@ -433,8 +446,11 @@ again:
+ 				 * We only want to run the 32 bit MSI hack below if
+ 				 * the max bus speed is Gen2 speed
+ 				 */
+-				if (pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT)
++				if (pdev->bus->max_bus_speed !=
++				    PCIE_SPEED_5_0GT) {
++					mutex_unlock(&rtas_quota_mutex);
+ 					return rc;
++				}
+ 
+ 				use_32bit_msi_hack = 1;
+ 			}
+@@ -459,6 +475,7 @@ again:
+ 			nvec = nvec_in;
+ 			goto again;
+ 		}
++		mutex_unlock(&rtas_quota_mutex);
+ 		pr_debug("rtas_msi: rtas_change_msi() failed\n");
+ 		return rc;
+ 	}
+@@ -467,6 +484,7 @@ again:
+ 	list_for_each_entry(entry, &pdev->msi_list, list) {
+ 		hwirq = rtas_query_irq_number(pdn, i++);
+ 		if (hwirq < 0) {
++			mutex_unlock(&rtas_quota_mutex);
+ 			pr_debug("rtas_msi: error (%d) getting hwirq\n", hwirq);
+ 			return hwirq;
+ 		}
+@@ -474,6 +492,7 @@ again:
+ 		virq = irq_create_mapping(NULL, hwirq);
+ 
+ 		if (virq == NO_IRQ) {
++			mutex_unlock(&rtas_quota_mutex);
+ 			pr_debug("rtas_msi: Failed mapping hwirq %d\n", hwirq);
+ 			return -ENOSPC;
+ 		}
+@@ -486,6 +505,7 @@ again:
+ 		entry->msg = msg;
+ 	}
+ 
++	mutex_unlock(&rtas_quota_mutex);
  	return 0;
  }
- static inline int pci_enable_msix(struct pci_dev *dev,
--				  struct msix_entry *entries, int nvec)
-+				  struct msix_entry *entries, int unsigned nvec)
- {
- 	return -ENOSYS;
- }
-@@ -1192,7 +1192,8 @@ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
- int pci_msix_table_size(struct pci_dev *dev);
--int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec);
-+int pci_enable_msix(struct pci_dev *dev,
-+		    struct msix_entry *entries, unsigned int nvec);
- void pci_msix_shutdown(struct pci_dev *dev);
- void pci_disable_msix(struct pci_dev *dev);
- void msi_remove_pci_irq_vectors(struct pci_dev *dev);
+ 
 -- 
 1.7.7.6
 
