@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3JRLCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:02:35 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:64407 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab3JRLCd convert rfc822-to-8bit (ORCPT
+	id S1753307Ab3JRLDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:03:15 -0400
+Received: from exprod5og119.obsmtp.com ([64.18.0.189]:47906 "HELO
+	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752009Ab3JRLDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:02:33 -0400
+	Fri, 18 Oct 2013 07:03:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGG-pURzhHWMHN8u4YKCNsc1UKyGJQC5tBfFhWNkrOC_o6zsJg@mail.gmail.com>
-References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-	<20131017224605.2e1d4bab@gandalf.local.home>
-	<CAGG-pURzhHWMHN8u4YKCNsc1UKyGJQC5tBfFhWNkrOC_o6zsJg@mail.gmail.com>
-Date: Fri, 18 Oct 2013 08:02:32 -0300
-Message-ID: <CAGG-pUSSeuaSMiOiTxQtgy84UZXq-VqOhSYyusi0XHJDbt=wJg@mail.gmail.com>
-Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
- refactors code
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kernel-br <kernel-br@googlegroups.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131018103117.GA3296@mudshark.cambridge.arm.com>
+References: <1382090789-18177-1-git-send-email-vkale@apm.com>
+	<20131018103117.GA3296@mudshark.cambridge.arm.com>
+Date: Fri, 18 Oct 2013 16:33:13 +0530
+Message-ID: <CAPrCYkcFBL5Rxf9z9L5PHULk_oSZX9ANBaG8dxyzGD_xhMeGpw@mail.gmail.com>
+Subject: Re: [PATCH] genirq: error reporting for non-percpu interrupt in request_percpu_irq()
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/18 Geyslan Gregório Bem <geyslan@gmail.com>:
-> 2013/10/17 Steven Rostedt <rostedt@goodmis.org>:
->> On Thu, 17 Oct 2013 22:44:56 -0300
->> "Geyslan G. Bem" <geyslan@gmail.com> wrote:
->>
->>> Restructures function logic conditions testing 'tracing_open_generic'
->>> return before the others. It avoids: unnecessary trace_array_get and
->>> kzalloc when tracing is disabled; and fix the possible 'dir'
->>> assignment after freeing it.
->>>
->>> Centralizes the exiting, ensuring the 'trace_array_put' on error,
->>> in accordance to Coding Style, Chapter 7.
->>>
->>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->>> ---
->>>  kernel/trace/trace_events.c | 22 ++++++++++++----------
->>>  1 file changed, 12 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
->>> index 368a4d5..8232362 100644
->>> --- a/kernel/trace/trace_events.c
->>> +++ b/kernel/trace/trace_events.c
->>> @@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
->>>       struct trace_array *tr = inode->i_private;
->>>       int ret;
->>>
->>> -     if (trace_array_get(tr) < 0)
->>> -             return -ENODEV;
->>> +     ret = tracing_open_generic(inode, filp);
->>> +     if (ret)
->>> +             return ret;
->>> +
->>> +     ret = trace_array_get(tr);
->>> +     if (ret)
->>> +             return ret;
->>
->> Hmm,
->>
->> I'm thinking of just nuking the tracing_open_generic() here. The only
->> thing it does here is the tracing_disabled check. The assignment of
->> inode->i_private to filp->private_data is pointless as it just
->> reassigns it anyway.
->>
->> We could add a tracing_is_disabled() function to test instead.
->
-> Nice, I can do it.
->
-> Questions:
+Hi Will,
 
-I realized that here not:
->
-> 1267 static const struct file_operations ftrace_enable_fops = {
-> 1268         .open = tracing_open_generic,
-> ...
-> 1286 static const struct file_operations ftrace_event_filter_fops = {
-> 1287         .open = tracing_open_generic,
-> ...
-> 1317 static const struct file_operations ftrace_show_header_fops = {
-> 1318         .open = tracing_open_generic,
 
-Tell me about this other case:
+On Fri, Oct 18, 2013 at 4:01 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Fri, Oct 18, 2013 at 11:06:29AM +0100, Vinayak Kale wrote:
+>> Return a separate error code when a non-percpu interrupt is passed to
+>> request_percpu_irq().
+>>
+>> Suggested-by: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>> ---
+>>  kernel/irq/manage.c |    6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+>> index 514bcfd..c2713ae 100644
+>> --- a/kernel/irq/manage.c
+>> +++ b/kernel/irq/manage.c
+>> @@ -1671,10 +1671,12 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+>>               return -EINVAL;
+>>
+>>       desc = irq_to_desc(irq);
+>> -     if (!desc || !irq_settings_can_request(desc) ||
+>> -         !irq_settings_is_per_cpu_devid(desc))
+>> +     if (!desc || !irq_settings_can_request(desc))
+>>               return -EINVAL;
+>>
+>> +     if (!irq_settings_is_per_cpu_devid(desc))
+>> +             return -EPERM;
 >
-> Are that structures in same case? Their 'open' can be replaced to the
-> new 'tracing_is_disabled()?
->
-> I think that 'subsystem_open()' can be also refactored to use the
-> about to rise 'tracing_is_disabled()'. Am I right?
-> 1096         ret = tracing_open_generic(inode, filp);
+> <bikeshedding> I reckon -ENODEV is clearer here. </bikeshedding>
 
-Regards,
--- Geyslan
+I looked at the issue as "operation not allowed since interrupt is
+non-percpu" and I found below comment for EPERM in
+'include/uapi/asm-generic/errno-base.h' . So thought this error code
+could be more fitting.
+
+#define EPERM            1      /* Operation not permitted */
+
 >
->>
->> -- Steve
->>
->>>
->>>       /* Make a temporary dir that has no system but points to tr */
->>>       dir = kzalloc(sizeof(*dir), GFP_KERNEL);
->>>       if (!dir) {
->>> -             trace_array_put(tr);
->>> -             return -ENOMEM;
->>> +             ret = -ENOMEM;
->>> +             goto err_dir;
->>>       }
->>>
->>>       dir->tr = tr;
->>>
->>> -     ret = tracing_open_generic(inode, filp);
->>> -     if (ret < 0) {
->>> -             trace_array_put(tr);
->>> -             kfree(dir);
->>> -     }
->>> -
->>>       filp->private_data = dir;
->>> +     return 0;
->>>
->>> +err_dir:
->>> +     trace_array_put(tr);
->>>       return ret;
->>>  }
->>>
->>
+> Also, there's a counterpart to this code in request_threaded_irq, where I
+> think we should do something similar.
+
+So in request_threaded_irq, we would still keep the WARN_ON for percpu
+interrupt and return a different error code. Is my understanding
+correct?
