@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab3JRPq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 11:46:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41402 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab3JRPq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 11:46:56 -0400
-Date: Fri, 18 Oct 2013 16:46:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 Resend 29/34] cpufreq: sa11x0: Convert to light
-	weight ->target_index() routine
-Message-ID: <20131018154644.GC25034@n2100.arm.linux.org.uk>
-References: <cover.1382104514.git.viresh.kumar@linaro.org> <fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
+	id S1756250Ab3JRPrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 11:47:03 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:65457 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756320Ab3JRPrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 11:47:00 -0400
+X-IronPort-AV: E=Sophos;i="4.93,523,1378857600"; 
+   d="scan'208";a="65042898"
+Date: Fri, 18 Oct 2013 16:46:00 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>, <will.deacon@arm.com>
+Subject: Re: [PATCH v8 08/19] arm/xen: get_dma_ops: return xen_dma_ops if we
+ are running as xen_initial_domain
+In-Reply-To: <20131018154246.GB25034@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1310181643260.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-8-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310181319300.26077@kaball.uk.xensource.com> <20131018154246.GB25034@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 07:29:52PM +0530, Viresh Kumar wrote:
-> This patch converts existing .target() to newly defined light weight
-> .target_index() routine for this driver.
+On Fri, 18 Oct 2013, Russell King - ARM Linux wrote:
+> On Fri, Oct 18, 2013 at 01:22:18PM +0100, Stefano Stabellini wrote:
+> > Russell,
+> > are you OK with this patch?
 > 
-> CPUFreq core will call cpufreq_frequency_table_target() before calling this
-> routine and will pass index to it.
+> Only concern is why the change is soo large.
 > 
-> Some existing routines are no more required and so are removed now.
+> > > -static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+> > > +static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
+> > >  {
+> > >  	if (dev && dev->archdata.dma_ops)
+> > >  		return dev->archdata.dma_ops;
+> > >  	return &arm_dma_ops;
+> > >  }
+> > >  
+> > > +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+> > > +{
+> > > +	if (xen_initial_domain())
+> > > +		return xen_dma_ops;
+> > > +	else
+> > > +		return __generic_dma_ops(dev);
+> > > +}
+> > > +
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
+> What's wrong with:
+> 
+>  static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+>  {
+> +	if (xen_initial_domain())
+> +		return xen_dma_ops;
+>  	if (dev && dev->archdata.dma_ops)
+>  		return dev->archdata.dma_ops;
+>  	return &arm_dma_ops;
+>  }
 
-I think I acked this patch.  Please ensure that my ack appears on all
-that I did ack, thanks.
+
+xen_dma_ops functions might have to call back the native implementation.
+With the above there is no way for a xen_dma_ops function to get to
+archdata.dma_ops or arm_dma_ops.
+This is the reason why this patch introduces __generic_dma_ops.
