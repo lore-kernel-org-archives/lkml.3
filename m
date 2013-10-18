@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3JRU5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 16:57:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40424 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab3JRU52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 16:57:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,525,1378882800"; 
-   d="scan'208";a="395141004"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-CC: "Chen, Gong" <gong.chen@linux.intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
- platform
-Thread-Topic: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
- platform
-Thread-Index: AQHOy92NO8Ykl3Pixk2WuH27ZgvdfZn621sAgAAEVACAAAzW0A==
-Date: Fri, 18 Oct 2013 20:57:22 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D41E37@ORSMSX106.amr.corp.intel.com>
-References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
- <1382084624-10857-5-git-send-email-gong.chen@linux.intel.com>
- <52612BA4.2060906@linux.vnet.ibm.com> <20131018125326.GC1007@pd.tnic>
-In-Reply-To: <20131018125326.GC1007@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754757Ab3JRVEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 17:04:45 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:51122 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab3JRVEo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 17:04:44 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: kernel-br@googlegroups.com
+Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] tracing: creates 'tracing_is_disabled()'
+Date: Fri, 18 Oct 2013 17:59:41 -0300
+Message-Id: <1382129982-9668-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9IKvv4a020676
 
-> Hmm, that's a good question you raise: but the more important question
-> is, do you guys - Gong and Tony - want to replace the logging we're
-> already doing, i.e. mce_log() with extlog or not.
+This patch creates the function 'tracing_is_disabled ", which
+can be used outside trace.c.
 
-Long term ... I'd be happy to see mce_log() go away.  But we need to have
-a robust, well tested replacement in place for some time before such a
-move is up for discussion.
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ kernel/trace/trace.c | 5 +++++
+ kernel/trace/trace.h | 1 +
+ 2 files changed, 6 insertions(+)
 
-> Because if you want to replace the current logging you actually have to
-> exit machine_check_poll() after having done mce_ext_err_print() so that
-> the rest of the chain doesn't see the error.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7974ba2..a120a73 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2964,6 +2964,11 @@ int tracing_open_generic(struct inode *inode, struct file *filp)
+ 	return 0;
+ }
+ 
++inline bool tracing_is_disabled(void)
++{
++	return (tracing_disabled) ? true: false;
++}
++
+ /*
+  * Open and update trace_array ref count.
+  * Must have the current trace_array passed to it.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 10c86fb..5deaa3b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -514,6 +514,7 @@ void tracing_reset_online_cpus(struct trace_buffer *buf);
+ void tracing_reset_current(int cpu);
+ void tracing_reset_all_online_cpus(void);
+ int tracing_open_generic(struct inode *inode, struct file *filp);
++bool tracing_is_disabled(void);
+ struct dentry *trace_create_file(const char *name,
+ 				 umode_t mode,
+ 				 struct dentry *parent,
+-- 
+1.8.4
 
-Yes - double error reporting should be avoided.
-
-> And, does mce_ext_err_print only report DRAM ECC errors or other error
-> types too?
-
-Our first platforms to implement this only do so for memory errors.  This
-could change in the future (the UEFI appendix N error record has defined
-sub-sections for lots of types of errors).
-
-Currently EDAC hooked into the mce even notification chain provides a
-return code to indicate whether it completely processed the error, or
-whether to fall through to the rest of mce_log():
-
-	if (ret == NOTIFY_STOP)
-		return;
-
-Having both EDAC and this new extended error log both registered on this
-chain would probably not be helpful in most cases.  Not sure if we should
-handle that with user education to not load both an EDAC and ext_log driver
-or if there should be some enforcement.
-
-> Btw, if we keep both, then we're going to have two tracepoints -
-> trace_mce_record() in mce_log() and this one - issuing each a record for
-> the same event. Which is not really what we want I'd say...
-
-trace_mce_record() dumps the raw data from the machine check banks.
-I think there may still be a case for having this.  Analysis tools that look at
-this trace as well should be smart enough to connect the dots.
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
