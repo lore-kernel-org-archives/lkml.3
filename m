@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3JROji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:39:38 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:16961 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab3JROjg (ORCPT
+	id S1755334Ab3JROjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:39:45 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:3314 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab3JROjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:39:36 -0400
+	Fri, 18 Oct 2013 10:39:37 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2 3/4] perf-report: add --max-stack option to limit callchain stack scan
-Date: Fri, 18 Oct 2013 10:38:48 -0400
-Message-Id: <1382107129-2010-4-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v2 4/4] perf-top: add --max-stack option to limit callchain stack scan
+Date: Fri, 18 Oct 2013 10:38:49 -0400
+Message-Id: <1382107129-2010-5-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1382107129-2010-1-git-send-email-Waiman.Long@hp.com>
 References: <1382107129-2010-1-git-send-email-Waiman.Long@hp.com>
@@ -26,51 +26,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When callgraph data was included in the perf data file, it may take a
-long time to scan all those data and merge them together especially
-if the stored callchains are long and the perf data file itself is
-large, like a Gbyte or so.
+When the callgraph function is enabled (-G), it may take a long time to
+scan all the stack data and merge them accordingly.
 
-The callchain stack is currently limited to PERF_MAX_STACK_DEPTH (127).
-This is a large value. Usually the callgraph data that developers are
-most interested in are the first few levels, the rests are usually
-not looked at.
-
-This patch adds a new --max-stack option to perf-report to limit the
-depth of callchain stack data to look at to reduce the time it takes
-for perf-report to finish its processing. It trades the presence of
-trailing stack information with faster speed.
-
-The following table shows the elapsed time of doing perf-report on a
-perf.data file of size 985,531,828 bytes.
-
---max_stack	Elapsed Time	Output data size
------------	------------	----------------
-not set		   88.0s	124,422,651
-64		   87.5s	116,303,213
-32		   87.2s	112,023,804
-16		   86.6s	 94,326,380
-8		   59.9s	 33,697,248
-4		   40.7s	 10,116,637
--g none		   27.1s	  2,555,810
+This patch adds a new --max-stack option to perf-top to limit the depth
+of callchain stack data to look at to reduce the time it takes for
+perf-top to finish its processing. It reduces the amount of information
+provided to the user in exchange for faster speed.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- tools/perf/Documentation/perf-report.txt |    8 ++++++++
- tools/perf/builtin-report.c              |   22 +++++++++++++++++-----
- tools/perf/builtin-top.c                 |    3 ++-
- tools/perf/util/machine.c                |   14 +++++++++-----
- tools/perf/util/machine.h                |    3 ++-
- tools/perf/util/session.c                |    3 ++-
- 6 files changed, 40 insertions(+), 13 deletions(-)
+ tools/perf/Documentation/perf-top.txt |    8 ++++++++
+ tools/perf/builtin-top.c              |    8 ++++++--
+ tools/perf/util/top.h                 |    1 +
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2b8097e..be3f196 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -135,6 +135,14 @@ OPTIONS
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 58d6598..3fd911c 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -155,6 +155,14 @@ Default is to monitor all CPUS.
  
- 	Default: fractal,0.5,callee,function.
+ 	Default: fractal,0.5,callee.
  
 +--max-stack::
 +	Set the stack depth limit when parsing the callchain, anything
@@ -80,181 +57,57 @@ index 2b8097e..be3f196 100644
 +
 +	Default: 127
 +
- -G::
- --inverted::
-         alias for inverted caller based call graph.
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 72eae74..d0c9504 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -47,6 +47,7 @@ struct perf_report {
- 	bool			show_threads;
- 	bool			inverted_callchain;
- 	bool			mem_mode;
-+	int			max_stack;
- 	struct perf_read_values	show_threads_values;
- 	const char		*pretty_printing_style;
- 	const char		*cpu_list;
-@@ -88,7 +89,8 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain) &&
- 	    sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -179,7 +181,8 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -242,18 +245,21 @@ out:
- 	return err;
- }
- 
--static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
-+static int perf_evsel__add_hist_entry(struct perf_tool *tool,
-+				      struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
- 				      struct machine *machine)
- {
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
- 	int err = 0;
- 	struct hist_entry *he;
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -330,7 +336,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		if (al.map != NULL)
- 			al.map->dso->hit = 1;
- 
--		ret = perf_evsel__add_hist_entry(evsel, &al, sample, machine);
-+		ret = perf_evsel__add_hist_entry(tool, evsel, &al, sample,
-+						 machine);
- 		if (ret < 0)
- 			pr_debug("problem incrementing symbol period, skipping event\n");
- 	}
-@@ -757,6 +764,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.ordered_samples = true,
- 			.ordering_requires_timestamps = true,
- 		},
-+		.max_stack		 = PERF_MAX_STACK_DEPTH,
- 		.pretty_printing_style	 = "normal",
- 	};
- 	const struct option options[] = {
-@@ -797,6 +805,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
-+	OPT_INTEGER(0, "max-stack", &report.max_stack,
-+		    "Set the maximum stack depth when parsing the callchain, "
-+		    "anything beyond the specified depth will be ignored. "
-+		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
- 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+ --ignore-callees=<regex>::
+         Ignore callees of the function(s) matching the given regex.
+         This has the effect of collecting the callers of each such
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..2725aca 100644
+index 2725aca..14902b0 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -771,7 +771,8 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		    sample->callchain) {
+@@ -772,7 +772,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
  			err = machine__resolve_callchain(machine, evsel,
  							 al.thread, sample,
--							 &parent, &al);
-+							 &parent, &al,
-+							 PERF_MAX_STACK_DEPTH);
+ 							 &parent, &al,
+-							 PERF_MAX_STACK_DEPTH);
++							 top->max_stack);
  			if (err)
  				return;
  		}
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6188d28..9617c4a 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1267,10 +1267,12 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
- 					     struct symbol **parent,
--					     struct addr_location *root_al)
-+					     struct addr_location *root_al,
-+					     int max_stack)
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
--	unsigned int i;
-+	int chain_nr = min(max_stack, (int)chain->nr);
-+	int i;
- 	int err;
- 
- 	callchain_cursor_reset(&callchain_cursor);
-@@ -1280,7 +1282,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 		return 0;
- 	}
- 
--	for (i = 0; i < chain->nr; i++) {
-+	for (i = 0; i < chain_nr; i++) {
- 		u64 ip;
- 		struct addr_location al;
- 
-@@ -1352,12 +1354,14 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al)
-+			       struct addr_location *root_al,
-+			       int max_stack)
- {
- 	int ret;
- 
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent, root_al);
-+						sample->callchain, parent,
-+						root_al, max_stack);
- 	if (ret)
- 		return ret;
- 
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 58a6be1..d09cce0 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -91,7 +91,8 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al);
-+			       struct addr_location *root_al,
-+			       int max_stack);
- 
- /*
-  * Default guest kernel is defined by parameter --guestkallsyms
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 568b750..96e5449 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1525,7 +1525,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 
- 		if (machine__resolve_callchain(machine, evsel, al.thread,
--					       sample, NULL, NULL) != 0) {
-+					       sample, NULL, NULL,
-+					       PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
+@@ -1052,10 +1052,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.user_freq	= UINT_MAX,
+ 			.user_interval	= ULLONG_MAX,
+ 			.freq		= 4000, /* 4 KHz */
+-			.target		     = {
++			.target		= {
+ 				.uses_mmap   = true,
+ 			},
+ 		},
++		.max_stack	     = PERF_MAX_STACK_DEPTH,
+ 		.sym_pcnt_filter     = 5,
+ 	};
+ 	struct perf_record_opts *opts = &top.record_opts;
+@@ -1110,6 +1111,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
+ 			     "mode[,dump_size]", record_callchain_help,
+ 			     &parse_callchain_opt, "fp"),
++	OPT_INTEGER(0, "max-stack", &top.max_stack,
++		    "Set the maximum stack depth when parsing the callchain. "
++		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
+ 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+ 		   "ignore callees of these functions in call graphs",
+ 		   report_parse_ignore_callees_opt),
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index b554ffc..88cfeaf 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -24,6 +24,7 @@ struct perf_top {
+ 	u64		   exact_samples;
+ 	u64		   guest_us_samples, guest_kernel_samples;
+ 	int		   print_entries, count_filter, delay_secs;
++	int		   max_stack;
+ 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+ 	bool		   use_tui, use_stdio;
+ 	bool		   kptr_restrict_warned;
 -- 
 1.7.1
 
