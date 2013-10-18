@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab3JRLXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 07:23:39 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38347 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3JRLXh (ORCPT
+	id S1753418Ab3JRLYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 07:24:24 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:46143 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3JRLYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 07:23:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1382030498-23465-1-git-send-email-acourbot@nvidia.com>
-References: <1382030498-23465-1-git-send-email-acourbot@nvidia.com>
-Date: Fri, 18 Oct 2013 13:23:36 +0200
-Message-ID: <CACRpkdYx07Kfs6zOQmTg2cTSmEmsGgP=7wMCSG_30NW=dfYRPQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] New descriptor-based GPIO interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Oct 2013 07:24:22 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v2 1/2] m68k: Add infrastructure for machine-specific random_get_entropy()
+Date: Fri, 18 Oct 2013 13:24:12 +0200
+Message-Id: <1382095453-24086-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 7:21 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On m68k, get_cycles() (the default implementation for random_get_entropy())
+always returns zero, providing no entropy for the random driver.
 
-> Hi Linus,
->
-> This version should merge as-is in your tree (I hope!). A patch for
-> documentation will follow soon.
->
-> Changes since v2:
-> - rebased on top of Linus' for-next branch
-> - exported new gpiod_(un)lock_as_irq() functions in driver.h
-> - squashed a fix for a compilation error
+Add a hook where platforms can provide their own implementation, and wire
+it up in the infrastructure provided by commit
+61875f30daf60305712e25b209ef41ced2635bad ("random: allow architectures to
+optionally define random_get_entropy()").
 
-Thanks, let's see if I can get this into v3.13, right now it's
-unclear if I'll dare to do this. These do not apply right off
-as it requires the late fixes to the gpiod code which currently
-are in Torvalds' tree and on my fixes branch, so I'll merge in
-v3.12-rc6 as it arrives, and then attempt to apply this on
-top, but I don't know if I dare to do this so late.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+v2:
+  - Hook for random_get_entropy() instead of get_cycles()
 
-The outage of linux-next also contributes to this situation.
+ arch/m68k/include/asm/timex.h |   10 ++++++++++
+ arch/m68k/kernel/time.c       |    4 ++++
+ 2 files changed, 14 insertions(+)
 
-We might have to take this as the first thing after the merge
-window and targeted for v3.14.
+diff --git a/arch/m68k/include/asm/timex.h b/arch/m68k/include/asm/timex.h
+index 6759dad954f6..efc1f4892357 100644
+--- a/arch/m68k/include/asm/timex.h
++++ b/arch/m68k/include/asm/timex.h
+@@ -28,4 +28,14 @@ static inline cycles_t get_cycles(void)
+ 	return 0;
+ }
+ 
++extern unsigned long (*mach_random_get_entropy)(void);
++
++static inline unsigned long random_get_entropy(void)
++{
++	if (mach_random_get_entropy)
++		return mach_random_get_entropy();
++	return 0;
++}
++#define random_get_entropy	random_get_entropy
++
+ #endif
+diff --git a/arch/m68k/kernel/time.c b/arch/m68k/kernel/time.c
+index 7eb9792009f8..958f1adb9d0c 100644
+--- a/arch/m68k/kernel/time.c
++++ b/arch/m68k/kernel/time.c
+@@ -28,6 +28,10 @@
+ #include <linux/timex.h>
+ #include <linux/profile.h>
+ 
++
++unsigned long (*mach_random_get_entropy)(void);
++
++
+ /*
+  * timer_interrupt() needs to keep up the real-time clock,
+  * as well as call the "xtime_update()" routine every clocktick
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
