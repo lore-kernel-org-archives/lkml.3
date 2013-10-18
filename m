@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3JRTwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:52:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54725 "EHLO
+	id S1757702Ab3JRTzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:55:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab3JRTwg (ORCPT
+	with ESMTP id S1757518Ab3JRTwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:52:36 -0400
+	Fri, 18 Oct 2013 15:52:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: [ 11/11] mm: do not grow the stack vma just because of an overrun on preceding vma
-Date: Fri, 18 Oct 2013 12:53:40 -0700
-Message-Id: <20131018195049.836387681@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 03/11] random: run random_int_secret_init() run after all late_initcalls
+Date: Fri, 18 Oct 2013 12:53:32 -0700
+Message-Id: <20131018195049.303462687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131018195049.069623827@linuxfoundation.org>
 References: <20131018195049.069623827@linuxfoundation.org>
@@ -27,79 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 09884964335e85e897876d17783c2ad33cf8a2e0 upstream.
+commit 47d06e532e95b71c0db3839ebdef3fe8812fca2c upstream.
 
-The stack vma is designed to grow automatically (marked with VM_GROWSUP
-or VM_GROWSDOWN depending on architecture) when an access is made beyond
-the existing boundary.  However, particularly if you have not limited
-your stack at all ("ulimit -s unlimited"), this can cause the stack to
-grow even if the access was really just one past *another* segment.
+The some platforms (e.g., ARM) initializes their clocks as
+late_initcalls for some unknown reason.  So make sure
+random_int_secret_init() is run after all of the late_initcalls are
+run.
 
-And that's wrong, especially since we first grow the segment, but then
-immediately later enforce the stack guard page on the last page of the
-segment.  So _despite_ first growing the stack segment as a result of
-the access, the kernel will then make the access cause a SIGSEGV anyway!
-
-So do the same logic as the guard page check does, and consider an
-access to within one page of the next segment to be a bad access, rather
-than growing the stack to abut the next segment.
-
-Reported-and-tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/char/random.c  |    3 +--
+ include/linux/random.h |    1 +
+ init/main.c            |    2 ++
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1875,9 +1875,28 @@ int expand_downwards(struct vm_area_stru
- 	return error;
- }
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1435,12 +1435,11 @@ ctl_table random_table[] = {
  
-+/*
-+ * Note how expand_stack() refuses to expand the stack all the way to
-+ * abut the next virtual mapping, *unless* that mapping itself is also
-+ * a stack mapping. We want to leave room for a guard page, after all
-+ * (the guard page itself is not added here, that is done by the
-+ * actual page faulting logic)
-+ *
-+ * This matches the behavior of the guard page logic (see mm/memory.c:
-+ * check_stack_guard_page()), which only allows the guard page to be
-+ * removed under these circumstances.
-+ */
- #ifdef CONFIG_STACK_GROWSUP
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
+ static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
+ 
+-static int __init random_int_secret_init(void)
++int random_int_secret_init(void)
  {
-+	struct vm_area_struct *next;
-+
-+	address &= PAGE_MASK;
-+	next = vma->vm_next;
-+	if (next && next->vm_start == address + PAGE_SIZE) {
-+		if (!(next->vm_flags & VM_GROWSUP))
-+			return -ENOMEM;
-+	}
- 	return expand_upwards(vma, address);
+ 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
+ 	return 0;
+ }
+-late_initcall(random_int_secret_init);
+ 
+ /*
+  * Get a random word for internal kernel use only. Similar to urandom but
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -56,6 +56,7 @@ extern void add_interrupt_randomness(int
+ extern void get_random_bytes(void *buf, int nbytes);
+ extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
++extern int random_int_secret_init(void);
+ 
+ #ifndef MODULE
+ extern const struct file_operations random_fops, urandom_fops;
+--- a/init/main.c
++++ b/init/main.c
+@@ -68,6 +68,7 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/slab.h>
+ #include <linux/perf_event.h>
++#include <linux/random.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -779,6 +780,7 @@ static void __init do_basic_setup(void)
+ 	do_ctors();
+ 	usermodehelper_enable();
+ 	do_initcalls();
++	random_int_secret_init();
  }
  
-@@ -1900,6 +1919,14 @@ find_extend_vma(struct mm_struct *mm, un
- #else
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
- {
-+	struct vm_area_struct *prev;
-+
-+	address &= PAGE_MASK;
-+	prev = vma->vm_prev;
-+	if (prev && prev->vm_end == address) {
-+		if (!(prev->vm_flags & VM_GROWSDOWN))
-+			return -ENOMEM;
-+	}
- 	return expand_downwards(vma, address);
- }
- 
+ static void __init do_pre_smp_initcalls(void)
 
 
