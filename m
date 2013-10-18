@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab3JRWpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:45:32 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:34849 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757355Ab3JRWpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:45:30 -0400
-Message-ID: <5261BA02.9050808@sgi.com>
-Date: Fri, 18 Oct 2013 17:45:22 -0500
-From: Rich Johnston <rjohnston@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Namjae Jeon <linkinjeon@gmail.com>, <viro@zeniv.linux.org.uk>,
-        <mtk.manpages@gmail.com>, <tytso@mit.edu>, <adilger.kernel@dilger.ca>,
-        <bpm@sgi.com>, <elder@kernel.org>, <hch@infradead.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <xfs@oss.sgi.com>, <a.sangwan@samsung.com>,
-        <linux-fsdevel@vger.kernel.org>, <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH RESEND 4/7] xfsprogs: xfsio: add support FALLOC_FL_COLLAPSE_RANGE
- for fallocate
-References: <1381090418-2829-1-git-send-email-linkinjeon@gmail.com> <52616EC6.7030400@sgi.com> <20131018224404.GX4446@dastard>
-In-Reply-To: <20131018224404.GX4446@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [134.15.128.221]
+	id S1757466Ab3JRWwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:52:19 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:45291 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab3JRWwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 18:52:13 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clocksource: Do not drop unheld reference on device node
+Date: Sat, 19 Oct 2013 00:49:48 +0200
+Message-Id: <1382136588-15320-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry if there are others please let me know.
+When booting a recent kernel on ARM with OF_DYNAMIC enabled, the kernel
+warns about the following:
 
-On 10/18/2013 05:44 PM, Dave Chinner wrote:
-> On Fri, Oct 18, 2013 at 12:24:22PM -0500, Rich Johnston wrote:
->> This has been committed.
->>
->> Thanks
->> --Rich
->>
->> commit e64190f8440286a815060524777b435e06a7b364
->> Author: Namjae Jeon <namjae.jeon@samsung.com>
->> Date:   Sun Oct 6 20:13:38 2013 +0000
->>
->>      [RESEND, 4/7] xfsprogs: xfsio: add support
->> FALLOC_FL_COLLAPSE_RANGE for fallocate
->
-> Hi Rich,
->
-> This isn't ready for being committed into xfsprogs. The kernel code
-> is still under review, and until we actually have it in a tree to be
-> merged int eh kernel, we shoul d't be making any userspace changes
-> at all. Indeed, there's a chance (unlikely, but still there) that
-> this code may still not end up in the kernel at all...
->
-> So, it's probably best right now to revert this patch until we have
-> the fallocate API support merged into the kernel...
->
-> Cheers,
->
-> Dave.
->
+	[    0.000000] ERROR: Bad of_node_put() on /timer@50004600
+	[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131017-00077-gedfd827-dirty #406
+	[    0.000000] [<c0015b68>] (unwind_backtrace+0x0/0xf4) from [<c00117e4>] (show_stack+0x10/0x14)
+	[    0.000000] [<c00117e4>] (show_stack+0x10/0x14) from [<c055f734>] (dump_stack+0x9c/0xc8)
+	[    0.000000] [<c055f734>] (dump_stack+0x9c/0xc8) from [<c03b47d4>] (of_node_release+0x90/0x9c)
+	[    0.000000] [<c03b47d4>] (of_node_release+0x90/0x9c) from [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4)
+	[    0.000000] [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4) from [<c07887c8>] (clocksource_of_init+0x60/0x70)
+	[    0.000000] [<c07887c8>] (clocksource_of_init+0x60/0x70) from [<c076e99c>] (start_kernel+0x1f4/0x33c)
+	[    0.000000] [<c076e99c>] (start_kernel+0x1f4/0x33c) from [<80008074>] (0x80008074)
+
+This is caused by clocksource_of_init() dropping a reference on the
+device node that it never took. The reference taken by the loop is
+implicitly dropped on subsequent iterations. See the implementation of
+and the comment on top of the of_find_matching_node_and_match()
+function for reference (no pun intended).
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/clocksource/clksrc-of.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+index 35639cf4..b9ddd9e 100644
+--- a/drivers/clocksource/clksrc-of.c
++++ b/drivers/clocksource/clksrc-of.c
+@@ -35,6 +35,5 @@ void __init clocksource_of_init(void)
+ 
+ 		init_func = match->data;
+ 		init_func(np);
+-		of_node_put(np);
+ 	}
+ }
+-- 
+1.8.4
+
