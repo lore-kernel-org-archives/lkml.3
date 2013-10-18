@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3JROVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 10:21:18 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47425 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab3JROVR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 10:21:17 -0400
-MIME-Version: 1.0
-X-Originating-IP: [218.164.102.79]
-In-Reply-To: <20131018141202.GA24660@redhat.com>
-References: <1382088475.16935.4.camel@phoenix>
-	<20131018141202.GA24660@redhat.com>
-Date: Fri, 18 Oct 2013 22:21:16 +0800
-Message-ID: <CAFRkauDwTBDbjs4+xba0-p_+2mX3tWAN0asUo-aG1ZYjRyaCrg@mail.gmail.com>
-Subject: Re: Build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected
-From: Axel Lin <axel.lin@ingics.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754881Ab3JROXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 10:23:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754378Ab3JROXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 10:23:33 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com, l.flis@cyfronet.pl
+Subject: [PATCH] block: properly stack underlying max_segment_size to DM device
+Date: Fri, 18 Oct 2013 10:23:26 -0400
+Message-Id: <1382106206-4459-1-git-send-email-snitzer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/18 Michael S. Tsirkin <mst@redhat.com>:
-> On Fri, Oct 18, 2013 at 05:27:55PM +0800, Axel Lin wrote:
->> Hi Michael,
->>
->> I got below build error for nommu if CONFIG_DEBUG_ATOMIC_SLEEP is selected.
->> Also got the same build error if CONFIG_PROVE_LOCKING is selected.
->>
->> Seems this issue is introduced by commit 662bbcb2747c2
->> "mm, sched: Allow uaccess in atomic with pagefault_disable()".
->>
->> arch/arm/kernel/built-in.o: In function `arch_ptrace':
->> arch/arm/kernel/ptrace.c:852: undefined reference to `might_fault'
->> arch/arm/kernel/built-in.o: In function `restore_sigframe':
->> arch/arm/kernel/signal.c:173: undefined reference to `might_fault'
->> arch/arm/kernel/signal.c:174: undefined reference to `might_fault'
->> arch/arm/kernel/signal.c:175: undefined reference to `might_fault'
->> arch/arm/kernel/signal.c:176: undefined reference to `might_fault'
->> arch/arm/kernel/built-in.o:arch/arm/kernel/signal.c:177: more undefined references to `might_fault' follow
->> make: *** [vmlinux] Error 1
->>
->> Regards,
->> Axel
->
-> Can you send/upload your full .config please?
+Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
+(65536) even if the underlying device(s) have a larger value -- this is
+due to blk_stack_limits() using min_not_zero() when stacking the
+max_segment_size limit.
 
-I patch the kernel to port it for an arm7tdmi SoC.
-But I think you can easily reproduce it by simply
-select ARM7TDMI cpu and then enable either
-CONFIG_DEBUG_ATOMIC_SLEEP or CONFIG_PROVE_LOCKING.
+# cat /sys/block/sda/queue/max_segment_size
+1073741824
 
-Note, might_fault is implemented in mm/memory.c which is not built if
-!CONFIG_MMU.
+# cat /sys/block/dm-0/queue/max_segment_size
+before patch:
+65536
 
-Regards,
-Axel
+after patch:
+1073741824
+
+Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: stable@vger.kernel.org # v3.3+
+---
+ block/blk-settings.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index c50ecf0..29f28bb 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -143,6 +143,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
+ 	/* Inherit limits from component devices */
+ 	lim->discard_zeroes_data = 1;
+ 	lim->max_segments = USHRT_MAX;
++	lim->max_segment_size = UINT_MAX;
+ 	lim->max_hw_sectors = UINT_MAX;
+ 	lim->max_sectors = UINT_MAX;
+ 	lim->max_write_same_sectors = UINT_MAX;
+-- 
+1.7.4.4
+
