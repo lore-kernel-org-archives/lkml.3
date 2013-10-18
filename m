@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab3JRTyD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:54:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54743 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab3JRTwj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:52:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>, "Theodore Tso" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: [ 05/11] ext4: fix memory leak in xattr
-Date: Fri, 18 Oct 2013 12:53:34 -0700
-Message-Id: <20131018195049.436649568@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20131018195049.069623827@linuxfoundation.org>
-References: <20131018195049.069623827@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S932255Ab3JRTyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:54:11 -0400
+Received: from smtp.newsguy.com ([74.209.136.69]:49640 "EHLO smtp.newsguy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932206Ab3JRTyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 15:54:07 -0400
+Message-ID: <526191C5.7060705@newsguy.com>
+Date: Fri, 18 Oct 2013 12:53:41 -0700
+From: Mike Dunn <mikedunn@newsguy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH v2] pwm-backlight: allow for non-increasing brightness
+ levels
+References: <1379869196-19377-1-git-send-email-mikedunn@newsguy.com> <20131018074623.GA22291@ulmo.nvidia.com>
+In-Reply-To: <20131018074623.GA22291@ulmo.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 10/18/2013 12:46 AM, Thierry Reding wrote:
+> On Sun, Sep 22, 2013 at 09:59:56AM -0700, Mike Dunn wrote:
+>> Currently the driver assumes that the values specified in the
+>> brightness-levels device tree property increase as they are parsed from
+>> left to right.  But boards that invert the signal between the PWM output
+>> and the backlight will need to specify decreasing brightness-levels.
+>> This patch removes the assumption that the last element of the array is
+>> the maximum value, and instead searches the array for the maximum value
+>> and uses that in the duty cycle calculation.
+>>
+>> Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+>> ---
+>> Changelog:
+>> v2: 
+>> - commit message reworded; correct line wrap used
+>> - 'max_level' variable renamed to 'scale'
+>> - loop counter variable type changed to unsigned int
+>> - value held in scale changed from array index to actual maximum level
+>> - blank lines added around loop for readability
+>>
+>>  drivers/video/backlight/pwm_bl.c | 12 ++++++++++--
+>>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> Hey Mike,
+> 
+> I've pushed a slightly different version of this patch which gets rid of
+> the intermediate max variable and uses the new scale field exclusively
+> to pass the same information around. Could you look at the patch from my
+> for-next branch in the PWM tree and see whether that still works for the
+> specific hardware that you need this for?
 
-------------------
 
-From: Dave Jones <davej@redhat.com>
+Yes looks good.
 
-commit 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc upstream.
+I also tested the current HEAD of for-next on the Palm Treo 680, including the
+enable-gpios DT node property.  I will have to do more work and investigation
+before I will be able to try the power-supply property, though.
 
-If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
-potentionally return from the function without having freed these
-allocations.  If we don't do the return, we over-write the previous
-allocation pointers, so we leak either way.
-
-Spotted with Coverity.
-
-[ Fixed by tytso to set is and bs to NULL after freeing these
-  pointers, in case in the retry loop we later end up triggering an
-  error causing a jump to cleanup, at which point we could have a double
-  free bug. -- Ted ]
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/xattr.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1268,6 +1268,8 @@ retry:
- 				    s_min_extra_isize) {
- 					tried_min_extra_isize++;
- 					new_extra_isize = s_min_extra_isize;
-+					kfree(is); is = NULL;
-+					kfree(bs); bs = NULL;
- 					goto retry;
- 				}
- 				error = -1;
-
+Thanks,
+Mike
 
