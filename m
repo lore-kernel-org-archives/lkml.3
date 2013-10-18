@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3JRNgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 09:36:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51027 "EHLO mail.skyhub.de"
+	id S1754461Ab3JRNlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 09:41:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13053 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754403Ab3JRNgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 09:36:32 -0400
-Date: Fri, 18 Oct 2013 15:36:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joonas Saarinen <jza@saunalahti.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD Bobcat cpufreq
-Message-ID: <20131018133630.GD1007@pd.tnic>
-References: <31997499.9414731382102390275.JavaMail.jza@saunalahti.fi>
+	id S1753669Ab3JRNlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 09:41:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
+   d="scan'208";a="394972383"
+Message-ID: <52613A1F.5000609@linux.intel.com>
+Date: Fri, 18 Oct 2013 06:39:43 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <31997499.9414731382102390275.JavaMail.jza@saunalahti.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: x86@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org,
+        sathyanarayanan.kuppuswamy@linux.intel.com
+Subject: Re: [PATCH v10 00/12] rework arch/x86/platform/[mrst => intel-mid]
+References: <1382049336-21316-1-git-send-email-david.a.cohen@linux.intel.com> <20131018060929.GB3411@gmail.com>
+In-Reply-To: <20131018060929.GB3411@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 04:19:49PM +0300, Joonas Saarinen wrote:
-> It's promising that the boost state support is "supported and
-> active" but the output is still kind of sparse. There's no mention
-> about specific turbo states,
+Hi Ingo,
 
-could be bug in the tool...
+On 10/17/2013 11:09 PM, Ingo Molnar wrote:
+>
+> * David Cohen <david.a.cohen@linux.intel.com> wrote:
+>
+>> David Cohen (3):
+>>    intel-mid: sfi: allow struct devs_id.get_platform_data to be NULL
+>>    x86: intel-mid: add section for sfi device table
+>>    intel_mid: move board related codes to their own platform_<device>.*
+>>      files
+>>
+>> Fengguang Wu (1):
+>>    pci: intel_mid: return true/false in function returning bool
+>>
+>> Kuppuswamy Sathyanarayanan (8):
+>>    mrst: Fixed printk/pr_* related issues
+>>    mrst: Fixed indentation issues
+>>    intel_mid: Renamed *mrst* to *intel_mid*
+>>    intel_mid: Renamed *mrst* to *intel_mid*
+>>    intel_mid: Refactored sfi_parse_devs() function
+>>    intel_mid: Added custom device_handler support
+>>    intel_mid: Added custom handler for ipc devices
+>>    intel_mid: Moved SFI related code to sfi.c
+>
+> Btw., when submitting a series _please_ harmonize the patch titles.
+>
+> 1)
+>
+> Verbs should be present tense, i.e.:
+>
+> ->   intel_mid: Renamed *mrst* to *intel_mid*
+> ->   intel_mid: Renamed *mrst* to *intel_mid*
+> +>   intel_mid: Rename *mrst* to *intel_mid*
+> +>   intel_mid: Rename *mrst* to *intel_mid*
+>
+> 2)
+>
+> Use consistent capitalization:
+>
+> ->   pci: intel_mid: return true/false in function returning bool
+> +>   pci: intel_mid: Return true/false in function returning bool
+>
+> 3)
+>
+> Use standard, consistent subsystem prefixes:
+>
+> ->   x86: intel-mid: add section for sfi device table
+> ->   intel_mid: Renamed *mrst* to *intel_mid*
+> +>    x86/intel-mid: Add section for sfi device table
+> +>    x86/intel/mid: Rename *mrst* to *intel_mid*
+>
+> etc.
 
-> nor do I get /proc/cpuinfo or that cpupower tool ever to show an
-> evidence that the CPU is going to 1333MHz. On Windows CPU-Z showed it
-> constantly visiting that state.
+Thanks for the suggestion. I'll take care of it next time.
 
-You can also try turbostat in tools/power/x86/turbostat/
-
-# ./turbostat -i 1
-
-to give you core freq. readout every second and then pin a workload on
-one core in another shell, say kernel build:
-
-$ taskset 1 make
-
-You should be able to see core 0 boosting like in my case:
-
-cor CPU   GHz  TSC
-        3.90 4.01
-  0   0 4.17 4.01
-  1   1 4.17 4.01
-  2   2 2.23 4.01
-  3   3 2.74 4.01
-  4   4 1.83 4.01
-  5   5 3.23 4.01
-  6   6 1.69 4.01
-  7   7 1.43 4.01
-
-cores 0 and 1 go over 4GHz which is their boosted state.
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Br, David Cohen
