@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233Ab3JRGwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 02:52:12 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:50395 "EHLO
+	id S1751496Ab3JRGxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 02:53:53 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:50908 "EHLO
 	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab3JRGwK (ORCPT
+	with ESMTP id S1750895Ab3JRGxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 02:52:10 -0400
-Date: Fri, 18 Oct 2013 08:52:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
-Message-ID: <20131018065206.GA17512@gmail.com>
-References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
- <1380753493.11046.82.camel@schen9-DESK>
- <20131003073212.GC5775@gmail.com>
- <1381186674.11046.105.camel@schen9-DESK>
- <20131009061551.GD7664@gmail.com>
- <1381336441.11046.128.camel@schen9-DESK>
- <20131010075444.GD17990@gmail.com>
- <1381882156.11046.178.camel@schen9-DESK>
- <20131016065526.GB22509@gmail.com>
- <1381960530.11046.200.camel@schen9-DESK>
+	Fri, 18 Oct 2013 02:53:52 -0400
+Date: Fri, 18 Oct 2013 07:53:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/3 v2] regulator: core: Add ability to create a lookup
+ alias for supply
+Message-ID: <20131018065345.GR19112@lee--X1>
+References: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1381864462-26167-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131017235940.GB2443@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1381960530.11046.200.camel@schen9-DESK>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131017235940.GB2443@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 18 Oct 2013, Mark Brown wrote:
 
-* Tim Chen <tim.c.chen@linux.intel.com> wrote:
-
+> On Tue, Oct 15, 2013 at 08:14:20PM +0100, Charles Keepax wrote:
+> > These patches add the ability to create an alternative device on which
+> > a lookup for a certain supply should be conducted.
 > 
-> > 
-> > It would be _really_ nice to stick this into tools/perf/bench/ as:
-> > 
-> > 	perf bench mem pagefaults
-> > 
-> > or so, with a number of parallelism and workload patterns. See 
-> > tools/perf/bench/numa.c for a couple of workload generators - although 
-> > those are not page fault intense.
-> > 
-> > So that future generations can run all these tests too and such.
-> > 
-> > > I compare the throughput where I have the complete rwsem patchset 
-> > > against vanilla and the case where I take out the optimistic spin patch.  
-> > > I have increased the run time by 10x from my pervious experiments and do 
-> > > 10 runs for each case.  The standard deviation is ~1.5% so any changes 
-> > > under 1.5% is statistically significant.
-> > > 
-> > > % change in throughput vs the vanilla kernel.
-> > > Threads	all	No-optspin
-> > > 1		+0.4%	-0.1%
-> > > 2		+2.0%	+0.2%
-> > > 3		+1.1%	+1.5%
-> > > 4		-0.5%	-1.4%
-> > > 5		-0.1%	-0.1%
-> > > 10		+2.2%	-1.2%
-> > > 20		+237.3%	-2.3%
-> > > 40		+548.1%	+0.3%
-> > 
-> > The tail is impressive. The early parts are important as well, but it's 
-> > really hard to tell the significance of the early portion without having 
-> > an sttdev column.
-> > 
-> > ( "perf stat --repeat N" will give you sttdev output, in handy percentage 
-> >   form. )
-> 
-> Quick naive question as I haven't hacked perf bench before.  
+> Applied, thanks.  This can't really be applied without pulling in large
+> chunks of the regulator changes due to some refactoring in the core that
+> it depends on, I've created a tag supply-alias but it's got a nasty diff
+> so it's probably best if I apply the other two patches to the regulator
+> tree?
 
-Btw., please use tip:master, I've got a few cleanups in there that should 
-make it easier to hack.
+If you're happy with the other two patches, I am. Would you mind
+reviewing and providing your Ack? Once I have it, I'll setup a branch
+you can pull from in my MFD tree.
 
-> Now perf stat gives the statistics of the performance counter or events.
-> How do I get it to compute the stats of 
-> the throughput reported by perf bench?
-
-What I do is that I measure the execution time, via:
-
-  perf stat --null --repeat 10 perf bench ...
-
-instead of relying on benchmark output.
-
-> Something like
-> 
-> perf stat -r 10 -- perf bench mm memset --iterations 10
-> 
-> doesn't quite give what I need.
-
-Yeha. So, perf bench also has a 'simple' output format:
-
-  comet:~/tip> perf bench -f simple sched pipe
-  10.378
-
-We could extend 'perf stat' with an option to not measure time, but to 
-take any numeric data output from the executed task and use that as the 
-measurement result.
-
-If you'd be interested in such a feature I can give it a try.
-
-Thanks,
-
-	Ingo
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
