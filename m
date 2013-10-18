@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab3JRTwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:52:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54705 "EHLO
+	id S1757479Ab3JRTwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:52:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3JRTvx (ORCPT
+	with ESMTP id S1754291Ab3JRTvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:51:53 -0400
+	Fri, 18 Oct 2013 15:51:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
-Subject: [ 7/7] ipv6: tcp: fix panic in SYN processing
-Date: Fri, 18 Oct 2013 12:52:54 -0700
-Message-Id: <20131018195036.526916841@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [ 4/7] parisc: fix interruption handler to respect pagefault_disable()
+Date: Fri, 18 Oct 2013 12:52:51 -0700
+Message-Id: <20131018195036.327069793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20131018195036.020644622@linuxfoundation.org>
 References: <20131018195036.020644622@linuxfoundation.org>
@@ -27,36 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Helge Deller <deller@gmx.de>
 
-commit c16a98ed91597b40b22b540c6517103497ef8e74 upstream.
+commit 59b33f148cc08fb33cbe823fca1e34f7f023765e upstream.
 
-commit 72a3effaf633bc ([NET]: Size listen hash tables using backlog
-hint) added a bug allowing inet6_synq_hash() to return an out of bound
-array index, because of u16 overflow.
+Running an "echo t > /proc/sysrq-trigger" crashes the parisc kernel.  The
+problem is, that in print_worker_info() we try to read the workqueue info via
+the probe_kernel_read() functions which use pagefault_disable() to avoid
+crashes like this:
+    probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
+    probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
+    probe_kernel_read(name, wq->name, sizeof(name) - 1);
 
-Bug can happen if system admins set net.core.somaxconn &
-net.ipv4.tcp_max_syn_backlog sysctls to values greater than 65536
+The problem here is, that the first probe_kernel_read(&pwq) might return zero
+in pwq and as such the following probe_kernel_reads() try to access contents of
+the page zero which is read protected and generate a kernel segfault.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Willy Tarreau <w@1wt.eu>
+With this patch we fix the interruption handler to call parisc_terminate()
+directly only if pagefault_disable() was not called (in which case
+preempt_count()==0).  Otherwise we hand over to the pagefault handler which
+will try to look up the faulting address in the fixup tables.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin  <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv6/inet6_connection_sock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/kernel/traps.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/inet6_connection_sock.c
-+++ b/net/ipv6/inet6_connection_sock.c
-@@ -85,7 +85,7 @@ struct dst_entry *inet6_csk_route_req(st
-  * request_sock (formerly open request) hash tables.
-  */
- static u32 inet6_synq_hash(const struct in6_addr *raddr, const __be16 rport,
--			   const u32 rnd, const u16 synq_hsize)
-+			   const u32 rnd, const u32 synq_hsize)
- {
- 	u32 c;
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -811,14 +811,14 @@ void notrace handle_interruption(int cod
+ 	else {
+ 
+ 	    /*
+-	     * The kernel should never fault on its own address space.
++	     * The kernel should never fault on its own address space,
++	     * unless pagefault_disable() was called before.
+ 	     */
+ 
+-	    if (fault_space == 0) 
++	    if (fault_space == 0 && !in_atomic())
+ 	    {
+ 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
+ 		parisc_terminate("Kernel Fault", regs, code, fault_address);
+-	
+ 	    }
+ 	}
  
 
 
