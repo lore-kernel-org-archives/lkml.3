@@ -1,445 +1,556 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3JRJEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:04:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:49645 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3JRJE2 (ORCPT
+	id S1752525Ab3JRJIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:08:17 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:42073 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751709Ab3JRJIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:04:28 -0400
-Message-ID: <5260F998.1080008@atmel.com>
-Date: Fri, 18 Oct 2013 11:04:24 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+	Fri, 18 Oct 2013 05:08:13 -0400
+From: <srinivas.kandagatla@st.com>
+To: <linux-media@vger.kernel.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 6/6] ARM: at91/dt: remove old clk material
-References: <1381495416-15928-1-git-send-email-b.brezillon@overkiz.com> <1381495416-15928-7-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1381495416-15928-7-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+        Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH v6] media: st-rc: Add ST remote control driver
+Date: Fri, 18 Oct 2013 10:01:14 +0100
+Message-ID: <1382086874-9531-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2013 14:43, Boris BREZILLON :
-> This patch removes the old main clk node which is now useless as sama5d3
-> SoCs and boards are no longer compatible with the old at91 clk
-> implementations.
->
-> It also remove old clock definitions (clock definitions using at91 old clk
-> framework).
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Happy to see all these lines removed!
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This patch adds support to ST RC driver, which is basically a IR/UHF
+receiver and transmitter. This IP (IRB) is common across all the ST
+parts for settop box platforms. IRB is embedded in ST COMMS IP block.
+It supports both Rx & Tx functionality.
 
-I am looking forward the same result on other SoCs.
+This driver adds only Rx functionality via LIRC codec.
 
-> ---
->   arch/arm/boot/dts/sama5d3xcm.dtsi |   11 --
->   arch/arm/mach-at91/sama5d3.c      |  346 -------------------------------------
->   2 files changed, 357 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> index dce5419..f55ed07 100644
-> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> @@ -18,17 +18,6 @@
->   		reg = <0x20000000 0x20000000>;
->   	};
->
-> -	clocks {
-> -		#address-cells = <1>;
-> -		#size-cells = <1>;
-> -		ranges;
-> -
-> -		main_clock: clock@0 {
-> -			compatible = "atmel,osc", "fixed-clock";
-> -			clock-frequency = <12000000>;
-> -		};
-> -	};
-> -
->   	ahb {
->   		apb {
->   			spi0: spi@f0004000 {
-> diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
-> index 3426098..ae58fea 100644
-> --- a/arch/arm/mach-at91/sama5d3.c
-> +++ b/arch/arm/mach-at91/sama5d3.c
-> @@ -21,349 +21,6 @@
->   #include "generic.h"
->   #include "sam9_smc.h"
->
-> -#if defined(CONFIG_OLD_CLK_AT91)
-> -#include "clock.h"
-> -/* --------------------------------------------------------------------
-> - *  Clocks
-> - * -------------------------------------------------------------------- */
-> -
-> -/*
-> - * The peripheral clocks.
-> - */
-> -
-> -static struct clk pioA_clk = {
-> -	.name		= "pioA_clk",
-> -	.pid		= SAMA5D3_ID_PIOA,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk pioB_clk = {
-> -	.name		= "pioB_clk",
-> -	.pid		= SAMA5D3_ID_PIOB,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk pioC_clk = {
-> -	.name		= "pioC_clk",
-> -	.pid		= SAMA5D3_ID_PIOC,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk pioD_clk = {
-> -	.name		= "pioD_clk",
-> -	.pid		= SAMA5D3_ID_PIOD,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk pioE_clk = {
-> -	.name		= "pioE_clk",
-> -	.pid		= SAMA5D3_ID_PIOE,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk usart0_clk = {
-> -	.name		= "usart0_clk",
-> -	.pid		= SAMA5D3_ID_USART0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk usart1_clk = {
-> -	.name		= "usart1_clk",
-> -	.pid		= SAMA5D3_ID_USART1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk usart2_clk = {
-> -	.name		= "usart2_clk",
-> -	.pid		= SAMA5D3_ID_USART2,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk usart3_clk = {
-> -	.name		= "usart3_clk",
-> -	.pid		= SAMA5D3_ID_USART3,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk uart0_clk = {
-> -	.name		= "uart0_clk",
-> -	.pid		= SAMA5D3_ID_UART0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk uart1_clk = {
-> -	.name		= "uart1_clk",
-> -	.pid		= SAMA5D3_ID_UART1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk twi0_clk = {
-> -	.name		= "twi0_clk",
-> -	.pid		= SAMA5D3_ID_TWI0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk twi1_clk = {
-> -	.name		= "twi1_clk",
-> -	.pid		= SAMA5D3_ID_TWI1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk twi2_clk = {
-> -	.name		= "twi2_clk",
-> -	.pid		= SAMA5D3_ID_TWI2,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk mmc0_clk = {
-> -	.name		= "mci0_clk",
-> -	.pid		= SAMA5D3_ID_HSMCI0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk mmc1_clk = {
-> -	.name		= "mci1_clk",
-> -	.pid		= SAMA5D3_ID_HSMCI1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk mmc2_clk = {
-> -	.name		= "mci2_clk",
-> -	.pid		= SAMA5D3_ID_HSMCI2,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk spi0_clk = {
-> -	.name		= "spi0_clk",
-> -	.pid		= SAMA5D3_ID_SPI0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk spi1_clk = {
-> -	.name		= "spi1_clk",
-> -	.pid		= SAMA5D3_ID_SPI1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk tcb0_clk = {
-> -	.name		= "tcb0_clk",
-> -	.pid		= SAMA5D3_ID_TC0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk tcb1_clk = {
-> -	.name		= "tcb1_clk",
-> -	.pid		= SAMA5D3_ID_TC1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk adc_clk = {
-> -	.name		= "adc_clk",
-> -	.pid		= SAMA5D3_ID_ADC,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk adc_op_clk = {
-> -	.name		= "adc_op_clk",
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.rate_hz	= 5000000,
-> -};
-> -static struct clk dma0_clk = {
-> -	.name		= "dma0_clk",
-> -	.pid		= SAMA5D3_ID_DMA0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk dma1_clk = {
-> -	.name		= "dma1_clk",
-> -	.pid		= SAMA5D3_ID_DMA1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk uhphs_clk = {
-> -	.name		= "uhphs",
-> -	.pid		= SAMA5D3_ID_UHPHS,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk udphs_clk = {
-> -	.name		= "udphs_clk",
-> -	.pid		= SAMA5D3_ID_UDPHS,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -/* gmac only for sama5d33, sama5d34, sama5d35 */
-> -static struct clk macb0_clk = {
-> -	.name		= "macb0_clk",
-> -	.pid		= SAMA5D3_ID_GMAC,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -/* emac only for sama5d31, sama5d35 */
-> -static struct clk macb1_clk = {
-> -	.name		= "macb1_clk",
-> -	.pid		= SAMA5D3_ID_EMAC,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -/* lcd only for sama5d31, sama5d33, sama5d34 */
-> -static struct clk lcdc_clk = {
-> -	.name		= "lcdc_clk",
-> -	.pid		= SAMA5D3_ID_LCDC,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -/* isi only for sama5d33, sama5d35 */
-> -static struct clk isi_clk = {
-> -	.name		= "isi_clk",
-> -	.pid		= SAMA5D3_ID_ISI,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk can0_clk = {
-> -	.name		= "can0_clk",
-> -	.pid		= SAMA5D3_ID_CAN0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk can1_clk = {
-> -	.name		= "can1_clk",
-> -	.pid		= SAMA5D3_ID_CAN1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk ssc0_clk = {
-> -	.name		= "ssc0_clk",
-> -	.pid		= SAMA5D3_ID_SSC0,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk ssc1_clk = {
-> -	.name		= "ssc1_clk",
-> -	.pid		= SAMA5D3_ID_SSC1,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV2,
-> -};
-> -static struct clk sha_clk = {
-> -	.name		= "sha_clk",
-> -	.pid		= SAMA5D3_ID_SHA,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -	.div		= AT91_PMC_PCR_DIV8,
-> -};
-> -static struct clk aes_clk = {
-> -	.name		= "aes_clk",
-> -	.pid		= SAMA5D3_ID_AES,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -static struct clk tdes_clk = {
-> -	.name		= "tdes_clk",
-> -	.pid		= SAMA5D3_ID_TDES,
-> -	.type		= CLK_TYPE_PERIPHERAL,
-> -};
-> -
-> -static struct clk *periph_clocks[] __initdata = {
-> -	&pioA_clk,
-> -	&pioB_clk,
-> -	&pioC_clk,
-> -	&pioD_clk,
-> -	&pioE_clk,
-> -	&usart0_clk,
-> -	&usart1_clk,
-> -	&usart2_clk,
-> -	&usart3_clk,
-> -	&uart0_clk,
-> -	&uart1_clk,
-> -	&twi0_clk,
-> -	&twi1_clk,
-> -	&twi2_clk,
-> -	&mmc0_clk,
-> -	&mmc1_clk,
-> -	&mmc2_clk,
-> -	&spi0_clk,
-> -	&spi1_clk,
-> -	&tcb0_clk,
-> -	&tcb1_clk,
-> -	&adc_clk,
-> -	&adc_op_clk,
-> -	&dma0_clk,
-> -	&dma1_clk,
-> -	&uhphs_clk,
-> -	&udphs_clk,
-> -	&macb0_clk,
-> -	&macb1_clk,
-> -	&lcdc_clk,
-> -	&isi_clk,
-> -	&can0_clk,
-> -	&can1_clk,
-> -	&ssc0_clk,
-> -	&ssc1_clk,
-> -	&sha_clk,
-> -	&aes_clk,
-> -	&tdes_clk,
-> -};
-> -
-> -static struct clk pck0 = {
-> -	.name		= "pck0",
-> -	.pmc_mask	= AT91_PMC_PCK0,
-> -	.type		= CLK_TYPE_PROGRAMMABLE,
-> -	.id		= 0,
-> -};
-> -
-> -static struct clk pck1 = {
-> -	.name		= "pck1",
-> -	.pmc_mask	= AT91_PMC_PCK1,
-> -	.type		= CLK_TYPE_PROGRAMMABLE,
-> -	.id		= 1,
-> -};
-> -
-> -static struct clk pck2 = {
-> -	.name		= "pck2",
-> -	.pmc_mask	= AT91_PMC_PCK2,
-> -	.type		= CLK_TYPE_PROGRAMMABLE,
-> -	.id		= 2,
-> -};
-> -
-> -static struct clk_lookup periph_clocks_lookups[] = {
-> -	/* lookup table for DT entries */
-> -	CLKDEV_CON_DEV_ID("usart", "ffffee00.serial", &mck),
-> -	CLKDEV_CON_DEV_ID(NULL, "fffff200.gpio", &pioA_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioB_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioC_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioD_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioE_clk),
-> -	CLKDEV_CON_DEV_ID("usart", "f001c000.serial", &usart0_clk),
-> -	CLKDEV_CON_DEV_ID("usart", "f0020000.serial", &usart1_clk),
-> -	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart2_clk),
-> -	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart3_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "f0014000.i2c", &twi0_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "f0018000.i2c", &twi1_clk),
-> -	CLKDEV_CON_DEV_ID(NULL, "f801c000.i2c", &twi2_clk),
-> -	CLKDEV_CON_DEV_ID("mci_clk", "f0000000.mmc", &mmc0_clk),
-> -	CLKDEV_CON_DEV_ID("mci_clk", "f8000000.mmc", &mmc1_clk),
-> -	CLKDEV_CON_DEV_ID("mci_clk", "f8004000.mmc", &mmc2_clk),
-> -	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi0_clk),
-> -	CLKDEV_CON_DEV_ID("spi_clk", "f8008000.spi", &spi1_clk),
-> -	CLKDEV_CON_DEV_ID("t0_clk", "f0010000.timer", &tcb0_clk),
-> -	CLKDEV_CON_DEV_ID("t0_clk", "f8014000.timer", &tcb1_clk),
-> -	CLKDEV_CON_DEV_ID("tsc_clk", "f8018000.tsadcc", &adc_clk),
-> -	CLKDEV_CON_DEV_ID("dma_clk", "ffffe600.dma-controller", &dma0_clk),
-> -	CLKDEV_CON_DEV_ID("dma_clk", "ffffe800.dma-controller", &dma1_clk),
-> -	CLKDEV_CON_DEV_ID("hclk", "600000.ohci", &uhphs_clk),
-> -	CLKDEV_CON_DEV_ID("ohci_clk", "600000.ohci", &uhphs_clk),
-> -	CLKDEV_CON_DEV_ID("ehci_clk", "700000.ehci", &uhphs_clk),
-> -	CLKDEV_CON_DEV_ID("pclk", "500000.gadget", &udphs_clk),
-> -	CLKDEV_CON_DEV_ID("hclk", "500000.gadget", &utmi_clk),
-> -	CLKDEV_CON_DEV_ID("hclk", "f0028000.ethernet", &macb0_clk),
-> -	CLKDEV_CON_DEV_ID("pclk", "f0028000.ethernet", &macb0_clk),
-> -	CLKDEV_CON_DEV_ID("hclk", "f802c000.ethernet", &macb1_clk),
-> -	CLKDEV_CON_DEV_ID("pclk", "f802c000.ethernet", &macb1_clk),
-> -	CLKDEV_CON_DEV_ID("pclk", "f0008000.ssc", &ssc0_clk),
-> -	CLKDEV_CON_DEV_ID("pclk", "f000c000.ssc", &ssc1_clk),
-> -	CLKDEV_CON_DEV_ID("can_clk", "f000c000.can", &can0_clk),
-> -	CLKDEV_CON_DEV_ID("can_clk", "f8010000.can", &can1_clk),
-> -	CLKDEV_CON_DEV_ID("sha_clk", "f8034000.sha", &sha_clk),
-> -	CLKDEV_CON_DEV_ID("aes_clk", "f8038000.aes", &aes_clk),
-> -	CLKDEV_CON_DEV_ID("tdes_clk", "f803c000.tdes", &tdes_clk),
-> -};
-> -
-> -static void __init sama5d3_register_clocks(void)
-> -{
-> -	int i;
-> -
-> -	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
-> -		clk_register(periph_clocks[i]);
-> -
-> -	clkdev_add_table(periph_clocks_lookups,
-> -			 ARRAY_SIZE(periph_clocks_lookups));
-> -
-> -	clk_register(&pck0);
-> -	clk_register(&pck1);
-> -	clk_register(&pck2);
-> -}
-> -#endif
-> -
->   /* --------------------------------------------------------------------
->    *  AT91SAM9x5 processor initialization
->    * -------------------------------------------------------------------- */
-> @@ -375,7 +32,4 @@ static void __init sama5d3_map_io(void)
->
->   AT91_SOC_START(sama5d3)
->   	.map_io = sama5d3_map_io,
-> -#if defined(CONFIG_OLD_CLK_AT91)
-> -	.register_clocks = sama5d3_register_clocks,
-> -#endif
->   AT91_SOC_END
->
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Acked-by: Sean Young <sean@mess.org>
+---
+Hi Chehab,
+
+This is a very simple rc driver for IRB controller found in STi SOCs.
+This driver is a raw driver which feeds data to lirc codec for the user lircd
+to decode the keys.
+
+Am happy to prefix "rx-mode" and "tx-mode" device tree properties with "st", if
+you think these can not be generic properties.
 
 
+Changes since v5:
+	- removed redundancy error checks and using small letters
+	 for hex as suggested by Prabhakar L.
+	- make tx-mode and rx-mode more descriptive.
+
+Changes since v4:
+	- updated dt bindings doc with suggestions from Stephen W.
+
+Changes since v3:
+	- updated dt bindings doc with suggestions from Mark R.
+
+Changes since v2:
+	- Updated Kconfig dependencies as suggested by Sean and Chehab.
+	- Fixed a logical check spoted by Sean.
+
+Changes since v1:
+	- Device tree bindings cleaned up as suggested by Mark and Pawel
+	- use ir_raw_event_reset under overflow conditions as suggested by Sean.
+	- call ir_raw_event_handle in interrupt handler as suggested by Sean.
+	- correct allowed_protos flag with RC_BIT_ types as suggested by Sean.
+	- timeout and rx resolution added as suggested by Sean.
+
+Thankyou all for reviewing and commenting.
+I would like to get this driver at least in 3.13.
+
+Thanks,
+srini
+
+ Documentation/devicetree/bindings/media/st-rc.txt |   29 ++
+ drivers/media/rc/Kconfig                          |   10 +
+ drivers/media/rc/Makefile                         |    1 +
+ drivers/media/rc/st_rc.c                          |  395 +++++++++++++++++++++
+ 4 files changed, 435 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/st-rc.txt
+ create mode 100644 drivers/media/rc/st_rc.c
+
+diff --git a/Documentation/devicetree/bindings/media/st-rc.txt b/Documentation/devicetree/bindings/media/st-rc.txt
+new file mode 100644
+index 0000000..05c432d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/st-rc.txt
+@@ -0,0 +1,29 @@
++Device-Tree bindings for ST IRB IP
++
++Required properties:
++	- compatible: Should contain "st,comms-irb".
++	- reg: Base physical address of the controller and length of memory
++	  mapped region.
++	- interrupts: interrupt-specifier for the sole interrupt generated by
++	  the device. The interrupt specifier format depends on the interrupt
++	  controller parent.
++	- rx-mode: can be "infrared" or "uhf". This property specifies the L1
++	  protocol used for receiving remote control signals. rx-mode should
++	  be present iff the rx pins are wired up.
++	- tx-mode: should be "infrared". This property specifies the L1
++	  protocol used for transmitting remote control signals. tx-mode should
++	  be present iff the tx pins are wired up.
++
++Optional properties:
++	- pinctrl-names, pinctrl-0: the pincontrol settings to configure muxing
++	  properly for IRB pins.
++	- clocks : phandle with clock-specifier pair for IRB.
++
++Example node:
++
++	rc: rc@fe518000 {
++		compatible	= "st,comms-irb";
++		reg		= <0xfe518000 0x234>;
++		interrupts	= <0 203 0>;
++		rx-mode		= "infrared";
++	};
+diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+index 11e84bc..904f113 100644
+--- a/drivers/media/rc/Kconfig
++++ b/drivers/media/rc/Kconfig
+@@ -322,4 +322,14 @@ config IR_GPIO_CIR
+ 	   To compile this driver as a module, choose M here: the module will
+ 	   be called gpio-ir-recv.
+ 
++config RC_ST
++	tristate "ST remote control receiver"
++	depends on ARCH_STI && RC_CORE
++	help
++	 Say Y here if you want support for ST remote control driver
++	 which allows both IR and UHF RX.
++	 The driver passes raw pulse and space information to the LIRC decoder.
++
++	 If you're not sure, select N here.
++
+ endif #RC_DEVICES
+diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+index 56bacf0..f4eb32c 100644
+--- a/drivers/media/rc/Makefile
++++ b/drivers/media/rc/Makefile
+@@ -30,3 +30,4 @@ obj-$(CONFIG_RC_LOOPBACK) += rc-loopback.o
+ obj-$(CONFIG_IR_GPIO_CIR) += gpio-ir-recv.o
+ obj-$(CONFIG_IR_IGUANA) += iguanair.o
+ obj-$(CONFIG_IR_TTUSBIR) += ttusbir.o
++obj-$(CONFIG_RC_ST) += st_rc.o
+diff --git a/drivers/media/rc/st_rc.c b/drivers/media/rc/st_rc.c
+new file mode 100644
+index 0000000..65120c2
+--- /dev/null
++++ b/drivers/media/rc/st_rc.c
+@@ -0,0 +1,395 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics Limited
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#include <linux/kernel.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <media/rc-core.h>
++#include <linux/pinctrl/consumer.h>
++
++struct st_rc_device {
++	struct device			*dev;
++	int				irq;
++	int				irq_wake;
++	struct clk			*sys_clock;
++	void				*base;	/* Register base address */
++	void				*rx_base;/* RX Register base address */
++	struct rc_dev			*rdev;
++	bool				overclocking;
++	int				sample_mult;
++	int				sample_div;
++	bool				rxuhfmode;
++};
++
++/* Registers */
++#define IRB_SAMPLE_RATE_COMM	0x64	/* sample freq divisor*/
++#define IRB_CLOCK_SEL		0x70	/* clock select       */
++#define IRB_CLOCK_SEL_STATUS	0x74	/* clock status       */
++/* IRB IR/UHF receiver registers */
++#define IRB_RX_ON               0x40	/* pulse time capture */
++#define IRB_RX_SYS              0X44	/* sym period capture */
++#define IRB_RX_INT_EN           0x48	/* IRQ enable (R/W)   */
++#define IRB_RX_INT_STATUS       0x4c	/* IRQ status (R/W)   */
++#define IRB_RX_EN               0x50	/* Receive enable     */
++#define IRB_MAX_SYM_PERIOD      0x54	/* max sym value      */
++#define IRB_RX_INT_CLEAR        0x58	/* overrun status     */
++#define IRB_RX_STATUS           0x6c	/* receive status     */
++#define IRB_RX_NOISE_SUPPR      0x5c	/* noise suppression  */
++#define IRB_RX_POLARITY_INV     0x68	/* polarity inverter  */
++
++/**
++ * IRQ set: Enable full FIFO                 1  -> bit  3;
++ *          Enable overrun IRQ               1  -> bit  2;
++ *          Enable last symbol IRQ           1  -> bit  1:
++ *          Enable RX interrupt              1  -> bit  0;
++ */
++#define IRB_RX_INTS		0x0f
++#define IRB_RX_OVERRUN_INT	0x04
++ /* maximum symbol period (microsecs),timeout to detect end of symbol train */
++#define MAX_SYMB_TIME		0x5000
++#define IRB_SAMPLE_FREQ		10000000
++#define	IRB_FIFO_NOT_EMPTY	0xff00
++#define IRB_OVERFLOW		0x4
++#define IRB_TIMEOUT		0xffff
++#define IR_ST_NAME "st-rc"
++
++static void st_rc_send_lirc_timeout(struct rc_dev *rdev)
++{
++	DEFINE_IR_RAW_EVENT(ev);
++	ev.timeout = true;
++	ir_raw_event_store(rdev, &ev);
++}
++
++/**
++ * RX graphical example to better understand the difference between ST IR block
++ * output and standard definition used by LIRC (and most of the world!)
++ *
++ *           mark                                     mark
++ *      |-IRB_RX_ON-|                            |-IRB_RX_ON-|
++ *      ___  ___  ___                            ___  ___  ___             _
++ *      | |  | |  | |                            | |  | |  | |             |
++ *      | |  | |  | |         space 0            | |  | |  | |   space 1   |
++ * _____| |__| |__| |____________________________| |__| |__| |_____________|
++ *
++ *      |--------------- IRB_RX_SYS -------------|------ IRB_RX_SYS -------|
++ *
++ *      |------------- encoding bit 0 -----------|---- encoding bit 1 -----|
++ *
++ * ST hardware returns mark (IRB_RX_ON) and total symbol time (IRB_RX_SYS), so
++ * convert to standard mark/space we have to calculate space=(IRB_RX_SYS-mark)
++ * The mark time represents the amount of time the carrier (usually 36-40kHz)
++ * is detected.The above examples shows Pulse Width Modulation encoding where
++ * bit 0 is represented by space>mark.
++ */
++
++static irqreturn_t st_rc_rx_interrupt(int irq, void *data)
++{
++	unsigned int symbol, mark = 0;
++	struct st_rc_device *dev = data;
++	int last_symbol = 0;
++	u32 status;
++	DEFINE_IR_RAW_EVENT(ev);
++
++	if (dev->irq_wake)
++		pm_wakeup_event(dev->dev, 0);
++
++	status  = readl(dev->rx_base + IRB_RX_STATUS);
++
++	while (status & (IRB_FIFO_NOT_EMPTY | IRB_OVERFLOW)) {
++		u32 int_status = readl(dev->rx_base + IRB_RX_INT_STATUS);
++		if (unlikely(int_status & IRB_RX_OVERRUN_INT)) {
++			/* discard the entire collection in case of errors!  */
++			ir_raw_event_reset(dev->rdev);
++			dev_info(dev->dev, "IR RX overrun\n");
++			writel(IRB_RX_OVERRUN_INT,
++					dev->rx_base + IRB_RX_INT_CLEAR);
++			continue;
++		}
++
++		symbol = readl(dev->rx_base + IRB_RX_SYS);
++		mark = readl(dev->rx_base + IRB_RX_ON);
++
++		if (symbol == IRB_TIMEOUT)
++			last_symbol = 1;
++
++		 /* Ignore any noise */
++		if ((mark > 2) && (symbol > 1)) {
++			symbol -= mark;
++			if (dev->overclocking) { /* adjustments to timings */
++				symbol *= dev->sample_mult;
++				symbol /= dev->sample_div;
++				mark *= dev->sample_mult;
++				mark /= dev->sample_div;
++			}
++
++			ev.duration = US_TO_NS(mark);
++			ev.pulse = true;
++			ir_raw_event_store(dev->rdev, &ev);
++
++			if (!last_symbol) {
++				ev.duration = US_TO_NS(symbol);
++				ev.pulse = false;
++				ir_raw_event_store(dev->rdev, &ev);
++			} else  {
++				st_rc_send_lirc_timeout(dev->rdev);
++			}
++
++		}
++		last_symbol = 0;
++		status  = readl(dev->rx_base + IRB_RX_STATUS);
++	}
++
++	writel(IRB_RX_INTS, dev->rx_base + IRB_RX_INT_CLEAR);
++
++	/* Empty software fifo */
++	ir_raw_event_handle(dev->rdev);
++	return IRQ_HANDLED;
++}
++
++static void st_rc_hardware_init(struct st_rc_device *dev)
++{
++	int baseclock, freqdiff;
++	unsigned int rx_max_symbol_per = MAX_SYMB_TIME;
++	unsigned int rx_sampling_freq_div;
++
++	clk_prepare_enable(dev->sys_clock);
++	baseclock = clk_get_rate(dev->sys_clock);
++
++	/* IRB input pins are inverted internally from high to low. */
++	writel(1, dev->rx_base + IRB_RX_POLARITY_INV);
++
++	rx_sampling_freq_div = baseclock / IRB_SAMPLE_FREQ;
++	writel(rx_sampling_freq_div, dev->base + IRB_SAMPLE_RATE_COMM);
++
++	freqdiff = baseclock - (rx_sampling_freq_div * IRB_SAMPLE_FREQ);
++	if (freqdiff) { /* over clocking, workout the adjustment factors */
++		dev->overclocking = true;
++		dev->sample_mult = 1000;
++		dev->sample_div = baseclock / (10000 * rx_sampling_freq_div);
++		rx_max_symbol_per = (rx_max_symbol_per * 1000)/dev->sample_div;
++	}
++
++	writel(rx_max_symbol_per, dev->rx_base + IRB_MAX_SYM_PERIOD);
++}
++
++static int st_rc_remove(struct platform_device *pdev)
++{
++	struct st_rc_device *rc_dev = platform_get_drvdata(pdev);
++	clk_disable_unprepare(rc_dev->sys_clock);
++	rc_unregister_device(rc_dev->rdev);
++	return 0;
++}
++
++static int st_rc_open(struct rc_dev *rdev)
++{
++	struct st_rc_device *dev = rdev->priv;
++	unsigned long flags;
++	local_irq_save(flags);
++	/* enable interrupts and receiver */
++	writel(IRB_RX_INTS, dev->rx_base + IRB_RX_INT_EN);
++	writel(0x01, dev->rx_base + IRB_RX_EN);
++	local_irq_restore(flags);
++
++	return 0;
++}
++
++static void st_rc_close(struct rc_dev *rdev)
++{
++	struct st_rc_device *dev = rdev->priv;
++	/* disable interrupts and receiver */
++	writel(0x00, dev->rx_base + IRB_RX_EN);
++	writel(0x00, dev->rx_base + IRB_RX_INT_EN);
++}
++
++static int st_rc_probe(struct platform_device *pdev)
++{
++	int ret = -EINVAL;
++	struct rc_dev *rdev;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++	struct st_rc_device *rc_dev;
++	struct device_node *np = pdev->dev.of_node;
++	const char *rx_mode;
++
++	rc_dev = devm_kzalloc(dev, sizeof(struct st_rc_device), GFP_KERNEL);
++
++	if (!rc_dev)
++		return -ENOMEM;
++
++	rdev = rc_allocate_device();
++
++	if (!rdev)
++		return -ENOMEM;
++
++	if (np && !of_property_read_string(np, "rx-mode", &rx_mode)) {
++
++		if (!strcmp(rx_mode, "uhf")) {
++			rc_dev->rxuhfmode = true;
++		} else if (!strcmp(rx_mode, "infrared")) {
++			rc_dev->rxuhfmode = false;
++		} else {
++			dev_err(dev, "Unsupported rx mode [%s]\n", rx_mode);
++			goto err;
++		}
++
++	} else {
++		goto err;
++	}
++
++	rc_dev->sys_clock = devm_clk_get(dev, NULL);
++	if (IS_ERR(rc_dev->sys_clock)) {
++		dev_err(dev, "System clock not found\n");
++		ret = PTR_ERR(rc_dev->sys_clock);
++		goto err;
++	}
++
++	rc_dev->irq = platform_get_irq(pdev, 0);
++	if (rc_dev->irq < 0) {
++		ret = rc_dev->irq;
++		goto err;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	rc_dev->base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(rc_dev->base)) {
++		ret = PTR_ERR(rc_dev->base);
++		goto err;
++	}
++
++	if (rc_dev->rxuhfmode)
++		rc_dev->rx_base = rc_dev->base + 0x40;
++	else
++		rc_dev->rx_base = rc_dev->base;
++
++	rc_dev->dev = dev;
++	platform_set_drvdata(pdev, rc_dev);
++	st_rc_hardware_init(rc_dev);
++
++	rdev->driver_type = RC_DRIVER_IR_RAW;
++	rdev->allowed_protos = RC_BIT_ALL;
++	/* rx sampling rate is 10Mhz */
++	rdev->rx_resolution = 100;
++	rdev->timeout = US_TO_NS(MAX_SYMB_TIME);
++	rdev->priv = rc_dev;
++	rdev->open = st_rc_open;
++	rdev->close = st_rc_close;
++	rdev->driver_name = IR_ST_NAME;
++	rdev->map_name = RC_MAP_LIRC;
++	rdev->input_name = "ST Remote Control Receiver";
++
++	/* enable wake via this device */
++	device_set_wakeup_capable(dev, true);
++	device_set_wakeup_enable(dev, true);
++
++	ret = rc_register_device(rdev);
++	if (ret < 0)
++		goto clkerr;
++
++	rc_dev->rdev = rdev;
++	if (devm_request_irq(dev, rc_dev->irq, st_rc_rx_interrupt,
++			IRQF_NO_SUSPEND, IR_ST_NAME, rc_dev) < 0) {
++		dev_err(dev, "IRQ %d register failed\n", rc_dev->irq);
++		ret = -EINVAL;
++		goto rcerr;
++	}
++
++	/**
++	 * for LIRC_MODE_MODE2 or LIRC_MODE_PULSE or LIRC_MODE_RAW
++	 * lircd expects a long space first before a signal train to sync.
++	 */
++	st_rc_send_lirc_timeout(rdev);
++
++	dev_info(dev, "setup in %s mode\n", rc_dev->rxuhfmode ? "UHF" : "IR");
++
++	return ret;
++rcerr:
++	rc_unregister_device(rdev);
++	rdev = NULL;
++clkerr:
++	clk_disable_unprepare(rc_dev->sys_clock);
++err:
++	rc_free_device(rdev);
++	dev_err(dev, "Unable to register device (%d)\n", ret);
++	return ret;
++}
++
++#ifdef CONFIG_PM
++static int st_rc_suspend(struct device *dev)
++{
++	struct st_rc_device *rc_dev = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev)) {
++		if (!enable_irq_wake(rc_dev->irq))
++			rc_dev->irq_wake = 1;
++		else
++			return -EINVAL;
++	} else {
++		pinctrl_pm_select_sleep_state(dev);
++		writel(0x00, rc_dev->rx_base + IRB_RX_EN);
++		writel(0x00, rc_dev->rx_base + IRB_RX_INT_EN);
++		clk_disable_unprepare(rc_dev->sys_clock);
++	}
++
++	return 0;
++}
++
++static int st_rc_resume(struct device *dev)
++{
++	struct st_rc_device *rc_dev = dev_get_drvdata(dev);
++	struct rc_dev	*rdev = rc_dev->rdev;
++
++	if (rc_dev->irq_wake) {
++		disable_irq_wake(rc_dev->irq);
++		rc_dev->irq_wake = 0;
++	} else {
++		pinctrl_pm_select_default_state(dev);
++		st_rc_hardware_init(rc_dev);
++		if (rdev->users) {
++			writel(IRB_RX_INTS, rc_dev->rx_base + IRB_RX_INT_EN);
++			writel(0x01, rc_dev->rx_base + IRB_RX_EN);
++		}
++	}
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(st_rc_pm_ops, st_rc_suspend, st_rc_resume);
++#endif
++
++#ifdef CONFIG_OF
++static struct of_device_id st_rc_match[] = {
++	{ .compatible = "st,comms-irb", },
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, st_rc_match);
++#endif
++
++static struct platform_driver st_rc_driver = {
++	.driver = {
++		.name = IR_ST_NAME,
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(st_rc_match),
++#ifdef CONFIG_PM
++		.pm     = &st_rc_pm_ops,
++#endif
++	},
++	.probe = st_rc_probe,
++	.remove = st_rc_remove,
++};
++
++module_platform_driver(st_rc_driver);
++
++MODULE_DESCRIPTION("RC Transceiver driver for STMicroelectronics platforms");
++MODULE_AUTHOR("STMicroelectronics (R&D) Ltd");
++MODULE_LICENSE("GPL");
 -- 
-Nicolas Ferre
+1.7.6.5
+
