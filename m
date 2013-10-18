@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3JRMat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:30:49 -0400
+	id S1754304Ab3JRMa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:30:56 -0400
 Received: from mga09.intel.com ([134.134.136.24]:2346 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753925Ab3JRMaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:30:46 -0400
+	id S1754244Ab3JRMay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:30:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,522,1378882800"; 
-   d="scan'208";a="394936462"
+   d="scan'208";a="394936501"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/19] perf evlist: Fix 32-bit build error
-Date: Fri, 18 Oct 2013 15:29:07 +0300
-Message-Id: <1382099356-4918-11-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 12/19] perf tools: Fix bench/numa.c for 32-bit build
+Date: Fri, 18 Oct 2013 15:29:09 +0300
+Message-Id: <1382099356-4918-13-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
 References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
@@ -28,28 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-util/evlist.c: In function 'perf_evlist__mmap':
-util/evlist.c:772:2: error: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'size_t' [-Werror=format]
+bench/numa.c: In function 'worker_thread':
+bench/numa.c:1123:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+bench/numa.c:1171:6: error: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'u64' [-Werror=format]
 cc1: all warnings being treated as errors
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/bench/numa.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 0b5425b..07ba0a4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -769,7 +769,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index 64fa01c..d4c83c6 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1120,7 +1120,7 @@ static void *worker_thread(void *__tdata)
+ 		/* Check whether our max runtime timed out: */
+ 		if (g->p.nr_secs) {
+ 			timersub(&stop, &start0, &diff);
+-			if (diff.tv_sec >= g->p.nr_secs) {
++			if ((u32)diff.tv_sec >= g->p.nr_secs) {
+ 				g->stop_work = true;
+ 				break;
+ 			}
+@@ -1167,7 +1167,7 @@ static void *worker_thread(void *__tdata)
+ 			runtime_ns_max += diff.tv_usec * 1000;
  
- 	evlist->overwrite = overwrite;
- 	evlist->mmap_len = perf_evlist__mmap_size(pages);
--	pr_debug("mmap size %luB\n", evlist->mmap_len);
-+	pr_debug("mmap size %zuB\n", evlist->mmap_len);
- 	mask = evlist->mmap_len - page_size - 1;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 			if (details >= 0) {
+-				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
++				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIx64"]\n",
+ 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
+ 			}
+ 			fflush(stdout);
 -- 
 1.7.11.7
 
