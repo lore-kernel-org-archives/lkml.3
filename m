@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab3JSGQA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 02:16:00 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:11130 "EHLO
+	id S1751771Ab3JSGRu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 02:17:50 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:11142 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751066Ab3JSGP7 (ORCPT
+	by vger.kernel.org with ESMTP id S1750966Ab3JSGRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 02:15:59 -0400
+	Sat, 19 Oct 2013 02:17:48 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,9 +16,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 18/29] ntb: Fix missed call to pci_enable_msix()
-Date: Fri, 18 Oct 2013 19:12:18 +0200
-Message-Id: <cb525949fe5df255e1c512b1095c8e52658a2388.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 13/29] ipr: Do not call pci_disable_msi/msix() if pci_enable_msi/msix() failed
+Date: Fri, 18 Oct 2013 19:12:13 +0200
+Message-Id: <b1baf19af848c0b105a13d65e4ae6819a0e997a5.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
 References: <cover.1382103786.git.agordeev@redhat.com>
@@ -26,32 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current MSI-X enablement code assumes MSI-Xs were successfully
-allocated in case less than requested vectors were available.
-That assumption is wrong, since MSI-Xs should be enabled with
-a repeated call to pci_enable_msix(). This update fixes this.
-
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Jon Mason <jon.mason@intel.com>
 ---
- drivers/ntb/ntb_hw.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/scsi/ipr.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 1cb6e51..de2062c 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1075,6 +1075,10 @@ static int ntb_setup_msix(struct ntb_device *ndev)
- 			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
- 			 rc);
- 		msix_entries = rc;
-+
-+		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+		if (rc)
-+			goto err1;
- 	}
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index 36ac1c3..fb57e21 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -9255,10 +9255,8 @@ static int ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
+ 	while ((err = pci_enable_msix(ioa_cfg->pdev, entries, vectors)) > 0)
+ 			vectors = err;
  
- 	for (i = 0; i < msix_entries; i++) {
+-	if (err < 0) {
+-		pci_disable_msix(ioa_cfg->pdev);
++	if (err < 0)
+ 		return err;
+-	}
+ 
+ 	if (!err) {
+ 		for (i = 0; i < vectors; i++)
+@@ -9278,10 +9276,8 @@ static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ 	while ((err = pci_enable_msi_block(ioa_cfg->pdev, vectors)) > 0)
+ 			vectors = err;
+ 
+-	if (err < 0) {
+-		pci_disable_msi(ioa_cfg->pdev);
++	if (err < 0)
+ 		return err;
+-	}
+ 
+ 	if (!err) {
+ 		for (i = 0; i < vectors; i++)
 -- 
 1.7.7.6
 
