@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3JRKDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 06:03:38 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7986 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab3JRKDg (ORCPT
+	id S1752957Ab3JRKNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 06:13:04 -0400
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:36504 "HELO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752744Ab3JRKNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 06:03:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 18 Oct 2013 02:59:05 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <rui.zhang@intel.com>, <durgadoss.r@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>,
-        Jinyoung Park <jinyoungp@nvidia.com>
-Subject: [PATCH] thermal: Fix binding problem when there is thermal zone params
-Date: Fri, 18 Oct 2013 18:03:06 +0800
-Message-ID: <1382090587-9602-1-git-send-email-wni@nvidia.com>
+	Fri, 18 Oct 2013 06:13:02 -0400
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Oct 2013 06:13:02 EDT
+From: Vinayak Kale <vkale@apm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: tglx@linutronix.de, will.deacon@arm.com, Vinayak Kale <vkale@apm.com>
+Subject: [PATCH] genirq: error reporting for non-percpu interrupt in request_percpu_irq()
+Date: Fri, 18 Oct 2013 15:36:29 +0530
+Message-Id: <1382090789-18177-1-git-send-email-vkale@apm.com>
 X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The thermal zone params can be used to set governor
-to specific thermal governor for thermal zone device.
-But if the thermal zone params has only governor name
-without thermal bind params, then the thermal zone device
-will not be binding to cooling device. Because tz->ops->bind
-operator is not invoked in bind_tz() and bind_cdev() when
-there is thermal zone params.
+Return a separate error code when a non-percpu interrupt is passed to
+request_percpu_irq().
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
-Signed-off-by: Jinyoung Park <jinyoungp@nvidia.com>
+Suggested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Vinayak Kale <vkale@apm.com>
 ---
- drivers/thermal/thermal_core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/irq/manage.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 4962a6a..2ea41d3 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -247,7 +247,7 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
- 		if (!pos->tzp && !pos->ops->bind)
- 			continue;
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 514bcfd..c2713ae 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1671,10 +1671,12 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ 		return -EINVAL;
  
--		if (!pos->tzp && pos->ops->bind) {
-+		if (pos->ops->bind) {
- 			ret = pos->ops->bind(pos, cdev);
- 			if (ret)
- 				print_bind_err_msg(pos, cdev, ret);
-@@ -282,8 +282,8 @@ static void bind_tz(struct thermal_zone_device *tz)
+ 	desc = irq_to_desc(irq);
+-	if (!desc || !irq_settings_can_request(desc) ||
+-	    !irq_settings_is_per_cpu_devid(desc))
++	if (!desc || !irq_settings_can_request(desc))
+ 		return -EINVAL;
  
- 	mutex_lock(&thermal_list_lock);
- 
--	/* If there is no platform data, try to use ops->bind */
--	if (!tzp && tz->ops->bind) {
-+	/* If there is ops->bind, try to use ops->bind */
-+	if (tz->ops->bind) {
- 		list_for_each_entry(pos, &thermal_cdev_list, node) {
- 			ret = tz->ops->bind(tz, pos);
- 			if (ret)
++	if (!irq_settings_is_per_cpu_devid(desc))
++		return -EPERM;
++
+ 	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
+ 	if (!action)
+ 		return -ENOMEM;
 -- 
 1.7.9.5
 
