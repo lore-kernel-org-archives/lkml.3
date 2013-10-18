@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab3JSHE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 03:04:59 -0400
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:15041 "EHLO
+	id S1751784Ab3JSHG1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 03:06:27 -0400
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:15253 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750948Ab3JSHE6 (ORCPT
+	by vger.kernel.org with ESMTP id S1751240Ab3JSHG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 03:04:58 -0400
+	Sat, 19 Oct 2013 03:06:26 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,129 +16,113 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH RFC v2 00/29] Introduce pcim_enable_msi*() family helpers
-Date: Fri, 18 Oct 2013 19:12:00 +0200
-Message-Id: <cover.1382103786.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 11/29] PCI/MSI: Convert pci_msix_table_size() to a public interface
+Date: Fri, 18 Oct 2013 19:12:11 +0200
+Message-Id: <04a7098780907bd8848d4939b24a74e70e274866.1382103786.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1382103786.git.agordeev@redhat.com>
+References: <cover.1382103786.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is against "next" branch in Bjorn's repo:
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
+Make pci_msix_table_size() return error code if the device
+does not support MSI-X. This update is needed to create a
+consistent MSI-X counterpart for pci_get_msi_cap() MSI
+interface.
 
-Currently many device drivers need contiguously call functions
-pci_enable_msix() for MSI-X or pci_enable_msi_block() for MSI
-in a loop until success or failure. This update generalizes
-this usage pattern and introduces pcim_enable_msi*() family
-helpers.
+Device drivers can use this interface to obtain maximum number
+of MSI-X interrupts the device supports and i.e. use that number
+in a following call to pci_enable_msix() interface.
 
-As result, device drivers do not have to deal with tri-state
-return values from pci_enable_msix() and pci_enable_msi_block()
-functions directly and expected to have more clearer and straight
-code.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ Documentation/PCI/MSI-HOWTO.txt |   13 +++++++++++++
+ drivers/pci/msi.c               |    5 ++++-
+ drivers/pci/pcie/portdrv_core.c |    5 +++--
+ include/linux/pci.h             |    2 +-
+ 4 files changed, 21 insertions(+), 4 deletions(-)
 
-So i.e. the request loop described in the documentation...
-
-	int foo_driver_enable_msix(struct foo_adapter *adapter,
-				   int nvec)
-	{
-		while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
-			rc = pci_enable_msix(adapter->pdev,
-					     adapter->msix_entries,
-					     nvec);
-			if (rc > 0)
-				nvec = rc;
-			else
-				return rc;
-		}
-
-		return -ENOSPC;
-	}
-
-...would turn into a single helper call....
-
-	rc = pcim_enable_msix_range(adapter->pdev,
-				    adapter->msix_entries,
-				    nvec,
-				    FOO_DRIVER_MINIMUM_NVEC);
-
-
-Device drivers with more specific requirements (i.e. a number of
-MSI-Xs which is a multiple of a certain number within a specified
-range) would still need to implement the loop using the two old
-functions.
-
-It is fair to say the proposal in v1 ("Re-design MSI/MSI-X interrupts
-enablement pattern")is scrapped. Thus, I do not clarify what are the
-changes since v1  - the whole v2 series could be
-considered as completely new.
-
-Device driver updates (patches 12-29) are provided to clarify the
-change and expected to get reviews in follow-up post(s) when/if
-patch 12 ("PCI/MSI: Introduce pcim_enable_msi*() family helpers")
-is accepted.
-
-Patches 1,2	- ACK'ed tweaks for s390 architecture
-Patches 3,4	- fixes for PowerPC pSeries platform
-Patches 5-12	- fixes, tweaks and changes of the generic MSI code
-Patches 12-29	- example updates of few device drivers
-
-The tree could be found in "pci-next-msi-v2" branch in repo:
-https://github.com/a-gordeev/linux.git
-
-Alexander Gordeev (29):
-  PCI/MSI/s390: Fix single MSI only check
-  PCI/MSI/s390: Remove superfluous check of MSI type
-  PCI/MSI/pSeries: Fix wrong error code reporting
-  PCI/MSI/pSeries: Make quota traversing and requesting race-safe
-  PCI/MSI: Fix return value when populate_msi_sysfs() failed
-  PCI/MSI: Get rid of useless count of msi_desc leftovers
-  PCI/MSI: Return -ENOSYS for unimplemented interfaces, not -1
-  PCI/MSI: Make pci_enable_msix() 'nvec' argument unsigned int
-  PCI/MSI: Factor out pci_get_msi_cap() interface
-  PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
-  PCI/MSI: Convert pci_msix_table_size() to a public interface
-  PCI/MSI: Introduce pcim_enable_msi*() family helpers
-  ipr: Do not call pci_disable_msi/msix() if pci_enable_msi/msix()
-    failed
-  ipr: Make use of pcim_enable_msi/msix() interfaces
-  ixgbe: Make use of pcim_enable_msix_range() interface
-  ixgbevf: Make use of pcim_enable_msix_range() interface
-  megaraid: Make use of pcim_enable_msix() interface
-  ntb: Fix missed call to pci_enable_msix()
-  ntb: Make use of pcim_enable_msix/msix_exact() interfaces
-  qib: Make use of pcim_enable_msix() and pci_msix_table_size()
-    interfaces
-  qla2xxx: Make use of pcim_enable_msix_range() interface
-  qlge: Get rid of an redundant assignment
-  qlge: Make use of pcim_enable_msix() interface
-  tg3: Make use of pcim_enable_msix() interface
-  vmxnet3: Return -EINVAL if number of requested MSI-Xs is not enough
-  vmxnet3: Fixup a weird loop exit
-  vmxnet3: Return -ENOSPC when not enough MSI-X vectors available
-  vmxnet3: Limit number of rx queues to 1 if per-queue MSI-Xs failed
-  vmxnet3: Make use of pcim_enable_msix_range() interface
-
- Documentation/PCI/MSI-HOWTO.txt                   |  169 ++++++++++++++++++---
- arch/powerpc/platforms/pseries/msi.c              |   26 +++-
- arch/s390/pci/pci.c                               |    4 +-
- drivers/ata/ahci.c                                |   56 +++++---
- drivers/infiniband/hw/qib/qib_pcie.c              |   48 +++---
- drivers/net/ethernet/broadcom/tg3.c               |    6 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c      |   16 +--
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   33 ++---
- drivers/net/ethernet/qlogic/qlge/qlge_main.c      |   16 +--
- drivers/net/vmxnet3/vmxnet3_drv.c                 |   58 +++-----
- drivers/ntb/ntb_hw.c                              |   34 ++---
- drivers/pci/msi.c                                 |  129 +++++++++-------
- drivers/pci/pcie/portdrv_core.c                   |    5 +-
- drivers/scsi/ipr.c                                |   51 +++----
- drivers/scsi/megaraid/megaraid_sas_base.c         |   16 +--
- drivers/scsi/qla2xxx/qla_isr.c                    |   28 ++--
- include/linux/pci.h                               |   79 +++++++++--
- 17 files changed, 466 insertions(+), 308 deletions(-)
-
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 47118f3..fdf3ae3 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -245,6 +245,19 @@ MSI-X Table.  This address is mapped by the PCI subsystem, and should not
+ be accessed directly by the device driver.  If the driver wishes to
+ mask or unmask an interrupt, it should call disable_irq() / enable_irq().
+ 
++4.3.4 pci_msix_table_size
++
++int pci_msix_table_size(struct pci_dev *dev)
++
++This function could be used to retrieve number of entries in the device
++MSI-X table.
++
++If this function returns a negative number, it indicates the device is
++not capable of sending MSI-Xs.
++
++If this function returns a positive number, it indicates the maximum
++number of MSI-X interrupt vectors that could be allocated.
++
+ 4.4 Handling devices implementing both MSI and MSI-X capabilities
+ 
+ If a device implements both MSI and MSI-X capabilities, it can
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 13bd901..96f51d0 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -898,11 +898,12 @@ int pci_msix_table_size(struct pci_dev *dev)
+ 	u16 control;
+ 
+ 	if (!dev->msix_cap)
+-		return 0;
++		return -EINVAL;
+ 
+ 	pci_read_config_word(dev, dev->msix_cap + PCI_MSIX_FLAGS, &control);
+ 	return msix_table_size(control);
+ }
++EXPORT_SYMBOL(pci_msix_table_size);
+ 
+ /**
+  * pci_enable_msix - configure device's MSI-X capability structure
+@@ -933,6 +934,8 @@ int pci_enable_msix(struct pci_dev *dev,
+ 		return status;
+ 
+ 	nr_entries = pci_msix_table_size(dev);
++	if (nr_entries < 0)
++		return nr_entries;
+ 	if (nvec > nr_entries)
+ 		return nr_entries;
+ 
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index 31063ac..242f9ff 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -80,8 +80,9 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+ 	u32 reg32;
+ 
+ 	nr_entries = pci_msix_table_size(dev);
+-	if (!nr_entries)
+-		return -EINVAL;
++	if (nr_entries < 0)
++		return nr_entries;
++	BUG_ON(!nr_entries);
+ 	if (nr_entries > PCIE_PORT_MAX_MSIX_ENTRIES)
+ 		nr_entries = PCIE_PORT_MAX_MSIX_ENTRIES;
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index a04f5da..bef5775 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1163,7 +1163,7 @@ static inline void pci_disable_msi(struct pci_dev *dev)
+ 
+ static inline int pci_msix_table_size(struct pci_dev *dev)
+ {
+-	return 0;
++	return -ENOSYS;
+ }
+ static inline int pci_enable_msix(struct pci_dev *dev,
+ 				  struct msix_entry *entries, int unsigned nvec)
 -- 
 1.7.7.6
 
