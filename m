@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab3JRMuZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 08:50:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47697 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab3JRMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 08:50:24 -0400
-Date: Fri, 18 Oct 2013 14:50:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Xie XiuQi <xiexiuqi@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] irq: Fix some trivial typos in comments
-In-Reply-To: <5260A6B0.4070509@infradead.org>
-Message-ID: <alpine.LNX.2.00.1310181450050.31790@pobox.suse.cz>
-References: <52608AB1.1010307@huawei.com> <52608AE4.9060304@huawei.com> <5260A6B0.4070509@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753552Ab3JRMvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 08:51:46 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50917 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3JRMvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 08:51:44 -0400
+X-Nat-Received: from [202.181.97.72]:60359 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1382100664.32604
+To: mingo@kernel.org
+Cc: peterz@infradead.org, maarten.lankhorst@canonical.com,
+        imirkin@alum.mit.edu, linux-kernel@vger.kernel.org,
+        daniel.vetter@ffwll.ch, robdclark@gmail.com
+Subject: Re: [PATCH for 3.12] mutex: Avoid gcc version dependent__builtin_constant_p() usage.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201310171945.AGB17114.FSQVtHOJFOOFML@I-love.SAKURA.ne.jp>
+	<20131017105243.GM2675@laptop.programming.kicks-ass.net>
+	<525FC1DD.4030205@canonical.com>
+	<20131017110215.GN2675@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131017110215.GN2675@laptop.programming.kicks-ass.net>
+Message-Id: <201310182151.AGF16889.SQOFJOtVLFFMHO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 18 Oct 2013 21:51:04 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18102013 #11162103, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013, Randy Dunlap wrote:
-
-> > ---
-> >  kernel/irq/chip.c   |    2 +-
-> >  kernel/irq/manage.c |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> > index a3bb14f..dc04c16 100644
-> > --- a/kernel/irq/chip.c
-> > +++ b/kernel/irq/chip.c
-> > @@ -214,7 +214,7 @@ void irq_enable(struct irq_desc *desc)
-> >  }
-> > 
-> >  /**
-> > - * irq_disable - Mark interupt disabled
-> > + * irq_disable - Mark interrupt disabled
-> >   * @desc:	irq descriptor which should be disabled
-> >   *
-> >   * If the chip does not implement the irq_disable callback, we
-> > diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> > index 514bcfd..6394a3c 100644
-> > --- a/kernel/irq/manage.c
-> > +++ b/kernel/irq/manage.c
-> > @@ -786,7 +786,7 @@ irq_forced_thread_fn(struct irq_desc *desc, struct irqaction *action)
-> >  }
-> > 
-> >  /*
-> > - * Interrupts explicitely requested as threaded interupts want to be
-> > + * Interrupts explicitely requested as threaded interrupts want to be
+Peter Zijlstra wrote:
+> On Thu, Oct 17, 2013 at 12:54:21PM +0200, Maarten Lankhorst wrote:
+> > op 17-10-13 12:52, Peter Zijlstra schreef:
+> > > On Thu, Oct 17, 2013 at 07:45:29PM +0900, Tetsuo Handa wrote:
+> > >> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+> > >> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
+> > >> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+> > > So I completely forgot all about this, but wouldn't something like:
+> > >
+> > >  !(__builtin_constant_p(p) && p == NULL)
+> > >
+> > > Not also work and generate the same code?
+> > >
+> > See earlier discussion. It was already answered why that was undesirable. ;)
 > 
->                  explicitly
+> OK; I forgot if we covered that particular option.. I so hate this
+> patch; but I'm afraid we'll have to take it :-/
+> 
 
-I have fixed this one and applied the series.
-
--- 
-Jiri Kosina
-SUSE Labs
+I see. Ingo, would you send this patch via your tree?
+Then, I'll post a patch for 3.11-stable which differs white spaces.
