@@ -1,87 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab3JRIOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 04:14:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23165 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab3JRIOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 04:14:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,520,1378882800"; 
-   d="scan'208";a="421039112"
-From: linx.z.chen@intel.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, cpw@sgi.com, kirill.shutemov@linux.intel.com,
-        linux-mm@kvack.org, yanmin_zhang@linux.intel.com, shuox.liu@intel.com,
-        linx.z.chen@intel.com
-Subject: [PATCH] mm/pagewalk.c: Fix walk_page_range access wrong PTEs
-Date: Fri, 18 Oct 2013 16:15:17 +0800
-Message-Id: <1382084117-25599-1-git-send-email-linx.z.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752009Ab3JRISP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 04:18:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:18160 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3JRISK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 04:18:10 -0400
+Message-ID: <5260EEBC.2090002@atmel.com>
+Date: Fri, 18 Oct 2013 10:18:04 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>
+CC: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v4 00/17] ARM: at91: move to common clk framework
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen LinX <linx.z.chen@intel.com>
+On 11/10/2013 09:37, Boris BREZILLON :
+> Hello,
+>
+> This patch series is the 4th version of the new at91 clock implementation
+> (using common clk framework).
 
-When walk_page_range walk a memory map's page tables, it'll skip VM_PFNMAP area,
-then variable 'next' will to assign to vma->vm_end, it maybe larger than 'end'.
-In next loop, 'addr' will be larger than 'next'. Then in /proc/XXXX/pagemap file
-reading procedure, the 'addr' will growing forever in pagemap_pte_range,
-pte_to_pagemap_entry will access wrong pte.
+Mike, DT maintainers,
 
-[   93.387934] BUG: Bad page map in process procrank  pte:8437526f pmd:785de067
-[   93.387936] addr:9108d000 vm_flags:00200073 anon_vma:f0d99020 mapping:  (null) index:9108d
-[   93.387938] CPU: 1 PID: 4974 Comm: procrank Tainted: G    B   W  O 3.10.1+ #1
-[   93.387942]  f0d983c8 f0d983c8 e8271e48 c281ef4b e8271e84 c20ee794 c2a3f150 9108d000
-[   93.387946]  00200073 f0d99020 00000000 0009108d e8342d90 8437526f 0009108d 00000000
-[   93.387950]  00000000 00084375 fffa4234 e8271e98 c20ef836 00000000 e8271f28 f0d983c8
-[   93.387951] Call Trace:
-[   93.387953]  [<c281ef4b>] dump_stack+0x16/0x18
-[   93.387956]  [<c20ee794>] print_bad_pte+0x114/0x1b0
-[   93.387959]  [<c20ef836>] vm_normal_page+0x56/0x60
-[   93.387961]  [<c21594ba>] pagemap_pte_range+0x17a/0x1d0
-[   93.387963]  [<c2159340>] ? m_next+0x70/0x70
-[   93.387966]  [<c20fc60e>] walk_page_range+0x19e/0x2c0
-[   93.387969]  [<c20432c4>] ? ptrace_may_access+0x24/0x40
-[   93.387971]  [<c2159a4e>] pagemap_read+0x16e/0x200
-[   93.387973]  [<c2159340>] ? m_next+0x70/0x70
-[   93.387976]  [<c2158be0>] ? quota_send_warning+0x1f0/0x1f0
-[   93.387979]  [<c2158c30>] ? pagemap_pte_hole+0x50/0x50
-[   93.387981]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
-[   93.387984]  [<c210c534>] vfs_read+0x84/0x150
-[   93.387986]  [<c21598e0>] ? clear_refs_pte_range+0xc0/0xc0
-[   93.387988]  [<c210c77a>] SyS_read+0x4a/0x80
-[   93.387991]  [<c28267c8>] syscall_call+0x7/0xb
-[   93.387996]  [<c2820000>] ? e1000_regdump+0x6f/0x37c
-[  102.866190]  [<c259fcd3>] ? cpuidle_idle_call+0x93/0x1b0
-[  102.872124]  [<c28297fa>] ? atomic_notifier_call_chain+0x1a/0x20
-[  102.878834]  [<c2008478>] ? arch_cpu_idle+0x8/0x20
-[  102.884183]  [<c207950d>] ? cpu_startup_entry+0x4d/0x1b0
-[  102.890116]  [<c280ecbd>] ? rest_init+0x5d/0x60
-[  102.895174]  [<c2b989f8>] ? start_kernel+0x31b/0x321
-[  102.900717]  [<c2b98512>] ? repair_env_string+0x51/0x51
-[  102.906551]  [<c2b98356>] ? i386_start_kernel+0x12c/0x12f
+Can you have a look at this series converting the AT91 family to common 
+clock framework and associated Device Tree description?
 
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-Signed-off-by: Chen LinX <linx.z.chen@intel.com>
----
- mm/pagewalk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Here is the thread on gmane:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/272550
 
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index 5da2cbc..2beeabf 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -242,7 +242,7 @@ int walk_page_range(unsigned long addr, unsigned long end,
- 		if (err)
- 			break;
- 		pgd++;
--	} while (addr = next, addr != end);
-+	} while (addr = next, addr < end);
- 
- 	return err;
- }
+Mike, I think that you already reviewed a previous version of this 
+series and I guess that we have finalized it.
+
+So gentlemen, It can be good for us if you can give us your "review" or 
+"acknowledgement" tags...
+
+Thanks, best regards,
+
+
+> Most of the clock provided by the PMC (Power Management Controller) are
+> implemented :
+> - main clock (main oscillator)
+> - pll clocks
+> - master clock
+> - programmable clocks
+> - utmi clock
+> - peripheral clocks
+> - system clocks
+>
+> This implementation is only compatible with device tree definition.
+> The goal is to define the whole clock tree in the device tree.
+>
+> Could a dt maintainer take a look at these dt bindinds.
+>
+> This patch series is based on linus tree (but should apply correctly on
+> linux-next) and has been tested on sama5d31ek.
+>
+> Best Regards,
+> Boris
+>
+> Changes since v3:
+>   - simplify master clk implementation (drop set_rate/parent support)
+>   - fix bug in set_rate function of pll driver
+>   - fix coding style issues
+>   - define macros and constants where needed
+>   - remove peripheral id macro references
+>   - remove sam9g35 specific handling (sam9g35 = sam9x5)
+>   - rework main clk prepare function to handle automatic rate calculation
+>
+> Changes since v2:
+>   - fix several bugs in clk implementations
+>   - drop non-dt boards support
+>   - split the series to ease review and tests:
+>     * 1 patch series for new clk implementations (this series)
+>     * 1 patch series to move each at91 SoC to common clk framework (coming soon)
+>   - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
+>   - add clk macros for dt-bindings
+>   - add pmc framework (helper function to access pmc registers)
+>   - add interrupt support to enable passive wait in clk_prepare functions
+>
+> Changes since v1:
+>   - fix bugs in pll, programmable and system clock implementations
+>     (wrong bit position).
+>   - add usb clock configuration support (ohci and udc drivers +
+>     clk_lookup for non dt boards)
+>   - rework of the system clock interfaces (no need to define a parent clock,
+>     system clock is a gate with no rate info)
+>   - change system, peripheral and programmable clk dt bindings (1 master node
+>     and multiple child nodes each defining a system/peripheral or prog clock)
+>   - fix bugs in sama5 dt definition
+>
+> Boris BREZILLON (17):
+>    ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
+>    ARM: at91: add Kconfig options for common clk support
+>    clk: at91: add PMC base support
+>    clk: at91: add PMC macro file for dt definitions
+>    clk: at91: add PMC main clock
+>    clk: at91: add PMC pll clocks
+>    clk: at91: add PMC master clock
+>    clk: at91: add PMC system clocks
+>    clk: at91: add PMC peripheral clocks
+>    clk: at91: add peripheral clk macros for peripheral clk dt bindings
+>    clk: at91: add PMC programmable clocks
+>    clk: at91: add PMC utmi clock
+>    clk: at91: add PMC usb clock
+>    clk: at91: add PMC smd clock
+>    clk: at91: add PMC clk device tree binding doc.
+>    ARM: at91: move pit timer to common clk framework
+>    ARM: at91: add new compatible strings for pmc driver
+>
+>   .../devicetree/bindings/clock/at91-clock.txt       |  328 ++++++++++++
+>   arch/arm/mach-at91/Kconfig                         |   44 ++
+>   arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
+>   arch/arm/mach-at91/Makefile                        |    2 +-
+>   arch/arm/mach-at91/at91rm9200.c                    |    2 +-
+>   arch/arm/mach-at91/at91sam9260.c                   |    2 +-
+>   arch/arm/mach-at91/at91sam9261.c                   |    2 +-
+>   arch/arm/mach-at91/at91sam9263.c                   |    2 +-
+>   arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
+>   arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
+>   arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
+>   arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
+>   arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
+>   arch/arm/mach-at91/clock.c                         |    7 +-
+>   arch/arm/mach-at91/generic.h                       |    3 +-
+>   arch/arm/mach-at91/pm.c                            |    2 +-
+>   arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
+>   arch/arm/mach-at91/sama5d3.c                       |    2 +-
+>   arch/arm/mach-at91/setup.c                         |    8 +-
+>   drivers/clk/Makefile                               |    1 +
+>   drivers/clk/at91/Makefile                          |   12 +
+>   drivers/clk/at91/clk-main.c                        |  189 +++++++
+>   drivers/clk/at91/clk-master.c                      |  278 ++++++++++
+>   drivers/clk/at91/clk-peripheral.c                  |  407 +++++++++++++++
+>   drivers/clk/at91/clk-pll.c                         |  539 ++++++++++++++++++++
+>   drivers/clk/at91/clk-plldiv.c                      |  137 +++++
+>   drivers/clk/at91/clk-programmable.c                |  423 +++++++++++++++
+>   drivers/clk/at91/clk-smd.c                         |  173 +++++++
+>   drivers/clk/at91/clk-system.c                      |  193 +++++++
+>   drivers/clk/at91/clk-usb.c                         |  400 +++++++++++++++
+>   drivers/clk/at91/clk-utmi.c                        |  162 ++++++
+>   drivers/clk/at91/pmc.c                             |  372 ++++++++++++++
+>   drivers/clk/at91/pmc.h                             |  113 ++++
+>   drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
+>   include/dt-bindings/clk/at91.h                     |   28 +
+>   .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
+>   36 files changed, 3847 insertions(+), 20 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
+>   create mode 100644 drivers/clk/at91/Makefile
+>   create mode 100644 drivers/clk/at91/clk-main.c
+>   create mode 100644 drivers/clk/at91/clk-master.c
+>   create mode 100644 drivers/clk/at91/clk-peripheral.c
+>   create mode 100644 drivers/clk/at91/clk-pll.c
+>   create mode 100644 drivers/clk/at91/clk-plldiv.c
+>   create mode 100644 drivers/clk/at91/clk-programmable.c
+>   create mode 100644 drivers/clk/at91/clk-smd.c
+>   create mode 100644 drivers/clk/at91/clk-system.c
+>   create mode 100644 drivers/clk/at91/clk-usb.c
+>   create mode 100644 drivers/clk/at91/clk-utmi.c
+>   create mode 100644 drivers/clk/at91/pmc.c
+>   create mode 100644 drivers/clk/at91/pmc.h
+>   create mode 100644 include/dt-bindings/clk/at91.h
+>   rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
+>
+
+
 -- 
-1.7.9.5
-
+Nicolas Ferre
