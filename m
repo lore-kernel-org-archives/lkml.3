@@ -1,127 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab3JRJt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 05:49:27 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:59871 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3JRJt0 (ORCPT
+	id S1752773Ab3JRJuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 05:50:37 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:12115 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751961Ab3JRJuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 05:49:26 -0400
+	Fri, 18 Oct 2013 05:50:35 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Neil Zhang <zhangwm@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Date: Fri, 18 Oct 2013 02:50:24 -0700
+Subject: RE: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
+Thread-Topic: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
+Thread-Index: Ac7GW1Eq27AdMp+8S66HQxTbZByyBAFjBqRA
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF788@SC-VEXCH4.marvell.com>
+References: <1381479838-7794-1-git-send-email-zhangwm@marvell.com>
+ <1381479838-7794-3-git-send-email-zhangwm@marvell.com>
+In-Reply-To: <1381479838-7794-3-git-send-email-zhangwm@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <20131017224605.2e1d4bab@gandalf.local.home>
-References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-	<20131017224605.2e1d4bab@gandalf.local.home>
-Date: Fri, 18 Oct 2013 06:49:25 -0300
-Message-ID: <CAGG-pURzhHWMHN8u4YKCNsc1UKyGJQC5tBfFhWNkrOC_o6zsJg@mail.gmail.com>
-Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
- refactors code
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kernel-br <kernel-br@googlegroups.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-18_03:2013-10-18,2013-10-18,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310180016
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9I9ohIZ015979
 
-2013/10/17 Steven Rostedt <rostedt@goodmis.org>:
-> On Thu, 17 Oct 2013 22:44:56 -0300
-> "Geyslan G. Bem" <geyslan@gmail.com> wrote:
->
->> Restructures function logic conditions testing 'tracing_open_generic'
->> return before the others. It avoids: unnecessary trace_array_get and
->> kzalloc when tracing is disabled; and fix the possible 'dir'
->> assignment after freeing it.
->>
->> Centralizes the exiting, ensuring the 'trace_array_put' on error,
->> in accordance to Coding Style, Chapter 7.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> ---
->>  kernel/trace/trace_events.c | 22 ++++++++++++----------
->>  1 file changed, 12 insertions(+), 10 deletions(-)
->>
->> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
->> index 368a4d5..8232362 100644
->> --- a/kernel/trace/trace_events.c
->> +++ b/kernel/trace/trace_events.c
->> @@ -1108,26 +1108,28 @@ static int system_tr_open(struct inode *inode, struct file *filp)
->>       struct trace_array *tr = inode->i_private;
->>       int ret;
->>
->> -     if (trace_array_get(tr) < 0)
->> -             return -ENODEV;
->> +     ret = tracing_open_generic(inode, filp);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ret = trace_array_get(tr);
->> +     if (ret)
->> +             return ret;
->
-> Hmm,
->
-> I'm thinking of just nuking the tracing_open_generic() here. The only
-> thing it does here is the tracing_disabled check. The assignment of
-> inode->i_private to filp->private_data is pointless as it just
-> reassigns it anyway.
->
-> We could add a tracing_is_disabled() function to test instead.
+Ping ?
 
-Nice, I can do it.
+> -----Original Message-----
+> From: Neil Zhang [mailto:zhangwm@marvell.com]
+> Sent: 2013Äê10ÔÂ11ÈÕ 16:24
+> To: linux-kernel@vger.kernel.org
+> Cc: haojian.zhuang@gmail.com; tglx@linutronix.de; Neil Zhang
+> Subject: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
+> 
+> Some of the Marvell SoCs use GIC as its interrupt controller,and ICU only used as
+> wakeup logic. When AP subsystem is powered off, GIC will lose its context, the
+> PMU will need ICU to wakeup the AP subsystem.
+> So add wakeup entry for such kind of usage.
+> 
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  .../devicetree/bindings/arm/mrvl/intc.txt          |   14 ++-
+>  drivers/irqchip/irq-mmp.c                          |  124
+> ++++++++++++++++++++
+>  include/linux/irqchip/mmp.h                        |   13 ++
+>  3 files changed, 150 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> index 8b53273..4180928 100644
+> --- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> +++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> @@ -2,7 +2,7 @@
+> 
+>  Required properties:
+>  - compatible : Should be "mrvl,mmp-intc", "mrvl,mmp2-intc" or
+> -  "mrvl,mmp2-mux-intc"
+> +  "mrvl,mmp2-mux-intc", "mrvl,mmp-intc-wakeupgen"
+>  - reg : Address and length of the register set of the interrupt controller.
+>    If the interrupt controller is intc, address and length means the range
+>    of the whold interrupt controller. If the interrupt controller is mux-intc, @@
+> -15,6 +15,9 @@ Required properties:
+>  - interrupt-controller : Identifies the node as an interrupt controller.
+>  - #interrupt-cells : Specifies the number of cells needed to encode an
+>    interrupt source.
+> +- mrvl,intc-gbl-mask : Specifies the address and value for global mask
+> +in the
+> +  interrupt controller.
+> +- mrvl,intc-for-cp : Specifies the irqs that will be routed to cp
+>  - mrvl,intc-nr-irqs : Specifies the number of interrupts in the interrupt
+>    controller.
+>  - mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear MFP edge @@
+> -39,6 +42,15 @@ Example:
+>  		mrvl,intc-nr-irqs = <2>;
+>  	};
+> 
+> +     intc: wakeupgen@d4282000 {
+> +		compatible = "mrvl,mmp-intc-wakeupgen";
+> +		reg = <0xd4282000 0x1000>;
+> +		mrvl,intc-nr-irqs = <64>;
+> +		mrvl,intc-gbl-mask = <0x114 0x3
+> +		                      0x144 0x3>;
+> +		mrvl,intc-for-cp = <0 31 32>;
+> +     };
+> +
+>  * Marvell Orion Interrupt controller
+> 
+>  Required properties
+> diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c index
+> 470c5de..445a00c 100644
+> --- a/drivers/irqchip/irq-mmp.c
+> +++ b/drivers/irqchip/irq-mmp.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/init.h>
+>  #include <linux/irq.h>
+>  #include <linux/irqdomain.h>
+> +#include <linux/irqchip/mmp.h>
+> +#include <linux/irqchip/arm-gic.h>
+>  #include <linux/io.h>
+>  #include <linux/ioport.h>
+>  #include <linux/of_address.h>
+> @@ -58,6 +60,8 @@ struct mmp_intc_conf {  static void __iomem
+> *mmp_icu_base;  static struct icu_chip_data icu_data[MAX_ICU_NR];  static
+> int max_icu_nr;
+> +static u32 irq_for_cp[64];
+> +static u32 irq_for_cp_nr;	/* How many irqs will be routed to cp */
+> 
+>  extern void mmp2_clear_pmic_int(void);
+> 
+> @@ -123,6 +127,50 @@ static void icu_unmask_irq(struct irq_data *d)
+>  	}
+>  }
+> 
+> +static int irq_ignore_wakeup(struct icu_chip_data *data, int hwirq) {
+> +	int i;
+> +
+> +	if (hwirq < 0 || hwirq >= data->nr_irqs)
+> +		return 1;
+> +
+> +	for (i = 0; i < irq_for_cp_nr; i++)
+> +		if (irq_for_cp[i] == hwirq)
+> +			return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +static void icu_mask_irq_wakeup(struct irq_data *d) {
+> +	struct icu_chip_data *data = &icu_data[0];
+> +	int hwirq = d->hwirq - data->virq_base;
+> +	u32 r;
+> +
+> +	if (irq_ignore_wakeup(data, hwirq))
+> +		return;
+> +
+> +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+> +	r &= ~data->conf_mask;
+> +	r |= data->conf_disable;
+> +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
+> +
+> +static void icu_unmask_irq_wakeup(struct irq_data *d) {
+> +	struct icu_chip_data *data = &icu_data[0];
+> +	int hwirq = d->irq - data->virq_base;
+> +	u32 r;
+> +
+> +	if (irq_ignore_wakeup(data, hwirq))
+> +		return;
+> +
+> +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+> +	r &= ~data->conf_mask;
+> +	r |= data->conf_enable;
+> +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
+> +
+>  struct irq_chip icu_irq_chip = {
+>  	.name		= "icu_irq",
+>  	.irq_mask	= icu_mask_irq,
+> @@ -491,5 +539,81 @@ err:
+>  	irq_domain_remove(icu_data[i].domain);
+>  	return -EINVAL;
+>  }
+> +
+> +void __init mmp_of_wakeup_init(void)
+> +{
+> +	struct device_node *node;
+> +	const __be32 *wakeup_reg;
+> +	const __be32 *cp_irq_reg;
+> +	int ret, nr_irqs;
+> +	int size, i = 0;
+> +	int irq;
+> +
+> +	node = of_find_compatible_node(NULL, NULL,
+> "mrvl,mmp-intc-wakeupgen");
+> +	if (!node) {
+> +		pr_err("Failed to find interrupt controller in arch-mmp\n");
+> +		return;
+> +	}
+> +
+> +	mmp_icu_base = of_iomap(node, 0);
+> +	if (!mmp_icu_base) {
+> +		pr_err("Failed to get interrupt controller register\n");
+> +		return;
+> +	}
+> +
+> +	ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
+> +	if (ret) {
+> +		pr_err("Not found mrvl,intc-nr-irqs property\n");
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Config all the interrupt source be able to interrupt the cpu 0,
+> +	 * in IRQ mode, with priority 0 as masked by default.
+> +	 */
+> +	for (irq = 0; irq < nr_irqs; irq++)
+> +		__raw_writel(ICU_IRQ_CPU0_MASKED, mmp_icu_base + (irq << 2));
+> +
+> +	/* ICU is only used as wake up logic
+> +	  * disable the global irq/fiq in icu for all cores.
+> +	  */
+> +	wakeup_reg = of_get_property(node, "mrvl,intc-gbl-mask", &size);
+> +	if (!wakeup_reg) {
+> +		pr_err("Not found mrvl,intc-gbl-mask property\n");
+> +		return;
+> +	}
+> +
+> +	size /= sizeof(*wakeup_reg);
+> +	while (i < size) {
+> +		unsigned offset, val;
+> +
+> +		offset = be32_to_cpup(wakeup_reg + i++);
+> +		val = be32_to_cpup(wakeup_reg + i++);
+> +		writel_relaxed(val, mmp_icu_base + offset);
+> +	}
+> +
+> +	/* Get the irq lines and ignore irqs */
+> +	cp_irq_reg = of_get_property(node, "mrvl,intc-for-cp", &size);
+> +	if (!cp_irq_reg)
+> +		return;
+> +
+> +	irq_for_cp_nr = size / sizeof(*cp_irq_reg);
+> +	for (i = 0; i < irq_for_cp_nr; i++) {
+> +		irq_for_cp[i] = be32_to_cpup(cp_irq_reg + i);
+> +		__raw_writel(ICU_CONF_SEAGULL, mmp_icu_base + (irq_for_cp[i]
+> << 2));
+> +	}
+> +
+> +	icu_data[0].conf_enable = mmp_conf.conf_enable;
+> +	icu_data[0].conf_disable = mmp_conf.conf_disable;
+> +	icu_data[0].conf_mask = mmp_conf.conf_mask;
+> +	icu_data[0].nr_irqs = nr_irqs;
+> +	icu_data[0].virq_base = 32;
+> +
+> +	gic_arch_extn.irq_mask = icu_mask_irq_wakeup;
+> +	gic_arch_extn.irq_unmask = icu_unmask_irq_wakeup;
+> +
+> +	return;
+> +}
+> +
+>  IRQCHIP_DECLARE(mmp2_mux_intc, "mrvl,mmp2-mux-intc",
+> mmp2_mux_of_init);  #endif diff --git a/include/linux/irqchip/mmp.h
+> b/include/linux/irqchip/mmp.h index c78a892..93b05ad 100644
+> --- a/include/linux/irqchip/mmp.h
+> +++ b/include/linux/irqchip/mmp.h
+> @@ -1,6 +1,19 @@
+>  #ifndef	__IRQCHIP_MMP_H
+>  #define	__IRQCHIP_MMP_H
+> 
+> +#define ICU_CONF_CPU3      (1 << 9)
+> +#define ICU_CONF_CPU2      (1 << 8)
+> +#define ICU_CONF_CPU1      (1 << 7)
+> +#define ICU_CONF_CPU0      (1 << 6)
+> +#define ICU_CONF_AP(n)     (1 << (6 + (n & 0x3)))
+> +#define ICU_CONF_AP_MASK   (0xF << 6)
+> +#define ICU_CONF_SEAGULL   (1 << 5)
+> +#define ICU_CONF_IRQ_FIQ   (1 << 4)
+> +#define ICU_CONF_PRIO(n)   (n & 0xF)
+> +
+> +#define ICU_IRQ_CPU0_MASKED    (ICU_CONF_IRQ_FIQ |
+> ICU_CONF_CPU0)
+> +
+>  extern struct irq_chip icu_irq_chip;
+> 
+> +extern void __init mmp_of_wakeup_init(void);
+>  #endif	/* __IRQCHIP_MMP_H */
+> --
+> 1.7.9.5
 
-Questions:
+Best Regards,
+Neil Zhang
 
-1267 static const struct file_operations ftrace_enable_fops = {
-1268         .open = tracing_open_generic,
-...
-1286 static const struct file_operations ftrace_event_filter_fops = {
-1287         .open = tracing_open_generic,
-...
-1317 static const struct file_operations ftrace_show_header_fops = {
-1318         .open = tracing_open_generic,
-
-Are that structures in same case? Their 'open' can be replaced to the
-new 'tracing_is_disabled()?
-
-I think that 'subsystem_open()' can be also refactored to use the
-about to rise 'tracing_is_disabled()'. Am I right?
-1096         ret = tracing_open_generic(inode, filp);
-
-Regards,
--- Geyslan
-
->
-> -- Steve
->
->>
->>       /* Make a temporary dir that has no system but points to tr */
->>       dir = kzalloc(sizeof(*dir), GFP_KERNEL);
->>       if (!dir) {
->> -             trace_array_put(tr);
->> -             return -ENOMEM;
->> +             ret = -ENOMEM;
->> +             goto err_dir;
->>       }
->>
->>       dir->tr = tr;
->>
->> -     ret = tracing_open_generic(inode, filp);
->> -     if (ret < 0) {
->> -             trace_array_put(tr);
->> -             kfree(dir);
->> -     }
->> -
->>       filp->private_data = dir;
->> +     return 0;
->>
->> +err_dir:
->> +     trace_array_put(tr);
->>       return ret;
->>  }
->>
->
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
