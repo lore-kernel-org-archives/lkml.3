@@ -1,100 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab3JRTw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 15:52:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54712 "EHLO
+	id S1757572Ab3JRTwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 15:52:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab3JRTw1 (ORCPT
+	with ESMTP id S1754473Ab3JRTwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 15:52:27 -0400
+	Fri, 18 Oct 2013 15:52:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/11] 3.4.67-stable review
-Date: Fri, 18 Oct 2013 12:53:29 -0700
-Message-Id: <20131018195049.069623827@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cyril Hrubis <chrubis@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [ 10/11] mm/mmap: check for RLIMIT_AS before unmapping
+Date: Fri, 18 Oct 2013 12:53:39 -0700
+Message-Id: <20131018195049.769189161@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+In-Reply-To: <20131018195049.069623827@linuxfoundation.org>
+References: <20131018195049.069623827@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.67 release.
-There are 11 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Oct 20 19:50:39 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.67-rc1.gz
-and the diffstat can be found below.
+From: Cyril Hrubis <chrubis@suse.cz>
 
-thanks,
+commit e8420a8ece80b3fe810415ecf061d54ca7fab266 upstream.
 
-greg k-h
+Fix a corner case for MAP_FIXED when requested mapping length is larger
+than rlimit for virtual memory.  In such case any overlapping mappings
+are unmapped before we check for the limit and return ENOMEM.
 
--------------
-Pseudo-Shortlog of commits:
+The check is moved before the loop that unmaps overlapping parts of
+existing mappings.  When we are about to hit the limit (currently mapped
+pages + len > limit) we scan for overlapping pages and check again
+accounting for them.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.67-rc1
+This fixes situation when userspace program expects that the previous
+mappings are preserved after the mmap() syscall has returned with error.
+(POSIX clearly states that successfull mapping shall replace any
+previous mappings.)
 
-Linus Torvalds <torvalds@linux-foundation.org>
-    mm: do not grow the stack vma just because of an overrun on preceding vma
+This corner case was found and can be tested with LTP testcase:
 
-Cyril Hrubis <chrubis@suse.cz>
-    mm/mmap: check for RLIMIT_AS before unmapping
+testcases/open_posix_testsuite/conformance/interfaces/mmap/24-2.c
 
-wojciech kapuscinski <wojtask9@wp.pl>
-    drm/radeon: fix hw contexts for SUMO2 asics
+In this case the mmap, which is clearly over current limit, unmaps
+dynamic libraries and the testcase segfaults right after returning into
+userspace.
 
-Dan Carpenter <dan.carpenter@oracle.com>
-    watchdog: ts72xx_wdt: locking bug in ioctl
+I've also looked at the second instance of the unmapping loop in the
+do_brk().  The do_brk() is called from brk() syscall and from vm_brk().
+The brk() syscall checks for overlapping mappings and bails out when
+there are any (so it can't be triggered from the brk syscall).  The
+vm_brk() is called only from binmft handlers so it shouldn't be
+triggered unless binmft handler created overlapping mappings.
 
-Helge Deller <deller@gmx.de>
-    parisc: fix interruption handler to respect pagefault_disable()
+Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Paul Mackerras <paulus@samba.org>
-    KVM: PPC: Book3S HV: Fix typo in saving DSCR
+---
+ mm/mmap.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 46 insertions(+), 4 deletions(-)
 
-Dave Jones <davej@redhat.com>
-    ext4: fix memory leak in xattr
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vfs: allow O_PATH file descriptors for fstatfs()
-
-Theodore Ts'o <tytso@mit.edu>
-    random: run random_int_secret_init() run after all late_initcalls
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: hda - Add fixup for ASUS N56VZ
-
-Daniel Mack <zonque@gmail.com>
-    ALSA: snd-usb-usx2y: remove bogus frame checks
-
-
--------------
-
-Diffstat:
-
- Makefile                                |  4 +-
- arch/parisc/kernel/traps.c              |  6 +--
- arch/powerpc/kvm/book3s_hv_rmhandlers.S |  2 +-
- drivers/char/random.c                   |  3 +-
- drivers/gpu/drm/radeon/evergreen.c      |  2 +-
- drivers/watchdog/ts72xx_wdt.c           |  3 +-
- fs/ext4/xattr.c                         |  2 +
- fs/statfs.c                             |  2 +-
- include/linux/random.h                  |  1 +
- init/main.c                             |  2 +
- mm/mmap.c                               | 77 +++++++++++++++++++++++++++++++--
- sound/pci/hda/patch_realtek.c           |  1 +
- sound/usb/usx2y/usbusx2yaudio.c         | 22 ++--------
- sound/usb/usx2y/usx2yhwdeppcm.c         |  7 +--
- 14 files changed, 94 insertions(+), 40 deletions(-)
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -6,6 +6,7 @@
+  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
+  */
+ 
++#include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/backing-dev.h>
+ #include <linux/mm.h>
+@@ -392,6 +393,34 @@ find_vma_prepare(struct mm_struct *mm, u
+ 	return vma;
+ }
+ 
++static unsigned long count_vma_pages_range(struct mm_struct *mm,
++		unsigned long addr, unsigned long end)
++{
++	unsigned long nr_pages = 0;
++	struct vm_area_struct *vma;
++
++	/* Find first overlaping mapping */
++	vma = find_vma_intersection(mm, addr, end);
++	if (!vma)
++		return 0;
++
++	nr_pages = (min(end, vma->vm_end) -
++		max(addr, vma->vm_start)) >> PAGE_SHIFT;
++
++	/* Iterate over the rest of the overlaps */
++	for (vma = vma->vm_next; vma; vma = vma->vm_next) {
++		unsigned long overlap_len;
++
++		if (vma->vm_start > end)
++			break;
++
++		overlap_len = min(end, vma->vm_end) - vma->vm_start;
++		nr_pages += overlap_len >> PAGE_SHIFT;
++	}
++
++	return nr_pages;
++}
++
+ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct rb_node **rb_link, struct rb_node *rb_parent)
+ {
+@@ -1245,6 +1274,23 @@ unsigned long mmap_region(struct file *f
+ 	unsigned long charged = 0;
+ 	struct inode *inode =  file ? file->f_path.dentry->d_inode : NULL;
+ 
++	/* Check against address space limit. */
++	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
++		unsigned long nr_pages;
++
++		/*
++		 * MAP_FIXED may remove pages of mappings that intersects with
++		 * requested mapping. Account for the pages it would unmap.
++		 */
++		if (!(vm_flags & MAP_FIXED))
++			return -ENOMEM;
++
++		nr_pages = count_vma_pages_range(mm, addr, addr + len);
++
++		if (!may_expand_vm(mm, (len >> PAGE_SHIFT) - nr_pages))
++			return -ENOMEM;
++	}
++
+ 	/* Clear old maps */
+ 	error = -ENOMEM;
+ munmap_back:
+@@ -1255,10 +1301,6 @@ munmap_back:
+ 		goto munmap_back;
+ 	}
+ 
+-	/* Check against address space limit. */
+-	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
+-		return -ENOMEM;
+-
+ 	/*
+ 	 * Set 'VM_NORESERVE' if we should not account for the
+ 	 * memory use of this mapping.
 
 
