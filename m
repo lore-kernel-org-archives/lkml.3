@@ -1,120 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3JRWQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 18:16:32 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:38361 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3JRWQa convert rfc822-to-8bit (ORCPT
+	id S1757234Ab3JRWTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 18:19:53 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:51840 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab3JRWTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 18:16:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACz4_2c0vvM2HwotMZbz9WWGZbCBmWCD=LrFRAK7uxcGXH+smQ@mail.gmail.com>
-References: <20131015001826.GL3432@hippobay.mtv.corp.google.com>
- <20131015110905.085B1E0090@blue.fi.intel.com> <CACz4_2cVZBxg88hqzOHpASN4e=hVYMTTQkXHssDjfXpcqACONw@mail.gmail.com>
- <CACz4_2c0vvM2HwotMZbz9WWGZbCBmWCD=LrFRAK7uxcGXH+smQ@mail.gmail.com>
-From: Ning Qu <quning@google.com>
-Date: Fri, 18 Oct 2013 15:16:09 -0700
-Message-ID: <CACz4_2cGdGLs6PPT6ERf3dU32PRKh6Jr+6QTJA9kvOQP-uQP9g@mail.gmail.com>
-Subject: Re: [PATCH 11/12] mm, thp, tmpfs: enable thp page cache in tmpfs
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Oct 2013 18:19:52 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
+        Daniel Mack <daniel@caiaq.de>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Johan Rudholm <jrudholm@gmail.com>, Namjae Jeon <linkinjeon@gmail.com>,
+        Kevin Liu <kliu5@marvell.com>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH v3 1/3] mmc: core: Support the optional init_card() callback for MMC and SD
+Date: Fri, 18 Oct 2013 14:56:00 -0700
+Message-Id: <1382133362-31747-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382133362-31747-1-git-send-email-dianders@chromium.org>
+References: <1382126905-14654-1-git-send-email-dianders@chromium.org>
+ <1382133362-31747-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kirill,
+In (3fcb027 ARM: MXC: mxcmmc: work around a bug in the SDHC busy line
+handling) the optional init_card() callback was added.  According to
+the original change it was "for now only called from
+mmc_sdio_init_card()".
 
-I have reviewed the current migration code and seems huge page will
-get splitted during migration. Since our current split_huge_page
-handle file cache as well, it seems not a problem for us?
+This callback really ought to be called from the SD and MMC init
+functions as well.  One current user of this callback
+(mxcmci_init_card) will not work as expected if you insert an SDIO
+card, then eject it and put a normal SD card in.  Specifically the
+normal SD card will not get to run with 4-bit data.
 
-We just simply not removing the __GFP_MOVABLE flag? Anything else I am
-missing here?
+I'd like to use the init_card() callback to handle a similar quirk on
+dw_mmc when using SDIO Interrupts (the "low power" feature of the card
+needs to be disabled), so that will add a second user of the function.
 
-Thanks!
-Best wishes,
+As part of this change fixup the one place that relied on the callback
+only happening for SDIO cards.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Grant Grundler <grundler@chromium.org>
+---
+Changes in v3:
+- Add fixup to pandora_wl1251_init_card().
+
+Changes in v2:
+- New for this version.
+
+ arch/arm/mach-omap2/board-omap3pandora.c | 14 ++++++++------
+ drivers/mmc/core/mmc.c                   |  6 ++++++
+ drivers/mmc/core/sd.c                    |  7 ++++++-
+ 3 files changed, 20 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index de1bc6b..6404595 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -254,12 +254,14 @@ static void pandora_wl1251_init_card(struct mmc_card *card)
+ 	 * We have TI wl1251 attached to MMC3. Pass this information to
+ 	 * SDIO core because it can't be probed by normal methods.
+ 	 */
+-	card->quirks |= MMC_QUIRK_NONSTD_SDIO;
+-	card->cccr.wide_bus = 1;
+-	card->cis.vendor = 0x104c;
+-	card->cis.device = 0x9066;
+-	card->cis.blksize = 512;
+-	card->cis.max_dtr = 20000000;
++	if (card->type == MMC_TYPE_SDIO || card->type == MMC_TYPE_SD_COMBO) {
++		card->quirks |= MMC_QUIRK_NONSTD_SDIO;
++		card->cccr.wide_bus = 1;
++		card->cis.vendor = 0x104c;
++		card->cis.device = 0x9066;
++		card->cis.blksize = 512;
++		card->cis.max_dtr = 20000000;
++	}
+ }
+ 
+ static struct omap2_hsmmc_info omap3pandora_mmc[] = {
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 6d02012..7ad75c0 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -940,6 +940,12 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+ 	}
+ 
+ 	/*
++	 * Call the optional HC's init_card function to handle quirks.
++	 */
++	if (host->ops->init_card)
++		host->ops->init_card(host, card);
++
++	/*
+ 	 * For native busses:  set card RCA and quit open drain mode.
+ 	 */
+ 	if (!mmc_host_is_spi(host)) {
+diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
+index 5e8823d..59e2318 100644
+--- a/drivers/mmc/core/sd.c
++++ b/drivers/mmc/core/sd.c
+@@ -940,6 +940,12 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
+ 	}
+ 
+ 	/*
++	 * Call the optional HC's init_card function to handle quirks.
++	 */
++	if (host->ops->init_card)
++		host->ops->init_card(host, card);
++
++	/*
+ 	 * For native busses:  get card RCA and quit open drain mode.
+ 	 */
+ 	if (!mmc_host_is_spi(host)) {
+@@ -1286,4 +1292,3 @@ err:
+ 
+ 	return err;
+ }
+-
 -- 
-Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
+1.8.4
 
-
-On Fri, Oct 18, 2013 at 11:24 AM, Ning Qu <quning@google.com> wrote:
-> I guess this is the last review I have for this around, but not sure
-> what's the best solution right now.
->
-> Kirill, do you think it's OK to just split the huge page when it will
-> be moved. Will look into how thp anon handle this situation.
->
-> Then after this, I probably will post v2.
->
-> Thanks!
-> Best wishes,
-> --
-> Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
->
->
-> On Tue, Oct 15, 2013 at 11:42 AM, Ning Qu <quning@google.com> wrote:
->> I agree with this. It has been like this just for a quick proof, but I
->> need to address this problem as soon as possible.
->>
->> Thanks!
->> Best wishes,
->> --
->> Ning Qu (ÇúÄþ) | Software Engineer | quning@google.com | +1-408-418-6066
->>
->>
->> On Tue, Oct 15, 2013 at 4:09 AM, Kirill A. Shutemov
->> <kirill.shutemov@linux.intel.com> wrote:
->>> Ning Qu wrote:
->>>> Signed-off-by: Ning Qu <quning@gmail.com>
->>>> ---
->>>>  mm/Kconfig | 4 ++--
->>>>  mm/shmem.c | 5 +++++
->>>>  2 files changed, 7 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/mm/Kconfig b/mm/Kconfig
->>>> index 562f12f..4d2f90f 100644
->>>> --- a/mm/Kconfig
->>>> +++ b/mm/Kconfig
->>>> @@ -428,8 +428,8 @@ config TRANSPARENT_HUGEPAGE_PAGECACHE
->>>>       help
->>>>         Enabling the option adds support hugepages for file-backed
->>>>         mappings. It requires transparent hugepage support from
->>>> -       filesystem side. For now, the only filesystem which supports
->>>> -       hugepages is ramfs.
->>>> +       filesystem side. For now, the filesystems which support
->>>> +       hugepages are: ramfs and tmpfs.
->>>>
->>>>  config CROSS_MEMORY_ATTACH
->>>>       bool "Cross Memory Support"
->>>> diff --git a/mm/shmem.c b/mm/shmem.c
->>>> index 75c0ac6..50a3335 100644
->>>> --- a/mm/shmem.c
->>>> +++ b/mm/shmem.c
->>>> @@ -1672,6 +1672,11 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->>>>                       break;
->>>>               case S_IFREG:
->>>>                       inode->i_mapping->a_ops = &shmem_aops;
->>>> +                     /*
->>>> +                      * TODO: make tmpfs pages movable
->>>> +                      */
->>>> +                     mapping_set_gfp_mask(inode->i_mapping,
->>>> +                                          GFP_TRANSHUGE & ~__GFP_MOVABLE);
->>>
->>> Unlike ramfs, tmpfs pages are movable before transparent page cache
->>> patchset.
->>> Making tmpfs pages non-movable looks like a big regression to me. It need
->>> to be fixed before proposing it upstream.
->>>
->>> --
->>>  Kirill A. Shutemov
