@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab3JSVfm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 17:35:42 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:56452 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab3JSVfk (ORCPT
+	id S1753504Ab3JSV4r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 17:56:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43130 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab3JSV4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 17:35:40 -0400
+	Sat, 19 Oct 2013 17:56:46 -0400
+Message-ID: <5263001C.1060109@infradead.org>
+Date: Sat, 19 Oct 2013 14:56:44 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1381392071-21407-6-git-send-email-mika.westerberg@linux.intel.com>
-References: <1381392071-21407-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1381392071-21407-6-git-send-email-mika.westerberg@linux.intel.com>
-Date: Sat, 19 Oct 2013 23:35:39 +0200
-Message-ID: <CACRpkdaAgsoO=w6=LDqE4-JZaOY7Ooofa_L2tRL2Hnt6SNh70g@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] gpiolib / ACPI: document the GPIO descriptor based interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] sched/fair.c: remove kernel-doc warning
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:01 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+From: Randy Dunlap <rdunlap@infradead.org>
 
-> In addition to the existing ACPI specific GPIO interface, document the new
-> descriptor based GPIO interface in Documentation/acpi/enumeration.txt, so
-> it is clear that this new interface is preferred over the ACPI specific
-> version.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+Remove @balance parameter that is no longer used in the function to
+remove a kernel-doc warning.
 
-I've applied the last 4 of these patches now as well, on top of
-Alexandre's gpiod interface. If you can, please test the result
-on my "devel" branch and let's see if the autobuilder likes it too...
+Warning(kernel/sched/fair.c:4704): Excess function parameter 'balance' description in 'update_sd_lb_stats'
 
-Yours,
-Linus Walleij
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ kernel/sched/fair.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- lnx-312-rc6.orig/kernel/sched/fair.c
++++ lnx-312-rc6/kernel/sched/fair.c
+@@ -4696,7 +4696,6 @@ static bool update_sd_pick_busiest(struc
+ /**
+  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @env: The load balancing environment.
+- * @balance: Should we balance.
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+ static inline void update_sd_lb_stats(struct lb_env *env,
