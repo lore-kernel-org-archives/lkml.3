@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3JSI4X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 04:56:23 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:64110 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3JSI4V (ORCPT
+	id S1751509Ab3JSJUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 05:20:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20393 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3JSJUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 04:56:21 -0400
-Date: Sat, 19 Oct 2013 10:56:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] : KGDB/KDB/UV updates.
-Message-ID: <20131019085617.GA9717@gmail.com>
-References: <20131018185334.272062791@asylum.americas.sgi.com>
+	Sat, 19 Oct 2013 05:20:16 -0400
+Date: Sat, 19 Oct 2013 12:17:12 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] pktcdvd: debugfs functions return NULL on error
+Message-ID: <20131019091712.GI9312@longonot.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131018185334.272062791@asylum.americas.sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+My static checker complains correctly that this is potential NULL
+dereference because debugfs functions return NULL on error.  They return
+an ERR_PTR if they are configured out.
 
-* Mike Travis <travis@sgi.com> wrote:
+We don't need to check for ERR_PTR because if debugfs is stubbed out the
+dummy functions won't complain about that.  We don't need to check the
+values before calling debugfs_remove() because that accepts ERR_PTRs and
+NULL pointers.
 
-> 
-> * Change the fix for KDB not defined build problem by changing
->   the kgdb_nmicallin() interface to include the KDB specific
->   reason code.  This removes a dependency on KDB in the debug
->   core.  Also requires a change the call in from UV NMI handler.
-> 
-> * Fix some problems found by the kbuild test robot.
-> 
-> * Fix UV call into kgdb to depend only on whether KGDB is defined
->   and not both KGDB and KDB.  This allows the power nmi command
->   to use the gdb remote connection if enabled.  Note new action
->   of 'kgdb' needs to be set as well to indicate user wants to
->   wait for gdb to be connected.  If it's set to 'kdb' then an
->   error message is displayed if KDB is not configured.
-> --
+We don't need to set pkt->dfs_f_info to NULL in pkt_debugfs_dev_new()
+because it was initialized with kzalloc() so I have removed that.
 
-This looks better.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Jason, any objections?
-
-Thanks,
-
-	Ingo
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index 5618847..ff8668c 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -473,45 +473,31 @@ static void pkt_debugfs_dev_new(struct pktcdvd_device *pd)
+ {
+ 	if (!pkt_debugfs_root)
+ 		return;
+-	pd->dfs_f_info = NULL;
+ 	pd->dfs_d_root = debugfs_create_dir(pd->name, pkt_debugfs_root);
+-	if (IS_ERR(pd->dfs_d_root)) {
+-		pd->dfs_d_root = NULL;
++	if (!pd->dfs_d_root)
+ 		return;
+-	}
++
+ 	pd->dfs_f_info = debugfs_create_file("info", S_IRUGO,
+ 				pd->dfs_d_root, pd, &debug_fops);
+-	if (IS_ERR(pd->dfs_f_info)) {
+-		pd->dfs_f_info = NULL;
+-		return;
+-	}
+ }
+ 
+ static void pkt_debugfs_dev_remove(struct pktcdvd_device *pd)
+ {
+ 	if (!pkt_debugfs_root)
+ 		return;
+-	if (pd->dfs_f_info)
+-		debugfs_remove(pd->dfs_f_info);
++	debugfs_remove(pd->dfs_f_info);
++	debugfs_remove(pd->dfs_d_root);
+ 	pd->dfs_f_info = NULL;
+-	if (pd->dfs_d_root)
+-		debugfs_remove(pd->dfs_d_root);
+ 	pd->dfs_d_root = NULL;
+ }
+ 
+ static void pkt_debugfs_init(void)
+ {
+ 	pkt_debugfs_root = debugfs_create_dir(DRIVER_NAME, NULL);
+-	if (IS_ERR(pkt_debugfs_root)) {
+-		pkt_debugfs_root = NULL;
+-		return;
+-	}
+ }
+ 
+ static void pkt_debugfs_cleanup(void)
+ {
+-	if (!pkt_debugfs_root)
+-		return;
+ 	debugfs_remove(pkt_debugfs_root);
+ 	pkt_debugfs_root = NULL;
+ }
