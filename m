@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3JSOjX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 10:39:23 -0400
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:53332 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750803Ab3JSOjU (ORCPT
+	id S1754176Ab3JSOlu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 10:41:50 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:38051 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750803Ab3JSOjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org,>);
-	Sat, 19 Oct 2013 10:39:20 -0400
+	Sat, 19 Oct 2013 10:39:24 -0400
 X-RRZE-Submit-IP: 212.255.122.85
 From: Dominik Paulus <dominik.paulus@fau.de>
 To: Dan Carpenter <dan.carpenter@oracle.com>
 Cc: Dominik Paulus <dominik.paulus@fau.de>,
-        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
         Tobias Polzer <tobias.polzer@fau.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, linux-kernel@vger.kernel.org,
-        tobias.polzer@fau.de, Ilija Hadzic <ihadzic@research.bell-labs.com>
-Subject: [PATCHv4 02/16] staging: usbip: Add kernel support for client ACLs
-Date: Sat, 19 Oct 2013 16:39:05 +0200
-Message-Id: <1382193559-12549-3-git-send-email-dominik.paulus@fau.de>
+        linux-kernel@i4.cs.fau.de, Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
+        linux-kernel@vger.kernel.org, tobias.polzer@fau.de,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>
+Subject: [PATCHv4 09/16] staging: usbip: Separate protocol/program version
+Date: Sat, 19 Oct 2013 16:39:12 +0200
+Message-Id: <1382193559-12549-10-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
 References: <20130930123821.GI6192@mwanda>
@@ -28,137 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the possibility to stored ACLs for allowed clients for
-each stub device in sysfs. It adds a new sysfs entry called "usbip_acl"
-for each stub device, containing a list of CIDR masks of allowed
-clients. This file will be used by usbip and usbipd to store the ACL.
+Not all new program versions necessarily introduce
+non-backwards-compatible protocol changes. We thus move the definition
+of the protocol version from configure.ac to usbip_network.h, where it
+logically belongs to.
 
-Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/stub.h     |  5 ++++
- drivers/staging/usbip/stub_dev.c | 61 +++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 65 insertions(+), 1 deletion(-)
+ drivers/staging/usbip/userspace/configure.ac        | 1 -
+ drivers/staging/usbip/userspace/src/usbip_network.c | 6 +++---
+ drivers/staging/usbip/userspace/src/usbip_network.h | 6 ++++++
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
-index a73e437..cfe75d1 100644
---- a/drivers/staging/usbip/stub.h
-+++ b/drivers/staging/usbip/stub.h
-@@ -60,6 +60,11 @@ struct stub_device {
- 	struct list_head unlink_free;
+diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
+index 2208516..bc08b81 100644
+--- a/drivers/staging/usbip/userspace/configure.ac
++++ b/drivers/staging/usbip/userspace/configure.ac
+@@ -2,7 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
  
- 	wait_queue_head_t tx_waitq;
-+
-+	/* list of allowed IP addrs */
-+	char *acls;
-+	/* for locking list operations */
-+	spinlock_t ip_lock;
- };
+ AC_PREREQ(2.59)
+ AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
+-AC_DEFINE([USBIP_VERSION], [0x00000111], [binary-coded decimal version number])
  
- /* private data into urb->priv */
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 76a1ff0..0e33542 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -142,6 +142,56 @@ err:
- }
- static DEVICE_ATTR(usbip_sockfd, S_IWUSR, NULL, store_sockfd);
+ CURRENT=0
+ REVISION=1
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
+index e573cb2..a606e2b 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.c
++++ b/drivers/staging/usbip/userspace/src/usbip_network.c
+@@ -156,7 +156,7 @@ int usbip_net_send_op_common(int sockfd, uint32_t code, uint32_t status)
+ 
+ 	memset(&op_common, 0, sizeof(op_common));
+ 
+-	op_common.version = USBIP_VERSION;
++	op_common.version = PROTOCOL_VERSION;
+ 	op_common.code    = code;
+ 	op_common.status  = status;
+ 
+@@ -186,9 +186,9 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code)
+ 
+ 	PACK_OP_COMMON(0, &op_common);
+ 
+-	if (op_common.version != USBIP_VERSION) {
++	if (op_common.version != PROTOCOL_VERSION) {
+ 		dbg("version mismatch: %d %d", op_common.version,
+-		    USBIP_VERSION);
++		    PROTOCOL_VERSION);
+ 		return -ERR_MISMATCH;
+ 	}
+ 
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
+index d3c1b71..6a41fd8 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.h
++++ b/drivers/staging/usbip/userspace/src/usbip_network.h
+@@ -14,6 +14,12 @@
+ 
+ #include <stdint.h>
  
 +/*
-+ * This function replaces the current ACL list
++ * Protocol version. Incremented only on non-backwards-compatible
++ * changes.
 + */
-+static ssize_t store_acl(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct stub_device *sdev = dev_get_drvdata(dev);
-+	int retval;
++#define PROTOCOL_VERSION 0x111
 +
-+	if (count >= PAGE_SIZE)
-+		return -EINVAL;
-+
-+	spin_lock_irq(&sdev->ip_lock);
-+	kfree(sdev->acls);
-+	sdev->acls = kstrdup(buf, GFP_KERNEL);
-+	if (!sdev->acls) {
-+		retval = -ENOMEM;
-+	} else {
-+		retval = strlen(sdev->acls);
-+	}
-+	spin_unlock_irq(&sdev->ip_lock);
-+
-+	return retval;
-+}
-+
-+/*
-+ * This functions prints all allowed IP addrs for this dev
-+ */
-+static ssize_t show_acl(struct device *dev, struct device_attribute *attr,
-+		       char *buf)
-+{
-+	struct stub_device *sdev = dev_get_drvdata(dev);
-+	int retval;
-+
-+	if (!sdev)
-+		return -ENODEV;
-+
-+	spin_lock_irq(&sdev->ip_lock);
-+	if (sdev->acls == NULL) {
-+		retval = 0;
-+	} else {
-+		strcpy(buf, sdev->acls);
-+		retval = strlen(buf);
-+	}
-+	spin_unlock_irq(&sdev->ip_lock);
-+
-+	return retval;
-+}
-+static DEVICE_ATTR(usbip_acl, S_IWUSR | S_IRUGO, show_acl, store_acl);
-+
- static int stub_add_files(struct device *dev)
- {
- 	int err = 0;
-@@ -157,9 +207,13 @@ static int stub_add_files(struct device *dev)
- 	err = device_create_file(dev, &dev_attr_usbip_debug);
- 	if (err)
- 		goto err_debug;
-+	err = device_create_file(dev, &dev_attr_usbip_acl);
-+	if (err)
-+		goto err_acl;
- 
- 	return 0;
--
-+err_acl:
-+	device_remove_file(dev, &dev_attr_usbip_debug);
- err_debug:
- 	device_remove_file(dev, &dev_attr_usbip_sockfd);
- err_sockfd:
-@@ -173,6 +227,7 @@ static void stub_remove_files(struct device *dev)
- 	device_remove_file(dev, &dev_attr_usbip_status);
- 	device_remove_file(dev, &dev_attr_usbip_sockfd);
- 	device_remove_file(dev, &dev_attr_usbip_debug);
-+	device_remove_file(dev, &dev_attr_usbip_acl);
- }
- 
- static void stub_shutdown_connection(struct usbip_device *ud)
-@@ -312,6 +367,7 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	INIT_LIST_HEAD(&sdev->priv_free);
- 	INIT_LIST_HEAD(&sdev->unlink_free);
- 	INIT_LIST_HEAD(&sdev->unlink_tx);
-+	spin_lock_init(&sdev->ip_lock);
- 	spin_lock_init(&sdev->priv_lock);
- 
- 	init_waitqueue_head(&sdev->tx_waitq);
-@@ -511,6 +567,9 @@ static void stub_disconnect(struct usb_interface *interface)
- 	usb_put_dev(sdev->udev);
- 	usb_put_intf(interface);
- 
-+	/* free ACL list */
-+	kfree(sdev->acls);
-+
- 	/* free sdev */
- 	busid_priv->sdev = NULL;
- 	stub_device_free(sdev);
+ extern int usbip_port;
+ extern char *usbip_port_string;
+ extern char *usbip_srp_password;
 -- 
 1.8.4.1
 
