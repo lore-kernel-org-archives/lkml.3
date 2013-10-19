@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab3JSDN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 23:13:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2586 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752791Ab3JSDN4 (ORCPT
+	id S1755543Ab3JSDkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 23:40:04 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:10356 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417Ab3JSDkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 23:13:56 -0400
-Date: Fri, 18 Oct 2013 23:13:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: int3 doing rcu_read_lock()
-Message-ID: <20131018231351.28c2036d@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 18 Oct 2013 23:40:02 -0400
+X-AuditID: cbfec37c-b7fd86d00000670b-1b-5261ff1029b0
+Message-id: <5261FF07.7010604@samsung.com>
+Date: Fri, 18 Oct 2013 21:39:51 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 0/7] 3.0.101-stable review
+References: <20131018195036.020644622@linuxfoundation.org>
+In-reply-to: <20131018195036.020644622@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hP12B/4lBBp3tMhZz1q9hs2hevJ7N
+	4vKuOWwWX386WCzY+IjR4lHfW3YHNo+ds+6ye5yY8ZvFY//cNewenzfJBbBEcdmkpOZklqUW
+	6dslcGXcefuLseAGf0VbVyt7A+Ncni5GTg4JAROJpl3zmCBsMYkL99azdTFycQgJLGOU+Hv8
+	NyOE08sksbrnJTOEs5FRYsbkhSwgLbwCWhId9z+D2SwCqhJbD51kBbHZBNQlPr/ewQ5iCwnI
+	STQtWc0MYosKREisXPKAFaJXUOLH5HtgvSICxhL9Z2eB1TMLHGOUWNhsAmILC2hKrLi6DKiG
+	A2iOlcTPZSkgYU4Ba4nfdzYyQ5RbS6yctI0RwpaX2LzmLTPEWmWJP5dPMYG0SggoSmxfbTWB
+	UWQWksWzkHTPQtK9gJF5FaNYaXFyQXFSemqFsV5xYm5xaV66XnJ+7iZGSMTU7GC899XmEKMA
+	B6MSD+/HR4lBQqyJZcWVuYcYJTiYlUR4ay4ChXhTEiurUovy44tKc1KLDzEycXBKNTAK1N0o
+	LZALDRX/8u6ArZrqgr8GujamB1Z35cwJ+J61MfLs4ZTz7Mes/nVfaq765S9zoPCDrd7/x+uc
+	5ap6uJSWqMjk+bB9iDc6n7+l++JBce6v7x+nNJ1yuHL20Nm5b5lcfz49ne82NffiOuZpApmf
+	QyTZJn0//5R9nsijK3lbwq8t9cyaNPGrEktxRqKhFnNRcSIA1kENTnYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Paul,
+On 10/18/2013 01:52 PM, Greg Kroah-Hartman wrote:
+> NOTE:
+>    This is the LAST 3.0.x stable kernel release that I will be doing.
+>    After this release, 3.0.x is End-Of-Life, please move to the 3.10.x,
+>    or if you must, 3.4.x series.  For more information about longterm
+>    stable releases and how long they will be maintained, please see
+>    https://www.kernel.org/category/releases.html
+>
+> This is the start of the stable review cycle for the 3.0.101 release.
+> There are 7 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Oct 20 19:50:26 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.101-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+> -------------
 
-I hit this in my tests:
+Patch applied cleanly 	 yes
+Compile testing          passed
+Boot testing 	         passed
+dmesg regression testing passed
+Cross-compile testing    passed
 
-[ 1597.688015] ===============================
-[ 1597.688015] [ INFO: suspicious RCU usage. ]
-[ 1597.688015] 3.12.0-rc4-test+ #48 Not tainted
-[ 1597.688015] -------------------------------
-[ 1597.688015] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:775 rcu_read_lock() used illegally while idle!
-[ 1597.688015] 
-[ 1597.688015] other info that might help us debug this:
-[ 1597.688015] 
-[ 1597.688015] 
-[ 1597.688015] RCU used illegally from idle CPU!
-[ 1597.688015] rcu_scheduler_active = 1, debug_locks = 0
-[ 1597.688015] RCU used illegally from extended quiescent state!
-[ 1597.688015] 1 lock held by swapper/0/0:
-[ 1597.688015]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff810689ab>] rcu_lock_acquire+0x0/0x29
-[ 1597.688015] 
-[ 1597.688015] stack backtrace:
-[ 1597.688015] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-rc4-test+ #48
-[ 1597.688015] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-[ 1597.688015]  0000000000000001 ffff88007a609e78 ffffffff8151125f ffffffff81a44f38
-[ 1597.688015]  ffffffff81a10490 ffff88007a609ea8 ffffffff8109abbe ffff88007a609f08
-[ 1597.688015]  ffffffff81a407d0 0000000000000002 00000000ffffffff ffff88007a609ee8
-[ 1597.688015] Call Trace:
-[ 1597.688015]  <#DB>  [<ffffffff8151125f>] dump_stack+0x52/0x8b
-[ 1597.688015]  [<ffffffff8109abbe>] lockdep_rcu_suspicious+0x109/0x112
-[ 1597.688015]  [<ffffffff81519596>] __atomic_notifier_call_chain+0x70/0xee
-[ 1597.688015]  [<ffffffff81519628>] atomic_notifier_call_chain+0x14/0x16
-[ 1597.688015]  [<ffffffff81519658>] notify_die+0x2e/0x30
-[ 1597.688015]  [<ffffffff81516e60>] do_int3+0x4f/0x9c
-[ 1597.688015]  [<ffffffff815166c4>] int3+0x34/0x50
-[ 1597.688015]  [<ffffffff8109a221>] ? trace_hardirqs_off_caller+0x3f/0xac
-[ 1597.688015]  [<ffffffff8151ea61>] ? do_IRQ+0x1/0xa4
-[ 1597.688015]  <<EOE>>  <IRQ>  [<ffffffff8151646f>] ? common_interrupt+0x6f/0x6f
-[ 1597.688015]  <EOI>  [<ffffffff8109dff0>] ? trace_hardirqs_on+0xd/0xf
-[ 1597.688015]  [<ffffffff8109a221>] ? trace_hardirqs_off_caller+0x3f/0xac
-[ 1597.688015]  [<ffffffff8100b60f>] ? default_idle+0x21/0x32
-[ 1597.688015]  [<ffffffff8100b60d>] ? default_idle+0x1f/0x32
-[ 1597.688015]  [<ffffffff8100bd90>] arch_cpu_idle+0x18/0x22
-[ 1597.688015]  [<ffffffff8108a28b>] cpu_startup_entry+0x10b/0x16c
-[ 1597.688015]  [<ffffffff81509876>] rest_init+0x13a/0x141
-[ 1597.688015]  [<ffffffff8150973c>] ? csum_partial_copy_generic+0x16c/0x16c
-[ 1597.688015]  [<ffffffff81cc4d91>] start_kernel+0x41c/0x429
-[ 1597.688015]  [<ffffffff81cc46e9>] ? repair_env_string+0x56/0x56
-[ 1597.688015]  [<ffffffff81cc448d>] x86_64_start_reservations+0x2a/0x2c
-[ 1597.688015]  [<ffffffff81cc457a>] x86_64_start_kernel+0xeb/0xf2
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions
+in warn.
 
-When function tracing is being enabled, to avoid stop machine we add a
-break point to all functions that are about to be traced, convert them,
-and then remove them. ftrace adds a breakpoint handler to be called by
-int3 that simply skips the code.
+Test systems
 
-The problem is that the do_int3 calls notify_die which does the notify
-handler which does a rcu_read_lock().
+     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+     HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2 (cross-compile 
+testing)
 
-The problem is if do_IRQ gets called during this transition (as it was
-above) from idle. The breakpoint is hit at the beginning of do_IRQ()
-before it gets to call irq_enter(), which means rcu_irq_enter() isn't
-called either.
+alpha 	defconfig 	Passed
+arm 	defconfig 	not applicable
+arm64 	defconfig 	Not applicable
+blackfin defconfig 	Passed
+c6x 	defconfig 	Not applicable
+mips 	defconfig 	Passed
+mipsel 	defconfig 	Passed
+powerpc wii_defconfig	Passed
+sh 	defconfig 	Passed
+sparc 	defconfig 	Passed
+tile 	tilegx_defconfig Passed 	
 
-I wonder if we should have a rcu_bp_enter(), that basically does what
-rcu_irq_enter() does, but it would not be traced.
+-- Shuah
 
-Thinking about this more, it seems that because breakpoints are used
-everywhere function tracing can be used, we may need to fix the
-breakpoint code not to call rcu_read_lock() as it can be just as
-dangerous to have as function tracing. We may need to have a different
-kind of notifier that breakpoints use :-/
-
-Something to talk about in Edinburgh ;-)
-
--- Steve
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
