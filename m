@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3JSQnm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 12:43:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2357 "EHLO mx1.redhat.com"
+	id S1753213Ab3JSQte (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 12:49:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab3JSQnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 12:43:41 -0400
-Date: Sat, 19 Oct 2013 18:36:27 +0200
+	id S1751401Ab3JSQtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 12:49:33 -0400
+Date: Sat, 19 Oct 2013 18:42:23 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: David Long <dave.long@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
         "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 03/13] uprobes: allow arch access to xol slot
-Message-ID: <20131019163627.GA7837@redhat.com>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+Subject: Re: [PATCH v2 04/13] uprobes: allow arch-specific initialization
+Message-ID: <20131019164223.GB7837@redhat.com>
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-5-git-send-email-dave.long@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+In-Reply-To: <1381871068-27660-5-git-send-email-dave.long@linaro.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 10/15, David Long wrote:
 >
-> Allow arches to customize how the instruction is filled into the xol
-> slot.  ARM will use this to insert an undefined instruction after the
-> real instruction in order to simulate a single step of the instruction
-> without hardware support.
+> Add a weak function for any architecture-specific initialization.  ARM
+> will use this to register the handlers for the undefined instructions it
+> uses to implement uprobes.
 
-OK, but
+Could you explain why ARM can't simply do the necessary initialization in
+arch/arm/kernel/uprobes-arm.c ?
 
-> +void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
+
+> +int __weak __init arch_uprobes_init(void)
 > +{
-> +	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
+> +	return 0;
 > +}
 > +
->  /*
->   * xol_get_insn_slot - allocate a slot for xol.
->   * Returns the allocated slot address or 0.
-> @@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+>  static int __init init_uprobes(void)
 >  {
->  	struct xol_area *area;
->  	unsigned long xol_vaddr;
-> +	void *kaddr;
+> +	int ret;
+>  	int i;
 >  
->  	area = get_xol_area();
->  	if (!area)
-> @@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
->  		return 0;
+>  	for (i = 0; i < UPROBES_HASH_SZ; i++)
+> @@ -1870,6 +1876,10 @@ static int __init init_uprobes(void)
+>  	if (percpu_init_rwsem(&dup_mmap_sem))
+>  		return -ENOMEM;
 >  
->  	/* Initialize the slot */
-> -	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
-> +	kaddr = kmap_atomic(area->page);
-> +	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
-> +	kunmap_atomic(kaddr);
+> +	ret = arch_uprobes_init();
+> +	if (ret)
+> +		return ret;
+> +
+>  	return register_die_notifier(&uprobe_exception_nb);
+>  }
+>  module_init(init_uprobes);
 
-This looks a bit strange and defeats the purpose of generic helper...
-
-How about
-
-	void __weak arch_uprobe_xol_copy(...)
-	{
-		copy_to_page(...);
-	}
-
-then just
-
-	- copy_to_page(...);
-	+ arch_uprobe_xol_copy(...);
-
-?
-
-Or, I am just curious, can't we have an empty "__weak arch_uprobe_xol_copy" if
-we call it right after copy_to_page() ?
+IOW, why do we need to call arch_uprobes_init() from init_uprobes().
 
 Oleg.
 
