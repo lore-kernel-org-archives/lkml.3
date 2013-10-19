@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3JSBgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 21:36:03 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:53132 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab3JSBgB (ORCPT
+	id S1755053Ab3JSBlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 21:41:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50898 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab3JSBlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 21:36:01 -0400
-Message-ID: <5261E1FE.2030304@lwfinger.net>
-Date: Fri, 18 Oct 2013 20:35:58 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 18 Oct 2013 21:41:07 -0400
+Date: Fri, 18 Oct 2013 18:41:01 -0700
+From: Michael Bohan <mbohan@codeaurora.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "david.daney@cavium.com" <david.daney@cavium.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH] of/lib: Export fdt routines to modules
+Message-ID: <20131019014101.GA30244@codeaurora.org>
+References: <1381966065-16854-1-git-send-email-mbohan@codeaurora.org>
+ <525F2397.40203@caviumnetworks.com>
+ <20131017002731.GA22830@codeaurora.org>
+ <525F6D83.1050808@roeck-us.net>
+ <20131017235132.GA6241@codeaurora.org>
+ <52608457.5040609@roeck-us.net>
+ <20131018183804.GA8546@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Felipe Pena <felipensp@gmail.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: rtl8192se: Fix wrong assignment
-References: <1382143960-4594-1-git-send-email-felipensp@gmail.com>
-In-Reply-To: <1382143960-4594-1-git-send-email-felipensp@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131018183804.GA8546@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2013 07:52 PM, Felipe Pena wrote:
-> There is a typo in the struct member name on assignment when checking
-> rtlphy->current_chan_bw == HT_CHANNEL_WIDTH_20_40, the check uses pwrgroup_ht40
-> for bound limit and uses pwrgroup_ht20 when assigning instead.
->
-> Signed-off-by: Felipe Pena <felipensp@gmail.com>
-> ---
->   drivers/net/wireless/rtlwifi/rtl8192se/rf.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> index 5061f1d..92d38ab 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> @@ -265,7 +265,7 @@ static void _rtl92s_get_txpower_writeval_byregulatory(struct ieee80211_hw *hw,
->   				    rtlefuse->pwrgroup_ht40
->   				    [RF90_PATH_A][chnl - 1]) {
->   					pwrdiff_limit[i] =
-> -					  rtlefuse->pwrgroup_ht20
-> +					  rtlefuse->pwrgroup_ht40
->   					  [RF90_PATH_A][chnl - 1];
->   				}
->   			} else {
-> --
+On Fri, Oct 18, 2013 at 07:38:04PM +0100, Mark Rutland wrote:
 
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Hi Mark,
 
-John: I forgot to mention this earlier, but when you add your s-o-b, please add 
-a Cc for Stable [3.0 +].
+> On Fri, Oct 18, 2013 at 01:44:07AM +0100, Guenter Roeck wrote:
+> > On 10/17/2013 04:51 PM, Michael Bohan wrote:
+> > > On Wed, Oct 16, 2013 at 09:54:27PM -0700, Guenter Roeck wrote:
+> > >> On 10/16/2013 05:27 PM, Michael Bohan wrote:
+> > >>> My motivation is actually to use the fdt format as a firmware.
+> > >>> I have a requirement to express driver metadata that's loadable
+> > >> >from the filesystem. This data is not reasonable to place in the
+> > >>> system Device Tree, since it's application specific and does not
+> > >>> actually describe hardware. The fact that the format chosen is
+> > >>> 'flattened device tree' is merely just a coincidence.
+> 
+> Michael, could you elaborate on using the fdt format "as a firmware" and
+> what driver metadata you need to be loadable from the filesystem?
+
+We have a hardware device in which of its internal register state
+is reconfigured for each application that uses it. And we may
+need to quickly swap between applications many times within the
+life of the system, so all of the data needs to be preloaded
+ahead of the time. There's a lot of data that needs to be updated
+in one-shot, and unfortunately there's really no great way to
+abstract much of this information.
+
+This metadata file is generated by a tool and lives on the
+filesystem, and exists mainly so that each higher level
+application driver doesn't need to change its code when such
+parameters change. We also want it to be human-readable so that
+people can view it, and possibly even tweak it by hand. As
+mentioned, most of the data represent actual hardware
+configurations, but some others describe per application software
+implementation details.
+
+> How are you intending to pass the DT to the kernel from userspace?
+
+request_firmware()
+
+> Given that you mention this is application-specific configuration, why
+> is using sysfs attributes or some other sort of filesystem interaction
+> not appropriate?
+
+Sysfs is another option, but the major problem is that the driver
+doesn't know the full list of applications until it reads the
+firmware file. So if we went the sysfs route, it seems we'd need
+to form some sort of 'virtual device' hierarchy so that the sysfs
+files map 1:1 with each application. That is, read the metadata
+file, and for each 'application node', instruct the driver to
+create a virtual device for that application node, exposing sysfs
+files that can hold its data. To me this seems a bit excessive
+and complicated.
+
+Another option would to have a flat sysfs representation and
+have the write of one special file create an internal application
+database entry for that configuration.
+
+The point is, we can't proceed with normal operation until we
+have the total list of applications and their respective
+properties registered in memory.
+
+But writing all the sysfs files could be expensive. There would
+be complicated tables of different formats that would be
+consuming to run through all the different possible entries.
+
+To be honest, I mostly just thought the fdt would be a cool
+implementation. It handles all of our requirements, while reusing
+infrastructure within and external to the kernel.
 
 Thanks,
+Mike
 
-Larry
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
