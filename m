@@ -1,115 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab3JSKvO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 06:51:14 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:64911 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3JSKvM (ORCPT
+	id S1752064Ab3JSKw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 06:52:57 -0400
+Received: from mail.ufac.br ([200.129.173.14]:51010 "EHLO mail.ufac.br"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab3JSKwz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 06:51:12 -0400
-Message-ID: <5262641C.5050406@gmail.com>
-Date: Sat, 19 Oct 2013 12:51:08 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Sat, 19 Oct 2013 06:52:55 -0400
+X-Greylist: delayed 762 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Oct 2013 06:52:55 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH] videobuf2: Add missing lock held on vb2_fop_relase
-References: <hverkuil@xs4all.nl> <1381736489-27852-1-git-send-email-ricardo.ribalda@gmail.com> <526256F5.1060404@gmail.com> <CAPybu_0NxSS2CyPL7sv0NOn8_1HcPPBsWyqV6Hi2=b7oRezKYQ@mail.gmail.com>
-In-Reply-To: <CAPybu_0NxSS2CyPL7sv0NOn8_1HcPPBsWyqV6Hi2=b7oRezKYQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Charity Donation
+To: Recipients <gillianwise@gmail.com>
+From: "Gillian and Adrian Bayford" <gillianwise@gmail.com>
+Date: Sat, 19 Oct 2013 12:36:59 +0200
+Reply-To: gillian.adrianbayford01@rogers.com
+Message-Id: <20131019103740.684BA606591@mail.ufac.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2013 12:22 PM, Ricardo Ribalda Delgado wrote:
-> On Sat, Oct 19, 2013 at 11:55 AM, Sylwester Nawrocki
-> <sylvester.nawrocki@gmail.com>  wrote:
->> >  On 10/14/2013 09:41 AM, Ricardo Ribalda Delgado wrote:
->>> >>
->>> >>  vb2_fop_relase does not held the lock although it is modifying the
->>> >>  queue->owner field.
->> >  [...]
->>> >>  diff --git a/drivers/media/v4l2-core/videobuf2-core.c
->>> >>  b/drivers/media/v4l2-core/videobuf2-core.c
->>> >>  index 9fc4bab..3a961ee 100644
->>> >>  --- a/drivers/media/v4l2-core/videobuf2-core.c
->>> >>  +++ b/drivers/media/v4l2-core/videobuf2-core.c
->>> >>  @@ -2588,8 +2588,15 @@ int vb2_fop_release(struct file *file)
->>> >>           struct video_device *vdev = video_devdata(file);
->>> >>
->>> >>           if (file->private_data == vdev->queue->owner) {
->>> >>  +               struct mutex *lock;
->>> >>  +
->>> >>  +               lock = vdev->queue->lock ? vdev->queue->lock : vdev->lock;
->>> >>  +               if (lock)
->>> >>  +                       mutex_lock(lock);
->>> >>                   vb2_queue_release(vdev->queue);
->>> >>                   vdev->queue->owner = NULL;
->>> >>  +               if (lock)
->>> >>  +                       mutex_unlock(lock);
->>> >>           }
->>> >>           return v4l2_fh_release(file);
->>> >>     }
->> >
->> >
->> >  It seems you didn't inspect all users of vb2_fop_release(). There are 3
->> >  drivers
->> >  that don't assign vb2_fop_release() to struct v4l2_file_operations directly
->> >  but
->> >  instead call it from within its own release() handler. Two of them do call
->> >  vb2_fop_release() with the video queue lock already held.
->> >
->> >  $ git grep -n vb2_fop_rel -- drivers/media/
->> >
->> >  drivers/media/platform/exynos4-is/fimc-capture.c:552:   ret =
->> >  vb2_fop_release(file);
->> >  drivers/media/platform/exynos4-is/fimc-lite.c:549: vb2_fop_release(file);
->> >
->
-> Very good catch, thanks!
->
->> >  A rather ugly solution would be to open code the vb2_fop_release() function
->> >  in those driver, like in below patch (untested). Unless there are better
->> >  proposals I would queue the patch as below together with the $subject patch
->> >  upstream.
->
-> IMHO this will lead to the same type of mistakes in the future.
->
->   What about creating a function __vb2_fop_release that does exactly
-> the same as the original function but with an extra parameter bool
-> lock_held
->
-> vb2_fop_release will be a wrapper for that funtion with lock_held== false
+My wife and i won £148.6 Million Pounds last year, and we have done lot of charity donation, so we decide to give 1.5 Million Pounds each to 5 lucky people, lucky for you, your email, was given to us by Google management as one of our lucky precipitants.
 
-Hmm, the parameter would be telling whether the lock is already held ? 
-Perhaps
-we should inverse its meaning and it should indicate whether 
-vb2_fop_release()
-should be taking the lock internally ? It seems to me more straightforward.
+For verification process see below Please read the article - http://www.bbc.co.uk/news/uk-england-19254228
 
-> drivers that overload the fop_release and need to hold the lock will
-> call the __ function with lock_held= true
->
-> What do you think?
+Send Name, Country, Age, Occupation and Phone Number for details
 
-I was also considering this, it's probably better. I'm not sure about 
-exporting
-functions prefixed with __ though. And the locking becomes less clear 
-with such
-functions proliferation.
+Congratulations & Happy Celebrations in Advance,
 
-Anyway, I'm in general personally OK with having an additional version like:
-
-__vb2_fop_release(struct file *filp, bool lock);
-
-
-Regards,
-Sylwester
+Gillian and Adrian Bayford
+Email: gillian.adrianbayford01@rogers.com
