@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab3JSQct (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 12:32:49 -0400
-Received: from sirius.lasnet.de ([78.47.116.19]:58698 "EHLO sirius.lasnet.de"
+	id S1753281Ab3JSQnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 12:43:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2357 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204Ab3JSQcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 12:32:47 -0400
-X-Greylist: delayed 1810 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Oct 2013 12:32:47 EDT
-Message-ID: <1382198544.22609.8.camel@polaris.local>
-From: Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Date: Sat, 19 Oct 2013 18:02:24 +0200
-In-Reply-To: <20130821075828.GZ7656@atomide.com>
-References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
-	 <20130821075828.GZ7656@atomide.com>
-Organization: Pengutronix
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
+	id S1751549Ab3JSQnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 12:43:41 -0400
+Date: Sat, 19 Oct 2013 18:36:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/13] uprobes: allow arch access to xol slot
+Message-ID: <20131019163627.GA7837@redhat.com>
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-21 at 00:58 -0700, Tony Lindgren wrote:
-> * Zubair Lutfullah <zubair.lutfullah@gmail.com> [130715 08:33]:
-> > Did a grep for coordiante and replaced them all
-> > with coordinate.
-> > 
-> > This applies to the mfd-next tree.
-> 
-> This should be safe to apply via the MFD tree as a non-critical
-> fix assuming the bootloaders are not yet using this:
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+On 10/15, David Long wrote:
+>
+> Allow arches to customize how the instruction is filled into the xol
+> slot.  ARM will use this to insert an undefined instruction after the
+> real instruction in order to simulate a single step of the instruction
+> without hardware support.
 
-It seems this didn't get applied. It fixes the touchscreen on a
-BeagleBone black with the 7" LCD and we should avoid having people use
-the wrong binding.
+OK, but
 
-Samuel or Lee: Could you take this patch?
+> +void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
+> +{
+> +	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
+> +}
+> +
+>  /*
+>   * xol_get_insn_slot - allocate a slot for xol.
+>   * Returns the allocated slot address or 0.
+> @@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+>  {
+>  	struct xol_area *area;
+>  	unsigned long xol_vaddr;
+> +	void *kaddr;
+>  
+>  	area = get_xol_area();
+>  	if (!area)
+> @@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+>  		return 0;
+>  
+>  	/* Initialize the slot */
+> -	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
+> +	kaddr = kmap_atomic(area->page);
+> +	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
+> +	kunmap_atomic(kaddr);
 
-Thanks,
-Jan Lübbe
+This looks a bit strange and defeats the purpose of generic helper...
+
+How about
+
+	void __weak arch_uprobe_xol_copy(...)
+	{
+		copy_to_page(...);
+	}
+
+then just
+
+	- copy_to_page(...);
+	+ arch_uprobe_xol_copy(...);
+
+?
+
+Or, I am just curious, can't we have an empty "__weak arch_uprobe_xol_copy" if
+we call it right after copy_to_page() ?
+
+Oleg.
 
