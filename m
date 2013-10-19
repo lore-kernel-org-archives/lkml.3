@@ -1,164 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab3JSOnh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 10:43:37 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:59005 "EHLO
-	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751236Ab3JSOjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org,>);
-	Sat, 19 Oct 2013 10:39:21 -0400
-X-RRZE-Submit-IP: 212.255.122.85
-From: Dominik Paulus <dominik.paulus@fau.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Dominik Paulus <dominik.paulus@fau.de>,
-        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
-        Tobias Polzer <tobias.polzer@fau.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, linux-kernel@vger.kernel.org,
-        tobias.polzer@fau.de, Ilija Hadzic <ihadzic@research.bell-labs.com>
-Subject: [PATCHv4 05/16] staging: usbip: Add support for ACLs in usbipd
-Date: Sat, 19 Oct 2013 16:39:08 +0200
-Message-Id: <1382193559-12549-6-git-send-email-dominik.paulus@fau.de>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
-References: <20130930123821.GI6192@mwanda>
- <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
+	id S1752764Ab3JSO5F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 10:57:05 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54419 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3JSO5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 10:57:03 -0400
+Message-ID: <52629DBB.6000800@hitachi.com>
+Date: Sat, 19 Oct 2013 23:56:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 1/6] x86: speed up int3-based patching using less paranoid
+ write
+References: <1382106445-31468-2-git-send-email-pmladek@suse.cz>
+In-Reply-To: <1382106445-31468-2-git-send-email-pmladek@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interpret the ACLs stored in sysfs in usbipd and reject clients not
-matching one of the ACLs.
+(2013/10/18 23:27), Petr Mladek wrote:
+> This change is inspired by the int3-based patching code used in
+> ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
+> (breakpoint)-based instruction patching).
+> 
+> When trying to use text_poke_bp in ftrace, the result was slower
+> than the original implementation. For example, I tried to modify
+> the ftrace function, enable, and disable the tracer in a cycle.
+> With 9 different trace functions and 500 cycles, I got these times:
+> 
+> 	original code:			with text_poke_bp using text_poke
+> 
+> 	real    19m51.667s		real    26m31.277s
+> 	user    0m0.004s		user    0m0.024s
+> 	sys     0m27.124s		sys     0m28.180s
+> 
+> It turned out that the difference was in text_poke vs. ftrace_write.
+> text_poke did many extra operations to make sure that the change
+> was atomic.
+> 
+> In fact, we do not need this luxury in text_poke_bp because
+> the modified code is guarded by the int3 handler. The int3
+> interupt itself is added and removed by an atomic operation
+> because we modify only one byte.
+> 
+> This patch adds text_poke_part which is inspired by ftrace_write.
+> Then it is used in text_poke_bp instead of the paranoid text_poke.
 
-Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
-Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
-Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
----
- drivers/staging/usbip/userspace/src/Makefile.am |  2 +-
- drivers/staging/usbip/userspace/src/usbipd.c    | 79 +++++++++++++++++++++++++
- 2 files changed, 80 insertions(+), 1 deletion(-)
+OK, as far as the handler correctly handles int3, we don't need
+to use fixmaps for this purpose.
 
-diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
-index a113003..5161bae 100644
---- a/drivers/staging/usbip/userspace/src/Makefile.am
-+++ b/drivers/staging/usbip/userspace/src/Makefile.am
-@@ -9,4 +9,4 @@ usbip_SOURCES := usbip.h utils.h usbip.c utils.c usbip_network.c \
- 		 usbip_bind.c usbip_unbind.c
- 
- 
--usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c
-+usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c utils.c
-diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
-index 8db2f27..bc1fd19 100644
---- a/drivers/staging/usbip/userspace/src/usbipd.c
-+++ b/drivers/staging/usbip/userspace/src/usbipd.c
-@@ -48,6 +48,7 @@
- #include "usbip_host_driver.h"
- #include "usbip_common.h"
- #include "usbip_network.h"
-+#include "utils.h"
- 
- #undef  PROGNAME
- #define PROGNAME "usbipd"
-@@ -169,12 +170,69 @@ static void usbipd_help(void)
- 	printf("%s\n", usbipd_help_string);
- }
- 
-+/*
-+ * Checks whether client IP matches at least one
-+ * ACL entry
-+ *
-+ * Returns:
-+ *		1  if matches
-+ *		0  if not
-+ *		-1 on error
-+ */
-+static int check_allowed(char *acls, int sockfd)
-+{
-+	int rc, match;
-+	struct sockaddr_storage sa;
-+	char *acl_cpy, *iter, *saveptr;
-+	socklen_t sa_len = sizeof(sa);
-+
-+	rc = getpeername(sockfd, (struct sockaddr *) &sa, &sa_len);
-+	if (rc || sa_len > sizeof(sa)) {
-+		err("getpeername failed: %s", strerror(errno));
-+		return -1;
-+	}
-+
-+	/*
-+	 * We are going to modify our argument,
-+	 * thus, we need to duplicate it.
-+	 */
-+	acl_cpy = strdup(acls);
-+	if (!acl_cpy) {
-+		err("strdup(): %s", strerror(errno));
-+		return -1;
-+	}
-+
-+	match = 0;
-+	iter = strtok_r(acl_cpy, "\n", &saveptr);
-+	/*
-+	 * Iterate over ACL entries and check for
-+	 * matching one.
-+	 */
-+	while (iter) {
-+		struct subnet net;
-+
-+		if (parse_cidr(iter, &net) < 0) {
-+			dbg("parse_cidr() failed");
-+		} else if (in_range(&sa, net)) {
-+			match = 1;
-+			break;
-+		}
-+
-+		iter = strtok_r(NULL, "\n", &saveptr);
-+	}
-+
-+	free(acl_cpy);
-+	return match;
-+}
-+
- static int recv_request_import(int sockfd)
- {
- 	struct op_import_request req;
- 	struct op_common reply;
- 	struct usbip_exported_device *edev;
- 	struct usbip_usb_device pdu_udev;
-+	struct sysfs_attribute *usbip_acl;
-+	char ip_attr_path[SYSFS_PATH_MAX];
- 	int found = 0;
- 	int error = 0;
- 	int rc;
-@@ -206,6 +264,27 @@ static int recv_request_import(int sockfd)
- 		rc = usbip_host_export_device(edev, sockfd);
- 		if (rc < 0)
- 			error = 1;
-+
-+		/* check for allowed IPs */
-+		snprintf(ip_attr_path, sizeof(ip_attr_path), "%s/%s:%d.%d/%s",
-+			edev->udev.path, edev->udev.busid,
-+			edev->udev.bConfigurationValue, 0, "usbip_acl");
-+
-+		usbip_acl = sysfs_open_attribute(ip_attr_path);
-+		if (usbip_acl) {
-+			rc = sysfs_read_attribute(usbip_acl);
-+			if (rc < 0) {
-+				err("Unable to open sysfs");
-+				error = 1;
-+			} else if (check_allowed(usbip_acl->value, sockfd) != 1) {
-+				info("Access denied to device %s",
-+					edev->udev.busid);
-+				error = 1;
-+			}
-+			sysfs_close_attribute(usbip_acl);
-+		} else {
-+			err("failed to get ip list");
-+		}
- 	} else {
- 		info("requested device not found: %s", req.busid);
- 		error = 1;
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> ---
+>  arch/x86/kernel/alternative.c | 49 +++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 43 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index df94598..f714316 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -8,6 +8,7 @@
+>  #include <linux/kprobes.h>
+>  #include <linux/mm.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/uaccess.h>
+>  #include <linux/memory.h>
+>  #include <linux/stop_machine.h>
+>  #include <linux/slab.h>
+> @@ -586,6 +587,43 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+>  	return addr;
+>  }
+>  
+> +/**
+> + * text_poke_part - Update part of the instruction on a live kernel when using
+> + * 		    int3 breakpoint
+> + * @addr:   address to modify
+> + * @opcode: source of the copy
+> + * @len:    length to copy
+> + *
+> + * If we patch instructions using int3 interupt, we do not need to be so careful
+> + * about an atomic write. Adding and removing the interupt is atomic because
+> + * we modify only one byte. The rest of the instruction could be modified in
+> + * several steps because it is quarded by the interupt handler. Hence we could
+> + * use faster code here. See also text_poke_bp below for more details.
+> + *
+> + * Note: Must be called under text_mutex.
+> + */
+> +static void *text_poke_part(void *addr, const void *opcode, size_t len)
+> +{
+> +	/*
+> +	 * On x86_64, kernel text mappings are mapped read-only with
+> +	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
+> +	 * of the kernel text mapping to modify the kernel text.
+> +	 *
+> +	 * For 32bit kernels, these mappings are same and we can use
+> +	 * kernel identity mapping to modify code.
+> +	 */
+> +	if (((unsigned long)addr >= (unsigned long)_text) &&
+> +	    ((unsigned long)addr < (unsigned long)_etext))
+> +		addr = __va(__pa_symbol(addr));
+> +
+> +	if (probe_kernel_write(addr, opcode, len))
+> +		return NULL;
+> +
+> +	sync_core();
+> +
+> +	return addr;
+> +}
+> +
+>  static void do_sync_core(void *info)
+>  {
+>  	sync_core();
+> @@ -648,15 +686,15 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	 */
+>  	smp_wmb();
+>  
+> -	text_poke(addr, &int3, sizeof(int3));
+> +	text_poke_part(addr, &int3, sizeof(int3));
+>  
+>  	on_each_cpu(do_sync_core, NULL, 1);
+>  
+>  	if (len - sizeof(int3) > 0) {
+>  		/* patch all but the first byte */
+> -		text_poke((char *)addr + sizeof(int3),
+> -			  (const char *) opcode + sizeof(int3),
+> -			  len - sizeof(int3));
+> +		text_poke_part((char *)addr + sizeof(int3),
+> +			       (const char *) opcode + sizeof(int3),
+> +			       len - sizeof(int3));
+>  		/*
+>  		 * According to Intel, this core syncing is very likely
+>  		 * not necessary and we'd be safe even without it. But
+> @@ -666,7 +704,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	}
+>  
+>  	/* patch the first byte */
+> -	text_poke(addr, opcode, sizeof(int3));
+> +	text_poke_part(addr, opcode, sizeof(int3));
+>  
+>  	on_each_cpu(do_sync_core, NULL, 1);
+>  
+> @@ -675,4 +713,3 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  
+>  	return addr;
+>  }
+> -
+> 
+
+
 -- 
-1.8.4.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
