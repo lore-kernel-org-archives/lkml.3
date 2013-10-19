@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab3JSQAW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 12:00:22 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53518 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3JSQAV (ORCPT
+	id S1751801Ab3JSQCm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 12:02:42 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:60234 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3JSQCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 12:00:21 -0400
-Message-ID: <5262AC92.3060606@hitachi.com>
-Date: Sun, 20 Oct 2013 01:00:18 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sat, 19 Oct 2013 12:02:41 -0400
+Date: Sat, 19 Oct 2013 18:02:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 4/5] sched: Refactor iowait accounting
+Message-ID: <20131019160235.GA13534@localhost.localdomain>
+References: <1382195841-6558-1-git-send-email-fweisbec@gmail.com>
+ <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
+ <20131019153535.GA2490@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Liuyongan <liuyongan@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Qianhuibin <qianhuibin@huawei.com>
-Subject: Re: kprobe pre_handler change return IP
-References: <E4ABEE53CC34664FA3F0BD8AEAF50A1941474DB1@szxeml511-mbs.china.huawei.com>
-In-Reply-To: <E4ABEE53CC34664FA3F0BD8AEAF50A1941474DB1@szxeml511-mbs.china.huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131019153535.GA2490@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/17 21:57), Liuyongan wrote:
-> I use kprobe to probe a function suppose: 
->           int is_winter(int num) { ... }
->           int replace_is_winter(int num) { ...} 
-> I want to replace is_winter() with replace_is_winter(), so when we call is_winter, replace_is_winter will be called.
->                                                                                                                   
-> so:  
->    int my_pre_handler(struct kprobe *p, struct pt_regs *regs)
->    { 
->         regs->ip = (unsigned long)&replace_is_winter;
->         return 1;
->    } 
+On Sat, Oct 19, 2013 at 05:35:35PM +0200, Peter Zijlstra wrote:
+> On Sat, Oct 19, 2013 at 05:17:20PM +0200, Frederic Weisbecker wrote:
+> > +u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+> > +{
+> > +	ktime_t iowait, delta = { .tv64 = 0 };
+> > +	struct rq *rq = cpu_rq(cpu);
+> > +	ktime_t now = ktime_get();
+> > +	unsigned int seq;
+> > +
+> > +	do {
+> > +		seq = read_seqbegin(&rq->iowait_lock);
+> > +		if (rq->nr_iowait)
+> > +			delta = ktime_sub(now, rq->iowait_start);
+> > +		iowait = ktime_add(rq->iowait_time, delta);
+> > +	} while (read_seqretry(&rq->iowait_lock, seq));
+> > +
+> > +	if (last_update_time)
+> > +		*last_update_time = ktime_to_us(now);
+> > +
+> > +	return ktime_to_us(iowait);
+> > +}
+> > +EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+> > +
+> > +static void cpu_iowait_start(struct rq *rq)
+> > +{
+> > +	write_seqlock(&rq->iowait_lock);
+> > +	if (!rq->nr_iowait++)
+> > +		rq->iowait_start = ktime_get();
+> > +	write_sequnlock(&rq->iowait_lock);
+> > +}
+> > +
+> > +static void cpu_iowait_end(struct rq *rq)
+> > +{
+> > +	ktime_t delta;
+> > +	write_seqlock(&rq->iowait_lock);
+> > +	if (!--rq->nr_iowait) {
+> > +		delta = ktime_sub(ktime_get(), rq->iowait_start);
+> > +		rq->iowait_time = ktime_add(rq->iowait_time, delta);
+> > +	}
+> > +	write_sequnlock(&rq->iowait_lock);
+> > +}
 > 
-> and echo 0 > /proc/sys/debug/kprobes-optimization so that jump instruction will not be used.
+> Yeah, so using ktime_get() for this is completely insane ;-)
+
+Woops, yeah I clearly overlooked that while moving the code :)
+local_clock() should be fine.
+
 > 
-> I got a exception in fault_handler, and trap number is 14.
-> 
->    fault_handler: p->addr = 0xffffffffa08e201a, ip = ffffffff8021c59d, trap #14n
-> 
-> Anyone here can help me ?
+> I just had a look at delayacct; wth wrote that crap; that too uses
+> gtod.
 
-If you want to replace something with kprobes, the pre_handler must clean current_kprobe up.
-Actually the same thing has been done in setup_detour_execution(). So, what you need to do is
-
->    int my_pre_handler(struct kprobe *p, struct pt_regs *regs)
->    {
->         regs->ip = (unsigned long)&replace_is_winter;
-
-          reset_current_kprobe();
-          preempt_enable_no_resched();
-
->         return 1;
->    }
-
-Happy hacking! ;)
-
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I can't find where it does that. kernel/delayacct.c doesn't seem to at least.
