@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab3JSAmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 20:42:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33661 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3JSAmD (ORCPT
+	id S1754716Ab3JSAoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 20:44:04 -0400
+Received: from mail-gg0-f170.google.com ([209.85.161.170]:60847 "EHLO
+	mail-gg0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab3JSAoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 20:42:03 -0400
-Message-ID: <5261D552.6090401@infradead.org>
-Date: Fri, 18 Oct 2013 17:41:54 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "pinctl-single.c" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: linux-next: Tree for Oct 17 (pinctrl-single.c)
-References: <20131018003847.GH2443@sirena.org.uk> <5261792C.7030203@infradead.org> <CACRpkdaz22N8-9Rg8vR=KGOEL5P6sZm6Hh5PT4Uq381+QmPs7g@mail.gmail.com> <20131018233951.GU15154@atomide.com> <5261C72D.1090302@infradead.org> <20131018234914.GV15154@atomide.com> <20131019003925.GW15154@atomide.com>
-In-Reply-To: <20131019003925.GW15154@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Oct 2013 20:44:03 -0400
+X-Greylist: delayed 1415 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Oct 2013 20:44:03 EDT
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: kernel-br@googlegroups.com
+Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v3] tracing: creates 'tracing_is_disabled()'
+Date: Fri, 18 Oct 2013 21:15:54 -0300
+Message-Id: <1382141754-12155-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/13 17:39, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [131018 16:49]:
->> * Randy Dunlap <rdunlap@infradead.org> [131018 16:41]:
->>> On 10/18/13 16:39, Tony Lindgren wrote:
->>>>
->>>> Looks like we need a little bit of arch specific handling
->>>> with the generic IRQ. Fix the issue with an ifdef the
->>>> same way as other drivers do.
->>>>
->>>> ARM needs things set to IRQF_VALID, which also then sets
->>>> noprobe. Others seem to use just irq_set_noprobe().
->>>>
->>>> Otherwise we can get:
->>>>
->>>> drivers/pinctrl/pinctrl-single.c: In function 'pcs_irqdomain_map':
->>>> drivers/pinctrl/pinctrl-single.c:1750:2: error: implicit declaration of function 'set_irq_flags' [-Werror=implicit-function-declaration]
->>>
->>> Did you address this error?  I don't see a fix for it...
->>
->> Yes set_irq_flags() is defined for ARM archs in
->> arch/arm/include/asm/hw_irq.h which is included from
->> include/linux/irq.h as <asm/hw_irq.h>. So the ifdef
->> below takes care of that too.
->>
->>>> +#ifdef CONFIG_ARM
->>>> +	set_irq_flags(irq, IRQF_VALID);
->>>> +#else
->>>> +	irq_set_noprobe(irq);
->>>> +#endif
-> 
-> OK I've sent the pull request and Olof has now pulled the fix
-> into arm-soc next/dt branch.
+This patch creates the function 'tracing_is_disabled', which
+can be used outside trace.c.
 
-Thanks.
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ kernel/trace/trace.c | 5 +++++
+ kernel/trace/trace.h | 1 +
+ 2 files changed, 6 insertions(+)
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7974ba2..d7ceaf6 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2964,6 +2964,11 @@ int tracing_open_generic(struct inode *inode, struct file *filp)
+ 	return 0;
+ }
+ 
++bool tracing_is_disabled(void)
++{
++	return (tracing_disabled) ? true: false;
++}
++
+ /*
+  * Open and update trace_array ref count.
+  * Must have the current trace_array passed to it.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 10c86fb..5deaa3b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -514,6 +514,7 @@ void tracing_reset_online_cpus(struct trace_buffer *buf);
+ void tracing_reset_current(int cpu);
+ void tracing_reset_all_online_cpus(void);
+ int tracing_open_generic(struct inode *inode, struct file *filp);
++bool tracing_is_disabled(void);
+ struct dentry *trace_create_file(const char *name,
+ 				 umode_t mode,
+ 				 struct dentry *parent,
 -- 
-~Randy
+1.8.4
+
