@@ -1,77 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab3JSPfy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 11:35:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39384 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3JSPfx (ORCPT
+	id S1753280Ab3JSPsW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 11:48:22 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:47699 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3JSPsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 11:35:53 -0400
-Date: Sat, 19 Oct 2013 17:35:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 4/5] sched: Refactor iowait accounting
-Message-ID: <20131019153535.GA2490@laptop.programming.kicks-ass.net>
-References: <1382195841-6558-1-git-send-email-fweisbec@gmail.com>
- <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
+	Sat, 19 Oct 2013 11:48:21 -0400
+Message-ID: <5262A9C1.5030200@hitachi.com>
+Date: Sun, 20 Oct 2013 00:48:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v3 2/3] Support for perf to probe into SDT markers:
+References: <20131018143714.10452.83494.stgit@hemant-fedora> <20131018144406.10452.43317.stgit@hemant-fedora>
+In-Reply-To: <20131018144406.10452.43317.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 19, 2013 at 05:17:20PM +0200, Frederic Weisbecker wrote:
-> +u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
-> +{
-> +	ktime_t iowait, delta = { .tv64 = 0 };
-> +	struct rq *rq = cpu_rq(cpu);
-> +	ktime_t now = ktime_get();
-> +	unsigned int seq;
+(2013/10/18 23:44), Hemant Kumar wrote:
+> This allows perf to probe into the sdt markers/notes present in
+> the libraries and executables. We try to find the associated location
+> and handle prelinking (since, stapsdt notes section is not allocated
+> during runtime). Prelinking is handled with the help of base
+> section which is allocated during runtime. This address can be compared
+> with the address retrieved from the notes' description. If its different,
+> we can take this difference and then add to the note's location.
+> 
+> We can use existing '-a/--add' option to add events for sdt markers.
+> Also, we can add multiple events at once using the same '-a' option.
+> 
+> Usage:
+> perf probe -x /lib64/libc.so.6 -a 'my_event=%libc:setjmp'
+> 
+> Output:
+> Added new event:
+>   libc:my_event        (on 0x35981)
+> 
+> You can now use it in all perf tools, such as:
+> 
+>     perf record -e libc:my_event -aR sleep 1
+> 
+> 
+> Signed-off-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+> ---
+>  tools/perf/builtin-probe.c    |    4 ++
+>  tools/perf/util/probe-event.c |   99 +++++++++++++++++++++++++++++++++++++----
+>  tools/perf/util/probe-event.h |    2 +
+>  tools/perf/util/symbol-elf.c  |   80 +++++++++++++++++++++++++++++++++
+>  tools/perf/util/symbol.h      |    3 +
+>  5 files changed, 178 insertions(+), 10 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+> index 2450613..8f0dd48 100644
+> --- a/tools/perf/builtin-probe.c
+> +++ b/tools/perf/builtin-probe.c
+> @@ -494,6 +494,10 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	}
+>  
+>  	if (params.nevents) {
+> +		if (params.events->sdt && !params.target && !params.exec) {
+> +			pr_err("SDT markers can be probed only with --exec.\n");
+> +			usage_with_options(probe_usage, options);
+> +		}
+>  		ret = add_perf_probe_events(params.events, params.nevents,
+>  					    params.max_probe_points,
+>  					    params.target,
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index c228fe6..06665a8 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -816,6 +816,40 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
+>  		pev->group = NULL;
+>  		arg = tmp;
+>  	}
+> +	/* Check for SDT marker */
+> +	if (*arg == '%') {
+> +		ptr = strchr(++arg, ':');
+> +		if (!ptr) {
+> +			semantic_error("Provider name must follow an event "
+> +				       "name\n");
+> +			return -EINVAL;
+> +		}
+> +		*ptr++ = '\0';
+> +		tmp = strdup(arg);
+> +		if (!tmp)
+> +			return -ENOMEM;
 > +
-> +	do {
-> +		seq = read_seqbegin(&rq->iowait_lock);
-> +		if (rq->nr_iowait)
-> +			delta = ktime_sub(now, rq->iowait_start);
-> +		iowait = ktime_add(rq->iowait_time, delta);
-> +	} while (read_seqretry(&rq->iowait_lock, seq));
+> +		pev->point.note = (struct sdt_note *)
+> +			zalloc(sizeof(struct sdt_note));
+> +		if (!pev->point.note) {
+> +			free(tmp);
+> +			return -ENOMEM;
+> +		}
+> +		pev->point.note->provider = tmp;
 > +
-> +	if (last_update_time)
-> +		*last_update_time = ktime_to_us(now);
-> +
-> +	return ktime_to_us(iowait);
-> +}
-> +EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
-> +
-> +static void cpu_iowait_start(struct rq *rq)
-> +{
-> +	write_seqlock(&rq->iowait_lock);
-> +	if (!rq->nr_iowait++)
-> +		rq->iowait_start = ktime_get();
-> +	write_sequnlock(&rq->iowait_lock);
-> +}
-> +
-> +static void cpu_iowait_end(struct rq *rq)
-> +{
-> +	ktime_t delta;
-> +	write_seqlock(&rq->iowait_lock);
-> +	if (!--rq->nr_iowait) {
-> +		delta = ktime_sub(ktime_get(), rq->iowait_start);
-> +		rq->iowait_time = ktime_add(rq->iowait_time, delta);
+> +		tmp = strdup(ptr);
+> +		if (!tmp) {
+> +			free(pev->point.note->provider);
+> +			free(pev->point.note);
+> +			return -ENOMEM;
+> +		}
+> +		pev->point.note->name = tmp;
+> +		pev->group = pev->point.note->provider;
+> +		if (!pev->event)
+> +			pev->event = pev->point.note->name;
+> +		pev->sdt = true;
+> +		return 0;
 > +	}
-> +	write_sequnlock(&rq->iowait_lock);
+>  
+>  	ptr = strpbrk(arg, ";:+@%");
+>  	if (ptr) {
+> @@ -1238,6 +1272,7 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
+>  	char *buf, *tmp;
+>  	char offs[32] = "", line[32] = "", file[32] = "";
+>  	int ret, len;
+> +	unsigned long long addr;
+>  
+>  	buf = zalloc(MAX_CMDLEN);
+>  	if (buf == NULL) {
+> @@ -1266,12 +1301,17 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
+>  			goto error;
+>  	}
+>  
+> -	if (pp->function)
+> +	if (pp->function) {
+>  		ret = e_snprintf(buf, MAX_CMDLEN, "%s%s%s%s%s", pp->function,
+>  				 offs, pp->retprobe ? "%return" : "", line,
+>  				 file);
+> -	else
+> +	} else if (pp->note) {
+> +		addr = pp->note->bit32 ? pp->note->addr.a32[0] :
+> +			pp->note->addr.a64[0];
+> +		ret = e_snprintf(buf, MAX_CMDLEN, "0x%llx", addr);
+> +	} else {
+>  		ret = e_snprintf(buf, MAX_CMDLEN, "%s%s", file, line);
+> +	}
+>  	if (ret <= 0)
+>  		goto error;
+>  
+> @@ -1921,6 +1961,21 @@ static void cleanup_sdt_note_list(struct list_head *sdt_notes)
+>  	}
+>  }
+>  
+> +static int try_to_find_sdt_notes(struct perf_probe_event *pev,
+> +				 const char *target)
+> +{
+> +	int ret;
+> +	LIST_HEAD(sdt_notes);
+> +
+> +	ret = search_sdt_note(pev->point.note, &sdt_notes, target);
+> +	if (!list_empty(&sdt_notes))
+> +		cleanup_sdt_note_list(&sdt_notes);
+> +	/* Abssence of SDT markers is an error in this case */
+> +	else if (list_empty(&sdt_notes) && !ret)
+> +		ret = -ENOENT;
+> +	return ret;
 > +}
+> +
+>  static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  					  struct probe_trace_event **tevs,
+>  					  int max_tevs, const char *target)
+> @@ -1928,11 +1983,23 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  	struct symbol *sym;
+>  	int ret = 0, i;
+>  	struct probe_trace_event *tev;
+> +	char *buf;
+> +	unsigned long long addr;
+>  
+> -	/* Convert perf_probe_event with debuginfo */
+> -	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+> -	if (ret != 0)
+> -		return ret;	/* Found in debuginfo or got an error */
+> +	if (pev->sdt) {
+> +		ret = -EBADF;
+> +		if (pev->uprobes)
+> +			ret = try_to_find_sdt_notes(pev, target);
+> +		if (ret)
+> +			return ret;
+> +	} else {
+> +		/* Convert perf_probe_event with debuginfo */
+> +		ret = try_to_find_probe_trace_events(pev, tevs, max_tevs,
+> +						     target);
+> +		/* Found in debuginfo or got an error */
+> +		if (ret != 0)
+> +			return ret;
+> +	}
+>  
+>  	/* Allocate trace event buffer */
+>  	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+> @@ -1940,10 +2007,22 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  		return -ENOMEM;
+>  
+>  	/* Copy parameters */
+> -	tev->point.symbol = strdup(pev->point.function);
+> -	if (tev->point.symbol == NULL) {
+> -		ret = -ENOMEM;
+> -		goto error;
+> +	if (pev->sdt) {
+> +		buf = (char *)zalloc(sizeof(char) * MAX_CMDLEN);
+> +		if (!buf) {
+> +			ret = -ENOMEM;
+> +			goto error;
+> +		}
+> +		addr = pev->point.note->bit32 ? pev->point.note->addr.a32[0] :
+> +			pev->point.note->addr.a64[0];
+> +		sprintf(buf, "0x%llx", addr);
+> +		tev->point.symbol = buf;
+> +	} else {
+> +		tev->point.symbol = strdup(pev->point.function);
+> +		if (tev->point.symbol == NULL) {
+> +			ret = -ENOMEM;
+> +			goto error;
+> +		}
+>  	}
+>  
+>  	if (target) {
+> diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+> index 32de5a3..beb1b4a 100644
+> --- a/tools/perf/util/probe-event.h
+> +++ b/tools/perf/util/probe-event.h
+> @@ -47,6 +47,7 @@ struct perf_probe_point {
+>  	bool		retprobe;	/* Return probe flag */
+>  	char		*lazy_line;	/* Lazy matching pattern */
+>  	unsigned long	offset;		/* Offset from function entry */
+> +	struct sdt_note *note;
+>  };
+>  
+>  /* Perf probe probing argument field chain */
+> @@ -72,6 +73,7 @@ struct perf_probe_event {
+>  	struct perf_probe_point	point;	/* Probe point */
+>  	int			nargs;	/* Number of arguments */
+>  	bool			uprobes;
+> +	bool                    sdt;
+>  	struct perf_probe_arg	*args;	/* Arguments */
+>  };
+>  
+> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> index 828ecad..73b368c 100644
+> --- a/tools/perf/util/symbol-elf.c
+> +++ b/tools/perf/util/symbol-elf.c
+> @@ -1824,6 +1824,86 @@ out_close:
+>  	return sdt_err(ret, target);
+>  }
+>  
+> +static void adjust_note_addr(struct sdt_note *tmp, struct sdt_note *key,
+> +			     Elf *elf)
+> +{
+> +	GElf_Ehdr ehdr;
+> +	GElf_Addr base_off = 0;
+> +	GElf_Shdr shdr;
+> +
+> +	if (!gelf_getehdr(elf, &ehdr)) {
+> +		pr_debug("%s : cannot get elf header.\n", __func__);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Find out the .stapsdt.base section.
+> +	 * This scn will help us to handle prelinking (if present).
+> +	 * Compare the retrieved file offset of the base section with the
+> +	 * base address in the description of the SDT note. If its different,
+> +	 * then accordingly, adjust the note location.
+> +	 */
+> +	if (elf_section_by_name(elf, &ehdr, &shdr, SDT_BASE_SCN, NULL))
+> +		base_off = shdr.sh_offset;
+> +	if (base_off) {
+> +		if (tmp->bit32)
+> +			key->addr.a32[0] = tmp->addr.a32[0] + base_off -
+> +				tmp->addr.a32[1];
+> +		else
+> +			key->addr.a64[0] = tmp->addr.a64[0] + base_off -
+> +				tmp->addr.a64[1];
+> +	}
+> +	key->bit32 = tmp->bit32;
+> +}
+> +
+> +int search_sdt_note(struct sdt_note *key, struct list_head *sdt_notes,
+> +		    const char *target)
 
-Yeah, so using ktime_get() for this is completely insane ;-)
+Hmm, this interface looks very odd.
+ - This just finds the first matched sdt_note entry instead of the list.
+   In that case, we don't need to pass the list_head.
+ - If the purpose is just counting the number of matched entries (or just
+   checking existence), we also don't need the list. Just returning the
+   number is enough.
 
-I just had a look at delayacct; wth wrote that crap; that too uses
-gtod.
+I recommend you to remove the "sdt_notes", and make the caller check
+key->addr is set.
+
+Thank you,
+
+> +{
+> +	Elf *elf;
+> +	int fd, ret;
+> +	bool found = false;
+> +	struct sdt_note *pos = NULL;
+> +
+> +	fd = open(target, O_RDONLY);
+> +	if (fd < 0) {
+> +		pr_err("%s : %s\n", target, strerror(errno));
+> +		return -errno;
+> +	}
+> +
+> +	symbol__elf_init();
+> +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+> +	if (!elf) {
+> +		ret = -EBADF;
+> +		pr_debug("Can't read the elf of %s\n", target);
+> +		goto out_close;
+> +	}
+> +
+> +	ret = construct_sdt_notes_list(elf, sdt_notes);
+> +	if (ret)
+> +		goto out_end;
+> +
+> +	/* Iterate through the notes and retrieve the required note */
+> +	list_for_each_entry(pos, sdt_notes, note_list) {
+> +		if (!strcmp(key->name, pos->name) &&
+> +		    !strcmp(key->provider, pos->provider)) {
+> +			adjust_note_addr(pos, key, elf);
+> +			found = true;
+> +			break;
+> +		}
+> +	}
+> +	if (!found) {
+> +		printf("%%%s:%s not found in %s!\n", key->provider, key->name,
+> +		       target);
+> +		return -ENOENT;
+> +	}
+> +
+> +out_end:
+> +	elf_end(elf);
+> +out_close:
+> +	close(fd);
+> +	return sdt_err(ret, target);
+> +}
+> +
+>  void symbol__elf_init(void)
+>  {
+>  	elf_version(EV_CURRENT);
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index b78397b..52b04e2 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -286,9 +286,12 @@ int compare_proc_modules(const char *from, const char *to);
+>  
+>  /* Specific to SDT notes */
+>  int get_sdt_note_list(struct list_head *head, const char *target);
+> +int search_sdt_note(struct sdt_note *key, struct list_head *head,
+> +		    const char *target);
+>  
+>  #define SDT_NOTE_TYPE 3
+>  #define SDT_NOTE_SCN ".note.stapsdt"
+>  #define SDT_NOTE_NAME "stapsdt"
+> +#define SDT_BASE_SCN ".stapsdt.base"
+>  
+>  #endif /* __PERF_SYMBOL */
+> 
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
