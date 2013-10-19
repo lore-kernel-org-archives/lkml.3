@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3JSUdK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 16:33:10 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:46876 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab3JSUdJ (ORCPT
+	id S1752961Ab3JSVSA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 17:18:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32878 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab3JSVR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 16:33:09 -0400
+	Sat, 19 Oct 2013 17:17:59 -0400
+Date: Sat, 19 Oct 2013 14:19:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>, olof@lixom.net,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2/2 v4] usb: ohci: remove ep93xx bus glue platform driver
+Message-ID: <20131019211912.GB4453@kroah.com>
+References: <201310171329.12434.hartleys@visionengravers.com>
+ <Pine.LNX.4.44L0.1310171710240.2436-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Date: Sun, 20 Oct 2013 00:33:07 +0400
-X-Google-Sender-Auth: WQHzv0i2s-1_MBdQBabzJ3NDeyY
-Message-ID: <CAG5DWojOsLa_SXaLR8_z4FVchqzwQM4vCNC_MUg27Z918ExPzw@mail.gmail.com>
-Subject: adjust /proc/PID/oom_score_adj with CAP_SYS_RESOURCE
-From: Azat Khuzhin <a.khuzhin@semrush.com>
-To: open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1310171710240.2436-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently I needed in adjusting /proc/PID/oom_score_adj to disable oom killer,
-but I didn't want to add suid/or run from root that binary.
+On Thu, Oct 17, 2013 at 05:11:54PM -0400, Alan Stern wrote:
+> On Thu, 17 Oct 2013, H Hartley Sweeten wrote:
+> 
+> > Convert ep93xx to use the OHCI platform driver and remove the
+> > ohci-ep93xx bus glue driver.
+> > 
+> > Enable CONFIG_OHCI_HCD_PLATFORM in the ep93xx_defconfig so that USB
+> > is still enabled by default on the EP93xx platform.
+> > 
+> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> > Cc: Ryan Mallon <rmallon@gmail.com>
+> > Cc: Lennert Buytenhek <kernel@wantstofly.org>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Olof Johansson <olof@lixom.net>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> 
+> Good work; thanks a lot for doing this.
+> 
+> Greg, please merge both of these v4 patches.
 
-I decided to use CAP_SYS_RESOURCE. However it didn't work.
+Will do, thanks for reviewing them.
 
-I gdb/strace/printk a lot, and finally found the reason,
-the process can't open this file for writing because pid_revalidate()
-change i_uid/i_gid for it to GLOBAL_ROOT_UID/GID.
-And to bypass this check I must to use CAP_DAC_OVERRIDE, which is not so good,
-because this will allow more capabilities than I need for that binary.
-
-Is this works by design,
-and/or is there another way to do this without suid/root?
-
-Thanks!
-
--- 
-Respectfully
-Azat Khuzhin
+greg k-h
