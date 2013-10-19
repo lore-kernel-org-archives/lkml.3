@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab3JSRHb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 13:07:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40556 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3JSRHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 13:07:30 -0400
-Message-ID: <5262BC50.4070004@infradead.org>
-Date: Sat, 19 Oct 2013 10:07:28 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753563Ab3JSRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 13:09:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab3JSRJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 13:09:24 -0400
+Date: Sat, 19 Oct 2013 19:02:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/13] uprobes: allow ignoring of probe hits
+Message-ID: <20131019170214.GA8324@redhat.com>
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-3-git-send-email-dave.long@linaro.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: Tree for Oct 15 (asymmetric keys)
-References: <1381845763-10487-1-git-send-email-treding@nvidia.com> <525DC4FB.4010305@infradead.org>
-In-Reply-To: <525DC4FB.4010305@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381871068-27660-3-git-send-email-dave.long@linaro.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/13 15:43, Randy Dunlap wrote:
-> On 10/15/13 07:02, Thierry Reding wrote:
->> Hi all,
->>
->> I've uploaded today's linux-next tree to the master branch of the
->> repository below:
->>
->>         git://gitorious.org/thierryreding/linux-next.git
->>
->> A next-20131015 tag is also provided for convenience.
-> 
-> on x86_64:
-> 
-> crypto/asymmetric_keys/x509_public_key.c: In function 'x509_key_preparse':
-> crypto/asymmetric_keys/x509_public_key.c:237:35: error: 'system_trusted_keyring' undeclared (first use in this function)
-> 
-> when CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE=m
-> and  CONFIG_SYSTEM_TRUSTED_KEYRING is not set.
-> 
-> 
-> Full randconfig file is attached.
-> 
+On 10/15, David Long wrote:
+>
+> @@ -1732,9 +1732,6 @@ static void handle_swbp(struct pt_regs *regs)
+>  		return;
+>  	}
+>  
+> -	/* change it in advance for ->handler() and restart */
+> -	instruction_pointer_set(regs, bp_vaddr);
+> -
 
-Hi David,
-Do you want me to fix this build error?
-(You might not like my fix. :)
+Well, this looks obviously wrong. This SET_IP() has the comment ;)
 
-thanks,
+Note also that with this breaks __skip_sstep() on x86.
 
+Oleg.
 
--- 
-~Randy
