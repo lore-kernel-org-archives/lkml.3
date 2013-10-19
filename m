@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3JSHtW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 03:49:22 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:59623 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab3JSHtV (ORCPT
+	id S1751425Ab3JSIXW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 04:23:22 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48499 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab3JSIXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 03:49:21 -0400
+	Sat, 19 Oct 2013 04:23:18 -0400
+Date: Sat, 19 Oct 2013 10:23:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Doug Ledford <dledford@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131019082314.GA7778@gmail.com>
+References: <201310181742.r9IHgO1q021001@ib.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <bedc4eadbebb75f6d51afea3f5755b7c@biophys.uni-duesseldorf.de>
-References: <1382080184-19115-1-git-send-email-geert@linux-m68k.org>
-	<172f2b40c29a29a470215c14250a559e@biophys.uni-duesseldorf.de>
-	<CAMuHMdVPnyRhfGjpMraMrwhxwy9_mSfm=ouDEnYm2YJMzhhZ_Q@mail.gmail.com>
-	<bedc4eadbebb75f6d51afea3f5755b7c@biophys.uni-duesseldorf.de>
-Date: Sat, 19 Oct 2013 09:49:20 +0200
-X-Google-Sender-Auth: jfmIvmKjKWB1dZT8QeFgx4tZRT8
-Message-ID: <CAMuHMdVS_Ad_0gmTbyVYRoYZDZQyczsa6ON20Yv_ouw3t0XX-w@mail.gmail.com>
-Subject: Re: [PATCH] m68k/atari: Call paging_init() before nf_init()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201310181742.r9IHgO1q021001@ib.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 19, 2013 at 2:33 AM, Michael Schmitz
-<schmitz@biophys.uni-duesseldorf.de> wrote:
->> With the DISCONTIGMEM memory model, the kernel must be stored in the
->> first memory block. As ST-RAM is before FastRAM in memory, you cannot
->> have the kernel in FastRAM without losing ST-RAM (as main memory ---
->> you can still e.g. ioremap() it for atafb, and use the rest of it as
->> swap through
->> a block device like z2ram. This is basically what we do on Amiga with Chip
->> RAM
->> and Z2 RAM).
->
-> As long as we can ioremap() the ST-RAM frame buffer, we ought to be fine in
-> the first instance. How useful ST-RAM as swap may be is debatable so I'd
-> leave that aside for now.
->
-> Main benefits would be for users of TTs that have been left out with recent
-> kernel sizes.
->
-> OK - how would I go about ioremaping a chunk of ST-RAM when that has been
-> left out of the mm setup because it violates the discontigmem layout rules?
-> Set up a kernel private mapping for all of ST-RAM, and make that available
-> to the stram allocator?
 
-Just call ioremap(), that takes care of the kernel private mapping.
-ioremap() is meant to map anything that is not part of the mm setup.
+* Doug Ledford <dledford@redhat.com> wrote:
 
->> With the SPARSEMEM memory model, you should be able to store the kernel
->> in FastRAM and have ST-RAM, too.
->
-> I can still remember the headache I got when last playing with the mm code,
-> I think I'll pass.
+> >> Based on these, prefetching is obviously a a good improvement, but 
+> >> not as good as parallel execution, and the winner by far is doing 
+> >> both.
+> 
+> OK, this is where I have to chime in that these tests can *not* be used 
+> to say anything about prefetch, and not just for the reasons Ingo lists 
+> in his various emails to this thread.  In fact I would argue that Ingo's 
+> methodology on this is wrong as well.
 
-But "we" probably have to do that anyway, to please the Amiga BigRAM users.
+Well, I didn't go into as many details as you - but I agree with your full 
+list obviously:
 
-Gr{oetje,eeting}s,
+> All prefetch operations get sent to an access queue in the memory 
+> controller where they compete with both other reads and writes for the 
+> available memory bandwidth.  The optimal prefetch window is not a factor 
+> of memory bandwidth and latency, it's a factor of memory bandwidth, 
+> memory latency, current memory access queue depth at time prefetch is 
+> issued, and memory bank switch time * number of queued memory operations 
+> that will require a bank switch.  In other words, it's much more complex 
+> and also much more fluid than any static optimization can pull out. 
+> [...]
 
-                        Geert
+But this is generally true of _any_ static operation - CPUs are complex, 
+workloads are complex, other threads, CPUs, sockets, devices might 
+interact, etc.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Yet it does not make it invalid to optimize for the isolated, static 
+usecase that was offered, because 'dynamism' and parallelism in a real 
+system will rarely make that optimization completely invalid, it will 
+typically only diminish its fruits to a certain degree (for example by 
+causing prefetches to be discarded).
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+What I was objecting to strongly here was to measure the _wrong_ thing, 
+i.e. the cache-hot case. The cache-cold case should be measured in a low 
+noise fashion, so that results are representative. It's closer to the real 
+usecase than any other microbenchmark. That will give us a usable speedup 
+figure and will tell us which technique helped how much and which 
+parameter should be how large.
+
+> [...]  So every time I see someone run a series of micro- benchmarks 
+> like you just did, where the system was only doing the micro- benchmark 
+> and not a real workload, and we draw conclusions about optimal prefetch 
+> distances from that test, I cringe inside and I think I even die... just 
+> a little.
+
+So the thing is, microbenchmarks can indeed be misleading - and as in this 
+case the cache-hot claims can be outright dangerously misleading.
+
+But yet, if done correctly and interpreted correctly they tell us a little 
+bit of the truth and are often correlated to real performance.
+
+Do microbenchmarks show us everything that a 'real' workload inhibits? Not 
+at all, they are way too simple for that. They are a shortcut, an 
+indicator, which is often helpful as long as not taken as 'the' 
+performance of the system.
+
+> A better test for this, IMO, would be to start a local kernel compile 
+> with at least twice as many gcc instances allowed as you have CPUs, 
+> *then* run your benchmark kernel module and see what prefetch distance 
+> works well. [...]
+
+I don't agree that this represents our optimization target. It may 
+represent _one_ optimization target. But many other important usecases 
+such as a dedicated file server, or a computation node that is 
+cache-optimized, would unlikely to show such high parallel memory pressure 
+as a GCC compilation.
+
+> [...]  This distance should be far enough out that it can withstand 
+> other memory pressure, yet not so far as to constantly be prefetching, 
+> tossing the result out of cache due to pressure, then fetching/stalling 
+> that same memory on load.  And it may not benchmark as well on a 
+> quiescent system running only the micro-benchmark, but it should end up 
+> performing better in actual real world usage.
+
+The 'fully adversarial' case where all resources are maximally competed 
+for by all other cores is actually pretty rare in practice. I don't say it 
+does not happen or that it does not matter, but I do say there are many 
+other important usecases as well.
+
+More importantly, the 'maximally adversarial' case is very hard to 
+generate, validate, and it's highly system dependent!
+
+Cache-cold (and cache hot) microbenchmarks on the other hand tend to be 
+more stable, because they typically reflect current physical (mostly 
+latency) limits of CPU and system technology, _not_ highly system 
+dependent resource sizing (mostly bandwidth) limits which are very hard to 
+optimize for in a generic fashion.
+
+Cache-cold and cache-hot measurements are, in a way, important physical 
+'eigenvalues' of a complex system. If they both show speedups then it's 
+likely that a more dynamic, contended for, mixed workload will show 
+speedups as well. And these 'eigenvalues' are statistically much more 
+stable across systems, and that's something we care for when we implement 
+various lowlevel assembly routines in arch/x86/ which cover many different 
+systems with different bandwidth characteristics.
+
+I hope I managed to explain my views clearly enough on this.
+
+Thanks,
+
+	Ingo
