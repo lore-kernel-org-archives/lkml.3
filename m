@@ -1,84 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3JSXrV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 19:47:21 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:33957 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3JSXrT (ORCPT
+	id S1751227Ab3JSX4D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 19:56:03 -0400
+Received: from smtp161.dfw.emailsrvr.com ([67.192.241.161]:42732 "EHLO
+	smtp161.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab3JSX4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 19:47:19 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Mark Brown <broonie@kernel.org>
-Cc: "Eric W. Biederman" <ebiederman@twitter.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Miklos Szeredi <miklos@szeredi.hu>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20131019121548.GX2443@sirena.org.uk>
-Date: Sat, 19 Oct 2013 16:47:08 -0700
-In-Reply-To: <20131019121548.GX2443@sirena.org.uk> (Mark Brown's message of
-	"Sat, 19 Oct 2013 13:15:48 +0100")
-Message-ID: <87k3h8escj.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19bc7lyVxuPIynJqyTcLE0qTZkOpWoeEJk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3136]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Mark Brown <broonie@kernel.org>
-X-Spam-Relay-Country: 
-Subject: Re: linux-next: manual merge of the userns tree
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Sat, 19 Oct 2013 19:56:00 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH] cpufreq, highbank: enable ECME thermal notifications
+Date: Sat, 19 Oct 2013 18:54:49 -0500
+Message-Id: <1382226889-11062-1-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@kernel.org> writes:
+The ECME sends thermal messages with a maximum and minimum allowed
+frequency when the SoC status reaches certain trip points known to the
+ECME. Use a notifier function to capture those messages and pass them
+to a work-queued function that can trigger a policy re-evaluation by
+cpufreq, capping the allowable frequencies.
 
-> Today's linux-next merge of the userns tree got a conflict in
-> fs/fuse/dir.c between 3c70b8eed (fuse: don't check_submounts_and_drop()
-> in RCU walk) in the fuse tree and 40216baa0 (vfs: Lazily remove mounts
-> on unlinked files and directories. v2) in the userns tree.
->
-> I fixed it up as below and can carry as required:
+The core of the policy adjusting code was taken from
+drivers/thermal/cpu_cooling.c.
 
-The fix looks right.
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+---
+ drivers/cpufreq/highbank-cpufreq.c | 117 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 117 insertions(+)
 
-However I think this conflict highlights a larger issue, as there are
-several other filesystems that call check_submounts_and_drop from the
-devalidate and possibly from rcu_walk today.
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+index b61b5a3..f0521d3 100644
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -17,15 +17,32 @@
+ #include <linux/module.h>
+ #include <linux/clk.h>
+ #include <linux/cpu.h>
++#include <linux/cpufreq.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
+ #include <linux/mailbox.h>
+ #include <linux/platform_device.h>
++#include <linux/cpumask.h>
++#include <linux/workqueue.h>
+ 
+ #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
++#define HB_CPUFREQ_HEALTH_NOTE  0x00001001
++#define HB_CPUFREQ_TPS_REPORT	1
+ #define HB_CPUFREQ_IPC_LEN	7
+ #define HB_CPUFREQ_VOLT_RETRIES	15
+ 
++#define NOTIFY_INVALID NULL
++
++struct hb_notify_device {
++	unsigned long max_freq;
++	unsigned long min_freq;
++	unsigned long thermal_state;
++	struct cpumask *allowed_cpus;
++};
++
++static struct hb_notify_device hb_records, *notify_device = NOTIFY_INVALID;
++static struct work_struct hb_thermal_wq;
++
+ static int hb_voltage_change(unsigned int freq)
+ {
+ 	u32 msg[HB_CPUFREQ_IPC_LEN] = {HB_CPUFREQ_CHANGE_NOTE, freq / 1000000};
+@@ -33,6 +50,89 @@ static int hb_voltage_change(unsigned int freq)
+ 	return pl320_ipc_transmit(msg);
+ }
+ 
++static int hb_thermal_cpufreq_notify(struct notifier_block *nb,
++				    unsigned long event, void *data)
++{
++	struct cpufreq_policy *policy = data;
++	unsigned long max_freq = 0, min_freq = 0;
++
++	if (event != CPUFREQ_ADJUST || notify_device == NOTIFY_INVALID)
++		return 0;
++
++	if (cpumask_test_cpu(policy->cpu, notify_device->allowed_cpus)) {
++		max_freq = notify_device->max_freq;
++		min_freq = notify_device->min_freq;
++	}
++
++	/* Never exceed user_policy.max */
++	if (max_freq > policy->user_policy.max)
++		max_freq = policy->user_policy.max;
++	if (min_freq < policy->user_policy.min)
++		min_freq = policy->user_policy.min;
++
++	if ((policy->max != max_freq) || (policy->min != min_freq))
++		cpufreq_verify_within_limits(policy, min_freq, max_freq);
++
++	return 0;
++}
++
++static struct notifier_block hb_thermal_cpufreq_nb = {
++	.notifier_call = hb_thermal_cpufreq_notify,
++};
++
++/*
++ * We can't call cpufreq_adjust_policy from inside a notifier, so
++ * do it from inside a workqueue
++ */
++static void hb_thermal_wq_task(struct work_struct *work)
++{
++	unsigned int cpuid;
++	struct cpumask *mask = hb_records.allowed_cpus;
++
++	notify_device = &hb_records;
++
++	for_each_cpu(cpuid, mask) {
++		struct cpufreq_policy policy;
++		if (cpufreq_get_policy(&policy, cpuid) == 0) {
++			cpufreq_update_policy(cpuid);
++			break;
++		}
++	}
++	notify_device = NOTIFY_INVALID;
++}
++
++static int hb_thermal_tps_notify(struct notifier_block *nb,
++				unsigned long action, void *mailbox)
++{
++	unsigned long *data = (unsigned long *) mailbox;
++
++	if ((action != HB_CPUFREQ_HEALTH_NOTE) &&
++			(data[0] != HB_CPUFREQ_TPS_REPORT))
++		return 0;
++
++	/*
++	 * If we're already at this thermal state, or if ECME isn't
++	 * sending frequency data, there's nothing to do
++	 */
++	if ((hb_records.thermal_state == data[1]) || !data[2] || !data[3])
++		return NOTIFY_DONE;
++
++	hb_records.thermal_state = data[1];
++	hb_records.min_freq = data[2];
++	hb_records.max_freq = data[3];
++	notify_device = &hb_records;
++
++	schedule_work(&hb_thermal_wq);
++
++	pr_warn("ECME TPS event: frequencies limited to %lu-%lu MHz\n",
++	       hb_records.min_freq, hb_records.max_freq);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block hb_thermal_tps_nb = {
++	.notifier_call = hb_thermal_tps_notify,
++};
++
+ static int hb_cpufreq_clk_notify(struct notifier_block *nb,
+ 				unsigned long action, void *hclk)
+ {
+@@ -100,6 +200,23 @@ static int hb_cpufreq_driver_init(void)
+ 		goto out_put_node;
+ 	}
+ 
++	/*
++	 * Set up thermal state notifications from ECME, but continue
++	 * running even if they don't work.
++	 */
++	ret = pl320_ipc_register_notifier(&hb_thermal_tps_nb);
++	if (!ret) {
++		ret = cpufreq_register_notifier(&hb_thermal_cpufreq_nb,
++				CPUFREQ_POLICY_NOTIFIER);
++		if (ret)
++			pl320_ipc_unregister_notifier(&hb_thermal_tps_nb);
++		else {
++			hb_records.allowed_cpus = (struct cpumask *)
++						cpu_possible_mask;
++			INIT_WORK(&hb_thermal_wq, hb_thermal_wq_task);
++		}
++	}
++
+ 	/* Instantiate cpufreq-cpu0 */
+ 	platform_device_register_full(&devinfo);
+ 
+-- 
+1.8.3.1
 
-Miklos what problem did you run into?
-
-Sigh.  It looks like it probably makes sense to merge
-shrink_submounts_and_drop with d_invalidate, so filesystems don't even
-need to think about this issue.
-
-Eric
-
-> diff --cc fs/fuse/dir.c
-> index 0747f6e,b1cd7b7..0000000
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@@ -263,9 -259,7 +263,10 @@@ out
->   
->   invalid:
->   	ret = 0;
->  -	shrink_submounts_and_drop(entry);
->  +
-> - 	if (!(flags & LOOKUP_RCU) && check_submounts_and_drop(entry) != 0)
-> - 		ret = 1;
-> ++	if (!(flags & LOOKUP_RCU))
-> ++		shrink_submounts_and_drop(entry);
-> ++
->   	goto out;
->   }
->   
