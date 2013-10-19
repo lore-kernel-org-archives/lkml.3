@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3JSN6S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 09:58:18 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49298 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3JSN6R (ORCPT
+	id S1752760Ab3JSOIx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 10:08:53 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:37407 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab3JSOIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 09:58:17 -0400
+	Sat, 19 Oct 2013 10:08:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131019124312.GA23872@redhat.com>
-References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-	<20131017224605.2e1d4bab@gandalf.local.home>
-	<20131019124312.GA23872@redhat.com>
-Date: Sat, 19 Oct 2013 10:58:15 -0300
-Message-ID: <CAGG-pUSk-A=m=cXL85fY+nNgRGQVtG62GouPoANuXFUSrKK6BA@mail.gmail.com>
-Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
- refactors code
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        kernel-br <kernel-br@googlegroups.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1382115075-4386-1-git-send-email-timg@tpi.com>
+References: <1382115075-4386-1-git-send-email-timg@tpi.com>
+Date: Sat, 19 Oct 2013 09:08:49 -0500
+Message-ID: <CADT32eKY0roovoZtm5+fVHEVco1G3qawxk-KaBSV3pH95c6jrg@mail.gmail.com>
+Subject: Re: [PATCH linux-next] cifs: Cleanup and clarify CalcNTLMv2_response()
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: Tim Gardner <timg@tpi.com>
+Cc: linux-cifs <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/19 Oleg Nesterov <oleg@redhat.com>:
-> On 10/17, Steven Rostedt wrote:
->>
->> On Thu, 17 Oct 2013 22:44:56 -0300
->> "Geyslan G. Bem" <geyslan@gmail.com> wrote:
->>
->> > and fix the possible 'dir'
->> > assignment after freeing it.
+Tim,
+
+Since when a NTLMv2 response is sent, contains a
+session key, hmac-md5 digest, and the blob,
+the offset has  + 8 to include 16 bytes of hmac-md5 digest.
+hmac-md5 digest is based on 8 bytes of server challenge
+and the blob.
+So hmac-md5 digest (output) overwrites total 16 bytes in overall
+ntlmv2 response after session key and is followed by the blob.
+
+At this point in time, we are dealing with the opaque data, so casting those
+16 bytes (after session key and before the blob) as ntlmv2_response
+structure does not appear correct and can be confusing.
+
+Regards,
+
+Shirish
+
+On Fri, Oct 18, 2013 at 11:51 AM, Tim Gardner <timg@tpi.com> wrote:
+> Use of a structure aids in the understanding of this
+> seemingly simple bit of code. The addition of a couple
+> of comments also helps.
 >
-> This should be safe afaics, nobody will use it anyway. Even
-> subsystem_release() won't be called if .open() fails. But I agree
-> this doesn't look good.
-
-Right.
+> Cc: Jeff Layton <jlayton@redhat.com>
+> Cc: Steve French <sfrench@samba.org>
+> Signed-off-by: Tim Gardner <timg@tpi.com>
+> ---
 >
->> I'm thinking of just nuking the tracing_open_generic() here. The only
->> thing it does here is the tracing_disabled check. The assignment of
->> inode->i_private to filp->private_data is pointless
+> I'd just like to be sure that the destructive copy is
+> really what was intended. I can't tell from reading the MSDN
+> section 3.3.2 NTLM v2 Authentication. It sort of makes
+> my head hurt.
 >
-> The same for ftrace_enable_fops() and ftrace_event_filter_fops() at
-> least. The users of event_file_data() do not use ->private_data.
+> rtg
 >
-
-Aren't "ftrace_enable_fops" and "ftrace_event_filter_fops" structures?
-About event_file_data() I think that the callers uses the
-private_data. So, we have to analyze better.
-
-> OTOH, say, trace_format_open() doesn't check tracing_disabled, so
+>  fs/cifs/cifsencrypt.c |   21 ++++++++++++++++-----
+>  1 file changed, 16 insertions(+), 5 deletions(-)
 >
->> We could add a tracing_is_disabled() function to test instead.
+> diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+> index fc6f4f3..fecbfd0 100644
+> --- a/fs/cifs/cifsencrypt.c
+> +++ b/fs/cifs/cifsencrypt.c
+> @@ -548,7 +548,9 @@ static int
+>  CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>  {
+>         int rc;
+> -       unsigned int offset = CIFS_SESS_KEY_SIZE + 8;
+> +       struct ntlmv2_resp *resp = (struct ntlmv2_resp *)
+> +               (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+> +       unsigned int hashed_len = ses->auth_key.len - (CIFS_SESS_KEY_SIZE + 8);
 >
-> perhaps it can have more callers.
+>         if (!ses->server->secmech.sdeschmacmd5) {
+>                 cifs_dbg(VFS, "%s: can't generate ntlmv2 hash\n", __func__);
+> @@ -569,21 +571,30 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>                 return rc;
+>         }
 >
-
-static int trace_format_open(struct inode *inode, struct file *file)
-{
-    struct seq_file *m;
-    int ret;
-
-    ret = seq_open(file, &trace_format_seq_ops);
-    if (ret < 0)
-        return ret;
-
-    m = file->private_data;
-    m->private = file;
-
-    return 0;
-}
-
-I really got confused here. The 'm' assignments are, to me, pointless.
-
-> Oleg.
+> +       /*
+> +        * The cryptkey is part of the buffer that feeds the MD5 hash, but
+> +        * gets over written later by the digest. See crypto_shash_final()
+> +        * below.
+> +        */
+>         if (ses->server->negflavor == CIFS_NEGFLAVOR_EXTENDED)
+> -               memcpy(ses->auth_key.response + offset,
+> +               memcpy(&resp->ntlmv2_hash[CIFS_SERVER_CHALLENGE_SIZE],
+>                         ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+>         else
+> -               memcpy(ses->auth_key.response + offset,
+> +               memcpy(&resp->ntlmv2_hash[CIFS_SERVER_CHALLENGE_SIZE],
+>                         ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+>         rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+> -               ses->auth_key.response + offset, ses->auth_key.len - offset);
+> +               &resp->ntlmv2_hash[8], hashed_len);
+>         if (rc) {
+>                 cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
+>                 return rc;
+>         }
 >
+> +       /*
+> +        * Yes - this is destructive. The 16 byte MD5 digest clobbers the
+> +        * cryptkey that was just copied into &resp->ntlmv2_hash[8].
+> +        */
+>         rc = crypto_shash_final(&ses->server->secmech.sdeschmacmd5->shash,
+> -               ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+> +               resp->ntlmv2_hash);
+>         if (rc)
+>                 cifs_dbg(VFS, "%s: Could not generate md5 hash\n", __func__);
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
