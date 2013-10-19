@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3JSUYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 16:24:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33022 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751103Ab3JSUYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 16:24:15 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] x86: remove duplicate includes
-Date: Sat, 19 Oct 2013 22:24:03 +0200
-Message-Id: <1382214243-8846-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752728Ab3JSU2H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 16:28:07 -0400
+Received: from mout.gmx.net ([212.227.17.21]:59447 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab3JSU2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 16:28:05 -0400
+Date: Sat, 19 Oct 2013 22:27:59 +0200
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Subject: [GIT PULL] parisc fixes for v3.12
+Message-ID: <20131019202759.GA3700@p100.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:6mh5f1oNrf+sZ3h3z9KqaAqg7pJ/FaMzdB9OlpRf30d+y1zLXNI
+ qlJ3PeDxY+IzE0L1p1uRWkvLcJvdYoq1az5dgGjr235UYXEmfmR6JZTupZ5a1xH5c1Md1Jr
+ M+ZfxOGaoELSIC2+yt6n+TTASdTNdfYxvIc7Jvwpodszm9WgcWgo3SbFQhQaA2wOfMQMvp7
+ qPJ9+o8dSZknlZlsuTxbg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found by running "make includecheck"
+Hi Linus,
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c | 1 -
- arch/x86/kernel/smpboot.c             | 2 --
- arch/x86/platform/ce4100/ce4100.c     | 1 -
- 3 files changed, 4 deletions(-)
+Please pull the latest parisc fixes from
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 1414c90..b5f5dbc 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -903,7 +903,6 @@ static int detect_cache_attributes(unsigned int cpu)
- 
- #include <linux/kobject.h>
- #include <linux/sysfs.h>
--#include <linux/cpu.h>
- 
- /* pointer to kobject for cpuX/cache */
- static DEFINE_PER_CPU(struct kobject *, ici_cache_kobject);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 6cacab6..f4a3ae1 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -77,8 +77,6 @@
- #include <asm/smpboot_hooks.h>
- #include <asm/i8259.h>
- 
--#include <asm/realmode.h>
--
- /* State of each CPU */
- DEFINE_PER_CPU(int, cpu_state) = { 0 };
- 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index 8244f5e..d62e74d 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -15,7 +15,6 @@
- #include <linux/reboot.h>
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
--#include <linux/reboot.h>
- 
- #include <asm/ce4100.h>
- #include <asm/prom.h>
--- 
-1.8.1.2
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.12
 
+There are just two small fixes in here:
+- Revert a commit which exported the flush_cache_page function. This was
+  noticed by Christoph Hellwig. 
+- Enable the DEVTMPFS, DEVTMPFS_MOUNT and BLK_DEV_INITRD config options in the
+  parisc defconfigs so that latest udev/initrd finds the root disk at boot.
+
+Thanks,
+Helge
+
+----------------------------------------------------------------
+Helge Deller (2):
+      Revert "parisc: Export flush_cache_page() (needed by lustre)"
+      parisc: enable DEVTMPFS, DEVTMPFS_MOUNT and BLK_DEV_INITRD in defconfigs
+
+ arch/parisc/configs/712_defconfig     | 2 ++
+ arch/parisc/configs/a500_defconfig    | 2 ++
+ arch/parisc/configs/b180_defconfig    | 3 +++
+ arch/parisc/configs/c3000_defconfig   | 3 +++
+ arch/parisc/configs/c8000_defconfig   | 2 ++
+ arch/parisc/configs/default_defconfig | 2 ++
+ arch/parisc/kernel/cache.c            | 1 -
+ 7 files changed, 14 insertions(+), 1 deletion(-)
