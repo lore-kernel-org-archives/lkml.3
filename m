@@ -1,305 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3JSTu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 15:50:56 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:56450 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab3JSTuw convert rfc822-to-8bit (ORCPT
+	id S1753949Ab3JSTus (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 15:50:48 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:45287 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3JSTtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 15:50:52 -0400
-MIME-Version: 1.0
-Date: Sat, 19 Oct 2013 12:50:51 -0700
-X-Google-Sender-Auth: xL7vRqg5NHqPGQZIm4U3JWBKLhI
-Message-ID: <CA+55aFx89vufPmMmnSN6bq7HU=zafm4mmM3GQ2m418k+R9AsPQ@mail.gmail.com>
-Subject: Linux 3.12-rc6
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 19 Oct 2013 15:49:04 -0400
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH net-next v4 7/9] inet: convert inet_ehash_secret and ipv6_hash_secret to net_get_random_once
+Date: Sat, 19 Oct 2013 21:48:57 +0200
+Message-Id: <1382212139-20301-8-git-send-email-hannes@stressinduktion.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
+References: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm at PDX, about to fly out to the kernel summit, and it has almost
-become a tradition to do an rc release using the airport wifi. So here
-it is..
+Initialize the ehash and ipv6_hash_secrets with net_get_random_once.
 
-The patch is still busily being pushed out, but the git trees are
-up-to-date, and the tar-file should already be out. Nothing major
-happened last week., and the upcoming week is likely to be quiet too,
-since a lot of core maintainers will be in Edinburgh for the KS.
+Each compilation unit gets its own secret now:
+  ipv4/inet_hashtables.o
+  ipv4/udp.o
+  ipv6/inet6_hashtables.o
+  ipv6/udp.o
+  rds/connection.o
 
-Shortlog with more details appended, but the overview is just mainly
-driver updates. USB, infiniband, acpi.. Some documentation and Cifs
-updates, and the rest is random noise.
+The functions still get inlined into the hashing functions. In the fast
+path we have at most two (needed in ipv6) if (unlikely(...)).
 
-Please test,
-
-                    Linus
-
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 ---
+ include/net/inet_sock.h     |  4 ----
+ net/ipv4/af_inet.c          | 27 ---------------------------
+ net/ipv4/inet_hashtables.c  |  4 ++++
+ net/ipv4/udp.c              |  6 +++++-
+ net/ipv6/af_inet6.c         |  5 -----
+ net/ipv6/inet6_hashtables.c | 15 ++++++++++++---
+ net/ipv6/udp.c              | 17 ++++++++++++++---
+ net/rds/connection.c        | 12 +++++++++---
+ 8 files changed, 44 insertions(+), 46 deletions(-)
+
+diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
+index 7a6c7f8..1833c3f 100644
+--- a/include/net/inet_sock.h
++++ b/include/net/inet_sock.h
+@@ -204,10 +204,6 @@ static inline void inet_sk_copy_descendant(struct sock *sk_to,
+ 
+ int inet_sk_rebuild_header(struct sock *sk);
+ 
+-extern u32 inet_ehash_secret;
+-extern u32 ipv6_hash_secret;
+-void build_ehash_secret(void);
+-
+ static inline unsigned int __inet_ehashfn(const __be32 laddr,
+ 					  const __u16 lport,
+ 					  const __be32 faddr,
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 35913fb..b6bdd82 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -245,29 +245,6 @@ out:
+ }
+ EXPORT_SYMBOL(inet_listen);
+ 
+-u32 inet_ehash_secret __read_mostly;
+-EXPORT_SYMBOL(inet_ehash_secret);
+-
+-u32 ipv6_hash_secret __read_mostly;
+-EXPORT_SYMBOL(ipv6_hash_secret);
+-
+-/*
+- * inet_ehash_secret must be set exactly once, and to a non nul value
+- * ipv6_hash_secret must be set exactly once.
+- */
+-void build_ehash_secret(void)
+-{
+-	u32 rnd;
+-
+-	do {
+-		get_random_bytes(&rnd, sizeof(rnd));
+-	} while (rnd == 0);
+-
+-	if (cmpxchg(&inet_ehash_secret, 0, rnd) == 0)
+-		get_random_bytes(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
+-}
+-EXPORT_SYMBOL(build_ehash_secret);
+-
+ /*
+  *	Create an inet socket.
+  */
+@@ -284,10 +261,6 @@ static int inet_create(struct net *net, struct socket *sock, int protocol,
+ 	int try_loading_module = 0;
+ 	int err;
+ 
+-	if (unlikely(!inet_ehash_secret))
+-		if (sock->type != SOCK_RAW && sock->type != SOCK_DGRAM)
+-			build_ehash_secret();
+-
+ 	sock->state = SS_UNCONNECTED;
+ 
+ 	/* Look for the requested type/protocol pair. */
+diff --git a/net/ipv4/inet_hashtables.c b/net/ipv4/inet_hashtables.c
+index 18aa668..8b9cf27 100644
+--- a/net/ipv4/inet_hashtables.c
++++ b/net/ipv4/inet_hashtables.c
+@@ -28,6 +28,10 @@ static unsigned int inet_ehashfn(struct net *net, const __be32 laddr,
+ 				 const __u16 lport, const __be32 faddr,
+ 				 const __be16 fport)
+ {
++	static u32 inet_ehash_secret __read_mostly;
++
++	net_get_random_once(&inet_ehash_secret, sizeof(inet_ehash_secret));
++
+ 	return __inet_ehashfn(laddr, lport, faddr, fport,
+ 			      inet_ehash_secret + net_hash_mix(net));
+ }
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index b4437c7..89909dd 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -411,8 +411,12 @@ static unsigned int udp_ehashfn(struct net *net, const __be32 laddr,
+ 				 const __u16 lport, const __be32 faddr,
+ 				 const __be16 fport)
+ {
++	static u32 udp_ehash_secret __read_mostly;
++
++	net_get_random_once(&udp_ehash_secret, sizeof(udp_ehash_secret));
++
+ 	return __inet_ehashfn(laddr, lport, faddr, fport,
+-			      inet_ehash_secret + net_hash_mix(net));
++			      udp_ehash_secret + net_hash_mix(net));
+ }
+ 
+ 
+diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
+index a2cb07c..20af1fb 100644
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -110,11 +110,6 @@ static int inet6_create(struct net *net, struct socket *sock, int protocol,
+ 	int try_loading_module = 0;
+ 	int err;
+ 
+-	if (sock->type != SOCK_RAW &&
+-	    sock->type != SOCK_DGRAM &&
+-	    !inet_ehash_secret)
+-		build_ehash_secret();
+-
+ 	/* Look for the requested type/protocol pair. */
+ lookup_protocol:
+ 	err = -ESOCKTNOSUPPORT;
+diff --git a/net/ipv6/inet6_hashtables.c b/net/ipv6/inet6_hashtables.c
+index fa7dd38..262e13c 100644
+--- a/net/ipv6/inet6_hashtables.c
++++ b/net/ipv6/inet6_hashtables.c
+@@ -29,10 +29,19 @@ static unsigned int inet6_ehashfn(struct net *net,
+ 				  const struct in6_addr *faddr,
+ 				  const __be16 fport)
+ {
+-	const u32 lhash = (__force u32)laddr->s6_addr32[3];
+-	const u32 fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
++	static u32 inet6_ehash_secret __read_mostly;
++	static u32 ipv6_hash_secret __read_mostly;
++
++	u32 lhash, fhash;
++
++	net_get_random_once(&inet6_ehash_secret, sizeof(inet6_ehash_secret));
++	net_get_random_once(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
++
++	lhash = (__force u32)laddr->s6_addr32[3];
++	fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
++
+ 	return __inet6_ehashfn(lhash, lport, fhash, fport,
+-			       inet_ehash_secret + net_hash_mix(net));
++			       inet6_ehash_secret + net_hash_mix(net));
+ }
+ 
+ static int inet6_sk_ehashfn(const struct sock *sk)
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index 324bd36..44fc4e3 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -59,10 +59,21 @@ static unsigned int udp6_ehashfn(struct net *net,
+ 				  const struct in6_addr *faddr,
+ 				  const __be16 fport)
+ {
+-	const u32 lhash = (__force u32)laddr->s6_addr32[3];
+-	const u32 fhash = __ipv6_addr_jhash(faddr, ipv6_hash_secret);
++	static u32 udp6_ehash_secret __read_mostly;
++	static u32 udp_ipv6_hash_secret __read_mostly;
++
++	u32 lhash, fhash;
++
++	net_get_random_once(&udp6_ehash_secret,
++			    sizeof(udp6_ehash_secret));
++	net_get_random_once(&udp_ipv6_hash_secret,
++			    sizeof(udp_ipv6_hash_secret));
++
++	lhash = (__force u32)laddr->s6_addr32[3];
++	fhash = __ipv6_addr_jhash(faddr, udp_ipv6_hash_secret);
++
+ 	return __inet6_ehashfn(lhash, lport, fhash, fport,
+-			       inet_ehash_secret + net_hash_mix(net));
++			       udp_ipv6_hash_secret + net_hash_mix(net));
+ }
+ 
+ int ipv6_rcv_saddr_equal(const struct sock *sk, const struct sock *sk2)
+diff --git a/net/rds/connection.c b/net/rds/connection.c
+index 45e2366..378c3a6 100644
+--- a/net/rds/connection.c
++++ b/net/rds/connection.c
+@@ -51,10 +51,16 @@ static struct kmem_cache *rds_conn_slab;
+ 
+ static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
+ {
++	static u32 rds_hash_secret __read_mostly;
++
++	unsigned long hash;
++
++	net_get_random_once(&rds_hash_secret, sizeof(rds_hash_secret));
++
+ 	/* Pass NULL, don't need struct net for hash */
+-	unsigned long hash = __inet_ehashfn(be32_to_cpu(laddr), 0,
+-					    be32_to_cpu(faddr), 0,
+-					    inet_ehash_secret);
++	hash = __inet_ehashfn(be32_to_cpu(laddr), 0,
++			      be32_to_cpu(faddr), 0,
++			      rds_hash_secret);
+ 	return &rds_conn_hash[hash & RDS_CONNECTION_HASH_MASK];
+ }
+ 
+-- 
+1.8.3.1
 
-AKASHI Takahiro (1):
-      ARM: 7851/1: check for number of arguments in syscall_get/set_arguments()
-
-Aaron Lu (1):
-      ATA / ACPI: remove power dependent device handling
-
-Alexandre Courbot (2):
-      gpiolib: safer implementation of desc_to_gpio()
-      gpiolib: let gpiod_request() return -EPROBE_DEFER
-
-Andrea Adami (1):
-      ARM: 7845/1: sharpsl_param.c: fix invalid memory access for pxa devices
-
-Andrea Arcangeli (1):
-      mm: hugetlb: initialize PG_reserved for tail pages of gigantic
-compound pages
-
-Andreas Herrmann (1):
-      ARM: dma-mapping: Always pass proper prot flags to iommu_map()
-
-Andrew Vagin (1):
-      mm/vmscan.c: don't forget to free shrinker->nr_deferred
-
-Antonios Motakis (1):
-      VFIO: vfio_iommu_type1: fix bug caused by break in nested loop
-
-Ard Biesheuvel (1):
-      ARM: 7843/1: drop asm/types.h from generic-y
-
-Borislav Petkov (1):
-      x86/microcode: Correct Kconfig dependencies
-
-Charles Keepax (1):
-      cpufreq: s3c64xx: Rename index to driver_data
-
-Christoph Lameter (1):
-      slab_common: Do not check for duplicate slab names
-
-Cyrill Gorcunov (2):
-      mm: migration: do not lose soft dirty bit if page is in migration state
-      mm: /proc/pid/pagemap: inspect _PAGE_SOFT_DIRTY only on present pages
-
-Dan Carpenter (1):
-      ALSA: hdsp - info leak in snd_hdsp_hwdep_ioctl()
-
-David Henningsson (1):
-      ALSA: hda - Fix inverted internal mic not indicated on some machines
-
-David Rientjes (1):
-      mm, memcg: protect mem_cgroup_read_events for cpu hotplug
-
-Davidlohr Bueso (1):
-      ipc: update locking scheme comments
-
-Diego Elio Pettenò (1):
-      USB: serial: ti_usb_3410_5052: add Abbott strip port ID to
-combined table as well.
-
-Dirk Brandewie (1):
-      cpufreq / intel_pstate: Fix max_perf_pct on resume
-
-Doug Anderson (1):
-      block/partitions/efi.c: treat size mismatch as a warning, not an error
-
-Eli Cohen (12):
-      IB/mlx5: Fix send work queue size calculation
-      mlx5: Remove checksum on command interface commands
-      IB/mlx5: Decrease memory consumption of mr caches
-      IB/mlx5: Avoid async events on invalid port number
-      mlx5: Keep polling to reclaim pages while any returned
-      mlx5: Fix layout of struct mlx5_init_seg
-      IB/mlx5: Disable atomic operations
-      mlx5: Fix opt param mask for sq err to rts transition
-      IB/mlx5: Fix opt param mask according to firmware spec
-      mlx5: Fix error code translation from firmware to driver
-      IB/mlx5: Fix alignment of reg umr gather buffers
-      IB/mlx5: Ensure proper synchronization accessing memory
-
-Enrico Mioso (1):
-      usb: serial: option: blacklist Olivetti Olicard200
-
-Fangxiaozhi (Franko) (1):
-      USB: support new huawei devices in option.c
-
-Felipe Pena (1):
-      tools/testing/selftests: fix uninitialized variable
-
-Fengguang Wu (1):
-      writeback: fix negative bdi max pause
-
-Frediano Ziglio (1):
-      xen: Fix possible user space selector corruption
-
-Grant Likely (2):
-      of: fix unnecessary warning on missing /cpus node
-      Revert "of: Feed entire flattened device tree into the random pool"
-
-Greg Kroah-Hartman (4):
-      Revert "serial: i.MX: evaluate linux,stdout-path property"
-      USB: serial: option: add support for Inovia SEW858 device
-      Revert "usb: musb: gadget: fix otg active status flag"
-      Revert "Drivers: hv: vmbus: Fix a bug in channel rescind code"
-
-Guenter Roeck (1):
-      usb: usb_phy_gen: refine conditional declaration of usb_nop_xceiv_register
-
-HATAYAMA Daisuke (2):
-      procfs: fix unintended truncation of returned mapped address
-      procfs: call default get_unmapped_area on MMU-present architectures
-
-Hans-Frieder Vogt (2):
-      w1 - fix fops in w1_bus_notify
-      w1 - call request_module with w1 master mutex unlocked
-
-Hugh Dickins (2):
-      mm: fix BUG in __split_huge_page_pmd
-      mm: revert mremap pud_free anti-fix
-
-Jan Klos (1):
-      cifs: Fix inability to write files >2GB to SMB2/3 shares
-
-Joe Perches (1):
-      IB: Remove unnecessary semicolons
-
-Johannes Weiner (2):
-      mm: memcg: handle non-error OOM situations more gracefully
-      fs: buffer: move allocation failure loop into the allocator
-
-John Johansen (2):
-      apparmor: fix memleak of the profile hash
-      apparmor: fix bad lock balance when introspecting policy
-
-Joonsoo Kim (1):
-      mm/hugetlb.c: correct missing private flag clearing
-
-Josef Bacik (1):
-      Btrfs: release path before starting transaction in can_nocow_extent
-
-K. Y. Srinivasan (1):
-      Drivers: hv: vmbus: Fix a bug in channel rescind code
-
-Krzysztof Kozlowski (1):
-      swap: fix set_blocksize race during swapon/swapoff
-
-Krzysztof Mazur (1):
-      ACPI: remove /proc/acpi/event from ACPI_BUTTON help
-
-Lan Tianyu (1):
-      ACPI / power: Release resource_lock after acpi_power_get_state()
-return error
-
-Lars-Peter Clausen (1):
-      iio:buffer: Free active scan mask in iio_disable_all_buffers()
-
-Linus Torvalds (1):
-      Linux 3.12-rc6
-
-Manfred Spraul (1):
-      ipc/sem.c: synchronize semop and semctl with IPC_RMID
-
-Marek Szyprowski (2):
-      Revert "ARM: init: add support for reserved memory defined by device tree"
-      Revert "drivers: of: add initialization code for dma reserved memory"
-
-Matias Bjorling (1):
-      percpu_refcount: export symbols
-
-Matthew Dawson (1):
-      usb: misc: usb3503: Fix compile error due to incorrect regmap depedency
-
-Mika Westerberg (1):
-      gpio/lynxpoint: check if the interrupt is enabled in IRQ handler
-
-Miklos Szeredi (1):
-      ext[34]: fix double put in tmpfile
-
-Mikulas Patocka (1):
-      dm snapshot: fix data corruption
-
-Moshe Lazer (2):
-      IB/mlx5: Flush cache workqueue before destroying it
-      IB/mlx5: Fix memory leak in mlx5_ib_create_srq
-
-Nicolas Pitre (1):
-      ARM: 7842/1: MCPM: don't explode if invoked without being
-initialized first
-
-Oliver Neukum (4):
-      xhci: quirk for extra long delay for S4
-      USB: quirks.c: add one device that cannot deal with suspension
-      USB: quirks: add touchscreen that is dazzeled by remote wakeup
-      usb-storage: add quirk for mandatory READ_CAPACITY_16
-
-Peter Oberparleiter (1):
-      gcov: MAINTAINERS: Add an entry for gcov
-
-Rafael J. Wysocki (9):
-      MAINTAINERS / Documentation: Update Rafael's e-mail address
-      MAINTAINERS / ACPI: Update links and git tree information
-      MAINTAINERS / ACPI: Update links to the Linux-ACPI project web page
-      ACPI / PM / Documentation: Replace outdated project links and addresses
-      ACPI / hotplug / PCI: Fix error code path in acpiphp_enumerate_slots()
-      ACPI / hotplug / PCI: Drop WARN_ON() from acpiphp_enumerate_slots()
-      intel_pstate: Fix type mismatch warning
-      ACPI / power: Drop automaitc resume of power resource dependent devices
-      ACPI / PM: Drop two functions that are not used any more
-
-Raghavendra K T (1):
-      KVM: Enable pvspinlock after jump_label_init() to avoid VM hang
-
-Rob Herring (1):
-      tpm: xen-tpmfront: fix missing declaration of xen_domain
-
-Roel Kluin (1):
-      serial: vt8500: add missing braces
-
-Russ Anderson (1):
-      x86: Update UV3 hub revision ID
-
-Russell King - ARM Linux (1):
-      usb/chipidea: fix oops on memory allocation failure
-
-Sachin Prabhu (1):
-      cifs: Allow LANMAN auth method for servers supporting
-unencapsulated authentication methods
-
-Sagi Grimberg (1):
-      IB/mlx5: Fix eq names to display nicely in /proc/interrupts
-
-Santosh Shilimkar (1):
-      ARM: 7846/1: Update SMP_ON_UP code to detect A9MPCore with 1 CPU devices
-
-Sarah Sharp (1):
-      xhci: Don't enable/disable RWE on bus suspend/resume.
-
-Sebastian Andrzej Siewior (1):
-      usb: musb: start musb on the udc side, too
-
-Shirish Pargaonkar (1):
-      cifs: Avoid umount hangs with smb2 when server is unresponsive
-
-Steve French (1):
-      do not treat non-symlink reparse points as valid symlinks
-
-Takashi Iwai (2):
-      xhci: Fix spurious wakeups after S5 on Haswell
-      ALSA: us122l: Fix pcm_usb_stream mmapping regression
-
-Tim Gardner (1):
-      cifs: ntstatus_to_dos_map[] is not terminated
-
-Wei Yongjun (1):
-      iio: frequency: adf4350: add missing clk_disable_unprepare() on
-error in adf4350_probe()
-
-Weijie Yang (1):
-      mm/zswap: bugfix: memory leak when re-swapon
-
-Xenia Ragiadakou (1):
-      xhci: fix write to USB3_PSSEN and XUSB2PRM pci config registers
-
-Yasuaki Ishimatsu (1):
-      driver core: Release device_hotplug_lock when store_mem_state
-returns EINVAL
