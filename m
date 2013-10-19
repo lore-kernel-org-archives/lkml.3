@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab3JSWi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 18:38:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40194 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3JSWi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 18:38:27 -0400
-Date: Sat, 19 Oct 2013 18:38:25 -0400 (EDT)
-Message-Id: <20131019.183825.2015665991258674429.davem@davemloft.net>
-To: geyslan@gmail.com
-Cc: kernel-br@googlegroups.com, herbert@gondor.hengli.com.au,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: n2_core: insert '!err' condition in else scope
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1382188171-25595-1-git-send-email-geyslan@gmail.com>
-References: <1382188171-25595-1-git-send-email-geyslan@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 19 Oct 2013 15:38:27 -0700 (PDT)
+	id S1753938Ab3JSWj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 18:39:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1176 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753662Ab3JSWj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 18:39:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,531,1378882800"; 
+   d="scan'208";a="421714639"
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 00/15] slab: overload struct slab over struct page to reduce memory usage
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
+Date: Sat, 19 Oct 2013 15:39:34 -0700
+In-Reply-To: <20131016133457.60fa71f893cd2962d8ec6ff3@linux-foundation.org>
+	(Andrew Morton's message of "Wed, 16 Oct 2013 13:34:57 -0700")
+Message-ID: <8738nwvqah.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-Date: Sat, 19 Oct 2013 10:09:31 -0300
+Andrew Morton <akpm@linux-foundation.org> writes:
+>
+> One example is mm/memory-failure.c:memory_failure().  It starts with a
+> raw pfn, uses that to get at the `struct page', then starts playing
+> around with it.  Will that code still work correctly when some of the
+> page's fields have been overlayed with slab-specific contents?
 
-> This patch moves the '!err' condition into the above else scope,
-> what is more obvious and has the secondary goal of avoid false-positives
-> in statical analyze tools.
-> 
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+As long as PageSlab() works correctly memory_failure should be happy.
 
-I do not think patches should be applied to satisfy tools if the
-code is semantically correct.
+>
+> This issue hasn't been well thought through.  Given a random struct
+> page, there isn't any protocol to determine what it actually *is*. 
+> It's a plain old variant record, but it lacks the agreed-upon tag field
+> which tells users which variant is currently in use.
+
+PageSlab() should work for this right?
+
+For the generic case it may not though.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
