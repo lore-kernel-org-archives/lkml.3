@@ -1,52 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3JSTgA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 15:36:00 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:52585 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3JSTf7 convert rfc822-to-8bit (ORCPT
+	id S1753077Ab3JSTtG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 15:49:06 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:45256 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab3JSTtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 15:35:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131019151039.358d9989@gandalf.local.home>
-References: <1382060696-30746-1-git-send-email-geyslan@gmail.com>
-	<20131017224605.2e1d4bab@gandalf.local.home>
-	<20131019124312.GA23872@redhat.com>
-	<CAGG-pUSk-A=m=cXL85fY+nNgRGQVtG62GouPoANuXFUSrKK6BA@mail.gmail.com>
-	<20131019141859.GA30765@redhat.com>
-	<CAGG-pUTE8prwynzWfwR0+MP4q9UTsKOiWYHM4onhzsrqcTbSMA@mail.gmail.com>
-	<20131019151039.358d9989@gandalf.local.home>
-Date: Sat, 19 Oct 2013 16:35:59 -0300
-Message-ID: <CAGG-pUQGa0E9G96t8C1TM6S7bM+krn+UyMKh6P+KNHg5AFyWNw@mail.gmail.com>
-Subject: Re: [PATCH] tracing: fix referencing after memory freeing and
- refactors code
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, kernel-br <kernel-br@googlegroups.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 19 Oct 2013 15:49:03 -0400
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH net-next v4 1/9] ipv4: split inet_ehashfn to hash functions per compilation unit
+Date: Sat, 19 Oct 2013 21:48:51 +0200
+Message-Id: <1382212139-20301-2-git-send-email-hannes@stressinduktion.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
+References: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/19 Steven Rostedt <rostedt@goodmis.org>:
-> On Sat, 19 Oct 2013 11:41:10 -0300
-> Geyslan Gregório Bem <geyslan@gmail.com> wrote:
->
->> Let's wait Steve's reply about further use of tracing_is_disabled().
->
-> Might want to ping me later. This weekend I'm taking my daughter to
-> colleges, and early Monday morning I'm leaving to Edinburgh (arriving
-> on Tuesday).
->
-> -- Steve
->
+This duplicates a bit of code but let's us easily introduce
+separate secret keys later. The separate compilation units are
+ipv4/inet_hashtabbles.o, ipv4/udp.o and rds/connection.o.
 
-There is no problem, weekends are sacred to me. It's family time.
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+---
+ include/net/inet_sock.h    | 22 ++++++----------------
+ net/ipv4/inet_hashtables.c | 21 +++++++++++++++++++++
+ net/ipv4/udp.c             | 16 ++++++++++++----
+ net/rds/connection.c       |  6 +++---
+ 4 files changed, 42 insertions(+), 23 deletions(-)
 
-o/
---Geyslan
+diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
+index 06da91e..7a6c7f8 100644
+--- a/include/net/inet_sock.h
++++ b/include/net/inet_sock.h
+@@ -208,26 +208,16 @@ extern u32 inet_ehash_secret;
+ extern u32 ipv6_hash_secret;
+ void build_ehash_secret(void);
+ 
+-static inline unsigned int inet_ehashfn(struct net *net,
+-					const __be32 laddr, const __u16 lport,
+-					const __be32 faddr, const __be16 fport)
++static inline unsigned int __inet_ehashfn(const __be32 laddr,
++					  const __u16 lport,
++					  const __be32 faddr,
++					  const __be16 fport,
++					  u32 initval)
+ {
+ 	return jhash_3words((__force __u32) laddr,
+ 			    (__force __u32) faddr,
+ 			    ((__u32) lport) << 16 | (__force __u32)fport,
+-			    inet_ehash_secret + net_hash_mix(net));
+-}
+-
+-static inline int inet_sk_ehashfn(const struct sock *sk)
+-{
+-	const struct inet_sock *inet = inet_sk(sk);
+-	const __be32 laddr = inet->inet_rcv_saddr;
+-	const __u16 lport = inet->inet_num;
+-	const __be32 faddr = inet->inet_daddr;
+-	const __be16 fport = inet->inet_dport;
+-	struct net *net = sock_net(sk);
+-
+-	return inet_ehashfn(net, laddr, lport, faddr, fport);
++			    initval);
+ }
+ 
+ static inline struct request_sock *inet_reqsk_alloc(struct request_sock_ops *ops)
+diff --git a/net/ipv4/inet_hashtables.c b/net/ipv4/inet_hashtables.c
+index a4b66bb..18aa668 100644
+--- a/net/ipv4/inet_hashtables.c
++++ b/net/ipv4/inet_hashtables.c
+@@ -24,6 +24,27 @@
+ #include <net/secure_seq.h>
+ #include <net/ip.h>
+ 
++static unsigned int inet_ehashfn(struct net *net, const __be32 laddr,
++				 const __u16 lport, const __be32 faddr,
++				 const __be16 fport)
++{
++	return __inet_ehashfn(laddr, lport, faddr, fport,
++			      inet_ehash_secret + net_hash_mix(net));
++}
++
++
++static unsigned int inet_sk_ehashfn(const struct sock *sk)
++{
++	const struct inet_sock *inet = inet_sk(sk);
++	const __be32 laddr = inet->inet_rcv_saddr;
++	const __u16 lport = inet->inet_num;
++	const __be32 faddr = inet->inet_daddr;
++	const __be16 fport = inet->inet_dport;
++	struct net *net = sock_net(sk);
++
++	return inet_ehashfn(net, laddr, lport, faddr, fport);
++}
++
+ /*
+  * Allocate and initialize a new local port bind bucket.
+  * The bindhash mutex for snum's hash chain must be held here.
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 9f27bb8..b4437c7 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -407,6 +407,14 @@ static inline int compute_score2(struct sock *sk, struct net *net,
+ 	return score;
+ }
+ 
++static unsigned int udp_ehashfn(struct net *net, const __be32 laddr,
++				 const __u16 lport, const __be32 faddr,
++				 const __be16 fport)
++{
++	return __inet_ehashfn(laddr, lport, faddr, fport,
++			      inet_ehash_secret + net_hash_mix(net));
++}
++
+ 
+ /* called with read_rcu_lock() */
+ static struct sock *udp4_lib_lookup2(struct net *net,
+@@ -430,8 +438,8 @@ begin:
+ 			badness = score;
+ 			reuseport = sk->sk_reuseport;
+ 			if (reuseport) {
+-				hash = inet_ehashfn(net, daddr, hnum,
+-						    saddr, sport);
++				hash = udp_ehashfn(net, daddr, hnum,
++						   saddr, sport);
+ 				matches = 1;
+ 			}
+ 		} else if (score == badness && reuseport) {
+@@ -511,8 +519,8 @@ begin:
+ 			badness = score;
+ 			reuseport = sk->sk_reuseport;
+ 			if (reuseport) {
+-				hash = inet_ehashfn(net, daddr, hnum,
+-						    saddr, sport);
++				hash = udp_ehashfn(net, daddr, hnum,
++						   saddr, sport);
+ 				matches = 1;
+ 			}
+ 		} else if (score == badness && reuseport) {
+diff --git a/net/rds/connection.c b/net/rds/connection.c
+index 642ad42..45e2366 100644
+--- a/net/rds/connection.c
++++ b/net/rds/connection.c
+@@ -52,9 +52,9 @@ static struct kmem_cache *rds_conn_slab;
+ static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
+ {
+ 	/* Pass NULL, don't need struct net for hash */
+-	unsigned long hash = inet_ehashfn(NULL,
+-					  be32_to_cpu(laddr), 0,
+-					  be32_to_cpu(faddr), 0);
++	unsigned long hash = __inet_ehashfn(be32_to_cpu(laddr), 0,
++					    be32_to_cpu(faddr), 0,
++					    inet_ehash_secret);
+ 	return &rds_conn_hash[hash & RDS_CONNECTION_HASH_MASK];
+ }
+ 
+-- 
+1.8.3.1
+
