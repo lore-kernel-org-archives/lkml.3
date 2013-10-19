@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab3JSXN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 19:13:27 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64641 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab3JSXN0 convert rfc822-to-8bit (ORCPT
+	id S1751171Ab3JSXqj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 19:46:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40640 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3JSXqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 19:13:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131019.184919.1292439830365652584.davem@davemloft.net>
-References: <1382188171-25595-1-git-send-email-geyslan@gmail.com>
-	<20131019.183825.2015665991258674429.davem@davemloft.net>
-	<CAGG-pUSMJTbGHEhCOy0PRLNN4+jyVB8oB3mca1O9sb2YbpQ-fg@mail.gmail.com>
-	<20131019.184919.1292439830365652584.davem@davemloft.net>
-Date: Sat, 19 Oct 2013 20:13:25 -0300
-Message-ID: <CAGG-pUSfA7ynQM3OEFqHaac3vh3BooisGq2rKO5OmAE_cdKb9A@mail.gmail.com>
-Subject: Re: [PATCH] crypto: n2_core: insert '!err' condition in else scope
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: kernel-br <kernel-br@googlegroups.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 19 Oct 2013 19:46:38 -0400
+Date: Sat, 19 Oct 2013 19:46:35 -0400 (EDT)
+Message-Id: <20131019.194635.2189923305870380269.davem@davemloft.net>
+To: hannes@stressinduktion.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next v4 0/9] Introduce support to lazy initialize
+ mostly static keys
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
+References: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 19 Oct 2013 16:46:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/19 David Miller <davem@davemloft.net>:
-> From: Geyslan Gregório Bem <geyslan@gmail.com>
-> Date: Sat, 19 Oct 2013 19:42:35 -0300
->
->> 2013/10/19 David Miller <davem@davemloft.net>:
->>> From: "Geyslan G. Bem" <geyslan@gmail.com>
->>> Date: Sat, 19 Oct 2013 10:09:31 -0300
->>>
->>>> This patch moves the '!err' condition into the above else scope,
->>>> what is more obvious and has the secondary goal of avoid false-positives
->>>> in statical analyze tools.
->>>>
->>>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->>>
->>> I do not think patches should be applied to satisfy tools if the
->>> code is semantically correct.
->>
->> Yes, Miller, I agree. But as I mentioned:
->> ".. and has as the 'secondary' goal of avoid false-positives in
->> statical analyze tools."
->>
->> The 'primary' goal is to not repeat a condition test:
->> "This patch moves the '!err' condition into the above else scope, what
->> is more obvious ..."
->
-> I still do not feel that this change is a net-positive.  Sorry.
-Miller,
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Sat, 19 Oct 2013 21:48:50 +0200
 
-I can understand you. You don't want to break your git history
-(blame). But when a code is clearly more readable/understandable you
-must assume that it has a huge net-positive.
+> This series implements support for delaying the initialization of secret
+> keys, e.g. used for hashing, for as long as possible. This functionality
+> is implemented by a new macro, net_get_random_bytes.
+> 
+> I already used it to protect the socket hashes, the syncookie secret
+> (most important) and the tcp_fastopen secrets.
+> 
+> Changelog:
+> v2) Use static_keys in net_get_random_once to have as minimal impact to
+>     the fast-path as possible.
+> v3) added patch "static_key: WARN on usage before jump_label_init was called":
+>     Patch "x86/jump_label: expect default_nop if static_key gets enabled
+>     on boot-up" relaxes the checks for using static_key primitives before
+>     jump_label_init. So tighten them first.
+> v4) Update changelog on the patch "static_key: WARN on usage before
+>     jump_label_init was called"
 
-The patch improves the code in three ways:
-- Only one if/else;
-- Not blame on static analysis tools.
-- And avoid more discussion about that in the future (nobody will send
-patches like this to disturb you about that part of code).
+Although I was very skeptical about these changes when you first posted
+them, I am quite happy with this series now.
 
-The decision is yours.
+Thanks for working on this and not giving up :-)
 
-Thanks again.
+Series applied, thanks a lot!
+
