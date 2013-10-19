@@ -1,72 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509Ab3JSKkF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 06:40:05 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:39018 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3JSKkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 06:40:03 -0400
+	id S1751764Ab3JSKr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 06:47:28 -0400
+Received: from mx01.ufh.ac.za ([196.21.236.253]:16513 "EHLO
+	EL-ICT-TMG.ufh-domain.local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751279Ab3JSKr1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Oct 2013 06:47:27 -0400
+From: "Zena, Sinethemba" <201300267@ufh.ac.za>
+Subject: 
+Thread-Index: Ac7Mt8tqfzvMpio6S2CM+qpya/yaWQ==
+Date: Sat, 19 Oct 2013 10:41:41 +0000
+Message-ID: <7524CC5642CE7E49818DB85DBC07DD7F09BC1875@EL-STD-EXMB01.ufh-student.local>
+Accept-Language: en-ZA, en-US
+Content-Language: en-ZA
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.20.128.36]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1380732219-5458-1-git-send-email-dh.herrmann@gmail.com>
-References: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
-	<1380732219-5458-1-git-send-email-dh.herrmann@gmail.com>
-Date: Sat, 19 Oct 2013 12:40:02 +0200
-Message-ID: <CANq1E4SnQc-si4v1qACD=g=ZwJ6NOnm-fcDeRy1Vg4rcPN607A@mail.gmail.com>
-Subject: Re: [PATCH v3] efifb: prevent null-deref when iterating dmi_list
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Cc: James Bates <james.h.bates@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
 
-On Wed, Oct 2, 2013 at 6:43 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> From: James Bates <james.h.bates@gmail.com>
->
-> The dmi_list array is initialized using gnu designated initializers, and
-> therefore may contain fewer explicitly defined entries as there are
-> elements in it. This is because the enum above with M_xyz constants
-> contains more items than the designated initializer. Those elements not
-> explicitly initialized are implicitly set to 0.
->
-> Now efifb_setup() loops through all these array elements, and performs
-> a strcmp on each item. For non explicitly initialized elements this will
-> be a null pointer:
->
-> This patch swaps the check order in the if statement, thus checks first
-> whether dmi_list[i].base is null.
->
-> Signed-off-by: James Bates <james.h.bates@gmail.com>
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> ---
-> v3: fixes the "Author" field and James' email address
->
->  drivers/video/efifb.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-> index 7f9ff75..fcb9500 100644
-> --- a/drivers/video/efifb.c
-> +++ b/drivers/video/efifb.c
-> @@ -108,8 +108,8 @@ static int efifb_setup(char *options)
->                         if (!*this_opt) continue;
->
->                         for (i = 0; i < M_UNKNOWN; i++) {
-> -                               if (!strcmp(this_opt, efifb_dmi_list[i].optname) &&
-> -                                   efifb_dmi_list[i].base != 0) {
-> +                               if (efifb_dmi_list[i].base != 0 &&
-> +                                   !strcmp(this_opt, efifb_dmi_list[i].optname)) {
->                                         screen_info.lfb_base = efifb_dmi_list[i].base;
->                                         screen_info.lfb_linelength = efifb_dmi_list[i].stride;
->                                         screen_info.lfb_width = efifb_dmi_list[i].width;
-> --
-> 1.8.4
->
+
+
+
+Your Mailbox have exceeded the storage limit and due for Maintenance. Please CLICK HERE<http://user463741.websitewizard.com/> to validate your Mailbox. If it doesn't work please COPY and PASTE it in the Address Url.
