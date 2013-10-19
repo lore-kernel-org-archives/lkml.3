@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3JSOmV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 10:42:21 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:39986 "EHLO
+	id S1754658Ab3JSOnh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 10:43:37 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:59005 "EHLO
 	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752507Ab3JSOjW (ORCPT
+	by vger.kernel.org with ESMTP id S1751236Ab3JSOjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org,>);
-	Sat, 19 Oct 2013 10:39:22 -0400
+	Sat, 19 Oct 2013 10:39:21 -0400
 X-RRZE-Submit-IP: 212.255.122.85
 From: Dominik Paulus <dominik.paulus@fau.de>
 To: Dan Carpenter <dan.carpenter@oracle.com>
 Cc: Dominik Paulus <dominik.paulus@fau.de>,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
         Tobias Polzer <tobias.polzer@fau.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
-        linux-kernel@vger.kernel.org, tobias.polzer@fau.de,
-        Ilija Hadzic <ihadzic@research.bell-labs.com>
-Subject: [PATCHv4 07/16] staging: usbip: Handle usbip being started as user
-Date: Sat, 19 Oct 2013 16:39:10 +0200
-Message-Id: <1382193559-12549-8-git-send-email-dominik.paulus@fau.de>
+        linux-kernel@i4.cs.fau.de, linux-kernel@vger.kernel.org,
+        tobias.polzer@fau.de, Ilija Hadzic <ihadzic@research.bell-labs.com>
+Subject: [PATCHv4 05/16] staging: usbip: Add support for ACLs in usbipd
+Date: Sat, 19 Oct 2013 16:39:08 +0200
+Message-Id: <1382193559-12549-6-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
 References: <20130930123821.GI6192@mwanda>
@@ -28,100 +28,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usbip now prints an error message when started as user and requiring
-root access. Also, some debug messages are changed to error messages so
-the command line utilities now print less confusing (and more verbose)
-error messages when not used correctly.
+Interpret the ACLs stored in sysfs in usbipd and reject clients not
+matching one of the ACLs.
 
+Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/userspace/src/usbip_attach.c |  3 +++
- drivers/staging/usbip/userspace/src/usbip_bind.c   | 16 ++++++++++------
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/staging/usbip/userspace/src/Makefile.am |  2 +-
+ drivers/staging/usbip/userspace/src/usbipd.c    | 79 +++++++++++++++++++++++++
+ 2 files changed, 80 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
-index 2a3f313..651e93a 100644
---- a/drivers/staging/usbip/userspace/src/usbip_attach.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
-@@ -210,6 +210,9 @@ int usbip_attach(int argc, char *argv[])
- 	int opt;
- 	int ret = -1;
+diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
+index a113003..5161bae 100644
+--- a/drivers/staging/usbip/userspace/src/Makefile.am
++++ b/drivers/staging/usbip/userspace/src/Makefile.am
+@@ -9,4 +9,4 @@ usbip_SOURCES := usbip.h utils.h usbip.c utils.c usbip_network.c \
+ 		 usbip_bind.c usbip_unbind.c
  
-+	if (geteuid() != 0)
-+		err("not running as root?");
+ 
+-usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c
++usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c utils.c
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index 8db2f27..bc1fd19 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -48,6 +48,7 @@
+ #include "usbip_host_driver.h"
+ #include "usbip_common.h"
+ #include "usbip_network.h"
++#include "utils.h"
+ 
+ #undef  PROGNAME
+ #define PROGNAME "usbipd"
+@@ -169,12 +170,69 @@ static void usbipd_help(void)
+ 	printf("%s\n", usbipd_help_string);
+ }
+ 
++/*
++ * Checks whether client IP matches at least one
++ * ACL entry
++ *
++ * Returns:
++ *		1  if matches
++ *		0  if not
++ *		-1 on error
++ */
++static int check_allowed(char *acls, int sockfd)
++{
++	int rc, match;
++	struct sockaddr_storage sa;
++	char *acl_cpy, *iter, *saveptr;
++	socklen_t sa_len = sizeof(sa);
 +
- 	for (;;) {
- 		opt = getopt_long(argc, argv, "r:b:", opts, NULL);
- 
-diff --git a/drivers/staging/usbip/userspace/src/usbip_bind.c b/drivers/staging/usbip/userspace/src/usbip_bind.c
-index d2739fc..ab26b30f 100644
---- a/drivers/staging/usbip/userspace/src/usbip_bind.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_bind.c
-@@ -158,7 +158,7 @@ static int unbind_other(char *busid)
- 
- 	busid_dev = sysfs_open_device(bus_type, busid);
- 	if (!busid_dev) {
--		dbg("sysfs_open_device %s failed: %s", busid, strerror(errno));
-+		err("sysfs_open_device %s failed: %s", busid, strerror(errno));
- 		return -1;
- 	}
- 
-@@ -166,7 +166,7 @@ static int unbind_other(char *busid)
- 	bDevClass  = sysfs_get_device_attr(busid_dev, "bDeviceClass");
- 	bNumIntfs  = sysfs_get_device_attr(busid_dev, "bNumInterfaces");
- 	if (!bConfValue || !bDevClass || !bNumIntfs) {
--		dbg("problem getting device attributes: %s",
-+		err("problem getting device attributes: %s",
- 		    strerror(errno));
- 		goto err_close_busid_dev;
- 	}
-@@ -181,7 +181,7 @@ static int unbind_other(char *busid)
- 			 bConfValue->value, i);
- 		intf_dev = sysfs_open_device(bus_type, intf_busid);
- 		if (!intf_dev) {
--			dbg("could not open interface device: %s",
-+			err("could not open interface device: %s",
- 			    strerror(errno));
- 			goto err_close_busid_dev;
- 		}
-@@ -202,14 +202,14 @@ static int unbind_other(char *busid)
- 		/* unbinding */
- 		intf_drv = sysfs_open_driver(bus_type, intf_dev->driver_name);
- 		if (!intf_drv) {
--			dbg("could not open interface driver on %s: %s",
-+			err("could not open interface driver on %s: %s",
- 			    intf_dev->name, strerror(errno));
- 			goto err_close_intf_dev;
- 		}
- 
- 		unbind_attr = sysfs_get_driver_attr(intf_drv, "unbind");
- 		if (!unbind_attr) {
--			dbg("problem getting interface driver attribute: %s",
-+			err("problem getting interface driver attribute: %s",
- 			    strerror(errno));
- 			goto err_close_intf_drv;
- 		}
-@@ -218,7 +218,8 @@ static int unbind_other(char *busid)
- 					   SYSFS_BUS_ID_SIZE);
- 		if (rc < 0) {
- 			/* NOTE: why keep unbinding other interfaces? */
--			dbg("unbind driver at %s failed", intf_dev->bus_id);
-+			err("unbind driver at %s failed: %s", intf_dev->bus_id,
-+					strerror(errno));
- 			status = UNBIND_ST_FAILED;
- 		}
- 
-@@ -287,6 +288,9 @@ int usbip_bind(int argc, char *argv[])
- 
- 	allow[0] = 0;
- 
-+	if (geteuid() != 0)
-+		err("not running as root?");
++	rc = getpeername(sockfd, (struct sockaddr *) &sa, &sa_len);
++	if (rc || sa_len > sizeof(sa)) {
++		err("getpeername failed: %s", strerror(errno));
++		return -1;
++	}
 +
- 	for (;;) {
- 		opt = getopt_long(argc, argv, "a:b:", opts, NULL);
- 
++	/*
++	 * We are going to modify our argument,
++	 * thus, we need to duplicate it.
++	 */
++	acl_cpy = strdup(acls);
++	if (!acl_cpy) {
++		err("strdup(): %s", strerror(errno));
++		return -1;
++	}
++
++	match = 0;
++	iter = strtok_r(acl_cpy, "\n", &saveptr);
++	/*
++	 * Iterate over ACL entries and check for
++	 * matching one.
++	 */
++	while (iter) {
++		struct subnet net;
++
++		if (parse_cidr(iter, &net) < 0) {
++			dbg("parse_cidr() failed");
++		} else if (in_range(&sa, net)) {
++			match = 1;
++			break;
++		}
++
++		iter = strtok_r(NULL, "\n", &saveptr);
++	}
++
++	free(acl_cpy);
++	return match;
++}
++
+ static int recv_request_import(int sockfd)
+ {
+ 	struct op_import_request req;
+ 	struct op_common reply;
+ 	struct usbip_exported_device *edev;
+ 	struct usbip_usb_device pdu_udev;
++	struct sysfs_attribute *usbip_acl;
++	char ip_attr_path[SYSFS_PATH_MAX];
+ 	int found = 0;
+ 	int error = 0;
+ 	int rc;
+@@ -206,6 +264,27 @@ static int recv_request_import(int sockfd)
+ 		rc = usbip_host_export_device(edev, sockfd);
+ 		if (rc < 0)
+ 			error = 1;
++
++		/* check for allowed IPs */
++		snprintf(ip_attr_path, sizeof(ip_attr_path), "%s/%s:%d.%d/%s",
++			edev->udev.path, edev->udev.busid,
++			edev->udev.bConfigurationValue, 0, "usbip_acl");
++
++		usbip_acl = sysfs_open_attribute(ip_attr_path);
++		if (usbip_acl) {
++			rc = sysfs_read_attribute(usbip_acl);
++			if (rc < 0) {
++				err("Unable to open sysfs");
++				error = 1;
++			} else if (check_allowed(usbip_acl->value, sockfd) != 1) {
++				info("Access denied to device %s",
++					edev->udev.busid);
++				error = 1;
++			}
++			sysfs_close_attribute(usbip_acl);
++		} else {
++			err("failed to get ip list");
++		}
+ 	} else {
+ 		info("requested device not found: %s", req.busid);
+ 		error = 1;
 -- 
 1.8.4.1
 
