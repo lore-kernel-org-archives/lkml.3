@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab3KAWL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:11:28 -0400
-Received: from nm34.bullet.mail.ne1.yahoo.com ([98.138.229.27]:23210 "EHLO
-	nm34.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751830Ab3KAWLY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:11:24 -0400
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 653133.12649.bm@omp1023.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=y7mail.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=XrDAbMGPeQw9I5EMjXcDRQoQ2xb0ZKSbf1E4/dUR7PakQtC4QF1cwGZoYdLNtV7++moLAgH5aXFvFXeoLCxyOgXQGYpd2bLh3S3qpI7kzYJEeEB9lO9mmH6dgT5Wm+9BvfKTTkVcGTIKqfLlX5KX2EIgUvdUwpQSmfDQhxQhxbw=;
-X-YMail-OSG: u3VXytoVM1noLLXQX7E59.dFXhH8etVs7iZjpKL46e3djD6
- mNJCzJSjlnX6ESxLLqcAGTnv7TYspWKKrkYXAENIfkbx3qQOexUoP7.e0sLf
- kJBQ-
-X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZCwNCiAgICAgICAgICAgICAgICAgICAgICAgICAgR3JlZXRpbmcgdG8geW91ISEhDQoNCkkga25vdyB0aGF0IHRoaXMgbWFpbCB3aWxsIGNvbWUgdG8geW91IGFzIGEgc3VycHJpc2UgYXMgd2UgbmV2ZXIgbWV0IGJlZm9yZS4gSSBhbSB0IE1yLiBLZWJhIEJhIGhlIENoaWVmIHJlcHJlc2VudGF0aXZlIG9mIHRoZSBBZnJpY2FuIERldmVsb3BtZW50IEJhbmsgZm9yIENlbnRyYWwgYW5kIFdlc3QgQWZyaWNhbiBEaXZpc2lvbiwgSSBIb3BlZCB0aGF0IHlvdSB3aWxsIG5vdCBleHBvc2Ugb3IBMAEBAQE-
-X-RocketYMMF: ibrahim_dabashi@y7mail.com
-X-Mailer: YahooMailClassic/362 YahooMailWebService/0.8.160.587
-Message-ID: <1383149605.67608.YahooMailBasic@web162906.mail.bf1.yahoo.com>
-Date: Wed, 30 Oct 2013 09:13:25 -0700 (PDT)
-From: Mr Keba Ba <dir.keba1@gmail.com>
-Reply-To: keba.ba1@laposte.net
-Subject: I GOT YOUR CONTACT... I WAIT OK!
-To: undisclosed recipients:;
+	id S1751358Ab3KRKk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:40:28 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:29515 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab3KRKkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 05:40:20 -0500
+From: Warner Wang <warner.wang@hp.com>
+To: tglx@linutronix.de, schwidefsky@de.ibm.com, linux-kernel@vger.kernel.org
+Cc: Warner Wang <warner.wang@hp.com>
+Subject: [RFC][PATCH] irq: restrict the numbers of misrouted interrupt (per second).
+Date: Sat, 19 Oct 2013 18:33:50 +0800
+Message-Id: <1382178830-19727-1-git-send-email-warner.wang@hp.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The original spurious.c already provides the functionality of
+detect & disable screaming interrupts.  But under some situation
+the code won't work.  When irq_poll is on and the system has some
+ISRs that don’t do sanity check and return IRQ_NONE.  This will
+come into a loop:  device A is screaming, keeps generates large
+amount of interrupts,  while device B's ISR keep being executed by
+misrouted irq code (because B's ISR have problem and won't return
+as IRQ_NONE.  In this situation the original code to detect the
+screaming interrupts will not have a chance to be called.  And the
+system performance will be very poor.
 
-Dear Friend,
-                          Greeting to you!!!
+This RFC patch tries to solve this problem, by adding a counter for
+maximum misrouted interrupts we should handle per second.  And if
+we reached the maximum number we simply skip the misrounted irq.
 
-I know that this mail will come to you as a surprise as we never met before. I am t Mr. Keba Ba he Chief representative of the African Development Bank for Central and West African Division, I Hoped that you will not expose or betray this trust and confident that I am about to repose on you for the mutual benefit of our both families and for the less privilege, I need your urgent assistance in transferring the sum of Two Million state dollars ($10,000.000) Immediately to your account. For comprehensive Detail, Go through the following website. (http://www.afdb.org/en/news-and-events/article/burkina-faso-receives-us-50-66-million-grant-for-drainage-of-ouagadougou-districts-12353/)
-        As I am talking to you right the contractor died last week in Mali, The $10m was credited in his contract CBI Bank account before the event, I am the head of the project that is going on right now, Please I would like you to keep this proposal as a top secret and delete it if you are not interested. Upon receipt of your reply, I will send you the application form you will fill and send to the bank for transfer of the fund into your bank account and also note that you will have 40% of the above mentioned amount if you agree to help me execute this business. And also 10% had been mapped out for you for the expense you will make in this transaction and 50% is for me.  I want us to complete the transaction within a week, very urgent nobody is aware if he has cash the money before his death, except me that knew and have all the information, I need your information’s so that I will send you the application form.
+This patch is based on tag v3.12, please give comments on it, all
+kinds of comments are welcome.
 
-Now my questions are:-
-1. Can you handle this project? ……………
-2. Can I give you this trust? ………………
+Signed-off-by: Warner Wang <warner.wang@hp.com>
+---
+ include/linux/irqdesc.h |    1 +
+ kernel/irq/irqdesc.c    |    1 +
+ kernel/irq/manage.c     |    1 +
+ kernel/irq/spurious.c   |   14 +++++++++++---
+ 4 files changed, 14 insertions(+), 3 deletions(-)
 
-Waiting for your urgent response so that we will proceed immediately, for confidentiality my contact info is on the bank website (www.afdb.org) What I need is confident and honest, I am very serious, I wait for your respond and call me as soon as possible.
-
-Best Regards, 
-Mr. Keba Ba
-+226 64558872
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 56fb646..1b777e3 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -52,6 +52,7 @@ struct irq_desc {
+ 	unsigned int		irq_count;	/* For detecting broken IRQs */
+ 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+ 	unsigned int		irqs_unhandled;
++	unsigned int		handled_in_jiff;
+ 	raw_spinlock_t		lock;
+ 	struct cpumask		*percpu_enabled;
+ #ifdef CONFIG_SMP
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..0fcbb55 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -86,6 +86,7 @@ static void desc_set_defaults(unsigned int irq, struct irq_desc *desc, int node,
+ 	desc->depth = 1;
+ 	desc->irq_count = 0;
+ 	desc->irqs_unhandled = 0;
++	desc->handled_in_jiff = 0;
+ 	desc->name = NULL;
+ 	desc->owner = owner;
+ 	for_each_possible_cpu(cpu)
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 514bcfd..31b2cb0 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1146,6 +1146,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	/* Reset broken irq detection when installing new handler */
+ 	desc->irq_count = 0;
+ 	desc->irqs_unhandled = 0;
++	desc->handled_in_jiff = 0;
+ 
+ 	/*
+ 	 * Check whether we disabled the irq via the spurious handler
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index 7b5f012..817d5a8 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -265,6 +265,7 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
+ 	return action && (action->flags & IRQF_IRQPOLL);
+ }
+ 
++static int irq_in_sec = 5000;
+ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 		    irqreturn_t action_ret)
+ {
+@@ -295,9 +296,16 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 	}
+ 
+ 	if (unlikely(try_misrouted_irq(irq, desc, action_ret))) {
+-		int ok = misrouted_irq(irq);
+-		if (action_ret == IRQ_NONE)
+-			desc->irqs_unhandled -= ok;
++		if (desc->handled_in_jiff < (irq_in_sec / HZ)) {
++			int ok = misrouted_irq(irq);
++			if (action_ret == IRQ_NONE) {
++				desc->irqs_unhandled -= ok;
++				if (time_after_eq(desc->last_unhandled, jiffies))
++					desc->handled_in_jiff++;
++				else
++					desc->handled_in_jiff = 0;
++			}
++		}
+ 	}
+ 
+ 	desc->irq_count++;
+-- 
+1.7.1
 
