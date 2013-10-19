@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3JSOm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 10:42:27 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:55978 "EHLO
-	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751144Ab3JSOjV (ORCPT
+	id S1754409Ab3JSOmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 10:42:25 -0400
+Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:43073 "EHLO
+	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751882Ab3JSOjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org,>);
 	Sat, 19 Oct 2013 10:39:21 -0400
 X-RRZE-Submit-IP: 212.255.122.85
@@ -17,9 +17,9 @@ Cc: Dominik Paulus <dominik.paulus@fau.de>,
         linux-kernel@i4.cs.fau.de, Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
         linux-kernel@vger.kernel.org, tobias.polzer@fau.de,
         Ilija Hadzic <ihadzic@research.bell-labs.com>
-Subject: [PATCHv4 01/16] staging: usbip: Add support for client authentication
-Date: Sat, 19 Oct 2013 16:39:04 +0200
-Message-Id: <1382193559-12549-2-git-send-email-dominik.paulus@fau.de>
+Subject: [PATCHv4 06/16] staging: usbip: Add proper error reporting
+Date: Sat, 19 Oct 2013 16:39:09 +0200
+Message-Id: <1382193559-12549-7-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
 References: <20130930123821.GI6192@mwanda>
@@ -28,603 +28,291 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for authenticating both client and server using
-a pre-shared passphrase using SRP (Secure Remote Password) over TLS (see
-RFC 5054) using GnuTLS. Both usbip and usbipd now accept a shared secret
-as a command line argument. Currently, the established TLS connection is
-only used to perform a secure handshake and dropped before the socket is
-passed to the kernel. The code may be extended to exchange a session key
-over TLS and pass it to the kernel to perform IPsec.
+This patch adds new error codes and features extended error reporting in
+op_common packets.
 
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/userspace/configure.ac       |  14 ++
- drivers/staging/usbip/userspace/doc/usbip.8        |   4 +
- drivers/staging/usbip/userspace/doc/usbipd.8       |   5 +
- drivers/staging/usbip/userspace/src/usbip.c        |  30 ++-
- drivers/staging/usbip/userspace/src/usbip_attach.c |   2 +-
- drivers/staging/usbip/userspace/src/usbip_list.c   |   2 +-
- .../staging/usbip/userspace/src/usbip_network.c    |  81 ++++++++
- .../staging/usbip/userspace/src/usbip_network.h    |   9 +-
- drivers/staging/usbip/userspace/src/usbipd.c       | 217 ++++++++++++++++++---
- 9 files changed, 331 insertions(+), 33 deletions(-)
+ drivers/staging/usbip/userspace/src/usbip_attach.c |  4 +-
+ drivers/staging/usbip/userspace/src/usbip_list.c   |  3 +-
+ .../staging/usbip/userspace/src/usbip_network.c    | 50 ++++++++++++++++------
+ .../staging/usbip/userspace/src/usbip_network.h    | 17 +++++++-
+ drivers/staging/usbip/userspace/src/usbipd.c       | 29 +++++++------
+ 5 files changed, 74 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
-index 0ee5d92..2208516 100644
---- a/drivers/staging/usbip/userspace/configure.ac
-+++ b/drivers/staging/usbip/userspace/configure.ac
-@@ -83,6 +83,20 @@ AC_ARG_WITH([tcp-wrappers],
- 		AC_DEFINE([HAVE_LIBWRAP], [1], [use tcp wrapper])],
- 	       [AC_MSG_RESULT([no]); LIBS="$saved_LIBS"])])
- 
-+# Checks for the GnuTLS library
-+AC_ARG_WITH([gnutls],
-+			[AS_HELP_STRING([--with-gnutls],
-+							[use the GnuTLS library for authentication])],
-+			dnl [ACTION-IF-GIVEN]
-+			[if test "$withval" = "yes"; then
-+			 PKG_CHECK_MODULES([GNUTLS], [gnutls])
-+			 AC_DEFINE([HAVE_GNUTLS], [1], [use gnutls])
-+			 CFLAGS="$CFLAGS $GNUTLS_CFLAGS"
-+			 LDFLAGS="$LDFLAGS $GNUTLS_LIBS"
-+			 fi
-+			],
-+			)
-+
- # Sets directory containing usb.ids.
- AC_ARG_WITH([usbids-dir],
- 	    [AS_HELP_STRING([--with-usbids-dir=DIR],
-diff --git a/drivers/staging/usbip/userspace/doc/usbip.8 b/drivers/staging/usbip/userspace/doc/usbip.8
-index a6097be..847aa40 100644
---- a/drivers/staging/usbip/userspace/doc/usbip.8
-+++ b/drivers/staging/usbip/userspace/doc/usbip.8
-@@ -27,6 +27,10 @@ Log to syslog.
- \fB\-\-tcp-port PORT\fR
- .IP
- Connect to PORT on remote host (used for attach and list --remote).
-+
-+\fB\-\-auth\fR
-+.IP
-+Set the password to be used for client authentication. See usbipd(8) for more information.
- .PP
- 
- .SH COMMANDS
-diff --git a/drivers/staging/usbip/userspace/doc/usbipd.8 b/drivers/staging/usbip/userspace/doc/usbipd.8
-index ac4635d..8beb95a 100644
---- a/drivers/staging/usbip/userspace/doc/usbipd.8
-+++ b/drivers/staging/usbip/userspace/doc/usbipd.8
-@@ -52,6 +52,11 @@ If no FILE specified, use /var/run/usbipd.pid
- \fB\-tPORT\fR, \fB\-\-tcp\-port PORT\fR
- .IP
- Listen on TCP/IP port PORT.
-+
-+.HP
-+\fB\-s\fR, \fB\-\-auth\fR
-+.IP
-+Sets the password to be used for client authentication. If -a is used, the server will only accept connections from authenticated clients. Note: USB traffic will still be unencrypted, this currently only serves for authentication.
- .PP
- 
- \fB\-h\fR, \fB\-\-help\fR
-diff --git a/drivers/staging/usbip/userspace/src/usbip.c b/drivers/staging/usbip/userspace/src/usbip.c
-index 04a5f20..8a5de83 100644
---- a/drivers/staging/usbip/userspace/src/usbip.c
-+++ b/drivers/staging/usbip/userspace/src/usbip.c
-@@ -25,6 +25,12 @@
- #include <getopt.h>
- #include <syslog.h>
- 
-+#include "../config.h"
-+
-+#ifdef HAVE_GNUTLS
-+#include <gnutls/gnutls.h>
-+#endif
-+
- #include "usbip_common.h"
- #include "usbip_network.h"
- #include "usbip.h"
-@@ -35,8 +41,12 @@ static int usbip_version(int argc, char *argv[]);
- static const char usbip_version_string[] = PACKAGE_STRING;
- 
- static const char usbip_usage_string[] =
--	"usbip [--debug] [--log] [--tcp-port PORT] [version]\n"
--	"             [help] <command> <args>\n";
-+	"usbip "
-+#ifdef HAVE_GNUTLS
-+	"[--auth PASSWORD] "
-+#endif
-+	"[--debug] [--log] [--tcp-port PORT]\n"
-+	"             [version] [help] <command> <args>\n";
- 
- static void usbip_usage(void)
- {
-@@ -142,6 +152,7 @@ int main(int argc, char *argv[])
- 		{ "debug",    no_argument,       NULL, 'd' },
- 		{ "log",      no_argument,       NULL, 'l' },
- 		{ "tcp-port", required_argument, NULL, 't' },
-+		{ "auth",     required_argument, NULL, 's' },
- 		{ NULL,       0,                 NULL,  0  }
- 	};
- 
-@@ -152,12 +163,25 @@ int main(int argc, char *argv[])
- 	usbip_use_stderr = 1;
- 	opterr = 0;
- 	for (;;) {
--		opt = getopt_long(argc, argv, "+dlt:", opts, NULL);
-+		opt = getopt_long(argc, argv, "+dls:t:", opts, NULL);
- 
- 		if (opt == -1)
- 			break;
- 
- 		switch (opt) {
-+		case 's':
-+#ifdef HAVE_GNUTLS
-+			usbip_srp_password = optarg;
-+			rc = gnutls_global_init();
-+			if (rc < 0) {
-+				err("Unable to initialize GnuTLS library: %s",
-+					gnutls_strerror(rc));
-+				return EXIT_FAILURE;
-+			}
-+#else
-+			err("usbip has been compiled without GnuTLS support");
-+#endif
-+			break;
- 		case 'd':
- 			usbip_use_debug = 1;
- 			break;
 diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
-index 0858411..2363e56 100644
+index 2363e56..2a3f313 100644
 --- a/drivers/staging/usbip/userspace/src/usbip_attach.c
 +++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
-@@ -175,7 +175,7 @@ static int attach_device(char *host, char *busid)
- 	int rc;
- 	int rhport;
- 
--	sockfd = usbip_net_tcp_connect(host, usbip_port_string);
-+	sockfd = usbip_net_connect(host);
- 	if (sockfd < 0) {
- 		err("tcp connect");
- 		return -1;
-diff --git a/drivers/staging/usbip/userspace/src/usbip_list.c b/drivers/staging/usbip/userspace/src/usbip_list.c
-index 237e099..e4fa5b8 100644
---- a/drivers/staging/usbip/userspace/src/usbip_list.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_list.c
-@@ -131,7 +131,7 @@ static int list_exported_devices(char *host)
- 	int rc;
- 	int sockfd;
- 
--	sockfd = usbip_net_tcp_connect(host, usbip_port_string);
-+	sockfd = usbip_net_connect(host);
- 	if (sockfd < 0) {
- 		err("could not connect to %s:%s: %s", host,
- 		    usbip_port_string, gai_strerror(sockfd));
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
-index b4c37e7..9425cb6 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.c
-@@ -29,11 +29,19 @@
- #include <tcpd.h>
- #endif
- 
-+#include "../config.h"
-+#ifdef HAVE_GNUTLS
-+#include <gnutls/gnutls.h>
-+#endif
-+
- #include "usbip_common.h"
- #include "usbip_network.h"
- 
- int usbip_port = 3240;
- char *usbip_port_string = "3240";
-+#ifdef HAVE_GNUTLS
-+char *usbip_srp_password;
-+#endif
- 
- void usbip_setup_port_number(char *arg)
- {
-@@ -301,3 +309,76 @@ int usbip_net_tcp_connect(char *hostname, char *service)
- 
- 	return sockfd;
- }
-+
-+#ifdef HAVE_GNUTLS
-+int usbip_net_srp_handshake(int sockfd)
-+{
-+	int ret;
-+	gnutls_session_t session;
-+	gnutls_srp_client_credentials_t srp_cred;
-+
-+	ret = gnutls_srp_allocate_client_credentials(&srp_cred);
-+	if (ret < 0)
-+		return ret;
-+
-+	gnutls_srp_set_client_credentials(srp_cred, "dummyuser",
-+		usbip_srp_password);
-+
-+	ret = gnutls_init(&session, GNUTLS_CLIENT);
-+	if (ret < 0) {
-+		gnutls_srp_free_client_credentials(srp_cred);
-+		return ret;
-+	}
-+
-+	gnutls_priority_set_direct(session, "NORMAL:+SRP", NULL);
-+
-+	gnutls_credentials_set(session, GNUTLS_CRD_SRP, srp_cred);
-+	gnutls_transport_set_int (session, sockfd);
-+
-+	do {
-+		ret = gnutls_handshake(session);
-+	} while (ret < 0 && !gnutls_error_is_fatal(ret));
-+
-+	gnutls_bye(session, GNUTLS_SHUT_RDWR);
-+
-+	gnutls_deinit(session);
-+	gnutls_srp_free_client_credentials(srp_cred);
-+
-+	return ret;
-+}
-+#endif
-+
-+/*
-+ * Connect to the server. Performs the TCP connection attempt
-+ * and - if necessary - the TLS handshake used for authentication.
-+ */
-+int usbip_net_connect(char *hostname)
-+{
-+	int sockfd;
-+
-+	sockfd = usbip_net_tcp_connect(hostname, usbip_port_string);
-+	if (sockfd < 0)
-+		return sockfd;
-+
-+#ifdef HAVE_GNUTLS
-+	if (usbip_srp_password) {
-+		int rc;
-+
-+		rc = usbip_net_send_op_common(sockfd, OP_REQ_STARTTLS, 0);
-+		if (rc < 0) {
-+			err("usbip_net_send_op_common failed");
-+			return EAI_SYSTEM;
-+		}
-+
-+		rc = usbip_net_srp_handshake(sockfd);
-+		if (rc < 0) {
-+			err("Unable to perform TLS handshake (wrong password?): %s",
-+				gnutls_strerror(rc));
-+			close(sockfd);
-+			return EAI_SYSTEM;
-+		}
-+	}
-+#endif
-+
-+	return sockfd;
-+}
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
-index f19ae19..758656b 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.h
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.h
-@@ -16,6 +16,7 @@
- 
- extern int usbip_port;
- extern char *usbip_port_string;
-+extern char *usbip_srp_password;
- void usbip_setup_port_number(char *arg);
- 
- /* ---------------------------------------------------------------------- */
-@@ -168,6 +169,12 @@ struct op_devlist_reply_extra {
- 	usbip_net_pack_uint32_t(pack, &(reply)->ndev);\
- } while (0)
- 
-+/* ---------------------------------------------------------------------- */
-+/* Initiate encrypted connection. */
-+#define OP_STARTTLS 0x06
-+#define OP_REQ_STARTTLS   (OP_REQUEST | OP_STARTTLS)
-+#define OP_REP_STARTTLS   (OP_REPLY   | OP_STARTTLS)
-+
- void usbip_net_pack_uint32_t(int pack, uint32_t *num);
- void usbip_net_pack_uint16_t(int pack, uint16_t *num);
- void usbip_net_pack_usb_device(int pack, struct usbip_usb_device *udev);
-@@ -181,6 +188,6 @@ int usbip_net_set_reuseaddr(int sockfd);
- int usbip_net_set_nodelay(int sockfd);
- int usbip_net_set_keepalive(int sockfd);
- int usbip_net_set_v6only(int sockfd);
--int usbip_net_tcp_connect(char *hostname, char *port);
-+int usbip_net_connect(char *hostname);
- 
- #endif /* __USBIP_NETWORK_H */
-diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
-index 7980f8b..8db2f27 100644
---- a/drivers/staging/usbip/userspace/src/usbipd.c
-+++ b/drivers/staging/usbip/userspace/src/usbipd.c
-@@ -32,6 +32,11 @@
- #include <sys/socket.h>
- #include <netinet/in.h>
- 
-+#ifdef HAVE_GNUTLS
-+#include <gnutls/gnutls.h>
-+#include <gnutls/crypto.h>
-+#endif
-+
- #ifdef HAVE_LIBWRAP
- #include <tcpd.h>
- #endif
-@@ -63,6 +68,11 @@ static const char usbipd_help_string[] =
- 	"	-6, --ipv6\n"
- 	"		Bind to IPv6. Default is both.\n"
- 	"\n"
-+#ifdef HAVE_GNUTLS
-+	"	-sPASSWORD, --auth PASSWORD\n"
-+	"		Set PASSWORD as key used for authentication.\n"
-+	"\n"
-+#endif
- 	"	-D, --daemon\n"
- 	"		Run as a daemon process.\n"
- 	"\n"
-@@ -82,6 +92,78 @@ static const char usbipd_help_string[] =
- 	"	-v, --version\n"
- 	"		Show version.\n";
- 
-+static int need_auth;
-+#ifdef HAVE_GNUTLS
-+static gnutls_datum_t srp_salt, srp_verifier;
-+static gnutls_srp_server_credentials_t srp_cred;
-+
-+#define SRP_GROUP gnutls_srp_2048_group_generator
-+#define SRP_PRIME gnutls_srp_2048_group_prime
-+
-+static int net_srp_callback(gnutls_session_t sess, const char *username,
-+	gnutls_datum_t *nsalt, gnutls_datum_t *nverifier, gnutls_datum_t *g,
-+	gnutls_datum_t *n)
-+{
-+	/*
-+	 * GnuTLS expects us to allocate all data returned from callbacks
-+	 * using gnutls_malloc(), thus, we have to create a fresh copy of
-+	 * our static credentials for every connection.
-+	 */
-+	nsalt->data = gnutls_malloc(srp_salt.size);
-+	nverifier->data = gnutls_malloc(srp_verifier.size);
-+	if (nsalt->data == NULL || nverifier->data == NULL) {
-+		gnutls_free(nsalt->data);
-+		gnutls_free(nverifier->data);
-+		return -1;
-+	}
-+	nsalt->size = srp_salt.size;
-+	nverifier->size = srp_verifier.size;
-+	memcpy(nverifier->data, srp_verifier.data, srp_verifier.size);
-+	memcpy(nsalt->data, srp_salt.data, srp_salt.size);
-+
-+	*g = SRP_GROUP;
-+	*n = SRP_PRIME;
-+
-+	/* We only have a single session, thus, ignore it */
-+	(void) sess;
-+
-+	if (strcmp(username, "dummyuser"))
-+		/* User invalid, stored dummy data in g and n. */
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int net_srp_server_handshake(int connfd)
-+{
-+	int ret;
-+	gnutls_session_t session;
-+
-+	if (gnutls_init(&session, GNUTLS_SERVER) != 0)
-+		return -1;
-+	gnutls_priority_set_direct(session, "NORMAL:-KX-ALL:+SRP", NULL);
-+	if (gnutls_credentials_set(session, GNUTLS_CRD_SRP, srp_cred) != 0)
-+		return -1;
-+
-+	gnutls_transport_set_int(session, connfd);
-+
-+	do {
-+		ret = gnutls_handshake(session);
-+	} while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
-+
-+	if (ret < 0)
-+		err("GnuTLS handshake failed (%s)", gnutls_strerror(ret));
-+	else
-+		info("GnuTLS handshake completed");
-+
-+	if (gnutls_bye(session, GNUTLS_SHUT_RDWR) != 0)
-+		err("Unable to shutdown TLS connection.");
-+	gnutls_deinit(session);
-+
-+	return ret;
-+}
-+#endif
-+
- static void usbipd_help(void)
- {
- 	printf("%s\n", usbipd_help_string);
-@@ -238,14 +320,7 @@ static int recv_request_devlist(int connfd)
- 
- static int recv_pdu(int connfd)
- {
--	uint16_t code = OP_UNSPEC;
--	int ret;
--
--	ret = usbip_net_recv_op_common(connfd, &code);
--	if (ret < 0) {
--		dbg("could not receive opcode: %#0x", code);
--		return -1;
--	}
-+	int auth = !need_auth, cont = 1, ret;
- 
- 	ret = usbip_host_refresh_device_list();
- 	if (ret < 0) {
-@@ -253,25 +328,64 @@ static int recv_pdu(int connfd)
+@@ -147,7 +147,7 @@ static int query_import_device(int sockfd, char *busid)
+ 	/* receive a reply */
+ 	rc = usbip_net_recv_op_common(sockfd, &code);
+ 	if (rc < 0) {
+-		err("recv op_common");
++		err("recv op_common: %s", usbip_net_strerror(rc));
  		return -1;
  	}
  
--	info("received request: %#0x(%d)", code, connfd);
--	switch (code) {
--	case OP_REQ_DEVLIST:
--		ret = recv_request_devlist(connfd);
--		break;
--	case OP_REQ_IMPORT:
--		ret = recv_request_import(connfd);
--		break;
--	case OP_REQ_DEVINFO:
--	case OP_REQ_CRYPKEY:
--	default:
--		err("received an unknown opcode: %#0x", code);
--		ret = -1;
+@@ -177,7 +177,7 @@ static int attach_device(char *host, char *busid)
+ 
+ 	sockfd = usbip_net_connect(host);
+ 	if (sockfd < 0) {
+-		err("tcp connect");
++		err("connection attempt failed");
+ 		return -1;
+ 	}
+ 
+diff --git a/drivers/staging/usbip/userspace/src/usbip_list.c b/drivers/staging/usbip/userspace/src/usbip_list.c
+index e4fa5b8..ff7acf8 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_list.c
++++ b/drivers/staging/usbip/userspace/src/usbip_list.c
+@@ -64,7 +64,8 @@ static int get_exported_devices(char *host, int sockfd)
+ 
+ 	rc = usbip_net_recv_op_common(sockfd, &code);
+ 	if (rc < 0) {
+-		dbg("usbip_net_recv_op_common failed");
++		err("usbip_net_recv_op_common failed: %s",
++			usbip_net_strerror(rc));
+ 		return -1;
+ 	}
+ 
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
+index 9425cb6..e573cb2 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.c
++++ b/drivers/staging/usbip/userspace/src/usbip_network.c
+@@ -181,7 +181,7 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code)
+ 	rc = usbip_net_recv(sockfd, &op_common, sizeof(op_common));
+ 	if (rc < 0) {
+ 		dbg("usbip_net_recv failed: %d", rc);
+-		goto err;
++		return -ERR_SYSERR;
+ 	}
+ 
+ 	PACK_OP_COMMON(0, &op_common);
+@@ -189,30 +189,48 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code)
+ 	if (op_common.version != USBIP_VERSION) {
+ 		dbg("version mismatch: %d %d", op_common.version,
+ 		    USBIP_VERSION);
+-		goto err;
++		return -ERR_MISMATCH;
+ 	}
+ 
+ 	switch (*code) {
+ 	case OP_UNSPEC:
+ 		break;
+ 	default:
+-		if (op_common.code != *code) {
++		/*
++		 * Only accept expected opcode. Exception: OP_REPLY
++		 * flag set may be sent as a reply to all requests,
++		 * if only used for status reporting.
++		 */
++		if (op_common.code != *code && op_common.code != OP_REPLY) {
+ 			dbg("unexpected pdu %#0x for %#0x", op_common.code,
+ 			    *code);
+-			goto err;
++			return -ERR_UNEXPECTED;
+ 		}
+ 	}
+ 
+-	if (op_common.status != ST_OK) {
+-		dbg("request failed at peer: %d", op_common.status);
+-		goto err;
 -	}
-+	/*
-+	 * Process opcodes. We might receive more than one, as the
-+	 * client might send STARTTLS first
-+	 */
-+	while (cont) {
-+		uint16_t code = OP_UNSPEC;
+-
+ 	*code = op_common.code;
  
--	if (ret == 0)
--		info("request %#0x(%d): complete", code, connfd);
--	else
--		info("request %#0x(%d): failed", code, connfd);
-+		ret = usbip_net_recv_op_common(connfd, &code);
-+		if (ret < 0) {
-+			dbg("could not receive opcode: %#0x", code);
-+			return -1;
-+		}
-+
-+		info("received request: %#0x(%d)", code, connfd);
-+
-+		/* We require an authenticated encryption */
-+		if (!auth && code != OP_REQ_STARTTLS) {
-+			usbip_net_send_op_common(connfd, OP_REPLY, ST_NA);
-+			return -1;
-+		}
-+
-+		switch (code) {
-+#ifdef HAVE_GNUTLS
-+		case OP_REQ_STARTTLS:
-+			if (!need_auth) {
-+				ret = -1;
-+				err("Unexpected TLS handshake attempt (client "
-+					"uses password, server doesn't)");
-+			} else {
-+				ret = net_srp_server_handshake(connfd);
-+				if (ret != 0)
-+					err("TLS handshake failed");
-+				auth = 1;
-+			}
-+			break;
-+#endif
-+		case OP_REQ_DEVLIST:
-+			ret = recv_request_devlist(connfd);
-+			cont = 0;
-+			break;
-+		case OP_REQ_IMPORT:
-+			ret = recv_request_import(connfd);
-+			cont = 0;
-+			break;
-+		case OP_REQ_DEVINFO:
-+		case OP_REQ_CRYPKEY:
-+		default:
-+			err("received an unknown opcode: %#0x", code);
-+			ret = -1;
-+		}
-+
-+		if (ret == 0)
-+			info("request %#0x(%d): complete", code, connfd);
-+		else {
-+			info("request %#0x(%d): failed", code, connfd);
-+			break;
-+		}
-+	}
- 
- 	return ret;
- }
-@@ -577,6 +691,37 @@ static int do_standalone_mode(int daemonize, int ipv4, int ipv6)
- 	return 0;
- }
- 
-+#ifdef HAVE_GNUTLS
-+static int usbip_init_gnutls(void)
-+{
-+	int ret;
-+
-+	gnutls_global_init();
-+
-+	srp_salt.data = gnutls_malloc(16);
-+	if (!srp_salt.data)
-+		return GNUTLS_E_MEMORY_ERROR;
-+
-+	ret = gnutls_rnd(GNUTLS_RND_NONCE, srp_salt.data, 16);
-+	if (ret < 0)
-+		return ret;
-+	srp_salt.size = 16;
-+
-+	ret = gnutls_srp_allocate_server_credentials(&srp_cred);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = gnutls_srp_verifier("dummyuser", optarg, &srp_salt, &SRP_GROUP,
-+		&SRP_PRIME, &srp_verifier);
-+	if (ret < 0)
-+		return ret;
-+
-+	gnutls_srp_set_server_credentials_function(srp_cred, net_srp_callback);
-+
-+	return GNUTLS_E_SUCCESS;
+-	return 0;
+-err:
+-	return -1;
++	return -op_common.status;
 +}
-+#endif
 +
- int main(int argc, char *argv[])
- {
- 	static const struct option longopts[] = {
-@@ -589,6 +734,7 @@ int main(int argc, char *argv[])
- 		{ "tcp-port", required_argument, NULL, 't' },
- 		{ "help",     no_argument,       NULL, 'h' },
- 		{ "version",  no_argument,       NULL, 'v' },
-+		{ "auth",     required_argument, NULL, 's' },
- 		{ NULL,	      0,                 NULL,  0  }
- 	};
++const char *usbip_net_strerror(int status)
++{
++	static const char *const errs[] = {
++		/* ERR_OK */ "Success",
++		/* ERR_NA */ "Command failed",
++		/* ERR_MISMATCH */ "Protocol version mismatch",
++		/* ERR_SYSERR */ "System error",
++		/* ERR_UNEXPECTED */ "Unexpected opcode received",
++		/* ERR_AUTHREQ */ "Server requires authentication",
++		/* ERR_PERM */ "Permission denied",
++		/* ERR_NOTFOUND */ "Requested device not found",
++		/* ERR_NOAUTH */ "Server doesn't support authentication"
++	};
++	if (status < 0)
++		status = -status;
++	if (status >= (int) (sizeof(errs) / sizeof(*errs)))
++		return "Invalid";
++	return errs[status];
+ }
  
-@@ -601,6 +747,9 @@ int main(int argc, char *argv[])
- 	int daemonize = 0;
- 	int ipv4 = 0, ipv6 = 0;
- 	int opt, rc = -1;
-+#ifdef HAVE_GNUTLS
-+	int ret;
-+#endif
- 	pid_file = NULL;
+ int usbip_net_set_reuseaddr(int sockfd)
+@@ -363,6 +381,7 @@ int usbip_net_connect(char *hostname)
+ #ifdef HAVE_GNUTLS
+ 	if (usbip_srp_password) {
+ 		int rc;
++		uint16_t code = OP_REP_STARTTLS;
  
- 	usbip_use_stderr = 1;
-@@ -611,7 +760,7 @@ int main(int argc, char *argv[])
+ 		rc = usbip_net_send_op_common(sockfd, OP_REQ_STARTTLS, 0);
+ 		if (rc < 0) {
+@@ -370,6 +389,13 @@ int usbip_net_connect(char *hostname)
+ 			return EAI_SYSTEM;
+ 		}
  
- 	cmd = cmd_standalone_mode;
- 	for (;;) {
--		opt = getopt_long(argc, argv, "46DdP::t:hv", longopts, NULL);
-+		opt = getopt_long(argc, argv, "46s:DdP::t:hv", longopts, NULL);
++		rc = usbip_net_recv_op_common(sockfd, &code);
++		if (rc < 0) {
++			err("STARTTLS attempt failed: %s",
++				usbip_net_strerror(rc));
++			return -1;
++		}
++
+ 		rc = usbip_net_srp_handshake(sockfd);
+ 		if (rc < 0) {
+ 			err("Unable to perform TLS handshake (wrong password?): %s",
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
+index 758656b..d3c1b71 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.h
++++ b/drivers/staging/usbip/userspace/src/usbip_network.h
+@@ -29,8 +29,15 @@ struct op_common {
+ 	uint16_t code;
  
- 		if (opt == -1)
- 			break;
-@@ -623,6 +772,20 @@ int main(int argc, char *argv[])
- 		case '6':
- 			ipv6 = 1;
- 			break;
-+		case 's':
-+#ifdef HAVE_GNUTLS
-+			need_auth = 1;
-+			ret = usbip_init_gnutls();
-+			if (ret < 0) {
-+				err("Unable to initialize GnuTLS: %s",
-+					gnutls_strerror(ret));
-+				return EXIT_FAILURE;
-+			}
-+			break;
-+#else
-+			err("usbipd has been compiled without GnuTLS support");
-+			break;
-+#endif
- 		case 'D':
- 			daemonize = 1;
- 			break;
+ 	/* add more error code */
+-#define ST_OK	0x00
+-#define ST_NA	0x01
++#define ERR_OK         0x00
++#define ERR_NA         0x01
++#define ERR_MISMATCH   0x02
++#define ERR_SYSERR     0x03
++#define ERR_UNEXPECTED 0x04
++#define ERR_AUTHREQ    0x05
++#define ERR_PERM       0x06
++#define ERR_NOTFOUND   0x07
++#define ERR_NOAUTH     0x08
+ 	uint32_t status; /* op_code status (for reply) */
+ 
+ } __attribute__((packed));
+@@ -179,10 +186,16 @@ void usbip_net_pack_uint32_t(int pack, uint32_t *num);
+ void usbip_net_pack_uint16_t(int pack, uint16_t *num);
+ void usbip_net_pack_usb_device(int pack, struct usbip_usb_device *udev);
+ void usbip_net_pack_usb_interface(int pack, struct usbip_usb_interface *uinf);
++const char *usbip_net_strerror(int status);
+ 
+ ssize_t usbip_net_recv(int sockfd, void *buff, size_t bufflen);
+ ssize_t usbip_net_send(int sockfd, void *buff, size_t bufflen);
+ int usbip_net_send_op_common(int sockfd, uint32_t code, uint32_t status);
++/*
++ * Receive opcode.
++ * Returns: 0 on success, negative error code (that may be passed to
++ * usbip_net_strerror) on failure.
++ */
+ int usbip_net_recv_op_common(int sockfd, uint16_t *code);
+ int usbip_net_set_reuseaddr(int sockfd);
+ int usbip_net_set_nodelay(int sockfd);
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index bc1fd19..ae572c6 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -234,7 +234,7 @@ static int recv_request_import(int sockfd)
+ 	struct sysfs_attribute *usbip_acl;
+ 	char ip_attr_path[SYSFS_PATH_MAX];
+ 	int found = 0;
+-	int error = 0;
++	int error = ERR_OK;
+ 	int rc;
+ 
+ 	memset(&req, 0, sizeof(req));
+@@ -263,7 +263,7 @@ static int recv_request_import(int sockfd)
+ 		/* export device needs a TCP/IP socket descriptor */
+ 		rc = usbip_host_export_device(edev, sockfd);
+ 		if (rc < 0)
+-			error = 1;
++			error = ERR_SYSERR;
+ 
+ 		/* check for allowed IPs */
+ 		snprintf(ip_attr_path, sizeof(ip_attr_path), "%s/%s:%d.%d/%s",
+@@ -275,11 +275,11 @@ static int recv_request_import(int sockfd)
+ 			rc = sysfs_read_attribute(usbip_acl);
+ 			if (rc < 0) {
+ 				err("Unable to open sysfs");
+-				error = 1;
++				error = ERR_SYSERR;
+ 			} else if (check_allowed(usbip_acl->value, sockfd) != 1) {
+ 				info("Access denied to device %s",
+ 					edev->udev.busid);
+-				error = 1;
++				error = ERR_PERM;
+ 			}
+ 			sysfs_close_attribute(usbip_acl);
+ 		} else {
+@@ -287,17 +287,16 @@ static int recv_request_import(int sockfd)
+ 		}
+ 	} else {
+ 		info("requested device not found: %s", req.busid);
+-		error = 1;
++		error = ERR_NOTFOUND;
+ 	}
+ 
+-	rc = usbip_net_send_op_common(sockfd, OP_REP_IMPORT,
+-				      (!error ? ST_OK : ST_NA));
++	rc = usbip_net_send_op_common(sockfd, OP_REP_IMPORT, error);
+ 	if (rc < 0) {
+ 		dbg("usbip_net_send_op_common failed: %#0x", OP_REP_IMPORT);
+ 		return -1;
+ 	}
+ 
+-	if (error) {
++	if (error != 0) {
+ 		dbg("import request busid %s: failed", req.busid);
+ 		return -1;
+ 	}
+@@ -333,7 +332,7 @@ static int send_reply_devlist(int connfd)
+ 	}
+ 	info("exportable devices: %d", reply.ndev);
+ 
+-	rc = usbip_net_send_op_common(connfd, OP_REP_DEVLIST, ST_OK);
++	rc = usbip_net_send_op_common(connfd, OP_REP_DEVLIST, ERR_OK);
+ 	if (rc < 0) {
+ 		dbg("usbip_net_send_op_common failed: %#0x", OP_REP_DEVLIST);
+ 		return -1;
+@@ -416,7 +415,8 @@ static int recv_pdu(int connfd)
+ 
+ 		ret = usbip_net_recv_op_common(connfd, &code);
+ 		if (ret < 0) {
+-			dbg("could not receive opcode: %#0x", code);
++			dbg("could not receive opcode: %#0x: %s", code,
++				usbip_net_strerror(ret));
+ 			return -1;
+ 		}
+ 
+@@ -424,7 +424,8 @@ static int recv_pdu(int connfd)
+ 
+ 		/* We require an authenticated encryption */
+ 		if (!auth && code != OP_REQ_STARTTLS) {
+-			usbip_net_send_op_common(connfd, OP_REPLY, ST_NA);
++			info("Unauthenticated connection attempt");
++			usbip_net_send_op_common(connfd, OP_REPLY, ERR_AUTHREQ);
+ 			return -1;
+ 		}
+ 
+@@ -432,10 +433,14 @@ static int recv_pdu(int connfd)
+ #ifdef HAVE_GNUTLS
+ 		case OP_REQ_STARTTLS:
+ 			if (!need_auth) {
+-				ret = -1;
++				usbip_net_send_op_common(connfd, OP_REPLY,
++					ERR_NOAUTH);
+ 				err("Unexpected TLS handshake attempt (client "
+ 					"uses password, server doesn't)");
++				ret = -1;
+ 			} else {
++				usbip_net_send_op_common(connfd, OP_REPLY,
++					ERR_OK);
+ 				ret = net_srp_server_handshake(connfd);
+ 				if (ret != 0)
+ 					err("TLS handshake failed");
 -- 
 1.8.4.1
 
