@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3JSCaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 22:30:12 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:40669 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab3JSCaK (ORCPT
+	id S1755373Ab3JSDN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 23:13:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2586 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752791Ab3JSDN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 22:30:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAANYUdCUg4GM5YX8KkokgqBGaUJjrtcHrkWaQEyhxUcivYnqMQ@mail.gmail.com>
-References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com>
-	<CAMP44s1_2VHf+FWkuQxLyYvhSRwnUwhDQTxi5YrOt-ON1OCNTQ@mail.gmail.com>
-	<CAANYUdCUg4GM5YX8KkokgqBGaUJjrtcHrkWaQEyhxUcivYnqMQ@mail.gmail.com>
-Date: Fri, 18 Oct 2013 21:30:08 -0500
-Message-ID: <CAMP44s3WowFAGMGDwEGGC6CiOsUpdwi7EP9=ZSMi6uv3edTpZA@mail.gmail.com>
-Subject: Re: [PATCH] acpi: update win8 OSI blacklist
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Stefan Hellermann <stefan@the2masters.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Oct 2013 23:13:56 -0400
+Date: Fri, 18 Oct 2013 23:13:51 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: int3 doing rcu_read_lock()
+Message-ID: <20131018231351.28c2036d@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 5:43 AM, Stefan Hellermann
-<stefan@the2masters.de> wrote:
-> 2013/10/3 Felipe Contreras <felipe.contreras@gmail.com>
->>
->> On Thu, Oct 3, 2013 at 12:13 PM, Felipe Contreras
->> <felipe.contreras@gmail.com> wrote:
->> > More people have reported they need this for their machines to work
->> > correctly.
->> >
->> > https://bugzilla.kernel.org/show_bug.cgi?id=60682
->>
->> Reported-by: Stefan Hellermann <bugzilla.kernel.org@the2masters.de>
->
->
-> That's not entirely correct! I reported bios version 2.52 is affected, but
-> 2.54 is fixed. I think we should match all Lenovo 3259*, but only bios
-> version < 2.54
+Hey Paul,
 
-As far as I know there's no way to do a match like that. So we have to
-choose, either we apply the blacklist for all, or for none. Since
-removing the win8 OSI doesn't cause any negative effects in 2.54, I
-say we would do the former.
+I hit this in my tests:
 
--- 
-Felipe Contreras
+[ 1597.688015] ===============================
+[ 1597.688015] [ INFO: suspicious RCU usage. ]
+[ 1597.688015] 3.12.0-rc4-test+ #48 Not tainted
+[ 1597.688015] -------------------------------
+[ 1597.688015] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:775 rcu_read_lock() used illegally while idle!
+[ 1597.688015] 
+[ 1597.688015] other info that might help us debug this:
+[ 1597.688015] 
+[ 1597.688015] 
+[ 1597.688015] RCU used illegally from idle CPU!
+[ 1597.688015] rcu_scheduler_active = 1, debug_locks = 0
+[ 1597.688015] RCU used illegally from extended quiescent state!
+[ 1597.688015] 1 lock held by swapper/0/0:
+[ 1597.688015]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff810689ab>] rcu_lock_acquire+0x0/0x29
+[ 1597.688015] 
+[ 1597.688015] stack backtrace:
+[ 1597.688015] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-rc4-test+ #48
+[ 1597.688015] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1597.688015]  0000000000000001 ffff88007a609e78 ffffffff8151125f ffffffff81a44f38
+[ 1597.688015]  ffffffff81a10490 ffff88007a609ea8 ffffffff8109abbe ffff88007a609f08
+[ 1597.688015]  ffffffff81a407d0 0000000000000002 00000000ffffffff ffff88007a609ee8
+[ 1597.688015] Call Trace:
+[ 1597.688015]  <#DB>  [<ffffffff8151125f>] dump_stack+0x52/0x8b
+[ 1597.688015]  [<ffffffff8109abbe>] lockdep_rcu_suspicious+0x109/0x112
+[ 1597.688015]  [<ffffffff81519596>] __atomic_notifier_call_chain+0x70/0xee
+[ 1597.688015]  [<ffffffff81519628>] atomic_notifier_call_chain+0x14/0x16
+[ 1597.688015]  [<ffffffff81519658>] notify_die+0x2e/0x30
+[ 1597.688015]  [<ffffffff81516e60>] do_int3+0x4f/0x9c
+[ 1597.688015]  [<ffffffff815166c4>] int3+0x34/0x50
+[ 1597.688015]  [<ffffffff8109a221>] ? trace_hardirqs_off_caller+0x3f/0xac
+[ 1597.688015]  [<ffffffff8151ea61>] ? do_IRQ+0x1/0xa4
+[ 1597.688015]  <<EOE>>  <IRQ>  [<ffffffff8151646f>] ? common_interrupt+0x6f/0x6f
+[ 1597.688015]  <EOI>  [<ffffffff8109dff0>] ? trace_hardirqs_on+0xd/0xf
+[ 1597.688015]  [<ffffffff8109a221>] ? trace_hardirqs_off_caller+0x3f/0xac
+[ 1597.688015]  [<ffffffff8100b60f>] ? default_idle+0x21/0x32
+[ 1597.688015]  [<ffffffff8100b60d>] ? default_idle+0x1f/0x32
+[ 1597.688015]  [<ffffffff8100bd90>] arch_cpu_idle+0x18/0x22
+[ 1597.688015]  [<ffffffff8108a28b>] cpu_startup_entry+0x10b/0x16c
+[ 1597.688015]  [<ffffffff81509876>] rest_init+0x13a/0x141
+[ 1597.688015]  [<ffffffff8150973c>] ? csum_partial_copy_generic+0x16c/0x16c
+[ 1597.688015]  [<ffffffff81cc4d91>] start_kernel+0x41c/0x429
+[ 1597.688015]  [<ffffffff81cc46e9>] ? repair_env_string+0x56/0x56
+[ 1597.688015]  [<ffffffff81cc448d>] x86_64_start_reservations+0x2a/0x2c
+[ 1597.688015]  [<ffffffff81cc457a>] x86_64_start_kernel+0xeb/0xf2
+
+When function tracing is being enabled, to avoid stop machine we add a
+break point to all functions that are about to be traced, convert them,
+and then remove them. ftrace adds a breakpoint handler to be called by
+int3 that simply skips the code.
+
+The problem is that the do_int3 calls notify_die which does the notify
+handler which does a rcu_read_lock().
+
+The problem is if do_IRQ gets called during this transition (as it was
+above) from idle. The breakpoint is hit at the beginning of do_IRQ()
+before it gets to call irq_enter(), which means rcu_irq_enter() isn't
+called either.
+
+I wonder if we should have a rcu_bp_enter(), that basically does what
+rcu_irq_enter() does, but it would not be traced.
+
+Thinking about this more, it seems that because breakpoints are used
+everywhere function tracing can be used, we may need to fix the
+breakpoint code not to call rcu_read_lock() as it can be just as
+dangerous to have as function tracing. We may need to have a different
+kind of notifier that breakpoints use :-/
+
+Something to talk about in Edinburgh ;-)
+
+-- Steve
