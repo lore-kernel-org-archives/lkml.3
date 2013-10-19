@@ -1,64 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3JSBFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Oct 2013 21:05:54 -0400
-Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:47467 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751213Ab3JSBFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Oct 2013 21:05:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:3870:3871:4321:4605:5007:6117:7514:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12555:12740:13018:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: horn34_6d387305c822a
-X-Filterd-Recvd-Size: 2132
-Message-ID: <1382144748.2041.16.camel@joe-AO722>
-Subject: Re: [PATCH] rtlwifi: rtl8192se: Fix wrong assignment
-From: Joe Perches <joe@perches.com>
-To: Felipe Pena <felipensp@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 18 Oct 2013 18:05:48 -0700
-In-Reply-To: <1382143960-4594-1-git-send-email-felipensp@gmail.com>
-References: <1382143960-4594-1-git-send-email-felipensp@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754852Ab3JSBGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Oct 2013 21:06:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3214 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753387Ab3JSBGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Oct 2013 21:06:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,526,1378882800"; 
+   d="scan'208";a="419224926"
+Date: Fri, 18 Oct 2013 18:06:02 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: dan.j.williams@intel.com, vinod.koul@intel.com, dave.jiang@intel.com,
+        t.figa@samsung.com, kyungmin.park@samsung.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH v2 11/13] NTB: convert to dmaengine_unmap_data
+Message-ID: <20131019010601.GH25432@jonmason-lab>
+References: <1382117733-16720-1-git-send-email-b.zolnierkie@samsung.com>
+ <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-18 at 21:52 -0300, Felipe Pena wrote:
-> There is a typo in the struct member name on assignment when checking
-> rtlphy->current_chan_bw == HT_CHANNEL_WIDTH_20_40, the check uses pwrgroup_ht40
-> for bound limit and uses pwrgroup_ht20 when assigning instead.
+On Fri, Oct 18, 2013 at 07:35:31PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> Use the generic unmap object to unmap dma buffers.
 > 
-> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> As NTB can be compiled without DMA_ENGINE support add
+
+Seems like the stubs should be added outside of this patch.  Also, the
+comment implies that NTB could not be compiled without DMA_ENGINE
+support before, which it could be.
+
+> stub functions to <linux/dmaengine.h> for dma_set_unmap(),
+> dmaengine_get_unmap_data() and dmaengine_unmap_put().
+> 
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: Dave Jiang <dave.jiang@intel.com>
+> Cc: Jon Mason <jon.mason@intel.com>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/net/wireless/rtlwifi/rtl8192se/rf.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/ntb/ntb_transport.c | 63 +++++++++++++++++++++++++++++++++------------
+>  include/linux/dmaengine.h   | 15 +++++++++++
+>  2 files changed, 61 insertions(+), 17 deletions(-)
 > 
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> index 5061f1d..92d38ab 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
-> @@ -265,7 +265,7 @@ static void _rtl92s_get_txpower_writeval_byregulatory(struct ieee80211_hw *hw,
->  				    rtlefuse->pwrgroup_ht40
->  				    [RF90_PATH_A][chnl - 1]) {
->  					pwrdiff_limit[i] =
-> -					  rtlefuse->pwrgroup_ht20
-> +					  rtlefuse->pwrgroup_ht40
->  					  [RF90_PATH_A][chnl - 1];
->  				}
+> diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
+> index 12a9e83..fc6bbf1 100644
+> --- a/drivers/ntb/ntb_transport.c
+> +++ b/drivers/ntb/ntb_transport.c
+> @@ -1034,7 +1034,7 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+>  	struct dma_chan *chan = qp->dma_chan;
+>  	struct dma_device *device;
+>  	size_t pay_off, buff_off;
+> -	dma_addr_t src, dest;
+> +	struct dmaengine_unmap_data *unmap;
+>  	dma_cookie_t cookie;
+>  	void *buf = entry->buf;
+>  	unsigned long flags;
+> @@ -1054,27 +1054,41 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+>  	if (!is_dma_copy_aligned(device, pay_off, buff_off, len))
+>  		goto err1;
+>  
+> -	dest = dma_map_single(device->dev, buf, len, DMA_FROM_DEVICE);
+> -	if (dma_mapping_error(device->dev, dest))
+> +	unmap = dmaengine_get_unmap_data(device->dev, 2, GFP_NOIO);
+> +	if (!unmap)
+>  		goto err1;
+>  
+> -	src = dma_map_single(device->dev, offset, len, DMA_TO_DEVICE);
+> -	if (dma_mapping_error(device->dev, src))
+> +	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(offset),
+> +				      pay_off, len, DMA_TO_DEVICE);
+> +	if (dma_mapping_error(device->dev, unmap->addr[0]))
+>  		goto err2;
+>  
+> -	flags = DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SRC_UNMAP_SINGLE |
+> +	unmap->to_cnt = 1;
+> +
+> +	unmap->addr[1] = dma_map_page(device->dev, virt_to_page(buf),
+> +				      buff_off, len, DMA_FROM_DEVICE);
+> +	if (dma_mapping_error(device->dev, unmap->addr[1]))
+> +		goto err2;
+> +
+> +	unmap->from_cnt = 1;
+> +
+> +	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
+>  		DMA_PREP_INTERRUPT;
+> -	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
+> +	txd = device->device_prep_dma_memcpy(chan, unmap->addr[1],
+> +					     unmap->addr[0], len, flags);
 
-Using min could help minimize typos
+I must say, as a user I dislike this interface much less than the
+previous.  Can we abstract all of this away in a helper function
+that simply takes the src, dest, and len, then maps and calls
+device_prep_dma_memcpy?  The driver does not keep track of the
+dmaengine_unmap_data, so the helper function could simply return an
+error if something isn't happy.  Thoughts?
 
-					pwrdiff_limit[i] = min(pwrdiff_limit[i],
-							       rtlefuse->pwrgroup_ht40[RF90_PATH_A][chnl - 1]);
+Thanks,
+Jon
 
-
-
-
+>  	if (!txd)
+> -		goto err3;
+> +		goto err2;
+>  
+>  	txd->callback = ntb_rx_copy_callback;
+>  	txd->callback_param = entry;
+> +	dma_set_unmap(txd, unmap);
+>  
+>  	cookie = dmaengine_submit(txd);
+>  	if (dma_submit_error(cookie))
+>  		goto err3;
+>  
+> +	dmaengine_unmap_put(unmap);
+> +
+>  	qp->last_cookie = cookie;
+>  
+>  	qp->rx_async++;
+> @@ -1082,9 +1096,9 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+>  	return;
+>  
+>  err3:
+> -	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
+> +	dmaengine_unmap_put(unmap);
+>  err2:
+> -	dma_unmap_single(device->dev, dest, len, DMA_FROM_DEVICE);
+> +	dmaengine_unmap_put(unmap);
+>  err1:
+>  	/* If the callbacks come out of order, the writing of the index to the
+>  	 * last completed will be out of order.  This may result in the
+> @@ -1245,7 +1259,8 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+>  	struct dma_chan *chan = qp->dma_chan;
+>  	struct dma_device *device;
+>  	size_t dest_off, buff_off;
+> -	dma_addr_t src, dest;
+> +	struct dmaengine_unmap_data *unmap;
+> +	dma_addr_t dest;
+>  	dma_cookie_t cookie;
+>  	void __iomem *offset;
+>  	size_t len = entry->len;
+> @@ -1273,28 +1288,42 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+>  	if (!is_dma_copy_aligned(device, buff_off, dest_off, len))
+>  		goto err;
+>  
+> -	src = dma_map_single(device->dev, buf, len, DMA_TO_DEVICE);
+> -	if (dma_mapping_error(device->dev, src))
+> +	unmap = dmaengine_get_unmap_data(device->dev, 1, GFP_NOIO);
+> +	if (!unmap)
+>  		goto err;
+>  
+> -	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_PREP_INTERRUPT;
+> -	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
+> +	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(buf),
+> +				      buff_off, len, DMA_TO_DEVICE);
+> +	if (dma_mapping_error(device->dev, unmap->addr[0]))
+> +		goto err1;
+> +
+> +	unmap->to_cnt = 1;
+> +
+> +	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
+> +		DMA_PREP_INTERRUPT;
+> +	txd = device->device_prep_dma_memcpy(chan, dest, unmap->addr[0], len,
+> +					    flags);
+>  	if (!txd)
+>  		goto err1;
+>  
+>  	txd->callback = ntb_tx_copy_callback;
+>  	txd->callback_param = entry;
+> +	dma_set_unmap(txd, unmap);
+>  
+>  	cookie = dmaengine_submit(txd);
+>  	if (dma_submit_error(cookie))
+> -		goto err1;
+> +		goto err2;
+> +
+> +	dmaengine_unmap_put(unmap);
+>  
+>  	dma_async_issue_pending(chan);
+>  	qp->tx_async++;
+>  
+>  	return;
+> +err2:
+> +	dmaengine_unmap_put(unmap);
+>  err1:
+> -	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
+> +	dmaengine_unmap_put(unmap);
+>  err:
+>  	ntb_memcpy_tx(entry, offset);
+>  	qp->tx_memcpy++;
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index dc98bc5..3782cdb 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -457,6 +457,7 @@ struct dma_async_tx_descriptor {
+>  #endif
+>  };
+>  
+> +#ifdef CONFIG_DMA_ENGINE
+>  static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+>  				 struct dmaengine_unmap_data *unmap)
+>  {
+> @@ -467,6 +468,20 @@ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+>  struct dmaengine_unmap_data *
+>  dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags);
+>  void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap);
+> +#else
+> +static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+> +				 struct dmaengine_unmap_data *unmap)
+> +{
+> +}
+> +static inline struct dmaengine_unmap_data *
+> +dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
+> +{
+> +	return NULL;
+> +}
+> +static inline void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap)
+> +{
+> +}
+> +#endif
+>  
+>  static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
+>  {
+> -- 
+> 1.8.2.3
+> 
