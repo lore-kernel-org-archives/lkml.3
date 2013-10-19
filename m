@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3JSVU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 17:20:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32892 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab3JSVU5 (ORCPT
+	id S1752982Ab3JSVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 17:24:57 -0400
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:46190 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751724Ab3JSVY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 17:20:57 -0400
-Date: Sat, 19 Oct 2013 14:22:13 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: linux-usb@vger.kernel.org,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <rmallon@gmail.com>, stern@rowland.harvard.edu,
-        Lennert Buytenhek <buytenh@wantstofly.org>, olof@lixom.net,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 2/2 v4] usb: ohci: remove ep93xx bus glue platform driver
-Message-ID: <20131019212213.GA5341@kroah.com>
-References: <201310171329.12434.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201310171329.12434.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 19 Oct 2013 17:24:56 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2526:2559:2562:2693:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3872:3873:3874:4250:4321:5007:6119:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shoe86_823a9ecdb9a51
+X-Filterd-Recvd-Size: 1801
+Message-ID: <1382217893.2041.27.camel@joe-AO722>
+Subject: Re: [PATCH] vsprintf: add Bluetooth UUID %pU[rR] format specifier
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 19 Oct 2013 14:24:53 -0700
+In-Reply-To: <1382199949-26779-1-git-send-email-marcel@holtmann.org>
+References: <1382199949-26779-1-git-send-email-marcel@holtmann.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 01:29:11PM -0700, H Hartley Sweeten wrote:
-> Convert ep93xx to use the OHCI platform driver and remove the
-> ohci-ep93xx bus glue driver.
-> 
-> Enable CONFIG_OHCI_HCD_PLATFORM in the ep93xx_defconfig so that USB
-> is still enabled by default on the EP93xx platform.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Lennert Buytenhek <kernel@wantstofly.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
->  arch/arm/configs/ep93xx_defconfig |   1 +
->  arch/arm/mach-ep93xx/clock.c      |   2 +-
->  arch/arm/mach-ep93xx/core.c       |  38 +++++++-
->  drivers/usb/host/ohci-ep93xx.c    | 184 --------------------------------------
->  drivers/usb/host/ohci-hcd.c       |  18 ----
->  5 files changed, 36 insertions(+), 207 deletions(-)
->  delete mode 100644 drivers/usb/host/ohci-ep93xx.c
+On Sat, 2013-10-19 at 09:25 -0700, Marcel Holtmann wrote:
+> The Bluetooth UUID is used in big endian reversed order. Add new
+> modifier to print a UUID in big endian, but where the input byte
+> stream is actually in reversed order.
+> This is similar to %pMR that allows to print a MAC address in
+> reversed order since that is how the Bluetooth BD_ADDR is
+> actually represented in a byte stream.
 
-This patch doesn't apply to my usb-next branch of usb.git at all, what
-happened?  Did Alan's other recent changes interfere with this?
+Seems sensible.  Other than print_bt_uuid, is
+there another place where will it be used?
 
-Can you refresh this against my tree and resend it so that I can apply
-it?  I've applied the 1/2 patch already.
+Are you going to convert print_bt_uuid to use this?
 
-thanks,
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
+> @@ -1106,6 +1106,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+>  	static const u8 le[16] = {3,2,1,0,5,4,7,6,8,9,10,11,12,13,14,15};
+>  	const u8 *index = be;
+>  	bool uc = false;
+> +	bool reversed = false;
+>  
+>  	switch (*(++fmt)) {
 
-greg k-h
+Could there ever be a little endian reversed UUID?
+
+Might it be useful to change this to:
+
+	while (isalpha(*++fmt)) {
+		switch (*fmt) {
+
+etc?
+
+
