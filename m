@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156Ab3JSFpp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 01:45:45 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59893 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab3JSFpo (ORCPT
+	id S1751223Ab3JSFwu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 01:52:50 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51467 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3JSFwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 01:45:44 -0400
+	Sat, 19 Oct 2013 01:52:49 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
+References: <1381296747.2040.17.camel@joe-AO722>
+	<20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
+	<CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
+	<CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
+	<20131018225702.GA13090@kroah.com>
+Date: Fri, 18 Oct 2013 22:52:46 -0700
+In-Reply-To: <20131018225702.GA13090@kroah.com> (Greg KH's message of "Fri, 18
+	Oct 2013 15:57:02 -0700")
+Message-ID: <8761stu7rl.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20131018123837.GB2277@redhat.com>
-References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
-	<CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
-	<20131015144810.GI31215@redhat.com>
-	<CAE9FiQXVCx__SuhAdO9_CNaRncW2HB2tv3UjZrQcbsTV35QWow@mail.gmail.com>
-	<20131018123837.GB2277@redhat.com>
-Date: Fri, 18 Oct 2013 22:45:43 -0700
-X-Google-Sender-Auth: BcMd8SQl63bRCMf6F6Jgkv8YKkE
-Message-ID: <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 5:38 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Oct 17, 2013 at 08:50:07PM -0700, Yinghai Lu wrote:
->
-> [..]
->> > Previously high reservation (reservation above 896M) will anyway fail. So
->> > instead of failing, if we try reservation in higher memory areas why that
->> > would break old kexec-tools?
->>
->> If thel old kexec-tools would fail, we should let them fail early as possible,
->> do not reserve at first point.
->
-> A user does not care if they get the message "memory nor reserved" or if
-> they get the message that "could not find a suitable memory hole at
-> address X".
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-you are asking for trouble.
-
-Now we have two paths:
-1. old kernel with old kexec tools. crashkernel=XM, work,
-the new kernel with old kexec tools still working with crashkernel=XM
-2. old kernel with old kernel tools, crashkernel=XM, not working.
-as X is too big.
-then user update to new kernel AND new kexec-tools, and crashkernel=XM,high
-
-with this patch, you will need to test new kernel all old kexec tools
-to make sure
-it will fail later instead of fail early to remind them to update kexec tools.
-Also would make user to guess and try to make new kernel to work with old
-kexec-tools
-
->
->>
+> On Fri, Oct 18, 2013 at 10:04:11AM -0700, Kevin Hilman wrote:
+>> > A handful of boot panics on ARM platforms were bisected to point at
+>> > the version of this commit that's in linux-next (commit
+>> > 64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
+>> > makes things happy again.
 >> >
->> > IOW, previously anyway kexec-tools will not work as no memory will be
->> > reserved in higher memory area. Now memory will be reserved but old
->> > kexec-tools should fail as it can't load in that area.
->> >
->> > If that works, then one would use crashkernel=X,high only if he is
->> > particualr that memory reservation comes from area above 4G (despite
->> > the fact that same memory could have been reserved below 4G too).
->>
->> My point:
->> Push user to use ",high" as more as possible, so we only to handle one
->> path eventually.
->> for old kernel, leave them to use old grammer. do not need to change it.
+>> > Upon further digging, it seems that users of devres_alloc() are
+>> > relying on the previous behavior of having the memory zero'd which is
+>> > no longer the case after $SUBJECT patch.  The change below on top of
+>> > -next makes these ARM boards happy again.
+>> 
+>> Oops, it should've fixed __devres_alloc() also.  Updated patch below.
 >
-> I don't understand this. Why we should push users to use ",high" syntax.
-> That is an option. Those who want to use it, should use it.
->
-> We have been using crashkernel=XM for a long time now. And it makes sense
-> to extend this option to be able to reserve memory at higher addresses
-> if asked memory is not available at lower addresses.
->
-> You are not thinking about ease of use here for existing users.
+> Can you send this in a format that I can apply it in?  It was whitespace
+> damaged.
 
-most existing user don't need to do anything. just with new kernel and
-old kexec tools.
+hmm, sorry about that.  This one should work, though I wonder if Andrew
+should pick this up since I think the patch that causes the breakage
+came through his tree.
 
-those system that did not work kexec before because XM is too big, they have to
-update kexec tools, and use ",high"
+Kevin
 
-Make it simple, less error.
+---------------8<----------------------------------------------------
+>From a1962ed4a999fb630a48f75a5ecaf84401d5dbfc Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@linaro.org>
+Date: Fri, 18 Oct 2013 09:41:39 -0700
+Subject: [PATCH] devres: restore zeroing behavior of devres_alloc()
 
->
->>
->> Also boot loader should always have different entry for old kernel and
->> new kernel.
->
-> What does memory reservation location has to do with kernel entry point?
-> If it is a 64bit bzImage, we will use 64bit entry point by default, isn't
-> it? Does not matter whether memory is reserved above 4G or not.
->
-> I think it makes sense that existing crashkernel=XM usres be able to
-> reserve memory in higher memory area if sufficient memory is not available
-> below 896M or below 4G. Those who always want memory reservation above 4G
-> they should use ",high" syntax and enforce memory allocation above 4G.
+commit 64c862a8 (devres: add kernel standard devm_k.alloc functions) changed
+the default behavior of alloc_dr() to no longer zero the allocated memory.  However,
+only the devm.k.alloc() function were modified to pass in __GFP_ZERO which leaves
+any users of devres_alloc() or __devres_alloc() with potentially wrong assumptions
+about memory being zero'd upon allocation.
 
-We already support above 4G, what is point for trying below 4G?
+To fix, add __GFP_ZERO to devres_alloc() calls to preserve previous
+behavior of zero'ing memory upon allocation.
 
-You could get more bug report about new kernel with old kexec-tools, as
-old kexec-tools could work with range between 896M and 4G in some case,
-but not all.
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+ drivers/base/devres.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks
+diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+index 37e67a2..545c4de 100644
+--- a/drivers/base/devres.c
++++ b/drivers/base/devres.c
+@@ -111,7 +111,7 @@ void * __devres_alloc(dr_release_t release, size_t size, gfp_t gfp,
+ {
+ 	struct devres *dr;
+ 
+-	dr = alloc_dr(release, size, gfp);
++	dr = alloc_dr(release, size, gfp | __GFP_ZERO);
+ 	if (unlikely(!dr))
+ 		return NULL;
+ 	set_node_dbginfo(&dr->node, name, size);
+@@ -136,7 +136,7 @@ void * devres_alloc(dr_release_t release, size_t size, gfp_t gfp)
+ {
+ 	struct devres *dr;
+ 
+-	dr = alloc_dr(release, size, gfp);
++	dr = alloc_dr(release, size, gfp | __GFP_ZERO);
+ 	if (unlikely(!dr))
+ 		return NULL;
+ 	return dr->data;
+-- 
+1.8.3
 
-Yinghai
