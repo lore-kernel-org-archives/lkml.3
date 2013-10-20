@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab3JTSGg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 14:06:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37617 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751654Ab3JTSGe (ORCPT
+	id S1751532Ab3JTSIr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 14:08:47 -0400
+Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:59430 "EHLO
+	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750949Ab3JTSIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 14:06:34 -0400
-Message-ID: <1382292356.2794.116.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [000/121] 3.2.51-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Greg Ungerer <gerg@uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Sun, 20 Oct 2013 14:08:46 -0400
+Date: Sun, 20 Oct 2013 18:08:44 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: JoonSoo Kim <js1304@gmail.com>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Date: Sun, 20 Oct 2013 19:05:56 +0100
-In-Reply-To: <52640379.8070609@roeck-us.net>
-References: <lsq.1378608720.401499712@decadent.org.uk>
-		 <522C22DB.9080008@roeck-us.net>
-		 <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
-		 <522CAB38.2010909@roeck-us.net>
-	 <1382270174.2794.96.camel@deadeye.wl.decadent.org.uk>
-	 <52640379.8070609@roeck-us.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-qUAKE/hW1Q6tWs8Wa7xd"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 82.132.212.222
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+        David Rientjes <rientjes@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 3/5] slab: restrict the number of objects in a slab
+In-Reply-To: <CAAmzW4Mzx0FWP6KK7gk88c07RP46WaA9i5DePnzSWt7XP6qQNw@mail.gmail.com>
+Message-ID: <00000141d70e0e22-bd66f3af-822a-47dd-bbd9-fe68ad8da2ff-000000@email.amazonses.com>
+References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com> <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com> <00000141c7cb668b-1e2528ea-ce87-4380-a0dd-e5be9384cd84-000000@email.amazonses.com>
+ <CAAmzW4Mzx0FWP6KK7gk88c07RP46WaA9i5DePnzSWt7XP6qQNw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.20-54.240.10.51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 19 Oct 2013, JoonSoo Kim wrote:
 
---=-qUAKE/hW1Q6tWs8Wa7xd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > Ok so that results in a mininum size object size of 2^(12 - 8) = 2^4 ==
+> > 16 bytes on x86. This is not true for order 1 pages (which SLAB also
+> > supports) where we need 32 bytes.
+>
+> According to current slab size calculating logic, slab whose object size is
+> less or equal to 16 bytes use only order 0 page. So there is no problem.
 
-On Sun, 2013-10-20 at 09:23 -0700, Guenter Roeck wrote:
-> On 10/20/2013 04:56 AM, Ben Hutchings wrote:
-> > On Sun, 2013-09-08 at 09:52 -0700, Guenter Roeck wrote:
-> >> On 09/08/2013 01:18 AM, Geert Uytterhoeven wrote:
-> >>> On Sun, Sep 8, 2013 at 9:10 AM, Guenter Roeck <linux@roeck-us.net> wr=
-ote:
-> >>>> m68k-linux-ld: error: no memory region specified for loadable sectio=
-n
-> >>>> `.note.gnu.build-id'
-> >>>
-> >>> I can't seem to find an explicit fix for that since v3.2.
-> >>> Perhaps the fix is a side effect of f84f52a5c15db7d14a534815f27253b00=
-1735183
-> >>> ("m68knommu: clean up linker script").
-> >>>
-> >>
-> >> Kind of. Turns out it requires the following patches.
-> >>
-> >> 40c1b9cf (m68k: consolidate the vmlinux.lds linker scripts)
-> >> ed865e31 (m68k: use non-MMU linker script for ColdFire MMU builds)
-> >> f84f52a5 (m68knommu: clean up linker script)
-> >>
-> >> With those patches applied, all my m68k builds (mmu and nommu) pass wi=
-th 3.2.
-> >
-> > I've queued these up for 3.2.  The first looks quite a big change in
-> > terms of lines, but most of that is just renaming a file so I think it'=
-s
-> > within the spirit of the stable rules.  The third is also pretty big as
-> > m68knommu seems so broken in 3.2 that I suppose it is OK.
-> >
-> > Ben.
-> >
-> Hi Ben,
->=20
-> is that in your patch list yet ? Just wondering, because the latest nommu=
- build still failed.
+Ok then lets add a VM_BUG_ON to detect the situation when someone tries
+something different.
 
-I've only just pushed them.
+> > Problems may arise on PPC or IA64 where the page size may be larger than
+> > 64K. With 64K we have a mininum size of 2^(16 - 8) = 256 bytes. For those
+> > arches we may need 16 bit sized indexes. Maybe make that compile time
+> > determined base on page size? > 64KByte results in 16 bit sized indexes?
+>
+> Okay. I will try it.
 
-Ben.
+Again compile time. You had runtime in some earlier patches which adds new
+branches to key functions.
 
---=20
-Ben Hutchings
-Tomorrow will be cancelled due to lack of interest.
-
---=-qUAKE/hW1Q6tWs8Wa7xd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIVAwUAUmQbhOe/yOyVhhEJAQoq/A/5AXCWVWnmaiKVgX0z0JHXvAqJUFJHzTEu
-8f7+7Nt7gz4eIHGSwTo0oPpvugikH+HlUNRXagA7+C2y6xX1aw4aq78hmcYAu77K
-tB1xioNRnn7nP0Sfh/k4msVWR6dV/REOIkY+gUGwMkfSpMPrs/urOqmMWKf7RsqF
-kVR38oONNCkvu2O5cmNqMJe8g2W2dm4gl9u5+X+Em9aeRG03/bkzRBU/J4NbC7AO
-RLclqfJQFj0NDTJ8+vQmCk0qW0HspwzNP1j6Ur6fjz8qp8vrmXdXEtI/JA8q1JOE
-bkVcpiivN6xygCV1V8OpFwS3qYPJ22CyhhzBRHyTdTdHHJH+m/+e67VuRHoElA2r
-vfDgVgvkIZFamfNsCp4jdIEG8rYznREdIErI6iWBabtJdO9VJwk6BHnvGl2TK/sA
-lWQjM5hWMhCh7JjrOQ/Rti6iGCzP9pTgdS0OGlLFf7tNOv2/xzXXp9AFLdP02RJC
-4ujGd/WPepVSqsNorqfYDFFgdwNdAz02EX2RgBr7lsWiVwSIswWbnJS3tjDdVuut
-0uVZfRpU/35U062GqFPu6t+n+785Y4OigMih9hNOwKm+Aws7gkeVP8glD43RTY5t
-Fb3jj6qFfIXX39nswzI3r7HYCmHKKe+R86UDBX6E073g/7k7qQIzHoBvo3V2BX6E
-OhSuGoR8Pow=
-=VAhW
------END PGP SIGNATURE-----
-
---=-qUAKE/hW1Q6tWs8Wa7xd--
