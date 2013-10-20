@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3JTXA6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 19:00:58 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:52274 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab3JTXA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 19:00:57 -0400
-Message-ID: <526460A0.3000807@interlog.com>
-Date: Sun, 20 Oct 2013 19:00:48 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751987Ab3JTXlS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 19:41:18 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39429 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3JTXlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 19:41:17 -0400
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        vaughan <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [SCSI] sg: late O_EXCL fix for lk 3.12-rc
-References: <52640025.60709@interlog.com> <52641389.6090604@acm.org>
-In-Reply-To: <52641389.6090604@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAFqkpAYZCrHgxsFJ+3nNzu=RuyFX0ao9ivGb_H4J1n+u01h4qQ@mail.gmail.com>
+References: <CAFqkpAYZCrHgxsFJ+3nNzu=RuyFX0ao9ivGb_H4J1n+u01h4qQ@mail.gmail.com>
+Date: Mon, 21 Oct 2013 05:11:16 +0530
+Message-ID: <CAFqkpAYxeDoZwpBfgkNtTvPJQ4J7CEamvnZX6icXY1N8ALU3-w@mail.gmail.com>
+Subject: Re: Classifying user and kernel pages
+From: Piyus Kedia <piyuskedia@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-10-20 01:31 PM, Bart Van Assche wrote:
-> On 10/20/13 18:09, Douglas Gilbert wrote:
->> Given that lk 3.12.0 release is not far away, the safest path
->> may still be to revert Vaughan Cao's patch. I'll leave that
->> decision to the maintainers.
->
-> Hello Doug,
->
-> Thanks for looking into this. But I would appreciate it if you could address the
-> whitespace errors reported by checkpatch:
->
-> ERROR: space prohibited after that '!' (ctx:BxW)
-> #24: FILE: drivers/scsi/sg.c:241:
-> +            (excl_case ? (! sdp->exclude) : sfds_list_empty(sdp))));
->                             ^
->
-> ERROR: space prohibited after that '!' (ctx:BxW)
-> #55: FILE: drivers/scsi/sg.c:289:
-> +            if (! alone) {
->                   ^
->
-> ERROR: code indent should use tabs where possible
-> #59: FILE: drivers/scsi/sg.c:292:
-> +                        }$
->
-> WARNING: please, no spaces at the start of a line
-> #59: FILE: drivers/scsi/sg.c:292:
-> +                        }$
->
-> ERROR: space prohibited after that '!' (ctx:BxW)
-> #73: FILE: drivers/scsi/sg.c:301:
-> +            while (! alone) {
->                      ^
->
-> WARNING: suspect code indent for conditional statements (8, 12)
-> #144: FILE: drivers/scsi/sg.c:375:
-> +    if (excl || sfds_list_empty(sdp))
-> +        wake_up_interruptible(&sdp->open_wait);
->
+The user pages are generally allocated using GFP_USER or GFP_HIGHMEM
+flags. The linux kernel treats GFP_USER and GFP_KERNEL as same. So,
+there is no way you can tell whether a physical page belongs to user
+process or not using physical frame number.
 
-I'd prefer people to test the patch or find logical flaws.
+Piyus
 
-Doug Gilbert
-
+On Fri, Oct 4, 2013 at 12:19 AM, Piyus Kedia <piyuskedia@gmail.com> wrote:
+> Hi All,
+>
+> Does anybody know if there is a way in Linux Kernel to find whether a
+> physical page is a user page or it is kernel page. A kernel page is
+> only accessed by kernel and it doesn't belong to any user process.
+>
+> Thanks,
+> Piyus
