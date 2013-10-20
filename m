@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab3JTOOw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 10:14:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36126 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab3JTOOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 10:14:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,533,1378882800"; 
-   d="scan'208";a="414048750"
-Date: Sun, 20 Oct 2013 18:51:19 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: misc: remove deprecated IRQF_DISABLED
-Message-ID: <20131020132119.GK14013@intel.com>
-References: <1381641051-7287-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20131013145400.GH2954@intel.com>
- <525B6623.8020102@free-electrons.com>
+	id S1751341Ab3JTOaH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 10:30:07 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:38300 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab3JTOaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 10:30:06 -0400
+X-Originating-IP: 77.221.165.98
+Date: Sun, 20 Oct 2013 15:29:57 +0100
+From: Josh Triplett <josh@joshtriplett.org>
+To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] kvm: Delete prototype for non-existent function
+ complete_pio
+Message-ID: <20131020142954.GA2962@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525B6623.8020102@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:33:55AM +0200, Michael Opdenacker wrote:
-> Hi Vinod,
-> 
-> On 10/13/2013 04:54 PM, Vinod Koul wrote:
-> > On Sun, Oct 13, 2013 at 07:10:51AM +0200, Michael Opdenacker wrote:
-> >> This patch proposes to remove the use of the IRQF_DISABLED flag
-> >>
-> >> It's a NOOP since 2.6.35 and it will be removed one day.
-> > Applied, thanks. Title shouldnt have misc as it doesnt convey anything.
-> Thanks!
-> 
-> Indeed, I sent separate patches for files which had different
-> maintainers, and grouped the patches for files which shared the same
-> maintainer information.
-> 
-> I put "misc" to avoid suggesting that the patch is for everything under
-> drivers/dma/, which is not the case. Wouldn't it have been confusing
-> otherwise?
-dmaengine: convert drivers to ....
+complete_pio ceased to exist in commit
+7972995b0c346de76fe260ce0fd6bcc8ffab724a ("KVM: x86 emulator: Move
+string pio emulation into emulator.c"), but the prototype remained.
+Remove its prototype.
 
-would have been right too as you are taregtting a subsystem as a whole...
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/x86/include/asm/kvm_host.h | 1 -
+ 1 file changed, 1 deletion(-)
 
---
-~Vinod
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c76ff74..00c5f44 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -926,7 +926,6 @@ void kvm_mmu_invlpg(struct kvm_vcpu *vcpu, gva_t gva);
+ void kvm_enable_tdp(void);
+ void kvm_disable_tdp(void);
+ 
+-int complete_pio(struct kvm_vcpu *vcpu);
+ bool kvm_check_iopl(struct kvm_vcpu *vcpu);
+ 
+ static inline gpa_t translate_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 access)
+-- 
+1.8.4.rc3
+
