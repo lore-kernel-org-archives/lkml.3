@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab3JTLdb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 07:33:31 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:42317 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab3JTLd3 (ORCPT
+	id S1751490Ab3JTLhF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 07:37:05 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:43955 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab3JTLhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 07:33:29 -0400
+	Sun, 20 Oct 2013 07:37:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvwgd95ZOGZ_F1_S9skqbrZ2wVV4Zwrd7Q9m92G_4RTnPA@mail.gmail.com>
+In-Reply-To: <F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com>
 References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
-	<CAFLxGvwgd95ZOGZ_F1_S9skqbrZ2wVV4Zwrd7Q9m92G_4RTnPA@mail.gmail.com>
-Date: Sun, 20 Oct 2013 19:33:28 +0800
-Message-ID: <CABjrhvpMRJhBPP+T8nWipFkFaoHvCXZn6FQOYkBz--6A0HM37A@mail.gmail.com>
+	<F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com>
+Date: Sun, 20 Oct 2013 19:37:01 +0800
+Message-ID: <CABjrhvqLgVSEOJVuS1n-R_kyvhFouUqhfjqS4P_jsPGAec+KdQ@mail.gmail.com>
 Subject: Re: [RFC] Rollback FS
 From: jiaweiwei <jiaweiwei.xiyou@gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
+To: Vyacheslav Dubeyko <slava@dubeyko.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Harry Wei <harryxiyou@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -23,14 +23,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 20, 2013 at 3:57 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> What about having a good backup and a statically linked busybox
-> somewhere on your filesystem?
+On Sun, Oct 20, 2013 at 6:43 PM, Vyacheslav Dubeyko <slava@dubeyko.com> wrote:
+> Anyway, you need to use Copy-On-Write (COW) approach for such file system.
+> But there are file systems that implements snapshot approach yet: NILFS2, ext3cow,
+> Next3, and so on.
 >
 
-I think it should not be a way for a specific file system but a
-mechanism like VFS. Anyway, backup would cost a lot. Thanks.
+Any file system should rollback but not specific ones. Therefore, a
+VFS like mechanism should be designed and implemented.
+
+> Do you really want to implement something likewise snapshot feature in a file system
+> from the scratch?
+>
+
+Maybe, I would give detail design, thanks.
+
 
 
 
