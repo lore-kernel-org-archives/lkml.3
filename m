@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab3JTMrI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 08:47:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17049 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab3JTMrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 08:47:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,533,1378882800"; 
-   d="scan'208";a="395712696"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Fix bfd link on opensuse
-Date: Sun, 20 Oct 2013 05:47:00 -0700
-Message-Id: <1382273220-25870-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751159Ab3JTM7R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 08:59:17 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53750 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3JTM7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 08:59:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131020123521.GA15627@thunk.org>
+References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
+	<F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com>
+	<CABjrhvqLgVSEOJVuS1n-R_kyvhFouUqhfjqS4P_jsPGAec+KdQ@mail.gmail.com>
+	<20131020123521.GA15627@thunk.org>
+Date: Sun, 20 Oct 2013 20:59:14 +0800
+Message-ID: <CABjrhvpzcETE=CZrOkRgxpKhFm9-piYJLJ=8zdwnNkmJtkWRtQ@mail.gmail.com>
+Subject: Re: [RFC] Rollback FS
+From: jiaweiwei <jiaweiwei.xiyou@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, jiaweiwei <jiaweiwei.xiyou@gmail.com>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Harry Wei <harryxiyou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sun, Oct 20, 2013 at 8:35 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Sun, Oct 20, 2013 at 07:37:01PM +0800, jiaweiwei wrote:
+>>
+>> Any file system should rollback but not specific ones. Therefore, a
+>> VFS like mechanism should be designed and implemented.
+>
+> And what if the blocks or inodes used for the files that were deleted
+> have already been used and overwritten?
 
-My opensuse libbfd requires libz and libiberty. perf
-was not adding that for the bfd check, so the bfd
-check was always failing.
+A good catch. Following ideas would be suitable.
 
-Always add -lz and -liberty to BFD
+1, Keep the blocks or inodes by a parameter we give.
+2, Keep the blocks or inodes for several seconds.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/config/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>
+>> Maybe, I would give detail design, thanks.
+>
+> I encourage you to try to do that; you might find it to be an
+> educational exercise.
+>
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 40a41c6..ec94f59 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -360,10 +360,10 @@ else
-   endif
- endif
- 
--FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-+FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd -liberty -lz
- has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
- ifeq ($(has_bfd),y)
--  EXTLIBS += -lbfd
-+  EXTLIBS += -lbfd -liberty -lz
-   CFLAGS += -DLIBBFD_SUPPORT
- endif
- 
+Yeah, I would, thanks.
+
+
 -- 
-1.8.3.1
-
+ do kernel
