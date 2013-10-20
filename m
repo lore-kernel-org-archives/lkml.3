@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab3JTIsn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 04:48:43 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:44358 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab3JTIsk (ORCPT
+	id S1751474Ab3JTIuj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 04:50:39 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:44338 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab3JTIuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 04:48:40 -0400
-Date: Sun, 20 Oct 2013 10:48:37 +0200
+	Sun, 20 Oct 2013 04:50:37 -0400
+Date: Sun, 20 Oct 2013 10:50:34 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Dave Sullivan <dsulliva@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] hung_task debugging: Add tracepoint to report the
- hang
-Message-ID: <20131020084837.GB16236@gmail.com>
-References: <20131019161807.GA7431@redhat.com>
- <20131019161828.GA7439@redhat.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] sched/fair.c: remove kernel-doc warning
+Message-ID: <20131020085034.GC16236@gmail.com>
+References: <5263001C.1060109@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131019161828.GA7439@redhat.com>
+In-Reply-To: <5263001C.1060109@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Oleg Nesterov <oleg@redhat.com> wrote:
+* Randy Dunlap <rdunlap@infradead.org> wrote:
 
-> Currently check_hung_task() prints a warning if it detects the problem, 
-> but it is not convenient to watch the system logs if user-space wants to 
-> be notified about the hang.
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> Add the new trace_sched_process_hang() into check_hung_task(), this way 
-> a user-space monitor can easily wait for the hang and potentially 
-> resolve a problem.
+> Remove @balance parameter that is no longer used in the function to
+> remove a kernel-doc warning.
+> 
+> Warning(kernel/sched/fair.c:4704): Excess function parameter 'balance' description in 'update_sd_lb_stats'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>  kernel/sched/fair.c |    1 -
 
-I'm wondering, is the data of trace_console() in kernel/printk/printk.c 
-not sufficient?
+I think that should be solved already by this pending tip:sched/core 
+commit:
 
-If it's not enough then it might be better to add a higher level printk 
-tracepoint instead - that can catch hung_task messages and (much) more.
+ 62e947cb0cd2 sched: Remove bogus parameter in structured comment
 
 Thanks,
 
