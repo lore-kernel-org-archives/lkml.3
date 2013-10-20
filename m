@@ -1,211 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3JTSDe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 14:03:34 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:57524 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3JTSDd (ORCPT
+	id S1751509Ab3JTSFX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 14:05:23 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:37323 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751140Ab3JTSFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 14:03:33 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: linux-iio@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: [PATCH] iio: (max1363) support SMBus for 8-bit devices
-Date: Sun, 20 Oct 2013 14:02:57 -0400
-Message-Id: <1382292177-31413-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.4.1
+	Sun, 20 Oct 2013 14:05:22 -0400
+Date: Sun, 20 Oct 2013 18:05:21 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: JoonSoo Kim <js1304@gmail.com>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 13/15] slab: use struct page for slab management
+In-Reply-To: <CAAmzW4PsEfGR8TMDiP4LTX7Oj3nr+F4Pxo2DyOEV4ab1pPmwkw@mail.gmail.com>
+Message-ID: <00000141d70af320-21d92853-2cfb-4292-af09-dd57d406ab8b-000000@email.amazonses.com>
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1381913052-23875-14-git-send-email-iamjoonsoo.kim@lge.com> <00000141c7d66282-aa92b1f2-2a69-424b-9498-8e5367304d32-000000@email.amazonses.com>
+ <CAAmzW4PsEfGR8TMDiP4LTX7Oj3nr+F4Pxo2DyOEV4ab1pPmwkw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.20-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver currently supports only I2C access. But some devices with an
-accuracy of 8-bit are compatible with the SMBus byte access routines.
+On Sat, 19 Oct 2013, JoonSoo Kim wrote:
 
-This patch wraps the send and receive routines depending on the chip
-accuracy and fonctionnalities of its adapter.
+> I search the history of struct page and find that the SLUB use mapping field
+> in past (2007 year). At that time, you inserted VM_BUG_ON(PageSlab(page))
+> ('b5fab14') into page_mapping() function to find remaining use. Recently,
+> I never hear that this is triggered and 6 years have passed since inserting
+> VM_BUG_ON(), so I guess there is no problem to use it.
+> If this argument is reasonable, please give me an ACK :)
+>
+> Thanks.
 
-For instance, this allows us to use a MAX11603 on a ICH7 controller.
-
-This patch also simplifies the max1363_write_basic_config() routine to
-use the struct max1363_state fields directly.
-
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- drivers/iio/adc/max1363.c | 76 +++++++++++++++++++++++++++++++++++------------
- 1 file changed, 57 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/iio/adc/max1363.c b/drivers/iio/adc/max1363.c
-index cc07b37..6118dce 100644
---- a/drivers/iio/adc/max1363.c
-+++ b/drivers/iio/adc/max1363.c
-@@ -165,6 +165,8 @@ struct max1363_chip_info {
-  * @thresh_low:		low threshold values
-  * @vref:		Reference voltage regulator
-  * @vref_uv:		Actual (external or internal) reference voltage
-+ * @send:		function used to send data to the chip
-+ * @recv:		function used to receive data from the chip
-  */
- struct max1363_state {
- 	struct i2c_client		*client;
-@@ -186,6 +188,10 @@ struct max1363_state {
- 	s16				thresh_low[8];
- 	struct regulator		*vref;
- 	u32				vref_uv;
-+	int				(*send)(const struct i2c_client *client,
-+						const char *buf, int count);
-+	int				(*recv)(const struct i2c_client *client,
-+						char *buf, int count);
- };
- 
- #define MAX1363_MODE_SINGLE(_num, _mask) {				\
-@@ -311,13 +317,37 @@ static const struct max1363_mode
- 	return NULL;
- }
- 
--static int max1363_write_basic_config(struct i2c_client *client,
--				      unsigned char d1,
--				      unsigned char d2)
-+static int max1363_smbus_send(const struct i2c_client *client, const char *buf,
-+		int count)
- {
--	u8 tx_buf[2] = {d1, d2};
-+	int i, err;
- 
--	return i2c_master_send(client, tx_buf, 2);
-+	for (i = err = 0; err == 0 && i < count; ++i)
-+		err = i2c_smbus_write_byte(client, buf[i]);
-+
-+	return err ? err : count;
-+}
-+
-+static int max1363_smbus_recv(const struct i2c_client *client, char *buf,
-+		int count)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < count; ++i) {
-+		ret = i2c_smbus_read_byte(client);
-+		if (ret < 0)
-+			return ret;
-+		buf[i] = ret;
-+	}
-+
-+	return count;
-+}
-+
-+static int max1363_write_basic_config(struct max1363_state *st)
-+{
-+	u8 tx_buf[2] = { st->setupbyte, st->configbyte };
-+
-+	return st->send(st->client, tx_buf, 2);
- }
- 
- static int max1363_set_scan_mode(struct max1363_state *st)
-@@ -327,9 +357,7 @@ static int max1363_set_scan_mode(struct max1363_state *st)
- 			    | MAX1363_SE_DE_MASK);
- 	st->configbyte |= st->current_mode->conf;
- 
--	return max1363_write_basic_config(st->client,
--					  st->setupbyte,
--					  st->configbyte);
-+	return max1363_write_basic_config(st);
- }
- 
- static int max1363_read_single_chan(struct iio_dev *indio_dev,
-@@ -366,7 +394,7 @@ static int max1363_read_single_chan(struct iio_dev *indio_dev,
- 	}
- 	if (st->chip_info->bits != 8) {
- 		/* Get reading */
--		data = i2c_master_recv(client, rxbuf, 2);
-+		data = st->recv(client, rxbuf, 2);
- 		if (data < 0) {
- 			ret = data;
- 			goto error_ret;
-@@ -375,7 +403,7 @@ static int max1363_read_single_chan(struct iio_dev *indio_dev,
- 		  ((1 << st->chip_info->bits) - 1);
- 	} else {
- 		/* Get reading */
--		data = i2c_master_recv(client, rxbuf, 1);
-+		data = st->recv(client, rxbuf, 1);
- 		if (data < 0) {
- 			ret = data;
- 			goto error_ret;
-@@ -772,11 +800,11 @@ static irqreturn_t max1363_event_handler(int irq, void *private)
- 	u8 tx[2] = { st->setupbyte,
- 		     MAX1363_MON_INT_ENABLE | (st->monitor_speed << 1) | 0xF0 };
- 
--	i2c_master_recv(st->client, &rx, 1);
-+	st->recv(st->client, &rx, 1);
- 	mask = rx;
- 	for_each_set_bit(loc, &mask, 8)
- 		iio_push_event(indio_dev, max1363_event_codes[loc], timestamp);
--	i2c_master_send(st->client, tx, 2);
-+	st->send(st->client, tx, 2);
- 
- 	return IRQ_HANDLED;
- }
-@@ -812,9 +840,7 @@ static int max1363_monitor_mode_update(struct max1363_state *st, int enabled)
- 		st->setupbyte &= ~MAX1363_SETUP_MONITOR_SETUP;
- 		st->configbyte &= ~MAX1363_SCAN_MASK;
- 		st->monitor_on = false;
--		return max1363_write_basic_config(st->client,
--						st->setupbyte,
--						st->configbyte);
-+		return max1363_write_basic_config(st);
- 	}
- 
- 	/* Ensure we are in the relevant mode */
-@@ -876,7 +902,7 @@ static int max1363_monitor_mode_update(struct max1363_state *st, int enabled)
- 		}
- 
- 
--	ret = i2c_master_send(st->client, tx_buf, len);
-+	ret = st->send(st->client, tx_buf, len);
- 	if (ret < 0)
- 		goto error_ret;
- 	if (ret != len) {
-@@ -893,7 +919,7 @@ static int max1363_monitor_mode_update(struct max1363_state *st, int enabled)
- 	 */
- 	tx_buf[0] = st->setupbyte;
- 	tx_buf[1] = MAX1363_MON_INT_ENABLE | (st->monitor_speed << 1) | 0xF0;
--	ret = i2c_master_send(st->client, tx_buf, 2);
-+	ret = st->send(st->client, tx_buf, 2);
- 	if (ret < 0)
- 		goto error_ret;
- 	if (ret != 2) {
-@@ -1481,9 +1507,9 @@ static irqreturn_t max1363_trigger_handler(int irq, void *p)
- 	if (rxbuf == NULL)
- 		goto done;
- 	if (st->chip_info->bits != 8)
--		b_sent = i2c_master_recv(st->client, rxbuf, numvals*2);
-+		b_sent = st->recv(st->client, rxbuf, numvals * 2);
- 	else
--		b_sent = i2c_master_recv(st->client, rxbuf, numvals);
-+		b_sent = st->recv(st->client, rxbuf, numvals);
- 	if (b_sent < 0)
- 		goto done_free;
- 
-@@ -1550,6 +1576,18 @@ static int max1363_probe(struct i2c_client *client,
- 		st->vref_uv = vref_uv;
- 	}
- 
-+	if (i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		st->send = i2c_master_send;
-+		st->recv = i2c_master_recv;
-+	} else if (i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE)
-+			&& st->chip_info->bits == 8) {
-+		st->send = max1363_smbus_send;
-+		st->recv = max1363_smbus_recv;
-+	} else {
-+		ret = -EOPNOTSUPP;
-+		goto error_disable_reg;
-+	}
-+
- 	ret = max1363_alloc_scan_masks(indio_dev);
- 	if (ret)
- 		goto error_disable_reg;
--- 
-1.8.4.1
+Acked-by: Christoph Lameter <cl@linux.com>
 
