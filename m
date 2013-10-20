@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab3JTHe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 03:34:59 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:60413 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3JTHe6 (ORCPT
+	id S1751328Ab3JTHio (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 03:38:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36815 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab3JTHim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 03:34:58 -0400
-Date: Sun, 20 Oct 2013 09:34:56 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 3/5] timer: Change idle/iowait accounting semantics
-Message-ID: <20131020073456.GA2729@rhlx01.hs-esslingen.de>
+	Sun, 20 Oct 2013 03:38:42 -0400
+Date: Sat, 19 Oct 2013 19:57:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
+Message-ID: <20131020025713.GA22344@kroah.com>
+References: <1381296747.2040.17.camel@joe-AO722>
+ <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
+ <CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
+ <CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
+ <20131018225702.GA13090@kroah.com>
+ <8761stu7rl.fsf@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382195841-6558-4-git-send-email-fweisbec@gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <8761stu7rl.fsf@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Oct 18, 2013 at 10:52:46PM -0700, Kevin Hilman wrote:
+> Greg KH <gregkh@linuxfoundation.org> writes:
+> 
+> > On Fri, Oct 18, 2013 at 10:04:11AM -0700, Kevin Hilman wrote:
+> >> > A handful of boot panics on ARM platforms were bisected to point at
+> >> > the version of this commit that's in linux-next (commit
+> >> > 64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
+> >> > makes things happy again.
+> >> >
+> >> > Upon further digging, it seems that users of devres_alloc() are
+> >> > relying on the previous behavior of having the memory zero'd which is
+> >> > no longer the case after $SUBJECT patch.  The change below on top of
+> >> > -next makes these ARM boards happy again.
+> >> 
+> >> Oops, it should've fixed __devres_alloc() also.  Updated patch below.
+> >
+> > Can you send this in a format that I can apply it in?  It was whitespace
+> > damaged.
+> 
+> hmm, sorry about that.  This one should work, though I wonder if Andrew
+> should pick this up since I think the patch that causes the breakage
+> came through his tree.
 
-just wanted to report that this capricious open-coded (ok, lone-coded :)
-converter:
+No, the patch is in my tree, not Andrew's.
 
-+static inline ktime_t us_to_ktime(u64 us)
-+{
-+	static const ktime_t ktime_zero = { .tv64 = 0 };
-+
-+	return ktime_add_us(ktime_zero, us);
-+}
+Joe, can I get a signed-off-by for this?
 
-triggered a virtual red flag in my processing.
+thanks,
 
-We obviously seem to be compensating for a domain mismatch here:
-
-+	iowait = get_cpu_iowait_time_us(cpu, NULL);
-+
-+	if (ktime_compare(idle, us_to_ktime(iowait)) > 0)
-+		idle = ktime_sub_us(idle, iowait);
-+
-
-And sure enough:
-get_cpu_iowait_time_us() does a final to-us conversion
-only right before result is returned,
-and it's located right within the same build unit (tick-sched.c).
-(and then we go ahead and do a from-us round trip :-P)
-
-So, in case we want to standardize on ktime_t domain
-for these parts of purely *in-kernel* time handling,
-how about adding a _unit-local_ helper for providing a ktime-only result
-and convert get_cpu_iowait_time_us() into a simple to-us *external user code*
-one-line wrapper for it?
-(and include updates to all other places which would benefit from this change)
-
-And preferably launch such patch as a preparatory patch for this
-subsequent 3/5 patch, within the series?
-
-Unless I missed some other restrictions which cause us to need to cling
-to that manual from-us conversion, for now or forever...
-
-Andreas Mohr
+greg k-h
