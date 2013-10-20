@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab3JTHrf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 03:47:35 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:49834 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3JTHre (ORCPT
+	id S1751443Ab3JTHtK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 03:49:10 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:60603 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3JTHtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 03:47:34 -0400
-Message-ID: <52638A84.7000706@linux.vnet.ibm.com>
-Date: Sun, 20 Oct 2013 13:17:16 +0530
-From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v3 1/3] SDT markers listing by perf:
-References: <20131018143714.10452.83494.stgit@hemant-fedora> <20131018144231.10452.65885.stgit@hemant-fedora> <5262A4F6.3000609@hitachi.com>
-In-Reply-To: <5262A4F6.3000609@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102007-5490-0000-0000-000004594269
+	Sun, 20 Oct 2013 03:49:08 -0400
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: linux-kernel@vger.kernel.org, mturquette@linaro.org
+Cc: patches@linaro.org, Haojian Zhuang <haojian.zhuang@linaro.org>
+Subject: [PATCH] clk: mux: fix the return value of get_parent
+Date: Sun, 20 Oct 2013 15:48:55 +0800
+Message-Id: <1382255335-8131-1-git-send-email-haojian.zhuang@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+If there're no parents on the clock mux node, it should return 0, not an
+errnor code.
 
-On 10/19/2013 08:57 PM, Masami Hiramatsu wrote:
-> (2013/10/18 23:44), Hemant Kumar wrote:
-[...]
->> +int show_sdt_notes(const char *target)
->> +{
->> +	int ret;
->> +	LIST_HEAD(sdt_notes);
->> +
->> +	ret = get_sdt_note_list(&sdt_notes, target);
->> +	if (!list_empty(&sdt_notes)) {
->> +		if (!ret)
-> Hmm, why don't you check the ret first? And I think the
-> empty check should be done in display_sdt_note_info() and
-> cleanup_sdt_note_list() (anyway, since both uses list_for_each*()
-> it is already done).
+The orphan clock node is using get_parent() to get the index of its
+parents in__clk_init(). If the return value is negative, it'll be
+transformed to a u8 value (clk_mux_get_parent()). Then the orphan clock
+node tries to get its parent with the invalid index. It will only cause
+accessing memory beyond border.
 
-Okay, will do that.
+Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+---
+ drivers/clk/clk-mux.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->
->> +			display_sdt_note_info(&sdt_notes);
->> +		cleanup_sdt_note_list(&sdt_notes);
->> +	}
->> +	return ret;
->> +}
-> Others are good for me. :)
-
-Great! thanks for the review. :)
-
+diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+index 4f96ff3..cc06015 100644
+--- a/drivers/clk/clk-mux.c
++++ b/drivers/clk/clk-mux.c
+@@ -51,7 +51,7 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
+ 		for (i = 0; i < num_parents; i++)
+ 			if (mux->table[i] == val)
+ 				return i;
+-		return -EINVAL;
++		return 0;
+ 	}
+ 
+ 	if (val && (mux->flags & CLK_MUX_INDEX_BIT))
+@@ -61,7 +61,7 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
+ 		val--;
+ 
+ 	if (val >= num_parents)
+-		return -EINVAL;
++		return 0;
+ 
+ 	return val;
+ }
 -- 
-Thanks
-Hemant Kumar
+1.8.1.2
 
