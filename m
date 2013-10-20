@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449Ab3JTOab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 10:30:31 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33195 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3JTOaY (ORCPT
+	id S1751253Ab3JTPWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 11:22:04 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:60788 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab3JTPWB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 10:30:24 -0400
-X-Originating-IP: 77.221.165.98
-Date: Sun, 20 Oct 2013 15:30:16 +0100
-From: Josh Triplett <josh@joshtriplett.org>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] kvm: Delete prototype for non-existent function
- kvm_check_iopl
-Message-ID: <20131020143015.GA2996@leaf>
+	Sun, 20 Oct 2013 11:22:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5263DA0A.7030004@linux.com>
+References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
+	<F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com>
+	<CABjrhvqLgVSEOJVuS1n-R_kyvhFouUqhfjqS4P_jsPGAec+KdQ@mail.gmail.com>
+	<20131020123521.GA15627@thunk.org>
+	<CABjrhvpzcETE=CZrOkRgxpKhFm9-piYJLJ=8zdwnNkmJtkWRtQ@mail.gmail.com>
+	<5263D576.70202@linux.com>
+	<CABjrhvq8WYUzv6DVewiincNkSH9rCC_-1RVEOop1QE8+e3dnig@mail.gmail.com>
+	<5263DA0A.7030004@linux.com>
+Date: Sun, 20 Oct 2013 23:22:00 +0800
+Message-ID: <CABjrhvomv62ww9z3_LXosWVMPCrAe7jME2NhBa4AkaZP5TQN3Q@mail.gmail.com>
+Subject: Re: [RFC] Rollback FS
+From: jiaweiwei <jiaweiwei.xiyou@gmail.com>
+To: Levente Kurusa <levex@linux.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Vyacheslav Dubeyko <slava@dubeyko.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Harry Wei <harryxiyou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prototype for kvm_check_iopl appeared in commit
-f850e2e603bf5a05b0aee7901857cf85715aa694 ("KVM: x86 emulator: Check IOPL
-level during io instruction emulation"), but the function never actually
-existed.  Remove the prototype.
+On Sun, Oct 20, 2013 at 9:26 PM, Levente Kurusa <levex@linux.com> wrote:
+> 2013-10-20 15:19 keltezéssel, jiaweiwei írta:
+>> On Sun, Oct 20, 2013 at 9:07 PM, Levente Kurusa <levex@linux.com> wrote:
+>> [...]
+>>>> A good catch. Following ideas would be suitable.
+>>>>
+>>>> 1, Keep the blocks or inodes by a parameter we give.
+>>>> 2, Keep the blocks or inodes for several seconds.
+>>> Keep them where? On the HDD? We just deleted/moved that.
+>>
+>> Delete/move a file with a parameter, which would keep the blocks or inodes
+>> in-place. Or we would keep the blocks or inodes for several seconds.
+>
+> The problem with keeping the inodes/blocks for several seconds is
+> that you would need to find a magic number that is not small enough,
+> because if it is, then what if the user doesn't notice the problem
+> during a long operation? If the magic number is big, then we waste a
+> lot of space.
+>
+> The problem with the parameter thing is that again, all the different
+> filesystems need to support that feature. We can't just tell Ext3 or JFFS2 on the VFS level,
+> that 'Hey, keep those inodes in place incase someone just made himself some headache.'
+>
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/include/asm/kvm_host.h | 2 --
- 1 file changed, 2 deletions(-)
+Above you said are what we should do. Don't waste time, let me design and
+implement it. I would send design document for review, thanks.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 00c5f44..ea52306 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -926,8 +926,6 @@ void kvm_mmu_invlpg(struct kvm_vcpu *vcpu, gva_t gva);
- void kvm_enable_tdp(void);
- void kvm_disable_tdp(void);
- 
--bool kvm_check_iopl(struct kvm_vcpu *vcpu);
--
- static inline gpa_t translate_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 access)
- {
- 	return gpa;
+
 -- 
-1.8.4.rc3
-
+ do kernel
