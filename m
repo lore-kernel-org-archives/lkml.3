@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751138Ab3JTGBt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 02:01:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47473 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab3JTGBr convert rfc822-to-8bit (ORCPT
+	id S1751194Ab3JTGpj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 02:45:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33624 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750916Ab3JTGph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 02:01:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,532,1378882800"; 
-   d="scan'208";a="377206301"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>
-CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] iwlwifi: remove duplicate includes
-Thread-Topic: [PATCH] iwlwifi: remove duplicate includes
-Thread-Index: AQHOzVHVeHype0Fitk++ZHQaFlSKCJn9GPWQ
-Date: Sun, 20 Oct 2013 06:01:42 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB301DDAABA@HASMSX103.ger.corp.intel.com>
-References: <1382245260-19065-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1382245260-19065-1-git-send-email-michael.opdenacker@free-electrons.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 20 Oct 2013 02:45:37 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: johannes@sipsolutions.net, davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] mac80211: document IEEE80211_HW_SUPPORTS_HT_CCK_RATES
+Date: Sun, 20 Oct 2013 08:45:29 +0200
+Message-Id: <1382251529-22540-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] iwlwifi: remove duplicate includes
-> 
-> Reported by "make includecheck"
-> 
-> Tested that the corresponding sources still compile well on x86
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-
-> electrons.com>
-> ---
+This patch documents the IEEE80211_HW_SUPPORTS_HT_CCK_RATES flag
+in ieee80211_hw_flags.
 
-Picked up. Thanks.
+Without this, you get countless warnings in "make htmldocs".
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ include/net/mac80211.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index cc6035f..0a26a6e 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1492,6 +1492,9 @@ struct ieee80211_tx_control {
+  *
+  * @IEEE80211_HW_TIMING_BEACON_ONLY: Use sync timing from beacon frames
+  *	only, to allow getting TBTT of a DTIM beacon.
++ *
++ * @IEEE80211_HW_SUPPORTS_HT_CCK_RATES:
++ *	Hardware has CCK support for HT clients.
+  */
+ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
+-- 
+1.8.1.2
+
