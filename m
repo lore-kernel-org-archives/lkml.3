@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab3JTBPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Oct 2013 21:15:16 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:38233 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab3JTBPO (ORCPT
+	id S1751015Ab3JTBiV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Oct 2013 21:38:21 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:46175 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab3JTBiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Oct 2013 21:15:14 -0400
-Date: Sun, 20 Oct 2013 09:14:47 +0800
+	Sat, 19 Oct 2013 21:38:20 -0400
+Date: Sun, 20 Oct 2013 09:37:57 +0800
 From: ZHAO Gang <gamerh2o@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: remove function sk_reset_txq()
-Message-ID: <20131020011447.GA22399@will>
+Subject: [PATCH v2] net: remove function sk_reset_txq()
+Message-ID: <20131020013757.GA25265@will>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,11 +22,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 What sk_reset_txq() does is just calls function sk_tx_queue_reset(),
-and sk_reset_txq() is used only in sock.c, by dst_negative_advice().
+and sk_reset_txq() is used only in sock.h, by dst_negative_advice().
 Let dst_negative_advice() calls sk_tx_queue_reset() directly so we
 can remove unneeded sk_reset_txq().
 
 Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+change a typo in patch description: sock.c -> sock.h
 ---
  include/net/sock.h | 4 +---
  net/core/sock.c    | 6 ------
