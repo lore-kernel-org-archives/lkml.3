@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab3JTNkP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 09:40:15 -0400
-Received: from mail.aswara.edu.my ([211.25.235.134]:49602 "HELO
-	zimbra.aswara.edu.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1750897Ab3JTNkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 09:40:12 -0400
-X-Greylist: delayed 5067 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Oct 2013 09:39:59 EDT
-Date: Sun, 20 Oct 2013 19:47:30 +0800 (MYT)
-From: Sung Lee <suzlee@aswara.edu.my>
-Reply-To: Sung Lee <sleehk24@zing.vn>
-Subject: Greetings
-Message-ID: <ec9e4461-9fb7-4108-81e8-e2f0ba2fb51a@zimbra>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751285Ab3JTOOw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 10:14:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36126 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab3JTOOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 10:14:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,533,1378882800"; 
+   d="scan'208";a="414048750"
+Date: Sun, 20 Oct 2013 18:51:19 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: misc: remove deprecated IRQF_DISABLED
+Message-ID: <20131020132119.GK14013@intel.com>
+References: <1381641051-7287-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20131013145400.GH2954@intel.com>
+ <525B6623.8020102@free-electrons.com>
 MIME-Version: 1.0
-X-Originating-IP: [41.138.176.224]
-X-Mailer: Zimbra 7.1.1_GA_3196 (zclient/7.1.1_GA_3196)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525B6623.8020102@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 14, 2013 at 05:33:55AM +0200, Michael Opdenacker wrote:
+> Hi Vinod,
+> 
+> On 10/13/2013 04:54 PM, Vinod Koul wrote:
+> > On Sun, Oct 13, 2013 at 07:10:51AM +0200, Michael Opdenacker wrote:
+> >> This patch proposes to remove the use of the IRQF_DISABLED flag
+> >>
+> >> It's a NOOP since 2.6.35 and it will be removed one day.
+> > Applied, thanks. Title shouldnt have misc as it doesnt convey anything.
+> Thanks!
+> 
+> Indeed, I sent separate patches for files which had different
+> maintainers, and grouped the patches for files which shared the same
+> maintainer information.
+> 
+> I put "misc" to avoid suggesting that the patch is for everything under
+> drivers/dma/, which is not the case. Wouldn't it have been confusing
+> otherwise?
+dmaengine: convert drivers to ....
 
+would have been right too as you are taregtting a subsystem as a whole...
 
-
-
-DAH SING BANK LTD
-DES VOEUX RD.BRANCH,CENTRAL HONG KONG,
-HONG KONG.
-
-Greetings,
-
-I am Mr.Sung Lee, Auditing and Account Credit Officer, Dah Sing Bank Ltd,(Hong Kong). I ask for your partnership in re-profiling funds Transfer. 
-
-Further to this,details would be made known if interested but in summary the funds would be transferred from my bank and further to this other informations to facilitate the remittance of the funds will be revealed to you in due course. For your assistance, you shall receive 25% of the funds to be transferred .
-
-I will appreciate if you can reply me.
-
-I'm looking forward to it
-Sung Lee
-
-The information contained in this email and any attachments is confidential and may be subject to copyright or other intellectual property protection. If you are not the intended recipient, you are not authorized to use or disclose this information, and we request that you notify us by reply mail or telephone and delete the original message from your mail system.
+--
+~Vinod
