@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab3JTVbz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 17:31:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57443 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3JTVbx (ORCPT
+	id S1752107Ab3JTVdN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 17:33:13 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59523 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3JTVdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 17:31:53 -0400
-Message-ID: <52644BBF.2050704@wwwdotorg.org>
-Date: Sun, 20 Oct 2013 22:31:43 +0100
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 20 Oct 2013 17:33:12 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 01/15] ARM: tegra30: add missing CLK IDs
-References: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com> <1382102719-5531-2-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1382102719-5531-2-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1382304603-26395-1-git-send-email-geert@linux-m68k.org>
+References: <1382304603-26395-1-git-send-email-geert@linux-m68k.org>
+Date: Sun, 20 Oct 2013 23:33:11 +0200
+X-Google-Sender-Auth: Og5PC6P-Gg7IVgRxRnqA1VciN0Q
+Message-ID: <CAMuHMdX+X+v6+QavzDdJM7rQv2-ztZAyoi0iUBzmzs1xC6taWg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.12-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Cris <linux-cris-kernel@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2013 02:25 PM, Peter De Schrijver wrote:
-> The Tegra30 clock bindings lack few IDs for audio and clk_out muxes.
+On Sun, Oct 20, 2013 at 11:30 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.12-rc6 to v3.12-rc5[3], the summaries are:
+>   - build errors: +9/-13
 
-Is there a list of changes for V5?
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-pca-platform.c: error:
+implicit declaration of function 'ioread8'
+[-Werror=implicit-function-declaration]cc1: some warnings being
+treated as errors:  => 46:2
 
-Don't forget that I gave tested-by/acked-by for V4(?), unless you've
-changed so much you consider that to no longer apply?
+cris-allmodconfig/cris-allyesconfig
+
+  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
+
+x86_64-randconfig
+
+  + error: No rule to make target include/config/auto.conf:  => N/A
+
+powerpc-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6796/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6776/ (all 120 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
