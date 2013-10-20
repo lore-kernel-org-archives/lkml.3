@@ -1,169 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab3JTTcS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 15:32:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52625 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab3JTTcP (ORCPT
+	id S1751849Ab3JTUgR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 16:36:17 -0400
+Received: from s15283307.onlinehome-server.info ([87.106.208.187]:41604 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab3JTUgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 15:32:15 -0400
-Date: Sun, 20 Oct 2013 12:31:21 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-3090ffb5a2515990182f3f55b0688a7817325488@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        jolsa@redhat.com, ak@linux.intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        jolsa@redhat.com, dsahern@gmail.com, ak@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20131017173215.GA8820@quad>
-References: <20131017173215.GA8820@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Disable PERF_RECORD_MMAP2 support
-Git-Commit-ID: 3090ffb5a2515990182f3f55b0688a7817325488
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 20 Oct 2013 12:31:29 -0700 (PDT)
+	Sun, 20 Oct 2013 16:36:17 -0400
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] vsprintf: add Bluetooth UUID %pU[rR] format specifier
+Date: Sun, 20 Oct 2013 13:36:11 -0700
+Message-Id: <1382301371-20428-1-git-send-email-marcel@holtmann.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3090ffb5a2515990182f3f55b0688a7817325488
-Gitweb:     http://git.kernel.org/tip/3090ffb5a2515990182f3f55b0688a7817325488
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 17 Oct 2013 19:32:15 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Oct 2013 16:27:14 -0300
+The Bluetooth UUID is used in big endian reversed order. Add new
+modifier to print a UUID in big endian, but where the input byte
+stream is actually in reversed order.
 
-perf: Disable PERF_RECORD_MMAP2 support
+This is similar to %pMR that allows to print a MAC address in
+reversed order since that is how the Bluetooth BD_ADDR is
+actually represented in a byte stream.
 
-For now, we disable the extended MMAP record support (MMAP2).
-
-We have identified cases where it would not report the correct mapping
-information, clone(VM_CLONE) but with separate pids.  We will revisit
-the support once we find a solution for this case.
-
-The patch changes the kernel to return EINVAL if attr->mmap2 is set. The
-patch also modifies the perf tool to use regular PERF_RECORD_MMAP for
-synthetic events and it also prevents the tool from requesting
-attr->mmap2 mode because the kernel would reject it.
-
-The support will be revisited once the kenrel interface is updated.
-
-In V2, we reduce the patch to the strict minimum.
-
-In V3, we avoid calling perf_event_open() with mmap2 set because we know
-it will fail and require fallback retry.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131017173215.GA8820@quad
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 ---
- kernel/events/core.c    |  4 ++++
- tools/perf/util/event.c | 30 +++++++++++++-----------------
- tools/perf/util/evsel.c |  1 -
- 3 files changed, 17 insertions(+), 18 deletions(-)
+v2: Allow combinations of %pUlr etc.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d49a9d2..953c143 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6767,6 +6767,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
+ Documentation/printk-formats.txt |  6 ++++++
+ lib/vsprintf.c                   | 40 ++++++++++++++++++++++++++++------------
+ 2 files changed, 34 insertions(+), 12 deletions(-)
+
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 445ad74..1fd0e43 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -159,12 +159,18 @@ UUID/GUID addresses:
+ 	%pUB	00010203-0405-0607-0809-0A0B0C0D0E0F
+ 	%pUl	03020100-0504-0706-0809-0a0b0c0e0e0f
+ 	%pUL	03020100-0504-0706-0809-0A0B0C0E0E0F
++	%pUr	0f0e0d0c-0b0a-0908-0706-050403020100
++	%pUR	0F0E0D0C-0B0A-0908-0706-050403020100
  
-+	/* disabled for now */
-+	if (attr->mmap2)
-+		return -EINVAL;
+ 	For printing 16-byte UUID/GUIDs addresses. The additional 'l', 'L',
+ 	'b' and 'B' specifiers are used to specify a little endian order in
+ 	lower ('l') or upper case ('L') hex characters - and big endian order
+ 	in lower ('b') or upper case ('B') hex characters.
+ 
++	The additional 'r' and 'R' specifiers are used to specify reversed
++	big endian order in either lower ('r') or upper case ('R') hex
++	characters. This is useful for Bluetooth UUID addresses.
 +
- 	if (attr->__reserved_1)
- 		return -EINVAL;
+ 	Where no additional specifiers are used the default little endian
+ 	order with lower case hex characters will be printed.
  
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 9b393e7..63df031 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -187,7 +187,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 26559bd..d0f9188 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1106,20 +1106,32 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 	static const u8 le[16] = {3,2,1,0,5,4,7,6,8,9,10,11,12,13,14,15};
+ 	const u8 *index = be;
+ 	bool uc = false;
++	bool reversed = false;
+ 
+-	switch (*(++fmt)) {
+-	case 'L':
+-		uc = true;		/* fall-through */
+-	case 'l':
+-		index = le;
+-		break;
+-	case 'B':
+-		uc = true;
+-		break;
++	while (isalpha(*++fmt)) {
++		switch (*fmt) {
++		case 'L':
++			uc = true;		/* fall-through */
++		case 'l':
++			index = le;
++			break;
++		case 'B':
++			uc = true;
++			break;
++		case 'R':
++			uc = true;		/* fall-through */
++		case 'r':
++			reversed = true;
++			break;
++		}
  	}
  
--	event->header.type = PERF_RECORD_MMAP2;
-+	event->header.type = PERF_RECORD_MMAP;
- 	/*
- 	 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
- 	 */
-@@ -198,7 +198,6 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
--		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -209,13 +208,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
--		       &event->mmap2.start, &event->mmap2.len, prot,
--		       &event->mmap2.pgoff, &event->mmap2.maj,
--		       &event->mmap2.min,
--		       &ino, execname);
--
--		event->mmap2.ino = (u64)ino;
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
-+		       &event->mmap.start, &event->mmap.len, prot,
-+		       &event->mmap.pgoff,
-+		       execname);
- 
- 		if (n != 8)
- 			continue;
-@@ -227,15 +223,15 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
- 
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap2.filename, execname, size);
-+		memcpy(event->mmap.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap2.len -= event->mmap.start;
--		event->mmap2.header.size = (sizeof(event->mmap2) -
--					(sizeof(event->mmap2.filename) - size));
--		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
--		event->mmap2.header.size += machine->id_hdr_size;
--		event->mmap2.pid = tgid;
--		event->mmap2.tid = pid;
-+		event->mmap.len -= event->mmap.start;
-+		event->mmap.header.size = (sizeof(event->mmap) -
-+					(sizeof(event->mmap.filename) - size));
-+		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
-+		event->mmap.header.size += machine->id_hdr_size;
-+		event->mmap.pid = tgid;
-+		event->mmap.tid = pid;
- 
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 0ce9feb..9f1ef9b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -678,7 +678,6 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
- 
- 	attr->mmap  = track;
--	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
- 
- 	/*
+ 	for (i = 0; i < 16; i++) {
+-		p = hex_byte_pack(p, addr[index[i]]);
++		if (reversed)
++			p = hex_byte_pack(p, addr[index[15 - i]]);
++		else
++			p = hex_byte_pack(p, addr[index[i]]);
++
+ 		switch (i) {
+ 		case 3:
+ 		case 5:
+@@ -1199,10 +1211,14 @@ int kptr_restrict __read_mostly;
+  *         B big endian UPPER case hex
+  *         l little endian lower case hex
+  *         L little endian UPPER case hex
++ *         r big endian lower case hex, reverse order (Bluetooth)
++ *         R big endian UPPER case hex, reverse order (Bluetooth)
+  *           big endian output byte order is:
+  *             [0][1][2][3]-[4][5]-[6][7]-[8][9]-[10][11][12][13][14][15]
+  *           little endian output byte order is:
+  *             [3][2][1][0]-[5][4]-[7][6]-[8][9]-[10][11][12][13][14][15]
++ *           big endian, reverse order output byte order is:
++ *             [15][14][13][12]-[11][10]-[9][8]-[7][6]-[5][4][3][2][1][0]
+  * - 'V' For a struct va_format which contains a format string * and va_list *,
+  *       call vsnprintf(->format, *->va_list).
+  *       Implements a "recursive vsnprintf".
+@@ -1572,8 +1588,8 @@ qualifier:
+  * %pI6c print an IPv6 address as specified by RFC 5952
+  * %pIS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+  * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+- * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+- *   case.
++ * %pU[bBlLrR] print a UUID/GUID in big or little endian or reversed order
++ *   big endian using lower or upper case.
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+  *           bytes of the input)
+  * %n is ignored
+-- 
+1.8.3.1
+
