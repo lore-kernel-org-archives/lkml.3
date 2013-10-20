@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249Ab3JTPmL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 11:42:11 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:50517 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3JTPmJ (ORCPT
+	id S1751328Ab3JTPvt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 11:51:49 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18805 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3JTPvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 11:42:09 -0400
-Date: Sun, 20 Oct 2013 08:42:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Petr Mladek <pmladek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 2/6] x86: allow to call text_poke_bp during boot
-Message-ID: <20131020154203.GN4118@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1382106445-31468-3-git-send-email-pmladek@suse.cz>
- <52629F08.2010609@hitachi.com>
- <20131019151658.583ac18e@gandalf.local.home>
- <20131019151919.2d4778d2@gandalf.local.home>
- <20131019213350.GH4118@linux.vnet.ibm.com>
- <20131019180239.1e318628@gandalf.local.home>
+	Sun, 20 Oct 2013 11:51:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/vZlIAQMJ04IGTmZ/uN0NU
+Date: Sun, 20 Oct 2013 08:51:35 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+Message-ID: <20131020155135.GW12599@atomide.com>
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org>
+ <5231E44C.9070800@ahsoftware.de>
+ <20130918003632.CBF48C42BC5@trevor.secretlab.ca>
+ <1805938.y3dym69kEh@avalon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131019180239.1e318628@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102015-1344-0000-0000-0000029BD641
+In-Reply-To: <1805938.y3dym69kEh@avalon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 19, 2013 at 06:02:39PM -0400, Steven Rostedt wrote:
-> On Sat, 19 Oct 2013 14:33:50 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+* Laurent Pinchart <laurent.pinchart@ideasonboard.com> [131020 05:41]:
+> Hi Grant,
 > 
-> 
-> > > > It's used to convert the calls to mcount to nops. But maybe a better
-> > > > thing to do is to check if we only have a single CPU:
+> On Tuesday 17 September 2013 17:36:32 Grant Likely wrote:
+> > On Thu, 12 Sep 2013 17:57:00 +0200, Alexander Holler wrote:
+> > > Am 12.09.2013 17:19, schrieb Stephen Warren:
+> > > > IRQs, DMA channels, and GPIOs are all different things. Their bindings
+> > > > are defined independently. While it's good to define new types of
+> > > > bindings consistently with other bindings, this hasn't always happened,
+> > > > so you can make zero assumptions about the IRQ bindings by reading the
+> > > > documentation for any other kind of binding.
 > > > > 
-> > > > static void run_sync(void)
-> > > > {
-> > > > 	if (num_online_cpus() != 1)
+> > > > Multiple interrupts are defined as follows:
+> > > > 	// Optional; otherwise inherited from parent/grand-parent/...
+> > > > 	interrupt-parent = <&gpio6>;
+> > > > 	// Must be in a fixed order, unless binding defines that the
+> > > > 	// optional interrupt-names property is to be used.
+> > > > 	interrupts = <1 IRQF_TRIGGER_HIGH> <2 IRQF_TRIGGER_LOW>;
+> > > > 	// Optional; binding for device defines whether it must
+> > > > 	// be present
+> > > > 	interrupt-names = "foo", "bar";
+> > > > 
+> > > > If you need multiple interrupts, each with a different parent, you need
+> > > > to use an interrupt-map property (Google it for a more complete
+> > > > explanation I guess). Unlike "interrupts", "interrupt-map" has a phandle
+> > > > in each entry, and hence each entry can refer to a different IRQ
+> > > > controller. You end up defining a dummy interrupt controller node (which
+> > > > may be the leaf node with multiple IRQ outputs, which then points at
+> > > > itself as the interrupt parent), pointing the leaf node's
+> > > > interrupt-parent at that node, and then having interrupt-map "demux" the
+> > > > N interrupt outputs to the various interrupt controllers.
 > > > 
-> > > Hmm, to be more robust to handle our future "ideal" machines, perhaps
-> > > this should be:
+> > > What a mess. I assume that is the price that bindings don't have to
+> > > change.
 > > > 
-> > > 	/* Ideally we would like to run on zero CPUS! */
-> > > 	if (num_online_cpus() < 2)
+> > > Thanks for clarifying that,
+> > > 
+> > > Alexander Holler
 > > 
+> > Actually, I think it is solveable but doing so requires a new binding
+> > for interrupts. I took a shot at implementing it earlier this week and
+> > I've got working patches that I'll be posting soon. I created a new
+> > "interrupts-extended" property that uses a phandle+args type of
+> > binding like this:
+> > 
+> > intc1: intc@1000 {
+> > 	interrupt-controller;
+> > 	#interrupt-cells = <1>;
+> > };
+> > 
+> > intc2: intc@2000 {
+> > 	interrupt-controller;
+> > 	#interrupt-cells = <2>;
+> > };
+> > 
+> > device@3000 {
+> > 	interrupts-extended = <&intc1 5> <&intc2 3 4> <&intc1 6>;
+> > };
+> > 
+> > 'interrupts-extended' will be proposed as a directly replacement of the
+> > 'interrupts' property and it will eliminate the need for an
+> > interrupt-map property. A node will be allowed to have one or the other,
+> > but not both.
+> > 
+> > I'll write up a proper binding document and post for review.
 > 
-> Bah! And for such a simple computation, I got it wrong.
-> 
-> 
-> 	/* Ideally we would like to run on zero CPUS! */
-> 	if (num_online_cpus > 1)
-> 
-> But I guess the question comes. If we are running on zero CPUS, should
-> we perform the "on_each_cpu(do_sync_core, NULL, 1);" or not? Same goes
-> with 5i-3 CPUS, or negative number CPUs. If we need to do on_each_cpu(),
-> then I guess the != 1 will suffice.
+> Any progress on this ? I'll need to use multiple interrupts with different 
+> parents in the near future, I can take this over if needed.
 
-Makes sense to me!  Whoever adds the ability to run on zero, negative,
-or complex numbers of CPUs can adjust on_each_cpu() accordingly.
+Grant posted the interrupts-extended binding few days ago:
 
-							Thanx, Paul
+http://lkml.org/lkml/2013/10/15/760
+ 
+> I've also been thinking that we could possibly reuse the "interrupts" property 
+> without defining a new "interrupts-extended". When parsing the property the 
+> code would use the current DT bindings if an interrupt-parent is present, and 
+> the new DT bindings if it isn't.
+
+That could lead to mysterious failures easily as the binding
+behaves in two different ways :) Probably best to have a separate
+binding for it.
+
+Regards,
+
+Tony
 
