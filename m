@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3JTWPL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 18:15:11 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13492 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab3JTWPI (ORCPT
+	id S1752230Ab3JTWS1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 18:18:27 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55002 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab3JTWSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 18:15:08 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 20 Oct 2013 15:15:08 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 0/3] Fixup patches for gpiod interface
-Date: Sun, 20 Oct 2013 15:14:56 -0700
-Message-ID: <1382307299-22587-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4.1
-X-NVConfidentiality: public
+	Sun, 20 Oct 2013 18:18:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CACRpkdbpRkiANA32ZMEhm-XTB_FKCfmKQuGSmsD_0rLi96kPtQ@mail.gmail.com>
+References: <1382030498-23465-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdYx07Kfs6zOQmTg2cTSmEmsGgP=7wMCSG_30NW=dfYRPQ@mail.gmail.com>
+ <CAAVeFu+rj6AtKgfig6ZrYUzW9HZTg5qLyw4aGozyD31P_pEKAQ@mail.gmail.com> <CACRpkdbpRkiANA32ZMEhm-XTB_FKCfmKQuGSmsD_0rLi96kPtQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 20 Oct 2013 15:18:03 -0700
+Message-ID: <CAAVeFuJ=Qvj2pT57T88eURrUOFURRFSXrFA+pL4xiA9c5sh9ig@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] New descriptor-based GPIO interface
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix a few issues of the gpiod series highlighted by the
-autobuild system. They take root in the fact that devres.c was compiled
-even when gpiolib is not to be built, which should obviously not happen.
-But they also reveal missing includes in the same file, and sparse also
-pointed out a suspiscious line that happened to be completely wrong.
+On Sat, Oct 19, 2013 at 2:26 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Oct 18, 2013 at 7:37 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Fri, Oct 18, 2013 at 4:23 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>
+>>> We might have to take this as the first thing after the merge
+>>> window and targeted for v3.14.
+>>
+>> No particular pressure from my side to get this in 3.13. Do for the
+>> best, and don't hesitate to delay them to 3.14 if you feel they are
+>> not tested enough. I'll already feel better once I know they are under
+>> your tree. ;)
+>
+> I applied it now anyway, I will try to also apply the ACPI stuff
+> making use of this interface and then throw it at the autobuild
+> to see what happens.
 
-Patch 1/3 and 2/3 can be applied on their own, but would probably better
-be squashed into bae48da2 "add gpiod_get() and gpiod_put() functions".
+Autobuild was unfortunately not too happy with one of the patches,
+sorry about that. I have sent a small series that addresses the issues
+it highlighted. Not sure if you are ok with squashing the first two
+into bae48da2, but IMHO that would be the preferred way.
 
-Patch 3/3 stands on its own, and should preferably be applied before the
-rest of the gpiod series. It would not hurt to apply it after if 1/3 and
-2/3 are properly squashed.
-
-Apologies for these issues that could have been caught earlier had I been
-less negligent.
-
-Alexandre Courbot (3):
-  gpiolib: devres: fix devm_gpiod_get_index()
-  gpiolib: devres: add missing headers
-  gpiolib: make GPIO_DEVRES depend on GPIOLIB
-
- drivers/gpio/Kconfig  | 8 ++++----
- drivers/gpio/devres.c | 4 +++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
-
--- 
-1.8.4.1
-
+Thanks,
+Alex.
