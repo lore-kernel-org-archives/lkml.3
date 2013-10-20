@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab3JTI1w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 04:27:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45393 "EHLO
+	id S1751605Ab3JTI21 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 04:28:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45394 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3JTI1p (ORCPT
+	with ESMTP id S1751194Ab3JTI1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 04:27:45 -0400
+	Sun, 20 Oct 2013 04:27:46 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/3] perf probe: Fix to initialize fname always before use it
-Date: Sun, 20 Oct 2013 05:27:24 -0300
-Message-Id: <1382257646-5808-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/3] perf: Disable PERF_RECORD_MMAP2 support
+Date: Sun, 20 Oct 2013 05:27:26 -0300
+Message-Id: <1382257646-5808-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382257646-5808-1-git-send-email-acme@infradead.org>
 References: <1382257646-5808-1-git-send-email-acme@infradead.org>
@@ -27,47 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Stephane Eranian <eranian@google.com>
 
-Fix perf probe --list to initialize fname local var always before
-use it. This may cause a SEGV if there is a probe which is in
-the function body but not in any inline function.
+For now, we disable the extended MMAP record support (MMAP2).
 
-Problem introduced in:
+We have identified cases where it would not report the correct mapping
+information, clone(VM_CLONE) but with separate pids.  We will revisit
+the support once we find a solution for this case.
 
-	commit e08cfd4bda76
-	Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-	Date:   Mon Sep 30 18:21:44 2013 +0900
+The patch changes the kernel to return EINVAL if attr->mmap2 is set. The
+patch also modifies the perf tool to use regular PERF_RECORD_MMAP for
+synthetic events and it also prevents the tool from requesting
+attr->mmap2 mode because the kernel would reject it.
 
-	    perf probe: Fix to find line information for probe list
+The support will be revisited once the kenrel interface is updated.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20131011122317.9662.29736.stgit@kbuild-fedora.novalocal
+In V2, we reduce the patch to the strict minimum.
+
+In V3, we avoid calling perf_event_open() with mmap2 set because we know
+it will fail and require fallback retry.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131017173215.GA8820@quad
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c    |  4 ++++
+ tools/perf/util/event.c | 30 +++++++++++++-----------------
+ tools/perf/util/evsel.c |  1 -
+ 3 files changed, 17 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c09e0a9fdf4c..f0692737ebf1 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1357,10 +1357,10 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
- 			goto post;
- 		}
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d49a9d29334c..953c14348375 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6767,6 +6767,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (ret)
+ 		return -EFAULT;
  
-+		fname = dwarf_decl_file(&spdie);
- 		if (addr == (unsigned long)baseaddr) {
- 			/* Function entry - Relative line number is 0 */
- 			lineno = baseline;
--			fname = dwarf_decl_file(&spdie);
- 			goto post;
- 		}
++	/* disabled for now */
++	if (attr->mmap2)
++		return -EINVAL;
++
+ 	if (attr->__reserved_1)
+ 		return -EINVAL;
  
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 9b393e7dca6f..63df031fc9c7 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -187,7 +187,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	event->header.type = PERF_RECORD_MMAP2;
++	event->header.type = PERF_RECORD_MMAP;
+ 	/*
+ 	 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+ 	 */
+@@ -198,7 +198,6 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		char prot[5];
+ 		char execname[PATH_MAX];
+ 		char anonstr[] = "//anon";
+-		unsigned int ino;
+ 		size_t size;
+ 		ssize_t n;
+ 
+@@ -209,13 +208,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		strcpy(execname, "");
+ 
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
+-		       &event->mmap2.start, &event->mmap2.len, prot,
+-		       &event->mmap2.pgoff, &event->mmap2.maj,
+-		       &event->mmap2.min,
+-		       &ino, execname);
+-
+-		event->mmap2.ino = (u64)ino;
++		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
++		       &event->mmap.start, &event->mmap.len, prot,
++		       &event->mmap.pgoff,
++		       execname);
+ 
+ 		if (n != 8)
+ 			continue;
+@@ -227,15 +223,15 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			strcpy(execname, anonstr);
+ 
+ 		size = strlen(execname) + 1;
+-		memcpy(event->mmap2.filename, execname, size);
++		memcpy(event->mmap.filename, execname, size);
+ 		size = PERF_ALIGN(size, sizeof(u64));
+-		event->mmap2.len -= event->mmap.start;
+-		event->mmap2.header.size = (sizeof(event->mmap2) -
+-					(sizeof(event->mmap2.filename) - size));
+-		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
+-		event->mmap2.header.size += machine->id_hdr_size;
+-		event->mmap2.pid = tgid;
+-		event->mmap2.tid = pid;
++		event->mmap.len -= event->mmap.start;
++		event->mmap.header.size = (sizeof(event->mmap) -
++					(sizeof(event->mmap.filename) - size));
++		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
++		event->mmap.header.size += machine->id_hdr_size;
++		event->mmap.pid = tgid;
++		event->mmap.tid = pid;
+ 
+ 		if (process(tool, event, &synth_sample, machine) != 0) {
+ 			rc = -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 0ce9febf1ba0..9f1ef9bee2d0 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -678,7 +678,6 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+ 
+ 	attr->mmap  = track;
+-	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
+ 
+ 	/*
 -- 
 1.8.1.4
 
