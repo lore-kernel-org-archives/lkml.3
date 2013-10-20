@@ -1,69 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab3JTVH0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 17:07:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47881 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab3JTVHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 17:07:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,534,1378882800"; 
-   d="scan'208";a="395837718"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        rostedt@goodmis.org, peterz@infradead.org
-Subject: [PATCH] perf: Allow ftracing perf code
-Date: Sun, 20 Oct 2013 14:07:16 -0700
-Message-Id: <1382303236-23839-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751945Ab3JTV3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 17:29:46 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58279 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3JTV3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 17:29:45 -0400
+Date: Sun, 20 Oct 2013 17:29:10 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131020212910.GA3387@neilslaptop.think-freely.org>
+References: <20131012172124.GA18241@gmail.com>
+ <20131014202854.GH26880@hmsreliant.think-freely.org>
+ <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
+ <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131017003421.GA31470@hmsreliant.think-freely.org>
+ <1381974128.2045.144.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131018165034.GC4019@hmsreliant.think-freely.org>
+ <1382116835.3284.23.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131018201133.GD4019@hmsreliant.think-freely.org>
+ <1382130952.3284.43.camel@edumazet-glaptop.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382130952.3284.43.camel@edumazet-glaptop.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, Oct 18, 2013 at 02:15:52PM -0700, Eric Dumazet wrote:
+> On Fri, 2013-10-18 at 16:11 -0400, Neil Horman wrote:
+> 
+> > #define BUFSIZ_ORDER 4
+> > #define BUFSIZ ((2 << BUFSIZ_ORDER) * (1024*1024*2))
+> > static int __init csum_init_module(void)
+> > {
+> > 	int i;
+> > 	__wsum sum = 0;
+> > 	struct timespec start, end;
+> > 	u64 time;
+> > 	struct page *page;
+> > 	u32 offset = 0;
+> > 
+> > 	page = alloc_pages((GFP_TRANSHUGE & ~__GFP_MOVABLE), BUFSIZ_ORDER);
+> 
+> Not sure what you are doing here, but its not correct.
+> 
+Why not?  You asked for a test with 32 hugepages, so I allocated 32 hugepages.
 
-According to Stephen there is no reason left not to allow
-function trace in perf code.  Don't disable the function
-tracer instrumentation for the perf files. Changes the
-generic and the x86 files.
+> You have a lot of variations in your results, I suspect a NUMA affinity
+> problem.
+> 
+I do have some variation, you're correct, but I don't think its a numa issue
 
-I've been using variants of this patch for a long time and
-haven't seen any problems.  It's really useful to figure
-out why a complex perf_event_open() syscall fails.
+> You can try the following code, and use taskset to make sure you run
+> this on a cpu on node 0
+> 
+I did run this with taskset to do exactly that (hence my comment above).  I'll
+be glad to run your variant on monday morning though and provide results.
 
-Cc: rostedt@goodmis.org
-Cc: peterz@infradead.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/Makefile | 1 -
- kernel/events/Makefile       | 4 ----
- 2 files changed, 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 47b56a7..190bf4a 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -5,7 +5,6 @@
- # Don't trace early stages of a secondary CPU boot
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_common.o = -pg
--CFLAGS_REMOVE_perf_event.o = -pg
- endif
- 
- # Make sure load_percpu_segment has no stackprotector
-diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-index 103f5d1..a630994 100644
---- a/kernel/events/Makefile
-+++ b/kernel/events/Makefile
-@@ -1,7 +1,3 @@
--ifdef CONFIG_FUNCTION_TRACER
--CFLAGS_REMOVE_core.o = -pg
--endif
--
- obj-y := core.o ring_buffer.o callchain.o
- 
- obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
--- 
-1.8.3.1
+Best
+Neil
 
+
+> #define BUFSIZ 2*1024*1024
+> #define NBPAGES 16
+> 
+> static int __init csum_init_module(void)
+> {
+>         int i;
+>         __wsum sum = 0;
+>         u64 start, end;
+> 	void *base, *addrs[NBPAGES];
+>         u32 rnd, offset;
+> 
+> 	memset(addrs, 0, sizeof(addrs));
+> 	for (i = 0; i < NBPAGES; i++) {
+> 		addrs[i] = kmalloc_node(BUFSIZ, GFP_KERNEL, 0);
+> 		if (!addrs[i])
+> 			goto out;
+> 	}
+> 
+>         local_bh_disable();
+>         pr_err("STARTING ITERATIONS on cpu %d\n", smp_processor_id());
+>         start = ktime_to_ns(ktime_get());
+>         
+>         for (i = 0; i < 100000; i++) {
+> 		rnd = prandom_u32();
+> 		base = addrs[rnd % NBPAGES];
+> 		rnd /= NBPAGES;
+> 		offset = rnd % (BUFSIZ - 1500);
+>                 offset &= ~1U;
+>                 sum = csum_partial_opt(base + offset, 1500, sum);
+>         }
+>         end = ktime_to_ns(ktime_get());
+>         local_bh_enable();
+> 
+>         pr_err("COMPLETED 100000 iterations of csum %x in %llu nanosec\n", sum, end - start);
+> 
+> out:
+> 	for (i = 0; i < NBPAGES; i++)
+> 		kfree(addrs[i]);
+> 
+>         return 0;
+> }
+> 
+> static void __exit csum_cleanup_module(void)
+> {
+>         return;
+> }
+> 
+> 
+> 
+> 
