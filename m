@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3JTMOo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 08:14:44 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38370 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3JTMOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 08:14:35 -0400
-From: Hong Zhiguo <honkiko@gmail.com>
-To: tj@kernel.org, vgoyal@redhat.com
-Cc: cgroups@vger.kernel.org, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        Hong Zhiguo <zhiguohong@tencent.com>
-Subject: [PATCH v4 2/2] blk-throttle: trim tokens generated for an idle tree
-Date: Sun, 20 Oct 2013 20:11:12 +0800
-Message-Id: <1382271072-15664-3-git-send-email-zhiguohong@tencent.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382271072-15664-1-git-send-email-zhiguohong@tencent.com>
-References: <20131018155532.GD2277@redhat.com>
- <1382271072-15664-1-git-send-email-zhiguohong@tencent.com>
+	id S1751593Ab3JTMWP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 08:22:15 -0400
+Received: from outbound-ss-330.hostmonster.com ([74.220.205.49]:36146 "HELO
+	outbound-ss-330.hostmonster.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751326Ab3JTMWO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 08:22:14 -0400
+Subject: Re: [RFC] Rollback FS
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <CAFLxGvwgf3dD=4Xf_JtFwPFtudRYg8RuL8Jcu5dJr3CfkdnvVg@mail.gmail.com>
+Date: Sun, 20 Oct 2013 16:32:12 +0400
+Cc: jiaweiwei <jiaweiwei.xiyou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Harry Wei <harryxiyou@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <977288EE-C80D-4808-93E6-E019CA1DDC58@dubeyko.com>
+References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com> <F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com> <CABjrhvqLgVSEOJVuS1n-R_kyvhFouUqhfjqS4P_jsPGAec+KdQ@mail.gmail.com> <CAFLxGvwgf3dD=4Xf_JtFwPFtudRYg8RuL8Jcu5dJr3CfkdnvVg@mail.gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hong Zhiguo <zhiguohong@tencent.com>
 
-Why
-====
-Pointed out by Vivek: Tokens generated during idle period should
-be trimmed. Otherwise a huge bio may be permited immediately.
-Overlimit behaviour may be observed during short I/O throughput
-test.
+On Oct 20, 2013, at 3:46 PM, Richard Weinberger wrote:
 
-Vivek also pointed out: We should not over-trim for hierarchical
-groups. Suppose a subtree of groups are idle when a big bio comes.
-The token of the child group is trimmed and not enough. So the bio is
-queued on the child group. After some jiffies the child group reserved
-enough tokens and the bio climbs up. If we trim the parent group at
-this time again, this bio will wait too much time than expected.
+> On Sun, Oct 20, 2013 at 1:37 PM, jiaweiwei <jiaweiwei.xiyou@gmail.com> wrote:
+>> On Sun, Oct 20, 2013 at 6:43 PM, Vyacheslav Dubeyko <slava@dubeyko.com> wrote:
+>>> Anyway, you need to use Copy-On-Write (COW) approach for such file system.
+>>> But there are file systems that implements snapshot approach yet: NILFS2, ext3cow,
+>>> Next3, and so on.
+>>> 
+>> 
+>> Any file system should rollback but not specific ones. Therefore, a
+>> VFS like mechanism should be designed and implemented.
+> 
+> -ENOPATCH
 
-Analysis
-========
-When the bio is queued on child group, all it's ancestor groups
-becomes non-idle. They should start to reserve tokens for that
-bio from this moment. And their reserved tokens before should be
-trimmed at this moment.
+Yes, I doubt also that it makes sense to implement such feature on VFS level only.
+Anyway, it needs to have support of snapshot feature on concrete file system level.
+Otherwise, if it doesn't take into account a concrete file system's internal techniques
+then it will have such nonsense as COW under COW. :)
 
-How
-====
-service_queue now has a new member nr_queued_tree[2], to represent
-the the number of bios waiting on the subtree rooted by this sq.
+Maybe, VFS needs in transparent rollback support likewise online resize. But such
+feature should be based on concrete file systems' internal techniques.
 
-When a bio is queued on the hierarchy first time, nr_queued_tree
-of all ancestors and the child group itself are increased. When a
-bio climbs up, nr_queued_tree of the child group is decreased.
-
-When nr_queued_tree turns from zero to one, the tokens reserved
-before are trimmed. And after this switch, this group will never
-be trimmed to reserve tokens for the bio waiting on it's descendant
-group.
-
-Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
----
- block/blk-throttle.c | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 45d4d91..d10a5e1 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -63,6 +63,10 @@ struct throtl_service_queue {
- 	 */
- 	struct list_head	queued[2];	/* throtl_qnode [READ/WRITE] */
- 	unsigned int		nr_queued[2];	/* number of queued bios */
-+	/*
-+	 * number of bios queued on this subtree
-+	 */
-+	unsigned int		nr_queued_tree[2];
- 
- 	/*
- 	 * RB tree of active children throtl_grp's, which are sorted by
-@@ -699,6 +703,11 @@ static void tg_update_token(struct throtl_grp *tg, bool rw)
- 	do_div(token, HZ);
- 	tg->bytes_token[rw] += token;
- 
-+	/* trim token if the whole subtree is idle */
-+	if (!tg->service_queue.nr_queued_tree[rw] &&
-+	    tg->bytes_token[rw] > THROTL_BURST_BYTES)
-+		token = THROTL_BURST_BYTES;
-+
- 	tg->t_c[rw] = jiffies;
- }
- 
-@@ -843,6 +852,28 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
- }
- 
- /**
-+ * tg_update_nr_queue_tree - update nr_queued_tree of all ancestors
-+ * @sq: the target service_queue
-+ *
-+ * Traverse from @sq to the top throtl_grp, increase their
-+ * nr_queued_tree. If one sq has zero nr_queued_tree and now turns to
-+ * one, trim the tokens generated before. From now on it will never
-+ * get trimmed until same thing happens next time.
-+ */
-+static void tg_update_nr_queue_tree(struct throtl_service_queue *sq, bool rw)
-+{
-+	struct throtl_grp *tg;
-+
-+	while (sq && (tg = sq_to_tg(sq))) {
-+		if (!sq->nr_queued_tree[rw])
-+			tg_update_token(tg, rw);
-+
-+		sq->nr_queued_tree[rw]++;
-+		sq = sq->parent_sq;
-+	}
-+}
-+
-+/**
-  * throtl_add_bio_tg - add a bio to the specified throtl_grp
-  * @bio: bio to add
-  * @qn: qnode to use
-@@ -916,6 +947,9 @@ static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
- 	bio = throtl_pop_queued(&sq->queued[rw], &tg_to_put);
- 	sq->nr_queued[rw]--;
- 
-+	/* Here's the only place nr_queued_tree get decreased */
-+	sq->nr_queued_tree[rw]--;
-+
- 	throtl_charge_bio(tg, bio);
- 
- 	/*
-@@ -1375,6 +1409,10 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 
- 	bio_associate_current(bio);
- 	tg->td->nr_queued[rw]++;
-+
-+	/* Here's the only place nr_queued_tree get increased */
-+	tg_update_nr_queue_tree(sq, rw);
-+
- 	throtl_add_bio_tg(bio, qn, tg);
- 	throttled = true;
- 
--- 
-1.8.1.2
+With the best regards,
+Vyacheslav Dubeyko.
 
