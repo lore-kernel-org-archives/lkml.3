@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab3JTVCg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 17:02:36 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39995 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3JTVCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 17:02:35 -0400
-Message-ID: <526444E5.5000405@samsung.com>
-Date: Mon, 21 Oct 2013 06:02:29 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        "'Chander Kashyap'" <chander.kashyap@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, thomas.abraham@linaro.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH v2] irqchip: exynos-combiner: remove hard-coded irq_base
- value
-References: <1379937815-21746-1-git-send-email-chander.kashyap@linaro.org> <02c701ceba75$f95b1900$ec114b00$@org> <1949846.N3fAUHQ1Nx@flatron>
-In-Reply-To: <1949846.N3fAUHQ1Nx@flatron>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751930Ab3JTVH0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 17:07:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47881 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab3JTVHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 17:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,534,1378882800"; 
+   d="scan'208";a="395837718"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        rostedt@goodmis.org, peterz@infradead.org
+Subject: [PATCH] perf: Allow ftracing perf code
+Date: Sun, 20 Oct 2013 14:07:16 -0700
+Message-Id: <1382303236-23839-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/13 02:53, Tomasz Figa wrote:
-> Hi Kukjin,
->
-> On Thursday 26 of September 2013 14:05:09 Kukjin Kim wrote:
->> Chander Kashyap wrote:
->>> Replace irq_domain_add_simple with "irq_domain_add_linear" in order to
->>> use linear irq domain, and to remove hardcoded irq_base_value.
->>>
->>> Signed-off-by: Chander Kashyap<chander.kashyap@linaro.org>
->>> ---
->>>
->>> Changes since v1:
->>> 	- Replaced irq_domain_add_simple with irq_domain_add_linear,
->>> 	
->>> 	  as suggested by Tomasz
->>>
->>>   drivers/irqchip/exynos-combiner.c |   15 +++------------
->>>   1 file changed, 3 insertions(+), 12 deletions(-)
-> [snip]
->>
->> Looks nice to me, applied with Tomasz's review.
->
-> I don't see this patch in your tree. Did you apply it in the end?
->
-Thanks for your gentle reminder.
+From: Andi Kleen <ak@linux.intel.com>
 
-Applied.
-- Kukjin
+According to Stephen there is no reason left not to allow
+function trace in perf code.  Don't disable the function
+tracer instrumentation for the perf files. Changes the
+generic and the x86 files.
+
+I've been using variants of this patch for a long time and
+haven't seen any problems.  It's really useful to figure
+out why a complex perf_event_open() syscall fails.
+
+Cc: rostedt@goodmis.org
+Cc: peterz@infradead.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/Makefile | 1 -
+ kernel/events/Makefile       | 4 ----
+ 2 files changed, 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 47b56a7..190bf4a 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -5,7 +5,6 @@
+ # Don't trace early stages of a secondary CPU boot
+ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_common.o = -pg
+-CFLAGS_REMOVE_perf_event.o = -pg
+ endif
+ 
+ # Make sure load_percpu_segment has no stackprotector
+diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+index 103f5d1..a630994 100644
+--- a/kernel/events/Makefile
++++ b/kernel/events/Makefile
+@@ -1,7 +1,3 @@
+-ifdef CONFIG_FUNCTION_TRACER
+-CFLAGS_REMOVE_core.o = -pg
+-endif
+-
+ obj-y := core.o ring_buffer.o callchain.o
+ 
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+-- 
+1.8.3.1
+
