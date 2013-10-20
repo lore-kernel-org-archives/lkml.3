@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab3JTKZM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 06:25:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33848 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751024Ab3JTKZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 06:25:10 -0400
-Date: Sun, 20 Oct 2013 12:23:14 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: "Victor N. Ramos Mello" <victornrm@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drivers: clk: sunxi: Fix memory leakage in clk-sunxi.c
-Message-ID: <20131020102314.GO3041@lukather>
-References: <1382138871-9366-1-git-send-email-victornrm@gmail.com>
+	id S1751423Ab3JTK2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 06:28:38 -0400
+Received: from venus.codepro.be ([5.9.86.228]:13173 "EHLO venus.codepro.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011Ab3JTK2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 06:28:37 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Oct 2013 06:28:37 EDT
+Date: Sun, 20 Oct 2013 12:22:03 +0200
+From: Kristof Provost <kristof@sigsegv.be>
+To: jiaweiwei <jiaweiwei.xiyou@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Harry Wei <harryxiyou@gmail.com>
+Subject: Re: [RFC] Rollback FS
+Message-ID: <20131020102203.GB77546@vega.codepro.be>
+References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Lqu5hkAdORZH7CMT"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1382138871-9366-1-git-send-email-victornrm@gmail.com>
+In-Reply-To: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
+X-PGP-Fingerprint: E114 D9EA 909E D469 8F57  17A5 7D15 91C6 9EFA F286
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013-10-20 15:06:33 (+0800), jiaweiwei <jiaweiwei.xiyou@gmail.com> wrote:
+> We could implement a File System to record all the operations which
+> send to VFS. Then when you think you have done a mistake command, you
+> could rollback from this File System.
+> 
+> This is just a RFC, I would give detail implementations. Would anyone
+> please give me some suggestions? Thanks very much.
 
---Lqu5hkAdORZH7CMT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think it needs to be fleshed out a lot more.
 
-Hi Victor,
+For example, how would you tell it to roll back without a functional
+libc? How does it differ from the snapshot feature in btrfs?
 
-On Fri, Oct 18, 2013 at 08:27:51PM -0300, Victor N. Ramos Mello wrote:
-> From: "Victor N. Ramos Mello" <victornrm@gmail.com>
->=20
-> Fix a possible memory leak in sun4i_osc_clk_setup().
-> Moved clock-frequency check to save superfluous allocation.
->=20
-> Signed-off-by: Victor N. Ramos Mello <victornrm@gmail.com>
-
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Lqu5hkAdORZH7CMT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSY68RAAoJEBx+YmzsjxAg0Y4P/jJEddHPkuV5Xr532+oUK932
-eQFMHd+e91rGa3Rz9GoEEsJMyHG1j3iGXcqkQWy+j3NJsMN5cc8Fy9Lv7vNDLkX3
-iPxOUDHjj++TyCHOZyPyJQqrQcxcNAozuJlScPmS4ejm+aWp/u4mTmGl2vSLHyHJ
-IpUTVb9So9QPzG6J/KMOUki+dspCil+qsNeDCOXtonLC2MSGQhC1CxfEgfXU9e+V
-NBwQUK3byUABkudaWh0Egs+9VYvk93c+sUzWAoKl2RfwRocjHCg+g1OISt9Rwg/I
-rLzJdDRkTBquQBxTI3ucEeX7m8FNhH+tnp6TSnPbXymMJawNzz5nImW4Zh8IsPJJ
-nlLpj/RuGx5OuSrPq7KH6zWAm6aWYVqVsCda1QlBS7KQoR9aMNOHOeyvD30uCJHP
-fQwpxEVoawT//ezWNponQBC9eqqaT+K4+P+9uHCKaNb87U84uy6UO3XuxkE8vhL6
-vo1WAXKsFmkvqF/DuNcIX4awJ260HhW8c7myK6ciqYEjxH9WfH025V9+NarHnvpF
-hB21zZrYhL1NiYY3VjzWhFfucc9y6m0+PAirctACDoGorK1PZG9vXifs7DUBFA4d
-qtjmrOBj+vcgR7nTen/wX6vkjwBRt7VtHHW4qsU81dIhe0qkfMOKgI5MQkUwlzV4
-l7mfnj+Xd5aCYJzI/Q1t
-=bvkc
------END PGP SIGNATURE-----
-
---Lqu5hkAdORZH7CMT--
+Regards,
+Kristof
