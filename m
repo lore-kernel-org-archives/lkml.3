@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253Ab3JTPWE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 11:22:04 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:60788 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3JTPWB convert rfc822-to-8bit (ORCPT
+	id S1751391Ab3JTPWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 11:22:52 -0400
+Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:40646 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751061Ab3JTPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 11:22:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <5263DA0A.7030004@linux.com>
-References: <CABjrhvqTHkuEyQ=-xaud5Y0i3YqYcdBsm2eWrR-44V=OESWypg@mail.gmail.com>
-	<F713E780-33E1-494C-ADAD-92211724209E@dubeyko.com>
-	<CABjrhvqLgVSEOJVuS1n-R_kyvhFouUqhfjqS4P_jsPGAec+KdQ@mail.gmail.com>
-	<20131020123521.GA15627@thunk.org>
-	<CABjrhvpzcETE=CZrOkRgxpKhFm9-piYJLJ=8zdwnNkmJtkWRtQ@mail.gmail.com>
-	<5263D576.70202@linux.com>
-	<CABjrhvq8WYUzv6DVewiincNkSH9rCC_-1RVEOop1QE8+e3dnig@mail.gmail.com>
-	<5263DA0A.7030004@linux.com>
-Date: Sun, 20 Oct 2013 23:22:00 +0800
-Message-ID: <CABjrhvomv62ww9z3_LXosWVMPCrAe7jME2NhBa4AkaZP5TQN3Q@mail.gmail.com>
-Subject: Re: [RFC] Rollback FS
-From: jiaweiwei <jiaweiwei.xiyou@gmail.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Harry Wei <harryxiyou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 20 Oct 2013 11:22:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3870:3871:3872:3873:3874:4250:4321:5007:6120:7652:7903:7974:10004:10400:10450:10455:10848:11232:11658:11914:12043:12295:12438:12517:12519:12555:12740:13069:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:n
+X-HE-Tag: joke43_52be253e05c33
+X-Filterd-Recvd-Size: 2721
+Message-ID: <1382282566.2041.39.camel@joe-AO722>
+Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Date: Sun, 20 Oct 2013 08:22:46 -0700
+In-Reply-To: <20131020025713.GA22344@kroah.com>
+References: <1381296747.2040.17.camel@joe-AO722>
+	 <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
+	 <CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
+	 <CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
+	 <20131018225702.GA13090@kroah.com> <8761stu7rl.fsf@linaro.org>
+	 <20131020025713.GA22344@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 20, 2013 at 9:26 PM, Levente Kurusa <levex@linux.com> wrote:
-> 2013-10-20 15:19 keltezéssel, jiaweiwei írta:
->> On Sun, Oct 20, 2013 at 9:07 PM, Levente Kurusa <levex@linux.com> wrote:
->> [...]
->>>> A good catch. Following ideas would be suitable.
->>>>
->>>> 1, Keep the blocks or inodes by a parameter we give.
->>>> 2, Keep the blocks or inodes for several seconds.
->>> Keep them where? On the HDD? We just deleted/moved that.
->>
->> Delete/move a file with a parameter, which would keep the blocks or inodes
->> in-place. Or we would keep the blocks or inodes for several seconds.
->
-> The problem with keeping the inodes/blocks for several seconds is
-> that you would need to find a magic number that is not small enough,
-> because if it is, then what if the user doesn't notice the problem
-> during a long operation? If the magic number is big, then we waste a
-> lot of space.
->
-> The problem with the parameter thing is that again, all the different
-> filesystems need to support that feature. We can't just tell Ext3 or JFFS2 on the VFS level,
-> that 'Hey, keep those inodes in place incase someone just made himself some headache.'
->
+On Sat, 2013-10-19 at 19:57 -0700, Greg KH wrote:
+> On Fri, Oct 18, 2013 at 10:52:46PM -0700, Kevin Hilman wrote:
+> > Greg KH <gregkh@linuxfoundation.org> writes:
+> > 
+> > > On Fri, Oct 18, 2013 at 10:04:11AM -0700, Kevin Hilman wrote:
+> > >> > A handful of boot panics on ARM platforms were bisected to point at
+> > >> > the version of this commit that's in linux-next (commit
+> > >> > 64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
+> > >> > makes things happy again.
+> > >> >
+> > >> > Upon further digging, it seems that users of devres_alloc() are
+> > >> > relying on the previous behavior of having the memory zero'd which is
+> > >> > no longer the case after $SUBJECT patch.  The change below on top of
+> > >> > -next makes these ARM boards happy again.
+> > >> 
+> > >> Oops, it should've fixed __devres_alloc() also.  Updated patch below.
+> > >
+> > > Can you send this in a format that I can apply it in?  It was whitespace
+> > > damaged.
+> > 
+> > hmm, sorry about that.  This one should work, though I wonder if Andrew
+> > should pick this up since I think the patch that causes the breakage
+> > came through his tree.
+> 
+> No, the patch is in my tree, not Andrew's.
+> 
+> Joe, can I get a signed-off-by for this?
 
-Above you said are what we should do. Don't waste time, let me design and
-implement it. I would send design document for review, thanks.
+If you want.
+
+Signed-off-by: Joe Perches <joe@perches.com>
 
 
--- 
- do kernel
