@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab3JTSIr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 14:08:47 -0400
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:59430 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750949Ab3JTSIq (ORCPT
+	id S1751661Ab3JTT2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 15:28:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50461 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3JTT2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 14:08:46 -0400
-Date: Sun, 20 Oct 2013 18:08:44 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: JoonSoo Kim <js1304@gmail.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 3/5] slab: restrict the number of objects in a slab
-In-Reply-To: <CAAmzW4Mzx0FWP6KK7gk88c07RP46WaA9i5DePnzSWt7XP6qQNw@mail.gmail.com>
-Message-ID: <00000141d70e0e22-bd66f3af-822a-47dd-bbd9-fe68ad8da2ff-000000@email.amazonses.com>
-References: <1381989797-29269-1-git-send-email-iamjoonsoo.kim@lge.com> <1381989797-29269-4-git-send-email-iamjoonsoo.kim@lge.com> <00000141c7cb668b-1e2528ea-ce87-4380-a0dd-e5be9384cd84-000000@email.amazonses.com>
- <CAAmzW4Mzx0FWP6KK7gk88c07RP46WaA9i5DePnzSWt7XP6qQNw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 20 Oct 2013 15:28:14 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52642EC7.7070901@roeck-us.net>
+Date: Sun, 20 Oct 2013 12:28:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.20-54.240.10.51
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Greg Ungerer <gerg@uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [000/121] 3.2.51-rc1 review
+References: <lsq.1378608720.401499712@decadent.org.uk>		 <522C22DB.9080008@roeck-us.net>		 <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>		 <522CAB38.2010909@roeck-us.net>	 <1382270174.2794.96.camel@deadeye.wl.decadent.org.uk>	 <52640379.8070609@roeck-us.net> <1382292356.2794.116.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1382292356.2794.116.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Oct 2013, JoonSoo Kim wrote:
-
-> > Ok so that results in a mininum size object size of 2^(12 - 8) = 2^4 ==
-> > 16 bytes on x86. This is not true for order 1 pages (which SLAB also
-> > supports) where we need 32 bytes.
+On 10/20/2013 11:05 AM, Ben Hutchings wrote:
+> On Sun, 2013-10-20 at 09:23 -0700, Guenter Roeck wrote:
+>> On 10/20/2013 04:56 AM, Ben Hutchings wrote:
+>>> On Sun, 2013-09-08 at 09:52 -0700, Guenter Roeck wrote:
+>>>> On 09/08/2013 01:18 AM, Geert Uytterhoeven wrote:
+>>>>> On Sun, Sep 8, 2013 at 9:10 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>>> m68k-linux-ld: error: no memory region specified for loadable section
+>>>>>> `.note.gnu.build-id'
+>>>>>
+>>>>> I can't seem to find an explicit fix for that since v3.2.
+>>>>> Perhaps the fix is a side effect of f84f52a5c15db7d14a534815f27253b001735183
+>>>>> ("m68knommu: clean up linker script").
+>>>>>
+>>>>
+>>>> Kind of. Turns out it requires the following patches.
+>>>>
+>>>> 40c1b9cf (m68k: consolidate the vmlinux.lds linker scripts)
+>>>> ed865e31 (m68k: use non-MMU linker script for ColdFire MMU builds)
+>>>> f84f52a5 (m68knommu: clean up linker script)
+>>>>
+>>>> With those patches applied, all my m68k builds (mmu and nommu) pass with 3.2.
+>>>
+>>> I've queued these up for 3.2.  The first looks quite a big change in
+>>> terms of lines, but most of that is just renaming a file so I think it's
+>>> within the spirit of the stable rules.  The third is also pretty big as
+>>> m68knommu seems so broken in 3.2 that I suppose it is OK.
+>>>
+>>> Ben.
+>>>
+>> Hi Ben,
+>>
+>> is that in your patch list yet ? Just wondering, because the latest nommu build still failed.
 >
-> According to current slab size calculating logic, slab whose object size is
-> less or equal to 16 bytes use only order 0 page. So there is no problem.
-
-Ok then lets add a VM_BUG_ON to detect the situation when someone tries
-something different.
-
-> > Problems may arise on PPC or IA64 where the page size may be larger than
-> > 64K. With 64K we have a mininum size of 2^(16 - 8) = 256 bytes. For those
-> > arches we may need 16 bit sized indexes. Maybe make that compile time
-> > determined base on page size? > 64KByte results in 16 bit sized indexes?
+> I've only just pushed them.
 >
-> Okay. I will try it.
 
-Again compile time. You had runtime in some earlier patches which adds new
-branches to key functions.
+Yes, I see that m68k-nommu build failures are all gone now.
+
+Great!
+
+Thanks,
+Guenter
 
