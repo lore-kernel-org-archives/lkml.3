@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3JUJSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:18:15 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44999 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab3JUJSN (ORCPT
+	id S1755312Ab3JUJSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:18:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55537 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3JUJSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 05:18:13 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] pinctrl: mvebu: remove redundant of_match_ptr
-Date: Mon, 21 Oct 2013 14:47:14 +0530
-Message-Id: <1382347034-32332-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 21 Oct 2013 05:18:31 -0400
+Message-ID: <5264F148.7030705@ti.com>
+Date: Mon, 21 Oct 2013 14:48:00 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>
+CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 0/2] ARM: dts: OMAP2+: add i2c aliases
+References: <525E8D91.5090400@ti.com> <1381954864-24410-1-git-send-email-nm@ti.com>
+In-Reply-To: <1381954864-24410-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data structure of_match_ptr() protects is always compiled in.
-Hence of_match_ptr() is not needed.
+On Thursday 17 October 2013 01:51 AM, Nishanth Menon wrote:
+> Add i2c aliases for OMAP and AM processor dts nodes to ensure proper
+> i2c ordering. Based on Benoit's for_13/dts branch[1]
+> 
+> Changes in V2:
+> 	- Following Rajendra's suggestion, done for all OMAP and AM
+> 	  series SoCs, where i2c is defined.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/pinctrl/mvebu/pinctrl-armada-370.c |    2 +-
- drivers/pinctrl/mvebu/pinctrl-armada-xp.c  |    2 +-
- drivers/pinctrl/mvebu/pinctrl-dove.c       |    2 +-
- drivers/pinctrl/mvebu/pinctrl-kirkwood.c   |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+Thanks Nishanth.
+Acked-by: Rajendra Nayak <rnayak@ti.com>
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-370.c b/drivers/pinctrl/mvebu/pinctrl-armada-370.c
-index 48e21a2..ae1f760 100644
---- a/drivers/pinctrl/mvebu/pinctrl-armada-370.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-armada-370.c
-@@ -408,7 +408,7 @@ static struct platform_driver armada_370_pinctrl_driver = {
- 	.driver = {
- 		.name = "armada-370-pinctrl",
- 		.owner = THIS_MODULE,
--		.of_match_table = of_match_ptr(armada_370_pinctrl_of_match),
-+		.of_match_table = armada_370_pinctrl_of_match,
- 	},
- 	.probe = armada_370_pinctrl_probe,
- 	.remove = armada_370_pinctrl_remove,
-diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-xp.c b/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
-index ab5dc04..843a51f 100644
---- a/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
-@@ -455,7 +455,7 @@ static struct platform_driver armada_xp_pinctrl_driver = {
- 	.driver = {
- 		.name = "armada-xp-pinctrl",
- 		.owner = THIS_MODULE,
--		.of_match_table = of_match_ptr(armada_xp_pinctrl_of_match),
-+		.of_match_table = armada_xp_pinctrl_of_match,
- 	},
- 	.probe = armada_xp_pinctrl_probe,
- 	.remove = armada_xp_pinctrl_remove,
-diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index 360b9b2..4726839 100644
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -806,7 +806,7 @@ static struct platform_driver dove_pinctrl_driver = {
- 	.driver = {
- 		.name = "dove-pinctrl",
- 		.owner = THIS_MODULE,
--		.of_match_table = of_match_ptr(dove_pinctrl_of_match),
-+		.of_match_table = dove_pinctrl_of_match,
- 	},
- 	.probe = dove_pinctrl_probe,
- 	.remove = dove_pinctrl_remove,
-diff --git a/drivers/pinctrl/mvebu/pinctrl-kirkwood.c b/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
-index cdd483d..6b504b5 100644
---- a/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
-@@ -471,7 +471,7 @@ static struct platform_driver kirkwood_pinctrl_driver = {
- 	.driver = {
- 		.name = "kirkwood-pinctrl",
- 		.owner = THIS_MODULE,
--		.of_match_table = of_match_ptr(kirkwood_pinctrl_of_match),
-+		.of_match_table = kirkwood_pinctrl_of_match,
- 	},
- 	.probe = kirkwood_pinctrl_probe,
- 	.remove = kirkwood_pinctrl_remove,
--- 
-1.7.9.5
+> 
+> V1: https://patchwork.kernel.org/patch/3046671/
+> 
+> Nishanth Menon (2):
+>   ARM: dts: OMAP3+: Add i2c aliases
+>   ARM: dts: AM33xx+: Add i2c aliases
+> 
+>  arch/arm/boot/dts/am33xx.dtsi |    3 +++
+>  arch/arm/boot/dts/am4372.dtsi |    3 +++
+>  arch/arm/boot/dts/dra7.dtsi   |    5 +++++
+>  arch/arm/boot/dts/omap3.dtsi  |    3 +++
+>  arch/arm/boot/dts/omap4.dtsi  |    4 ++++
+>  arch/arm/boot/dts/omap5.dtsi  |    5 +++++
+>  6 files changed, 23 insertions(+)
+> 
+> [1] https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.13/dts
+> 
 
