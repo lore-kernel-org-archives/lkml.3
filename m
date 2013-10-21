@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3JUJCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:02:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39801 "EHLO
+	id S1755315Ab3JUJEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:04:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39791 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754297Ab3JUIwl (ORCPT
+	by vger.kernel.org with ESMTP id S1753119Ab3JUIwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:41 -0400
+	Mon, 21 Oct 2013 04:52:35 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kirill Tkhai" <tkhai@yandex.ru>,
-        "David Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Ricardo Ribalda" <ricardo.ribalda@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.996319300@decadent.org.uk>
+Message-ID: <lsq.1382345188.381487203@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 118/149] sparc64: Fix not SRA'ed %o5 in 32-bit traced
- syscall
+Subject: [PATCH 3.2 113/149] ll_temac: Reset dma descriptors indexes on
+ ndo_open
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,53 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
 
-[ Upstream commit ab2abda6377723e0d5fbbfe5f5aa16a5523344d1 ]
+[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
 
-(From v1 to v2: changed comment)
+The dma descriptors indexes are only initialized on the probe function.
 
-On the way linux_sparc_syscall32->linux_syscall_trace32->goto 2f,
-register %o5 doesn't clear its second 32-bit.
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors indexes can be left on a incorrect state where no other
+package can be sent.
 
-Fix that.
+So an interface could be left in an usable state after ifdow/ifup.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
+This patch makes sure that the descriptors indexes are in a proper
+status when the device is open.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/kernel/syscalls.S | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 7f5f65d..817187d 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -147,7 +147,7 @@ linux_syscall_trace32:
- 	srl	%i4, 0, %o4
- 	srl	%i1, 0, %o1
- 	srl	%i2, 0, %o2
--	ba,pt	%xcc, 2f
-+	ba,pt	%xcc, 5f
- 	 srl	%i3, 0, %o3
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 2681b53..e26945d 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -308,6 +308,12 @@ static int temac_dma_bd_init(struct net_device *ndev)
+ 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
+ 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
  
- linux_syscall_trace:
-@@ -177,13 +177,13 @@ linux_sparc_syscall32:
- 	srl	%i1, 0, %o1				! IEU0	Group
- 	ldx	[%g6 + TI_FLAGS], %l0		! Load
++	/* Init descriptor indexes */
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
++
+ 	return 0;
  
--	srl	%i5, 0, %o5				! IEU1
-+	srl	%i3, 0, %o3				! IEU0
- 	srl	%i2, 0, %o2				! IEU0	Group
- 	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
- 	bne,pn	%icc, linux_syscall_trace32		! CTI
- 	 mov	%i0, %l5				! IEU1
--	call	%l7					! CTI	Group brk forced
--	 srl	%i3, 0, %o3				! IEU0
-+5:	call	%l7					! CTI	Group brk forced
-+	 srl	%i5, 0, %o5				! IEU1
- 	ba,a,pt	%xcc, 3f
- 
- 	/* Linux native system calls enter here... */
+ out:
 
