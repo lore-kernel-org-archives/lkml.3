@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab3JUN4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 09:56:30 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5884 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab3JUN40 (ORCPT
+	id S1753957Ab3JUN4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 09:56:41 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19473 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab3JUN4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 09:56:26 -0400
+	Mon, 21 Oct 2013 09:56:38 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 06:51:48 -0700
+	by hqnvupgp07.nvidia.com on Mon, 21 Oct 2013 06:56:37 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>
-Subject: [PATCH v6 07/15] clk: tegra: add header for common tegra clock IDs
-Date: Mon, 21 Oct 2013 16:53:46 +0300
-Message-ID: <1382363634-10870-8-git-send-email-pdeschrijver@nvidia.com>
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v6 08/15] clk: tegra: add common infra for DT clocks
+Date: Mon, 21 Oct 2013 16:53:47 +0300
+Message-ID: <1382363634-10870-9-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
@@ -27,236 +31,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many clocks are common between several Tegra SoCs. Define an enum to list
-them so we can move them to separate files which can be shared between
-SoCs. Each SoC specific file will provide an array with the common clocks
-which are present on the SoC and their DT binding ID.
+Introduce a common infrastructure for sharing clock initialization between
+SoCs.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/clk-id.h |  213 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 213 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/tegra/clk-id.h
+ drivers/clk/tegra/clk.c |    9 +++++++++
+ drivers/clk/tegra/clk.h |    7 +++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/clk/tegra/clk-id.h b/drivers/clk/tegra/clk-id.h
-new file mode 100644
-index 0000000..22e2e8e
---- /dev/null
-+++ b/drivers/clk/tegra/clk-id.h
-@@ -0,0 +1,213 @@
-+/*
-+ * This header provides IDs for clocks common between several Tegra SoCs
-+ */
-+#ifndef _TEGRA_CLK_ID_H
-+#define _TEGRA_CLK_ID_H
+diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+index 3a95a87..a0430cd 100644
+--- a/drivers/clk/tegra/clk.c
++++ b/drivers/clk/tegra/clk.c
+@@ -212,6 +212,15 @@ void __init tegra_add_of_provider(struct device_node *np)
+ 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+ }
+ 
++struct clk ** __init tegra_lookup_dt_id(int clk_id,
++					struct tegra_clk *tegra_clk)
++{
++	if (tegra_clk[clk_id].present)
++		return &clks[tegra_clk[clk_id].dt_id];
++	else
++		return NULL;
++}
 +
-+enum clk_id {
-+	tegra_clk_actmon,
-+	tegra_clk_adx,
-+	tegra_clk_afi,
-+	tegra_clk_amx,
-+	tegra_clk_apbdma,
-+	tegra_clk_apbif,
-+	tegra_clk_audio0,
-+	tegra_clk_audio0_2x,
-+	tegra_clk_audio0_mux,
-+	tegra_clk_audio1,
-+	tegra_clk_audio1_2x,
-+	tegra_clk_audio1_mux,
-+	tegra_clk_audio2,
-+	tegra_clk_audio2_2x,
-+	tegra_clk_audio2_mux,
-+	tegra_clk_audio3,
-+	tegra_clk_audio3_2x,
-+	tegra_clk_audio3_mux,
-+	tegra_clk_audio4,
-+	tegra_clk_audio4_2x,
-+	tegra_clk_audio4_mux,
-+	tegra_clk_blink,
-+	tegra_clk_bsea,
-+	tegra_clk_bsev,
-+	tegra_clk_cclk_g,
-+	tegra_clk_cclk_lp,
-+	tegra_clk_cilab,
-+	tegra_clk_cilcd,
-+	tegra_clk_cile,
-+	tegra_clk_clk_32k,
-+	tegra_clk_clk_m,
-+	tegra_clk_clk_m_div2,
-+	tegra_clk_clk_m_div4,
-+	tegra_clk_clk_out_1,
-+	tegra_clk_clk_out_1_mux,
-+	tegra_clk_clk_out_2,
-+	tegra_clk_clk_out_2_mux,
-+	tegra_clk_clk_out_3,
-+	tegra_clk_clk_out_3_mux,
-+	tegra_clk_csi,
-+	tegra_clk_csite,
-+	tegra_clk_csus,
-+	tegra_clk_cve,
-+	tegra_clk_dam0,
-+	tegra_clk_dam1,
-+	tegra_clk_dam2,
-+	tegra_clk_d_audio,
-+	tegra_clk_dds,
-+	tegra_clk_dfll_ref,
-+	tegra_clk_dfll_soc,
-+	tegra_clk_disp1,
-+	tegra_clk_disp2,
-+	tegra_clk_dp2,
-+	tegra_clk_dsia,
-+	tegra_clk_dsialp,
-+	tegra_clk_dsia_mux,
-+	tegra_clk_dsib,
-+	tegra_clk_dsiblp,
-+	tegra_clk_dsib_mux,
-+	tegra_clk_dtv,
-+	tegra_clk_emc,
-+	tegra_clk_epp,
-+	tegra_clk_epp_8,
-+	tegra_clk_extern1,
-+	tegra_clk_extern2,
-+	tegra_clk_extern3,
-+	tegra_clk_fuse,
-+	tegra_clk_fuse_burn,
-+	tegra_clk_gr2d,
-+	tegra_clk_gr2d_8,
-+	tegra_clk_gr3d,
-+	tegra_clk_gr3d_8,
-+	tegra_clk_hclk,
-+	tegra_clk_hda,
-+	tegra_clk_hda2codec_2x,
-+	tegra_clk_hda2hdmi,
-+	tegra_clk_hdmi,
-+	tegra_clk_host1x,
-+	tegra_clk_host1x_8,
-+	tegra_clk_i2c1,
-+	tegra_clk_i2c2,
-+	tegra_clk_i2c3,
-+	tegra_clk_i2c4,
-+	tegra_clk_i2c5,
-+	tegra_clk_i2cslow,
-+	tegra_clk_i2s0,
-+	tegra_clk_i2s0_sync,
-+	tegra_clk_i2s1,
-+	tegra_clk_i2s1_sync,
-+	tegra_clk_i2s2,
-+	tegra_clk_i2s2_sync,
-+	tegra_clk_i2s3,
-+	tegra_clk_i2s3_sync,
-+	tegra_clk_i2s4,
-+	tegra_clk_i2s4_sync,
-+	tegra_clk_isp,
-+	tegra_clk_kbc,
-+	tegra_clk_kfuse,
-+	tegra_clk_la,
-+	tegra_clk_mipi,
-+	tegra_clk_mipi_cal,
-+	tegra_clk_mpe,
-+	tegra_clk_mselect,
-+	tegra_clk_msenc,
-+	tegra_clk_ndflash,
-+	tegra_clk_ndflash_8,
-+	tegra_clk_ndspeed,
-+	tegra_clk_ndspeed_8,
-+	tegra_clk_nor,
-+	tegra_clk_owr,
-+	tegra_clk_pclk,
-+	tegra_clk_pll_a,
-+	tegra_clk_pll_a_out0,
-+	tegra_clk_pll_c,
-+	tegra_clk_pll_c2,
-+	tegra_clk_pll_c3,
-+	tegra_clk_pll_c_out1,
-+	tegra_clk_pll_d,
-+	tegra_clk_pll_d2,
-+	tegra_clk_pll_d2_out0,
-+	tegra_clk_pll_d_out0,
-+	tegra_clk_pll_e_out0,
-+	tegra_clk_pll_m,
-+	tegra_clk_pll_m_out1,
-+	tegra_clk_pll_p,
-+	tegra_clk_pll_p_out1,
-+	tegra_clk_pll_p_out2,
-+	tegra_clk_pll_p_out2_int,
-+	tegra_clk_pll_p_out3,
-+	tegra_clk_pll_p_out4,
-+	tegra_clk_pll_ref,
-+	tegra_clk_pll_re_out,
-+	tegra_clk_pll_re_vco,
-+	tegra_clk_pll_u,
-+	tegra_clk_pll_u_12m,
-+	tegra_clk_pll_u_480m,
-+	tegra_clk_pll_u_48m,
-+	tegra_clk_pll_u_60m,
-+	tegra_clk_pll_x,
-+	tegra_clk_pll_x_out0,
-+	tegra_clk_pwm,
-+	tegra_clk_rtc,
-+	tegra_clk_sata,
-+	tegra_clk_sata_cold,
-+	tegra_clk_sata_oob,
-+	tegra_clk_sbc1,
-+	tegra_clk_sbc1_8,
-+	tegra_clk_sbc2,
-+	tegra_clk_sbc2_8,
-+	tegra_clk_sbc3,
-+	tegra_clk_sbc3_8,
-+	tegra_clk_sbc4,
-+	tegra_clk_sbc4_8,
-+	tegra_clk_sbc5,
-+	tegra_clk_sbc5_8,
-+	tegra_clk_sbc6,
-+	tegra_clk_sbc6_8,
-+	tegra_clk_sclk,
-+	tegra_clk_sdmmc1,
-+	tegra_clk_sdmmc2,
-+	tegra_clk_sdmmc3,
-+	tegra_clk_sdmmc4,
-+	tegra_clk_se,
-+	tegra_clk_soc_therm,
-+	tegra_clk_spdif,
-+	tegra_clk_spdif_2x,
-+	tegra_clk_spdif_in,
-+	tegra_clk_spdif_in_sync,
-+	tegra_clk_spdif_mux,
-+	tegra_clk_spdif_out,
-+	tegra_clk_timer,
-+	tegra_clk_trace,
-+	tegra_clk_tsec,
-+	tegra_clk_tsensor,
-+	tegra_clk_tvdac,
-+	tegra_clk_tvo,
-+	tegra_clk_uarta,
-+	tegra_clk_uartb,
-+	tegra_clk_uartc,
-+	tegra_clk_uartd,
-+	tegra_clk_uarte,
-+	tegra_clk_usb2,
-+	tegra_clk_usb3,
-+	tegra_clk_usbd,
-+	tegra_clk_vcp,
-+	tegra_clk_vde,
-+	tegra_clk_vde_8,
-+	tegra_clk_vfir,
-+	tegra_clk_vi,
-+	tegra_clk_vi_8,
-+	tegra_clk_vimclk_sync,
-+	tegra_clk_vi_sensor,
-+	tegra_clk_vi_sensor_8,
-+	tegra_clk_xusb_dev,
-+	tegra_clk_xusb_dev_src,
-+	tegra_clk_xusb_falcon_src,
-+	tegra_clk_xusb_fs_src,
-+	tegra_clk_xusb_host,
-+	tegra_clk_xusb_host_src,
-+	tegra_clk_xusb_hs_src,
-+	tegra_clk_xusb_ss,
-+	tegra_clk_xusb_ss_src,
-+	tegra_clk_max,
+ tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
+ 
+ void __init tegra_clocks_apply_init_table(void)
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index c49df4d..489dad5 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -568,6 +568,11 @@ struct tegra_clk_duplicate {
+ 		},				\
+ 	}
+ 
++struct tegra_clk {
++	int			dt_id;
++	bool			present;
 +};
 +
-+#endif	/* _TEGRA_CLK_ID_H */
+ void tegra_init_from_table(struct tegra_clk_init_table *tbl,
+ 		struct clk *clks[], int clk_max);
+ 
+@@ -577,6 +582,8 @@ void tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
+ struct tegra_clk_periph_regs *get_reg_bank(int clkid);
+ struct clk **tegra_clk_init(int num, int periph_banks);
+ 
++struct clk **tegra_lookup_dt_id(int clk_id, struct tegra_clk *tegra_clk);
++
+ void tegra_add_of_provider(struct device_node *np);
+ 
+ void tegra114_clock_tune_cpu_trimmers_high(void);
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
