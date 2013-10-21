@@ -1,227 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab3JUER6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 00:17:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33362 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab3JUER4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 00:17:56 -0400
-X-IronPort-AV: E=Sophos;i="4.93,536,1378828800"; 
-   d="scan'208";a="8812088"
-Message-ID: <5264A99A.3080107@cn.fujitsu.com>
-Date: Mon, 21 Oct 2013 12:12:10 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751937Ab3JUEXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 00:23:54 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7915 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3JUEXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 00:23:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 20 Oct 2013 21:23:52 -0700
+From: Bibek Basu <bbasu@nvidia.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Oct 2013 09:53:48 +0530
+Subject: RE: [PATCH] HID: i2c-hid: Stop querying for init reports
+Thread-Topic: [PATCH] HID: i2c-hid: Stop querying for init reports
+Thread-Index: Ac7LYlF29jLtgo/0TpiHbtmkfJQaWgCstDlA
+Message-ID: <77F7DB30C698A44DA22FB222C89DE941A68D423ECA@BGMAIL01.nvidia.com>
+References: <1381825709-5098-1-git-send-email-bbasu@nvidia.com>
+ <CAN+gG=FukmZEpo8wvsmNeV=0h7xR9xYOPLyvYEiDq98T-4tn=A@mail.gmail.com>
+In-Reply-To: <CAN+gG=FukmZEpo8wvsmNeV=0h7xR9xYOPLyvYEiDq98T-4tn=A@mail.gmail.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] fb: reorder the lock sequence to fix a potential lockdep
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/21 12:15:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/21 12:15:27,
-	Serialize complete at 2013/10/21 12:15:27
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Language: en-US
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9L4ORuu029036
 
-Following commits:
-50e244cc79 fb: rework locking to fix lock ordering on takeover
-e93a9a8687 fb: Yet another band-aid for fixing lockdep mess
-054430e773 fbcon: fix locking harder
-reworked locking to fix related lock ordering on takeover, and introduced console_lock
-into fbmem, but it seems that the new lock sequence(fb_info->lock ---> console_lock)
-is against with the one in console_callback(console_lock ---> fb_info->lock), and leads to
-a potential deadlock as following:
-[  601.079000] ======================================================
-[  601.079000] [ INFO: possible circular locking dependency detected ]
-[  601.079000] 3.11.0 #189 Not tainted
-[  601.079000] -------------------------------------------------------
-[  601.079000] kworker/0:3/619 is trying to acquire lock:
-[  601.079000]  (&fb_info->lock){+.+.+.}, at: [<ffffffff81397566>] lock_fb_info+0x26/0x60
-[  601.079000]
-but task is already holding lock:
-[  601.079000]  (console_lock){+.+.+.}, at: [<ffffffff8141aae3>] console_callback+0x13/0x160
-[  601.079000]
-which lock already depends on the new lock.
 
-[  601.079000]
-the existing dependency chain (in reverse order) is:
-[  601.079000]
--> #1 (console_lock){+.+.+.}:
-[  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-[  601.079000]        [<ffffffff810c6267>] console_lock+0x77/0x80
-[  601.079000]        [<ffffffff81399448>] register_framebuffer+0x1d8/0x320
-[  601.079000]        [<ffffffff81cfb4c8>] efifb_probe+0x408/0x48f
-[  601.079000]        [<ffffffff8144a963>] platform_drv_probe+0x43/0x80
-[  601.079000]        [<ffffffff8144853b>] driver_probe_device+0x8b/0x390
-[  601.079000]        [<ffffffff814488eb>] __driver_attach+0xab/0xb0
-[  601.079000]        [<ffffffff814463bd>] bus_for_each_dev+0x5d/0xa0
-[  601.079000]        [<ffffffff81447e6e>] driver_attach+0x1e/0x20
-[  601.079000]        [<ffffffff81447a07>] bus_add_driver+0x117/0x290
-[  601.079000]        [<ffffffff81448fea>] driver_register+0x7a/0x170
-[  601.079000]        [<ffffffff8144a10a>] __platform_driver_register+0x4a/0x50
-[  601.079000]        [<ffffffff8144a12d>] platform_driver_probe+0x1d/0xb0
-[  601.079000]        [<ffffffff81cfb0a1>] efifb_init+0x273/0x292
-[  601.079000]        [<ffffffff81002132>] do_one_initcall+0x102/0x1c0
-[  601.079000]        [<ffffffff81cb80a6>] kernel_init_freeable+0x15d/0x1ef
-[  601.079000]        [<ffffffff8166d2de>] kernel_init+0xe/0xf0
-[  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-[  601.079000]
--> #0 (&fb_info->lock){+.+.+.}:
-[  601.079000]        [<ffffffff810dc1d8>] __lock_acquire+0x1e18/0x1f10
-[  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-[  601.079000]        [<ffffffff816835ca>] mutex_lock_nested+0x7a/0x3b0
-[  601.079000]        [<ffffffff81397566>] lock_fb_info+0x26/0x60
-[  601.079000]        [<ffffffff813a4aeb>] fbcon_blank+0x29b/0x2e0
-[  601.079000]        [<ffffffff81418658>] do_blank_screen+0x1d8/0x280
-[  601.079000]        [<ffffffff8141ab34>] console_callback+0x64/0x160
-[  601.079000]        [<ffffffff8108d855>] process_one_work+0x1f5/0x540
-[  601.079000]        [<ffffffff8108e04c>] worker_thread+0x11c/0x370
-[  601.079000]        [<ffffffff81095fbd>] kthread+0xed/0x100
-[  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-[  601.079000]
-other info that might help us debug this:
+Hi Benjamin,
 
-[  601.079000]  Possible unsafe locking scenario:
 
-[  601.079000]        CPU0                    CPU1
-[  601.079000]        ----                    ----
-[  601.079000]   lock(console_lock);
-[  601.079000]                                lock(&fb_info->lock);
-[  601.079000]                                lock(console_lock);
-[  601.079000]   lock(&fb_info->lock);
-[  601.079000]
- *** DEADLOCK ***
+> -----Original Message-----
+> From: Benjamin Tissoires [mailto:benjamin.tissoires@gmail.com]
+> Sent: Thursday, October 17, 2013 11:27 PM
+> To: Bibek Basu
+> Cc: Jiri Kosina; linux-input; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] HID: i2c-hid: Stop querying for init reports
+> 
+> Hi Bibek,
+> 
+> On Tue, Oct 15, 2013 at 4:28 AM, Bibek Basu <bbasu@nvidia.com> wrote:
+> > According to specifications, HID over I2C devices are not bound to
+> > respond to query for INPUT REPORTS. Thus dropping the call during init
+> > as many devices does not respond causing error messages during boot.
+> >
+> 
+> This time, the patch is removing too many things that are correct. :)
+> 
+> see below to know what to remove and what to keep:
+> 
+> > Signed-off-by: Bibek Basu <bbasu@nvidia.com>
+> > ---
+> >  drivers/hid/i2c-hid/i2c-hid.c | 59
+> > -------------------------------------------
+> >  1 file changed, 59 deletions(-)
+> >
+> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c
+> > b/drivers/hid/i2c-hid/i2c-hid.c index fd7ce37..58a4f12 100644
+> > --- a/drivers/hid/i2c-hid/i2c-hid.c
+> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> > @@ -409,62 +409,6 @@ static int i2c_hid_get_report_length(struct
+> hid_report *report)
+> >                 report->device->report_enum[report->type].numbered +
+> > 2;  }
+> >
+> > -static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
+> > -       size_t bufsize)
+> > -{
+> > -       struct hid_device *hid = report->device;
+> > -       struct i2c_client *client = hid->driver_data;
+> > -       struct i2c_hid *ihid = i2c_get_clientdata(client);
+> > -       unsigned int size, ret_size;
+> > -
+> > -       size = i2c_hid_get_report_length(report);
+> > -       if (i2c_hid_get_report(client,
+> > -                       report->type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+> > -                       report->id, buffer, size))
+> > -               return;
+> > -
+> > -       i2c_hid_dbg(ihid, "report (len=%d): %*ph\n", size, size, ihid->inbuf);
+> > -
+> > -       ret_size = buffer[0] | (buffer[1] << 8);
+> > -
+> > -       if (ret_size != size) {
+> > -               dev_err(&client->dev, "error in %s size:%d / ret_size:%d\n",
+> > -                       __func__, size, ret_size);
+> > -               return;
+> > -       }
+> > -
+> > -       /* hid->driver_lock is held as we are in probe function,
+> > -        * we just need to setup the input fields, so using
+> > -        * hid_report_raw_event is safe. */
+> > -       hid_report_raw_event(hid, report->type, buffer + 2, size - 2, 1);
+> > -}
+> 
+> This function should be kept
+> 
+> > -
+> > -/*
+> > - * Initialize all reports
+> > - */
+> > -static void i2c_hid_init_reports(struct hid_device *hid) -{
+> > -       struct hid_report *report;
+> > -       struct i2c_client *client = hid->driver_data;
+> > -       struct i2c_hid *ihid = i2c_get_clientdata(client);
+> > -       u8 *inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
+> > -
+> > -       if (!inbuf) {
+> > -               dev_err(&client->dev, "can not retrieve initial reports\n");
+> > -               return;
+> > -       }
+> > -
+> 
+> Above should be kept
+> 
+> > -       list_for_each_entry(report,
+> > -               &hid->report_enum[HID_INPUT_REPORT].report_list, list)
+> > -               i2c_hid_init_report(report, inbuf, ihid->bufsize);
+> > -
+> 
+> these for lines should be removed (they are the one giving the errors in the
+> logs)
+> 
+> and please keep the rest of the code as is.
+> 
+> 
+> > -       list_for_each_entry(report,
+> > -               &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
+> > -               i2c_hid_init_report(report, inbuf, ihid->bufsize);
+> 
+> Actually, this part is very important because we have no spontaneous events
+> emitted by features, so we don't know the value of the feature until we
+> probed it. So please keep this part as mentioned above.
 
-so we reorder the lock sequence the same as it in console_callback() to
-avoid this issue.
-Not very sure this change is suitable, any comments is welcome.
+Thanks for the inputs. I am repushing  the patch. Unfortunately, looks like I need to upgrade the firmware of my HID keyboard, as it does not responds to the FEATURE_REPORT
+query:(
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- drivers/video/fbmem.c |   50 +++++++++++++++++++++++++++++++-----------------
- 1 files changed, 32 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index dacaf74..010d191 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1108,14 +1108,16 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 	case FBIOPUT_VSCREENINFO:
- 		if (copy_from_user(&var, argp, sizeof(var)))
- 			return -EFAULT;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		info->flags |= FBINFO_MISC_USEREVENT;
- 		ret = fb_set_var(info, &var);
- 		info->flags &= ~FBINFO_MISC_USEREVENT;
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		if (!ret && copy_to_user(argp, &var, sizeof(var)))
- 			ret = -EFAULT;
- 		break;
-@@ -1144,12 +1146,14 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 	case FBIOPAN_DISPLAY:
- 		if (copy_from_user(&var, argp, sizeof(var)))
- 			return -EFAULT;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		ret = fb_pan_display(info, &var);
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		if (ret == 0 && copy_to_user(argp, &var, sizeof(var)))
- 			return -EFAULT;
- 		break;
-@@ -1184,23 +1188,27 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 			break;
- 		}
- 		event.data = &con2fb;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		event.info = info;
- 		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		break;
- 	case FBIOBLANK:
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		info->flags |= FBINFO_MISC_USEREVENT;
- 		ret = fb_blank(info, arg);
- 		info->flags &= ~FBINFO_MISC_USEREVENT;
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		break;
- 	default:
- 		if (!lock_fb_info(info))
-@@ -1660,12 +1668,15 @@ static int do_register_framebuffer(struct fb_info *fb_info)
- 	registered_fb[i] = fb_info;
- 
- 	event.info = fb_info;
--	if (!lock_fb_info(fb_info))
--		return -ENODEV;
- 	console_lock();
-+	if (!lock_fb_info(fb_info)) {
-+		console_unlock();
-+		return -ENODEV;
-+	}
-+
- 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
--	console_unlock();
- 	unlock_fb_info(fb_info);
-+	console_unlock();
- 	return 0;
- }
- 
-@@ -1678,13 +1689,16 @@ static int do_unregister_framebuffer(struct fb_info *fb_info)
- 	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
- 		return -EINVAL;
- 
--	if (!lock_fb_info(fb_info))
--		return -ENODEV;
- 	console_lock();
-+	if (!lock_fb_info(fb_info)) {
-+		console_unlock();
-+		return -ENODEV;
-+	}
-+
- 	event.info = fb_info;
- 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
--	console_unlock();
- 	unlock_fb_info(fb_info);
-+	console_unlock();
- 
- 	if (ret)
- 		return -EINVAL;
--- 
-1.7.7
-
+regards
+Bibek
+> 
+> Cheers,
+> Benjamin
+> 
+> > -
+> > -       kfree(inbuf);
+> > -}
+> > -
+> >  /*
+> >   * Traverse the supplied list of reports and find the longest
+> >   */
+> > @@ -683,9 +627,6 @@ static int i2c_hid_start(struct hid_device *hid)
+> >                         return ret;
+> >         }
+> >
+> > -       if (!(hid->quirks & HID_QUIRK_NO_INIT_REPORTS))
+> > -               i2c_hid_init_reports(hid);
+> > -
+> >         return 0;
+> >  }
+> >
+> > --
+> > 1.8.1.5
+> >
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
