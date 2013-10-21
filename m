@@ -1,57 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3JUXMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 19:12:22 -0400
-Received: from sandeen.net ([63.231.237.45]:51959 "EHLO sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463Ab3JUXMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 19:12:21 -0400
-Message-ID: <5265B4D2.3000907@sandeen.net>
-Date: Mon, 21 Oct 2013 18:12:18 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752660Ab3JUXNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 19:13:14 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:47831 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3JUXNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 19:13:11 -0400
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Alex Elder <elder@kernel.org>, open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
-        "Geyslan G. Bem" <geyslan@gmail.com>, kernel-br@googlegroups.com
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-References: <1382380366-26540-1-git-send-email-geyslan@gmail.com> <5265956F.4010700@sandeen.net> <20131021224459.GE16161@dastard>
-In-Reply-To: <20131021224459.GE16161@dastard>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <20131017141309.GG24056@e106331-lin.cambridge.arm.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	<1381960030-1640-7-git-send-email-tim.kryger@linaro.org>
+	<20131017141309.GG24056@e106331-lin.cambridge.arm.com>
+Date: Mon, 21 Oct 2013 16:13:10 -0700
+Message-ID: <CAAYSxhorTkuMHU=mqWG5WsNYE1c2dh9-44yLhT6DGhEpgWSZxw@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 6/6] mmc: sdhci-bcm-kona: Add basic use of clocks
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/13 5:44 PM, Dave Chinner wrote:
-> On Mon, Oct 21, 2013 at 03:58:23PM -0500, Eric Sandeen wrote:
->> On 10/21/13 1:32 PM, Geyslan G. Bem wrote:
->>> This patch puts a 'break' in the true branch, avoiding the 'icptr->ic_next'
->>> dereferencing.
+On Thu, Oct 17, 2013 at 7:13 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Wed, Oct 16, 2013 at 10:47:10PM +0100, Tim Kryger wrote:
+>> Enable the external clock needed by the host controller during the
+>> probe and disable it during the remove.
+>
+> This requires a biding document update.
+
+The current best practice for declaring the association of a clock
+with a consumer device is to embed the common clock bindings 'clocks'
+property inside its node but this is not the only way it may be done.
+
+Given that clk_get() still works for clocks found using string
+matching, is it appropriate to mandate that all drivers that uses the
+clk api mention the common clock bindings 'clocks' property in the
+documentation for their device's binding?
+
+> I note that the binding is already incomplete (it does not describe the
+> interrupts or reg).
+
+The current document reflects the standard for
+Documentation/devicetree/bindings/mmc where normal properties are
+described in mmc.txt and only the deviations described in vendor
+specific files.
+
 >>
->> Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-> 
-> Actually, NACK.
-
-I felt that one coming ;)
-
->> Hm, yeah - cmn_err(CE_PANIC, " " ); used to BUG_ON, but the newer
->> xfs_emerg() doesn't.
+>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+>> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>> ---
+>>  drivers/mmc/host/sdhci-bcm-kona.c | 30 ++++++++++++++++++++++++++++--
+>>  1 file changed, 28 insertions(+), 2 deletions(-)
 >>
->> Dave, was that intentional?
-> 
-> Of course it was. ;) xfs_emerg() is only called from the debug code
-> in xlog_verify_iclog(), xlog_verify_tail_lsn and assfail().
-> 
-> In the case of assfail(), it has it's own BUG() call, so it does
-> everything just fine.
-> 
-> In the case of xlog_verify_iclog() when icptr is NULL, it will
-> panic immediately after the message is printed, just like the old
-> code. i.e. this patch isn't fixing anything we need fixed. 
+>> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+>> index 85472d3..91db099 100644
+>> --- a/drivers/mmc/host/sdhci-bcm-kona.c
+>> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
+>> @@ -54,6 +54,7 @@
+>>
+>>  struct sdhci_bcm_kona_dev {
+>>       struct mutex    write_lock; /* protect back to back writes */
+>> +     struct clk      *external_clk;
+>
+> Is this the only clock input the unit has?
 
-A BUG() is probably warranted, then.
+The SDHCI block only receives one clock.
 
--Eric
+> Are there any other external resources the device needs (e.g. gpios,
+> regulators)?
+
+Yes but the cd-gpio and vmmc/vqmmc regulators are handled by the
+common SDHCI driver.
+
+>
+>>  };
+>>
+>>
+>> @@ -252,11 +253,29 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+>>       mmc_of_parse(host->mmc);
+>>
+>>       if (!host->mmc->f_max) {
+>> -             dev_err(&pdev->dev, "Missing max-freq for SDHCI cfg\n");
+>> +             dev_err(dev, "Missing max-freq for SDHCI cfg\n");
+>
+> This seems like an unrelated change.
+
+Agreed.  I will remove this change.
+
+>>               ret = -ENXIO;
+>>               goto err_pltfm_free;
+>>       }
+>>
+>> +     /* Get and enable the external clock */
+>> +     kona_dev->external_clk = devm_clk_get(dev, NULL);
+>> +     if (IS_ERR(kona_dev->external_clk)) {
+>> +             dev_err(dev, "Failed to get external clock\n");
+>> +             ret = PTR_ERR(kona_dev->external_clk);
+>> +             goto err_pltfm_free;
+>
+> This seems like a pretty clear breakage of existing DTBs.
+>
+> Why?
+
+The defconfig that builds this driver and DTBs currently sets
+CONFIG_ARM_APPENDED_DTB=y so there isn't any actual breakage risk.
