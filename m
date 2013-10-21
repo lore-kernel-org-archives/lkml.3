@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3JUKt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:49:26 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:54286 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab3JUKtY (ORCPT
+	id S1753311Ab3JUKuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:50:15 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:42849 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab3JUKuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:49:24 -0400
-Date: Mon, 21 Oct 2013 11:49:20 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup fixes for v3.12-rc6
-Message-ID: <20131021104920.GA26917@mtj.dyndns.org>
+	Mon, 21 Oct 2013 06:50:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Iago Abal <mail@iagoabal.eu>
+Date: Mon, 21 Oct 2013 12:49:32 +0200
+X-Google-Sender-Auth: OWnNXyDku0xpPrh6kcBDXiQqj8Y
+Message-ID: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
+Subject: Looking for configuration-dependent bugs in Linux
+To: linux-kernel@vger.kernel.org
+Cc: Iago Abal <iari@itu.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Dear Linux kernel developer,
 
-Two late fixes for cgroup.  One fixes descendant walk introduced
-during this rc1 cycle.  The other fixes a post 3.9 bug during task
-attach which can lead to hang.  Both fixes are critical and the fixes
-are relatively straight-forward.
+We are a group working on analysis of configurable software systems at
+IT University of Copenhagen. For the next four years [1] we will study
+the problem of verification in highly configurable software, and we
+will focus on the Linux kernel as the prime example of configurable
+software. We will therefore appreciate your advice regarding a few
+questions (see below).
 
-The two fixes are available in the following branch
+We are currently looking for already-fixed configuration-dependent
+bugs in Linux ---the bugfix helps us to understand the underlying
+cause. A good example is [2], which fixes a bug that only shows up in
+PA-RISC architectures when DISCONTIGMEM is enabled. Any bug appearing
+in some configurations but not in others is interesting for us (e.g. a
+bug affecting PowerPC only), even though the more complex the
+interaction between configuration options the more interesting is the
+bug for our purpose.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.12-fixes
+As a Linux kernel developer, could you:
 
-for you to fetch changes up to ea84753c98a7ac6b74e530b64c444a912b3835ca:
+* remember any configuration-dependent bug?
+* identify any subset of configuration options that tend to interact badly?
+* spot any part of the kernel more prone to configuration-dependent bugs?
 
-  cgroup: fix to break the while loop in cgroup_attach_task() correctly (2013-10-13 16:07:10 -0400)
+Your feedback will allow us to make our search more effective. A good
+understanding of how these bugs occur in Linux will also be important
+for developing subsequent techniques and tools. There is of course a
+potential benefit for the Linux community: we plan to pay you back in
+bug reports :-)
 
-Thanks.
+All your feedback is welcomed.
 
-----------------------------------------------------------------
-Anjana V Kumar (1):
-      cgroup: fix to break the while loop in cgroup_attach_task() correctly
+Thank you for your time.
 
-Tejun Heo (1):
-      cgroup: fix cgroup post-order descendant walk of empty subtree
+Kind regards,
 
- kernel/cgroup.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+[1] http://variete.wikit.itu.dk/
+[2] http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=91ea8207168793b365322be3c90a4ee9e8b03ed4
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e0aeb32..1bf4f7a1 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2038,7 +2038,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 
- 		/* @tsk either already exited or can't exit until the end */
- 		if (tsk->flags & PF_EXITING)
--			continue;
-+			goto next;
- 
- 		/* as per above, nr_threads may decrease, but not increase. */
- 		BUG_ON(i >= group_size);
-@@ -2046,7 +2046,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 		ent.cgrp = task_cgroup_from_root(tsk, root);
- 		/* nothing to do if this task is already in the cgroup */
- 		if (ent.cgrp == cgrp)
--			continue;
-+			goto next;
- 		/*
- 		 * saying GFP_ATOMIC has no effect here because we did prealloc
- 		 * earlier, but it's good form to communicate our expectations.
-@@ -2054,7 +2054,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
- 		BUG_ON(retval != 0);
- 		i++;
--
-+	next:
- 		if (!threadgroup)
- 			break;
- 	} while_each_thread(leader, tsk);
-@@ -3187,11 +3187,9 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
- 
- 	WARN_ON_ONCE(!rcu_read_lock_held());
- 
--	/* if first iteration, visit the leftmost descendant */
--	if (!pos) {
--		next = css_leftmost_descendant(root);
--		return next != root ? next : NULL;
--	}
-+	/* if first iteration, visit leftmost descendant which may be @root */
-+	if (!pos)
-+		return css_leftmost_descendant(root);
- 
- 	/* if we visited @root, we're done */
- 	if (pos == root)
+--
+Iago Abal Rivas - http://www.iagoabal.eu
+Ph.D. Fellow at IT University of Copenhagen
