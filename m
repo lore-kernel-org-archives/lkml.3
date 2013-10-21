@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3JUJcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:32:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39322 "EHLO
+	id S1756041Ab3JUJci (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:32:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39309 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753085Ab3JUIub (ORCPT
+	by vger.kernel.org with ESMTP id S1753275Ab3JUIuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:50:31 -0400
+	Mon, 21 Oct 2013 04:50:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>
+CC: akpm@linux-foundation.org,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Stephen Warren" <swarren@nvidia.com>, "Thomas Graf" <tgraf@suug.ch>,
+        "Fabio Estevam" <fabio.estevam@freescale.com>,
+        "Fabio Estevam" <festevam@gmail.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.367165274@decadent.org.uk>
+Message-ID: <lsq.1382345188.613078978@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 017/149] HID: hidraw: put old deallocation mechanism
- in place
+Subject: [PATCH 3.2 011/149] ipv6: Don't depend on per socket memory for
+ neighbour  discovery messages
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,139 +38,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Thomas Graf <tgraf@suug.ch>
 
-commit df0cfd6990347c20ae031f3f34137cba274f1972 upstream.
+[ Upstream commit 25a6e6b84fba601eff7c28d30da8ad7cfbef0d43 ]
 
-This basically reverts commit 4fe9f8e203fda. It causes multiple problems,
-namely:
+Allocating skbs when sending out neighbour discovery messages
+currently uses sock_alloc_send_skb() based on a per net namespace
+socket and thus share a socket wmem buffer space.
 
-- after rmmod/modprobe cycle of bus driver, the input is not claimed any
-  more. This is likely because of misplaced hid_hw_close()
-- it causes memory corruption on hidraw_list
+If a netdevice is temporarily unable to transmit due to carrier
+loss or for other reasons, the queued up ndisc messages will cosnume
+all of the wmem space and will thus prevent from any more skbs to
+be allocated even for netdevices that are able to transmit packets.
 
-As original patch author is not responding to requests to fix his patch,
-and the original deallocation mechanism is not exposing any problems, I
-am reverting back to it.
+The number of neighbour discovery messages sent is very limited,
+use of alloc_skb() bypasses the socket wmem buffer size enforcement
+while the manual call to skb_set_owner_w() maintains the socket
+reference needed for the IPv6 output path.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+This patch has orginally been posted by Eric Dumazet in a modified
+form.
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Fabio Estevam <festevam@gmail.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hidraw.c | 69 ++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 43 insertions(+), 26 deletions(-)
+ net/ipv6/ndisc.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -42,7 +42,6 @@ static struct cdev hidraw_cdev;
- static struct class *hidraw_class;
- static struct hidraw *hidraw_table[HIDRAW_MAX_DEVICES];
- static DEFINE_MUTEX(minors_lock);
--static void drop_ref(struct hidraw *hid, int exists_bit);
+diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
+index 9ffc37f..bc55358 100644
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -447,7 +447,6 @@ struct sk_buff *ndisc_build_skb(struct net_device *dev,
+ 	struct sk_buff *skb;
+ 	struct icmp6hdr *hdr;
+ 	int len;
+-	int err;
+ 	u8 *opt;
  
- static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count, loff_t *ppos)
- {
-@@ -114,7 +113,7 @@ static ssize_t hidraw_send_report(struct
- 	__u8 *buf;
- 	int ret = 0;
+ 	if (!dev->addr_len)
+@@ -457,14 +456,12 @@ struct sk_buff *ndisc_build_skb(struct net_device *dev,
+ 	if (llinfo)
+ 		len += ndisc_opt_addr_space(dev);
  
--	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
-+	if (!hidraw_table[minor]) {
- 		ret = -ENODEV;
- 		goto out;
+-	skb = sock_alloc_send_skb(sk,
+-				  (MAX_HEADER + sizeof(struct ipv6hdr) +
+-				   len + LL_ALLOCATED_SPACE(dev)),
+-				  1, &err);
++	skb = alloc_skb((MAX_HEADER + sizeof(struct ipv6hdr) +
++			 len + LL_ALLOCATED_SPACE(dev)), GFP_ATOMIC);
+ 	if (!skb) {
+ 		ND_PRINTK0(KERN_ERR
+-			   "ICMPv6 ND: %s() failed to allocate an skb, err=%d.\n",
+-			   __func__, err);
++			   "ICMPv6 ND: %s() failed to allocate an skb.\n",
++			   __func__);
+ 		return NULL;
  	}
-@@ -262,7 +261,7 @@ static int hidraw_open(struct inode *ino
- 	}
  
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
-+	if (!hidraw_table[minor]) {
- 		err = -ENODEV;
- 		goto out_unlock;
- 	}
-@@ -299,12 +298,36 @@ out:
- static int hidraw_release(struct inode * inode, struct file * file)
- {
- 	unsigned int minor = iminor(inode);
-+	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
-+	int ret;
-+	int i;
-+
-+	mutex_lock(&minors_lock);
-+	if (!hidraw_table[minor]) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
+@@ -492,6 +489,11 @@ struct sk_buff *ndisc_build_skb(struct net_device *dev,
+ 					   csum_partial(hdr,
+ 							len, 0));
  
--	drop_ref(hidraw_table[minor], 0);
- 	list_del(&list->node);
-+	dev = hidraw_table[minor];
-+	if (!--dev->open) {
-+		if (list->hidraw->exist) {
-+			hid_hw_power(dev->hid, PM_HINT_NORMAL);
-+			hid_hw_close(dev->hid);
-+		} else {
-+			kfree(list->hidraw);
-+		}
-+	}
++	/* Manually assign socket ownership as we avoid calling
++	 * sock_alloc_send_pskb() to bypass wmem buffer limits
++	 */
++	skb_set_owner_w(skb, sk);
 +
-+	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
-+		kfree(list->buffer[i].value);
- 	kfree(list);
--	return 0;
-+	ret = 0;
-+unlock:
-+	mutex_unlock(&minors_lock);
-+
-+	return ret;
+ 	return skb;
  }
  
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
-@@ -506,7 +529,21 @@ EXPORT_SYMBOL_GPL(hidraw_connect);
- void hidraw_disconnect(struct hid_device *hid)
- {
- 	struct hidraw *hidraw = hid->hidraw;
--	drop_ref(hidraw, 1);
-+
-+	mutex_lock(&minors_lock);
-+	hidraw->exist = 0;
-+
-+	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
-+
-+	hidraw_table[hidraw->minor] = NULL;
-+
-+	if (hidraw->open) {
-+		hid_hw_close(hid);
-+		wake_up_interruptible(&hidraw->wait);
-+	} else {
-+		kfree(hidraw);
-+	}
-+	mutex_unlock(&minors_lock);
- }
- EXPORT_SYMBOL_GPL(hidraw_disconnect);
- 
-@@ -555,23 +592,3 @@ void hidraw_exit(void)
- 	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
- 
- }
--
--static void drop_ref(struct hidraw *hidraw, int exists_bit)
--{
--	mutex_lock(&minors_lock);
--	if (exists_bit) {
--		hid_hw_close(hidraw->hid);
--		hidraw->exist = 0;
--		if (hidraw->open)
--			wake_up_interruptible(&hidraw->wait);
--	} else {
--		--hidraw->open;
--	}
--
--	if (!hidraw->open && !hidraw->exist) {
--		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
--		hidraw_table[hidraw->minor] = NULL;
--		kfree(hidraw);
--	}
--	mutex_unlock(&minors_lock);
--}
 
