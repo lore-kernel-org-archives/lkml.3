@@ -1,136 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3JUFKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 01:10:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35552 "EHLO
+	id S1752609Ab3JUFUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 01:20:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35564 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752280Ab3JUFKG (ORCPT
+	with ESMTP id S1752094Ab3JUFT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 01:10:06 -0400
+	Mon, 21 Oct 2013 01:19:59 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: divy@chelsio.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: jon.mason@intel.com
+Cc: linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH v2] chelsio: remove duplicate defines
-Date: Mon, 21 Oct 2013 07:09:49 +0200
-Message-Id: <1382332189-5596-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] NTB: remove duplicate defines
+Date: Mon, 21 Oct 2013 07:19:42 +0200
+Message-Id: <1382332782-5686-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes multiple duplicate definitions
-in drivers/net/ethernet/chelsio/cxgb3/regs.h
+Remove duplicate defines in drivers/ntb/ntb_regs.h
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/net/ethernet/chelsio/cxgb3/regs.h | 35 -------------------------------
- 1 file changed, 35 deletions(-)
+ drivers/ntb/ntb_regs.h | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb3/regs.h b/drivers/net/ethernet/chelsio/cxgb3/regs.h
-index 6990f6c..81029b8 100644
---- a/drivers/net/ethernet/chelsio/cxgb3/regs.h
-+++ b/drivers/net/ethernet/chelsio/cxgb3/regs.h
-@@ -685,10 +685,6 @@
- #define V_BUSY(x) ((x) << S_BUSY)
- #define F_BUSY    V_BUSY(1U)
- 
--#define S_BUSY    31
--#define V_BUSY(x) ((x) << S_BUSY)
--#define F_BUSY    V_BUSY(1U)
--
- #define A_MC7_EXT_MODE1 0x108
- 
- #define A_MC7_EXT_MODE2 0x10c
-@@ -749,14 +745,6 @@
- 
- #define A_MC7_CAL 0x128
- 
--#define S_BUSY    31
--#define V_BUSY(x) ((x) << S_BUSY)
--#define F_BUSY    V_BUSY(1U)
--
--#define S_BUSY    31
--#define V_BUSY(x) ((x) << S_BUSY)
--#define F_BUSY    V_BUSY(1U)
--
- #define S_CAL_FAULT    30
- #define V_CAL_FAULT(x) ((x) << S_CAL_FAULT)
- #define F_CAL_FAULT    V_CAL_FAULT(1U)
-@@ -815,9 +803,6 @@
- #define V_OP(x) ((x) << S_OP)
- #define F_OP    V_OP(1U)
- 
--#define F_OP    V_OP(1U)
--#define A_SF_OP 0x6dc
--
- #define A_MC7_BIST_ADDR_BEG 0x168
- 
- #define A_MC7_BIST_ADDR_END 0x16c
-@@ -830,8 +815,6 @@
- #define V_CONT(x) ((x) << S_CONT)
- #define F_CONT    V_CONT(1U)
- 
--#define F_CONT    V_CONT(1U)
--
- #define A_MC7_INT_ENABLE 0x178
- 
- #define S_AE    17
-@@ -1017,8 +1000,6 @@
- #define V_NICMODE(x) ((x) << S_NICMODE)
- #define F_NICMODE    V_NICMODE(1U)
- 
--#define F_NICMODE    V_NICMODE(1U)
--
- #define S_IPV6ENABLE    15
- #define V_IPV6ENABLE(x) ((x) << S_IPV6ENABLE)
- #define F_IPV6ENABLE    V_IPV6ENABLE(1U)
-@@ -1562,27 +1543,15 @@
- #define A_ULPRX_STAG_ULIMIT 0x530
- 
- #define A_ULPRX_RQ_LLIMIT 0x534
--#define A_ULPRX_RQ_LLIMIT 0x534
- 
- #define A_ULPRX_RQ_ULIMIT 0x538
--#define A_ULPRX_RQ_ULIMIT 0x538
- 
- #define A_ULPRX_PBL_LLIMIT 0x53c
- 
- #define A_ULPRX_PBL_ULIMIT 0x540
--#define A_ULPRX_PBL_ULIMIT 0x540
- 
- #define A_ULPRX_TDDP_TAGMASK 0x524
- 
--#define A_ULPRX_RQ_LLIMIT 0x534
--#define A_ULPRX_RQ_LLIMIT 0x534
--
--#define A_ULPRX_RQ_ULIMIT 0x538
--#define A_ULPRX_RQ_ULIMIT 0x538
--
--#define A_ULPRX_PBL_ULIMIT 0x540
--#define A_ULPRX_PBL_ULIMIT 0x540
--
- #define A_ULPTX_CONFIG 0x580
- 
- #define S_CFG_CQE_SOP_MASK    1
-@@ -2053,8 +2022,6 @@
- #define V_TMMODE(x) ((x) << S_TMMODE)
- #define F_TMMODE    V_TMMODE(1U)
- 
--#define F_TMMODE    V_TMMODE(1U)
--
- #define A_MC5_DB_ROUTING_TABLE_INDEX 0x70c
- 
- #define A_MC5_DB_FILTER_TABLE 0x710
-@@ -2454,8 +2421,6 @@
- #define V_TXACTENABLE(x) ((x) << S_TXACTENABLE)
- #define F_TXACTENABLE    V_TXACTENABLE(1U)
- 
--#define A_XGM_SERDES_CTRL0 0x8e0
--
- #define S_RESET3    23
- #define V_RESET3(x) ((x) << S_RESET3)
- #define F_RESET3    V_RESET3(1U)
+diff --git a/drivers/ntb/ntb_regs.h b/drivers/ntb/ntb_regs.h
+index aa4bdd3..caa5975 100644
+--- a/drivers/ntb/ntb_regs.h
++++ b/drivers/ntb/ntb_regs.h
+@@ -75,9 +75,6 @@
+ #define SNB_SBAR2XLAT_OFFSET	0x0030
+ #define SNB_SBAR4XLAT_OFFSET	0x0038
+ #define SNB_SBAR0BASE_OFFSET	0x0040
+-#define SNB_SBAR0BASE_OFFSET	0x0040
+-#define SNB_SBAR2BASE_OFFSET	0x0048
+-#define SNB_SBAR4BASE_OFFSET	0x0050
+ #define SNB_SBAR2BASE_OFFSET	0x0048
+ #define SNB_SBAR4BASE_OFFSET	0x0050
+ #define SNB_NTBCNTL_OFFSET	0x0058
 -- 
 1.8.1.2
 
