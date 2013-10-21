@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3JUKuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:50:15 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:42849 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3JUKuN (ORCPT
+	id S1753269Ab3JUKvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:51:48 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19803 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3JUKvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:50:13 -0400
+	Mon, 21 Oct 2013 06:51:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 03:47:08 -0700
+Message-ID: <52650DA2.60609@nvidia.com>
+Date: Mon, 21 Oct 2013 16:48:58 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-From: Iago Abal <mail@iagoabal.eu>
-Date: Mon, 21 Oct 2013 12:49:32 +0200
-X-Google-Sender-Auth: OWnNXyDku0xpPrh6kcBDXiQqj8Y
-Message-ID: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
-Subject: Looking for configuration-dependent bugs in Linux
-To: linux-kernel@vger.kernel.org
-Cc: Iago Abal <iari@itu.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Florian Lobmaier <florian.lobmaier@ams.com>
+Subject: Re: [PATCH V5 1/3] mfd: add support for ams AS3722 PMIC
+References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com> <1381321761-8898-2-git-send-email-ldewangan@nvidia.com> <525580A8.5050902@wwwdotorg.org>
+In-Reply-To: <525580A8.5050902@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linux kernel developer,
+Hi Lee/Samuel,
 
-We are a group working on analysis of configurable software systems at
-IT University of Copenhagen. For the next four years [1] we will study
-the problem of verification in highly configurable software, and we
-will focus on the Linux kernel as the prime example of configurable
-software. We will therefore appreciate your advice regarding a few
-questions (see below).
+On Wednesday 09 October 2013 09:43 PM, Stephen Warren wrote:
+> On 10/09/2013 06:29 AM, Laxman Dewangan wrote:
+>> The ams AS3722 is a compact system PMU suitable for mobile phones,
+>> tablets etc. It has 4 DC/DC step-down regulators, 3 DC/DC step-down
+>> controller, 11 LDOs, RTC, automatic battery, temperature and
+>> over-current monitoring, 8 GPIOs, ADC and a watchdog.
+>>
+>> Add MFD core driver for the AS3722 to support core functionality.
+> OK, I think the binding here is about clear enough, so the binding,
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-We are currently looking for already-fixed configuration-dependent
-bugs in Linux ---the bugfix helps us to understand the underlying
-cause. A good example is [2], which fixes a bug that only shows up in
-PA-RISC architectures when DISCONTIGMEM is enabled. Any bug appearing
-in some configurations but not in others is interesting for us (e.g. a
-bug affecting PowerPC only), even though the more complex the
-interaction between configuration options the more interesting is the
-bug for our purpose.
 
-As a Linux kernel developer, could you:
+I saw that Lee has already acked this (V4) for the nondt side.
 
-* remember any configuration-dependent bug?
-* identify any subset of configuration options that tend to interact badly?
-* spot any part of the kernel more prone to configuration-dependent bugs?
+As there is no issue on dt side also, can it be apply please?
 
-Your feedback will allow us to make our search more effective. A good
-understanding of how these bugs occur in Linux will also be important
-for developing subsequent techniques and tools. There is of course a
-potential benefit for the Linux community: we plan to pay you back in
-bug reports :-)
 
-All your feedback is welcomed.
-
-Thank you for your time.
-
-Kind regards,
-
-[1] http://variete.wikit.itu.dk/
-[2] http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=91ea8207168793b365322be3c90a4ee9e8b03ed4
-
---
-Iago Abal Rivas - http://www.iagoabal.eu
-Ph.D. Fellow at IT University of Copenhagen
