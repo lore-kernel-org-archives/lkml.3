@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab3JUOVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:21:39 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:51268 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab3JUOTh (ORCPT
+	id S1754363Ab3JUOWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:22:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:34150 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab3JUOTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:19:37 -0400
-From: Majunath Goudar <csmanjuvijay@gmail.com>
-To: csmanjuvijay@gmail.com
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH V4 5/6] USB: OHCI: Properly handle ohci-exynos suspend
-Date: Mon, 21 Oct 2013 19:48:55 +0530
-Message-Id: <1382365136-24472-6-git-send-email-csmanjuvijay@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1382365136-24472-1-git-send-email-csmanjuvijay@gmail.com>
-References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
- <1382365136-24472-1-git-send-email-csmanjuvijay@gmail.com>
+	Mon, 21 Oct 2013 10:19:30 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-88-526537f152f1
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+To: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org, kyungmin.park@samsung.com,
+        t.figa@samsung.com, kishon@ti.com, sw0312.kim@samsung.com,
+        inki.dae@samsung.com, rahul.sharma@samsung.com, kgene.kim@samsung.com,
+        s.nawrocki@samsung.com, thomas.abraham@linaro.org,
+        mturquette@linaro.org, Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: [RFC 08/12] drm: exynos: hdmi: simplify extracting hpd-gpio from DT
+Date: Mon, 21 Oct 2013 16:18:27 +0200
+Message-id: <1382365111-6533-9-git-send-email-t.stanislaws@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
+References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t9jAd2P5qlBBrtvKlnMP3KO1eLK1/ds
+	FpPuT2Cx6F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLpxMusllMWXSY1eLwm3ZWixmTX7JZ
+	rJ/xmsViXvtLVotjM5YwOvB73Lm2h83jfvdxJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllq
+	kb5dAlfG3LMbmQrWclZcvv6dsYHxDnsXIyeHhICJxK4fT5ghbDGJC/fWs3UxcnEICSxilGia
+	O48dwuliktiwdQ5YFRtQx7ElnxlBbBGBRIlfzXeZQYqYBQ4xSexumQJWJCzgI/FqVi+YzSKg
+	KvFh6zMwm1fAXeJAzyOodfIST+/3sYHYnAIeEqdergUbKgRU8+7bPJYJjLwLGBlWMYqmFiQX
+	FCel5xrpFSfmFpfmpesl5+duYgQH6jPpHYyrGiwOMQpwMCrx8Aa4pAQJsSaWFVfmHmKU4GBW
+	EuGtMk0NEuJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDo
+	1/xPT+xJalE701Pj5rtT3K+XzGf5/r1VL4+psPeEsU3f/3VODhMztW9kLg1OObtuxV/ensLl
+	q3a/SbRo6PKsW1yp9OiweNCkJt97DO5yF9RzG3SSlTwv3QoPePO0Q6Z4ysWcm3EPW20fRusf
+	ybnuUpvpcnZOYZr3hPNpjzdOd/RZq8RrI63EUpyRaKjFXFScCAB6Vq7lUAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend scenario in case of ohci-exynos glue was not
-properly handled as it was not suspending generic part
-of ohci controller. Alan Stern suggested, properly handle
-ohci-exynos suspend scenario.
+This patch eliminates redundant checks while retrieving HPD gpio from DT during
+HDMI's probe().
 
-Calling explicitly the ohci_suspend() routine in
-exynos_ohci_suspend() will ensure proper handling of suspend
-scenario.
-
-Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
+Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
-V3->V4:
-      -No changes, only added Alan Acked-by.
+ drivers/gpu/drm/exynos/exynos_hdmi.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-V2->V3:
-      -No changes.
-      As a build failure on "ep93xx proper suspend patch"
-      and Linaro id bounced. Rewrote this patch on top of latest
-      Greg usb-next branch. This patch not gives any build error.
-      Patch is required for ohci-exynos proper suspending as Alan
-      mentioned.
-
-      Initially when I wrote this patch I was working in Linaro,
-      now I am not part of Linaro that is why Linaro id is bouncing.
-      Sending this patch from personal mail id.
-
-V1->V2:
-      -No changes.
-       Due to the build failure on ep93xx reverted this patch.
-       This patch is needed as Alan Stern suggestion.
-
- drivers/usb/host/ohci-exynos.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a87baed..4b5c8bd 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -192,23 +192,14 @@ static int exynos_ohci_suspend(struct device *dev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct platform_device *pdev = to_platform_device(dev);
-+	bool do_wakeup = device_may_wakeup(dev);
- 	unsigned long flags;
--	int rc = 0;
-+	int rc = ohci_suspend(hcd, do_wakeup);
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index e36588a..5adb5c1 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -1858,23 +1858,18 @@ static struct s5p_hdmi_platform_data *drm_hdmi_dt_parse_pdata
+ {
+ 	struct device_node *np = dev->of_node;
+ 	struct s5p_hdmi_platform_data *pd;
+-	u32 value;
  
--	/*
--	 * Root hub was already suspended. Disable irq emission and
--	 * mark HW unaccessible, bail out if RH has been resumed. Use
--	 * the spinlock to properly synchronize with possible pending
--	 * RH suspend or resume activity.
--	 */
--	spin_lock_irqsave(&ohci->lock, flags);
--	if (ohci->rh_state != OHCI_RH_SUSPENDED &&
--			ohci->rh_state != OHCI_RH_HALTED) {
--		rc = -EINVAL;
--		goto fail;
--	}
-+	if (rc)
-+		return rc;
+ 	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+ 	if (!pd)
+-		goto err_data;
++		return NULL;
  
--	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	spin_lock_irqsave(&ohci->lock, flags);
+-	if (!of_find_property(np, "hpd-gpio", &value)) {
++	pd->hpd_gpio = of_get_named_gpio_flags(np, "hpd-gpio", 0, NULL);
++	if (pd->hpd_gpio < 0) {
+ 		DRM_ERROR("no hpd gpio property found\n");
+-		goto err_data;
++		return NULL;
+ 	}
  
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
-@@ -217,10 +208,9 @@ static int exynos_ohci_suspend(struct device *dev)
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
--fail:
- 	spin_unlock_irqrestore(&ohci->lock, flags);
- 
--	return rc;
-+	return 0;
+-	pd->hpd_gpio = of_get_named_gpio(np, "hpd-gpio", 0);
+-
+ 	return pd;
+-
+-err_data:
+-	return NULL;
  }
  
- static int exynos_ohci_resume(struct device *dev)
+ static struct of_device_id hdmi_match_types[] = {
 -- 
 1.7.9.5
 
