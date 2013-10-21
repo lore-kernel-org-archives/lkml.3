@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3JUIxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:53:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39886 "EHLO
+	id S1754590Ab3JUIxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:53:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39846 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754516Ab3JUIxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754516Ab3JUIxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:53:25 -0400
+	Mon, 21 Oct 2013 04:53:14 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lino Sanfilippo" <LinoSanfilippo@gmx.de>,
-        "Boyd Yang" <boyd.yang@gmail.com>, "Eric Paris" <eparis@redhat.com>,
-        "Lino Sanfilippo" <LinoSanfilipp@gmx.de>
+CC: akpm@linux-foundation.org, "Greg Ungerer" <gerg@uclinux.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.177963512@decadent.org.uk>
+Message-ID: <lsq.1382345188.30450496@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 135/149] fanotify: dont merge permission events
+Subject: [PATCH 3.2 126/149] m68knommu: clean up linker script
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,55 +30,270 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+From: Greg Ungerer <gerg@uclinux.org>
 
-commit 03a1cec1f17ac1a6041996b3e40f96b5a2f90e1b upstream.
+commit f84f52a5c15db7d14a534815f27253b001735183 upstream.
 
-Boyd Yang reported a problem for the case that multiple threads of the same
-thread group are waiting for a reponse for a permission event.
-In this case it is possible that some of the threads are never woken up, even
-if the response for the event has been received
-(see http://marc.info/?l=linux-kernel&m=131822913806350&w=2).
+There is a lot of years of collected cruft in the m68knommu linker script.
+Clean it all up and use the well defined linker script support macros.
 
-The reason is that we are currently merging permission events if they belong to
-the same thread group. But we are not prepared to wake up more than one waiter
-for each event. We do
+Support is maintained for building both ROM/FLASH based and RAM based setups.
+No major changes to section layouts, though the rodata section is now lumped
+in with the read/write data section.
 
-wait_event(group->fanotify_data.access_waitq, event->response ||
-			atomic_read(&group->fanotify_data.bypass_perm));
-and after that
-  event->response = 0;
-
-which is the reason that even if we woke up all waiters for the same event
-some of them may see event->response being already set 0 again, then go back to
-sleep and block forever.
-
-With this patch we avoid that more than one thread is waiting for a response
-by not merging permission events for the same thread group any more.
-
-Reported-by: Boyd Yang <boyd.yang@gmail.com>
-Signed-off-by: Lino Sanfilippo <LinoSanfilipp@gmx.de>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/notify/fanotify/fanotify.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/m68k/kernel/vmlinux-nommu.lds | 200 +++++++++----------------------------
+ 1 file changed, 49 insertions(+), 151 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index f35794b..aeb5b5a 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -18,6 +18,12 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
- 	    old->tgid == new->tgid) {
- 		switch (old->data_type) {
- 		case (FSNOTIFY_EVENT_PATH):
-+#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-+			/* dont merge two permission events */
-+			if ((old->mask & FAN_ALL_PERM_EVENTS) &&
-+			    (new->mask & FAN_ALL_PERM_EVENTS))
-+				return false;
+diff --git a/arch/m68k/kernel/vmlinux-nommu.lds b/arch/m68k/kernel/vmlinux-nommu.lds
+index 8e66ccb..40e02d9 100644
+--- a/arch/m68k/kernel/vmlinux-nommu.lds
++++ b/arch/m68k/kernel/vmlinux-nommu.lds
+@@ -1,195 +1,93 @@
+ /*
+  *	vmlinux.lds.S -- master linker script for m68knommu arch
+  *
+- *	(C) Copyright 2002-2006, Greg Ungerer <gerg@snapgear.com>
++ *	(C) Copyright 2002-2012, Greg Ungerer <gerg@snapgear.com>
+  *
+  *	This linker script is equipped to build either ROM loaded or RAM
+  *	run kernels.
+  */
+ 
+-#include <asm-generic/vmlinux.lds.h>
+-#include <asm/page.h>
+-#include <asm/thread_info.h>
+-
+ #if defined(CONFIG_RAMKERNEL)
+-#define	RAM_START	CONFIG_KERNELBASE
+-#define	RAM_LENGTH	(CONFIG_RAMBASE + CONFIG_RAMSIZE - CONFIG_KERNELBASE)
+-#define	TEXT		ram
+-#define	DATA		ram
+-#define	INIT		ram
+-#define	BSSS		ram
+-#endif
+-#if defined(CONFIG_ROMKERNEL) || defined(CONFIG_HIMEMKERNEL)
+-#define	RAM_START	CONFIG_RAMBASE
+-#define	RAM_LENGTH	CONFIG_RAMSIZE
+-#define	ROMVEC_START	CONFIG_ROMVEC
+-#define	ROMVEC_LENGTH	CONFIG_ROMVECSIZE
+-#define	ROM_START	CONFIG_ROMSTART
+-#define	ROM_LENGTH	CONFIG_ROMSIZE
+-#define	TEXT		rom
+-#define	DATA		ram
+-#define	INIT		ram
+-#define	BSSS		ram
++#define	KTEXT_ADDR	CONFIG_KERNELBASE
+ #endif
+-
+-#ifndef DATA_ADDR
+-#define	DATA_ADDR
++#if defined(CONFIG_ROMKERNEL)
++#define	KTEXT_ADDR	CONFIG_ROMSTART
++#define	KDATA_ADDR	CONFIG_KERNELBASE
++#define	LOAD_OFFSET	KDATA_ADDR + (ADDR(.text) + SIZEOF(.text))
+ #endif
+ 
++#include <asm/page.h>
++#include <asm/thread_info.h>
++#include <asm-generic/vmlinux.lds.h>
+ 
+ OUTPUT_ARCH(m68k)
+ ENTRY(_start)
+ 
+-MEMORY {
+-	ram	: ORIGIN = RAM_START, LENGTH = RAM_LENGTH
+-#ifdef ROM_START
+-	romvec	: ORIGIN = ROMVEC_START, LENGTH = ROMVEC_LENGTH
+-	rom	: ORIGIN = ROM_START, LENGTH = ROM_LENGTH
+-#endif
+-}
+-
+ jiffies = jiffies_64 + 4;
+ 
+ SECTIONS {
+ 
+-#ifdef ROMVEC_START
+-	. = ROMVEC_START ;
++#ifdef CONFIG_ROMVEC
++	. = CONFIG_ROMVEC;
+ 	.romvec : {
+-		__rom_start = . ;
++		__rom_start = .;
+ 		_romvec = .;
++		*(.romvec)
+ 		*(.data..initvect)
+-	} > romvec
++	}
+ #endif
+ 
++	. = KTEXT_ADDR;
++
++	_text = .;
++	_stext = .;
+ 	.text : {
+-		_text = .;
+-		_stext = . ;
+ 		HEAD_TEXT
+ 		TEXT_TEXT
+ 		SCHED_TEXT
+ 		LOCK_TEXT
+-		*(.text..lock)
+ 		*(.fixup)
++		. = ALIGN(16);
++	}
++	_etext = .;
++
++#ifdef KDATA_ADDR
++	. = KDATA_ADDR;
 +#endif
- 			if ((old->path.mnt == new->path.mnt) &&
- 			    (old->path.dentry == new->path.dentry))
- 				return true;
++
++	_sdata = .;
++	RO_DATA_SECTION(PAGE_SIZE)
++	RW_DATA_SECTION(16, PAGE_SIZE, THREAD_SIZE)
++	_edata = .;
+ 
+-		. = ALIGN(16);          /* Exception table              */
+-		__start___ex_table = .;
+-		*(__ex_table)
+-		__stop___ex_table = .;
+-
+-		*(.rodata) *(.rodata.*)
+-		*(__vermagic)		/* Kernel version magic */
+-		*(.rodata1)
+-		*(.rodata.str1.1)
+-
+-		/* Kernel symbol table: Normal symbols */
+-		. = ALIGN(4);
+-		__start___ksymtab = .;
+-		*(SORT(___ksymtab+*))
+-		__stop___ksymtab = .;
+-
+-		/* Kernel symbol table: GPL-only symbols */
+-		__start___ksymtab_gpl = .;
+-		*(SORT(___ksymtab_gpl+*))
+-		__stop___ksymtab_gpl = .;
+-
+-		/* Kernel symbol table: Normal unused symbols */
+-		__start___ksymtab_unused = .;
+-		*(SORT(___ksymtab_unused+*))
+-		__stop___ksymtab_unused = .;
+-
+-		/* Kernel symbol table: GPL-only unused symbols */
+-		__start___ksymtab_unused_gpl = .;
+-		*(SORT(___ksymtab_unused_gpl+*))
+-		__stop___ksymtab_unused_gpl = .;
+-
+-		/* Kernel symbol table: GPL-future symbols */
+-		__start___ksymtab_gpl_future = .;
+-		*(SORT(___ksymtab_gpl_future+*))
+-		__stop___ksymtab_gpl_future = .;
+-
+-		/* Kernel symbol table: Normal symbols */
+-		__start___kcrctab = .;
+-		*(SORT(___kcrctab+*))
+-		__stop___kcrctab = .;
+-
+-		/* Kernel symbol table: GPL-only symbols */
+-		__start___kcrctab_gpl = .;
+-		*(SORT(___kcrctab_gpl+*))
+-		__stop___kcrctab_gpl = .;
+-
+-		/* Kernel symbol table: Normal unused symbols */
+-		__start___kcrctab_unused = .;
+-		*(SORT(___kcrctab_unused+*))
+-		__stop___kcrctab_unused = .;
+-
+-		/* Kernel symbol table: GPL-only unused symbols */
+-		__start___kcrctab_unused_gpl = .;
+-		*(SORT(___kcrctab_unused_gpl+*))
+-		__stop___kcrctab_unused_gpl = .;
+-
+-		/* Kernel symbol table: GPL-future symbols */
+-		__start___kcrctab_gpl_future = .;
+-		*(SORT(___kcrctab_gpl_future+*))
+-		__stop___kcrctab_gpl_future = .;
+-
+-		/* Kernel symbol table: strings */
+-		*(__ksymtab_strings)
+-
+-		/* Built-in module parameters */
+-		. = ALIGN(4) ;
+-		__start___param = .;
+-		*(__param)
+-		__stop___param = .;
+-
+-		/* Built-in module versions */
+-		. = ALIGN(4) ;
+-		__start___modver = .;
+-		*(__modver)
+-		__stop___modver = .;
+-
+-		. = ALIGN(4) ;
+-		_etext = . ;
+-	} > TEXT
+-
+-	.data DATA_ADDR : {
+-		. = ALIGN(4);
+-		_sdata = . ;
+-		DATA_DATA
+-		CACHELINE_ALIGNED_DATA(32)
+-		PAGE_ALIGNED_DATA(PAGE_SIZE)
+-		*(.data..shared_aligned)
+-		INIT_TASK_DATA(THREAD_SIZE)
+-		_edata = . ;
+-	} > DATA
++	EXCEPTION_TABLE(16)
++	NOTES
+ 
++	. = ALIGN(PAGE_SIZE);
++	__init_begin = .;
++	INIT_TEXT_SECTION(PAGE_SIZE)
++	INIT_DATA_SECTION(16)
++	PERCPU_SECTION(16)
+ 	.m68k_fixup : {
+ 		__start_fixup = .;
+ 		*(.m68k_fixup)
+ 		__stop_fixup = .;
+-	} > DATA
+-	NOTES > DATA
+-
+-	.init.text : {
+-		. = ALIGN(PAGE_SIZE);
+-		__init_begin = .;
+-	} > INIT
+-	INIT_TEXT_SECTION(PAGE_SIZE) > INIT
+-	INIT_DATA_SECTION(16) > INIT
++	}
+ 	.init.data : {
+ 		. = ALIGN(PAGE_SIZE);
+ 		__init_end = .;
+-	} > INIT
+-
+-	.bss : {
+-		. = ALIGN(4);
+-		_sbss = . ;
+-		*(.bss)
+-		*(COMMON)
+-		. = ALIGN(4) ;
+-		_ebss = . ;
+-	 	_end = . ;
+-	} > BSSS
++	}
++
++	_sbss = .;
++	BSS_SECTION(0, 0, 0)
++	_ebss = .;
++
++	_end = .;
++
++	STABS_DEBUG
++	.comment 0 : { *(.comment) }
+ 
++	/* Sections to be discarded */
+ 	DISCARDS
+ }
+ 
 
