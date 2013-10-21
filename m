@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab3JUJYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:24:18 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:62681 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3JUJX6 (ORCPT
+	id S1753610Ab3JUIvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:51:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39426 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753535Ab3JUIvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 05:23:58 -0400
+	Mon, 21 Oct 2013 04:51:09 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <20131018154644.GC25034@n2100.arm.linux.org.uk>
-References: <cover.1382104514.git.viresh.kumar@linaro.org>
-	<fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
-	<20131018154644.GC25034@n2100.arm.linux.org.uk>
-Date: Mon, 21 Oct 2013 14:53:57 +0530
-Message-ID: <CAKohpok-wy7FnGfyVTp2whrDZuezh2okA+FXVWqwg5wc8bBM9w@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 29/34] cpufreq: sa11x0: Convert to light weight
- ->target_index() routine
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "majianpeng" <majianpeng@gmail.com>,
+        "Sage Weil" <sage@inktank.com>
+Date: Mon, 21 Oct 2013 09:46:28 +0100
+Message-ID: <lsq.1382345188.138222653@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 021/149] libceph: unregister request in __map_request
+ failed and nofail == false
+In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
+X-SA-Exim-Connect-IP: 212.20.242.100
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2013 21:16, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Oct 18, 2013 at 07:29:52PM +0530, Viresh Kumar wrote:
->> This patch converts existing .target() to newly defined light weight
->> .target_index() routine for this driver.
->>
->> CPUFreq core will call cpufreq_frequency_table_target() before calling this
->> routine and will pass index to it.
->>
->> Some existing routines are no more required and so are removed now.
->>
->> Cc: Russell King <linux@arm.linux.org.uk>
->
-> I think I acked this patch.  Please ensure that my ack appears on all
-> that I did ack, thanks.
+3.2.52-rc1 review patch.  If anyone has any objections, please let me know.
 
-Yeah. I am sure you did Ack it and I applied your Ack in one of my branches.
-But somehow I screwed up and only your Ack was missing in the patches
-I sent.. Others weren't missed.
+------------------
 
-Will handle this along with Rafael and will not miss any of your Acks.
+From: majianpeng <majianpeng@gmail.com>
 
-Thanks..
+commit 73d9f7eef3d98c3920e144797cc1894c6b005a1e upstream.
+
+For nofail == false request, if __map_request failed, the caller does
+cleanup work, like releasing the relative pages.  It doesn't make any sense
+to retry this request.
+
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+[bwh: Backported to 3.2: adjust indentation]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/ceph/osd_client.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1719,6 +1719,8 @@ int ceph_osdc_start_request(struct ceph_
+ 				dout("osdc_start_request failed map, "
+ 				     " will retry %lld\n", req->r_tid);
+ 				rc = 0;
++			} else {
++				__unregister_request(osdc, req);
+ 			}
+ 			goto out_unlock;
+ 		}
+
