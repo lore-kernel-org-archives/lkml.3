@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab3JUMgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 08:36:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51412 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab3JUMgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 08:36:14 -0400
-Subject: Re: modalias char-major-10-130
-From: Jean Delvare <jdelvare@suse.de>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>
-In-Reply-To: <20130705205307.GB14258@spo001.leaseweb.com>
-References: <1372854803.22042.22.camel@chaos.site>
-	 <20130705205307.GB14258@spo001.leaseweb.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Mon, 21 Oct 2013 14:36:07 +0200
-Message-ID: <1382358967.4599.39.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1753493Ab3JUMiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 08:38:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43993 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab3JUMiK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 08:38:10 -0400
+Message-ID: <52652042.4090200@arm.com>
+Date: Mon, 21 Oct 2013 13:38:26 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: Re: [PATCH] of: fix iteration bug over CPU reg properties
+References: <1380904802-10432-1-git-send-email-grant.likely@linaro.org>
+In-Reply-To: <1380904802-10432-1-git-send-email-grant.likely@linaro.org>
+X-OriginalArrivalTime: 21 Oct 2013 12:38:05.0883 (UTC) FILETIME=[63E7B0B0:01CECE5A]
+X-MC-Unique: 113102113380806501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Hi Grant,
 
-Sorry for the very very late reply :(
-
-Le Friday 05 July 2013 à 22:53 +0200, Wim Van Sebroeck a écrit :
-> Hi Jean,
+On 04/10/13 17:40, Grant Likely wrote:
+> The size of each hwid in a cpu nodes 'reg' property is defined by the
+> parents #address-cells property in the normal way. The cpu parsing code
+> has a bug where it will overrun the end of the property if
+> address-cells is greater than one. This commit fixes the problem by
+> adjusting the array size by the number of address cells. It also makes
+> sure address-cells isn't zero for that would cause an infinite loop.
 > 
-> > All watchdog drivers include:
-> > 
-> > MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> > 
-> > which causes a modalias char-major-10-130 to be added to every watchdog
-> > driver module. As a result, any access to /dev/watchdog on a system with
-> > no watchdog driver loaded and working will result in an attempt to load
-> > several dozen drivers. At best one or two will actually work, the others
-> > will:
-> > 
-> > * Waste time failing to load.
-> > * Waste memory succeeding to load but not finding any device to bind to.
-> > * Pollute the kernel log.
-> > * Sometimes even load while they should not and break the system. I just
-> > had a report about advantechwdt doing that on some systems.
-> > 
-> > And the attempt order will presumably be random, so it might as well
-> > load softdog before a hardware-based watchdog which would have been
-> > preferred.
-> > 
-> > This looks so 90s. Drivers for enumerated devices have hardware-based
-> > modaliases, so char-major-10-130 shouldn't be needed. Other drivers
-> > should certainly not be loaded randomly if they need to poke the
-> > hardware to detect the presence of a supported device.
-> > 
-> > My opinion is that the char-major-10-130 modalias should ONLY be defined
-> > by user-space, when the user knows he/she needs a watchdog driver which
-> > doesn't support auto-loading via hardware-based auto-loading.
-> > 
-> > So, can we please get rid of all these
-> > MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR) statements? They do more harm than
-> > good as far as I can see.
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
 > 
-> You have a valid point: There were we have modaliases and other detection
-> mechanism we should indeed remove them. The rest should be evaluated
-> afterwards on a case by case basis. Certain intel based drivers should
-> (like advantechwdt) should indeed be fixed because they poke in the hardware
-> directly and can't be really detected.
+> I discovered this during code inspection. I don't think it is an actual
+> bug seen in the wild, but the code does look wrong. I'd appreciate
+> someone take a look and confirm that I've read the code right.
+> 
 
-I would suggest a bigger move and remove _all_
-MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR) statements. I just can't find any
-value in them.
+Thanks for finding and fixing the bug.
+I have tested this on ARM64 with 2 cell reg value using [1].
 
-Either the device is enumerated and the driver already has a module
-alias (e.g. PCI, USB etc.) that will get the right driver loaded
-automatically.
+Tested-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Or the device is not enumerated and loading its driver will lead to more
-or less intrusive hardware poking. Such hardware poking should be
-limited to a bare minimum, so the user should really decide which
-drivers should be tried and in what order. Trying them all in arbitrary
-order can't do any good.
+Regards,
+Sudeep
 
-On top of that, loading that many drivers at once bloats the kernel log.
-Also many drivers will stay loaded afterward, bloating the output of
-"lsmod" and wasting memory.
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/206401.html
 
-If defining char-major-10-130 is needed then it should happen in
-user-space.
+>  drivers/of/base.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index e4c9945..470b871 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -263,11 +263,11 @@ static bool __of_find_n_match_cpu_property(struct device_node *cpun,
+>  	int ac, prop_len, tid;
+>  	u64 hwid;
+>  
+> -	ac = of_n_addr_cells(cpun);
+> +	ac = of_n_addr_cells(cpun) ? : OF_ROOT_NODE_ADDR_CELLS_DEFAULT;
+>  	cell = of_get_property(cpun, prop_name, &prop_len);
+>  	if (!cell)
+>  		return false;
+> -	prop_len /= sizeof(*cell);
+> +	prop_len /= sizeof(*cell) * ac;
+>  	for (tid = 0; tid < prop_len; tid++) {
+>  		hwid = of_read_number(cell, ac);
+>  		if (arch_match_cpu_phys_id(cpu, hwid)) {
+> 
 
-Thanks,
--- 
-Jean Delvare
-Suse L3 Support
 
