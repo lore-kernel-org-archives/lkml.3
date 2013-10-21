@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab3JUIvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:51:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39448 "EHLO
+	id S1755679Ab3JUJWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:22:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39478 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905Ab3JUIvR (ORCPT
+	by vger.kernel.org with ESMTP id S1753642Ab3JUIvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:17 -0400
+	Mon, 21 Oct 2013 04:51:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, friedrich@mailstation.de,
-        "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org, "Anand Avati" <avati@redhat.com>,
+        "Miklos Szeredi" <mszeredi@suse.cz>,
+        "Brian Foster" <bfoster@redhat.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.602843614@decadent.org.uk>
+Message-ID: <lsq.1382345188.289408856@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 042/149] drm/edid: add quirk for Medion MD30217PG
+Subject: [PATCH 3.2 049/149] fuse: invalidate inode attributes on xattr
+ modification
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,74 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anand Avati <avati@redhat.com>
 
-commit 118bdbd86b39dbb843155054021d2c59058f1e05 upstream.
+commit d331a415aef98717393dda0be69b7947da08eba3 upstream.
 
-This LCD monitor (1280x1024 native) has a completely
-bogus detailed timing (640x350@70hz).  User reports that
-1280x1024@60 has waves so prefer 1280x1024@75.
+Calls like setxattr and removexattr result in updation of ctime.
+Therefore invalidate inode attributes to force a refresh.
 
-Manufacturer: MED  Model: 7b8  Serial#: 99188
-Year: 2005  Week: 5
-EDID Version: 1.3
-Analog Display Input,  Input Voltage Level: 0.700/0.700 V
-Sync:  Separate
-Max Image Size [cm]: horiz.: 34  vert.: 27
-Gamma: 2.50
-DPMS capabilities: Off; RGB/Color Display
-First detailed timing is preferred mode
-redX: 0.645 redY: 0.348   greenX: 0.280 greenY: 0.605
-blueX: 0.142 blueY: 0.071   whiteX: 0.313 whiteY: 0.329
-Supported established timings:
-720x400@70Hz
-640x480@60Hz
-640x480@72Hz
-640x480@75Hz
-800x600@56Hz
-800x600@60Hz
-800x600@72Hz
-800x600@75Hz
-1024x768@60Hz
-1024x768@70Hz
-1024x768@75Hz
-1280x1024@75Hz
-Manufacturer's mask: 0
-Supported standard timings:
-Supported detailed timing:
-clock: 25.2 MHz   Image Size:  337 x 270 mm
-h_active: 640  h_sync: 688  h_sync_end 784 h_blank_end 800 h_border: 0
-v_active: 350  v_sync: 350  v_sync_end 352 v_blanking: 449 v_border: 0
-Monitor name: MD30217PG
-Ranges: V min: 56 V max: 76 Hz, H min: 30 H max: 83 kHz, PixClock max 145 MHz
-Serial No: 501099188
-EDID (in hex):
-          00ffffffffffff0034a4b80774830100
-          050f010368221b962a0c55a559479b24
-          125054afcf00310a0101010101018180
-          000000000000d60980a0205e63103060
-          0200510e1100001e000000fc004d4433
-          3032313750470a202020000000fd0038
-          4c1e530e000a202020202020000000ff
-          003530313039393138380a2020200078
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reported-by: friedrich@mailstation.de
+Signed-off-by: Anand Avati <avati@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_edid.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/fuse/dir.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -125,6 +125,9 @@ static struct edid_quirk {
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1439,6 +1439,8 @@ static int fuse_setxattr(struct dentry *
+ 		fc->no_setxattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
  
- 	/* ViewSonic VA2026w */
- 	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
-+
-+	/* Medion MD 30217 PG */
-+	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
- };
+@@ -1568,6 +1570,8 @@ static int fuse_removexattr(struct dentr
+ 		fc->no_removexattr = 1;
+ 		err = -EOPNOTSUPP;
+ 	}
++	if (!err)
++		fuse_invalidate_attr(inode);
+ 	return err;
+ }
  
- /*** DDC fetch and block validation ***/
 
