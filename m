@@ -1,188 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3JUMOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 08:14:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34421 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3JUMN7 (ORCPT
+	id S1753495Ab3JUMPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 08:15:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39834 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753207Ab3JUMPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 08:13:59 -0400
-Message-ID: <52651A54.3020403@ti.com>
-Date: Mon, 21 Oct 2013 15:13:08 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 21 Oct 2013 08:15:03 -0400
+Date: Mon, 21 Oct 2013 13:14:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] netfilter: fix ordering of jumpstack allocation and
+ table update
+Message-ID: <20131021121452.GA29250@mudshark.cambridge.arm.com>
+References: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
+ <20131018111536.GA11132@localhost>
+ <20131018165749.GI3296@mudshark.cambridge.arm.com>
+ <1382116693.3284.21.camel@edumazet-glaptop.roam.corp.google.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY
- Framework
-References: <1381866857-3861-1-git-send-email-kishon@ti.com> <1381866857-3861-3-git-send-email-kishon@ti.com> <525E9232.9050502@ti.com> <525E9A11.7080501@ti.com> <525EA171.9010402@ti.com> <52651614.5040309@ti.com>
-In-Reply-To: <52651614.5040309@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382116693.3284.21.camel@edumazet-glaptop.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2013 02:55 PM, Kishon Vijay Abraham I wrote:
-> Hi,
+On Fri, Oct 18, 2013 at 06:18:13PM +0100, Eric Dumazet wrote:
+> On Fri, 2013-10-18 at 17:57 +0100, Will Deacon wrote:
+> > Hi Pablo,
+> > 
 > 
-> On Wednesday 16 October 2013 07:53 PM, Roger Quadros wrote:
->> On 10/16/2013 04:52 PM, Kishon Vijay Abraham I wrote:
->>> Hi,
->>>
->>> On Wednesday 16 October 2013 06:48 PM, Roger Quadros wrote:
->>>> Hi,
->>>>
->>>> On 10/15/2013 10:54 PM, Kishon Vijay Abraham I wrote:
->>>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
->>>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
->>>>> phy_power_on() and phy_power_off().
->>>>>
->>>>> However using the old USB phy library wont be removed till the PHYs of all
->>>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
->>>>>
->>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>>> ---
->>>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
->>>>>  drivers/usb/dwc3/Kconfig                       |    1 +
->>>>>  drivers/usb/dwc3/core.c                        |   52 ++++++++++++++++++++++++
->>>>>  drivers/usb/dwc3/core.h                        |    7 ++++
->>>>>  drivers/usb/dwc3/platform_data.h               |    2 +
->>>>>  5 files changed, 66 insertions(+), 2 deletions(-)
->>>>>
->>>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>>> index e807635..471366d 100644
->>>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
->>>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>>> @@ -6,11 +6,13 @@ Required properties:
->>>>>   - compatible: must be "snps,dwc3"
->>>>>   - reg : Address and length of the register set for the device
->>>>>   - interrupts: Interrupts used by the dwc3 controller.
->>>>> +
->>>>> +Optional properties:
->>>>>   - usb-phy : array of phandle for the PHY device.  The first element
->>>>>     in the array is expected to be a handle to the USB2/HS PHY and
->>>>>     the second element is expected to be a handle to the USB3/SS PHY
->>>>> -
->>>>> -Optional properties:
->>>>> + - phys: from the *Generic PHY* bindings
->>>>> + - phy-names: from the *Generic PHY* bindings
->>>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
->>>>>  
->>>>>  This is usually a subnode to DWC3 glue to which it is connected.
->>>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
->>>>> index 8e385b4..64eed6f 100644
->>>>> --- a/drivers/usb/dwc3/Kconfig
->>>>> +++ b/drivers/usb/dwc3/Kconfig
->>>>> @@ -2,6 +2,7 @@ config USB_DWC3
->>>>>  	tristate "DesignWare USB3 DRD Core Support"
->>>>>  	depends on (USB || USB_GADGET) && HAS_DMA
->>>>>  	select USB_PHY
->>>>> +	select GENERIC_PHY
->>>>>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
->>>>>  	help
->>>>>  	  Say Y or M here if your system has a Dual Role SuperSpeed
->>>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->>>>> index cb91d70..28bfa5b 100644
->>>>> --- a/drivers/usb/dwc3/core.c
->>>>> +++ b/drivers/usb/dwc3/core.c
->>>>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
->>>>>  
->>>>>  	usb_phy_init(dwc->usb2_phy);
->>>>>  	usb_phy_init(dwc->usb3_phy);
->>>>> +
->>>>> +	if (dwc->usb2_generic_phy)
->>>>> +		phy_init(dwc->usb2_generic_phy);
->>>>> +	if (dwc->usb3_generic_phy)
->>>>> +		phy_init(dwc->usb3_generic_phy);
->>>>> +
->>>>
->>>> dwc3_core_soft_reset() is called from dwc3_core_init() which is called from
->>>> dwc3_probe() but before the PHYs are initialized.
->>>>
->>>> This will cause phy power_on() to be called before phy_init() which is wrong.
->>>>
->>
->> You overlooked the above?
+> > > We also need fixes for net/ipv6/netfilter/ip6_tables.c and
+> > > net/ipv4/netfilter/arp_tables.c as well. Could you extend this patch
+> > > and resend?
+> > 
+> > Sure, I can try, but that's going to require a bit of time to sit down and
+> > look at the shared data, access order, dependencies etc. I'm currently
+> > preparing for Edinburgh, so it might be a while before I get a chance to
+> > extend this.
 > 
-> No. Forgot to comment back.
-> Yeah, you are right.. that should be fixed.
->>
->>>>>  	mdelay(100);
->>>>>  
->>>>>  	/* Clear USB3 PHY reset */
->>>>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
->>>>>  {
->>>>>  	usb_phy_shutdown(dwc->usb2_phy);
->>>>>  	usb_phy_shutdown(dwc->usb3_phy);
->>>>> +
->>>>> +	if (dwc->usb2_generic_phy)
->>>>> +		phy_power_off(dwc->usb2_generic_phy);
->>>>> +	if (dwc->usb3_generic_phy)
->>>>> +		phy_power_off(dwc->usb3_generic_phy);
->>>>>  }
->>>>>  
->>>>>  #define DWC3_ALIGN_MASK		(16 - 1)
->>>>> @@ -439,6 +450,26 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
->>>>>  	}
->>>>>  
->>>>> +	count = of_property_match_string(node, "phy-names", "usb2-phy");
->>>>> +	if (count >= 0 || (pdata && pdata->usb2_generic_phy)) {
->>>>> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
->>>>> +		if (IS_ERR(dwc->usb2_generic_phy)) {
->>>>> +			dev_err(dev, "no usb2 phy configured yet");
->>>>> +			return PTR_ERR(dwc->usb2_generic_phy);
->>>>> +		}
->>>>> +		dwc->usb2_phy = NULL;
->>>>> +	}
->>>>> +
->>>>> +	count = of_property_match_string(node, "phy-names", "usb3-phy");
->>>>> +	if (count >= 0 || (pdata && pdata->usb3_generic_phy)) {
->>>>> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
->>>>> +		if (IS_ERR(dwc->usb3_generic_phy)) {
->>>>> +			dev_err(dev, "no usb3 phy configured yet");
->>>>> +			return PTR_ERR(dwc->usb3_generic_phy);
->>>>> +		}
->>>>> +		dwc->usb3_phy = NULL;
->>>>> +	}
->>>>> +
->>>>
->>>> There are a couple of issues here.
->>>> - The above code must be executed only if it node is valid.
->>>
->>> of_property_match_string will give a error value if the node is not present.
->>> *count >= 0* can take care of this.
->>
->> OK. 
->>
->>>> - We must either get both PHYs via old method or via new method and not support mix matching
->>>> them. e.g. it is possible with this code that usb2_phy is set and usb3_generic_phy is set.
->>>
->>> Why? As long as both the frameworks co-exist (and we support both in dwc3), I
->>> don't see any reason why we shouldn't allow it. We can avoid adding a few more
->>> checks by leaving it the way it is currently.
->>
->> Because it just doesn't seem elegant. Why would you want to even allow both types of PHY
->> to be used simultaneously?
-> 
-> We actually don't allow both types of PHYs to be used simultaneously.  We set
-> usb2_phy/usb3_phy to NULL, if we had got the the generic PHY.
-> If you just doesn't even want to get PHY by the second method if we have got
-> PHY by the first method, then we might need to add more *if* checks which IMO
-> don't make it any elegant either.
-> Having a clean dt data wont have both types of PHYs anyway.
+> That's basically same code copy/pasted, so it should be relatively easy.
 
-OK.
+Ok, I took a look and I think I see what you mean: there are just some
+additional consumers of the tables, so there aren't any additional writers
+afaict (at least, net/bridge/netfilter/ebtables.c uses rw locks so we don't
+have an issue there).
 
-cheers,
--roger
+Attempt at an updated patch below.
+
+Cheers,
+
+Will
+
+--->8
+
+>From 128bff68debba70c3cec4b4ac01050d7e864aa83 Mon Sep 17 00:00:00 2001
+From: Will Deacon <will.deacon@arm.com>
+Date: Thu, 17 Oct 2013 13:34:13 +0100
+Subject: [PATCH v2] netfilter: fix ordering of jumpstack allocation and table
+ update
+
+During kernel stability testing on an SMP ARMv7 system, Yalin Wang
+reported the following panic from the netfilter code:
+
+  1fe0: 0000001c 5e2d3b10 4007e779 4009e110 60000010 00000032 ff565656 ff545454
+  [<c06c48dc>] (ipt_do_table+0x448/0x584) from [<c0655ef0>] (nf_iterate+0x48/0x7c)
+  [<c0655ef0>] (nf_iterate+0x48/0x7c) from [<c0655f7c>] (nf_hook_slow+0x58/0x104)
+  [<c0655f7c>] (nf_hook_slow+0x58/0x104) from [<c0683bbc>] (ip_local_deliver+0x88/0xa8)
+  [<c0683bbc>] (ip_local_deliver+0x88/0xa8) from [<c0683718>] (ip_rcv_finish+0x418/0x43c)
+  [<c0683718>] (ip_rcv_finish+0x418/0x43c) from [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598)
+  [<c062b1c4>] (__netif_receive_skb+0x4cc/0x598) from [<c062b314>] (process_backlog+0x84/0x158)
+  [<c062b314>] (process_backlog+0x84/0x158) from [<c062de84>] (net_rx_action+0x70/0x1dc)
+  [<c062de84>] (net_rx_action+0x70/0x1dc) from [<c0088230>] (__do_softirq+0x11c/0x27c)
+  [<c0088230>] (__do_softirq+0x11c/0x27c) from [<c008857c>] (do_softirq+0x44/0x50)
+  [<c008857c>] (do_softirq+0x44/0x50) from [<c0088614>] (local_bh_enable_ip+0x8c/0xd0)
+  [<c0088614>] (local_bh_enable_ip+0x8c/0xd0) from [<c06b0330>] (inet_stream_connect+0x164/0x298)
+  [<c06b0330>] (inet_stream_connect+0x164/0x298) from [<c061d68c>] (sys_connect+0x88/0xc8)
+  [<c061d68c>] (sys_connect+0x88/0xc8) from [<c000e340>] (ret_fast_syscall+0x0/0x30)
+  Code: 2a000021 e59d2028 e59de01c e59f011c (e7824103)
+  ---[ end trace da227214a82491bd ]---
+  Kernel panic - not syncing: Fatal exception in interrupt
+
+This comes about because CPU1 is executing xt_replace_table in response
+to a setsockopt syscall, resulting in:
+
+	ret = xt_jumpstack_alloc(newinfo);
+		--> newinfo->jumpstack = kzalloc(size, GFP_KERNEL);
+
+	[...]
+
+	table->private = newinfo;
+	newinfo->initial_entries = private->initial_entries;
+
+Meanwhile, CPU0 is handling the network receive path and ends up in
+ipt_do_table, resulting in:
+
+	private = table->private;
+
+	[...]
+
+	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+
+On weakly ordered memory architectures, the writes to table->private
+and newinfo->jumpstack from CPU1 can be observed out of order by CPU0.
+Furthermore, on architectures which don't respect ordering of address
+dependencies (i.e. Alpha), the reads from CPU0 can also be re-ordered.
+
+This patch adds an smp_wmb() before the assignment to table->private
+(which is essentially publishing newinfo) to ensure that all writes to
+newinfo will be observed before plugging it into the table structure.
+A dependent-read barrier is also added on the consumer sides, to ensure
+the same ordering requirements are also respected there.
+
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Reported-by: Wang, Yalin <Yalin.Wang@sonymobile.com>
+Tested-by: Wang, Yalin <Yalin.Wang@sonymobile.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ net/ipv4/netfilter/arp_tables.c | 5 +++++
+ net/ipv4/netfilter/ip_tables.c  | 5 +++++
+ net/ipv6/netfilter/ip6_tables.c | 5 +++++
+ net/netfilter/x_tables.c        | 7 ++++++-
+ 4 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
+index 85a4f21..59da7cd 100644
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -271,6 +271,11 @@ unsigned int arpt_do_table(struct sk_buff *skb,
+ 	local_bh_disable();
+ 	addend = xt_write_recseq_begin();
+ 	private = table->private;
++	/*
++	 * Ensure we load private-> members after we've fetched the base
++	 * pointer.
++	 */
++	smp_read_barrier_depends();
+ 	table_base = private->entries[smp_processor_id()];
+ 
+ 	e = get_entry(table_base, private->hook_entry[hook]);
+diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
+index d23118d..718dfbd 100644
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -327,6 +327,11 @@ ipt_do_table(struct sk_buff *skb,
+ 	addend = xt_write_recseq_begin();
+ 	private = table->private;
+ 	cpu        = smp_processor_id();
++	/*
++	 * Ensure we load private-> members after we've fetched the base
++	 * pointer.
++	 */
++	smp_read_barrier_depends();
+ 	table_base = private->entries[cpu];
+ 	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+ 	stackptr   = per_cpu_ptr(private->stackptr, cpu);
+diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
+index 44400c2..710238f 100644
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -349,6 +349,11 @@ ip6t_do_table(struct sk_buff *skb,
+ 	local_bh_disable();
+ 	addend = xt_write_recseq_begin();
+ 	private = table->private;
++	/*
++	 * Ensure we load private-> members after we've fetched the base
++	 * pointer.
++	 */
++	smp_read_barrier_depends();
+ 	cpu        = smp_processor_id();
+ 	table_base = private->entries[cpu];
+ 	jumpstack  = (struct ip6t_entry **)private->jumpstack[cpu];
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 8b03028..227aa11 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -845,8 +845,13 @@ xt_replace_table(struct xt_table *table,
+ 		return NULL;
+ 	}
+ 
+-	table->private = newinfo;
+ 	newinfo->initial_entries = private->initial_entries;
++	/*
++	 * Ensure contents of newinfo are visible before assigning to
++	 * private.
++	 */
++	smp_wmb();
++	table->private = newinfo;
+ 
+ 	/*
+ 	 * Even though table entries have now been swapped, other CPU's
+-- 
+1.8.3.2
+
