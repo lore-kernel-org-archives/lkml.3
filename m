@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3JUTxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 15:53:10 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:34094 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714Ab3JUTw5 convert rfc822-to-8bit (ORCPT
+	id S1752085Ab3JUT5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 15:57:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34853 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab3JUT5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 15:52:57 -0400
+	Mon, 21 Oct 2013 15:57:50 -0400
+Message-ID: <52658736.6050707@wwwdotorg.org>
+Date: Mon, 21 Oct 2013 20:57:42 +0100
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAGG-pUSHj5uumz01mReeD+gpg--fkZCS18gMbW2FBjmufjcEDg@mail.gmail.com>
-References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
-	<1380411144-9236-5-git-send-email-geyslan@gmail.com>
-	<CAFkjPTkKeEFmVWoPFXhAkBwwO67M1K-c1Q2OUvajSArTSgrFvg@mail.gmail.com>
-	<CAGG-pUSHj5uumz01mReeD+gpg--fkZCS18gMbW2FBjmufjcEDg@mail.gmail.com>
-Date: Mon, 21 Oct 2013 17:52:56 -0200
-Message-ID: <CAGG-pUTjmNt1r1KVc6nA7ogxvQ9_r8-7dJSknN65uPL=csFDgw@mail.gmail.com>
-Subject: Re: [PATCH] 9p: fix return value in case of error in v9fs_fid_xattr_set
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>, mturquette@linaro.org
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: pull request for Tegra clock rework and Tegra124 clock support
+References: <20131021135638.GA10943@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20131021135638.GA10943@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/21 Geyslan Gregório Bem <geyslan@gmail.com>:
-> At first, thanks for reply.
->
-> 2013/10/20 Eric Van Hensbergen <ericvh@gmail.com>:
->> On Sat, Sep 28, 2013 at 6:32 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
->>>
->>> In case of error in the p9_client_write, the function v9fs_fid_xattr_set
->>> should return its negative value, what was never being done.
->>>
->>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->>> ---
->>>  fs/9p/xattr.c | 9 ++++-----
->>>  1 file changed, 4 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
->>> index 3c28cdf..0788388 100644
->>> --- a/fs/9p/xattr.c
->>> +++ b/fs/9p/xattr.c
->>> @@ -149,11 +149,10 @@ int v9fs_fid_xattr_set(struct p9_fid *fid, const
->>> char *name,
->>>                         write_count = value_len;
->>>                 write_count = p9_client_write(fid, ((char *)value)+offset,
->>>                                         NULL, offset, write_count);
->>> -               if (write_count < 0) {
->>> -                       /* error in xattr write */
->>> -                       retval = write_count;
->>> -                       break;
->>> -               }
->>> +               /* error in xattr write */
->>> +               if (write_count < 0)
->>> +                       return write_count;
->>> +
->>>
->>
->>
->> So, I'm convinced that there's a problem here, but I think the solution in
->> the patch is incomplete.  Simply returning wouldn't clunk the fid.  I think
->> the right approach is likely to keep the break, clunk and return an error if
->> either the p9_client_write or the p9_client_clunk fails.
->>
->> I suppose you could make a claim that v9fs_fid_xattr_set shouldn't be
->> clunking the fid -- but considering it's cloned the fid in its function
->> body, it does seem like it shoudl also be cleaning up after itself.
->>
->
-> Right. I'll centralize the exiting assuring that fid will be clunked
-> in case of fails.
->
->>     -eric
->>
->>
->>       -eric
->>
+On 10/21/2013 02:56 PM, Peter De Schrijver wrote:
+> Hi Mike,
+> 
+> This pull request contains both the tegra clock rework patches
+> ([PATCH v6 00/15] Introduce common infra for tegra clocks)
+> and the patches to support Tegra124 ([PATCH v4 0/7] Tegra124 clock support)
+> 
+> The following changes since commit d031acfc0b8376209e5b429513766e7028e40e1d:
+> 
+>   clk: tegra114: Rename gr_2d/gr_3d to gr2d/gr3d (2013-10-16 19:49:25 +0300)
+> 
+> are available in the git repository at:
+>   git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-tegra124-0
+> 
+> Joseph Lo (2):
+>       clk: tegra124: add wait_for_reset and disable_clock for tegra_cpu_car_ops
+>       clk: tegra124: add suspend/resume function for tegra_cpu_car_ops
 
-New version sent:
- [PATCH] 9p: fix return value in case in v9fs_fid_xattr_set()
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
