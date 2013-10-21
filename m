@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3JUIuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:50:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39318 "EHLO
+	id S1753361Ab3JUIuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:50:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39327 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753053Ab3JUIua (ORCPT
+	by vger.kernel.org with ESMTP id S1753298Ab3JUIuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:50:30 -0400
+	Mon, 21 Oct 2013 04:50:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -15,12 +15,12 @@ From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
         "Steffen Klassert" <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <edumazet@google.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.484558614@decadent.org.uk>
+Message-ID: <lsq.1382345188.634563927@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 015/149] inetpeer: Invalidate the inetpeer tree along
- with the  routing cache
+Subject: [PATCH 3.2 016/149] inetpeer: fix a race in inetpeer_gc_worker()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,180 +33,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5faa5df1fa2024bd750089ff21dcc4191798263d ]
+[ Upstream commit 55432d2b543a4b6dfae54f5c432a566877a85d90 ]
 
-We initialize the routing metrics with the values cached on the
-inetpeer in rt_init_metrics(). So if we have the metrics cached on the
-inetpeer, we ignore the user configured fib_metrics.
+commit 5faa5df1fa2024 (inetpeer: Invalidate the inetpeer tree along with
+the routing cache) added a race :
 
-To fix this issue, we replace the old tree with a fresh initialized
-inet_peer_base. The old tree is removed later with a delayed work queue.
+Before freeing an inetpeer, we must respect a RCU grace period, and make
+sure no user will attempt to increase refcnt.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+inetpeer_invalidate_tree() waits for a RCU grace period before inserting
+inetpeer tree into gc_list and waking the worker. At that time, no
+concurrent lookup can find a inetpeer in this tree.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/inetpeer.h |  3 ++
- net/ipv4/inetpeer.c    | 80 +++++++++++++++++++++++++++++++++++++++++++++++++-
- net/ipv4/route.c       |  1 +
- 3 files changed, 83 insertions(+), 1 deletion(-)
+ include/net/inetpeer.h |  5 ++++-
+ net/ipv4/inetpeer.c    | 16 ++++++++++++----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
 diff --git a/include/net/inetpeer.h b/include/net/inetpeer.h
-index e9ff3fc..ac8a4ea 100644
+index ac8a4ea..34b06da 100644
 --- a/include/net/inetpeer.h
 +++ b/include/net/inetpeer.h
-@@ -41,6 +41,7 @@ struct inet_peer {
+@@ -41,7 +41,10 @@ struct inet_peer {
  	u32			pmtu_orig;
  	u32			pmtu_learned;
  	struct inetpeer_addr_base redirect_learned;
-+	struct list_head	gc_list;
+-	struct list_head	gc_list;
++	union {
++		struct list_head	gc_list;
++		struct rcu_head     gc_rcu;
++	};
  	/*
  	 * Once inet_peer is queued for deletion (refcnt == -1), following fields
  	 * are not available: rid, ip_id_count, tcp_ts, tcp_ts_stamp
-@@ -96,6 +97,8 @@ static inline struct inet_peer *inet_getpeer_v6(const struct in6_addr *v6daddr,
- extern void inet_putpeer(struct inet_peer *p);
- extern bool inet_peer_xrlim_allow(struct inet_peer *peer, int timeout);
- 
-+extern void inetpeer_invalidate_tree(int family);
-+
- /*
-  * temporary check to make sure we dont access rid, ip_id_count, tcp_ts,
-  * tcp_ts_stamp if no refcount is taken on inet_peer
 diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index 86f13c67..d77a7dd 100644
+index d77a7dd..552e4f8 100644
 --- a/net/ipv4/inetpeer.c
 +++ b/net/ipv4/inetpeer.c
-@@ -17,6 +17,7 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/net.h>
-+#include <linux/workqueue.h>
- #include <net/ip.h>
- #include <net/inetpeer.h>
- #include <net/secure_seq.h>
-@@ -66,6 +67,11 @@
+@@ -560,6 +560,17 @@ bool inet_peer_xrlim_allow(struct inet_peer *peer, int timeout)
+ }
+ EXPORT_SYMBOL(inet_peer_xrlim_allow);
  
- static struct kmem_cache *peer_cachep __read_mostly;
- 
-+static LIST_HEAD(gc_list);
-+static const int gc_delay = 60 * HZ;
-+static struct delayed_work gc_work;
-+static DEFINE_SPINLOCK(gc_lock);
-+
- #define node_height(x) x->avl_height
- 
- #define peer_avl_empty ((struct inet_peer *)&peer_fake_node)
-@@ -102,6 +108,50 @@ int inet_peer_threshold __read_mostly = 65536 + 128;	/* start to throw entries m
- int inet_peer_minttl __read_mostly = 120 * HZ;	/* TTL under high load: 120 sec */
- int inet_peer_maxttl __read_mostly = 10 * 60 * HZ;	/* usual time to live: 10 min */
- 
-+static void inetpeer_gc_worker(struct work_struct *work)
++static void inetpeer_inval_rcu(struct rcu_head *head)
 +{
-+	struct inet_peer *p, *n;
-+	LIST_HEAD(list);
++	struct inet_peer *p = container_of(head, struct inet_peer, gc_rcu);
 +
 +	spin_lock_bh(&gc_lock);
-+	list_replace_init(&gc_list, &list);
-+	spin_unlock_bh(&gc_lock);
-+
-+	if (list_empty(&list))
-+		return;
-+
-+	list_for_each_entry_safe(p, n, &list, gc_list) {
-+
-+		if(need_resched())
-+			cond_resched();
-+
-+		if (p->avl_left != peer_avl_empty) {
-+			list_add_tail(&p->avl_left->gc_list, &list);
-+			p->avl_left = peer_avl_empty;
-+		}
-+
-+		if (p->avl_right != peer_avl_empty) {
-+			list_add_tail(&p->avl_right->gc_list, &list);
-+			p->avl_right = peer_avl_empty;
-+		}
-+
-+		n = list_entry(p->gc_list.next, struct inet_peer, gc_list);
-+
-+		if (!atomic_read(&p->refcnt)) {
-+			list_del(&p->gc_list);
-+			kmem_cache_free(peer_cachep, p);
-+		}
-+	}
-+
-+	if (list_empty(&list))
-+		return;
-+
-+	spin_lock_bh(&gc_lock);
-+	list_splice(&list, &gc_list);
++	list_add_tail(&p->gc_list, &gc_list);
 +	spin_unlock_bh(&gc_lock);
 +
 +	schedule_delayed_work(&gc_work, gc_delay);
 +}
++
+ void inetpeer_invalidate_tree(int family)
+ {
+ 	struct inet_peer *old, *new, *prev;
+@@ -576,10 +587,7 @@ void inetpeer_invalidate_tree(int family)
+ 	prev = cmpxchg(&base->root, old, new);
+ 	if (prev == old) {
+ 		base->total = 0;
+-		spin_lock(&gc_lock);
+-		list_add_tail(&prev->gc_list, &gc_list);
+-		spin_unlock(&gc_lock);
+-		schedule_delayed_work(&gc_work, gc_delay);
++		call_rcu(&prev->gc_rcu, inetpeer_inval_rcu);
+ 	}
  
- /* Called from ip_output.c:ip_init  */
- void __init inet_initpeers(void)
-@@ -126,6 +176,7 @@ void __init inet_initpeers(void)
- 			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC,
- 			NULL);
- 
-+	INIT_DELAYED_WORK_DEFERRABLE(&gc_work, inetpeer_gc_worker);
- }
- 
- static int addr_compare(const struct inetpeer_addr *a,
-@@ -448,7 +499,7 @@ relookup:
- 		p->pmtu_expires = 0;
- 		p->pmtu_orig = 0;
- 		memset(&p->redirect_learned, 0, sizeof(p->redirect_learned));
--
-+		INIT_LIST_HEAD(&p->gc_list);
- 
- 		/* Link the node. */
- 		link_to_pool(p, base);
-@@ -508,3 +559,30 @@ bool inet_peer_xrlim_allow(struct inet_peer *peer, int timeout)
- 	return rc;
- }
- EXPORT_SYMBOL(inet_peer_xrlim_allow);
-+
-+void inetpeer_invalidate_tree(int family)
-+{
-+	struct inet_peer *old, *new, *prev;
-+	struct inet_peer_base *base = family_to_base(family);
-+
-+	write_seqlock_bh(&base->lock);
-+
-+	old = base->root;
-+	if (old == peer_avl_empty_rcu)
-+		goto out;
-+
-+	new = peer_avl_empty_rcu;
-+
-+	prev = cmpxchg(&base->root, old, new);
-+	if (prev == old) {
-+		base->total = 0;
-+		spin_lock(&gc_lock);
-+		list_add_tail(&prev->gc_list, &gc_list);
-+		spin_unlock(&gc_lock);
-+		schedule_delayed_work(&gc_work, gc_delay);
-+	}
-+
-+out:
-+	write_sequnlock_bh(&base->lock);
-+}
-+EXPORT_SYMBOL(inetpeer_invalidate_tree);
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 94cdbc5..c45a155a3 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -939,6 +939,7 @@ static void rt_cache_invalidate(struct net *net)
- 	get_random_bytes(&shuffle, sizeof(shuffle));
- 	atomic_add(shuffle + 1U, &net->ipv4.rt_genid);
- 	redirect_genid++;
-+	inetpeer_invalidate_tree(AF_INET);
- }
- 
- /*
+ out:
 
