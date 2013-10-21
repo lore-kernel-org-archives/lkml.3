@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3JUOTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:19:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:49971 "EHLO
+	id S1754052Ab3JUOTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:19:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49960 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3JUOTp (ORCPT
+	with ESMTP id S1753875Ab3JUOTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:19:45 -0400
-X-AuditID: cbfee61a-b7f836d0000025d7-45-526538004614
+	Mon, 21 Oct 2013 10:19:40 -0400
+X-AuditID: cbfee61a-b7f836d0000025d7-3f-526537fb13a9
 From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 To: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -16,84 +16,68 @@ Cc: dri-devel@lists.freedesktop.org, kyungmin.park@samsung.com,
         inki.dae@samsung.com, rahul.sharma@samsung.com, kgene.kim@samsung.com,
         s.nawrocki@samsung.com, thomas.abraham@linaro.org,
         mturquette@linaro.org, Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC 11/12] arm: dts: exynos4: add HDMI devices
-Date: Mon, 21 Oct 2013 16:18:30 +0200
-Message-id: <1382365111-6533-12-git-send-email-t.stanislaws@samsung.com>
+Subject: [RFC 10/12] arm: dts: exynos4: add i2c controller for HDMIPHY
+Date: Mon, 21 Oct 2013 16:18:29 +0200
+Message-id: <1382365111-6533-11-git-send-email-t.stanislaws@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
 References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAV0Gi9Qgg80XrS3mHznHanHl63s2
-	i0n3J7BY9C64ymZx4WkPm8XZpjfsFpd3zWGzmHF+H5PF0wkX2SymLDrManH4TTurxYzJL9ks
-	1s94zWIxr/0lq8WxGUsYHfg97lzbw+Zxv/s4k0ffllWMHsdvbGfy+LxJLoA1issmJTUnsyy1
-	SN8ugSvj55wtTAWveCs23DnE1MC4lLuLkZNDQsBEouPCHzYIW0ziwr31QDYXh5DAIkaJq0/3
-	sEI4XUwSncv6GUGq2IA6ji35DGaLCCRK/Gq+ywxSxCxwiElid8sUZpCEsICFxNRpG9lBbBYB
-	VYk/n1qBGjg4eAU8JC6954HYJi/x9H4f2GZOoPCpl2vBZgoJuEu8+zaPZQIj7wJGhlWMoqkF
-	yQXFSem5hnrFibnFpXnpesn5uZsYwWH6TGoH48oGi0OMAhyMSjy8AS4pQUKsiWXFlbmHGCU4
-	mJVEeKtMU4OEeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0tSC2CyTJxcEo1
-	MB6aaebpKfwkNpF1f3jMN+f4UCuBLRZaUQESiglq6Xm+XDKXT/W8k3ZyWPb3tbH4XqW3M3Zd
-	ZWDb7br6kqJK1rMNuSdXhL3Zn7RMPC/UyfWpUHfGyUqG1d7X/i+vCQw0f/fF40l9jP6zGeVP
-	7ZZ8tpm5Z6+o+uqg/Z9WCJkc/vPeuU/m7uJudSWW4oxEQy3mouJEALOFBRhPAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAd3f5qlBBit+m1jMP3KO1eLK1/ds
+	FpPuT2Cx6F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLpxMusllMWXSY1eLwm3ZWixmTX7JZ
+	rJ/xmsViXvtLVotjM5YwOvB73Lm2h83jfvdxJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllq
+	kb5dAlfGnm/vGAu2cFR0vpjG0sB4iq2LkYNDQsBEYv45nS5GTiBTTOLCvfVAYS4OIYFFjBIz
+	z+9hhHC6mCSOnDrIClLFBtRwbMlnRhBbRCBR4lfzXWaQImaBQ0wSu1umMIMkhAXcJF609rOD
+	2CwCqhJ7uv6C2bwCHhKzD01nglgnL/H0fh8biM0JFD/1ci3YUCEBd4l33+axTGDkXcDIsIpR
+	NLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOEyfSe1gXNlgcYhRgINRiYc3wCUlSIg1say4MvcQ
+	owQHs5IIb5VpapAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYO
+	TqkGRufvrwv7FkfsMpkg/UDmpE343oLzwj+cRcobAzq0P5W4SB+LM9m57+RPo0LL39OfXHpi
+	vWhdXTD3nMVJmwS0z93eujLs79kPlrtjrtVEC/26oZVQaP3n97zaW3NnPG2yvdp60oZfysb0
+	+8UyPd+mJzKfBc3C9z+N/HRh4wQBtT4ZfpaHdwoUjyqxFGckGmoxFxUnAgAvAob1TwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT nodes for HDMI related devices on SoCs from Exynos4 family.
+This patch adds DT nodes for I2C controller dedicated for HDMIPHY.
 
 Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
- arch/arm/boot/dts/exynos4.dtsi    |   27 +++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos4210.dtsi |    4 ++++
- 2 files changed, 31 insertions(+)
+ arch/arm/boot/dts/exynos4.dtsi |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-index a5f6b8b..a5df9fe 100644
+index caadc02..a5f6b8b 100644
 --- a/arch/arm/boot/dts/exynos4.dtsi
 +++ b/arch/arm/boot/dts/exynos4.dtsi
-@@ -522,4 +522,31 @@
- 		samsung,power-domain = <&pd_lcd0>;
+@@ -36,6 +36,7 @@
+ 		i2c5 = &i2c_5;
+ 		i2c6 = &i2c_6;
+ 		i2c7 = &i2c_7;
++		i2c8 = &i2c_8;
+ 		csis0 = &csis_0;
+ 		csis1 = &csis_1;
+ 		fimc0 = &fimc_0;
+@@ -399,6 +400,21 @@
  		status = "disabled";
  	};
+ 
++	i2c_8: i2c@138E0000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "samsung,s3c2440-hdmiphy-i2c";
++		reg = <0x138E0000 0x100>;
++		interrupts = <0 93 0>;
++		clocks = <&clock 325>;
++		clock-names = "i2c";
 +
-+	hdmi_phy: hdmi-phy@10020700 {
-+		compatible = "simple-phy";
-+		reg = <0x10020700 0x4>;
-+		mask = <1>;
-+		#phy-cells = <0>;
++		hdmiphy@38 {
++			compatible = "samsung,exynos5-hdmiphy";
++			reg = <0x38>;
++		};
 +	};
 +
-+	hdmi: hdmi@12D00000 {
-+		reg = <0x12D00000 0x70000>;
-+		interrupts = <0 92 0>;
-+		clock-names = "hdmi", "sclk_hdmi", "sclk_pixel", "sclk_hdmiphy";
-+		clocks = <&clock 271>, <&clock 136>, <&clock 139>, <&clock 21>;
-+		phys = <&hdmi_phy>;
-+		phy-names = "hdmiphy";
-+		status = "disabled";
-+		samsung,power-domain = <&pd_tv>;
-+	};
-+
-+	mixer: mixer@12C10000 {
-+		compatible = "samsung,exynos4-mixer";
-+		interrupts = <0 91 0>;
-+		reg = <0x12C10000 0x2100>, <0x12c00000 0x300>;
-+		clock-names = "mixer", "sclk_hdmi", "vp", "sclk_dac", "sclk_mixer";
-+		clocks = <&clock 269>, <&clock 136>, <&clock 268>, <&clock 138>, <&clock 137>;
-+		samsung,power-domain = <&pd_tv>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index 057d682..75fd845 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -155,4 +155,8 @@
- 			samsung,lcd-wb;
- 		};
- 	};
-+
-+	hdmi: hdmi@12D00000 {
-+		compatible = "samsung,exynos4210-hdmi";
-+	};
- };
+ 	spi_0: spi@13920000 {
+ 		compatible = "samsung,exynos4210-spi";
+ 		reg = <0x13920000 0x100>;
 -- 
 1.7.9.5
 
