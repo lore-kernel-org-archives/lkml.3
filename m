@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3JUP40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 11:56:26 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:42862 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3JUP4Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 11:56:25 -0400
-Message-ID: <52654EA6.6020805@gmail.com>
-Date: Mon, 21 Oct 2013 08:56:22 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Geyslan G. Bem" <geyslan@gmail.com>, kernel-br@googlegroups.com
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "open list:CPU FREQUENCY DRI..." <cpufreq@vger.kernel.org>,
-        "open list:CPU FREQUENCY DRI..." <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: fix possible integer overflow
-References: <1382239876-12688-1-git-send-email-geyslan@gmail.com>
-In-Reply-To: <1382239876-12688-1-git-send-email-geyslan@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751326Ab3JUQGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 12:06:44 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58651 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab3JUQGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 12:06:43 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>, <gleb@redhat.com>,
+        <pbonzini@redhat.com>, <tglx@linutronix.de>
+Cc: <konrad.wilk@oracle.com>, <linux@eikelenboom.it>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: [PATCH] x86 kconfig: Add recommendation to enable paravirt spinlock
+Date: Mon, 21 Oct 2013 21:35:08 +0530
+Message-Id: <1382371508-3843-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <n>
+References: <n>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102116-5806-0000-0000-00002327CA77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2013 08:31 PM, Geyslan G. Bem wrote:
-> The expression 'pstate << 8' is evaluated using 32-bit arithmetic while
-> 'val' expects an expression of type u64.
->
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> ---
->   drivers/cpufreq/intel_pstate.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index badf620..43446b5 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -395,7 +395,7 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
->   	trace_cpu_frequency(pstate * 100000, cpu->cpu);
->
->   	cpu->pstate.current_pstate = pstate;
-> -	val = pstate << 8;
-> +	val = (u64)pstate << 8;
->   	if (limits.no_turbo)
->   		val |= (u64)1 << 32;
->
->
+Since paravirt spinlock optimization are in 3.12 kernel, we have
+very good performance benefit for paravirtualized KVM / Xen kernel.
+Also we no longer suffer from 5% side effect on native kernel.
+
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ Would like to thank Sander for spotting and suggesting this.
+ pvspinlock benefit on KVM link: https://lkml.org/lkml/2013/8/6/178 
+ 
+ Attilio's tests on native kernel impact:
+ http://blog.xen.org/index.php/2012/05/11/benchmarking-the-new-pv-ticketlock-implementation/
+
+ arch/x86/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f67e839..4ba9d32 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -638,10 +638,10 @@ config PARAVIRT_SPINLOCKS
+ 	  spinlock implementation with something virtualization-friendly
+ 	  (for example, block the virtual CPU rather than spinning).
+ 
+-	  Unfortunately the downside is an up to 5% performance hit on
+-	  native kernels, with various workloads.
++	  It has minimal impact on native kernels and gives nice performance
++	  benefit for paravirtualized KVM / Xen kernels.
+ 
+-	  If you are unsure how to answer this question, answer N.
++	  If you are unsure how to answer this question, answer Y.
+ 
+ source "arch/x86/xen/Kconfig"
+ 
+-- 
+1.7.11.7
 
