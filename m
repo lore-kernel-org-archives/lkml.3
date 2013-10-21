@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3JULpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:45:17 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34193 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab3JULpM (ORCPT
+	id S1753562Ab3JULpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:45:24 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:59552 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316Ab3JULpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:45:12 -0400
-Subject: [PATCH 3/3] sched: Aggressive balance in domains whose groups share
- package resources
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 21 Oct 2013 17:15:02 +0530
-Message-ID: <20131021114502.13291.60794.stgit@drishya>
-In-Reply-To: <20131021114002.13291.31478.stgit@drishya>
-References: <20131021114002.13291.31478.stgit@drishya>
-User-Agent: StGit/0.15
+	Mon, 21 Oct 2013 07:45:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102111-7014-0000-0000-000003CCAF0E
+In-Reply-To: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
+References: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
+Date: Mon, 21 Oct 2013 13:45:19 +0200
+Message-ID: <CAFLxGvzvg-h_cRFSQ-W1bT-cgFuRwTOBFO1S842TFK-24xKqMg@mail.gmail.com>
+Subject: Re: Looking for configuration-dependent bugs in Linux
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Iago Abal <mail@iagoabal.eu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Iago Abal <iari@itu.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+On Mon, Oct 21, 2013 at 12:49 PM, Iago Abal <mail@iagoabal.eu> wrote:
+> Dear Linux kernel developer,
+>
+> We are a group working on analysis of configurable software systems at
+> IT University of Copenhagen. For the next four years [1] we will study
+> the problem of verification in highly configurable software, and we
+> will focus on the Linux kernel as the prime example of configurable
+> software. We will therefore appreciate your advice regarding a few
+> questions (see below).
+>
+> We are currently looking for already-fixed configuration-dependent
+> bugs in Linux ---the bugfix helps us to understand the underlying
+> cause. A good example is [2], which fixes a bug that only shows up in
+> PA-RISC architectures when DISCONTIGMEM is enabled. Any bug appearing
+> in some configurations but not in others is interesting for us (e.g. a
+> bug affecting PowerPC only), even though the more complex the
+> interaction between configuration options the more interesting is the
+> bug for our purpose.
+>
+> As a Linux kernel developer, could you:
+>
+> * remember any configuration-dependent bug?
+> * identify any subset of configuration options that tend to interact badly?
+> * spot any part of the kernel more prone to configuration-dependent bugs?
 
-The current logic in load balance is such that after picking the
-busiest group, the load is attempted to be moved from the busiest cpu
-in that group to the dst_cpu. If the load cannot be moved from the
-busiest cpu to dst_cpu due to either tsk_cpus_allowed mask or cache
-hot tasks, then the dst_cpu is changed to be another idle cpu within
-the dst->grpmask. If even then, the load cannot be moved from the
-busiest cpu, then the source group is changed. The next busiest group
-is found and the above steps are repeated.
+Isn't this your job?
+Just read the kernel mainlinglist archives. :-)
 
-However if the cpus in the group share package resources, then when
-a load movement from the busiest cpu in this group fails as above,
-instead of finding the next busiest group to move load from, find the
-next busiest cpu *within the same group* from which to move load away.
-By doing so, a conscious effort is made during load balancing to keep
-just one cpu busy as much as possible within domains that have
-SHARED_PKG_RESOURCES flag set unless under scenarios of high load.
-Having multiple cpus busy within a domain which share package resource
-could lead to a performance hit.
+> Your feedback will allow us to make our search more effective. A good
+> understanding of how these bugs occur in Linux will also be important
+> for developing subsequent techniques and tools. There is of course a
+> potential benefit for the Linux community: we plan to pay you back in
+> bug reports :-)
+>
+> All your feedback is welcomed.
+>
+> Thank you for your time.
+>
+> Kind regards,
+>
+> [1] http://variete.wikit.itu.dk/
+> [2] http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=91ea8207168793b365322be3c90a4ee9e8b03ed4
+>
+> --
+> Iago Abal Rivas - http://www.iagoabal.eu
+> Ph.D. Fellow at IT University of Copenhagen
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-A similar scenario arises in active load balancing as well. When the
-current task on the busiest cpu cannot be moved away due to task
-pinning, currently no more attempts at load balancing is made. This
-patch checks if the balancing is being done on a group whose cpus
-share package resources. If so, then check if the load balancing can
-be done for other cpus in the same group.
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 828ed97..bbcd96b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5165,6 +5165,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- {
- 	int ld_moved, cur_ld_moved, active_balance = 0;
- 	struct sched_group *group;
-+	struct sched_domain *child;
-+	int share_pkg_res = 0;
- 	struct rq *busiest;
- 	unsigned long flags;
- 	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
-@@ -5190,6 +5192,10 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 
- 	schedstat_inc(sd, lb_count[idle]);
- 
-+	child = sd->child;
-+	if (child && child->flags & SD_SHARE_PKG_RESOURCES)
-+		share_pkg_res = 1;
-+
- redo:
- 	if (!should_we_balance(&env)) {
- 		*continue_balancing = 0;
-@@ -5202,6 +5208,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
-+redo_grp:
- 	busiest = find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
-@@ -5292,6 +5299,11 @@ more_balance:
- 			if (!cpumask_empty(cpus)) {
- 				env.loop = 0;
- 				env.loop_break = sched_nr_migrate_break;
-+				if (share_pkg_res &&
-+					cpumask_intersects(cpus,
-+						to_cpumask(group->cpumask)))
-+					goto redo_grp;
-+
- 				goto redo;
- 			}
- 			goto out_balanced;
-@@ -5318,9 +5330,15 @@ more_balance:
- 			 */
- 			if (!cpumask_test_cpu(this_cpu,
- 					tsk_cpus_allowed(busiest->curr))) {
-+				cpumask_clear_cpu(cpu_of(busiest), cpus);
- 				raw_spin_unlock_irqrestore(&busiest->lock,
- 							    flags);
- 				env.flags |= LBF_ALL_PINNED;
-+				if (share_pkg_res &&
-+					cpumask_intersects(cpus,
-+						to_cpumask(group->cpumask)))
-+					goto redo_grp;
-+
- 				goto out_one_pinned;
- 			}
- 
-
+-- 
+Thanks,
+//richard
