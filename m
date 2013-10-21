@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3JUOTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:19:33 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:42036 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3JUOT1 (ORCPT
+	id S1753872Ab3JUOTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:19:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11962 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab3JUOTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:19:27 -0400
-From: Majunath Goudar <csmanjuvijay@gmail.com>
-To: csmanjuvijay@gmail.com
-Cc: Greg KH <greg@kroah.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH V4 3/6]  USB: OHCI: Properly handle ohci-s3c2410 suspend
-Date: Mon, 21 Oct 2013 19:48:53 +0530
-Message-Id: <1382365136-24472-4-git-send-email-csmanjuvijay@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1382365136-24472-1-git-send-email-csmanjuvijay@gmail.com>
-References: <1380708947-15966-1-git-send-email-csmanjuvijay@gmail.com>
- <1382365136-24472-1-git-send-email-csmanjuvijay@gmail.com>
+	Mon, 21 Oct 2013 10:19:20 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-7b-526537e7ccb8
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+To: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org, kyungmin.park@samsung.com,
+        t.figa@samsung.com, kishon@ti.com, sw0312.kim@samsung.com,
+        inki.dae@samsung.com, rahul.sharma@samsung.com, kgene.kim@samsung.com,
+        s.nawrocki@samsung.com, thomas.abraham@linaro.org,
+        mturquette@linaro.org, Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: [RFC 06/12] Revert
+ "drm/exynos: add mout_hdmi clock in hdmi driver to change parent"
+Date: Mon, 21 Oct 2013 16:18:25 +0200
+Message-id: <1382365111-6533-7-git-send-email-t.stanislaws@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
+References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t9jAd3n5qlBBh8aBS3mHznHanHl63s2
+	i0n3J7BY9C64ymZx4WkPm8XZpjfsFpd3zWGzmHF+H5PF0wkX2SymLDrManH4TTurxYzJL9ks
+	1s94zWIxr/0lq8WxGUsYHfg97lzbw+Zxv/s4k0ffllWMHsdvbGfy+LxJLoA1issmJTUnsyy1
+	SN8ugStjwump7AWbBSsajvSwNzC+5+ti5OSQEDCReDh9FhuELSZx4d56IJuLQ0hgEaPE4zfL
+	mSCcLiaJ1/0NzCBVbEAdx5Z8ZgSxRQQSJX4132UGKWIWOMQksbtlCliRsEC8xPtHE8GKWARU
+	JU729TKB2LwC7hIX9l9nhVgnL/H0fh/Yak4BD4lTL9eC1QsB1bz7No9lAiPvAkaGVYyiqQXJ
+	BcVJ6blGesWJucWleel6yfm5mxjBgfpMegfjqgaLQ4wCHIxKPLwBLilBQqyJZcWVuYcYJTiY
+	lUR4q0xTg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUw
+	5n7+2ta994TNdNe/UbtPcD3N4H30cYcq46Tp7oc7fj6f8ae348qtsBz96FNlYloFArXLBMKk
+	nzqZskkf832wWYCV8apijvEBvkyTw9FuLtY9ntdj7npp3vG81nDm1dXqCuXNVxUenGGv+3XF
+	3jzZg/uK939bvx5xTr4VAgeazeRuzbI3+92ixFKckWioxVxUnAgADTemI1ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend scenario in case of ohci-s3c2410 glue was not
-properly handled as it was not suspending generic part
-of ohci controller. Alan Stern suggested, properly handle
-ohci-s3c2410 suspend scenario.
-
-Calling explicitly the ohci_suspend()
-routine in ohci_hcd_s3c2410_drv_suspend() will ensure
-proper handling of suspend scenario.
-
-Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
+This reverts commit 59956d35a8618235ea715280b49447bb36f2c975.
 ---
-V3->V4:
-      -No changes, only added Alan Acked-by.
+ drivers/gpu/drm/exynos/exynos_hdmi.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-V2->V3:
-      -No changes.
-      As a build failure on "ep93xx proper suspend patch" and Linaro
-      id bounced. Rewrote this patch on top of latest Greg usb-next
-      branch. This patch not gives any build error. Patch is required
-      for ohci-s3c2410 proper suspending as Alan mentioned.
-
-      Initially when I wrote this patch I was working in Linaro, now
-      I am not part of Linaro that is why Linaro id is bouncing. Sending
-      this patch from personal mail id.
-
-V1->V2:
-      -No changes.
-       Due to the build failure on ep93xx reverted this patch.
-       This patch is needed as Alan Stern suggestion.
-
- drivers/usb/host/ohci-s3c2410.c |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-s3c2410.c b/drivers/usb/host/ohci-s3c2410.c
-index be3429e..b5bf9b7 100644
---- a/drivers/usb/host/ohci-s3c2410.c
-+++ b/drivers/usb/host/ohci-s3c2410.c
-@@ -426,28 +426,15 @@ static int ohci_hcd_s3c2410_drv_remove(struct platform_device *pdev)
- static int ohci_hcd_s3c2410_drv_suspend(struct device *dev)
- {
- 	struct usb_hcd *hcd = dev_get_drvdata(dev);
--	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct platform_device *pdev = to_platform_device(dev);
--	unsigned long flags;
-+	bool do_wakeup = device_may_wakeup(dev);
- 	int rc = 0;
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index a0e10ae..fcfa23a 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -83,7 +83,6 @@ struct hdmi_resources {
+ 	struct clk			*sclk_pixel;
+ 	struct clk			*sclk_hdmiphy;
+ 	struct clk			*hdmiphy;
+-	struct clk			*mout_hdmi;
+ 	struct regulator_bulk_data	*regul_bulk;
+ 	int				regul_count;
+ };
+@@ -1113,7 +1112,7 @@ static void hdmi_v13_mode_apply(struct hdmi_context *hdata)
+ 	}
  
--	/*
--	 * Root hub was already suspended. Disable irq emission and
--	 * mark HW unaccessible, bail out if RH has been resumed. Use
--	 * the spinlock to properly synchronize with possible pending
--	 * RH suspend or resume activity.
--	 */
--	spin_lock_irqsave(&ohci->lock, flags);
--	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
--		rc = -EINVAL;
--		goto bail;
+ 	clk_disable_unprepare(hdata->res.sclk_hdmi);
+-	clk_set_parent(hdata->res.mout_hdmi, hdata->res.sclk_hdmiphy);
++	clk_set_parent(hdata->res.sclk_hdmi, hdata->res.sclk_hdmiphy);
+ 	clk_prepare_enable(hdata->res.sclk_hdmi);
+ 
+ 	/* enable HDMI and timing generator */
+@@ -1280,7 +1279,7 @@ static void hdmi_v14_mode_apply(struct hdmi_context *hdata)
+ 	}
+ 
+ 	clk_disable_unprepare(hdata->res.sclk_hdmi);
+-	clk_set_parent(hdata->res.mout_hdmi, hdata->res.sclk_hdmiphy);
++	clk_set_parent(hdata->res.sclk_hdmi, hdata->res.sclk_hdmiphy);
+ 	clk_prepare_enable(hdata->res.sclk_hdmi);
+ 
+ 	/* enable HDMI and timing generator */
+@@ -1306,7 +1305,7 @@ static void hdmiphy_conf_reset(struct hdmi_context *hdata)
+ 	u32 reg;
+ 
+ 	clk_disable_unprepare(hdata->res.sclk_hdmi);
+-	clk_set_parent(hdata->res.mout_hdmi, hdata->res.sclk_pixel);
++	clk_set_parent(hdata->res.sclk_hdmi, hdata->res.sclk_pixel);
+ 	clk_prepare_enable(hdata->res.sclk_hdmi);
+ 
+ 	/* operation mode */
+@@ -1815,13 +1814,8 @@ static int hdmi_resources_init(struct hdmi_context *hdata)
+ 		DRM_ERROR("failed to get clock 'hdmiphy'\n");
+ 		goto fail;
+ 	}
+-	res->mout_hdmi = devm_clk_get(dev, "mout_hdmi");
+-	if (IS_ERR(res->mout_hdmi)) {
+-		DRM_ERROR("failed to get clock 'mout_hdmi'\n");
+-		goto fail;
 -	}
--
--	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+	rc = ohci_suspend(hcd, do_wakeup);
-+	if (rc)
-+		return rc;
  
- 	s3c2410_stop_hc(pdev);
--bail:
--	spin_unlock_irqrestore(&ohci->lock, flags);
+-	clk_set_parent(res->mout_hdmi, res->sclk_pixel);
++	clk_set_parent(res->sclk_hdmi, res->sclk_pixel);
  
- 	return rc;
- }
+ 	res->regul_bulk = devm_kzalloc(dev, ARRAY_SIZE(supply) *
+ 		sizeof(res->regul_bulk[0]), GFP_KERNEL);
 -- 
 1.7.9.5
 
