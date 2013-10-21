@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab3JUQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 12:58:19 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48653 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3JUQ6R (ORCPT
+	id S1751597Ab3JUQ7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 12:59:52 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:47644 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3JUQ7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 12:58:17 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
-Subject: [PATCH] staging: ashmem: Fix ASHMEM_PURGE_ALL_CACHES return value
-Date: Mon, 21 Oct 2013 09:58:07 -0700
-Message-Id: <1382374687-4831-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 21 Oct 2013 12:59:51 -0400
+From: Mariusz Ceier <mceier+kernel@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "Lad Prabhakar" <prabhakar.csengg@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mariusz Ceier <mceier+kernel@gmail.com>
+Subject: [PATCH] davinci_emac.c: Fix IFF_ALLMULTI setup
+Date: Mon, 21 Oct 2013 18:59:37 +0200
+Message-Id: <1382374777-24200-1-git-send-email-mceier+kernel@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hopefully this isn't too late for 3.12.
+When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+emac_dev_mcast_set should only enable RX of multicasts and reset
+MACHASH registers.
 
-In commit 7dc19d5aff (convert shrinkers to new count/scan API)
-the return value to PURGE_ALL_CACHES was dropped, causing -EPERM
-to always be returned.
+It does this, but afterwards it either sets up multicast MACs
+filtering or disables RX of multicasts and resets MACHASH registers
+again, rendering IFF_ALLMULTI flag useless.
 
-This patch re-adds the ret assignment, setting it to the the
-ashmem_shrink_count(), which is the lru_count.
+This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
 
-(Sorry this was missed in the review!)
+Tested with kernel 2.6.37.
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Reported-by: YongQin Liu <yongqin.liu@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
 ---
- drivers/staging/android/ashmem.c | 2 +-
+ drivers/net/ethernet/ti/davinci_emac.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 8e76ddc..5a5e9c9 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -706,7 +706,7 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 				.gfp_mask = GFP_KERNEL,
- 				.nr_to_scan = LONG_MAX,
- 			};
--
-+			ret = ashmem_shrink_count(&ashmem_shrinker, &sc);
- 			nodes_setall(sc.nodes_to_scan);
- 			ashmem_shrink_scan(&ashmem_shrinker, &sc);
- 		}
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index 67df09e..ff3bf0e 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -876,7 +876,7 @@ static void emac_dev_mcast_set(struct net_device *ndev)
+ 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
+-		}
++		} else
+ 		if (!netdev_mc_empty(ndev)) {
+ 			struct netdev_hw_addr *ha;
+ 
 -- 
-1.8.1.2
+1.8.4
 
