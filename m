@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3JUS6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 14:58:49 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22392 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3JUS6s (ORCPT
+	id S1752129Ab3JUTAx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 15:00:53 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:65465 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3JUTAv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 14:58:48 -0400
-Date: Mon, 21 Oct 2013 20:57:58 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Peter Jones <pjones@redhat.com>
-Cc: boris.ostrovsky@oracle.com, david.woodhouse@intel.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, keir@xen.org,
-        konrad.wilk@oracle.com, richard.l.maliszewski@intel.com,
-        ross.philipson@citrix.com, stefano.stabellini@eu.citrix.com,
-        xen-devel@lists.xen.org, grub-devel@gnu.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
- <20131021135437.GD1283@fenchurch.internal.datastacks.com>
+	Mon, 21 Oct 2013 15:00:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131021135437.GD1283@fenchurch.internal.datastacks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CAGG-pUTVh06YcpkW06jp-nB1YaqOtm3GYgEXeLS7iF33RG5AsA@mail.gmail.com>
+References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
+	<1380411144-9236-8-git-send-email-geyslan@gmail.com>
+	<CAFkjPTmg26H0RGdHmR2u-wuJF=Jhd4PbbG1hVrBucuWyZDgNAw@mail.gmail.com>
+	<CAGG-pUTVh06YcpkW06jp-nB1YaqOtm3GYgEXeLS7iF33RG5AsA@mail.gmail.com>
+Date: Mon, 21 Oct 2013 17:00:51 -0200
+Message-ID: <CAGG-pUQc8Y+2osgj1M1DeaEBVVpRm_9vF8TELbi4ScfopZHnPQ@mail.gmail.com>
+Subject: Re: [PATCH] 9p: proper use of the 'name' variable
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: rminnich@sandia.gov, Latchesar Ionkov <lucho@ionkov.net>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 09:54:38AM -0400, Peter Jones wrote:
-> On Mon, Oct 21, 2013 at 02:57:56PM +0200, Daniel Kiper wrote:
-> > Hi,
-> >
-> > During work on multiboot2 protocol support for Xen it was discovered
-> > that memory map passed via relevant tag could not represent wide range
-> > of memory types available on EFI platforms. Additionally, GRUB2
-> > implementation calls ExitBootServices() on them just before jumping
-> > into loaded image. In this situation loaded system could not clearly
-> > identify reserved memory regions, EFI runtime services regions and others.
+2013/10/21 Geyslan Gregório Bem <geyslan@gmail.com>:
+> 2013/10/20 Eric Van Hensbergen <ericvh@gmail.com>:
+>> I reckon we should probably just get rid of name if its not being used.  I
+>> doubt the indirection is going to hurt anything here.
+>>
+>>      -eric
+>>
 >
-> I think you'll find that many distros are shipping patches to grub2 to
-> add a "linuxefi" command that starts the kernel through its EFISTUB
-> code.  You may want to look in to that.
+> Eric, you're right. Once that there's not assignment to name, the
+> cycles are the same.
+> I'll get rid of name var.
+>
 
-I am referring to that patches in my initial email. However, I think that
-we are not able to use them directly (correct me if I am wrong) because
-Xen does not use Linux Boot protocol. I thought that it is worth to
-migrate to multiboot2 protocol if Xen supports earlier multiboot protocol
-version. As I understood you are suggesting to drop multiboot2 idea and
-prepare something similar to linuxefi. It should pass only needed things
-to Xen and later Xen itself should get required stuff from EFI directly.
-Finally it should call ExitBootSerices(). Is it correct?
+New patch sent.
+[PATCH] 9p: remove useless 'name' variable and assignment
 
-Daniel
+>>
+>>
+>> On Sat, Sep 28, 2013 at 6:32 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
+>>>
+>>> The 'name' variable was assigned but never used. Hence puts its
+>>> assignment to the top and makes proper use of its value.
+>>>
+>>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>>> ---
+>>>  fs/9p/vfs_inode_dotl.c | 8 ++++----
+>>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+>>> index 6803758..86b6944 100644
+>>> --- a/fs/9p/vfs_inode_dotl.c
+>>> +++ b/fs/9p/vfs_inode_dotl.c
+>>> @@ -772,8 +772,10 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
+>>> inode *dir,
+>>>         struct p9_fid *dfid, *oldfid;
+>>>         struct v9fs_session_info *v9ses;
+>>>
+>>> +       name = (char *) dentry->d_name.name;
+>>> +
+>>>         p9_debug(P9_DEBUG_VFS, "dir ino: %lu, old_name: %s, new_name:
+>>> %s\n",
+>>> -                dir->i_ino, old_dentry->d_name.name,
+>>> dentry->d_name.name);
+>>> +                dir->i_ino, old_dentry->d_name.name, name);
+>>>
+>>>         v9ses = v9fs_inode2v9ses(dir);
+>>>         dir_dentry = dentry->d_parent;
+>>> @@ -785,9 +787,7 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
+>>> inode *dir,
+>>>         if (IS_ERR(oldfid))
+>>>                 return PTR_ERR(oldfid);
+>>>
+>>> -       name = (char *) dentry->d_name.name;
+>>> -
+>>> -       err = p9_client_link(dfid, oldfid, (char *)dentry->d_name.name);
+>>> +       err = p9_client_link(dfid, oldfid, name);
+>>>
+>>>         if (err < 0) {
+>>>                 p9_debug(P9_DEBUG_VFS, "p9_client_link failed %d\n", err);
+>>> --
+>>> 1.8.4
+>>>
+>>
