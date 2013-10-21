@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3JUQhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 12:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59536 "EHLO mx1.redhat.com"
+	id S1751463Ab3JUQrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 12:47:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36810 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab3JUQhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 12:37:51 -0400
-Date: Mon, 21 Oct 2013 12:37:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>, Theodore Tso <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: Re: [ 05/11] ext4: fix memory leak in xattr
-Message-ID: <20131021163732.GA16581@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-	Dave Jones <davej@fedoraproject.org>, Theodore Tso <tytso@mit.edu>,
-	Eric Sandeen <sandeen@redhat.com>
-References: <20131018195049.069623827@linuxfoundation.org>
- <20131018195049.436649568@linuxfoundation.org>
+	id S1751356Ab3JUQrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 12:47:04 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131018195049.436649568@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Message-ID: <21093.23168.424554.698941@linux-qknr.site>
+Date: Mon, 21 Oct 2013 18:46:56 +0200
+From: Egbert Eich <eich@suse.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Egbert Eich <eich@suse.de>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: HPD flood warning since b8f102e8b
+In-Reply-To: jkosina@suse.cz wrote on Thursday, 3 October 2013 at 16:33:20 +0200 
+References: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz>
+	<CAKMK7uEbGZ3_tHTCqOT7H4eViBnYmkPTS210jOvfweSf3gQ_fg@mail.gmail.com>
+	<alpine.LNX.2.00.1310031632320.29701@pobox.suse.cz>
+X-Mailer: VM 8.2.0b under 24.2.1 (x86_64-suse-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 12:53:34PM -0700, Greg Kroah-Hartman wrote:
- > 3.4-stable review patch.  If anyone has any objections, please let me know.
- > 
- > ------------------
- > 
- > From: Dave Jones <davej@redhat.com>
- > 
- > commit 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc upstream.
- > 
- > If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
- > potentionally return from the function without having freed these
- > allocations.  If we don't do the return, we over-write the previous
- > allocation pointers, so we leak either way.
- > 
- > Spotted with Coverity.
- > 
- > [ Fixed by tytso to set is and bs to NULL after freeing these
- >   pointers, in case in the retry loop we later end up triggering an
- >   error causing a jump to cleanup, at which point we could have a double
- >   free bug. -- Ted ]
- > 
- > Signed-off-by: Dave Jones <davej@fedoraproject.org>
- > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
- > Reviewed-by: Eric Sandeen <sandeen@redhat.com>
- > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hi Jiri,
 
-I'm still waiting to hear if we also need this..
+Just found your email, it got missed do to a temporary inaccessibility to
+my email.
 
-Ted ?
+Jiri Kosina writes:
+ > On Thu, 3 Oct 2013, Daniel Vetter wrote:
+ > 
+ > > Can you please attach full dmesg from boot up to the first WARN with
+ > > drm.debug=0xe? This really shouldn't happen and indicates a bug
+ > > somewhere ...
+ > 
+ > A bit difficult ... I originally thought that it was reliably 
+ > reproducible, but now I didn't get it after 10 suspend/resume cycles. Will 
+ > keep following it, and once it appears, will send you the dmesg.
+ > 
+Could you check if you get any messages regarding HPD storms after 
+suspend/resume ie messages like:
+"[drm] HPD interrupt storm detected on connector HDMI-A-1"
+but without the annouing warn messages?
 
--- 
+I cannot find anything obviously wrong in the code. 
+However there are several code paths for different hardware though - could 
+you give me an 'lspci -n' output so I can narrow them down?
 
-If we take the retry path here, we end up potentially overwriting bh, leaving
-it with an elevated reference count.
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 03e9beb..1423c48 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1352,6 +1352,7 @@ retry:
- 					new_extra_isize = s_min_extra_isize;
- 					kfree(is); is = NULL;
- 					kfree(bs); bs = NULL;
-+					brelse(bh);
- 					goto retry;
- 				}
- 				error = -1;
-
+Thanks!
+Cheers,
+	Egbert.
