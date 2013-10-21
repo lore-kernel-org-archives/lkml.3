@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3JUItT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:49:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab3JUItS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:49:18 -0400
-Date: Mon, 21 Oct 2013 10:48:59 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 03/19] perf record: Improve write_output error message
-Message-ID: <20131021084858.GA1294@krava.brq.redhat.com>
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
- <1382099356-4918-4-git-send-email-adrian.hunter@intel.com>
- <20131020204316.GB12044@krava>
- <5264C494.9070003@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753293Ab3JUIu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:50:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39299 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753235Ab3JUIuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:50:22 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <5264C494.9070003@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Neil Horman" <nhorman@tuxdriver.com>
+Date: Mon, 21 Oct 2013 09:46:28 +0100
+Message-ID: <lsq.1382345188.551263273@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 008/149] tun: signedness bug in tun_get_user()
+In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
+X-SA-Exim-Connect-IP: 212.20.242.100
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 09:07:16AM +0300, Adrian Hunter wrote:
-> On 20/10/13 23:43, Jiri Olsa wrote:
-> > On Fri, Oct 18, 2013 at 03:29:00PM +0300, Adrian Hunter wrote:
-> >> Improve the error message from write_output() to say
-> >> what failed to write and give the error number.
-> >>
-> >> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> >> ---
-> >>  tools/perf/builtin-record.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> >> index 92ca541..d269dfa 100644
-> >> --- a/tools/perf/builtin-record.c
-> >> +++ b/tools/perf/builtin-record.c
-> >> @@ -88,7 +88,7 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
-> >>  		int ret = write(rec->output, buf, size);
-> >>  
-> >>  		if (ret < 0) {
-> >> -			pr_err("failed to write\n");
-> >> +			pr_err("failed to write perf data, error: %m\n");
-> > 
-> > is this some kind of format magic? ;-) you wanted
-> 
-> It is a glibc extension.
-> 
-> > to print out 'ret' value, right?
-> 
-> No, errno
-> 
+3.2.52-rc1 review patch.  If anyone has any objections, please let me know.
 
-ok, thanks
+------------------
 
-jirka
+From: Dan Carpenter <dan.carpenter@oracle.com>
+
+[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
+
+The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
+not totally correct.  Because "len" and "sizeof()" are size_t type, that
+means they are never less than zero.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/tun.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index f4c5de6..ee1aab0 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -614,8 +614,9 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+ 	int offset = 0;
+ 
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > count)
++		if (len < sizeof(pi))
+ 			return -EINVAL;
++		len -= sizeof(pi);
+ 
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+ 			return -EFAULT;
+@@ -623,8 +624,9 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > count)
++		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
++		len -= tun->vnet_hdr_sz;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+ 			return -EFAULT;
+
