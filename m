@@ -1,180 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab3JUMK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 08:10:27 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:16206 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753390Ab3JUMKZ (ORCPT
+	id S1753460Ab3JUMOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 08:14:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34421 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3JUMN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 08:10:25 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApwGAHwYZVJ5LAy1/2dsb2JhbABZgweDTrYmhUaBKxd0giUBAQQBDhkTHA8NBwULCAMOCgklDwUlAyETiAAFvWMWj0YHgx+BCgOYCJIIgzgo
-Date: Mon, 21 Oct 2013 23:10:16 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
-Message-ID: <20131021121016.GB16161@dastard>
-References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
- <20131011003930.GC4446@dastard>
- <20131014214250.GG856@cmpxchg.org>
- <20131015014123.GQ4446@dastard>
- <20131015174128.GH856@cmpxchg.org>
- <20131015234147.GA4446@dastard>
- <525DF466.6030308@redhat.com>
- <20131016022606.GD4446@dastard>
- <20131016223104.GA738@cmpxchg.org>
+	Mon, 21 Oct 2013 08:13:59 -0400
+Message-ID: <52651A54.3020403@ti.com>
+Date: Mon, 21 Oct 2013 15:13:08 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131016223104.GA738@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY
+ Framework
+References: <1381866857-3861-1-git-send-email-kishon@ti.com> <1381866857-3861-3-git-send-email-kishon@ti.com> <525E9232.9050502@ti.com> <525E9A11.7080501@ti.com> <525EA171.9010402@ti.com> <52651614.5040309@ti.com>
+In-Reply-To: <52651614.5040309@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 06:31:04PM -0400, Johannes Weiner wrote:
-> On Wed, Oct 16, 2013 at 01:26:06PM +1100, Dave Chinner wrote:
-> > On Tue, Oct 15, 2013 at 10:05:26PM -0400, Rik van Riel wrote:
-> > > On 10/15/2013 07:41 PM, Dave Chinner wrote:
-> > > > On Tue, Oct 15, 2013 at 01:41:28PM -0400, Johannes Weiner wrote:
-> > > >> But it
-> > > >> looks like tracking radix tree nodes with a list and backpointers to
-> > > >> the mapping object for the lock etc. will be a major pain in the ass.
-> > > > 
-> > > > Perhaps so - it may not work out when we get down to the fine
-> > > > details...
-> > > 
-> > > I suspect that a combination of lifetime rules (inode cannot
-> > > disappear until all the radix tree nodes) and using RCU free
-> > > for the radix tree nodes, and the inodes might do the trick.
-> > > 
-> > > That would mean that, while holding the rcu read lock, the
-> > > back pointer from a radix tree node to the inode will always
-> > > point to valid memory.
-> > 
-> > Yes, that is what I was thinking...
-> > 
-> > > That allows the shrinker to lock the inode, and verify that
-> > > the inode is still valid, before it attempts to rcu free the
-> > > radix tree node with shadow entries.
-> > 
-> > Lock the mapping, not the inode. The radix tree is protected by the
-> > mapping_lock, not an inode lock. i.e. I'd hope that this can all b
-> > contained within the struct address_space and not require any
-> > knowledge of inodes or inode lifecycles at all.
+On 10/21/2013 02:55 PM, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> Agreed, we can point to struct address_space and invalidate it by
-> setting mapping->host to NULL or so during the RCU grace period.
+> On Wednesday 16 October 2013 07:53 PM, Roger Quadros wrote:
+>> On 10/16/2013 04:52 PM, Kishon Vijay Abraham I wrote:
+>>> Hi,
+>>>
+>>> On Wednesday 16 October 2013 06:48 PM, Roger Quadros wrote:
+>>>> Hi,
+>>>>
+>>>> On 10/15/2013 10:54 PM, Kishon Vijay Abraham I wrote:
+>>>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+>>>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+>>>>> phy_power_on() and phy_power_off().
+>>>>>
+>>>>> However using the old USB phy library wont be removed till the PHYs of all
+>>>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+>>>>>
+>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>> ---
+>>>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>>>>>  drivers/usb/dwc3/Kconfig                       |    1 +
+>>>>>  drivers/usb/dwc3/core.c                        |   52 ++++++++++++++++++++++++
+>>>>>  drivers/usb/dwc3/core.h                        |    7 ++++
+>>>>>  drivers/usb/dwc3/platform_data.h               |    2 +
+>>>>>  5 files changed, 66 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> index e807635..471366d 100644
+>>>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> @@ -6,11 +6,13 @@ Required properties:
+>>>>>   - compatible: must be "snps,dwc3"
+>>>>>   - reg : Address and length of the register set for the device
+>>>>>   - interrupts: Interrupts used by the dwc3 controller.
+>>>>> +
+>>>>> +Optional properties:
+>>>>>   - usb-phy : array of phandle for the PHY device.  The first element
+>>>>>     in the array is expected to be a handle to the USB2/HS PHY and
+>>>>>     the second element is expected to be a handle to the USB3/SS PHY
+>>>>> -
+>>>>> -Optional properties:
+>>>>> + - phys: from the *Generic PHY* bindings
+>>>>> + - phy-names: from the *Generic PHY* bindings
+>>>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>>>>>  
+>>>>>  This is usually a subnode to DWC3 glue to which it is connected.
+>>>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>>>>> index 8e385b4..64eed6f 100644
+>>>>> --- a/drivers/usb/dwc3/Kconfig
+>>>>> +++ b/drivers/usb/dwc3/Kconfig
+>>>>> @@ -2,6 +2,7 @@ config USB_DWC3
+>>>>>  	tristate "DesignWare USB3 DRD Core Support"
+>>>>>  	depends on (USB || USB_GADGET) && HAS_DMA
+>>>>>  	select USB_PHY
+>>>>> +	select GENERIC_PHY
+>>>>>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>>>>  	help
+>>>>>  	  Say Y or M here if your system has a Dual Role SuperSpeed
+>>>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>>>>> index cb91d70..28bfa5b 100644
+>>>>> --- a/drivers/usb/dwc3/core.c
+>>>>> +++ b/drivers/usb/dwc3/core.c
+>>>>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>>>>>  
+>>>>>  	usb_phy_init(dwc->usb2_phy);
+>>>>>  	usb_phy_init(dwc->usb3_phy);
+>>>>> +
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_init(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_init(dwc->usb3_generic_phy);
+>>>>> +
+>>>>
+>>>> dwc3_core_soft_reset() is called from dwc3_core_init() which is called from
+>>>> dwc3_probe() but before the PHYs are initialized.
+>>>>
+>>>> This will cause phy power_on() to be called before phy_init() which is wrong.
+>>>>
+>>
+>> You overlooked the above?
 > 
-> Also, the parent pointer is in a union with the two-word rcu_head, so
-> we get the address space backpointer for free.
+> No. Forgot to comment back.
+> Yeah, you are right.. that should be fixed.
+>>
+>>>>>  	mdelay(100);
+>>>>>  
+>>>>>  	/* Clear USB3 PHY reset */
+>>>>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>>>>>  {
+>>>>>  	usb_phy_shutdown(dwc->usb2_phy);
+>>>>>  	usb_phy_shutdown(dwc->usb3_phy);
+>>>>> +
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_power_off(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_power_off(dwc->usb3_generic_phy);
+>>>>>  }
+>>>>>  
+>>>>>  #define DWC3_ALIGN_MASK		(16 - 1)
+>>>>> @@ -439,6 +450,26 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>>>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>>>>>  	}
+>>>>>  
+>>>>> +	count = of_property_match_string(node, "phy-names", "usb2-phy");
+>>>>> +	if (count >= 0 || (pdata && pdata->usb2_generic_phy)) {
+>>>>> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+>>>>> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+>>>>> +			dev_err(dev, "no usb2 phy configured yet");
+>>>>> +			return PTR_ERR(dwc->usb2_generic_phy);
+>>>>> +		}
+>>>>> +		dwc->usb2_phy = NULL;
+>>>>> +	}
+>>>>> +
+>>>>> +	count = of_property_match_string(node, "phy-names", "usb3-phy");
+>>>>> +	if (count >= 0 || (pdata && pdata->usb3_generic_phy)) {
+>>>>> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+>>>>> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+>>>>> +			dev_err(dev, "no usb3 phy configured yet");
+>>>>> +			return PTR_ERR(dwc->usb3_generic_phy);
+>>>>> +		}
+>>>>> +		dwc->usb3_phy = NULL;
+>>>>> +	}
+>>>>> +
+>>>>
+>>>> There are a couple of issues here.
+>>>> - The above code must be executed only if it node is valid.
+>>>
+>>> of_property_match_string will give a error value if the node is not present.
+>>> *count >= 0* can take care of this.
+>>
+>> OK. 
+>>
+>>>> - We must either get both PHYs via old method or via new method and not support mix matching
+>>>> them. e.g. it is possible with this code that usb2_phy is set and usb3_generic_phy is set.
+>>>
+>>> Why? As long as both the frameworks co-exist (and we support both in dwc3), I
+>>> don't see any reason why we shouldn't allow it. We can avoid adding a few more
+>>> checks by leaving it the way it is currently.
+>>
+>> Because it just doesn't seem elegant. Why would you want to even allow both types of PHY
+>> to be used simultaneously?
 > 
-> The struct list_head for the FIFO, as you said, we can get for free as
-> well (at least on slab).
-> 
-> The FIFO lists themselves can be trimmed by a shrinker, I think.  You
-> were concerned about wind-up but if the nodes are not in excess and
-> ->count just returns 0 until we are actually prepared to shrink
-> objects, then there shouldn't be any windup, right?
+> We actually don't allow both types of PHYs to be used simultaneously.  We set
+> usb2_phy/usb3_phy to NULL, if we had got the the generic PHY.
+> If you just doesn't even want to get PHY by the second method if we have got
+> PHY by the first method, then we might need to add more *if* checks which IMO
+> don't make it any elegant either.
+> Having a clean dt data wont have both types of PHYs anyway.
 
-It's not windup that will be the problem, it's the step change from
-going from zero cache items to the global counter value when the
-magic threshold is crossed. That will generate a massive delta, and
-so generate a huge amount of work to be done from a single shrinker
-call that will be executed on the next context that can run it.
+OK.
 
-i.e. the problem is that the cache size goes from 0 to something
-huge in an instant, and will drop from something huge to zero just
-as quickly. There is no way the shrinker can prevent overshoot and
-oscillation around that magic threshold because the nature of the
-step change overwhelms the damping algorithms in the shrinker used
-to control the amount work being done and hence reach stability.
-
-Normally, the shrinker sees the size of the cache change gradually,
-and so the delta tends to be relatively small and so it does a
-little bit of work every time it is called. This keeps the caches
-balanced with all the other caches that are trimmed a little at a
-time. IOWs, there is a natural damping algorithm built into the
-shrinkers that biases them towards a stable, balanced condition,
-even under changing workloads.
-
-Windup occurs when that little bit of work keeps getting delayed and
-aggregated (e.g. repeated GFP_NOFS reclaim context) which then gets
-dumped on a single scan that can make progress (e.g. kswapd). So
-windup is an iterative process that triggers "catchup work". The
-macro level behaviour might end up looking the same, but they have
-very different underlying algorithmic causes.
-
-> I don't see a natural threshold for "excess" yet, though, because
-> there is no relationship between where radix_tree_node is allocated
-> and which zones the contained shadow entries point to, so it's hard to
-> estimate how worthwile any given radix_tree_node is to a node.  Maybe
-> tying it to an event might be better, like reclaim pressure, swapping
-> etc.
-
-The shrinker is provided a measure of reclaim pressure already,
-which it uses to balance the cache sizes. The shadow entries are no
-different from that perspective. You can't let them overrun the
-system, but you want to keep a respectable number of them around to
-keep (some metric of) performance within respectable bounds.  IOWs,
-that's the same constraints as most other caches (e.g. inode and
-dentry caches) with a shrinker shrinker and so I don't see any
-reason why it needs some magic threshold to avoid being shrunk
-proportionally like all other caches...
-
-Indeed, as memory pressure gets higher, the value of keeping lots of
-shadow entries around goes down because if there is lots of
-refaulting occurring then the number of shadow entries will be
-shrinking as a natural side effect of replacing shadow entries with
-real pages.
-
-If the memory pressure is not causing refaults to occur, then the
-shadow entries are using memory that could otherwise be put to
-better use, and so we should reclaim them in proportion to the
-memory pressure.
-
-If you use lazy lists, in the first case the scanner will expend
-most of it work removing radix tree nodes from the list because they
-have pages in them again, and so the shrinker does cleanup work
-rather than reclaim work. If the second case occurs, then the
-shrinker does reclaim work to free the radix tree nodes so the
-memory can be put to better use. No magic thresholds are needed at
-all...
-
-> > > It also means that locking only needs to be in the inode,
-> > > and on the LRU list for shadow radix tree nodes.
-> > > 
-> > > Does that sound sane?
-> > > 
-> > > Am I overlooking something?
-> > 
-> > It's pretty much along the same lines of what I was thinking, but
-> > lets see what Johannes thinks.
-> 
-> That sounds great to me.  I just have looked at this code for so long
-> that I'm getting blind towards it, so I really appreciate your input.
-
-I think we all suffer from that problem from time to time :/
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+cheers,
+-roger
