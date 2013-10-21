@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3JUJ0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:26:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39429 "EHLO
+	id S1753530Ab3JUIvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:51:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39393 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753542Ab3JUIvJ (ORCPT
+	by vger.kernel.org with ESMTP id S1753376Ab3JUIvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:09 -0400
+	Mon, 21 Oct 2013 04:51:01 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wladislav Wiebe" <wladislav.kw@gmail.com>,
-        "Grant Likely" <grant.likely@linaro.org>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.169822969@decadent.org.uk>
+Message-ID: <lsq.1382345188.872497273@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 040/149] of: Fix missing memory initialization on FDT
- unflattening
+Subject: [PATCH 3.2 046/149] drm/radeon: fix handling of variable sized
+ arrays for router objects
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 0640332e073be9207f0784df43595c0c39716e42 upstream.
+commit fb93df1c2d8b3b1fb16d6ee9e32554e0c038815d upstream.
 
-Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
-the allocation function itself needs to zero memory before returning
-it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
-initialization for expanded DT" which fixed one call site but missed
-another.
+The table has the following format:
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+typedef struct _ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT         //usSrcDstTableOffset pointing to this structure
+{
+  UCHAR               ucNumberOfSrc;
+  USHORT              usSrcObjectID[1];
+  UCHAR               ucNumberOfDst;
+  USHORT              usDstObjectID[1];
+}ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT;
+
+usSrcObjectID[] and usDstObjectID[] are variably sized, so we
+can't access them directly.  Use pointers and update the offset
+appropriately when accessing the Dst members.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/of/base.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1189,6 +1189,7 @@ void of_alias_scan(void * (*dt_alloc)(u6
- 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
- 		if (!ap)
- 			continue;
-+		memset(ap, 0, sizeof(*ap) + len + 1);
- 		ap->alias = start;
- 		of_alias_add(ap, np, id, start, len);
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -709,13 +709,16 @@ bool radeon_get_atom_connector_info_from
+ 								(ATOM_SRC_DST_TABLE_FOR_ONE_OBJECT *)
+ 								(ctx->bios + data_offset +
+ 								 le16_to_cpu(router_obj->asObjects[k].usSrcDstTableOffset));
++							u8 *num_dst_objs = (u8 *)
++								((u8 *)router_src_dst_table + 1 +
++								 (router_src_dst_table->ucNumberOfSrc * 2));
++							u16 *dst_objs = (u16 *)(num_dst_objs + 1);
+ 							int enum_id;
+ 
+ 							router.router_id = router_obj_id;
+-							for (enum_id = 0; enum_id < router_src_dst_table->ucNumberOfDst;
+-							     enum_id++) {
++							for (enum_id = 0; enum_id < (*num_dst_objs); enum_id++) {
+ 								if (le16_to_cpu(path->usConnObjectId) ==
+-								    le16_to_cpu(router_src_dst_table->usDstObjectID[enum_id]))
++								    le16_to_cpu(dst_objs[enum_id]))
+ 									break;
+ 							}
+ 
 
