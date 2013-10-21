@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab3JUJJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:09:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39714 "EHLO
+	id S1754034Ab3JUIwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:52:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39662 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754064Ab3JUIwK (ORCPT
+	by vger.kernel.org with ESMTP id S1753994Ab3JUIv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:10 -0400
+	Mon, 21 Oct 2013 04:51:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nishanth Aravamudan" <nacc@linux.vnet.ibm.com>,
-        "Nishanth Aravamudan" <nacc@us.ibm.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org, "David Cohen" <david.a.cohen@linux.intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.579162159@decadent.org.uk>
+Message-ID: <lsq.1382345188.367003786@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 100/149] powerpc/iommu: Use GFP_KERNEL instead of
- GFP_ATOMIC in iommu_init_table()
+Subject: [PATCH 3.2 093/149] usb: dwc3: add support for Merrifield
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
+commit 85601f8cf67c56a561a6dd5e130e65fdc179047d upstream.
 
-Under heavy (DLPAR?) stress, we tripped this panic() in
-arch/powerpc/kernel/iommu.c::iommu_init_table():
+Add PCI id for Intel Merrifield
 
-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-	if (!page)
-		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
-
-Before the panic() we got a page allocation failure for an order-2
-allocation. There appears to be memory free, but perhaps not in the
-ATOMIC context. I looked through all the call-sites of
-iommu_init_table() and didn't see any obvious reason to need an ATOMIC
-allocation. Most call-sites in fact have an explicit GFP_KERNEL
-allocation shortly before the call to iommu_init_table(), indicating we
-are not in an atomic context. There is some indirection for some paths,
-but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
-
-With this change under the same conditions, we have not been able to
-reproduce the panic.
-
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc3/dwc3-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -495,7 +495,7 @@ struct iommu_table *iommu_init_table(str
- 	/* number of bytes needed for the bitmap */
- 	sz = (tbl->it_size + 7) >> 3;
+--- a/drivers/usb/dwc3/dwc3-pci.c
++++ b/drivers/usb/dwc3/dwc3-pci.c
+@@ -46,6 +46,7 @@
+ #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
+ #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
+ #define PCI_DEVICE_ID_INTEL_BYT		0x0f37
++#define PCI_DEVICE_ID_INTEL_MRFLD	0x119e
  
--	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-+	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
- 	if (!page)
- 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
- 	tbl->it_map = page_address(page);
+ #define DWC3_PCI_DEVS_POSSIBLE	32
+ 
+@@ -193,6 +194,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_
+ 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
+ 	},
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRFLD), },
+ 	{  }	/* Terminating Entry */
+ };
+ MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
 
