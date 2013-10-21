@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3JUL4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:56:02 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50985 "EHLO comal.ext.ti.com"
+	id S1753454Ab3JUL5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:57:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51986 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753207Ab3JULz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:55:59 -0400
-Message-ID: <52651614.5040309@ti.com>
-Date: Mon, 21 Oct 2013 17:25:00 +0530
+	id S1753171Ab3JUL5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 07:57:50 -0400
+Message-ID: <5265168A.3060309@ti.com>
+Date: Mon, 21 Oct 2013 17:26:58 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
         <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
         <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
         <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
@@ -21,10 +21,10 @@ CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY
- Framework
-References: <1381866857-3861-1-git-send-email-kishon@ti.com> <1381866857-3861-3-git-send-email-kishon@ti.com> <525E9232.9050502@ti.com> <525E9A11.7080501@ti.com> <525EA171.9010402@ti.com>
-In-Reply-To: <525EA171.9010402@ti.com>
+Subject: Re: [PATCH v2 1/7] usb: dwc3: get "usb_phy" only if the platform
+ indicates the presence of PHY's
+References: <1381866857-3861-1-git-send-email-kishon@ti.com> <1381866857-3861-2-git-send-email-kishon@ti.com> <20131017163828.GH11611@gimli>
+In-Reply-To: <20131017163828.GH11611@gimli>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,157 +33,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wednesday 16 October 2013 07:53 PM, Roger Quadros wrote:
-> On 10/16/2013 04:52 PM, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Wednesday 16 October 2013 06:48 PM, Roger Quadros wrote:
->>> Hi,
->>>
->>> On 10/15/2013 10:54 PM, Kishon Vijay Abraham I wrote:
->>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
->>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
->>>> phy_power_on() and phy_power_off().
->>>>
->>>> However using the old USB phy library wont be removed till the PHYs of all
->>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
->>>>  drivers/usb/dwc3/Kconfig                       |    1 +
->>>>  drivers/usb/dwc3/core.c                        |   52 ++++++++++++++++++++++++
->>>>  drivers/usb/dwc3/core.h                        |    7 ++++
->>>>  drivers/usb/dwc3/platform_data.h               |    2 +
->>>>  5 files changed, 66 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> index e807635..471366d 100644
->>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
->>>> @@ -6,11 +6,13 @@ Required properties:
->>>>   - compatible: must be "snps,dwc3"
->>>>   - reg : Address and length of the register set for the device
->>>>   - interrupts: Interrupts used by the dwc3 controller.
->>>> +
->>>> +Optional properties:
->>>>   - usb-phy : array of phandle for the PHY device.  The first element
->>>>     in the array is expected to be a handle to the USB2/HS PHY and
->>>>     the second element is expected to be a handle to the USB3/SS PHY
->>>> -
->>>> -Optional properties:
->>>> + - phys: from the *Generic PHY* bindings
->>>> + - phy-names: from the *Generic PHY* bindings
->>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
->>>>  
->>>>  This is usually a subnode to DWC3 glue to which it is connected.
->>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
->>>> index 8e385b4..64eed6f 100644
->>>> --- a/drivers/usb/dwc3/Kconfig
->>>> +++ b/drivers/usb/dwc3/Kconfig
->>>> @@ -2,6 +2,7 @@ config USB_DWC3
->>>>  	tristate "DesignWare USB3 DRD Core Support"
->>>>  	depends on (USB || USB_GADGET) && HAS_DMA
->>>>  	select USB_PHY
->>>> +	select GENERIC_PHY
->>>>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
->>>>  	help
->>>>  	  Say Y or M here if your system has a Dual Role SuperSpeed
->>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->>>> index cb91d70..28bfa5b 100644
->>>> --- a/drivers/usb/dwc3/core.c
->>>> +++ b/drivers/usb/dwc3/core.c
->>>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
->>>>  
->>>>  	usb_phy_init(dwc->usb2_phy);
->>>>  	usb_phy_init(dwc->usb3_phy);
->>>> +
->>>> +	if (dwc->usb2_generic_phy)
->>>> +		phy_init(dwc->usb2_generic_phy);
->>>> +	if (dwc->usb3_generic_phy)
->>>> +		phy_init(dwc->usb3_generic_phy);
->>>> +
->>>
->>> dwc3_core_soft_reset() is called from dwc3_core_init() which is called from
->>> dwc3_probe() but before the PHYs are initialized.
->>>
->>> This will cause phy power_on() to be called before phy_init() which is wrong.
->>>
+On Thursday 17 October 2013 10:08 PM, Felipe Balbi wrote:
+> Hi,
 > 
-> You overlooked the above?
+> On Wed, Oct 16, 2013 at 01:24:11AM +0530, Kishon Vijay Abraham I wrote:
+>> There can be systems which does not have a external usb_phy, so get
+>> usb_phy only if dt data indicates the presence of PHY in the case of dt boot or
+>> if platform_data indicates the presence of PHY. Also remove checking if
+>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
+> I'm fine with this patch, but one comment below:
+> 
+>> @@ -387,16 +388,49 @@ static int dwc3_probe(struct platform_device *pdev)
+>>  	if (node) {
+>>  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+>>  
+>> -		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+>> -		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
+>> +		count = of_count_phandle_with_args(node, "usb-phy", NULL);
+>> +		switch (count) {
+>> +		case 2:
+>> +			dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
+>> +				"usb-phy", 1);
+>> +			if (IS_ERR(dwc->usb3_phy)) {
+>> +				dev_err(dev, "usb3 phy not found\n");
+>> +				return PTR_ERR(dwc->usb3_phy);
+>> +			}
+>> +		case 1:
+>> +			dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
+>> +				"usb-phy", 0);
+>> +			if (IS_ERR(dwc->usb2_phy)) {
+>> +				dev_err(dev, "usb2 phy not found\n");
+>> +				return PTR_ERR(dwc->usb2_phy);
+>> +			}
+>> +			break;
+>> +		default:
+>> +			dev_err(dev, "usb phy nodes not configured\n");
+>> +		}
+>>  
+>>  		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
+>>  		dwc->dr_mode = of_usb_get_dr_mode(node);
+>>  	} else if (pdata) {
+>>  		dwc->maximum_speed = pdata->maximum_speed;
+>>  
+>> -		dwc->usb2_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+>> -		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>> +		if (pdata->usb2_phy) {
+>> +			dwc->usb2_phy = devm_usb_get_phy(dev,
+>> +				USB_PHY_TYPE_USB2);
+>> +			if (IS_ERR(dwc->usb2_phy)) {
+>> +				dev_err(dev, "usb2 phy not found\n");
+>> +				return PTR_ERR(dwc->usb2_phy);
+>> +			}
+>> +		}
+>> +
+>> +		if (pdata->usb3_phy) {
+>> +			dwc->usb3_phy = devm_usb_get_phy(dev,
+>> +				USB_PHY_TYPE_USB3);
+>> +			if (IS_ERR(dwc->usb3_phy)) {
+>> +				dev_err(dev, "usb3 phy not found\n");
+>> +				return PTR_ERR(dwc->usb3_phy);
+>> +			}
+>> +		}
+>>  
+>>  		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
+>>  		dwc->dr_mode = pdata->dr_mode;
+>> @@ -409,36 +443,6 @@ static int dwc3_probe(struct platform_device *pdev)
+>>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>>  		dwc->maximum_speed = USB_SPEED_SUPER;
+>>  
+>> -	if (IS_ERR(dwc->usb2_phy)) {
+>> -		ret = PTR_ERR(dwc->usb2_phy);
+>> -
+>> -		/*
+>> -		 * if -ENXIO is returned, it means PHY layer wasn't
+>> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
+>> -		 * in that case, since no PHY driver will ever probe.
+>> -		 */
+>> -		if (ret == -ENXIO)
+>> -			return ret;
+>> -
+>> -		dev_err(dev, "no usb2 phy configured\n");
+>> -		return -EPROBE_DEFER;
+>> -	}
+>> -
+>> -	if (IS_ERR(dwc->usb3_phy)) {
+>> -		ret = PTR_ERR(dwc->usb3_phy);
+>> -
+>> -		/*
+>> -		 * if -ENXIO is returned, it means PHY layer wasn't
+>> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
+>> -		 * in that case, since no PHY driver will ever probe.
+>> -		 */
+>> -		if (ret == -ENXIO)
+>> -			return ret;
+>> -
+>> -		dev_err(dev, "no usb3 phy configured\n");
+>> -		return -EPROBE_DEFER;
+>> -	}
+> 
+> the idea for doing the error checking here was actually to avoid
+> duplicating it in all previous cases, as you did. Please keep the error
+> checking here and you're good to go.
 
-No. Forgot to comment back.
-Yeah, you are right.. that should be fixed.
+Ok.
 > 
->>>>  	mdelay(100);
->>>>  
->>>>  	/* Clear USB3 PHY reset */
->>>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
->>>>  {
->>>>  	usb_phy_shutdown(dwc->usb2_phy);
->>>>  	usb_phy_shutdown(dwc->usb3_phy);
->>>> +
->>>> +	if (dwc->usb2_generic_phy)
->>>> +		phy_power_off(dwc->usb2_generic_phy);
->>>> +	if (dwc->usb3_generic_phy)
->>>> +		phy_power_off(dwc->usb3_generic_phy);
->>>>  }
->>>>  
->>>>  #define DWC3_ALIGN_MASK		(16 - 1)
->>>> @@ -439,6 +450,26 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
->>>>  	}
->>>>  
->>>> +	count = of_property_match_string(node, "phy-names", "usb2-phy");
->>>> +	if (count >= 0 || (pdata && pdata->usb2_generic_phy)) {
->>>> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
->>>> +		if (IS_ERR(dwc->usb2_generic_phy)) {
->>>> +			dev_err(dev, "no usb2 phy configured yet");
->>>> +			return PTR_ERR(dwc->usb2_generic_phy);
->>>> +		}
->>>> +		dwc->usb2_phy = NULL;
->>>> +	}
->>>> +
->>>> +	count = of_property_match_string(node, "phy-names", "usb3-phy");
->>>> +	if (count >= 0 || (pdata && pdata->usb3_generic_phy)) {
->>>> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
->>>> +		if (IS_ERR(dwc->usb3_generic_phy)) {
->>>> +			dev_err(dev, "no usb3 phy configured yet");
->>>> +			return PTR_ERR(dwc->usb3_generic_phy);
->>>> +		}
->>>> +		dwc->usb3_phy = NULL;
->>>> +	}
->>>> +
->>>
->>> There are a couple of issues here.
->>> - The above code must be executed only if it node is valid.
->>
->> of_property_match_string will give a error value if the node is not present.
->> *count >= 0* can take care of this.
+>> -
+>>  	dwc->xhci_resources[0].start = res->start;
+>>  	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+>>  					DWC3_XHCI_REGS_END;
+>> diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
+>> index 7db34f0..49ffa6d 100644
+>> --- a/drivers/usb/dwc3/platform_data.h
+>> +++ b/drivers/usb/dwc3/platform_data.h
+>> @@ -24,4 +24,6 @@ struct dwc3_platform_data {
+>>  	enum usb_device_speed maximum_speed;
+>>  	enum usb_dr_mode dr_mode;
+>>  	bool tx_fifo_resize;
+>> +	bool usb2_phy;
+>> +	bool usb3_phy;
 > 
-> OK. 
+> This would look better as a quirks flag, then we could:
 > 
->>> - We must either get both PHYs via old method or via new method and not support mix matching
->>> them. e.g. it is possible with this code that usb2_phy is set and usb3_generic_phy is set.
->>
->> Why? As long as both the frameworks co-exist (and we support both in dwc3), I
->> don't see any reason why we shouldn't allow it. We can avoid adding a few more
->> checks by leaving it the way it is currently.
+> unsigned long quirks;
+> #define DWC3_QUIRK_NO_USB3_PHY	BIT(0)
+> #define DWC3_QUIRK_NO_USB2_PHY	BIT(1)
 > 
-> Because it just doesn't seem elegant. Why would you want to even allow both types of PHY
-> to be used simultaneously?
+> ...
+> 
+> if (!test_bit(DWC3_QUIRK_NO_USB3_PHY), &dwc->quirks &&
+> 	dwc->has_usb3_phy) {
+> 	grab_usb3_phy();
+> }
 
-We actually don't allow both types of PHYs to be used simultaneously.  We set
-usb2_phy/usb3_phy to NULL, if we had got the the generic PHY.
-If you just doesn't even want to get PHY by the second method if we have got
-PHY by the first method, then we might need to add more *if* checks which IMO
-don't make it any elegant either.
-Having a clean dt data wont have both types of PHYs anyway.
+Ok.
 
 Thanks
 Kishon
-> 
-> cheers,
-> -roger
-> 
-
