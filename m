@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3JUIuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:50:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39339 "EHLO
+	id S1756012Ab3JUJaW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:30:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39350 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753298Ab3JUIum (ORCPT
+	by vger.kernel.org with ESMTP id S1753384Ab3JUIuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:50:42 -0400
+	Mon, 21 Oct 2013 04:50:46 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roger Pau Monne" <roger.pau@citrix.com>,
-        "Matt Wilson" <msw@amazon.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "David Vrabel" <david.vrabel@citrix.com>
+CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.831422308@decadent.org.uk>
+Message-ID: <lsq.1382345188.106721208@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 019/149] xen-gnt: prevent adding duplicate gnt callbacks
+Subject: [PATCH 3.2 035/149] rt2800: fix wrong TX power compensation
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,51 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Pau Monne <roger.pau@citrix.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 5f338d9001094a56cf87bd8a280b4e7ff953bb59 upstream.
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-With the current implementation, the callback in the tail of the list
-can be added twice, because the check done in
-gnttab_request_free_callback is bogus, callback->next can be NULL if
-it is the last callback in the list. If we add the same callback twice
-we end up with an infinite loop, were callback == callback->next.
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
 
-Replace this check with a proper one that iterates over the list to
-see if the callback has already been added.
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Matt Wilson <msw@amazon.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: use rt2x00_eeprom_read()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/xen/grant-table.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -355,9 +355,18 @@ void gnttab_request_free_callback(struct
- 				  void (*fn)(void *), void *arg, u16 count)
- {
- 	unsigned long flags;
-+	struct gnttab_free_callback *cb;
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2067,6 +2067,13 @@ static int rt2800_get_gain_calibration_d
+ 	int i;
+ 
+ 	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
 +
- 	spin_lock_irqsave(&gnttab_list_lock, flags);
--	if (callback->next)
--		goto out;
-+
-+	/* Check if the callback is already on the list */
-+	cb = gnttab_free_callback_list;
-+	while (cb) {
-+		if (cb == callback)
-+			goto out;
-+		cb = cb->next;
-+	}
-+
- 	callback->fn = fn;
- 	callback->arg = arg;
- 	callback->count = count;
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
 
