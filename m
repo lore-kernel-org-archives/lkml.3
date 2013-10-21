@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3JUIxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:53:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39932 "EHLO
+	id S1753467Ab3JUIyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:54:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39906 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754516Ab3JUIxf (ORCPT
+	by vger.kernel.org with ESMTP id S1754592Ab3JUIxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:53:35 -0400
+	Mon, 21 Oct 2013 04:53:33 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mel Gorman" <mgorman@suse.de>,
-        "David Rientjes" <rientjes@google.com>,
-        "Michal Hocko" <mhocko@suse.cz>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Mike Christie" <michaelc@cs.wisc.edu>,
+        "James Bottomley" <JBottomley@Parallels.com>,
+        "Sasha Levin" <levinsasha928@gmail.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.383266048@decadent.org.uk>
+Message-ID: <lsq.1382345188.11296265@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 148/149] mm, show_mem: suppress page counts in
- non-blockable contexts
+Subject: [PATCH 3.2 140/149] [SCSI] iscsi: don't hang in endless loop if
+ no targets present
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,134 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit 4b59e6c4730978679b414a8da61514a2518da512 upstream.
+commit 46a7c17d26967922092f3a8291815ffb20f6cabe upstream.
 
-On large systems with a lot of memory, walking all RAM to determine page
-types may take a half second or even more.
+iscsi_if_send_reply() may return -ESRCH if there were no targets to send
+data to. Currently we're ignoring this value and looping in attempt to do it
+over and over, which will usually lead in a hung task like this one:
 
-In non-blockable contexts, the page allocator will emit a page allocation
-failure warning unless __GFP_NOWARN is specified.  In such contexts, irqs
-are typically disabled and such a lengthy delay may even result in NMI
-watchdog timeouts.
+[ 4920.817298] INFO: task trinity:9074 blocked for more than 120 seconds.
+[ 4920.818527] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 4920.819982] trinity         D 0000000000000000  5504  9074   2756 0x00000004
+[ 4920.825374]  ffff880003961a98 0000000000000086 ffff8800001aa000 ffff8800001aa000
+[ 4920.826791]  00000000001d4340 ffff880003961fd8 ffff880003960000 00000000001d4340
+[ 4920.828241]  00000000001d4340 00000000001d4340 ffff880003961fd8 00000000001d4340
+[ 4920.833231]
+[ 4920.833519] Call Trace:
+[ 4920.834010]  [<ffffffff826363fa>] schedule+0x3a/0x50
+[ 4920.834953]  [<ffffffff82634ac9>] __mutex_lock_common+0x209/0x5b0
+[ 4920.836226]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
+[ 4920.837281]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
+[ 4920.838305]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
+[ 4920.839336]  [<ffffffff82634eb0>] mutex_lock_nested+0x40/0x50
+[ 4920.840423]  [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
+[ 4920.841434]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
+[ 4920.842548]  [<ffffffff82637bb0>] ? _raw_read_unlock+0x30/0x60
+[ 4920.843666]  [<ffffffff821f71de>] netlink_unicast+0x1ae/0x1f0
+[ 4920.844751]  [<ffffffff821f7997>] netlink_sendmsg+0x227/0x350
+[ 4920.845850]  [<ffffffff821857bd>] ? sock_update_netprioidx+0xdd/0x1b0
+[ 4920.847060]  [<ffffffff82185732>] ? sock_update_netprioidx+0x52/0x1b0
+[ 4920.848276]  [<ffffffff8217f226>] sock_aio_write+0x166/0x180
+[ 4920.849348]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
+[ 4920.850428]  [<ffffffff811d0d9a>] do_sync_write+0xda/0x120
+[ 4920.851465]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
+[ 4920.852579]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
+[ 4920.853608]  [<ffffffff81791887>] ? security_file_permission+0x27/0xb0
+[ 4920.854821]  [<ffffffff811d0f4c>] vfs_write+0x16c/0x180
+[ 4920.855781]  [<ffffffff811d104f>] sys_write+0x4f/0xa0
+[ 4920.856798]  [<ffffffff82638e79>] system_call_fastpath+0x16/0x1b
+[ 4920.877487] 1 lock held by trinity/9074:
+[ 4920.878239]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
+[ 4920.880005] Kernel panic - not syncing: hung_task: blocked tasks
 
-To fix this, suppress the page walk in such contexts when printing the
-page allocation failure warning.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/init.c       | 3 +++
- arch/ia64/mm/contig.c    | 2 ++
- arch/ia64/mm/discontig.c | 2 ++
- arch/parisc/mm/init.c    | 2 ++
- arch/unicore32/mm/init.c | 3 +++
- include/linux/mm.h       | 3 ++-
- lib/show_mem.c           | 3 +++
- mm/page_alloc.c          | 7 +++++++
- 8 files changed, 24 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_transport_iscsi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -98,6 +98,9 @@ void show_mem(unsigned int filter)
- 	printk("Mem-info:\n");
- 	show_free_areas(filter);
- 
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
-+
- 	for_each_bank (i, mi) {
- 		struct membank *bank = &mi->bank[i];
- 		unsigned int pfn1, pfn2;
---- a/arch/ia64/mm/contig.c
-+++ b/arch/ia64/mm/contig.c
-@@ -46,6 +46,8 @@ void show_mem(unsigned int filter)
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
- 	printk(KERN_INFO "Node memory in pages:\n");
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long present;
- 		unsigned long flags;
---- a/arch/ia64/mm/discontig.c
-+++ b/arch/ia64/mm/discontig.c
-@@ -623,6 +623,8 @@ void show_mem(unsigned int filter)
- 
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- 	printk(KERN_INFO "Node memory in pages:\n");
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long present;
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -685,6 +685,8 @@ void show_mem(unsigned int filter)
- 
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- #ifndef CONFIG_DISCONTIGMEM
- 	i = max_mapnr;
- 	while (i-- > 0) {
---- a/arch/unicore32/mm/init.c
-+++ b/arch/unicore32/mm/init.c
-@@ -65,6 +65,9 @@ void show_mem(unsigned int filter)
- 	printk(KERN_DEFAULT "Mem-info:\n");
- 	show_free_areas(filter);
- 
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
-+
- 	for_each_bank(i, mi) {
- 		struct membank *bank = &mi->bank[i];
- 		unsigned int pfn1, pfn2;
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -865,7 +865,8 @@ extern void pagefault_out_of_memory(void
-  * Flags passed to show_mem() and show_free_areas() to suppress output in
-  * various contexts.
-  */
--#define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
-+#define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
-+#define SHOW_MEM_FILTER_PAGE_COUNT	(0x0002u)	/* page type count */
- 
- extern void show_free_areas(unsigned int flags);
- extern bool skip_free_areas_node(unsigned int flags, int nid);
---- a/lib/show_mem.c
-+++ b/lib/show_mem.c
-@@ -18,6 +18,9 @@ void show_mem(unsigned int filter)
- 	printk("Mem-Info:\n");
- 	show_free_areas(filter);
- 
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
-+
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long i, flags;
- 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1760,6 +1760,13 @@ void warn_alloc_failed(gfp_t gfp_mask, i
- 		return;
- 
- 	/*
-+	 * Walking all memory to count page types is very expensive and should
-+	 * be inhibited in non-blockable contexts.
-+	 */
-+	if (!(gfp_mask & __GFP_WAIT))
-+		filter |= SHOW_MEM_FILTER_PAGE_COUNT;
-+
-+	/*
- 	 * This documents exceptions given to allocations in certain
- 	 * contexts that are allowed to allocate outside current's set
- 	 * of allowed nodes.
+--- a/drivers/scsi/scsi_transport_iscsi.c
++++ b/drivers/scsi/scsi_transport_iscsi.c
+@@ -2105,7 +2105,7 @@ iscsi_if_rx(struct sk_buff *skb)
+ 				break;
+ 			err = iscsi_if_send_reply(group, nlh->nlmsg_seq,
+ 				nlh->nlmsg_type, 0, 0, ev, sizeof(*ev));
+-		} while (err < 0 && err != -ECONNREFUSED);
++		} while (err < 0 && err != -ECONNREFUSED && err != -ESRCH);
+ 		skb_pull(skb, rlen);
+ 	}
+ 	mutex_unlock(&rx_queue_mutex);
 
