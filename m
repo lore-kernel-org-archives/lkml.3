@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3JUJFj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:05:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39778 "EHLO
+	id S1754553Ab3JUJGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:06:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39755 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754242Ab3JUIwd (ORCPT
+	by vger.kernel.org with ESMTP id S1754194Ab3JUIwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:33 -0400
+	Mon, 21 Oct 2013 04:52:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Gospodarek" <andy@greyhouse.net>,
-        "Mark Wu" <wudxw@linux.vnet.ibm.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
-        "Jay Vosburgh" <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org,
+        "Steffen Klassert" <steffen.klassert@secunet.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Alan Chester" <alan.chester@tekelec.com>,
+        "Alexey Dobriyan" <adobriyan@gmail.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.280765896@decadent.org.uk>
+Message-ID: <lsq.1382345188.776964173@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 110/149] bonding: Fix broken promiscuity reference
- counting  issue
+Subject: [PATCH 3.2 104/149] net: sctp: fix ipv6 ipsec encryption bug in 
+ sctp_v6_xmit
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,79 +38,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
+[ Upstream commit 95ee62083cb6453e056562d91f597552021e6ae7 ]
 
-Recently grabbed this report:
-https://bugzilla.redhat.com/show_bug.cgi?id=1005567
+Alan Chester reported an issue with IPv6 on SCTP that IPsec traffic is not
+being encrypted, whereas on IPv4 it is. Setting up an AH + ESP transport
+does not seem to have the desired effect:
 
-Of an issue in which the bonding driver, with an attached vlan encountered the
-following errors when bond0 was taken down and back up:
+SCTP + IPv4:
 
-dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
-device might be broken.
+  22:14:20.809645 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 116)
+    192.168.0.2 > 192.168.0.5: AH(spi=0x00000042,sumlen=16,seq=0x1): ESP(spi=0x00000044,seq=0x1), length 72
+  22:14:20.813270 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 340)
+    192.168.0.5 > 192.168.0.2: AH(spi=0x00000043,sumlen=16,seq=0x1):
 
-The error occurs because, during __bond_release_one, if we release our last
-slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
-notification.  With an attached vlan, the vlan may see that the vlan and bond
-mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
-and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
-we complete __bond_release_one, we use the current state of the bond flags to
-determine if we should decrement the promiscuity of the releasing slave.  But
-since the bond changed promiscuity state during the release operation, we
-incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
-to begin with, causing the above error
+SCTP + IPv6:
 
-Fix is pretty simple, just cache the bonding flags at the start of the function
-and use those when determining the need to set promiscuity.
+  22:31:19.215029 IP6 (class 0x02, hlim 64, next-header SCTP (132) payload length: 364)
+    fe80::222:15ff:fe87:7fc.3333 > fe80::92e6:baff:fe0d:5a54.36767: sctp
+    1) [INIT ACK] [init tag: 747759530] [rwnd: 62464] [OS: 10] [MIS: 10]
 
-This is also needed for the ALLMULTI flag
+Moreover, Alan says:
 
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Mark Wu <wudxw@linux.vnet.ibm.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
+  This problem was seen with both Racoon and Racoon2. Other people have seen
+  this with OpenSwan. When IPsec is configured to encrypt all upper layer
+  protocols the SCTP connection does not initialize. After using Wireshark to
+  follow packets, this is because the SCTP packet leaves Box A unencrypted and
+  Box B believes all upper layer protocols are to be encrypted so it drops
+  this packet, causing the SCTP connection to fail to initialize. When IPsec
+  is configured to encrypt just SCTP, the SCTP packets are observed unencrypted.
 
+In fact, using `socat sctp6-listen:3333 -` on one end and transferring "plaintext"
+string on the other end, results in cleartext on the wire where SCTP eventually
+does not report any errors, thus in the latter case that Alan reports, the
+non-paranoid user might think he's communicating over an encrypted transport on
+SCTP although he's not (tcpdump ... -X):
+
+  ...
+  0x0030: 5d70 8e1a 0003 001a 177d eb6c 0000 0000  ]p.......}.l....
+  0x0040: 0000 0000 706c 6169 6e74 6578 740a 0000  ....plaintext...
+
+Only in /proc/net/xfrm_stat we can see XfrmInTmplMismatch increasing on the
+receiver side. Initial follow-up analysis from Alan's bug report was done by
+Alexey Dobriyan. Also thanks to Vlad Yasevich for feedback on this.
+
+SCTP has its own implementation of sctp_v6_xmit() not calling inet6_csk_xmit().
+This has the implication that it probably never really got updated along with
+changes in inet6_csk_xmit() and therefore does not seem to invoke xfrm handlers.
+
+SCTP's IPv4 xmit however, properly calls ip_queue_xmit() to do the work. Since
+a call to inet6_csk_xmit() would solve this problem, but result in unecessary
+route lookups, let us just use the cached flowi6 instead that we got through
+sctp_v6_get_dst(). Since all SCTP packets are being sent through sctp_packet_transmit(),
+we do the route lookup / flow caching in sctp_transport_route(), hold it in
+tp->dst and skb_dst_set() right after that. If we would alter fl6->daddr in
+sctp_v6_xmit() to np->opt->srcrt, we possibly could run into the same effect
+of not having xfrm layer pick it up, hence, use fl6_update_dst() in sctp_v6_get_dst()
+instead to get the correct source routed dst entry, which we assign to the skb.
+
+Also source address routing example from 625034113 ("sctp: fix sctp to work with
+ipv6 source address routing") still works with this patch! Nevertheless, in RFC5095
+it is actually 'recommended' to not use that anyway due to traffic amplification [1].
+So it seems we're not supposed to do that anyway in sctp_v6_xmit(). Moreover, if
+we overwrite the flow destination here, the lower IPv6 layer will be unable to
+put the correct destination address into IP header, as routing header is added in
+ipv6_push_nfrag_opts() but then probably with wrong final destination. Things aside,
+result of this patch is that we do not have any XfrmInTmplMismatch increase plus on
+the wire with this patch it now looks like:
+
+SCTP + IPv6:
+
+  08:17:47.074080 IP6 2620:52:0:102f:7a2b:cbff:fe27:1b0a > 2620:52:0:102f:213:72ff:fe32:7eba:
+    AH(spi=0x00005fb4,seq=0x1): ESP(spi=0x00005fb5,seq=0x1), length 72
+  08:17:47.074264 IP6 2620:52:0:102f:213:72ff:fe32:7eba > 2620:52:0:102f:7a2b:cbff:fe27:1b0a:
+    AH(spi=0x00003d54,seq=0x1): ESP(spi=0x00003d55,seq=0x1), length 296
+
+This fixes Kernel Bugzilla 24412. This security issue seems to be present since
+2.6.18 kernels. Lets just hope some big passive adversary in the wild didn't have
+its fun with that. lksctp-tools IPv6 regression test suite passes as well with
+this patch.
+
+ [1] http://www.secdev.org/conf/IPv6_RH_security-csw07.pdf
+
+Reported-by: Alan Chester <alan.chester@tekelec.com>
+Reported-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_main.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ net/sctp/ipv6.c | 42 +++++++++++++-----------------------------
+ 1 file changed, 13 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index b436b84..1bf36ac 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1911,6 +1911,7 @@ int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
- 	struct bonding *bond = netdev_priv(bond_dev);
- 	struct slave *slave, *oldcurrent;
- 	struct sockaddr addr;
-+	int old_flags = bond_dev->flags;
- 	u32 old_features = bond_dev->features;
+diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
+index 8104278..0b6a391 100644
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -205,45 +205,24 @@ out:
+ 		in6_dev_put(idev);
+ }
  
- 	/* slave is not a slave or master is not master of this slave */
-@@ -2041,12 +2042,18 @@ int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
- 	 * already taken care of above when we detached the slave
- 	 */
- 	if (!USES_PRIMARY(bond->params.mode)) {
--		/* unset promiscuity level from slave */
--		if (bond_dev->flags & IFF_PROMISC)
-+		/* unset promiscuity level from slave
-+		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
-+		 * of the IFF_PROMISC flag in the bond_dev, but we need the
-+		 * value of that flag before that change, as that was the value
-+		 * when this slave was attached, so we cache at the start of the
-+		 * function and use it here. Same goes for ALLMULTI below
-+		 */
-+		if (old_flags & IFF_PROMISC)
- 			dev_set_promiscuity(slave_dev, -1);
+-/* Based on tcp_v6_xmit() in tcp_ipv6.c. */
+ static int sctp_v6_xmit(struct sk_buff *skb, struct sctp_transport *transport)
+ {
+ 	struct sock *sk = skb->sk;
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+-	struct flowi6 fl6;
+-
+-	memset(&fl6, 0, sizeof(fl6));
+-
+-	fl6.flowi6_proto = sk->sk_protocol;
+-
+-	/* Fill in the dest address from the route entry passed with the skb
+-	 * and the source address from the transport.
+-	 */
+-	ipv6_addr_copy(&fl6.daddr, &transport->ipaddr.v6.sin6_addr);
+-	ipv6_addr_copy(&fl6.saddr, &transport->saddr.v6.sin6_addr);
+-
+-	fl6.flowlabel = np->flow_label;
+-	IP6_ECN_flow_xmit(sk, fl6.flowlabel);
+-	if (ipv6_addr_type(&fl6.saddr) & IPV6_ADDR_LINKLOCAL)
+-		fl6.flowi6_oif = transport->saddr.v6.sin6_scope_id;
+-	else
+-		fl6.flowi6_oif = sk->sk_bound_dev_if;
+-
+-	if (np->opt && np->opt->srcrt) {
+-		struct rt0_hdr *rt0 = (struct rt0_hdr *) np->opt->srcrt;
+-		ipv6_addr_copy(&fl6.daddr, rt0->addr);
+-	}
++	struct flowi6 *fl6 = &transport->fl.u.ip6;
  
- 		/* unset allmulti level from slave */
--		if (bond_dev->flags & IFF_ALLMULTI)
-+		if (old_flags & IFF_ALLMULTI)
- 			dev_set_allmulti(slave_dev, -1);
+ 	SCTP_DEBUG_PRINTK("%s: skb:%p, len:%d, src:%pI6 dst:%pI6\n",
+ 			  __func__, skb, skb->len,
+-			  &fl6.saddr, &fl6.daddr);
++			  &fl6->saddr, &fl6->daddr);
  
- 		/* flush master's mc_list from slave */
+-	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
++	IP6_ECN_flow_xmit(sk, fl6->flowlabel);
+ 
+ 	if (!(transport->param_flags & SPP_PMTUD_ENABLE))
+ 		skb->local_df = 1;
+ 
+-	return ip6_xmit(sk, skb, &fl6, np->opt, np->tclass);
++	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
++
++	return ip6_xmit(sk, skb, fl6, np->opt, np->tclass);
+ }
+ 
+ /* Returns the dst cache entry for the given source and destination ip
+@@ -256,10 +235,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 	struct dst_entry *dst = NULL;
+ 	struct flowi6 *fl6 = &fl->u.ip6;
+ 	struct sctp_bind_addr *bp;
++	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct sctp_sockaddr_entry *laddr;
+ 	union sctp_addr *baddr = NULL;
+ 	union sctp_addr *daddr = &t->ipaddr;
+ 	union sctp_addr dst_saddr;
++	struct in6_addr *final_p, final;
+ 	__u8 matchlen = 0;
+ 	__u8 bmatchlen;
+ 	sctp_scope_t scope;
+@@ -282,7 +263,8 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 		SCTP_DEBUG_PRINTK("SRC=%pI6 - ", &fl6->saddr);
+ 	}
+ 
+-	dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
++	final_p = fl6_update_dst(fl6, np->opt, &final);
++	dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
+ 	if (!asoc || saddr)
+ 		goto out;
+ 
+@@ -333,10 +315,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 		}
+ 	}
+ 	rcu_read_unlock();
++
+ 	if (baddr) {
+ 		ipv6_addr_copy(&fl6->saddr, &baddr->v6.sin6_addr);
+ 		fl6->fl6_sport = baddr->v6.sin6_port;
+-		dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
++		final_p = fl6_update_dst(fl6, np->opt, &final);
++		dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
+ 	}
+ 
+ out:
 
