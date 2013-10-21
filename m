@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab3JUKsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:48:02 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14031 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab3JUKr7 (ORCPT
+	id S1753292Ab3JUKt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:49:26 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:54286 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab3JUKtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:47:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Oct 2013 03:47:58 -0700
-Message-ID: <52650CB2.9030409@nvidia.com>
-Date: Mon, 21 Oct 2013 16:44:58 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 21 Oct 2013 06:49:24 -0400
+Date: Mon, 21 Oct 2013 11:49:20 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.12-rc6
+Message-ID: <20131021104920.GA26917@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: Re: [PATCH V5 3/3] drivers/rtc/rtc-as3722: add RTC driver
-References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com> <1381321761-8898-4-git-send-email-ldewangan@nvidia.com> <20131010152446.1715e64b70ddd0281a3971e9@linux-foundation.org> <20131010224748.GW21581@sirena.org.uk>
-In-Reply-To: <20131010224748.GW21581@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 October 2013 04:17 AM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Oct 10, 2013 at 03:24:46PM -0700, Andrew Morton wrote:
->
->>> +#ifdef CONFIG_PM
->> Most (but not all!) rtc drivers use CONFIG_PM_SLEEP.  People have madly
->> mucked with CONFIG_PM* and I don't know the difference and I don't know
->> what's going on and I don't know of a convenient place to go to find
->> out.  If you work it out, please be sure to tell me!  But as soon as I
->> figure it out I'm sure they'll go and madly muck with it again.
-> The two effective options for this stuff are PM_SLEEP (for system
-> suspend) and PM_RUNTIME (for runtime suspend which RTCs are unlikely to
-> use I guess).  PM mostly just enables selection of the other two.
+Hello, Linus.
 
-I think, correct defs is  CONFIG_PM_SLEEP here. I will re-spin this patch.
+Two late fixes for cgroup.  One fixes descendant walk introduced
+during this rc1 cycle.  The other fixes a post 3.9 bug during task
+attach which can lead to hang.  Both fixes are critical and the fixes
+are relatively straight-forward.
+
+The two fixes are available in the following branch
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.12-fixes
+
+for you to fetch changes up to ea84753c98a7ac6b74e530b64c444a912b3835ca:
+
+  cgroup: fix to break the while loop in cgroup_attach_task() correctly (2013-10-13 16:07:10 -0400)
+
+Thanks.
+
+----------------------------------------------------------------
+Anjana V Kumar (1):
+      cgroup: fix to break the while loop in cgroup_attach_task() correctly
+
+Tejun Heo (1):
+      cgroup: fix cgroup post-order descendant walk of empty subtree
+
+ kernel/cgroup.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e0aeb32..1bf4f7a1 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2038,7 +2038,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
+ 
+ 		/* @tsk either already exited or can't exit until the end */
+ 		if (tsk->flags & PF_EXITING)
+-			continue;
++			goto next;
+ 
+ 		/* as per above, nr_threads may decrease, but not increase. */
+ 		BUG_ON(i >= group_size);
+@@ -2046,7 +2046,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
+ 		ent.cgrp = task_cgroup_from_root(tsk, root);
+ 		/* nothing to do if this task is already in the cgroup */
+ 		if (ent.cgrp == cgrp)
+-			continue;
++			goto next;
+ 		/*
+ 		 * saying GFP_ATOMIC has no effect here because we did prealloc
+ 		 * earlier, but it's good form to communicate our expectations.
+@@ -2054,7 +2054,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
+ 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+ 		BUG_ON(retval != 0);
+ 		i++;
+-
++	next:
+ 		if (!threadgroup)
+ 			break;
+ 	} while_each_thread(leader, tsk);
+@@ -3187,11 +3187,9 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+ 
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 
+-	/* if first iteration, visit the leftmost descendant */
+-	if (!pos) {
+-		next = css_leftmost_descendant(root);
+-		return next != root ? next : NULL;
+-	}
++	/* if first iteration, visit leftmost descendant which may be @root */
++	if (!pos)
++		return css_leftmost_descendant(root);
+ 
+ 	/* if we visited @root, we're done */
+ 	if (pos == root)
