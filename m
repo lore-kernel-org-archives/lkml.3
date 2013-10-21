@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3JUIva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:51:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39516 "EHLO
+	id S1754541Ab3JUJTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:19:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39534 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753618Ab3JUIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753718Ab3JUIv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:26 -0400
+	Mon, 21 Oct 2013 04:51:29 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Aaron Lu" <aaron.lu@intel.com>, "Jani Nikula" <jani.nikula@intel.com>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "Kees Cook" <keescook@chromium.org>,
+        "Rafi Rubin" <rafi@seas.upenn.edu>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.971060995@decadent.org.uk>
+Message-ID: <lsq.1382345188.747695565@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 059/149] drm/i915: try not to lose backlight CBLV
- precision
+Subject: [PATCH 3.2 055/149] HID: ntrig: validate feature report details
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,47 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
+commit 875b4e3763dbc941f15143dd1a18d10bb0be303b upstream.
 
-ACPI has _BCM and _BQC methods to set and query the backlight
-brightness, respectively. The ACPI opregion has variables BCLP and CBLV
-to hold the requested and current backlight brightness, respectively.
+A HID device could send a malicious feature report that would cause the
+ntrig HID driver to trigger a NULL dereference during initialization:
 
-The BCLP variable has range 0..255 while the others have range
-0..100. This means the _BCM method has to scale the brightness for BCLP,
-and the gfx driver has to scale the requested value back for CBLV. If
-the _BQC method uses the CBLV variable (apparently some implementations
-do, some don't) for current backlight level reporting, there's room for
-rounding errors.
+[57383.031190] usb 3-1: New USB device found, idVendor=1b96, idProduct=0001
+...
+[57383.315193] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+[57383.315308] IP: [<ffffffffa08102de>] ntrig_probe+0x25e/0x420 [hid_ntrig]
 
-Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
-that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
-255) / 100 for scaling to BCLP.
+CVE-2013-2896
 
-Reference: https://gist.github.com/aaronlu/6314920
-Reported-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - ASLE region is treated as normal memory rather than __iomem]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_opregion.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-ntrig.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -161,7 +161,7 @@ static u32 asle_set_backlight(struct drm
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -115,7 +115,8 @@ static inline int ntrig_get_mode(struct
+ 	struct hid_report *report = hdev->report_enum[HID_FEATURE_REPORT].
+ 				    report_id_hash[0x0d];
  
- 	max = intel_panel_get_max_backlight(dev);
- 	intel_panel_set_backlight(dev, bclp * max / 255);
--	asle->cblv = (bclp*0x64)/0xff | ASLE_CBLV_VALID;
-+	asle->cblv = DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID;
+-	if (!report)
++	if (!report || report->maxfield < 1 ||
++	    report->field[0]->report_count < 1)
+ 		return -EINVAL;
  
- 	return 0;
- }
+ 	usbhid_submit_report(hdev, report, USB_DIR_IN);
 
