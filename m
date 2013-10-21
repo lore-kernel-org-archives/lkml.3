@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3JUPEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 11:04:46 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:41646 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab3JUPEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 11:04:10 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v3 1/3] perf: streamline append_chain() function
-Date: Mon, 21 Oct 2013 11:03:37 -0400
-Message-Id: <1382367819-19643-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1382367819-19643-1-git-send-email-Waiman.Long@hp.com>
-References: <1382367819-19643-1-git-send-email-Waiman.Long@hp.com>
+	id S1753852Ab3JUPFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 11:05:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753811Ab3JUPE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 11:04:58 -0400
+Date: Mon, 21 Oct 2013 23:04:26 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131021150426.GB4515@dhcp-16-126.nay.redhat.com>
+References: <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
+ <20131011074144.GA18719@pd.tnic>
+ <20131012075443.GD7550@dhcp-16-126.nay.redhat.com>
+ <20131012101308.GI12321@console-pimps.org>
+ <20131012103054.GA13739@pd.tnic>
+ <20131013031126.GB1914@darkstar.nay.redhat.com>
+ <20131013092521.GA22866@pd.tnic>
+ <20131014155851.GJ4009@pd.tnic>
+ <20131021124739.GA4515@dhcp-16-126.nay.redhat.com>
+ <20131021133741.GA5716@nazgul.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131021133741.GA5716@nazgul.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When callgraph is enabled, the append_chain() function consumes a major
-portion of the total CPU time. This patch tries to streamline the
-append_chain() function by removing unneeded conditional test as well as
-using ?: statement which can be more efficient than the regular if
-statement in some architectures.
+On 10/21/13 at 03:37pm, Borislav Petkov wrote:
+> On Mon, Oct 21, 2013 at 08:47:39PM +0800, Dave Young wrote:
+> > What's the status of this series?
+> 
+> They should appear at some point in Matt's efi-next branch, I think.
+> 
+> > I need below patch for mapping to fixed virt addr passed
+> > from 1st kernel.
+> 
+> You need this to map the runtime regions in the kexec kernel, right?
+> Please write that in the commit message.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- tools/perf/util/callchain.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+Yes, will do
+> 
+> > Would you like to add it to your series or I send out it later?
+> 
+> Yeah, just add it to your patchset.
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 482f680..1e79001 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -315,6 +315,7 @@ append_chain(struct callchain_node *root,
- 	struct callchain_list *cnode;
- 	u64 start = cursor->pos;
- 	bool found = false;
-+	bool func_mode = (callchain_param.key == CCKEY_FUNCTION);
- 	u64 matches;
- 
- 	/*
-@@ -331,17 +332,15 @@ append_chain(struct callchain_node *root,
- 		if (!node)
- 			break;
- 
--		sym = node->sym;
-+		sym = func_mode ? node->sym : NULL;
- 
--		if (cnode->ms.sym && sym &&
--		    callchain_param.key == CCKEY_FUNCTION) {
-+		if (cnode->ms.sym && sym) {
- 			if (cnode->ms.sym->start != sym->start)
- 				break;
- 		} else if (cnode->ip != node->ip)
- 			break;
- 
--		if (!found)
--			found = true;
-+		found = true;
- 
- 		callchain_cursor_advance(cursor);
- 	}
--- 
-1.7.1
+Ok.
 
+> 
+> > BTW, what tree should my patches based on? Matt's next tree?
+> 
+> Yeah, I think efi-next. Matt?
