@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab3JUJTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:19:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39537 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753618Ab3JUIva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753727Ab3JUIva (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Oct 2013 04:51:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39516 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753618Ab3JUIv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:51:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        "Hans Verkuil" <hans.verkuil@cisco.com>,
-        "Alexey Khoroshilov" <khoroshilov@ispras.ru>
+CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Aaron Lu" <aaron.lu@intel.com>, "Jani Nikula" <jani.nikula@intel.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.346318099@decadent.org.uk>
+Message-ID: <lsq.1382345188.971060995@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 052/149] [media] hdpvr: fix iteration over
- uninitialized lists in hdpvr_probe()
+Subject: [PATCH 3.2 059/149] drm/i915: try not to lose backlight CBLV
+ precision
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,58 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 2e923a0527ac439e135b9961e58d3acd876bba10 upstream.
+commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
 
-free_buff_list and rec_buff_list are initialized in the middle of hdpvr_probe(),
-but if something bad happens before that, error handling code calls hdpvr_delete(),
-which contains iteration over the lists (via hdpvr_free_buffers()).
-The patch moves the lists initialization to the beginning and by the way fixes
-goto label in error handling of registering videodev.
-Found by Linux Driver Verification project (linuxtesting.org).
+ACPI has _BCM and _BQC methods to set and query the backlight
+brightness, respectively. The ACPI opregion has variables BCLP and CBLV
+to hold the requested and current backlight brightness, respectively.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[bwh: Backported to 3.2: adjust filename]
+The BCLP variable has range 0..255 while the others have range
+0..100. This means the _BCM method has to scale the brightness for BCLP,
+and the gfx driver has to scale the requested value back for CBLV. If
+the _BQC method uses the CBLV variable (apparently some implementations
+do, some don't) for current backlight level reporting, there's room for
+rounding errors.
+
+Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
+that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
+255) / 100 for scaling to BCLP.
+
+Reference: https://gist.github.com/aaronlu/6314920
+Reported-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - ASLE region is treated as normal memory rather than __iomem]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/video/hdpvr/hdpvr-core.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/intel_opregion.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/video/hdpvr/hdpvr-core.c
-+++ b/drivers/media/video/hdpvr/hdpvr-core.c
-@@ -297,6 +297,11 @@ static int hdpvr_probe(struct usb_interf
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -161,7 +161,7 @@ static u32 asle_set_backlight(struct drm
  
- 	dev->workqueue = 0;
+ 	max = intel_panel_get_max_backlight(dev);
+ 	intel_panel_set_backlight(dev, bclp * max / 255);
+-	asle->cblv = (bclp*0x64)/0xff | ASLE_CBLV_VALID;
++	asle->cblv = DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID;
  
-+	/* init video transfer queues first of all */
-+	/* to prevent oops in hdpvr_delete() on error paths */
-+	INIT_LIST_HEAD(&dev->free_buff_list);
-+	INIT_LIST_HEAD(&dev->rec_buff_list);
-+
- 	/* register v4l2_device early so it can be used for printks */
- 	if (v4l2_device_register(&interface->dev, &dev->v4l2_dev)) {
- 		err("v4l2_device_register failed");
-@@ -319,10 +324,6 @@ static int hdpvr_probe(struct usb_interf
- 	if (!dev->workqueue)
- 		goto error;
- 
--	/* init video transfer queues */
--	INIT_LIST_HEAD(&dev->free_buff_list);
--	INIT_LIST_HEAD(&dev->rec_buff_list);
--
- 	dev->options = hdpvr_default_options;
- 
- 	if (default_video_input < HDPVR_VIDEO_INPUTS)
-@@ -397,7 +398,7 @@ static int hdpvr_probe(struct usb_interf
- 				    video_nr[atomic_inc_return(&dev_nr)]);
- 	if (retval < 0) {
- 		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
--		goto error;
-+		goto reg_fail;
- 	}
- 
- 	/* let the user know what node this device is now attached to */
+ 	return 0;
+ }
 
