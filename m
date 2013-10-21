@@ -1,149 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3JUToJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 15:44:09 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46008 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3JUToI (ORCPT
+	id S1751989Ab3JUTwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 15:52:46 -0400
+Received: from mail-gg0-f176.google.com ([209.85.161.176]:59594 "EHLO
+	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab3JUTwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 15:44:08 -0400
-Message-ID: <1382384645.3284.86.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Date: Mon, 21 Oct 2013 12:44:05 -0700
-In-Reply-To: <20131021192116.GB4154@hmsreliant.think-freely.org>
-References: <20131012172124.GA18241@gmail.com>
-	 <20131014202854.GH26880@hmsreliant.think-freely.org>
-	 <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
-	 <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131017003421.GA31470@hmsreliant.think-freely.org>
-	 <1381974128.2045.144.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131018165034.GC4019@hmsreliant.think-freely.org>
-	 <1382116835.3284.23.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131018201133.GD4019@hmsreliant.think-freely.org>
-	 <1382130952.3284.43.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131021192116.GB4154@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 21 Oct 2013 15:52:45 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: kernel-br@googlegroups.com
+Cc: "Geyslan G. Bem" <geyslan@gmail.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net (open list:9P FILE SYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] 9p: fix return value in case in v9fs_fid_xattr_set()
+Date: Mon, 21 Oct 2013 16:47:58 -0300
+Message-Id: <1382384878-12788-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-21 at 15:21 -0400, Neil Horman wrote:
+In case of error in the p9_client_write, the function v9fs_fid_xattr_set
+should return its negative value, what was never being done.
 
-> 
-> Ok, so I ran the above code on a single cpu using taskset, and set irq affinity
-> such that no interrupts (save for local ones), would occur on that cpu.  Note
-> that I had to convert csum_partial_opt to csum_partial, as the _opt variant
-> doesn't exist in my tree, nor do I see it in any upstream tree or in the history
-> anywhere.
+In case of success it only retuned 0. Now it returns the 'offset'
+variable (write_count total).
 
-This csum_partial_opt() was a private implementation of csum_partial()
-so that I could load the module without rebooting the kernel ;)
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ fs/9p/xattr.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-> 
-> base results:
-> 53569916
-> 43506025
-> 43476542
-> 44048436
-> 45048042
-> 48550429
-> 53925556
-> 53927374
-> 53489708
-> 53003915
-> 
-> AVG = 492 ns
-> 
-> prefetching only:
-> 53279213
-> 45518140
-> 49585388
-> 53176179
-> 44071822
-> 43588822
-> 44086546
-> 47507065
-> 53646812
-> 54469118
-> 
-> AVG = 488 ns
-> 
-> 
-> parallel alu's only:
-> 46226844
-> 44458101
-> 46803498
-> 45060002
-> 46187624
-> 37542946
-> 45632866
-> 46275249
-> 45031141
-> 46281204
-> 
-> AVG = 449 ns
-> 
-> 
-> both optimizations:
-> 45708837
-> 45631124
-> 45697135
-> 45647011
-> 45036679
-> 39418544
-> 44481577
-> 46820868
-> 44496471
-> 35523928
-> 
-> AVG = 438 ns
-> 
-> 
-> We continue to see a small savings in execution time with prefetching (4 ns, or
-> about 0.8%), a better savings with parallel alu execution (43 ns, or 8.7%), and
-> the best savings with both optimizations (54 ns, or 10.9%).  
-> 
-> These results, while they've changed as we've modified the test case slightly
-> have remained consistent in their sppedup ordinality.  Prefetching helps, but
-> not as much as using multiple alu's, and neither is as good as doing both
-> together.
-> 
-> Unless you see something else that I'm doing wrong here.  It seems like a win to
-> do both.
-> 
-
-Well, I only said (or maybe I forgot), that on my machines, I got no
-improvements at all with the multiple alu or the prefetch. (I tried
-different strides)
-
-Only noises in the results.
-
-It seems it depends on cpus and/or multiple factors.
-
-Last machine I used for the tests had :
-
-processor	: 23
-vendor_id	: GenuineIntel
-cpu family	: 6
-model		: 44
-model name	: Intel(R) Xeon(R) CPU           X5660  @ 2.80GHz
-stepping	: 2
-microcode	: 0x13
-cpu MHz		: 2800.256
-cache size	: 12288 KB
-physical id	: 1
-siblings	: 12
-core id		: 10
-cpu cores	: 6
-
-
+diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
+index 3c28cdf..04133a1 100644
+--- a/fs/9p/xattr.c
++++ b/fs/9p/xattr.c
+@@ -138,8 +138,7 @@ int v9fs_fid_xattr_set(struct p9_fid *fid, const char *name,
+ 	if (retval < 0) {
+ 		p9_debug(P9_DEBUG_VFS, "p9_client_xattrcreate failed %d\n",
+ 			 retval);
+-		p9_client_clunk(fid);
+-		return retval;
++		goto err;
+ 	}
+ 	msize = fid->clnt->msize;
+ 	while (value_len) {
+@@ -152,12 +151,15 @@ int v9fs_fid_xattr_set(struct p9_fid *fid, const char *name,
+ 		if (write_count < 0) {
+ 			/* error in xattr write */
+ 			retval = write_count;
+-			break;
++			goto err;
+ 		}
+ 		offset += write_count;
+ 		value_len -= write_count;
+ 	}
+-	return p9_client_clunk(fid);
++	retval = offset;
++err:
++	p9_client_clunk(fid);
++	return retval;
+ }
+ 
+ ssize_t v9fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
+-- 
+1.8.4
 
