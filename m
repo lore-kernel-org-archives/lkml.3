@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3JUWze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:55:34 -0400
-Received: from ozlabs.org ([203.10.76.45]:55289 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219Ab3JUWzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:55:13 -0400
-From: Michael Neuling <michael.neuling@au1.ibm.com>
-To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 2/3] sched: Fix asymmetric scheduling for POWER7
-In-reply-to: <20131021114452.13291.19947.stgit@drishya>
-References: <20131021114002.13291.31478.stgit@drishya> <20131021114452.13291.19947.stgit@drishya>
-Comments: In-reply-to Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-   message dated "Mon, 21 Oct 2013 17:14:52 +0530."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Tue, 22 Oct 2013 09:55:10 +1100
-Message-ID: <21476.1382396110@ale.ozlabs.ibm.com>
+	id S1753054Ab3JUW6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:58:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44490 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab3JUW6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 18:58:00 -0400
+Date: Mon, 21 Oct 2013 18:57:59 -0400 (EDT)
+Message-Id: <20131021.185759.2298688785062999792.davem@davemloft.net>
+To: mceier+kernel@gmail.com
+Cc: mugunthanvnm@ti.com, prabhakar.csengg@gmail.com, jg1.han@samsung.com,
+        jiri@resnulli.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] davinci_emac.c: Fix IFF_ALLMULTI setup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1382377504-24688-1-git-send-email-mceier+kernel@gmail.com>
+References: <5265640C.4070201@cogentembedded.com>
+	<1382377504-24688-1-git-send-email-mceier+kernel@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 21 Oct 2013 15:58:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com> wrote:
+From: Mariusz Ceier <mceier+kernel@gmail.com>
+Date: Mon, 21 Oct 2013 19:45:04 +0200
 
-> Asymmetric scheduling within a core is a scheduler loadbalancing
-> feature that is triggered when SD_ASYM_PACKING flag is set.  The goal
-> for the load balancer is to move tasks to lower order idle SMT threads
-> within a core on a POWER7 system.
+> When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+> emac_dev_mcast_set should only enable RX of multicasts and reset
+> MACHASH registers.
 > 
-> In nohz_kick_needed(), we intend to check if our sched domain (core)
-> is completely busy or we have idle cpu.
+> It does this, but afterwards it either sets up multicast MACs
+> filtering or disables RX of multicasts and resets MACHASH registers
+> again, rendering IFF_ALLMULTI flag useless.
 > 
-> The following check for SD_ASYM_PACKING:
+> This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+> disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
 > 
->     (cpumask_first_and(nohz.idle_cpus_mask, sched_domain_span(sd)) < cpu)
+> Tested with kernel 2.6.37.
 > 
-> already covers the case of checking if the domain has an idle cpu,
-> because cpumask_first_and() will not yield any set bits if this domain
-> has no idle cpu.
-> 
-> Hence, nr_busy check against group weight can be removed.
-> 
-> Reported-by: Michael Neuling <michael.neuling@au1.ibm.com>
+> Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
 
-Tested-by: Michael Neuling <mikey@neuling.org>
-
-Peter, I tested this only a brief while back but it turned out my test
-wasn't stringent enough and it was actually broken (in v3.9).  This
-fixes it.
-
-Mikey
-
-> Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> ---
->  kernel/sched/fair.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 12f0eab..828ed97 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5821,8 +5821,8 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->  				goto need_kick_unlock;
->  		}
->  
-> -		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
-> -		    && (cpumask_first_and(nohz.idle_cpus_mask,
-> +		if (sd->flags & SD_ASYM_PACKING &&
-> +			(cpumask_first_and(nohz.idle_cpus_mask,
->  					  sched_domain_span(sd)) < cpu))
->  			goto need_kick_unlock;
->  
-> 
+Applied and queued up for -stable, thanks.
