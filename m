@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab3JUJZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:25:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39437 "EHLO
+	id S1753552Ab3JUIvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:51:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39400 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753480Ab3JUIvL (ORCPT
+	by vger.kernel.org with ESMTP id S1753480Ab3JUIvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:11 -0400
+	Mon, 21 Oct 2013 04:51:02 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Maxim Patlasov" <mpatlasov@parallels.com>,
-        "Maxim Patlasov" <MPatlasov@parallels.com>,
-        "Miklos Szeredi" <mszeredi@suse.cz>
+CC: akpm@linux-foundation.org, "Felix Fietkau" <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.840678647@decadent.org.uk>
+Message-ID: <lsq.1382345188.230744131@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 048/149] fuse: postpone end_page_writeback() in
- fuse_writepage_locked()
+Subject: [PATCH 3.2 026/149] ath9k: fix rx descriptor related race condition
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,57 +31,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
+commit e96542e55a2aacf4bdeccfe2f17b77c4895b4df2 upstream.
 
-The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
+Similar to a race condition that exists in the tx path, the hardware
+might re-read the 'next' pointer of a descriptor of the last completed
+frame. This only affects non-EDMA (pre-AR93xx) devices.
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs shrinking truncate(2) intended to purge the page.
-3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
-   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
-   the original page by end_page_writeback.
-4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
-   is free.
-5) Ordinary write(2) extends i_size back to cover the page. Note that
-   fuse_send_write_pages do wait for fuse writeback, but for another
-   page->index.
-6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
-   fuse_send_writepage is supposed to crop inarg->size of the request,
-   but it doesn't because i_size has already been extended back.
+To deal with this race, defer clearing and re-linking a completed rx
+descriptor until the next one has been processed.
 
-Moving end_page_writeback to the end of fuse_writepage_locked fixes the
-race because now the fact that truncate_pagecache is successfully returned
-infers that fuse_writepage_locked has already called end_page_writeback.
-And this, in turn, infers that fuse_flush_writepages has already called
-fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
-could not extend it because of i_mutex held by ftruncate(2).
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/fuse/file.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ath9k.h |  5 +----
+ drivers/net/wireless/ath/ath9k/recv.c  | 17 +++++++++++++----
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1251,7 +1251,6 @@ static int fuse_writepage_locked(struct
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -77,10 +77,6 @@ struct ath_config {
+ 		       sizeof(struct ath_buf_state));		\
+ 	} while (0)
  
- 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
- 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
--	end_page_writeback(page);
+-#define ATH_RXBUF_RESET(_bf) do {		\
+-		(_bf)->bf_stale = false;	\
+-	} while (0)
+-
+ /**
+  * enum buffer_type - Buffer type flags
+  *
+@@ -308,6 +304,7 @@ struct ath_rx {
+ 	struct ath_buf *rx_bufptr;
+ 	struct ath_rx_edma rx_edma[ATH9K_RX_QUEUE_MAX];
  
- 	spin_lock(&fc->lock);
- 	list_add(&req->writepages_entry, &fi->writepages);
-@@ -1259,6 +1258,8 @@ static int fuse_writepage_locked(struct
- 	fuse_flush_writepages(inode);
- 	spin_unlock(&fc->lock);
++	struct ath_buf *buf_hold;
+ 	struct sk_buff *frag;
+ };
  
-+	end_page_writeback(page);
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -78,8 +78,6 @@ static void ath_rx_buf_link(struct ath_s
+ 	struct ath_desc *ds;
+ 	struct sk_buff *skb;
+ 
+-	ATH_RXBUF_RESET(bf);
+-
+ 	ds = bf->bf_desc;
+ 	ds->ds_link = 0; /* link to null */
+ 	ds->ds_data = bf->bf_buf_addr;
+@@ -106,6 +104,14 @@ static void ath_rx_buf_link(struct ath_s
+ 	sc->rx.rxlink = &ds->ds_link;
+ }
+ 
++static void ath_rx_buf_relink(struct ath_softc *sc, struct ath_buf *bf)
++{
++	if (sc->rx.buf_hold)
++		ath_rx_buf_link(sc, sc->rx.buf_hold);
 +
- 	return 0;
++	sc->rx.buf_hold = bf;
++}
++
+ static void ath_setdefantenna(struct ath_softc *sc, u32 antenna)
+ {
+ 	/* XXX block beacon interrupts */
+@@ -153,7 +159,6 @@ static bool ath_rx_edma_buf_link(struct
  
- err_free:
+ 	skb = bf->bf_mpdu;
+ 
+-	ATH_RXBUF_RESET(bf);
+ 	memset(skb->data, 0, ah->caps.rx_status_len);
+ 	dma_sync_single_for_device(sc->dev, bf->bf_buf_addr,
+ 				ah->caps.rx_status_len, DMA_TO_DEVICE);
+@@ -492,6 +497,7 @@ int ath_startrecv(struct ath_softc *sc)
+ 	if (list_empty(&sc->rx.rxbuf))
+ 		goto start_recv;
+ 
++	sc->rx.buf_hold = NULL;
+ 	sc->rx.rxlink = NULL;
+ 	list_for_each_entry_safe(bf, tbf, &sc->rx.rxbuf, list) {
+ 		ath_rx_buf_link(sc, bf);
+@@ -742,6 +748,9 @@ static struct ath_buf *ath_get_next_rx_b
+ 	}
+ 
+ 	bf = list_first_entry(&sc->rx.rxbuf, struct ath_buf, list);
++	if (bf == sc->rx.buf_hold)
++		return NULL;
++
+ 	ds = bf->bf_desc;
+ 
+ 	/*
+@@ -1974,7 +1983,7 @@ requeue:
+ 		if (edma) {
+ 			ath_rx_edma_buf_link(sc, qtype);
+ 		} else {
+-			ath_rx_buf_link(sc, bf);
++			ath_rx_buf_relink(sc, bf);
+ 			ath9k_hw_rxena(ah);
+ 		}
+ 	} while (1);
 
