@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3JUJLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:11:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39658 "EHLO
+	id S1755369Ab3JUJMC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:12:02 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39651 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753990Ab3JUIv4 (ORCPT
+	by vger.kernel.org with ESMTP id S1753967Ab3JUIvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:56 -0400
+	Mon, 21 Oct 2013 04:51:53 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Heikki Krogerus" <heikki.krogerus@linux.intel.com>,
-        "Felipe Balbi" <balbi@ti.com>
+CC: akpm@linux-foundation.org, "Henrik Rydberg" <rydberg@euromail.se>,
+        "Guenter Roeck" <linux@roeck-us.net>, "" <jwboyer@fedoraproject.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.577649342@decadent.org.uk>
+Message-ID: <lsq.1382345188.14992029@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 092/149] usb: dwc3: pci: add support for BayTrail
+Subject: [PATCH 3.2 089/149] hwmon: (applesmc) Check key count before
+ proceeding
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +32,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit b62cd96de3161dfb125a769030eec35a4cab3d3a upstream.
+commit 5f4513864304672e6ea9eac60583eeac32e679f2 upstream.
 
-Add PCI id for Intel BayTrail.
+After reports from Chris and Josh Boyer of a rare crash in applesmc,
+Guenter pointed at the initialization problem fixed below. The patch
+has not been verified to fix the crash, but should be applied
+regardless.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reported-by: <jwboyer@fedoraproject.org>
+Suggested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/dwc3/dwc3-pci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/applesmc.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/dwc3-pci.c
-+++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -45,6 +45,7 @@
- /* FIXME define these in <linux/pci_ids.h> */
- #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
- #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
-+#define PCI_DEVICE_ID_INTEL_BYT		0x0f37
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -485,16 +485,25 @@ static int applesmc_init_smcreg_try(void
+ {
+ 	struct applesmc_registers *s = &smcreg;
+ 	bool left_light_sensor, right_light_sensor;
++	unsigned int count;
+ 	u8 tmp[1];
+ 	int ret;
  
- #define DWC3_PCI_DEVS_POSSIBLE	32
+ 	if (s->init_complete)
+ 		return 0;
  
-@@ -191,6 +192,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_
- 		PCI_DEVICE(PCI_VENDOR_ID_SYNOPSYS,
- 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
- 	},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
- 	{  }	/* Terminating Entry */
- };
- MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
+-	ret = read_register_count(&s->key_count);
++	ret = read_register_count(&count);
+ 	if (ret)
+ 		return ret;
+ 
++	if (s->cache && s->key_count != count) {
++		pr_warn("key count changed from %d to %d\n",
++			s->key_count, count);
++		kfree(s->cache);
++		s->cache = NULL;
++	}
++	s->key_count = count;
++
+ 	if (!s->cache)
+ 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+ 	if (!s->cache)
 
