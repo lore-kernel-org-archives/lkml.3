@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3JUN5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 09:57:53 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19357 "EHLO
+	id S1754109Ab3JUN6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 09:58:20 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19409 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab3JUN5v (ORCPT
+	with ESMTP id S1754065Ab3JUN6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 09:57:51 -0400
+	Mon, 21 Oct 2013 09:58:17 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 06:53:13 -0700
+	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 06:53:39 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Mike Turquette <mturquette@linaro.org>,
@@ -17,9 +17,9 @@ CC: Mike Turquette <mturquette@linaro.org>,
         Thierry Reding <treding@nvidia.com>,
         Paul Walmsley <pwalmsley@nvidia.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>
-Subject: [PATCH v6 11/15] clk: tegra: move periph clocks to common file
-Date: Mon, 21 Oct 2013 16:53:50 +0300
-Message-ID: <1382363634-10870-12-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v6 12/15] clk: tegra: move PMC, fixed clocks to common files
+Date: Mon, 21 Oct 2013 16:53:51 +0300
+Message-ID: <1382363634-10870-13-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
@@ -30,40 +30,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new file for peripheral clocks common between several Tegra
-SoCs and move Tegra114 to this new infrastructure. Also PLLP and the PLLP_OUT
-clocks will be initialized here.
+Introduce new files for fixed and PMC clocks common between several Tegra
+SoCs and move Tegra114 to this new infrastructure.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/Makefile           |    2 +-
- drivers/clk/tegra/clk-tegra-periph.c |  590 +++++++++++++++++++++++++++++++++
- drivers/clk/tegra/clk-tegra114.c     |  593 +---------------------------------
- drivers/clk/tegra/clk-tegra20.c      |    4 +-
- drivers/clk/tegra/clk-tegra30.c      |    4 +-
- drivers/clk/tegra/clk.h              |   11 +-
- 6 files changed, 621 insertions(+), 583 deletions(-)
- create mode 100644 drivers/clk/tegra/clk-tegra-periph.c
+ drivers/clk/tegra/Makefile          |    2 +
+ drivers/clk/tegra/clk-tegra-fixed.c |  111 +++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk-tegra-pmc.c   |  131 +++++++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk-tegra114.c    |   68 +------------------
+ drivers/clk/tegra/clk.h             |    7 ++
+ 5 files changed, 252 insertions(+), 67 deletions(-)
+ create mode 100644 drivers/clk/tegra/clk-tegra-fixed.c
+ create mode 100644 drivers/clk/tegra/clk-tegra-pmc.c
 
 diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
-index 796ff9a..304ea5d 100644
+index 304ea5d..a02e9a9 100644
 --- a/drivers/clk/tegra/Makefile
 +++ b/drivers/clk/tegra/Makefile
-@@ -7,7 +7,7 @@ obj-y					+= clk-pll.o
- obj-y					+= clk-pll-out.o
+@@ -8,6 +8,8 @@ obj-y					+= clk-pll-out.o
  obj-y					+= clk-super.o
  obj-y					+= clk-tegra-audio.o
--
-+obj-y					+= clk-tegra-periph.o
+ obj-y					+= clk-tegra-periph.o
++obj-y					+= clk-tegra-pmc.o
++obj-y					+= clk-tegra-fixed.o
  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
  obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= clk-tegra114.o
-diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
+diff --git a/drivers/clk/tegra/clk-tegra-fixed.c b/drivers/clk/tegra/clk-tegra-fixed.c
 new file mode 100644
-index 0000000..1252778
+index 0000000..f3b7738
 --- /dev/null
-+++ b/drivers/clk/tegra/clk-tegra-periph.c
-@@ -0,0 +1,590 @@
++++ b/drivers/clk/tegra/clk-tegra-fixed.c
+@@ -0,0 +1,111 @@
++/*
++ * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/clk/tegra.h>
++
++#include "clk.h"
++#include "clk-id.h"
++
++#define OSC_CTRL			0x50
++#define OSC_CTRL_OSC_FREQ_SHIFT		28
++#define OSC_CTRL_PLL_REF_DIV_SHIFT	26
++
++int __init tegra_osc_clk_init(void __iomem *clk_base,
++				struct tegra_clk *tegra_clks,
++				unsigned long *input_freqs, int num,
++				unsigned long *osc_freq,
++				unsigned long *pll_ref_freq)
++{
++	struct clk *clk;
++	struct clk **dt_clk;
++	u32 val, pll_ref_div;
++	unsigned osc_idx;
++
++	val = readl_relaxed(clk_base + OSC_CTRL);
++	osc_idx = val >> OSC_CTRL_OSC_FREQ_SHIFT;
++
++	if (osc_idx < num)
++		*osc_freq = input_freqs[osc_idx];
++	else
++		*osc_freq = 0;
++
++	if (!*osc_freq) {
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
++	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m, tegra_clks);
++	if (!dt_clk)
++		return 0;
++
++	clk = clk_register_fixed_rate(NULL, "clk_m", NULL, CLK_IS_ROOT,
++				      *osc_freq);
++	*dt_clk = clk;
++
++	/* pll_ref */
++	val = (val >> OSC_CTRL_PLL_REF_DIV_SHIFT) & 3;
++	pll_ref_div = 1 << val;
++	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_ref, tegra_clks);
++	if (!dt_clk)
++		return 0;
++
++	clk = clk_register_fixed_factor(NULL, "pll_ref", "clk_m",
++					0, 1, pll_ref_div);
++	*dt_clk = clk;
++
++	if (pll_ref_freq)
++		*pll_ref_freq = *osc_freq / pll_ref_div;
++
++	return 0;
++}
++
++void __init tegra_fixed_clk_init(struct tegra_clk *tegra_clks)
++{
++	struct clk *clk;
++	struct clk **dt_clk;
++
++	/* clk_32k */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_32k, tegra_clks);
++	if (dt_clk) {
++		clk = clk_register_fixed_rate(NULL, "clk_32k", NULL,
++					CLK_IS_ROOT, 32768);
++		*dt_clk = clk;
++	}
++
++	/* clk_m_div2 */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div2, tegra_clks);
++	if (dt_clk) {
++		clk = clk_register_fixed_factor(NULL, "clk_m_div2", "clk_m",
++					CLK_SET_RATE_PARENT, 1, 2);
++		*dt_clk = clk;
++	}
++
++	/* clk_m_div4 */
++	dt_clk = tegra_lookup_dt_id(tegra_clk_clk_m_div4, tegra_clks);
++	if (dt_clk) {
++		clk = clk_register_fixed_factor(NULL, "clk_m_div4", "clk_m",
++					CLK_SET_RATE_PARENT, 1, 4);
++		*dt_clk = clk;
++	}
++}
++
+diff --git a/drivers/clk/tegra/clk-tegra-pmc.c b/drivers/clk/tegra/clk-tegra-pmc.c
+new file mode 100644
+index 0000000..00e8275
+--- /dev/null
++++ b/drivers/clk/tegra/clk-tegra-pmc.c
+@@ -0,0 +1,131 @@
 +/*
 + * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
 + *
@@ -93,1325 +209,215 @@ index 0000000..1252778
 +#include "clk.h"
 +#include "clk-id.h"
 +
-+#define CLK_SOURCE_I2S0 0x1d8
-+#define CLK_SOURCE_I2S1 0x100
-+#define CLK_SOURCE_I2S2 0x104
-+#define CLK_SOURCE_NDFLASH 0x160
-+#define CLK_SOURCE_I2S3 0x3bc
-+#define CLK_SOURCE_I2S4 0x3c0
-+#define CLK_SOURCE_SPDIF_OUT 0x108
-+#define CLK_SOURCE_SPDIF_IN 0x10c
-+#define CLK_SOURCE_PWM 0x110
-+#define CLK_SOURCE_ADX 0x638
-+#define CLK_SOURCE_AMX 0x63c
-+#define CLK_SOURCE_HDA 0x428
-+#define CLK_SOURCE_HDA2CODEC_2X 0x3e4
-+#define CLK_SOURCE_SBC1 0x134
-+#define CLK_SOURCE_SBC2 0x118
-+#define CLK_SOURCE_SBC3 0x11c
-+#define CLK_SOURCE_SBC4 0x1b4
-+#define CLK_SOURCE_SBC5 0x3c8
-+#define CLK_SOURCE_SBC6 0x3cc
-+#define CLK_SOURCE_SATA_OOB 0x420
-+#define CLK_SOURCE_SATA 0x424
-+#define CLK_SOURCE_NDSPEED 0x3f8
-+#define CLK_SOURCE_VFIR 0x168
-+#define CLK_SOURCE_SDMMC1 0x150
-+#define CLK_SOURCE_SDMMC2 0x154
-+#define CLK_SOURCE_SDMMC3 0x1bc
-+#define CLK_SOURCE_SDMMC4 0x164
-+#define CLK_SOURCE_CVE 0x140
-+#define CLK_SOURCE_TVO 0x188
-+#define CLK_SOURCE_TVDAC 0x194
-+#define CLK_SOURCE_VDE 0x1c8
-+#define CLK_SOURCE_CSITE 0x1d4
-+#define CLK_SOURCE_LA 0x1f8
-+#define CLK_SOURCE_TRACE 0x634
-+#define CLK_SOURCE_OWR 0x1cc
-+#define CLK_SOURCE_NOR 0x1d0
-+#define CLK_SOURCE_MIPI 0x174
-+#define CLK_SOURCE_I2C1 0x124
-+#define CLK_SOURCE_I2C2 0x198
-+#define CLK_SOURCE_I2C3 0x1b8
-+#define CLK_SOURCE_I2C4 0x3c4
-+#define CLK_SOURCE_I2C5 0x128
-+#define CLK_SOURCE_UARTA 0x178
-+#define CLK_SOURCE_UARTB 0x17c
-+#define CLK_SOURCE_UARTC 0x1a0
-+#define CLK_SOURCE_UARTD 0x1c0
-+#define CLK_SOURCE_UARTE 0x1c4
-+#define CLK_SOURCE_3D 0x158
-+#define CLK_SOURCE_2D 0x15c
-+#define CLK_SOURCE_MPE 0x170
-+#define CLK_SOURCE_VI_SENSOR 0x1a8
-+#define CLK_SOURCE_VI 0x148
-+#define CLK_SOURCE_EPP 0x16c
-+#define CLK_SOURCE_MSENC 0x1f0
-+#define CLK_SOURCE_TSEC 0x1f4
-+#define CLK_SOURCE_HOST1X 0x180
-+#define CLK_SOURCE_HDMI 0x18c
-+#define CLK_SOURCE_DISP1 0x138
-+#define CLK_SOURCE_DISP2 0x13c
-+#define CLK_SOURCE_CILAB 0x614
-+#define CLK_SOURCE_CILCD 0x618
-+#define CLK_SOURCE_CILE 0x61c
-+#define CLK_SOURCE_DSIALP 0x620
-+#define CLK_SOURCE_DSIBLP 0x624
-+#define CLK_SOURCE_TSENSOR 0x3b8
-+#define CLK_SOURCE_D_AUDIO 0x3d0
-+#define CLK_SOURCE_DAM0 0x3d8
-+#define CLK_SOURCE_DAM1 0x3dc
-+#define CLK_SOURCE_DAM2 0x3e0
-+#define CLK_SOURCE_ACTMON 0x3e8
-+#define CLK_SOURCE_EXTERN1 0x3ec
-+#define CLK_SOURCE_EXTERN2 0x3f0
-+#define CLK_SOURCE_EXTERN3 0x3f4
-+#define CLK_SOURCE_I2CSLOW 0x3fc
-+#define CLK_SOURCE_SE 0x42c
-+#define CLK_SOURCE_MSELECT 0x3b4
-+#define CLK_SOURCE_DFLL_REF 0x62c
-+#define CLK_SOURCE_DFLL_SOC 0x630
-+#define CLK_SOURCE_SOC_THERM 0x644
-+#define CLK_SOURCE_XUSB_HOST_SRC 0x600
-+#define CLK_SOURCE_XUSB_FALCON_SRC 0x604
-+#define CLK_SOURCE_XUSB_FS_SRC 0x608
-+#define CLK_SOURCE_XUSB_SS_SRC 0x610
-+#define CLK_SOURCE_XUSB_DEV_SRC 0x60c
++#define PMC_CLK_OUT_CNTRL 0x1a8
++#define PMC_DPD_PADS_ORIDE 0x1c
++#define PMC_DPD_PADS_ORIDE_BLINK_ENB 20
++#define PMC_CTRL 0
++#define PMC_CTRL_BLINK_ENB 7
++#define PMC_BLINK_TIMER 0x40
 +
-+#define MASK(x) (BIT(x) - 1)
-+
-+#define MUX(_name, _parents, _offset,	\
-+			    _clk_num, _gate_flags, _clk_id)	\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 8, 1, 0, \
-+			_clk_num,  _gate_flags, _clk_id, _parents##_idx, 0)
-+
-+#define MUX_FLAGS(_name, _parents, _offset,\
-+			    _clk_num, _gate_flags, _clk_id, flags)\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 8, 1, 0, _clk_num,	\
-+			_gate_flags, _clk_id, _parents##_idx, flags)
-+
-+#define MUX8(_name, _parents, _offset, \
-+			     _clk_num, _gate_flags, _clk_id)	\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			29, MASK(3), 0, 0, 8, 1, 0, _clk_num,	\
-+			_gate_flags, _clk_id, _parents##_idx, 0)
-+
-+#define INT(_name, _parents, _offset,	\
-+			    _clk_num, _gate_flags, _clk_id)	\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 8, 1, TEGRA_DIVIDER_INT,\
-+			_clk_num, _gate_flags, _clk_id, _parents##_idx, 0)
-+
-+#define INT_FLAGS(_name, _parents, _offset,\
-+			    _clk_num, _gate_flags, _clk_id, flags)\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 8, 1, TEGRA_DIVIDER_INT,\
-+			_clk_num,  _gate_flags, _clk_id, _parents##_idx, flags)
-+
-+#define INT8(_name, _parents, _offset,\
-+			    _clk_num, _gate_flags, _clk_id)	\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			29, MASK(3), 0, 0, 8, 1, TEGRA_DIVIDER_INT,\
-+			_clk_num, _gate_flags, _clk_id, _parents##_idx, 0)
-+
-+#define UART(_name, _parents, _offset,\
-+			     _clk_num, _clk_id)			\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 16, 1, TEGRA_DIVIDER_UART,\
-+			_clk_num, 0, _clk_id, _parents##_idx, 0)
-+
-+#define I2C(_name, _parents, _offset,\
-+			     _clk_num, _clk_id)			\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			30, MASK(2), 0, 0, 16, 0, 0, _clk_num,	\
-+			0, _clk_id, _parents##_idx, 0)
-+
-+#define XUSB(_name, _parents, _offset, \
-+			     _clk_num, _gate_flags, _clk_id)	 \
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset, \
-+			29, MASK(3), 0, 0, 8, 1, TEGRA_DIVIDER_INT,\
-+			_clk_num, _gate_flags, _clk_id, _parents##_idx, 0)
-+
-+#define AUDIO(_name, _offset,  _clk_num,\
-+				 _gate_flags, _clk_id)		\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, mux_d_audio_clk,	\
-+			_offset, 16, 0xE01F, 0, 0, 8, 1, 0, _clk_num, \
-+			_gate_flags , _clk_id,	mux_d_audio_clk_idx, 0)
-+
-+#define NODIV(_name, _parents, _offset, \
-+			      _mux_shift, _mux_mask, _clk_num, \
-+			      _gate_flags, _clk_id)			\
-+	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
-+			_mux_shift, _mux_mask, 0, 0, 0, 0, 0,\
-+			_clk_num, (_gate_flags) | TEGRA_PERIPH_NO_DIV,\
-+			_clk_id, _parents##_idx, 0)
-+
-+#define GATE(_name, _parent_name,	\
-+			     _clk_num, _gate_flags,  _clk_id, _flags)	\
-+	{								\
-+		.name = _name,						\
-+		.clk_id = _clk_id,					\
-+		.p.parent_name = _parent_name,				\
-+		.periph = TEGRA_CLK_PERIPH(0, 0, 0, 0, 0, 0, 0,		\
-+				_clk_num, _gate_flags, 0),		\
-+		.flags = _flags						\
-+	}
-+
-+#define PLLP_BASE 0xa0
-+#define PLLP_MISC 0xac
-+#define PLLP_OUTA 0xa4
-+#define PLLP_OUTB 0xa8
-+
-+#define PLL_BASE_LOCK BIT(27)
-+#define PLL_MISC_LOCK_ENABLE 18
-+
-+static DEFINE_SPINLOCK(PLLP_OUTA_lock);
-+static DEFINE_SPINLOCK(PLLP_OUTB_lock);
-+
-+#define MUX_I2S_SPDIF(_id)						\
-+static const char *mux_pllaout0_##_id##_2x_pllp_clkm[] = { "pll_a_out0", \
-+							   #_id, "pll_p",\
-+							   "clk_m"};
-+MUX_I2S_SPDIF(audio0)
-+MUX_I2S_SPDIF(audio1)
-+MUX_I2S_SPDIF(audio2)
-+MUX_I2S_SPDIF(audio3)
-+MUX_I2S_SPDIF(audio4)
-+MUX_I2S_SPDIF(audio)
-+
-+#define mux_pllaout0_audio0_2x_pllp_clkm_idx NULL
-+#define mux_pllaout0_audio1_2x_pllp_clkm_idx NULL
-+#define mux_pllaout0_audio2_2x_pllp_clkm_idx NULL
-+#define mux_pllaout0_audio3_2x_pllp_clkm_idx NULL
-+#define mux_pllaout0_audio4_2x_pllp_clkm_idx NULL
-+#define mux_pllaout0_audio_2x_pllp_clkm_idx NULL
-+
-+static const char *mux_pllp_pllc_pllm_clkm[] = {
-+	"pll_p", "pll_c", "pll_m", "clk_m"
-+};
-+#define mux_pllp_pllc_pllm_clkm_idx NULL
-+
-+static const char *mux_pllp_pllc_pllm[] = { "pll_p", "pll_c", "pll_m" };
-+#define mux_pllp_pllc_pllm_idx NULL
-+
-+static const char *mux_pllp_pllc_clk32_clkm[] = {
-+	"pll_p", "pll_c", "clk_32k", "clk_m"
-+};
-+#define mux_pllp_pllc_clk32_clkm_idx NULL
-+
-+static const char *mux_plla_pllc_pllp_clkm[] = {
-+	"pll_a_out0", "pll_c", "pll_p", "clk_m"
-+};
-+#define mux_plla_pllc_pllp_clkm_idx mux_pllp_pllc_pllm_clkm_idx
-+
-+static const char *mux_pllp_pllc2_c_c3_pllm_clkm[] = {
-+	"pll_p", "pll_c2", "pll_c", "pll_c3", "pll_m", "clk_m"
-+};
-+static u32 mux_pllp_pllc2_c_c3_pllm_clkm_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 2, [3] = 3, [4] = 4, [5] = 6,
++struct pmc_clk_init_data {
++	char *mux_name;
++	char *gate_name;
++	const char **parents;
++	int num_parents;
++	int mux_id;
++	int gate_id;
++	char *dev_name;
++	u8 mux_shift;
++	u8 gate_shift;
 +};
 +
-+static const char *mux_pllp_clkm[] = {
-+	"pll_p", "clk_m"
-+};
-+static u32 mux_pllp_clkm_idx[] = {
-+	[0] = 0, [1] = 3,
-+};
-+
-+static const char *mux_pllm_pllc2_c_c3_pllp_plla[] = {
-+	"pll_m", "pll_c2", "pll_c", "pll_c3", "pll_p", "pll_a_out0"
-+};
-+#define mux_pllm_pllc2_c_c3_pllp_plla_idx mux_pllp_pllc2_c_c3_pllm_clkm_idx
-+
-+static const char *mux_pllp_pllm_plld_plla_pllc_plld2_clkm[] = {
-+	"pll_p", "pll_m", "pll_d_out0", "pll_a_out0", "pll_c",
-+	"pll_d2_out0", "clk_m"
-+};
-+#define mux_pllp_pllm_plld_plla_pllc_plld2_clkm_idx NULL
-+
-+static const char *mux_pllm_pllc_pllp_plla[] = {
-+	"pll_m", "pll_c", "pll_p", "pll_a_out0"
-+};
-+#define mux_pllm_pllc_pllp_plla_idx mux_pllp_pllc_pllm_clkm_idx
-+
-+static const char *mux_pllp_pllc_clkm[] = {
-+	"pll_p", "pll_c", "pll_m"
-+};
-+static u32 mux_pllp_pllc_clkm_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 3,
-+};
-+
-+static const char *mux_pllp_pllc_clkm_clk32[] = {
-+	"pll_p", "pll_c", "clk_m", "clk_32k"
-+};
-+#define mux_pllp_pllc_clkm_clk32_idx NULL
-+
-+static const char *mux_plla_clk32_pllp_clkm_plle[] = {
-+	"pll_a_out0", "clk_32k", "pll_p", "clk_m", "pll_e_out0"
-+};
-+#define mux_plla_clk32_pllp_clkm_plle_idx NULL
-+
-+static const char *mux_clkm_pllp_pllc_pllre[] = {
-+	"clk_m", "pll_p", "pll_c", "pll_re_out"
-+};
-+static u32 mux_clkm_pllp_pllc_pllre_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 3, [3] = 5,
-+};
-+
-+static const char *mux_clkm_48M_pllp_480M[] = {
-+	"clk_m", "pll_u_48M", "pll_p", "pll_u_480M"
-+};
-+#define mux_clkm_48M_pllp_480M_idx NULL
-+
-+static const char *mux_clkm_pllre_clk32_480M_pllc_ref[] = {
-+	"clk_m", "pll_re_out", "clk_32k", "pll_u_480M", "pll_c", "pll_ref"
-+};
-+static u32 mux_clkm_pllre_clk32_480M_pllc_ref_idx[] = {
-+	[0] = 0, [1] = 1, [2] = 3, [3] = 3, [4] = 4, [5] = 7,
-+};
-+
-+static const char *mux_d_audio_clk[] = {
-+	"pll_a_out0", "pll_p", "clk_m", "spdif_in_sync", "i2s0_sync",
-+	"i2s1_sync", "i2s2_sync", "i2s3_sync", "i2s4_sync", "vimclk_sync",
-+};
-+static u32 mux_d_audio_clk_idx[] = {
-+	[0] = 0, [1] = 0x8000, [2] = 0xc000, [3] = 0xE000, [4] = 0xE001,
-+	[5] = 0xE002, [6] = 0xE003, [7] = 0xE004, [8] = 0xE005, [9] = 0xE007,
-+};
-+
-+static const char *mux_pllp_plld_pllc_clkm[] = {
-+	"pll_p", "pll_d_out0", "pll_c", "clk_m"
-+};
-+#define mux_pllp_plld_pllc_clkm_idx NULL
-+
-+static struct tegra_periph_init_data periph_clks[] = {
-+	AUDIO("d_audio", CLK_SOURCE_D_AUDIO, 106, TEGRA_PERIPH_ON_APB, tegra_clk_d_audio),
-+	AUDIO("dam0", CLK_SOURCE_DAM0, 108, TEGRA_PERIPH_ON_APB, tegra_clk_dam0),
-+	AUDIO("dam1", CLK_SOURCE_DAM1, 109, TEGRA_PERIPH_ON_APB, tegra_clk_dam1),
-+	AUDIO("dam2", CLK_SOURCE_DAM2, 110, TEGRA_PERIPH_ON_APB, tegra_clk_dam2),
-+	I2C("i2c1", mux_pllp_clkm, CLK_SOURCE_I2C1, 12, tegra_clk_i2c1),
-+	I2C("i2c2", mux_pllp_clkm, CLK_SOURCE_I2C2, 54, tegra_clk_i2c2),
-+	I2C("i2c3", mux_pllp_clkm, CLK_SOURCE_I2C3, 67, tegra_clk_i2c3),
-+	I2C("i2c4", mux_pllp_clkm, CLK_SOURCE_I2C4, 103, tegra_clk_i2c4),
-+	I2C("i2c5", mux_pllp_clkm, CLK_SOURCE_I2C5, 47, tegra_clk_i2c5),
-+	INT("vde", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_VDE, 61, 0, tegra_clk_vde),
-+	INT("vi", mux_pllm_pllc_pllp_plla, CLK_SOURCE_VI, 20, 0, tegra_clk_vi),
-+	INT("epp", mux_pllm_pllc_pllp_plla, CLK_SOURCE_EPP, 19, 0, tegra_clk_epp),
-+	INT("host1x", mux_pllm_pllc_pllp_plla, CLK_SOURCE_HOST1X, 28, 0, tegra_clk_host1x),
-+	INT("mpe", mux_pllm_pllc_pllp_plla, CLK_SOURCE_MPE, 60, 0, tegra_clk_mpe),
-+	INT("2d", mux_pllm_pllc_pllp_plla, CLK_SOURCE_2D, 21, 0, tegra_clk_gr2d),
-+	INT("3d", mux_pllm_pllc_pllp_plla, CLK_SOURCE_3D, 24, 0, tegra_clk_gr3d),
-+	INT8("vde", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_VDE, 61, 0, tegra_clk_vde_8),
-+	INT8("vi", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI, 20, 0, tegra_clk_vi_8),
-+	INT8("epp", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_EPP, 19, 0, tegra_clk_epp_8),
-+	INT8("msenc", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_MSENC, 91, TEGRA_PERIPH_WAR_1005168, tegra_clk_msenc),
-+	INT8("tsec", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_TSEC, 83, 0, tegra_clk_tsec),
-+	INT8("host1x", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_HOST1X, 28, 0, tegra_clk_host1x_8),
-+	INT8("se", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SE, 127, TEGRA_PERIPH_ON_APB, tegra_clk_se),
-+	INT8("2d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_2D, 21, 0, tegra_clk_gr2d_8),
-+	INT8("3d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_3D, 24, 0, tegra_clk_gr3d_8),
-+	INT_FLAGS("mselect", mux_pllp_clkm, CLK_SOURCE_MSELECT, 99, 0, tegra_clk_mselect, CLK_IGNORE_UNUSED),
-+	MUX("i2s0", mux_pllaout0_audio0_2x_pllp_clkm, CLK_SOURCE_I2S0, 30, TEGRA_PERIPH_ON_APB, tegra_clk_i2s0),
-+	MUX("i2s1", mux_pllaout0_audio1_2x_pllp_clkm, CLK_SOURCE_I2S1, 11, TEGRA_PERIPH_ON_APB, tegra_clk_i2s1),
-+	MUX("i2s2", mux_pllaout0_audio2_2x_pllp_clkm, CLK_SOURCE_I2S2, 18, TEGRA_PERIPH_ON_APB, tegra_clk_i2s2),
-+	MUX("i2s3", mux_pllaout0_audio3_2x_pllp_clkm, CLK_SOURCE_I2S3, 101, TEGRA_PERIPH_ON_APB, tegra_clk_i2s3),
-+	MUX("i2s4", mux_pllaout0_audio4_2x_pllp_clkm, CLK_SOURCE_I2S4, 102, TEGRA_PERIPH_ON_APB, tegra_clk_i2s4),
-+	MUX("spdif_out", mux_pllaout0_audio_2x_pllp_clkm, CLK_SOURCE_SPDIF_OUT, 10, TEGRA_PERIPH_ON_APB, tegra_clk_spdif_out),
-+	MUX("spdif_in", mux_pllp_pllc_pllm, CLK_SOURCE_SPDIF_IN, 10, TEGRA_PERIPH_ON_APB, tegra_clk_spdif_in),
-+	MUX("pwm", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_PWM, 17, TEGRA_PERIPH_ON_APB, tegra_clk_pwm),
-+	MUX("adx", mux_plla_pllc_pllp_clkm, CLK_SOURCE_ADX, 154, TEGRA_PERIPH_ON_APB, tegra_clk_adx),
-+	MUX("amx", mux_plla_pllc_pllp_clkm, CLK_SOURCE_AMX, 153, TEGRA_PERIPH_ON_APB, tegra_clk_amx),
-+	MUX("hda", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA, 125, TEGRA_PERIPH_ON_APB, tegra_clk_hda),
-+	MUX("hda2codec_2x", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA2CODEC_2X, 111, TEGRA_PERIPH_ON_APB, tegra_clk_hda2codec_2x),
-+	MUX("vfir", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_VFIR, 7, TEGRA_PERIPH_ON_APB, tegra_clk_vfir),
-+	MUX("sdmmc1", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC1, 14, 0, tegra_clk_sdmmc1),
-+	MUX("sdmmc2", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC2, 9, 0, tegra_clk_sdmmc2),
-+	MUX("sdmmc3", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC3, 69, 0, tegra_clk_sdmmc3),
-+	MUX("sdmmc4", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC4, 15, 0, tegra_clk_sdmmc4),
-+	MUX("la", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_LA, 76, TEGRA_PERIPH_ON_APB, tegra_clk_la),
-+	MUX("trace", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_TRACE, 77, TEGRA_PERIPH_ON_APB, tegra_clk_trace),
-+	MUX("owr", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_OWR, 71, TEGRA_PERIPH_ON_APB, tegra_clk_owr),
-+	MUX("nor", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_NOR, 42, 0, tegra_clk_nor),
-+	MUX("mipi", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_MIPI, 50, TEGRA_PERIPH_ON_APB, tegra_clk_mipi),
-+	MUX("vi_sensor", mux_pllm_pllc_pllp_plla, CLK_SOURCE_VI_SENSOR, 20, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor),
-+	MUX("cilab", mux_pllp_pllc_clkm, CLK_SOURCE_CILAB, 144, 0, tegra_clk_cilab),
-+	MUX("cilcd", mux_pllp_pllc_clkm, CLK_SOURCE_CILCD, 145, 0, tegra_clk_cilcd),
-+	MUX("cile", mux_pllp_pllc_clkm, CLK_SOURCE_CILE, 146, 0, tegra_clk_cile),
-+	MUX("dsialp", mux_pllp_pllc_clkm, CLK_SOURCE_DSIALP, 147, 0, tegra_clk_dsialp),
-+	MUX("dsiblp", mux_pllp_pllc_clkm, CLK_SOURCE_DSIBLP, 148, 0, tegra_clk_dsiblp),
-+	MUX("tsensor", mux_pllp_pllc_clkm_clk32, CLK_SOURCE_TSENSOR, 100, TEGRA_PERIPH_ON_APB, tegra_clk_tsensor),
-+	MUX("actmon", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_ACTMON, 119, 0, tegra_clk_actmon),
-+	MUX("dfll_ref", mux_pllp_clkm, CLK_SOURCE_DFLL_REF, 155, TEGRA_PERIPH_ON_APB, tegra_clk_dfll_ref),
-+	MUX("dfll_soc", mux_pllp_clkm, CLK_SOURCE_DFLL_SOC, 155, TEGRA_PERIPH_ON_APB, tegra_clk_dfll_soc),
-+	MUX("i2cslow", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_I2CSLOW, 81, TEGRA_PERIPH_ON_APB, tegra_clk_i2cslow),
-+	MUX("sbc1", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, tegra_clk_sbc1),
-+	MUX("sbc2", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, tegra_clk_sbc2),
-+	MUX("sbc3", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, tegra_clk_sbc3),
-+	MUX("sbc4", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC4, 68, TEGRA_PERIPH_ON_APB, tegra_clk_sbc4),
-+	MUX("sbc5", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC5, 104, TEGRA_PERIPH_ON_APB, tegra_clk_sbc5),
-+	MUX("sbc6", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SBC6, 105, TEGRA_PERIPH_ON_APB, tegra_clk_sbc6),
-+	MUX("cve", mux_pllp_plld_pllc_clkm, CLK_SOURCE_CVE, 49, 0, tegra_clk_cve),
-+	MUX("tvo", mux_pllp_plld_pllc_clkm, CLK_SOURCE_TVO, 49, 0, tegra_clk_tvo),
-+	MUX("tvdac", mux_pllp_plld_pllc_clkm, CLK_SOURCE_TVDAC, 53, 0, tegra_clk_tvdac),
-+	MUX("ndflash", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_NDFLASH, 13, TEGRA_PERIPH_ON_APB, tegra_clk_ndflash),
-+	MUX("ndspeed", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_NDSPEED, 80, TEGRA_PERIPH_ON_APB, tegra_clk_ndspeed),
-+	MUX("sata_oob", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SATA_OOB, 123, TEGRA_PERIPH_ON_APB, tegra_clk_sata_oob),
-+	MUX("sata", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SATA, 124, TEGRA_PERIPH_ON_APB, tegra_clk_sata),
-+	MUX8("sbc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, tegra_clk_sbc1_8),
-+	MUX8("sbc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, tegra_clk_sbc2_8),
-+	MUX8("sbc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, tegra_clk_sbc3_8),
-+	MUX8("sbc4", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC4, 68, TEGRA_PERIPH_ON_APB, tegra_clk_sbc4_8),
-+	MUX8("sbc5", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC5, 104, TEGRA_PERIPH_ON_APB, tegra_clk_sbc5_8),
-+	MUX8("sbc6", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC6, 105, TEGRA_PERIPH_ON_APB, tegra_clk_sbc6_8),
-+	MUX8("ndflash", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_NDFLASH, 13, TEGRA_PERIPH_ON_APB, tegra_clk_ndflash_8),
-+	MUX8("ndspeed", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_NDSPEED, 80, TEGRA_PERIPH_ON_APB, tegra_clk_ndspeed_8),
-+	MUX8("hdmi", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_HDMI, 51, 0, tegra_clk_hdmi),
-+	MUX8("extern1", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN1, 120, 0, tegra_clk_extern1),
-+	MUX8("extern2", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN2, 121, 0, tegra_clk_extern2),
-+	MUX8("extern3", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN3, 122, 0, tegra_clk_extern3),
-+	MUX8("soc_therm", mux_pllm_pllc_pllp_plla, CLK_SOURCE_SOC_THERM, 78, TEGRA_PERIPH_ON_APB, tegra_clk_soc_therm),
-+	MUX8("vi_sensor", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR, 20, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor_8),
-+	MUX_FLAGS("csite", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_CSITE, 73, TEGRA_PERIPH_ON_APB, tegra_clk_csite, CLK_IGNORE_UNUSED),
-+	NODIV("disp1", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP1, 29, 7, 27, 0, tegra_clk_disp1),
-+	NODIV("disp2", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP2, 29, 7, 26, 0, tegra_clk_disp2),
-+	UART("uarta", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTA, 6, tegra_clk_uarta),
-+	UART("uartb", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTB, 7, tegra_clk_uartb),
-+	UART("uartc", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTC, 55, tegra_clk_uartc),
-+	UART("uartd", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTD, 65, tegra_clk_uartd),
-+	UART("uarte", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTE, 65, tegra_clk_uarte),
-+	XUSB("xusb_host_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_HOST_SRC, 143, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, tegra_clk_xusb_host_src),
-+	XUSB("xusb_falcon_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_FALCON_SRC, 143, TEGRA_PERIPH_NO_RESET, tegra_clk_xusb_falcon_src),
-+	XUSB("xusb_fs_src", mux_clkm_48M_pllp_480M, CLK_SOURCE_XUSB_FS_SRC, 143, TEGRA_PERIPH_NO_RESET, tegra_clk_xusb_fs_src),
-+	XUSB("xusb_ss_src", mux_clkm_pllre_clk32_480M_pllc_ref, CLK_SOURCE_XUSB_SS_SRC, 143, TEGRA_PERIPH_NO_RESET, tegra_clk_xusb_ss_src),
-+	XUSB("xusb_dev_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_DEV_SRC, 95, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, tegra_clk_xusb_dev_src),
-+};
-+
-+static struct tegra_periph_init_data gate_clks[] = {
-+	GATE("rtc", "clk_32k", 4, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, tegra_clk_rtc, 0),
-+	GATE("timer", "clk_m", 5, 0, tegra_clk_timer, 0),
-+	GATE("isp", "clk_m", 23, 0, tegra_clk_isp, 0),
-+	GATE("vcp", "clk_m", 29, 0, tegra_clk_hda2hdmi, 0),
-+	GATE("apbdma", "clk_m", 34, 0, tegra_clk_apbdma, 0),
-+	GATE("kbc", "clk_32k", 36, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, tegra_clk_kbc, 0),
-+	GATE("fuse", "clk_m", 39, TEGRA_PERIPH_ON_APB, tegra_clk_fuse, 0),
-+	GATE("fuse_burn", "clk_m", 39, TEGRA_PERIPH_ON_APB, tegra_clk_fuse_burn, 0),
-+	GATE("kfuse", "clk_m", 40, TEGRA_PERIPH_ON_APB, tegra_clk_kfuse, 0),
-+	GATE("apbif", "clk_m", 107, TEGRA_PERIPH_ON_APB, tegra_clk_apbif, 0),
-+	GATE("hda2hdmi", "clk_m", 128, TEGRA_PERIPH_ON_APB, tegra_clk_hda2hdmi, 0),
-+	GATE("bsea", "clk_m", 62, 0, tegra_clk_hda2hdmi, 0),
-+	GATE("bsev", "clk_m", 63, 0, tegra_clk_bsev, 0),
-+	GATE("mipi-cal", "clk_m", 56, 0, tegra_clk_mipi_cal, 0),
-+	GATE("usbd", "clk_m", 22, 0, tegra_clk_usbd, 0),
-+	GATE("usb2", "clk_m", 58, 0, tegra_clk_usb2, 0),
-+	GATE("usb3", "clk_m", 59, 0, tegra_clk_usb3, 0),
-+	GATE("csi", "pll_p_out3", 52, 0, tegra_clk_csi, 0),
-+	GATE("afi", "clk_m", 72, 0, tegra_clk_afi, 0),
-+	GATE("csus", "clk_m", 92, TEGRA_PERIPH_NO_RESET, tegra_clk_csus, 0),
-+	GATE("dds", "clk_m", 150, TEGRA_PERIPH_ON_APB, tegra_clk_dds, 0),
-+	GATE("dp2", "clk_m", 152, TEGRA_PERIPH_ON_APB, tegra_clk_dp2, 0),
-+	GATE("dtv", "clk_m", 79, TEGRA_PERIPH_ON_APB, tegra_clk_dtv, 0),
-+	GATE("xusb_host", "xusb_host_src", 89, 0, tegra_clk_xusb_host, 0),
-+	GATE("xusb_ss", "xusb_ss_src", 156, 0, tegra_clk_xusb_ss, 0),
-+	GATE("xusb_dev", "xusb_dev_src", 95, 0, tegra_clk_xusb_dev, 0),
-+	GATE("dsia", "dsia_mux", 48, 0, tegra_clk_dsia, 0),
-+	GATE("dsib", "dsib_mux", 82, 0, tegra_clk_dsib, 0),
-+	GATE("emc", "emc_mux", 57, 0, tegra_clk_emc, CLK_IGNORE_UNUSED),
-+	GATE("sata_cold", "clk_m", 129, TEGRA_PERIPH_ON_APB, tegra_clk_sata_cold, 0),
-+};
-+
-+struct pll_out_data {
-+	char *div_name;
-+	char *pll_out_name;
-+	u32 offset;
-+	int clk_id;
-+	u8 div_shift;
-+	u8 div_flags;
-+	u8 rst_shift;
-+	spinlock_t *lock;
-+};
-+
-+#define PLL_OUT(_num, _offset, _div_shift, _div_flags, _rst_shift, _id) \
++#define PMC_CLK(_num, _mux_shift, _gate_shift)\
 +	{\
-+		.div_name = "pll_p_out" #_num "_div",\
-+		.pll_out_name = "pll_p_out" #_num,\
-+		.offset = _offset,\
-+		.div_shift = _div_shift,\
-+		.div_flags = _div_flags | TEGRA_DIVIDER_FIXED |\
-+					TEGRA_DIVIDER_ROUND_UP,\
-+		.rst_shift = _rst_shift,\
-+		.clk_id = tegra_clk_ ## _id,\
-+		.lock = &_offset ##_lock,\
++		.mux_name = "clk_out_" #_num "_mux",\
++		.gate_name = "clk_out_" #_num,\
++		.parents = clk_out ##_num ##_parents,\
++		.num_parents = ARRAY_SIZE(clk_out ##_num ##_parents),\
++		.mux_id = tegra_clk_clk_out_ ##_num ##_mux,\
++		.gate_id = tegra_clk_clk_out_ ##_num,\
++		.dev_name = "extern" #_num,\
++		.mux_shift = _mux_shift,\
++		.gate_shift = _gate_shift,\
 +	}
 +
-+static struct pll_out_data pllp_out_clks[] = {
-+	PLL_OUT(1, PLLP_OUTA, 8, 0, 0, pll_p_out1),
-+	PLL_OUT(2, PLLP_OUTA, 24, 0, 16, pll_p_out2),
-+	PLL_OUT(2, PLLP_OUTA, 24, TEGRA_DIVIDER_INT, 16, pll_p_out2_int),
-+	PLL_OUT(3, PLLP_OUTB, 8, 0, 0, pll_p_out3),
-+	PLL_OUT(4, PLLP_OUTB, 24, 0, 16, pll_p_out4),
++static DEFINE_SPINLOCK(clk_out_lock);
++
++static const char *clk_out1_parents[] = { "clk_m", "clk_m_div2",
++	"clk_m_div4", "extern1",
 +};
 +
-+static void __init periph_clk_init(void __iomem *clk_base,
++static const char *clk_out2_parents[] = { "clk_m", "clk_m_div2",
++	"clk_m_div4", "extern2",
++};
++
++static const char *clk_out3_parents[] = { "clk_m", "clk_m_div2",
++	"clk_m_div4", "extern3",
++};
++
++static struct pmc_clk_init_data pmc_clks[] = {
++	PMC_CLK(1, 6, 2),
++	PMC_CLK(2, 14, 10),
++	PMC_CLK(3, 22, 18),
++};
++
++void __init tegra_pmc_clk_init(void __iomem *pmc_base,
 +				struct tegra_clk *tegra_clks)
 +{
-+	int i;
-+	struct clk *clk;
-+	struct clk **dt_clk;
-+
-+	for (i = 0; i < ARRAY_SIZE(periph_clks); i++) {
-+		struct tegra_clk_periph_regs *bank;
-+		struct tegra_periph_init_data *data;
-+
-+		data = periph_clks + i;
-+
-+		dt_clk = tegra_lookup_dt_id(data->clk_id, tegra_clks);
-+		if (!dt_clk)
-+			continue;
-+
-+		bank = get_reg_bank(data->periph.gate.clk_num);
-+		if (!bank)
-+			continue;
-+
-+		data->periph.gate.regs = bank;
-+		clk = tegra_clk_register_periph(data->name,
-+			data->p.parent_names, data->num_parents,
-+			&data->periph, clk_base, data->offset,
-+			data->flags);
-+		*dt_clk = clk;
-+	}
-+}
-+
-+static void __init gate_clk_init(void __iomem *clk_base,
-+				struct tegra_clk *tegra_clks)
-+{
-+	int i;
-+	struct clk *clk;
-+	struct clk **dt_clk;
-+
-+	for (i = 0; i < ARRAY_SIZE(gate_clks); i++) {
-+		struct tegra_periph_init_data *data;
-+
-+		data = gate_clks + i;
-+
-+		dt_clk = tegra_lookup_dt_id(data->clk_id, tegra_clks);
-+		if (!dt_clk)
-+			continue;
-+
-+		clk = tegra_clk_register_periph_gate(data->name,
-+				data->p.parent_name, data->periph.gate.flags,
-+				clk_base, data->flags,
-+				data->periph.gate.clk_num,
-+				periph_clk_enb_refcnt);
-+		*dt_clk = clk;
-+	}
-+}
-+
-+static void __init init_pllp(void __iomem *clk_base, void __iomem *pmc_base,
-+				struct tegra_clk *tegra_clks,
-+				struct tegra_clk_pll_params *pll_params)
-+{
 +	struct clk *clk;
 +	struct clk **dt_clk;
 +	int i;
 +
-+	dt_clk = tegra_lookup_dt_id(tegra_clk_pll_p, tegra_clks);
-+	if (dt_clk) {
-+		/* PLLP */
-+		clk = tegra_clk_register_pll("pll_p", "pll_ref", clk_base,
-+					pmc_base, 0, pll_params, NULL);
-+		clk_register_clkdev(clk, "pll_p", NULL);
-+		*dt_clk = clk;
-+	}
++	for (i = 0; i < ARRAY_SIZE(pmc_clks); i++) {
++		struct pmc_clk_init_data *data;
 +
-+	for (i = 0; i < ARRAY_SIZE(pllp_out_clks); i++) {
-+		struct pll_out_data *data;
++		data = pmc_clks + i;
 +
-+		data = pllp_out_clks + i;
-+
-+		dt_clk = tegra_lookup_dt_id(data->clk_id, tegra_clks);
++		dt_clk = tegra_lookup_dt_id(data->mux_id, tegra_clks);
 +		if (!dt_clk)
 +			continue;
 +
-+		clk = tegra_clk_register_divider(data->div_name, "pll_p",
-+				clk_base + data->offset, 0, data->div_flags,
-+				data->div_shift, 8, 1, data->lock);
-+		clk = tegra_clk_register_pll_out(data->pll_out_name,
-+				data->div_name, clk_base + data->offset,
-+				data->rst_shift + 1, data->rst_shift,
-+				CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
-+				data->lock);
++		clk = clk_register_mux(NULL, data->mux_name, data->parents,
++				data->num_parents, CLK_SET_RATE_NO_REPARENT,
++				pmc_base + PMC_CLK_OUT_CNTRL, data->mux_shift,
++				3, 0, &clk_out_lock);
 +		*dt_clk = clk;
++
++
++		dt_clk = tegra_lookup_dt_id(data->gate_id, tegra_clks);
++		if (!dt_clk)
++			continue;
++
++		clk = clk_register_gate(NULL, data->gate_name, data->mux_name,
++					0, pmc_base + PMC_CLK_OUT_CNTRL,
++					data->gate_shift, 0, &clk_out_lock);
++		*dt_clk = clk;
++		clk_register_clkdev(clk, data->dev_name, data->gate_name);
 +	}
++
++	/* blink */
++	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
++				pmc_base + PMC_DPD_PADS_ORIDE,
++				PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
++
++	dt_clk = tegra_lookup_dt_id(tegra_clk_blink, tegra_clks);
++	if (!dt_clk)
++		return;
++
++	clk = clk_register_gate(NULL, "blink", "blink_override", 0,
++				pmc_base + PMC_CTRL,
++				PMC_CTRL_BLINK_ENB, 0, NULL);
++	clk_register_clkdev(clk, "blink", NULL);
++	*dt_clk = clk;
 +}
 +
-+void __init tegra_periph_clk_init(void __iomem *clk_base,
-+			void __iomem *pmc_base, struct tegra_clk *tegra_clks,
-+			struct tegra_clk_pll_params *pll_params)
-+{
-+	init_pllp(clk_base, pmc_base, tegra_clks, pll_params);
-+	periph_clk_init(clk_base, tegra_clks);
-+	gate_clk_init(clk_base, tegra_clks);
-+}
 diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 5d276fa..34b991b 100644
+index 34b991b..8880b92 100644
 --- a/drivers/clk/tegra/clk-tegra114.c
 +++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -106,8 +106,6 @@
- #define PLLE_AUX 0x48c
- #define PLLC_OUT 0x84
- #define PLLM_OUT 0x94
--#define PLLP_OUTA 0xa4
--#define PLLP_OUTB 0xa8
- 
- #define PMC_CLK_OUT_CNTRL 0x1a8
- #define PMC_DPD_PADS_ORIDE 0x1c
-@@ -153,91 +151,8 @@
- #define UTMIPLL_HW_PWRDN_CFG0_IDDQ_OVERRIDE	BIT(1)
- #define UTMIPLL_HW_PWRDN_CFG0_IDDQ_SWCTL	BIT(0)
- 
--#define CLK_SOURCE_I2S0 0x1d8
--#define CLK_SOURCE_I2S1 0x100
--#define CLK_SOURCE_I2S2 0x104
--#define CLK_SOURCE_NDFLASH 0x160
--#define CLK_SOURCE_I2S3 0x3bc
--#define CLK_SOURCE_I2S4 0x3c0
--#define CLK_SOURCE_SPDIF_OUT 0x108
--#define CLK_SOURCE_SPDIF_IN 0x10c
--#define CLK_SOURCE_PWM 0x110
--#define CLK_SOURCE_ADX 0x638
--#define CLK_SOURCE_AMX 0x63c
--#define CLK_SOURCE_HDA 0x428
--#define CLK_SOURCE_HDA2CODEC_2X 0x3e4
--#define CLK_SOURCE_SBC1 0x134
--#define CLK_SOURCE_SBC2 0x118
--#define CLK_SOURCE_SBC3 0x11c
--#define CLK_SOURCE_SBC4 0x1b4
--#define CLK_SOURCE_SBC5 0x3c8
--#define CLK_SOURCE_SBC6 0x3cc
--#define CLK_SOURCE_SATA_OOB 0x420
--#define CLK_SOURCE_SATA 0x424
--#define CLK_SOURCE_NDSPEED 0x3f8
--#define CLK_SOURCE_VFIR 0x168
--#define CLK_SOURCE_SDMMC1 0x150
--#define CLK_SOURCE_SDMMC2 0x154
--#define CLK_SOURCE_SDMMC3 0x1bc
--#define CLK_SOURCE_SDMMC4 0x164
--#define CLK_SOURCE_VDE 0x1c8
- #define CLK_SOURCE_CSITE 0x1d4
--#define CLK_SOURCE_LA 0x1f8
--#define CLK_SOURCE_TRACE 0x634
--#define CLK_SOURCE_OWR 0x1cc
--#define CLK_SOURCE_NOR 0x1d0
--#define CLK_SOURCE_MIPI 0x174
--#define CLK_SOURCE_I2C1 0x124
--#define CLK_SOURCE_I2C2 0x198
--#define CLK_SOURCE_I2C3 0x1b8
--#define CLK_SOURCE_I2C4 0x3c4
--#define CLK_SOURCE_I2C5 0x128
--#define CLK_SOURCE_UARTA 0x178
--#define CLK_SOURCE_UARTB 0x17c
--#define CLK_SOURCE_UARTC 0x1a0
--#define CLK_SOURCE_UARTD 0x1c0
--#define CLK_SOURCE_UARTE 0x1c4
--#define CLK_SOURCE_UARTA_DBG 0x178
--#define CLK_SOURCE_UARTB_DBG 0x17c
--#define CLK_SOURCE_UARTC_DBG 0x1a0
--#define CLK_SOURCE_UARTD_DBG 0x1c0
--#define CLK_SOURCE_UARTE_DBG 0x1c4
--#define CLK_SOURCE_3D 0x158
--#define CLK_SOURCE_2D 0x15c
--#define CLK_SOURCE_VI_SENSOR 0x1a8
--#define CLK_SOURCE_VI 0x148
--#define CLK_SOURCE_EPP 0x16c
--#define CLK_SOURCE_MSENC 0x1f0
--#define CLK_SOURCE_TSEC 0x1f4
--#define CLK_SOURCE_HOST1X 0x180
--#define CLK_SOURCE_HDMI 0x18c
--#define CLK_SOURCE_DISP1 0x138
--#define CLK_SOURCE_DISP2 0x13c
--#define CLK_SOURCE_CILAB 0x614
--#define CLK_SOURCE_CILCD 0x618
--#define CLK_SOURCE_CILE 0x61c
--#define CLK_SOURCE_DSIALP 0x620
--#define CLK_SOURCE_DSIBLP 0x624
--#define CLK_SOURCE_TSENSOR 0x3b8
--#define CLK_SOURCE_D_AUDIO 0x3d0
--#define CLK_SOURCE_DAM0 0x3d8
--#define CLK_SOURCE_DAM1 0x3dc
--#define CLK_SOURCE_DAM2 0x3e0
--#define CLK_SOURCE_ACTMON 0x3e8
--#define CLK_SOURCE_EXTERN1 0x3ec
--#define CLK_SOURCE_EXTERN2 0x3f0
--#define CLK_SOURCE_EXTERN3 0x3f4
--#define CLK_SOURCE_I2CSLOW 0x3fc
--#define CLK_SOURCE_SE 0x42c
--#define CLK_SOURCE_MSELECT 0x3b4
--#define CLK_SOURCE_DFLL_REF 0x62c
--#define CLK_SOURCE_DFLL_SOC 0x630
--#define CLK_SOURCE_SOC_THERM 0x644
--#define CLK_SOURCE_XUSB_HOST_SRC 0x600
--#define CLK_SOURCE_XUSB_FALCON_SRC 0x604
--#define CLK_SOURCE_XUSB_FS_SRC 0x608
- #define CLK_SOURCE_XUSB_SS_SRC 0x610
--#define CLK_SOURCE_XUSB_DEV_SRC 0x60c
- #define CLK_SOURCE_EMC 0x19c
- 
- /* PLLM override registers */
-@@ -261,7 +176,6 @@ static void __iomem *pmc_base;
- static DEFINE_SPINLOCK(pll_d_lock);
+@@ -177,7 +177,6 @@ static DEFINE_SPINLOCK(pll_d_lock);
  static DEFINE_SPINLOCK(pll_d2_lock);
  static DEFINE_SPINLOCK(pll_u_lock);
--static DEFINE_SPINLOCK(pll_div_lock);
  static DEFINE_SPINLOCK(pll_re_lock);
- static DEFINE_SPINLOCK(clk_out_lock);
+-static DEFINE_SPINLOCK(clk_out_lock);
  static DEFINE_SPINLOCK(sysrate_lock);
-@@ -722,75 +636,6 @@ static unsigned long tegra114_input_freq[] = {
  
- #define MASK(x) (BIT(x) - 1)
- 
--#define TEGRA_INIT_DATA_MUX(_name, _parents, _offset,	\
--			    _clk_num, _gate_flags, _clk_id)	\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			30, MASK(2), 0, 0, 8, 1, 0, _clk_num, _gate_flags,\
--			_clk_id, _parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_MUX_FLAGS(_name, _parents, _offset,\
--			    _clk_num, _gate_flags, _clk_id, flags)\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			30, MASK(2), 0, 0, 8, 1, 0, _clk_num,	\
--			_gate_flags, _clk_id,	\
--			_parents##_idx, flags)
--
--#define TEGRA_INIT_DATA_MUX8(_name, _parents, _offset, \
--			     _clk_num, _gate_flags, _clk_id)	\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			29, MASK(3), 0, 0, 8, 1, 0, _clk_num,	\
--			_gate_flags, _clk_id,	\
--			_parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_INT_FLAGS(_name, _parents, _offset,\
--			    _clk_num, _gate_flags, _clk_id, flags)\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			30, MASK(2), 0, 0, 8, 1, TEGRA_DIVIDER_INT, \
--			_clk_num, _gate_flags,	\
--			_clk_id, _parents##_idx, flags)
--
--#define TEGRA_INIT_DATA_INT8(_name, _parents, _offset,\
--			    _clk_num, _gate_flags, _clk_id)	\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			29, MASK(3), 0, 0, 8, 1, TEGRA_DIVIDER_INT, \
--			_clk_num, _gate_flags,	\
--			_clk_id, _parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_UART(_name, _parents, _offset,\
--			     _clk_num, _clk_id)			\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			30, MASK(2), 0, 0, 16, 1, TEGRA_DIVIDER_UART, \
--			_clk_num, 0, _clk_id,	\
--			_parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_I2C(_name, _parents, _offset,\
--			     _clk_num, _clk_id)			\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			30, MASK(2), 0, 0, 16, 0, 0, _clk_num,	\
--			0, _clk_id, _parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_NODIV(_name, _parents, _offset, \
--			      _mux_shift, _mux_mask, _clk_num, \
--			      _gate_flags, _clk_id)			\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset,\
--			_mux_shift, _mux_mask, 0, 0, 0, 0, 0,\
--			_clk_num, _gate_flags,	\
--			_clk_id, _parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_XUSB(_name, _parents, _offset, \
--			     _clk_num, _gate_flags, _clk_id)	 \
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, _parents, _offset, \
--			29, MASK(3), 0, 0, 8, 1, TEGRA_DIVIDER_INT, \
--			_clk_num, _gate_flags,	 \
--			_clk_id, _parents##_idx, 0)
--
--#define TEGRA_INIT_DATA_AUDIO(_name, _offset,  _clk_num,\
--				 _gate_flags, _clk_id)		\
--	TEGRA_INIT_DATA_TABLE(_name, NULL, NULL, mux_d_audio_clk,	\
--			_offset, 16, 0xE01F, 0, 0, 8, 1, 0, _clk_num, \
--			_gate_flags , _clk_id,	\
--			mux_d_audio_clk_idx, 0)
--
- struct utmi_clk_param {
- 	/* Oscillator Frequency in KHz */
- 	u32 osc_frequency;
-@@ -824,122 +669,11 @@ static const struct utmi_clk_param utmi_parameters[] = {
- 
- /* peripheral mux definitions */
- 
--#define MUX_I2S_SPDIF(_id)						\
--static const char *mux_pllaout0_##_id##_2x_pllp_clkm[] = { "pll_a_out0", \
--							   #_id, "pll_p",\
--							   "clk_m"};
--MUX_I2S_SPDIF(audio0)
--MUX_I2S_SPDIF(audio1)
--MUX_I2S_SPDIF(audio2)
--MUX_I2S_SPDIF(audio3)
--MUX_I2S_SPDIF(audio4)
--MUX_I2S_SPDIF(audio)
--
--#define mux_pllaout0_audio0_2x_pllp_clkm_idx NULL
--#define mux_pllaout0_audio1_2x_pllp_clkm_idx NULL
--#define mux_pllaout0_audio2_2x_pllp_clkm_idx NULL
--#define mux_pllaout0_audio3_2x_pllp_clkm_idx NULL
--#define mux_pllaout0_audio4_2x_pllp_clkm_idx NULL
--#define mux_pllaout0_audio_2x_pllp_clkm_idx NULL
--
--static const char *mux_pllp_pllc_pllm_clkm[] = {
--	"pll_p", "pll_c", "pll_m", "clk_m"
--};
--#define mux_pllp_pllc_pllm_clkm_idx NULL
--
--static const char *mux_pllp_pllc_pllm[] = { "pll_p", "pll_c", "pll_m" };
--#define mux_pllp_pllc_pllm_idx NULL
--
--static const char *mux_pllp_pllc_clk32_clkm[] = {
--	"pll_p", "pll_c", "clk_32k", "clk_m"
--};
--#define mux_pllp_pllc_clk32_clkm_idx NULL
--
--static const char *mux_plla_pllc_pllp_clkm[] = {
--	"pll_a_out0", "pll_c", "pll_p", "clk_m"
--};
--#define mux_plla_pllc_pllp_clkm_idx mux_pllp_pllc_pllm_clkm_idx
--
--static const char *mux_pllp_pllc2_c_c3_pllm_clkm[] = {
--	"pll_p", "pll_c2", "pll_c", "pll_c3", "pll_m", "clk_m"
--};
--static u32 mux_pllp_pllc2_c_c3_pllm_clkm_idx[] = {
--	[0] = 0, [1] = 1, [2] = 2, [3] = 3, [4] = 4, [5] = 6,
--};
--
--static const char *mux_pllp_clkm[] = {
--	"pll_p", "clk_m"
--};
--static u32 mux_pllp_clkm_idx[] = {
--	[0] = 0, [1] = 3,
--};
--
--static const char *mux_pllm_pllc2_c_c3_pllp_plla[] = {
--	"pll_m", "pll_c2", "pll_c", "pll_c3", "pll_p", "pll_a_out0"
--};
--#define mux_pllm_pllc2_c_c3_pllp_plla_idx mux_pllp_pllc2_c_c3_pllm_clkm_idx
--
--static const char *mux_pllp_pllm_plld_plla_pllc_plld2_clkm[] = {
--	"pll_p", "pll_m", "pll_d_out0", "pll_a_out0", "pll_c",
--	"pll_d2_out0", "clk_m"
--};
--#define mux_pllp_pllm_plld_plla_pllc_plld2_clkm_idx NULL
--
--static const char *mux_pllm_pllc_pllp_plla[] = {
--	"pll_m", "pll_c", "pll_p", "pll_a_out0"
--};
--#define mux_pllm_pllc_pllp_plla_idx mux_pllp_pllc_pllm_clkm_idx
--
--static const char *mux_pllp_pllc_clkm[] = {
--	"pll_p", "pll_c", "pll_m"
--};
--static u32 mux_pllp_pllc_clkm_idx[] = {
--	[0] = 0, [1] = 1, [2] = 3,
--};
--
--static const char *mux_pllp_pllc_clkm_clk32[] = {
--	"pll_p", "pll_c", "clk_m", "clk_32k"
--};
--#define mux_pllp_pllc_clkm_clk32_idx NULL
--
--static const char *mux_plla_clk32_pllp_clkm_plle[] = {
--	"pll_a_out0", "clk_32k", "pll_p", "clk_m", "pll_e_out0"
--};
--#define mux_plla_clk32_pllp_clkm_plle_idx NULL
--
--static const char *mux_clkm_pllp_pllc_pllre[] = {
--	"clk_m", "pll_p", "pll_c", "pll_re_out"
--};
--static u32 mux_clkm_pllp_pllc_pllre_idx[] = {
--	[0] = 0, [1] = 1, [2] = 3, [3] = 5,
--};
--
--static const char *mux_clkm_48M_pllp_480M[] = {
--	"clk_m", "pll_u_48M", "pll_p", "pll_u_480M"
--};
--#define mux_clkm_48M_pllp_480M_idx NULL
--
--static const char *mux_clkm_pllre_clk32_480M_pllc_ref[] = {
--	"clk_m", "pll_re_out", "clk_32k", "pll_u_480M", "pll_c", "pll_ref"
--};
--static u32 mux_clkm_pllre_clk32_480M_pllc_ref_idx[] = {
--	[0] = 0, [1] = 1, [2] = 3, [3] = 3, [4] = 4, [5] = 7,
--};
--
- static const char *mux_plld_out0_plld2_out0[] = {
- 	"pll_d_out0", "pll_d2_out0",
- };
- #define mux_plld_out0_plld2_out0_idx NULL
- 
--static const char *mux_d_audio_clk[] = {
--	"pll_a_out0", "pll_p", "clk_m", "spdif_in_sync", "i2s0_sync",
--	"i2s1_sync", "i2s2_sync", "i2s3_sync", "i2s4_sync", "vimclk_sync",
--};
--static u32 mux_d_audio_clk_idx[] = {
--	[0] = 0, [1] = 0x8000, [2] = 0xc000, [3] = 0xE000, [4] = 0xE001,
--	[5] = 0xE002, [6] = 0xE003, [7] = 0xE004, [8] = 0xE005, [9] = 0xE007,
--};
--
- static const char *mux_pllmcp_clkm[] = {
- 	"pll_m_out0", "pll_c_out0", "pll_p_out0", "clk_m", "pll_m_ud",
- };
-@@ -1367,53 +1101,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
- 			     &pll_c3_params, NULL);
- 	clks[TEGRA114_CLK_PLL_C3] = clk;
- 
--	/* PLLP */
--	clk = tegra_clk_register_pll("pll_p", "pll_ref", clk_base, pmc, 0,
--			    &pll_p_params, NULL);
--	clks[TEGRA114_CLK_PLL_P] = clk;
--
--	/* PLLP_OUT1 */
--	clk = tegra_clk_register_divider("pll_p_out1_div", "pll_p",
--				clk_base + PLLP_OUTA, 0, TEGRA_DIVIDER_FIXED |
--				TEGRA_DIVIDER_ROUND_UP, 8, 8, 1, &pll_div_lock);
--	clk = tegra_clk_register_pll_out("pll_p_out1", "pll_p_out1_div",
--				clk_base + PLLP_OUTA, 1, 0,
--				CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
--				&pll_div_lock);
--	clks[TEGRA114_CLK_PLL_P_OUT1] = clk;
--
--	/* PLLP_OUT2 */
--	clk = tegra_clk_register_divider("pll_p_out2_div", "pll_p",
--				clk_base + PLLP_OUTA, 0, TEGRA_DIVIDER_FIXED |
--				TEGRA_DIVIDER_ROUND_UP | TEGRA_DIVIDER_INT, 24,
--				8, 1, &pll_div_lock);
--	clk = tegra_clk_register_pll_out("pll_p_out2", "pll_p_out2_div",
--				clk_base + PLLP_OUTA, 17, 16,
--				CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
--				&pll_div_lock);
--	clks[TEGRA114_CLK_PLL_P_OUT2] = clk;
--
--	/* PLLP_OUT3 */
--	clk = tegra_clk_register_divider("pll_p_out3_div", "pll_p",
--				clk_base + PLLP_OUTB, 0, TEGRA_DIVIDER_FIXED |
--				TEGRA_DIVIDER_ROUND_UP, 8, 8, 1, &pll_div_lock);
--	clk = tegra_clk_register_pll_out("pll_p_out3", "pll_p_out3_div",
--				clk_base + PLLP_OUTB, 1, 0,
--				CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
--				&pll_div_lock);
--	clks[TEGRA114_CLK_PLL_P_OUT3] = clk;
--
--	/* PLLP_OUT4 */
--	clk = tegra_clk_register_divider("pll_p_out4_div", "pll_p",
--				clk_base + PLLP_OUTB, 0, TEGRA_DIVIDER_FIXED |
--				TEGRA_DIVIDER_ROUND_UP, 24, 8, 1,
--				&pll_div_lock);
--	clk = tegra_clk_register_pll_out("pll_p_out4", "pll_p_out4_div",
--				clk_base + PLLP_OUTB, 17, 16,
--				CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
--				&pll_div_lock);
--	clks[TEGRA114_CLK_PLL_P_OUT4] = clk;
--
- 	/* PLLM */
- 	clk = tegra_clk_register_pllm("pll_m", "pll_ref", clk_base, pmc,
- 			     CLK_IGNORE_UNUSED | CLK_SET_RATE_GATE,
-@@ -1635,290 +1322,44 @@ static void __init tegra114_super_clk_init(void __iomem *clk_base)
- 	clks[TEGRA114_CLK_PCLK] = clk;
+ static struct div_nmp pllxc_nmp = {
+@@ -1198,71 +1197,6 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	clks[TEGRA114_CLK_PLL_E_OUT0] = clk;
  }
  
--static struct tegra_periph_init_data tegra_periph_clk_list[] = {
--	TEGRA_INIT_DATA_MUX("i2s0", mux_pllaout0_audio0_2x_pllp_clkm, CLK_SOURCE_I2S0, 30, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2S0),
--	TEGRA_INIT_DATA_MUX("i2s1", mux_pllaout0_audio1_2x_pllp_clkm, CLK_SOURCE_I2S1, 11, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2S1),
--	TEGRA_INIT_DATA_MUX("i2s2", mux_pllaout0_audio2_2x_pllp_clkm, CLK_SOURCE_I2S2, 18, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2S2),
--	TEGRA_INIT_DATA_MUX("i2s3", mux_pllaout0_audio3_2x_pllp_clkm, CLK_SOURCE_I2S3, 101, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2S3),
--	TEGRA_INIT_DATA_MUX("i2s4", mux_pllaout0_audio4_2x_pllp_clkm, CLK_SOURCE_I2S4, 102, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2S4),
--	TEGRA_INIT_DATA_MUX("spdif_out", mux_pllaout0_audio_2x_pllp_clkm, CLK_SOURCE_SPDIF_OUT, 10, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SPDIF_OUT),
--	TEGRA_INIT_DATA_MUX("spdif_in", mux_pllp_pllc_pllm, CLK_SOURCE_SPDIF_IN, 10, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SPDIF_IN),
--	TEGRA_INIT_DATA_MUX("pwm", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_PWM, 17, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_PWM),
--	TEGRA_INIT_DATA_MUX("adx", mux_plla_pllc_pllp_clkm, CLK_SOURCE_ADX, 154, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_ADX),
--	TEGRA_INIT_DATA_MUX("amx", mux_plla_pllc_pllp_clkm, CLK_SOURCE_AMX, 153, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_AMX),
--	TEGRA_INIT_DATA_MUX("hda", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA, 125, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_HDA),
--	TEGRA_INIT_DATA_MUX("hda2codec_2x", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA2CODEC_2X, 111, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_HDA2CODEC_2X),
--	TEGRA_INIT_DATA_MUX8("sbc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC1),
--	TEGRA_INIT_DATA_MUX8("sbc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC2),
--	TEGRA_INIT_DATA_MUX8("sbc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC3),
--	TEGRA_INIT_DATA_MUX8("sbc4", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC4, 68, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC4),
--	TEGRA_INIT_DATA_MUX8("sbc5", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC5, 104, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC5),
--	TEGRA_INIT_DATA_MUX8("sbc6", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC6, 105, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SBC6),
--	TEGRA_INIT_DATA_MUX8("ndflash", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_NDFLASH, 13, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_NDSPEED),
--	TEGRA_INIT_DATA_MUX8("ndspeed", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_NDSPEED, 80, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_NDSPEED),
--	TEGRA_INIT_DATA_MUX("vfir", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_VFIR, 7, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_VFIR),
--	TEGRA_INIT_DATA_MUX("sdmmc1", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC1, 14, 0, TEGRA114_CLK_SDMMC1),
--	TEGRA_INIT_DATA_MUX("sdmmc2", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC2, 9, 0, TEGRA114_CLK_SDMMC2),
--	TEGRA_INIT_DATA_MUX("sdmmc3", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC3, 69, 0, TEGRA114_CLK_SDMMC3),
--	TEGRA_INIT_DATA_MUX("sdmmc4", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC4, 15, 0, TEGRA114_CLK_SDMMC4),
--	TEGRA_INIT_DATA_INT8("vde", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_VDE, 61, 0, TEGRA114_CLK_VDE),
--	TEGRA_INIT_DATA_MUX_FLAGS("csite", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_CSITE, 73, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_CSITE, CLK_IGNORE_UNUSED),
--	TEGRA_INIT_DATA_MUX("la", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_LA, 76, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_LA),
--	TEGRA_INIT_DATA_MUX("trace", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_TRACE, 77, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_TRACE),
--	TEGRA_INIT_DATA_MUX("owr", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_OWR, 71, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_OWR),
--	TEGRA_INIT_DATA_MUX("nor", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_NOR, 42, 0, TEGRA114_CLK_NOR),
--	TEGRA_INIT_DATA_MUX("mipi", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_MIPI, 50, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_MIPI),
--	TEGRA_INIT_DATA_I2C("i2c1", mux_pllp_clkm, CLK_SOURCE_I2C1, 12, TEGRA114_CLK_I2C1),
--	TEGRA_INIT_DATA_I2C("i2c2", mux_pllp_clkm, CLK_SOURCE_I2C2, 54, TEGRA114_CLK_I2C2),
--	TEGRA_INIT_DATA_I2C("i2c3", mux_pllp_clkm, CLK_SOURCE_I2C3, 67, TEGRA114_CLK_I2C3),
--	TEGRA_INIT_DATA_I2C("i2c4", mux_pllp_clkm, CLK_SOURCE_I2C4, 103, TEGRA114_CLK_I2C4),
--	TEGRA_INIT_DATA_I2C("i2c5", mux_pllp_clkm, CLK_SOURCE_I2C5, 47, TEGRA114_CLK_I2C5),
--	TEGRA_INIT_DATA_UART("uarta", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTA, 6, TEGRA114_CLK_UARTA),
--	TEGRA_INIT_DATA_UART("uartb", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTB, 7, TEGRA114_CLK_UARTB),
--	TEGRA_INIT_DATA_UART("uartc", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTC, 55, TEGRA114_CLK_UARTC),
--	TEGRA_INIT_DATA_UART("uartd", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_UARTD, 65, TEGRA114_CLK_UARTD),
--	TEGRA_INIT_DATA_INT8("3d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_3D, 24, 0, TEGRA114_CLK_GR3D),
--	TEGRA_INIT_DATA_INT8("2d", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_2D, 21, 0, TEGRA114_CLK_GR2D),
--	TEGRA_INIT_DATA_MUX("vi_sensor", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR, 20, TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_VI_SENSOR),
--	TEGRA_INIT_DATA_INT8("vi", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI, 20, 0, TEGRA114_CLK_VI),
--	TEGRA_INIT_DATA_INT8("epp", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_EPP, 19, 0, TEGRA114_CLK_EPP),
--	TEGRA_INIT_DATA_INT8("msenc", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_MSENC, 91, TEGRA_PERIPH_WAR_1005168, TEGRA114_CLK_MSENC),
--	TEGRA_INIT_DATA_INT8("tsec", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_TSEC, 83, 0, TEGRA114_CLK_TSEC),
--	TEGRA_INIT_DATA_INT8("host1x", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_HOST1X, 28, 0, TEGRA114_CLK_HOST1X),
--	TEGRA_INIT_DATA_MUX8("hdmi", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_HDMI, 51, 0, TEGRA114_CLK_HDMI),
--	TEGRA_INIT_DATA_MUX("cilab", mux_pllp_pllc_clkm, CLK_SOURCE_CILAB, 144, 0, TEGRA114_CLK_CILAB),
--	TEGRA_INIT_DATA_MUX("cilcd", mux_pllp_pllc_clkm, CLK_SOURCE_CILCD, 145, 0, TEGRA114_CLK_CILCD),
--	TEGRA_INIT_DATA_MUX("cile", mux_pllp_pllc_clkm, CLK_SOURCE_CILE, 146, 0, TEGRA114_CLK_CILE),
--	TEGRA_INIT_DATA_MUX("dsialp", mux_pllp_pllc_clkm, CLK_SOURCE_DSIALP, 147, 0, TEGRA114_CLK_DSIALP),
--	TEGRA_INIT_DATA_MUX("dsiblp", mux_pllp_pllc_clkm, CLK_SOURCE_DSIBLP, 148, 0, TEGRA114_CLK_DSIBLP),
--	TEGRA_INIT_DATA_MUX("tsensor", mux_pllp_pllc_clkm_clk32, CLK_SOURCE_TSENSOR, 100, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_TSENSOR),
--	TEGRA_INIT_DATA_MUX("actmon", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_ACTMON, 119, 0, TEGRA114_CLK_ACTMON),
--	TEGRA_INIT_DATA_MUX8("extern1", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN1, 120, 0, TEGRA114_CLK_EXTERN1),
--	TEGRA_INIT_DATA_MUX8("extern2", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN2, 121, 0, TEGRA114_CLK_EXTERN2),
--	TEGRA_INIT_DATA_MUX8("extern3", mux_plla_clk32_pllp_clkm_plle, CLK_SOURCE_EXTERN3, 122, 0, TEGRA114_CLK_EXTERN3),
--	TEGRA_INIT_DATA_MUX("i2cslow", mux_pllp_pllc_clk32_clkm, CLK_SOURCE_I2CSLOW, 81, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_I2CSLOW),
--	TEGRA_INIT_DATA_INT8("se", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SE, 127, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SE),
--	TEGRA_INIT_DATA_INT_FLAGS("mselect", mux_pllp_clkm, CLK_SOURCE_MSELECT, 99, 0, TEGRA114_CLK_MSELECT, CLK_IGNORE_UNUSED),
--	TEGRA_INIT_DATA_MUX("dfll_ref", mux_pllp_clkm, CLK_SOURCE_DFLL_REF, 155, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_DFLL_REF),
--	TEGRA_INIT_DATA_MUX("dfll_soc", mux_pllp_clkm, CLK_SOURCE_DFLL_SOC, 155, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_DFLL_SOC),
--	TEGRA_INIT_DATA_MUX8("soc_therm", mux_pllm_pllc_pllp_plla, CLK_SOURCE_SOC_THERM, 78, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_SOC_THERM),
--	TEGRA_INIT_DATA_XUSB("xusb_host_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_HOST_SRC, 143, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_XUSB_HOST_SRC),
--	TEGRA_INIT_DATA_XUSB("xusb_falcon_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_FALCON_SRC, 143, TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_XUSB_FALCON_SRC),
--	TEGRA_INIT_DATA_XUSB("xusb_fs_src", mux_clkm_48M_pllp_480M, CLK_SOURCE_XUSB_FS_SRC, 143, TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_XUSB_FS_SRC),
--	TEGRA_INIT_DATA_XUSB("xusb_ss_src", mux_clkm_pllre_clk32_480M_pllc_ref, CLK_SOURCE_XUSB_SS_SRC, 143, TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_XUSB_SS_SRC),
--	TEGRA_INIT_DATA_XUSB("xusb_dev_src", mux_clkm_pllp_pllc_pllre, CLK_SOURCE_XUSB_DEV_SRC, 95, TEGRA_PERIPH_ON_APB | TEGRA_PERIPH_NO_RESET, TEGRA114_CLK_XUSB_DEV_SRC),
--	TEGRA_INIT_DATA_AUDIO("d_audio", CLK_SOURCE_D_AUDIO, 106, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_D_AUDIO),
--	TEGRA_INIT_DATA_AUDIO("dam0", CLK_SOURCE_DAM0, 108, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_DAM0),
--	TEGRA_INIT_DATA_AUDIO("dam1", CLK_SOURCE_DAM1, 109, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_DAM1),
--	TEGRA_INIT_DATA_AUDIO("dam2", CLK_SOURCE_DAM2, 110, TEGRA_PERIPH_ON_APB, TEGRA114_CLK_DAM2),
+-static const char *clk_out1_parents[] = { "clk_m", "clk_m_div2",
+-	"clk_m_div4", "extern1",
 -};
 -
--static struct tegra_periph_init_data tegra_periph_nodiv_clk_list[] = {
--	TEGRA_INIT_DATA_NODIV("disp1", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP1, 29, 7, 27, 0, TEGRA114_CLK_DISP1),
--	TEGRA_INIT_DATA_NODIV("disp2", mux_pllp_pllm_plld_plla_pllc_plld2_clkm, CLK_SOURCE_DISP2, 29, 7, 26, 0, TEGRA114_CLK_DISP2),
+-static const char *clk_out2_parents[] = { "clk_m", "clk_m_div2",
+-	"clk_m_div4", "extern2",
 -};
 -
--static __init void tegra114_periph_clk_init(void __iomem *clk_base)
-+static __init void tegra114_periph_clk_init(void __iomem *clk_base,
-+					    void __iomem *pmc_base)
- {
--	struct tegra_periph_init_data *data;
- 	struct clk *clk;
--	int i;
- 	u32 val;
- 
--	/* apbdma */
--	clk = tegra_clk_register_periph_gate("apbdma", "clk_m", 0, clk_base,
--				  0, 34, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_APBDMA] = clk;
+-static const char *clk_out3_parents[] = { "clk_m", "clk_m_div2",
+-	"clk_m_div4", "extern3",
+-};
 -
--	/* rtc */
--	clk = tegra_clk_register_periph_gate("rtc", "clk_32k",
--				    TEGRA_PERIPH_ON_APB |
--				    TEGRA_PERIPH_NO_RESET, clk_base,
--				    0, 4, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_RTC] = clk;
+-static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
+-{
+-	struct clk *clk;
 -
--	/* kbc */
--	clk = tegra_clk_register_periph_gate("kbc", "clk_32k",
--				    TEGRA_PERIPH_ON_APB |
--				    TEGRA_PERIPH_NO_RESET, clk_base,
--				    0, 36, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_KBC] = clk;
+-	/* clk_out_1 */
+-	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
+-			       ARRAY_SIZE(clk_out1_parents),
+-			       CLK_SET_RATE_NO_REPARENT,
+-			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
+-			       &clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_1_MUX] = clk;
+-	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
+-				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
+-				&clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_1] = clk;
 -
--	/* timer */
--	clk = tegra_clk_register_periph_gate("timer", "clk_m", 0, clk_base,
--				  0, 5, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_TIMER] = clk;
+-	/* clk_out_2 */
+-	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
+-			       ARRAY_SIZE(clk_out2_parents),
+-			       CLK_SET_RATE_NO_REPARENT,
+-			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
+-			       &clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_2_MUX] = clk;
+-	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
+-				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
+-				&clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_2] = clk;
 -
--	/* kfuse */
--	clk = tegra_clk_register_periph_gate("kfuse", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base,  0, 40,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_KFUSE] = clk;
+-	/* clk_out_3 */
+-	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
+-			       ARRAY_SIZE(clk_out3_parents),
+-			       CLK_SET_RATE_NO_REPARENT,
+-			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
+-			       &clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_3_MUX] = clk;
+-	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
+-				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
+-				&clk_out_lock);
+-	clks[TEGRA114_CLK_CLK_OUT_3] = clk;
 -
--	/* fuse */
--	clk = tegra_clk_register_periph_gate("fuse", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base,  0, 39,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_FUSE] = clk;
+-	/* blink */
+-	/* clear the blink timer register to directly output clk_32k */
+-	writel_relaxed(0, pmc_base + PMC_BLINK_TIMER);
+-	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
+-				pmc_base + PMC_DPD_PADS_ORIDE,
+-				PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
+-	clk = clk_register_gate(NULL, "blink", "blink_override", 0,
+-				pmc_base + PMC_CTRL,
+-				PMC_CTRL_BLINK_ENB, 0, NULL);
+-	clks[TEGRA114_CLK_BLINK] = clk;
 -
--	/* fuse_burn */
--	clk = tegra_clk_register_periph_gate("fuse_burn", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base,  0, 39,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_FUSE_BURN] = clk;
+-}
 -
--	/* apbif */
--	clk = tegra_clk_register_periph_gate("apbif", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base,  0, 107,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_APBIF] = clk;
--
--	/* hda2hdmi */
--	clk = tegra_clk_register_periph_gate("hda2hdmi", "clk_m",
--				    TEGRA_PERIPH_ON_APB, clk_base,  0, 128,
--				    periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_HDA2HDMI] = clk;
--
--	/* vcp */
--	clk = tegra_clk_register_periph_gate("vcp", "clk_m", 0, clk_base,  0,
--				  29, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_VCP] = clk;
--
--	/* bsea */
--	clk = tegra_clk_register_periph_gate("bsea", "clk_m", 0, clk_base,
--				  0, 62, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_BSEA] = clk;
--
--	/* bsev */
--	clk = tegra_clk_register_periph_gate("bsev", "clk_m", 0, clk_base,
--				  0, 63, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_BSEV] = clk;
--
--	/* mipi-cal */
--	clk = tegra_clk_register_periph_gate("mipi-cal", "clk_m", 0, clk_base,
--				   0, 56, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_MIPI_CAL] = clk;
--
--	/* usbd */
--	clk = tegra_clk_register_periph_gate("usbd", "clk_m", 0, clk_base,
--				  0, 22, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_USBD] = clk;
--
--	/* usb2 */
--	clk = tegra_clk_register_periph_gate("usb2", "clk_m", 0, clk_base,
--				  0, 58, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_USB2] = clk;
--
--	/* usb3 */
--	clk = tegra_clk_register_periph_gate("usb3", "clk_m", 0, clk_base,
--				  0, 59, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_USB3] = clk;
--
--	/* csi */
--	clk = tegra_clk_register_periph_gate("csi", "pll_p_out3", 0, clk_base,
--				   0, 52, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_CSI] = clk;
--
--	/* isp */
--	clk = tegra_clk_register_periph_gate("isp", "clk_m", 0, clk_base, 0,
--				  23, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_ISP] = clk;
--
--	/* csus */
--	clk = tegra_clk_register_periph_gate("csus", "clk_m",
--				  TEGRA_PERIPH_NO_RESET, clk_base, 0, 92,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_CSUS] = clk;
--
--	/* dds */
--	clk = tegra_clk_register_periph_gate("dds", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base, 0, 150,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_DDS] = clk;
--
--	/* dp2 */
--	clk = tegra_clk_register_periph_gate("dp2", "clk_m",
--				  TEGRA_PERIPH_ON_APB, clk_base, 0, 152,
--				  periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_DP2] = clk;
--
--	/* dtv */
--	clk = tegra_clk_register_periph_gate("dtv", "clk_m",
--				    TEGRA_PERIPH_ON_APB, clk_base, 0, 79,
--				    periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_DTV] = clk;
--
--	/* dsia */
-+	/* xusb_hs_src */
-+	val = readl(clk_base + CLK_SOURCE_XUSB_SS_SRC);
-+	val |= BIT(25); /* always select PLLU_60M */
-+	writel(val, clk_base + CLK_SOURCE_XUSB_SS_SRC);
-+
-+	clk = clk_register_fixed_factor(NULL, "xusb_hs_src", "pll_u_60M", 0,
-+					1, 1);
-+	clks[TEGRA114_CLK_XUSB_HS_SRC] = clk;
-+
-+	/* dsia mux */
- 	clk = clk_register_mux(NULL, "dsia_mux", mux_plld_out0_plld2_out0,
- 			       ARRAY_SIZE(mux_plld_out0_plld2_out0),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + PLLD_BASE, 25, 1, 0, &pll_d_lock);
- 	clks[TEGRA114_CLK_DSIA_MUX] = clk;
--	clk = tegra_clk_register_periph_gate("dsia", "dsia_mux", 0, clk_base,
--				    0, 48, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_DSIA] = clk;
- 
--	/* dsib */
-+	/* dsib mux */
- 	clk = clk_register_mux(NULL, "dsib_mux", mux_plld_out0_plld2_out0,
- 			       ARRAY_SIZE(mux_plld_out0_plld2_out0),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
- 	clks[TEGRA114_CLK_DSIB_MUX] = clk;
--	clk = tegra_clk_register_periph_gate("dsib", "dsib_mux", 0, clk_base,
--				    0, 82, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_DSIB] = clk;
- 
--	/* xusb_hs_src */
--	val = readl(clk_base + CLK_SOURCE_XUSB_SS_SRC);
--	val |= BIT(25); /* always select PLLU_60M */
--	writel(val, clk_base + CLK_SOURCE_XUSB_SS_SRC);
--
--	clk = clk_register_fixed_factor(NULL, "xusb_hs_src", "pll_u_60M", 0,
--					1, 1);
--	clks[TEGRA114_CLK_XUSB_HS_SRC] = clk;
--
--	/* xusb_host */
--	clk = tegra_clk_register_periph_gate("xusb_host", "xusb_host_src", 0,
--				    clk_base, 0, 89, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_XUSB_HOST] = clk;
--
--	/* xusb_ss */
--	clk = tegra_clk_register_periph_gate("xusb_ss", "xusb_ss_src", 0,
--				    clk_base, 0, 156, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_XUSB_HOST] = clk;
--
--	/* xusb_dev */
--	clk = tegra_clk_register_periph_gate("xusb_dev", "xusb_dev_src", 0,
--				    clk_base, 0, 95, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_XUSB_DEV] = clk;
--
--	/* emc */
-+	/* emc mux */
- 	clk = clk_register_mux(NULL, "emc_mux", mux_pllmcp_clkm,
- 			       ARRAY_SIZE(mux_pllmcp_clkm),
- 			       CLK_SET_RATE_NO_REPARENT,
- 			       clk_base + CLK_SOURCE_EMC,
- 			       29, 3, 0, NULL);
--	clk = tegra_clk_register_periph_gate("emc", "emc_mux", 0, clk_base,
--				CLK_IGNORE_UNUSED, 57, periph_clk_enb_refcnt);
--	clks[TEGRA114_CLK_EMC] = clk;
--
--	for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
--		data = &tegra_periph_clk_list[i];
- 
--		clk = tegra_clk_register_periph(data->name,
--			data->parent_names, data->num_parents, &data->periph,
--			clk_base, data->offset, data->flags);
--		clks[data->clk_id] = clk;
--	}
--
--	for (i = 0; i < ARRAY_SIZE(tegra_periph_nodiv_clk_list); i++) {
--		data = &tegra_periph_nodiv_clk_list[i];
--
--		clk = tegra_clk_register_periph_nodiv(data->name,
--				data->parent_names, data->num_parents,
--				&data->periph, clk_base, data->offset);
--		clks[data->clk_id] = clk;
--	}
-+	tegra_periph_clk_init(clk_base, pmc_base, tegra114_clks,
-+				&pll_p_params);
- }
- 
- /* Tegra114 CPU clock and reset control functions */
-@@ -2168,7 +1609,7 @@ static void __init tegra114_clock_init(struct device_node *np)
- 
- 	tegra114_fixed_clk_init(clk_base);
+ static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
+ 			       "pll_p", "pll_p_out2", "unused",
+ 			       "clk_32k", "pll_m_out1" };
+@@ -1611,7 +1545,7 @@ static void __init tegra114_clock_init(struct device_node *np)
  	tegra114_pll_init(clk_base, pmc_base);
--	tegra114_periph_clk_init(clk_base);
-+	tegra114_periph_clk_init(clk_base, pmc_base);
+ 	tegra114_periph_clk_init(clk_base, pmc_base);
  	tegra_audio_clk_init(clk_base, pmc_base, tegra114_clks, &pll_a_params);
- 	tegra114_pmc_clk_init(pmc_base);
+-	tegra114_pmc_clk_init(pmc_base);
++	tegra_pmc_clk_init(pmc_base, tegra114_clks);
  	tegra114_super_clk_init(clk_base);
-diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-index 31547fd..7c9af8e 100644
---- a/drivers/clk/tegra/clk-tegra20.c
-+++ b/drivers/clk/tegra/clk-tegra20.c
-@@ -973,7 +973,7 @@ static void __init tegra20_periph_clk_init(void)
  
- 	for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
- 		data = &tegra_periph_clk_list[i];
--		clk = tegra_clk_register_periph(data->name, data->parent_names,
-+		clk = tegra_clk_register_periph(data->name, data->p.parent_names,
- 				data->num_parents, &data->periph,
- 				clk_base, data->offset, data->flags);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
-@@ -983,7 +983,7 @@ static void __init tegra20_periph_clk_init(void)
- 	for (i = 0; i < ARRAY_SIZE(tegra_periph_nodiv_clk_list); i++) {
- 		data = &tegra_periph_nodiv_clk_list[i];
- 		clk = tegra_clk_register_periph_nodiv(data->name,
--					data->parent_names,
-+					data->p.parent_names,
- 					data->num_parents, &data->periph,
- 					clk_base, data->offset);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index d5a78f5..bffeb5c 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -1615,7 +1615,7 @@ static void __init tegra30_periph_clk_init(void)
- 
- 	for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
- 		data = &tegra_periph_clk_list[i];
--		clk = tegra_clk_register_periph(data->name, data->parent_names,
-+		clk = tegra_clk_register_periph(data->name, data->p.parent_names,
- 				data->num_parents, &data->periph,
- 				clk_base, data->offset, data->flags);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
-@@ -1625,7 +1625,7 @@ static void __init tegra30_periph_clk_init(void)
- 	for (i = 0; i < ARRAY_SIZE(tegra_periph_nodiv_clk_list); i++) {
- 		data = &tegra_periph_nodiv_clk_list[i];
- 		clk = tegra_clk_register_periph_nodiv(data->name,
--					data->parent_names,
-+					data->p.parent_names,
- 					data->num_parents, &data->periph,
- 					clk_base, data->offset);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
+ 	tegra_add_of_provider(np);
 diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 3306e41..9ec6118 100644
+index 9ec6118..2d48817 100644
 --- a/drivers/clk/tegra/clk.h
 +++ b/drivers/clk/tegra/clk.h
-@@ -460,7 +460,10 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
- struct tegra_periph_init_data {
- 	const char *name;
- 	int clk_id;
--	const char **parent_names;
-+	union {
-+		const char **parent_names;
-+		const char *parent_name;
-+	} p;
- 	int num_parents;
- 	struct tegra_clk_periph periph;
- 	u32 offset;
-@@ -477,7 +480,7 @@ struct tegra_periph_init_data {
- 	{								\
- 		.name = _name,						\
- 		.clk_id = _clk_id,					\
--		.parent_names = _parent_names,				\
-+		.p.parent_names = _parent_names,			\
- 		.num_parents = ARRAY_SIZE(_parent_names),		\
- 		.periph = TEGRA_CLK_PERIPH(_mux_shift, _mux_mask,	\
- 					   _mux_flags, _div_shift,	\
-@@ -597,6 +600,10 @@ void tegra_audio_clk_init(void __iomem *clk_base,
- 			void __iomem *pmc_base, struct tegra_clk *tegra_clks,
+@@ -604,6 +604,13 @@ void tegra_periph_clk_init(void __iomem *clk_base, void __iomem *pmc_base,
+ 			struct tegra_clk *tegra_clks,
  			struct tegra_clk_pll_params *pll_params);
  
-+void tegra_periph_clk_init(void __iomem *clk_base, void __iomem *pmc_base,
-+			struct tegra_clk *tegra_clks,
-+			struct tegra_clk_pll_params *pll_params);
++void tegra_pmc_clk_init(void __iomem *pmc_base, struct tegra_clk *tegra_clks);
++void tegra_fixed_clk_init(struct tegra_clk *tegra_clks);
++int tegra_osc_clk_init(void __iomem *clk_base, struct tegra_clk *tegra_clks,
++				unsigned long *input_freqs, int num,
++				unsigned long *osc_freq,
++				unsigned long *pll_ref_freq);
 +
  void tegra114_clock_tune_cpu_trimmers_high(void);
  void tegra114_clock_tune_cpu_trimmers_low(void);
