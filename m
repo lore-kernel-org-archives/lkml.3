@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab3JVHp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 03:45:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41199 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab3JVHp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 03:45:57 -0400
-Message-ID: <52662D3B.5050204@ti.com>
-Date: Tue, 22 Oct 2013 10:46:03 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753530Ab3JVIJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:09:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36864 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab3JVIJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:09:49 -0400
+Message-ID: <526512DE.8000005@pengutronix.de>
+Date: Mon, 21 Oct 2013 13:41:18 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Jyri Sarha <jsarha@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: am4372: Add McASP nodes
-References: <1382348758-1083-1-git-send-email-peter.ujfalusi@ti.com> <526579FB.10005@cogentembedded.com>
-In-Reply-To: <526579FB.10005@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Luis Henriques <luis.henriques@canonical.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        =?UTF-8?B?TG90aGFyIFdh?= =?UTF-8?B?w59tYW5u?= 
+	<LW@KARO-electronics.de>
+Subject: Re: [PATCH 3.2 094/149] can: flexcan: fix flexcan_chip_start() on
+ imx6
+References: <lsq.1382345188.205668698@decadent.org.uk> <87mwm27tf6.fsf@canonical.com>
+In-Reply-To: <87mwm27tf6.fsf@canonical.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="LwBH1WNDpigJU3WDndtioQuaxTm6fIfdT"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--LwBH1WNDpigJU3WDndtioQuaxTm6fIfdT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 10/21/2013 10:01 PM, Sergei Shtylyov wrote:
+On 10/21/2013 01:30 PM, Luis Henriques wrote:
+> Ben Hutchings <ben@decadent.org.uk> writes:
+>=20
+>> 3.2.52-rc1 review patch.  If anyone has any objections, please let me =
+know.
+>=20
+> Looks like this patch introduces a regression.  According to Marc, the
 
->> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
->> index c328d5c..defaad1 100644
->> --- a/arch/arm/boot/dts/am4372.dtsi
->> +++ b/arch/arm/boot/dts/am4372.dtsi
->> @@ -633,5 +633,32 @@
->>               dma-names = "tx", "rx";
->>           };
->>
->> +        mcasp0: mcasp@48038000 {
-> 
->    According to ePAPR spec [1], "the name of a node should be somewhat
-> generic, reflecting the function of the device and not its
-> precise programming model". In this case probably "sound"?
+yes
 
-We use the 'sound' node name for the sound card itself. The case with McASP is
-a bit complicated. It can operate in I2S mode (and similar protocols like RJM,
-LJM, TDM) or it can interface with S/PDIF, IEC60958-1, AES-3 codecs.
-The mode we put McASP depends on the external components, so the same McASP
-can be used in I2S mode in one board while on the other it can be S/PDIF.
-It would have been convenient if I could use 'i2s' as node name but it is not
-true for McASP (Tegra, Exynos for example have I2S, AC97, S/PDIF as separate IP).
+> fix is on its way into mainline ("can: flexcan: flexcan_chip_start:
+> fix regression, mark one MB for TX and abort pending TX"), although I
+> haven't seen it in netdev git repo.
 
-IMHO the 'mcasp' is still the best node name for this IP. McASP stands for:
-'Multichannel Audio Serial Port' and this is pretty much what McASP is.
+I see it on "net/master", though.
 
--- 
-Péter
+d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB
+        for TX and abort pending TX
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--LwBH1WNDpigJU3WDndtioQuaxTm6fIfdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlJlEt4ACgkQjTAFq1RaXHP6zACfaAUtP7R1geGWLsNreDvwut59
+zMcAn3FhM520wvcXQqndFfKAnRQqKjkl
+=+bKR
+-----END PGP SIGNATURE-----
+
+--LwBH1WNDpigJU3WDndtioQuaxTm6fIfdT--
