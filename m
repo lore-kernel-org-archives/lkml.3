@@ -1,68 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3JUMJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 08:09:15 -0400
-Received: from services.gouders.net ([141.101.32.176]:39456 "EHLO
-	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3JUMJJ (ORCPT
+	id S1753439Ab3JUMK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 08:10:27 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:16206 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753390Ab3JUMKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 08:09:09 -0400
-From: Dirk Gouders <dirk@gouders.net>
-To: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-Cc: Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [BUG bisected] WARNING: CPU: 0 PID: 1550 at net/wireless/chan.c:373 cfg80211_chandef_usable+0x30/0x15f()
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Mon, 21 Oct 2013 14:09:40 +0200
-Message-ID: <gifvruyge3.fsf@karga.hank.lab>
+	Mon, 21 Oct 2013 08:10:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApwGAHwYZVJ5LAy1/2dsb2JhbABZgweDTrYmhUaBKxd0giUBAQQBDhkTHA8NBwULCAMOCgklDwUlAyETiAAFvWMWj0YHgx+BCgOYCJIIgzgo
+Date: Mon, 21 Oct 2013 23:10:16 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
+Message-ID: <20131021121016.GB16161@dastard>
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+ <20131011003930.GC4446@dastard>
+ <20131014214250.GG856@cmpxchg.org>
+ <20131015014123.GQ4446@dastard>
+ <20131015174128.GH856@cmpxchg.org>
+ <20131015234147.GA4446@dastard>
+ <525DF466.6030308@redhat.com>
+ <20131016022606.GD4446@dastard>
+ <20131016223104.GA738@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016223104.GA738@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Simon, all,
+On Wed, Oct 16, 2013 at 06:31:04PM -0400, Johannes Weiner wrote:
+> On Wed, Oct 16, 2013 at 01:26:06PM +1100, Dave Chinner wrote:
+> > On Tue, Oct 15, 2013 at 10:05:26PM -0400, Rik van Riel wrote:
+> > > On 10/15/2013 07:41 PM, Dave Chinner wrote:
+> > > > On Tue, Oct 15, 2013 at 01:41:28PM -0400, Johannes Weiner wrote:
+> > > >> But it
+> > > >> looks like tracking radix tree nodes with a list and backpointers to
+> > > >> the mapping object for the lock etc. will be a major pain in the ass.
+> > > > 
+> > > > Perhaps so - it may not work out when we get down to the fine
+> > > > details...
+> > > 
+> > > I suspect that a combination of lifetime rules (inode cannot
+> > > disappear until all the radix tree nodes) and using RCU free
+> > > for the radix tree nodes, and the inodes might do the trick.
+> > > 
+> > > That would mean that, while holding the rcu read lock, the
+> > > back pointer from a radix tree node to the inode will always
+> > > point to valid memory.
+> > 
+> > Yes, that is what I was thinking...
+> > 
+> > > That allows the shrinker to lock the inode, and verify that
+> > > the inode is still valid, before it attempts to rcu free the
+> > > radix tree node with shadow entries.
+> > 
+> > Lock the mapping, not the inode. The radix tree is protected by the
+> > mapping_lock, not an inode lock. i.e. I'd hope that this can all b
+> > contained within the struct address_space and not require any
+> > knowledge of inodes or inode lifecycles at all.
+> 
+> Agreed, we can point to struct address_space and invalidate it by
+> setting mapping->host to NULL or so during the RCU grace period.
+> 
+> Also, the parent pointer is in a union with the two-word rcu_head, so
+> we get the address space backpointer for free.
+> 
+> The struct list_head for the FIFO, as you said, we can get for free as
+> well (at least on slab).
+> 
+> The FIFO lists themselves can be trimmed by a shrinker, I think.  You
+> were concerned about wind-up but if the nodes are not in excess and
+> ->count just returns 0 until we are actually prepared to shrink
+> objects, then there shouldn't be any windup, right?
 
-Recently, I noticed many traces (find a sample attached) in situations
-when wpa_supplicant is running but no appropriate access-point available.
+It's not windup that will be the problem, it's the step change from
+going from zero cache items to the global counter value when the
+magic threshold is crossed. That will generate a massive delta, and
+so generate a huge amount of work to be done from a single shrinker
+call that will be executed on the next context that can run it.
 
-I started a bisect and ended at commit 3aede78aad2a7e
-(mac80211: change IBSS channel state to chandef).
+i.e. the problem is that the cache size goes from 0 to something
+huge in an instant, and will drop from something huge to zero just
+as quickly. There is no way the shrinker can prevent overshoot and
+oscillation around that magic threshold because the nature of the
+step change overwhelms the damping algorithms in the shrinker used
+to control the amount work being done and hence reach stability.
 
-Please let me know if you need more information to inspect this problem.
+Normally, the shrinker sees the size of the cache change gradually,
+and so the delta tends to be relatively small and so it does a
+little bit of work every time it is called. This keeps the caches
+balanced with all the other caches that are trimmed a little at a
+time. IOWs, there is a natural damping algorithm built into the
+shrinkers that biases them towards a stable, balanced condition,
+even under changing workloads.
 
-Best regards,
+Windup occurs when that little bit of work keeps getting delayed and
+aggregated (e.g. repeated GFP_NOFS reclaim context) which then gets
+dumped on a single scan that can make progress (e.g. kswapd). So
+windup is an iterative process that triggers "catchup work". The
+macro level behaviour might end up looking the same, but they have
+very different underlying algorithmic causes.
 
-Dirk
+> I don't see a natural threshold for "excess" yet, though, because
+> there is no relationship between where radix_tree_node is allocated
+> and which zones the contained shadow entries point to, so it's hard to
+> estimate how worthwile any given radix_tree_node is to a node.  Maybe
+> tying it to an event might be better, like reclaim pressure, swapping
+> etc.
 
-------------------------------------------------------------------------
-Oct 21 13:56:06 lena kernel: ------------[ cut here ]------------
-Oct 21 13:56:06 lena kernel: WARNING: CPU: 0 PID: 1550 at net/wireless/chan.c:373 cfg80211_chandef_usable+0x30/0x15f()
-Oct 21 13:56:06 lena kernel: Modules linked in: brcmsmac cordic brcmutil bcma
-Oct 21 13:56:06 lena kernel: CPU: 0 PID: 1550 Comm: kworker/u4:5 Tainted: G        W    3.12.0-rc6+ #20
-Oct 21 13:56:06 lena kernel: Hardware name: LENOVO 08946MG/MoutCook, BIOS 33CN14WW        05/10/2010
-Oct 21 13:56:06 lena kernel: Workqueue: phy0 ieee80211_iface_work
-Oct 21 13:56:06 lena kernel: 0000000000000000 0000000000000009 ffffffff8161e3c7 0000000000000000
-Oct 21 13:56:06 lena kernel: ffffffff81068b00 ffff88006f8be7c0 ffffffff815e79e4 0000000000000000
-Oct 21 13:56:06 lena kernel: 000000000000000f ffff8800703e5dc2 ffff8800703e5d50 ffff88006f8bc200
-Oct 21 13:56:06 lena kernel: Call Trace:
-Oct 21 13:56:06 lena kernel: [<ffffffff8161e3c7>] ? dump_stack+0x50/0x80
-Oct 21 13:56:06 lena kernel: [<ffffffff81068b00>] ? warn_slowpath_common+0x73/0x8b
-Oct 21 13:56:06 lena kernel: [<ffffffff815e79e4>] ? cfg80211_chandef_usable+0x30/0x15f
-Oct 21 13:56:06 lena kernel: [<ffffffff815e79e4>] ? cfg80211_chandef_usable+0x30/0x15f
-Oct 21 13:56:06 lena kernel: [<ffffffff815f7c2e>] ? __ieee80211_sta_join_ibss+0x162/0x6e2
-Oct 21 13:56:06 lena kernel: [<ffffffff8161b8cd>] ? printk+0x4f/0x54
-Oct 21 13:56:06 lena kernel: [<ffffffff815f8439>] ? ieee80211_sta_create_ibss+0xc8/0xce
-Oct 21 13:56:06 lena kernel: [<ffffffff815f91ed>] ? ieee80211_ibss_work+0x255/0x3c5
-Oct 21 13:56:06 lena kernel: [<ffffffff8107addb>] ? process_one_work+0x1c7/0x2e6
-Oct 21 13:56:06 lena kernel: [<ffffffff81078c58>] ? pwq_activate_delayed_work+0x1e/0x28
-Oct 21 13:56:06 lena kernel: [<ffffffff8107b346>] ? worker_thread+0x1cb/0x2c4
-Oct 21 13:56:06 lena kernel: [<ffffffff8107b17b>] ? rescuer_thread+0x25c/0x25c
-Oct 21 13:56:06 lena kernel: [<ffffffff8107ff37>] ? kthread+0xad/0xb5
-Oct 21 13:56:06 lena kernel: [<ffffffff81080000>] ? kthread_create_on_node+0xc1/0x115
-Oct 21 13:56:06 lena kernel: [<ffffffff8107fe8a>] ? kthread_freezable_should_stop+0x3b/0x3b
-Oct 21 13:56:06 lena kernel: [<ffffffff816247bc>] ? ret_from_fork+0x7c/0xb0
-Oct 21 13:56:06 lena kernel: [<ffffffff8107fe8a>] ? kthread_freezable_should_stop+0x3b/0x3b
-Oct 21 13:56:06 lena kernel: ---[ end trace ade89af8f1b5d90f ]---
-------------------------------------------------------------------------
+The shrinker is provided a measure of reclaim pressure already,
+which it uses to balance the cache sizes. The shadow entries are no
+different from that perspective. You can't let them overrun the
+system, but you want to keep a respectable number of them around to
+keep (some metric of) performance within respectable bounds.  IOWs,
+that's the same constraints as most other caches (e.g. inode and
+dentry caches) with a shrinker shrinker and so I don't see any
+reason why it needs some magic threshold to avoid being shrunk
+proportionally like all other caches...
+
+Indeed, as memory pressure gets higher, the value of keeping lots of
+shadow entries around goes down because if there is lots of
+refaulting occurring then the number of shadow entries will be
+shrinking as a natural side effect of replacing shadow entries with
+real pages.
+
+If the memory pressure is not causing refaults to occur, then the
+shadow entries are using memory that could otherwise be put to
+better use, and so we should reclaim them in proportion to the
+memory pressure.
+
+If you use lazy lists, in the first case the scanner will expend
+most of it work removing radix tree nodes from the list because they
+have pages in them again, and so the shrinker does cleanup work
+rather than reclaim work. If the second case occurs, then the
+shrinker does reclaim work to free the radix tree nodes so the
+memory can be put to better use. No magic thresholds are needed at
+all...
+
+> > > It also means that locking only needs to be in the inode,
+> > > and on the LRU list for shadow radix tree nodes.
+> > > 
+> > > Does that sound sane?
+> > > 
+> > > Am I overlooking something?
+> > 
+> > It's pretty much along the same lines of what I was thinking, but
+> > lets see what Johannes thinks.
+> 
+> That sounds great to me.  I just have looked at this code for so long
+> that I'm getting blind towards it, so I really appreciate your input.
+
+I think we all suffer from that problem from time to time :/
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
