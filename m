@@ -1,184 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3JUSNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 14:13:34 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:41068 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3JUSNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 14:13:32 -0400
-Date: Mon, 21 Oct 2013 15:13:24 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/8] perf ui/progress: Add new helper functions for
- progress bar
-Message-ID: <20131021181324.GA3288@ghostprotocols.net>
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
- <1381468543-25334-3-git-send-email-namhyung@kernel.org>
+	id S1751730Ab3JUS3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 14:29:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9369 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751587Ab3JUS3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 14:29:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,541,1378882800"; 
+   d="scan'208";a="414655008"
+Message-ID: <52657278.7050208@intel.com>
+Date: Mon, 21 Oct 2013 21:29:12 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381468543-25334-3-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
+References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-10-git-send-email-adrian.hunter@intel.com> <20131021141228.GA2245@ghostprotocols.net>
+In-Reply-To: <20131021141228.GA2245@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 11, 2013 at 02:15:37PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Introduce ui_progress_setup() and ui_progress__advance() to separate
-> out from the session logic.  It'll be used by other places in the
-> upcoming patch.
 
-Renaming this from 'perf_progress' to 'ui_progress', as the existing
-method names implies, and also because this is not perf specific at all
-:-)
 
-- Arnaldo
- 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/progress.c  | 18 ++++++++++++++++++
->  tools/perf/ui/progress.h  | 10 ++++++++++
->  tools/perf/util/session.c | 24 ++++++++++++------------
->  3 files changed, 40 insertions(+), 12 deletions(-)
-> 
-> diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
-> index 3ec695607a4d..b5c22c6b1d93 100644
-> --- a/tools/perf/ui/progress.c
-> +++ b/tools/perf/ui/progress.c
-> @@ -19,6 +19,24 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
->  	return progress_fns->update(curr, total, title);
->  }
->  
-> +void ui_progress__setup(struct perf_progress *p, u64 total)
-> +{
-> +	p->curr = 0;
-> +	p->next = p->unit = total / 16;
-> +	p->total = total;
-> +
-> +}
-> +
-> +void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title)
-> +{
-> +	p->curr += adv;
-> +
-> +	if (p->curr >= p->next) {
-> +		p->next += p->unit;
-> +		ui_progress__update(p->curr, p->total, title);
-> +	}
-> +}
-> +
->  void ui_progress__finish(void)
->  {
->  	if (progress_fns->finish)
-> diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-> index 257cc224f9cf..3bd23e825953 100644
-> --- a/tools/perf/ui/progress.h
-> +++ b/tools/perf/ui/progress.h
-> @@ -8,10 +8,20 @@ struct ui_progress {
->  	void (*finish)(void);
->  };
->  
-> +struct perf_progress {
-> +	u64 curr;
-> +	u64 next;
-> +	u64 unit;
-> +	u64 total;
-> +};
-> +
->  extern struct ui_progress *progress_fns;
->  
->  void ui_progress__init(void);
->  
-> +void ui_progress__setup(struct perf_progress *p, u64 total);
-> +void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title);
-> +
->  void ui_progress__update(u64 curr, u64 total, const char *title);
->  void ui_progress__finish(void);
->  
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 6c1d4447c5b4..9f62be8bc167 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -538,13 +538,16 @@ static int flush_sample_queue(struct perf_session *s,
->  	struct perf_sample sample;
->  	u64 limit = os->next_flush;
->  	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
-> -	unsigned idx = 0, progress_next = os->nr_samples / 16;
->  	bool show_progress = limit == ULLONG_MAX;
-> +	struct perf_progress prog;
->  	int ret;
->  
->  	if (!tool->ordered_samples || !limit)
->  		return 0;
->  
-> +	if (show_progress)
-> +		ui_progress__setup(&prog, os->nr_samples);
-> +
->  	list_for_each_entry_safe(iter, tmp, head, list) {
->  		if (iter->timestamp > limit)
->  			break;
-> @@ -562,10 +565,10 @@ static int flush_sample_queue(struct perf_session *s,
->  		os->last_flush = iter->timestamp;
->  		list_del(&iter->list);
->  		list_add(&iter->list, &os->sample_cache);
-> -		if (show_progress && (++idx >= progress_next)) {
-> -			progress_next += os->nr_samples / 16;
-> -			ui_progress__update(idx, os->nr_samples,
-> -					    "Processing time ordered events...");
-> +
-> +		if (show_progress) {
-> +			ui_progress__advance(&prog, 1,
-> +					     "Processing time ordered events...");
->  		}
->  	}
->  
-> @@ -1310,12 +1313,13 @@ int __perf_session__process_events(struct perf_session *session,
->  				   u64 data_offset, u64 data_size,
->  				   u64 file_size, struct perf_tool *tool)
->  {
-> -	u64 head, page_offset, file_offset, file_pos, progress_next;
-> +	u64 head, page_offset, file_offset, file_pos;
->  	int err, mmap_prot, mmap_flags, map_idx = 0;
->  	size_t	mmap_size;
->  	char *buf, *mmaps[NUM_MMAPS];
->  	union perf_event *event;
->  	uint32_t size;
-> +	struct perf_progress prog;
->  
->  	perf_tool__fill_defaults(tool);
->  
-> @@ -1326,7 +1330,7 @@ int __perf_session__process_events(struct perf_session *session,
->  	if (data_offset + data_size < file_size)
->  		file_size = data_offset + data_size;
->  
-> -	progress_next = file_size / 16;
-> +	ui_progress__setup(&prog, file_size);
->  
->  	mmap_size = MMAP_SIZE;
->  	if (mmap_size > file_size)
-> @@ -1381,11 +1385,7 @@ more:
->  	head += size;
->  	file_pos += size;
->  
-> -	if (file_pos >= progress_next) {
-> -		progress_next += file_size / 16;
-> -		ui_progress__update(file_pos, file_size,
-> -				    "Processing events...");
-> -	}
-> +	ui_progress__advance(&prog, size, "Processing events...");
->  
->  	if (file_pos < file_size)
->  		goto more;
-> -- 
-> 1.7.11.7
+On 21/10/2013 5:12 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter escreveu:
+>> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
+>> was not passed around.
+
+Unfortunately passing CFLAGS seems to break some of the
+tests, so this needs more work.
+
+>
+> <SNIP>
+>
+>> index c873e03..699cdb7 100644
+>> --- a/tools/perf/Makefile.perf
+>> +++ b/tools/perf/Makefile.perf
+>> @@ -706,7 +706,7 @@ $(LIB_FILE): $(LIB_OBJS)
+>>   TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
+>>
+>>   $(LIBTRACEEVENT): $(TE_SOURCES)
+>> -	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
+>> +	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
+>
+> So are we unconditionally set -g and -Wall?
+
+They are the defaults from tools/lib/traceevent/Makefile
+if CFLAGS is not set.  It seemed reasonably to keep them
+the same.
+
+>
+> And by making CFLAGS be $(EXTRA_CFLAGS) implies EXTRA_CFLAGS already
+> contains "$(CFLAGS)?
+
+No I was intending to pass only -m32
+
+>
+> - Arnaldo
+>
+>>
+>>   $(LIBTRACEEVENT)-clean:
+>>   	$(call QUIET_CLEAN, libtraceevent)
+>> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+>> index c516d6b..c94a06b 100644
+>> --- a/tools/perf/config/Makefile
+>> +++ b/tools/perf/config/Makefile
+>> @@ -92,7 +92,7 @@ endif
+>>
+>>   feature_check = $(eval $(feature_check_code))
+>>   define feature_check_code
+>> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+>> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+>>   endef
+>>
+>>   feature_set = $(eval $(feature_set_code))
+>> @@ -169,7 +169,7 @@ ifeq ($(feature-all), 1)
+>>     #
+>>     $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+>>   else
+>> -  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+>> +  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+>>     $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+>>   endif
+>>
+>> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+>> index 452b67c..353c00c 100644
+>> --- a/tools/perf/config/feature-checks/Makefile
+>> +++ b/tools/perf/config/feature-checks/Makefile
+>> @@ -31,7 +31,7 @@ CC := $(CC) -MD
+>>
+>>   all: $(FILES)
+>>
+>> -BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+>> +BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+>>
+>>   ###############################
+>>
+>> --
+>> 1.7.11.7
