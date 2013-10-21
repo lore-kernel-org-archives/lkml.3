@@ -1,118 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3JUU5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 16:57:50 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25438 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3JUU5t (ORCPT
+	id S1751788Ab3JUVHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 17:07:18 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:55845 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3JUVHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 16:57:49 -0400
-Date: Mon, 21 Oct 2013 13:53:09 -0700 (PDT)
-From: Seth Goldberg <seth.goldberg@oracle.com>
-X-X-Sender: sethg@bergsoft
-To: The development of GNU GRUB <grub-devel@gnu.org>
-cc: boris.ostrovsky@oracle.com, david.woodhouse@intel.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, keir@xen.org,
-        konrad.wilk@oracle.com, pjones@redhat.com,
-        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-In-Reply-To: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-Message-ID: <alpine.GSO.2.00.1310211348530.2162@oretfbsg>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
+	Mon, 21 Oct 2013 17:07:14 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20131017140542.GE24056@e106331-lin.cambridge.arm.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	<1381960030-1640-5-git-send-email-tim.kryger@linaro.org>
+	<20131017140542.GE24056@e106331-lin.cambridge.arm.com>
+Date: Mon, 21 Oct 2013 14:07:14 -0700
+Message-ID: <CAAYSxhoBvr2Q=ZEQX6hgBjLorgjCjeLLqB9WP2RQ1YFBejjHbg@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 4/6] clocksource: kona: Add basic use of
+ external clock
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Quoting Daniel Kiper, who wrote the following on Mon, 21 Oct 2013:
-
-> Hi,
+On Thu, Oct 17, 2013 at 7:05 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Wed, Oct 16, 2013 at 10:47:08PM +0100, Tim Kryger wrote:
+>> When an clock handle is specified in the device tree, enable it and use
+>> it to determine the external clock frequency.
 >
-> During work on multiboot2 protocol support for Xen it was discovered
-> that memory map passed via relevant tag could not represent wide range
-> of memory types available on EFI platforms. Additionally, GRUB2
-> implementation calls ExitBootServices() on them just before jumping
-> into loaded image. In this situation loaded system could not clearly
-> identify reserved memory regions, EFI runtime services regions and others.
+> I'd drop handle here and just say "When a clock is specified".
+>
+> This will need a binding document update.
 
-   Yes, that is exactly why we added full support to pass the entire UEFI 
-memory map via a new tag.
+Can you be more specific about what you are looking for here?
+
+Shall I just say that the frequency property is now deprecated since
+it actually belongs to the external clock whose association with a
+kona timer instance might be declared in the DT using the common clock
+bindings but could also be declared through other means?
+
+>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+>> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>> ---
+>>  drivers/clocksource/bcm_kona_timer.c | 14 +++++++++++---
+>>  1 file changed, 11 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
+>> index 0d7d8c3..fd11f96 100644
+>> --- a/drivers/clocksource/bcm_kona_timer.c
+>> +++ b/drivers/clocksource/bcm_kona_timer.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/jiffies.h>
+>>  #include <linux/clockchips.h>
+>>  #include <linux/types.h>
+>> +#include <linux/clk.h>
+>>
+>>  #include <linux/io.h>
+>>  #include <asm/mach/time.h>
+>> @@ -107,11 +108,18 @@ static const struct of_device_id bcm_timer_ids[] __initconst = {
+>>  static void __init kona_timers_init(struct device_node *node)
+>>  {
+>>       u32 freq;
+>> +     struct clk *external_clk;
+>>
+>> -     if (!of_property_read_u32(node, "clock-frequency", &freq))
+>> +     external_clk = of_clk_get_by_name(node, NULL);
+>
+> Is there only a single external clock input to the kona timer, or is
+> only one relevant here?
+>
+> Are there any other inputs currently not modelled (e.g. regulators)?
+
+The timer block relies upon a single clock and does not use any regulators.
+
+>> +
+>> +     if (!IS_ERR(external_clk)) {
+>> +             arch_timer_rate = clk_get_rate(external_clk);
+>> +             clk_prepare_enable(external_clk);
+>> +     } else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
+>>               arch_timer_rate = freq;
+>> -     else
+>> -             panic("clock-frequency not set in the .dts file");
+>> +     } else {
+>> +             panic("neither clock-frequency or clocks handle in .dts file");
+>
+> Nit: it's not a handle, it's a phandle+args pair.
+>
+> Why not just "Unable to determine clock frequency"?
+
+Sure that sounds fine.
 
 >
-> Normally, on EFI platform, system requires access to at least EFI runtime
-> services. However, it is not possible to identify them in GRUB2
-> implementation of multiboot2 protocol because they are marked as reserved,
-> like memory mapped IO regions, really reserved memory regions and others.
-> Additionally, it is not possible to get memory map directly from EFI (similar
-> solution is used on legacy BIOS platforms in Xen case) because ExitBootServices()
-> was earlier called by GRUB2. So there is only one chance to do that today.
-> Loaded image could map all reserved regions. However, this is not final
-> solution because it could be dangerous. So this is rather workaround which
-> should be used on currently existing multiboot2 protocol implementation only.
-> At this stage extra tag could be added to multiboot2 protocol to pass plain
-> EFI memory map to loaded image too. However, this solution requires some
-> coordination with GRUB2 upstream and could take some time.
+> Do we need to panic here? Might a system have other clocks it could use
+> to continue?
 
-   This is precisely what we did, and though there is a risk of using a tag 
-that is not accepted upstream, we did what we needed to do, since we ship the 
-boot loader with the OS and don't have to be concerned with making it work 
-with some arbitrary already-installed loader.
-
->
-> Additionally, it should be mentioned that there is no possibility or it could
-> be very difficult to implement secure boot on EFI platforms using GRUB2 as boot
-> loader because, as it was mentioned earlier, it calls ExitBootServices().
->
-> At first there was a plan to use upstream GRUB2 as a reference multiboot2 protocol
-> implementation. However, during discussion on LPC 2013 it was stated that every
-> distribution uses tons of patches for GRUB2. So distros GRUB2 implementation
-> substantially deviates form upstream. One of this deviation is linuxefi module
-> which enables usage of secure boot protocol on EFI platforms with shim. However,
-> it should be mentioned that this module still uses Linux x86 boot protocol.
-> So I think that similar solution could be used in multiboot2 protocol case.
->
-> Separate multiboot2efi module should be established. It should verify system
-> kernel and all loaded modules using shim on EFI platforms with enabled secure boot
-> (this step should be omitted on platforms without secure boot). If verification
-> is successfully completed GRUB2 should transfer control to loaded image. Later
-> it should get system memory map directly from EFI, do other needed things, call
-> ExitBootServices() and finally start loaded system. I think that this proposal
-> could solve above mentioned problems. Additionally, I think that multiboot2 protocol
-> should be extended by adding extra tag which will be used to pass plain EFI memory
-> map to loaded image. Just in case (we could also use this as transitional thing
-> as I mentioned above). Work on this solution should be coordinated with upstream
-> GRUB2 guys to ease its later introduction in distros and to avoid another deviation.
->
-
-   I'm not sure we even need a separate command -- it adds complexity for no 
-reason.  It's reasonable to just perform the validation if we're on a UEFI 
-platform and secure boot is enabled.  MAYBE an arg to the multiboot2 command 
-would be useful for testing, but I'd rather not have any way for secure boot 
-to be circumvented, lest a piece of malware only needs to write a new 
-menuentry with the non-secure-boot multiboot2 command and make it the default.
-
-  Thanks,
-  --S
-
-
-> At first I am going to prepare multiboot2 protocol implementation for Xen (there
-> is about 80% of code ready) with above mentioned workaround. Later I am going
-> to work on multiboot2efi module.
->
-> What do you think about that?
-> Any comments, suggestions, objections?
->
-> Daniel
->
-> _______________________________________________
-> Grub-devel mailing list
-> Grub-devel@gnu.org
-> https://lists.gnu.org/mailman/listinfo/grub-devel
->
+I completely agree that this driver could be improved.  However, this
+is unrelated to the topic of this series so I will address it later in
+a separate patch.
