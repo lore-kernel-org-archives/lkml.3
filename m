@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3JUIyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:54:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39906 "EHLO
+	id S1754800Ab3JUIzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:55:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39910 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754592Ab3JUIxd (ORCPT
+	by vger.kernel.org with ESMTP id S1754636Ab3JUIxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:53:33 -0400
+	Mon, 21 Oct 2013 04:53:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mike Christie" <michaelc@cs.wisc.edu>,
-        "James Bottomley" <JBottomley@Parallels.com>,
-        "Sasha Levin" <levinsasha928@gmail.com>
+CC: akpm@linux-foundation.org, "Huang Ying" <ying.huang@intel.com>,
+        "Lv Zheng" <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.11296265@decadent.org.uk>
+Message-ID: <lsq.1382345188.138469147@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 140/149] [SCSI] iscsi: don't hang in endless loop if
- no targets present
+Subject: [PATCH 3.2 147/149] ACPI / IPMI: Fix atomic context requirement
+ of ipmi_msg_handler()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,65 +33,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 46a7c17d26967922092f3a8291815ffb20f6cabe upstream.
+commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
 
-iscsi_if_send_reply() may return -ESRCH if there were no targets to send
-data to. Currently we're ignoring this value and looping in attempt to do it
-over and over, which will usually lead in a hung task like this one:
+This patch fixes the issues indicated by the test results that
+ipmi_msg_handler() is invoked in atomic context.
 
-[ 4920.817298] INFO: task trinity:9074 blocked for more than 120 seconds.
-[ 4920.818527] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 4920.819982] trinity         D 0000000000000000  5504  9074   2756 0x00000004
-[ 4920.825374]  ffff880003961a98 0000000000000086 ffff8800001aa000 ffff8800001aa000
-[ 4920.826791]  00000000001d4340 ffff880003961fd8 ffff880003960000 00000000001d4340
-[ 4920.828241]  00000000001d4340 00000000001d4340 ffff880003961fd8 00000000001d4340
-[ 4920.833231]
-[ 4920.833519] Call Trace:
-[ 4920.834010]  [<ffffffff826363fa>] schedule+0x3a/0x50
-[ 4920.834953]  [<ffffffff82634ac9>] __mutex_lock_common+0x209/0x5b0
-[ 4920.836226]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
-[ 4920.837281]  [<ffffffff81053943>] ? sched_clock+0x13/0x20
-[ 4920.838305]  [<ffffffff81af805d>] ? iscsi_if_rx+0x2d/0x990
-[ 4920.839336]  [<ffffffff82634eb0>] mutex_lock_nested+0x40/0x50
-[ 4920.840423]  [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
-[ 4920.841434]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
-[ 4920.842548]  [<ffffffff82637bb0>] ? _raw_read_unlock+0x30/0x60
-[ 4920.843666]  [<ffffffff821f71de>] netlink_unicast+0x1ae/0x1f0
-[ 4920.844751]  [<ffffffff821f7997>] netlink_sendmsg+0x227/0x350
-[ 4920.845850]  [<ffffffff821857bd>] ? sock_update_netprioidx+0xdd/0x1b0
-[ 4920.847060]  [<ffffffff82185732>] ? sock_update_netprioidx+0x52/0x1b0
-[ 4920.848276]  [<ffffffff8217f226>] sock_aio_write+0x166/0x180
-[ 4920.849348]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
-[ 4920.850428]  [<ffffffff811d0d9a>] do_sync_write+0xda/0x120
-[ 4920.851465]  [<ffffffff810dffed>] ? sub_preempt_count+0x9d/0xd0
-[ 4920.852579]  [<ffffffff810dfe41>] ? get_parent_ip+0x11/0x50
-[ 4920.853608]  [<ffffffff81791887>] ? security_file_permission+0x27/0xb0
-[ 4920.854821]  [<ffffffff811d0f4c>] vfs_write+0x16c/0x180
-[ 4920.855781]  [<ffffffff811d104f>] sys_write+0x4f/0xa0
-[ 4920.856798]  [<ffffffff82638e79>] system_call_fastpath+0x16/0x1b
-[ 4920.877487] 1 lock held by trinity/9074:
-[ 4920.878239]  #0:  (rx_queue_mutex){+.+...}, at: [<ffffffff81af805d>] iscsi_if_rx+0x2d/0x990
-[ 4920.880005] Kernel panic - not syncing: hung_task: blocked tasks
+BUG: scheduling while atomic: kipmi0/18933/0x10000100
+Modules linked in: ipmi_si acpi_ipmi ...
+CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
+Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
+ ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
+ ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
+ 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
+Call Trace:
+ <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
+ [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
+ [<ffffffff814c73e0>] __schedule+0x83/0x59c
+ [<ffffffff81058853>] __cond_resched+0x22/0x2d
+ [<ffffffff814c794b>] _cond_resched+0x14/0x1d
+ [<ffffffff814c6d82>] mutex_lock+0x11/0x32
+ [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
+ [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
+ [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
+ [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
+ [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
+ [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
+ [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
+ ...
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Also Tony Camuso says:
+
+ We were getting occasional "Scheduling while atomic" call traces
+ during boot on some systems. Problem was first seen on a Cisco C210
+ but we were able to reproduce it on a Cisco c220m3. Setting
+ CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
+ tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
+
+ =================================
+ [ INFO: inconsistent lock state ]
+ 2.6.32-415.el6.x86_64-debug-splck #1
+ ---------------------------------
+ inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+ ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
+  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
+ {SOFTIRQ-ON-W} state was registered at:
+   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
+   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
+   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
+   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
+   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
+   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
+
+The fix implemented by this change has been tested by Tony:
+
+ Tested the patch in a boot loop with lockdep debug enabled and never
+ saw the problem in over 400 reboots.
+
+Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reviewed-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/scsi_transport_iscsi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/acpi_ipmi.c | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/drivers/scsi/scsi_transport_iscsi.c
-+++ b/drivers/scsi/scsi_transport_iscsi.c
-@@ -2105,7 +2105,7 @@ iscsi_if_rx(struct sk_buff *skb)
- 				break;
- 			err = iscsi_if_send_reply(group, nlh->nlmsg_seq,
- 				nlh->nlmsg_type, 0, 0, ev, sizeof(*ev));
--		} while (err < 0 && err != -ECONNREFUSED);
-+		} while (err < 0 && err != -ECONNREFUSED && err != -ESRCH);
- 		skb_pull(skb, rlen);
+diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
+index f40acef..a6977e1 100644
+--- a/drivers/acpi/acpi_ipmi.c
++++ b/drivers/acpi/acpi_ipmi.c
+@@ -39,6 +39,7 @@
+ #include <linux/ipmi.h>
+ #include <linux/device.h>
+ #include <linux/pnp.h>
++#include <linux/spinlock.h>
+ 
+ MODULE_AUTHOR("Zhao Yakui");
+ MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
+@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
+ 	struct list_head head;
+ 	/* the IPMI request message list */
+ 	struct list_head tx_msg_list;
+-	struct mutex	tx_msg_lock;
++	spinlock_t	tx_msg_lock;
+ 	acpi_handle handle;
+ 	struct pnp_dev *pnp_dev;
+ 	ipmi_user_t	user_interface;
+@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct acpi_ipmi_msg *tx_msg,
+ 	struct kernel_ipmi_msg *msg;
+ 	struct acpi_ipmi_buffer *buffer;
+ 	struct acpi_ipmi_device *device;
++	unsigned long flags;
+ 
+ 	msg = &tx_msg->tx_message;
+ 	/*
+@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct acpi_ipmi_msg *tx_msg,
+ 
+ 	/* Get the msgid */
+ 	device = tx_msg->device;
+-	mutex_lock(&device->tx_msg_lock);
++	spin_lock_irqsave(&device->tx_msg_lock, flags);
+ 	device->curr_msgid++;
+ 	tx_msg->tx_msgid = device->curr_msgid;
+-	mutex_unlock(&device->tx_msg_lock);
++	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
+ }
+ 
+ static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
+@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 	int msg_found = 0;
+ 	struct acpi_ipmi_msg *tx_msg;
+ 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
++	unsigned long flags;
+ 
+ 	if (msg->user != ipmi_device->user_interface) {
+ 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
+@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 		ipmi_free_recv_msg(msg);
+ 		return;
  	}
- 	mutex_unlock(&rx_queue_mutex);
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
+ 		if (msg->msgid == tx_msg->tx_msgid) {
+ 			msg_found = 1;
+@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 		}
+ 	}
+ 
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	if (!msg_found) {
+ 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
+ 			"returned.\n", msg->msgid);
+@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
+ 	struct acpi_ipmi_device *ipmi_device = handler_context;
+ 	int err, rem_time;
+ 	acpi_status status;
++	unsigned long flags;
+ 	/*
+ 	 * IPMI opregion message.
+ 	 * IPMI message is firstly written to the BMC and system software
+@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
+ 		return AE_NO_MEMORY;
+ 
+ 	acpi_format_ipmi_msg(tx_msg, address, value);
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	err = ipmi_request_settime(ipmi_device->user_interface,
+ 					&tx_msg->addr,
+ 					tx_msg->tx_msgid,
+@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
+ 	status = AE_OK;
+ 
+ end_label:
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_del(&tx_msg->head);
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	kfree(tx_msg);
+ 	return status;
+ }
+@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct acpi_ipmi_device *ipmi_device)
+ 
+ 	INIT_LIST_HEAD(&ipmi_device->head);
+ 
+-	mutex_init(&ipmi_device->tx_msg_lock);
++	spin_lock_init(&ipmi_device->tx_msg_lock);
+ 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
+ 	ipmi_install_space_handler(ipmi_device);
+ 
 
