@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab3JUFUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 01:20:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35564 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752094Ab3JUFT7 (ORCPT
+	id S1752659Ab3JUF1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 01:27:37 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:37784 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab3JUF1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 01:19:59 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: jon.mason@intel.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] NTB: remove duplicate defines
-Date: Mon, 21 Oct 2013 07:19:42 +0200
-Message-Id: <1382332782-5686-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 21 Oct 2013 01:27:36 -0400
+Date: Mon, 21 Oct 2013 07:27:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 4/3] x86/vdso: Optimize setup_additional_pages()
+Message-ID: <20131021052731.GA14476@gmail.com>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+ <1382057438-3306-4-git-send-email-davidlohr@hp.com>
+ <20131018060501.GA3411@gmail.com>
+ <1382327556.2402.23.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382327556.2402.23.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicate defines in drivers/ntb/ntb_regs.h
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/ntb/ntb_regs.h | 3 ---
- 1 file changed, 3 deletions(-)
+* Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-diff --git a/drivers/ntb/ntb_regs.h b/drivers/ntb/ntb_regs.h
-index aa4bdd3..caa5975 100644
---- a/drivers/ntb/ntb_regs.h
-+++ b/drivers/ntb/ntb_regs.h
-@@ -75,9 +75,6 @@
- #define SNB_SBAR2XLAT_OFFSET	0x0030
- #define SNB_SBAR4XLAT_OFFSET	0x0038
- #define SNB_SBAR0BASE_OFFSET	0x0040
--#define SNB_SBAR0BASE_OFFSET	0x0040
--#define SNB_SBAR2BASE_OFFSET	0x0048
--#define SNB_SBAR4BASE_OFFSET	0x0050
- #define SNB_SBAR2BASE_OFFSET	0x0048
- #define SNB_SBAR4BASE_OFFSET	0x0050
- #define SNB_NTBCNTL_OFFSET	0x0058
--- 
-1.8.1.2
+> > 2)
+> > 
+> > I don't see the justification: this code gets executed in exec() where 
+> > a new mm has just been allocated. There's only a single user of the mm 
+> > and thus the critical section width of mmap_sem is more or less 
+> > irrelevant.
+> > 
+> > mmap_sem critical section size only matters for codepaths that 
+> > threaded programs can hit.
+> 
+> Yes, I was surprised by the performance boost I noticed when running 
+> this patch. This weekend I re-ran the tests (including your 4/3 patch) 
+> and noticed that while we're still getting some benefits (more like in 
+> the +5% throughput range), it's not as good as I originally reported. I 
+> believe the reason is because I had ran the tests on the vanilla kernel 
+> without the max clock frequency, so the comparison was obviously not 
+> fair. That said, I still think it's worth adding this patch, as it does 
+> help at a micro-optimization level, and it's one less mmap_sem user we 
+> have to worry about.
 
+But it's a mmap_sem user that is essentially _guaranteed_ to have only a 
+single user at that point, in the exec() path!
+
+So I don't see how this can show _any_ measurable speedup, let alone a 5% 
+speedup in a macro test. If our understanding is correct then the patch 
+does nothing but shuffle around a flag setting operation. (the mmap_sem is 
+equivalent to setting a single flag, in the single-user case.)
+
+Now, if our understanding is incorrect then we need to improve our 
+understanding.
+
+Thanks,
+
+	Ingo
