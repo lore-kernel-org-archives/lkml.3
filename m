@@ -1,125 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3JUCrO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 22:47:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56684 "EHLO
+	id S1752731Ab3JUCrR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 22:47:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:22710 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752244Ab3JUCqd (ORCPT
+	by vger.kernel.org with ESMTP id S1752277Ab3JUCqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 Oct 2013 22:46:33 -0400
-Message-Id: <20131021024630.485773104@goodmis.org>
+Message-Id: <20131021024630.653228933@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 20 Oct 2013 22:44:31 -0400
+Date: Sun, 20 Oct 2013 22:44:32 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Konovalov <andreyknvl@google.com>
-Subject: [for-next][PATCH 2/6] tracing: Fix potential out-of-bounds in trace_get_user()
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [for-next][PATCH 3/6] ftrace: Get rid of ftrace_graph_filter_enabled
 References: <20131021024429.189874455@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Fix-potential-out-of-bounds-in-trace_get_use.patch
+Content-Disposition: inline; filename=0003-ftrace-Get-rid-of-ftrace_graph_filter_enabled.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Andrey reported the following report:
+The ftrace_graph_filter_enabled means that user sets function filter
+and it always has same meaning of ftrace_graph_count > 0.
 
-ERROR: AddressSanitizer: heap-buffer-overflow on address ffff8800359c99f3
-ffff8800359c99f3 is located 0 bytes to the right of 243-byte region [ffff8800359c9900, ffff8800359c99f3)
-Accessed by thread T13003:
-  #0 ffffffff810dd2da (asan_report_error+0x32a/0x440)
-  #1 ffffffff810dc6b0 (asan_check_region+0x30/0x40)
-  #2 ffffffff810dd4d3 (__tsan_write1+0x13/0x20)
-  #3 ffffffff811cd19e (ftrace_regex_release+0x1be/0x260)
-  #4 ffffffff812a1065 (__fput+0x155/0x360)
-  #5 ffffffff812a12de (____fput+0x1e/0x30)
-  #6 ffffffff8111708d (task_work_run+0x10d/0x140)
-  #7 ffffffff810ea043 (do_exit+0x433/0x11f0)
-  #8 ffffffff810eaee4 (do_group_exit+0x84/0x130)
-  #9 ffffffff810eafb1 (SyS_exit_group+0x21/0x30)
-  #10 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
+Link: http://lkml.kernel.org/r/1381739066-7531-2-git-send-email-namhyung@kernel.org
 
-Allocated by thread T5167:
-  #0 ffffffff810dc778 (asan_slab_alloc+0x48/0xc0)
-  #1 ffffffff8128337c (__kmalloc+0xbc/0x500)
-  #2 ffffffff811d9d54 (trace_parser_get_init+0x34/0x90)
-  #3 ffffffff811cd7b3 (ftrace_regex_open+0x83/0x2e0)
-  #4 ffffffff811cda7d (ftrace_filter_open+0x2d/0x40)
-  #5 ffffffff8129b4ff (do_dentry_open+0x32f/0x430)
-  #6 ffffffff8129b668 (finish_open+0x68/0xa0)
-  #7 ffffffff812b66ac (do_last+0xb8c/0x1710)
-  #8 ffffffff812b7350 (path_openat+0x120/0xb50)
-  #9 ffffffff812b8884 (do_filp_open+0x54/0xb0)
-  #10 ffffffff8129d36c (do_sys_open+0x1ac/0x2c0)
-  #11 ffffffff8129d4b7 (SyS_open+0x37/0x50)
-  #12 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
-
-Shadow bytes around the buggy address:
-  ffff8800359c9700: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  ffff8800359c9780: fd fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa
-  ffff8800359c9800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  ffff8800359c9880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  ffff8800359c9900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-=>ffff8800359c9980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00[03]fb
-  ffff8800359c9a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  ffff8800359c9a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  ffff8800359c9b00: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
-  ffff8800359c9b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  ffff8800359c9c00: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
-Shadow byte legend (one shadow byte represents 8 application bytes):
-  Addressable:           00
-  Partially addressable: 01 02 03 04 05 06 07
-  Heap redzone:          fa
-  Heap kmalloc redzone:  fb
-  Freed heap region:     fd
-  Shadow gap:            fe
-
-The out-of-bounds access happens on 'parser->buffer[parser->idx] = 0;'
-
-Although the crash happened in ftrace_regex_open() the real bug
-occurred in trace_get_user() where there's an incrementation to
-parser->idx without a check against the size. The way it is triggered
-is if userspace sends in 128 characters (EVENT_BUF_SIZE + 1), the loop
-that reads the last character stores it and then breaks out because
-there is no more characters. Then the last character is read to determine
-what to do next, and the index is incremented without checking size.
-
-Then the caller of trace_get_user() usually nulls out the last character
-with a zero, but since the index is equal to the size, it writes a nul
-character after the allocated space, which can corrupt memory.
-
-Luckily, only root user has write access to this file.
-
-Link: http://lkml.kernel.org/r/20131009222323.04fd1a0d@gandalf.local.home
-
-Reported-by: Andrey Konovalov <andreyknvl@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c | 6 +-----
+ kernel/trace/trace.h  | 3 +--
+ 2 files changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d5f7c4d..063a92b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -843,9 +843,12 @@ int trace_get_user(struct trace_parser *parser, const char __user *ubuf,
- 	if (isspace(ch)) {
- 		parser->buffer[parser->idx] = 0;
- 		parser->cont = false;
--	} else {
-+	} else if (parser->idx < parser->size - 1) {
- 		parser->cont = true;
- 		parser->buffer[parser->idx++] = ch;
-+	} else {
-+		ret = -EINVAL;
-+		goto out;
- 	}
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 03cf44a..a77e4a0 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3776,7 +3776,6 @@ static const struct file_operations ftrace_notrace_fops = {
+ static DEFINE_MUTEX(graph_lock);
  
- 	*ppos += read;
+ int ftrace_graph_count;
+-int ftrace_graph_filter_enabled;
+ unsigned long ftrace_graph_funcs[FTRACE_GRAPH_MAX_FUNCS] __read_mostly;
+ 
+ static void *
+@@ -3799,7 +3798,7 @@ static void *g_start(struct seq_file *m, loff_t *pos)
+ 	mutex_lock(&graph_lock);
+ 
+ 	/* Nothing, tell g_show to print all functions are enabled */
+-	if (!ftrace_graph_filter_enabled && !*pos)
++	if (!ftrace_graph_count && !*pos)
+ 		return (void *)1;
+ 
+ 	return __g_next(m, pos);
+@@ -3845,7 +3844,6 @@ ftrace_graph_open(struct inode *inode, struct file *file)
+ 	mutex_lock(&graph_lock);
+ 	if ((file->f_mode & FMODE_WRITE) &&
+ 	    (file->f_flags & O_TRUNC)) {
+-		ftrace_graph_filter_enabled = 0;
+ 		ftrace_graph_count = 0;
+ 		memset(ftrace_graph_funcs, 0, sizeof(ftrace_graph_funcs));
+ 	}
+@@ -3925,8 +3923,6 @@ out:
+ 	if (fail)
+ 		return -EINVAL;
+ 
+-	ftrace_graph_filter_enabled = !!(*idx);
+-
+ 	return 0;
+ }
+ 
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 10c86fb..40211ce 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -730,7 +730,6 @@ extern void __trace_graph_return(struct trace_array *tr,
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ /* TODO: make this variable */
+ #define FTRACE_GRAPH_MAX_FUNCS		32
+-extern int ftrace_graph_filter_enabled;
+ extern int ftrace_graph_count;
+ extern unsigned long ftrace_graph_funcs[FTRACE_GRAPH_MAX_FUNCS];
+ 
+@@ -738,7 +737,7 @@ static inline int ftrace_graph_addr(unsigned long addr)
+ {
+ 	int i;
+ 
+-	if (!ftrace_graph_filter_enabled)
++	if (!ftrace_graph_count)
+ 		return 1;
+ 
+ 	for (i = 0; i < ftrace_graph_count; i++) {
 -- 
 1.8.4.rc3
 
