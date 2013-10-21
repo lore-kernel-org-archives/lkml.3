@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3JUXyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 19:54:09 -0400
-Received: from mout.gmx.net ([212.227.15.18]:53123 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab3JUXyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 19:54:07 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 1/2] tpm: Fix module name description in Kconfig for tpm_i2c_*
-Date: Tue, 22 Oct 2013 01:53:47 +0200
-Message-Id: <1382399628-28409-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.5.4
-X-Provags-ID: V03:K0:VjfnWD0a016H3SLFKMrUn7yha967vPHKwi31rMTcZzWQGN9ly6s
- 1EtyoOl1LVS6Sj8YWwCfzEJ8fBwwkPMPopD8wxt80OI9gHWX42iBuVKH9c1tlJpaBjKzoO3
- hV4yM3Q5r1wFVP8U1JusMx8Ftjt4BtoF4XrLCpzhGJuG/NGIAUhWx5LgmiqbkEk4wzp5Gt4
- do+OYBtRa52qbjUBB9y8A==
+	id S1752875Ab3JUX4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 19:56:07 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:39593 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751844Ab3JUX4F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 19:56:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmEGALi9ZVJ5LAy1/2dsb2JhbABZgwe6CoU+gTAXdIIlAQEFJxMcIxAIAw4KCSUPBSUDIROIBbpeFo9FB4QpA5gIkgiDOCg
+Date: Tue, 22 Oct 2013 10:56:01 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Eric Sandeen <sandeen@sandeen.net>, Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>, "Geyslan G. Bem" <geyslan@gmail.com>,
+        kernel-br@googlegroups.com
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+Message-ID: <20131021235601.GG4446@dastard>
+References: <1382380366-26540-1-git-send-email-geyslan@gmail.com>
+ <5265956F.4010700@sandeen.net>
+ <20131021224459.GE16161@dastard>
+ <5265B4D2.3000907@sandeen.net>
+ <20131021231849.GL10553@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131021231849.GL10553@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the displayed module name from
-tpm_tis_i2c_infineon to its actual name tpm_i2c_infineon
-and from tpm_stm_st33_i2c to tpm_i2c_stm_st33
+On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
+> Hey,
+> 
+> On Mon, Oct 21, 2013 at 06:12:18PM -0500, Eric Sandeen wrote:
+> > On 10/21/13 5:44 PM, Dave Chinner wrote:
+> > > On Mon, Oct 21, 2013 at 03:58:23PM -0500, Eric Sandeen wrote:
+> > >> On 10/21/13 1:32 PM, Geyslan G. Bem wrote:
+> > >>> This patch puts a 'break' in the true branch, avoiding the 'icptr->ic_next'
+> > >>> dereferencing.
+> > >>
+> > >> Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+> > > 
+> > > Actually, NACK.
+> > 
+> > I felt that one coming ;)
+> > 
+> > >> Hm, yeah - cmn_err(CE_PANIC, " " ); used to BUG_ON, but the newer
+> > >> xfs_emerg() doesn't.
+> > >>
+> > >> Dave, was that intentional?
+> > > 
+> > > Of course it was. ;) xfs_emerg() is only called from the debug code
+> > > in xlog_verify_iclog(), xlog_verify_tail_lsn and assfail().
+> > > 
+> > > In the case of assfail(), it has it's own BUG() call, so it does
+> > > everything just fine.
+> > > 
+> > > In the case of xlog_verify_iclog() when icptr is NULL, it will
+> > > panic immediately after the message is printed, just like the old
+> > > code. i.e. this patch isn't fixing anything we need fixed. 
+> > 
+> > A BUG() is probably warranted, then.
+> 
+> I tend to agree with Eric on this point.  If we want to crash, I'd rather our
+> intent be very clear, rather than just see a null ptr deref.  ;)
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Sure. ASSERT() would be better and more consistent with the rest of
+the code. i.e:
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index f908586..4716af5 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -51,7 +51,7 @@ config TCG_TIS_I2C_INFINEON
- 	  Specification 0.20 say Yes and it will be accessible from within
- 	  Linux.
- 	  To compile this driver as a module, choose M here; the module
--	  will be called tpm_tis_i2c_infineon.
-+	  will be called tpm_i2c_infineon.
- 
- config TCG_TIS_I2C_NUVOTON
- 	tristate "TPM Interface Specification 1.2 Interface (I2C - Nuvoton)"
-@@ -108,7 +108,7 @@ config TCG_ST33_I2C
-         If you have a TPM security chip from STMicroelectronics working with
-         an I2C bus say Yes and it will be accessible from within Linux.
-         To compile this driver as a module, choose M here; the module will be
--        called tpm_stm_st33_i2c.
-+        called tpm_i2c_stm_st33.
- 
- config TCG_XEN
- 	tristate "XEN TPM Interface"
+        for (i = 0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
+		ASSERT(icptr);
+
+<Devil's Advocate>
+
+However, I keep coming back to the fact that what we are checking is
+that the list is correctly circular and that and adding an
+ASSERT(icptr) to panic if a pointer chase finds a null pointer is
+kinda redundant, especially as:
+
+	- there's already 2 comments for the function indicating
+	  that it is checking the validity of the pointers and that
+	  they are circular....
+	- we have repeatedly, over many years, justified the removal
+	  of ASSERT(ptr) from code like:
+
+		ASSERT(ptr);
+		foo = ptr->foo;
+
+	  as it is redundant because production code will always
+	  panic the machine in that situation via the dereference.
+	  ASSERT() is for documenting assumptions and constraints
+	  that are not obvious from the code context.
+
+IOWs, in this case the presence or absence of the ASSERT inside
+*debug-only code* doesn't add any addition value to debugging such
+problems, nor does it add any value in terms of documentation
+because it's clear from the comments in the debug code that it
+should not be NULL to begin with.
+
+</Devil's Advocate>
+
+Cheers,
+
+Dave.
 -- 
-1.7.5.4
-
+Dave Chinner
+david@fromorbit.com
