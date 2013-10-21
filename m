@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3JUOTF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:19:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:64583 "EHLO
+	id S1753776Ab3JUOTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:19:13 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:64609 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3JUOS7 (ORCPT
+	with ESMTP id S1753618Ab3JUOTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:18:59 -0400
-X-AuditID: cbfee61a-b7f836d0000025d7-0a-526537d191a9
+	Mon, 21 Oct 2013 10:19:09 -0400
+X-AuditID: cbfee61a-b7f836d0000025d7-17-526537dca08e
 From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 To: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -16,69 +16,195 @@ Cc: dri-devel@lists.freedesktop.org, kyungmin.park@samsung.com,
         inki.dae@samsung.com, rahul.sharma@samsung.com, kgene.kim@samsung.com,
         s.nawrocki@samsung.com, thomas.abraham@linaro.org,
         mturquette@linaro.org, Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC 02/12] clk: exynos4: export sclk_hdmiphy clock
-Date: Mon, 21 Oct 2013 16:18:21 +0200
-Message-id: <1382365111-6533-3-git-send-email-t.stanislaws@samsung.com>
+Subject: [RFC 04/12] phy: Add simple-phy driver
+Date: Mon, 21 Oct 2013 16:18:23 +0200
+Message-id: <1382365111-6533-5-git-send-email-t.stanislaws@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
 References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jAd2L5qlBBn+PmlrMP3KO1eLK1/ds
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAd075qlBBjMW6FnMP3KO1eLK1/ds
 	FpPuT2Cx6F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLpxMusllMWXSY1eLwm3ZWixmTX7JZ
 	rJ/xmsViXvtLVotjM5YwOvB73Lm2h83jfvdxJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllq
-	kb5dAlfGzv/7WQo281es33uVqYHxAU8XIyeHhICJxPXdc1khbDGJC/fWs3UxcnEICSxilDiz
-	fhorhNPFJLF1yTdmkCo2oI5jSz4zgtgiAokSv5rvMoMUMQscYpLY3TIFyOHgEBawkehqdwCp
-	YRFQlfi+cykbSJhXwF1i4fFIiGXyEk/v97GB2JwCHhKnXq4FGykEVPLu2zyWCYy8CxgZVjGK
-	phYkFxQnpeca6hUn5haX5qXrJefnbmIEB+kzqR2MKxssDjEKcDAq8fAGuKQECbEmlhVX5h5i
-	lOBgVhLhrTJNDRLiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgmy8TB
-	KdXAeCByZ29tv0Ivb4T4qerf317G75umdc+Ju3zi8f95t86wOElrCZw1v9GYVbdyasMiTr6A
-	xezVL1qE/W6LPr47qWGqT1/Ru8imV3PNlIRl/onLfJ6slajB32ldlG67ye5qRKKshMW8Vv3t
-	73jnxKXcmXjbaMkjgy3b08w/v1IyCzvwaKWNh+dOJZbijERDLeai4kQAc8XRx04CAAA=
+	kb5dAlfGkyM/WQquKVfsvPmcuYHximwXIweHhICJxPrr9V2MnECmmMSFe+vZuhi5OIQEFjFK
+	XPp7lxHC6WKS6L7WwARSxQbUcGzJZ0YQW0QgUeJX811mkCJmgUNMErtbpjCDJIQF9CWOTPvP
+	BmKzCKhKnFg0AayZV8BdYtW9a0wQ6+Qlnt7vA6vhFPCQOPVyLdhQIaCad9/msUxg5F3AyLCK
+	UTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhMn0ntYFzZYHGIUYCDUYmHN8AlJUiINbGsuDL3
+	EKMEB7OSCG+VaWqQEG9KYmVValF+fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkm
+	Dk6pBsYM7YUtl/wm3GMz86v3MV3+oNbp+rFJ+qsZZid8PRxjflRPJtq6Xsr0bvVj7QXLLuzP
+	i1Tr3KHFvty17p1ydtAXV40kLenc76rskruC2+R28XR6FQa7/VigEzlTVetDwv+j9udm9qhI
+	/6g8a8PEdt61Vrt60/s21ivH1z848fLm9GqF03f371NiKc5INNRiLipOBADkLgagTwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export sclk_hdmiphy clock to be usable from DT.
+Add simple-phy driver to support a single register
+PHY interfaces present on Exynos4 SoC.
 
 Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos4-clock.txt    |    1 +
- drivers/clk/samsung/clk-exynos4.c                  |    4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/phy/Kconfig      |    5 ++
+ drivers/phy/Makefile     |    1 +
+ drivers/phy/phy-simple.c |  128 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 134 insertions(+)
+ create mode 100644 drivers/phy/phy-simple.c
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos4-clock.txt b/Documentation/devicetree/bindings/clock/exynos4-clock.txt
-index c6bf8a6..cb08f5d 100644
---- a/Documentation/devicetree/bindings/clock/exynos4-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos4-clock.txt
-@@ -46,6 +46,7 @@ Exynos4 SoC and this is specified where applicable.
-   mout_mpll_user_c    18      Exynos4x12
-   mout_core           19
-   mout_apll           20
-+  sclk_hdmiphy        21
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index ac239ac..619c657 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -38,4 +38,9 @@ config TWL4030_USB
+ 	  This transceiver supports high and full speed devices plus,
+ 	  in host mode, low speed.
  
- 
-             [Clock Gate for Special Clocks]
-diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-index ad5ff50..df79ca6 100644
---- a/drivers/clk/samsung/clk-exynos4.c
-+++ b/drivers/clk/samsung/clk-exynos4.c
-@@ -148,7 +148,7 @@ enum exynos4_clks {
- 	xxti, xusbxti, fin_pll, fout_apll, fout_mpll, fout_epll, fout_vpll,
- 	sclk_apll, sclk_mpll, sclk_epll, sclk_vpll, arm_clk, aclk200, aclk100,
- 	aclk160, aclk133, mout_mpll_user_t, mout_mpll_user_c, mout_core,
--	mout_apll, /* 20 */
-+	mout_apll, sclk_hdmiphy, /* 21 */
- 
- 	/* gate for special clocks (sclk) */
- 	sclk_fimc0 = 128, sclk_fimc1, sclk_fimc2, sclk_fimc3, sclk_cam0,
-@@ -354,7 +354,7 @@ static struct samsung_fixed_rate_clock exynos4_fixed_rate_ext_clks[] __initdata
- /* fixed rate clocks generated inside the soc */
- static struct samsung_fixed_rate_clock exynos4_fixed_rate_clks[] __initdata = {
- 	FRATE(none, "sclk_hdmi24m", NULL, CLK_IS_ROOT, 24000000),
--	FRATE(none, "sclk_hdmiphy", NULL, CLK_IS_ROOT, 27000000),
-+	FRATE(sclk_hdmiphy, "sclk_hdmiphy", NULL, CLK_IS_ROOT, 27000000),
- 	FRATE(none, "sclk_usbphy0", NULL, CLK_IS_ROOT, 48000000),
- };
- 
++config PHY_SIMPLE
++	tristate "Simple PHY driver"
++	help
++	  Support for PHY controllers configured using single register.
++
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 0dd8a98..3d68e19 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -5,3 +5,4 @@
+ obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
+ obj-$(CONFIG_OMAP_USB2)		+= phy-omap-usb2.o
+ obj-$(CONFIG_TWL4030_USB)	+= phy-twl4030-usb.o
++obj-$(CONFIG_PHY_SIMPLE)	+= phy-simple.o
+diff --git a/drivers/phy/phy-simple.c b/drivers/phy/phy-simple.c
+new file mode 100644
+index 0000000..4a28af7
+--- /dev/null
++++ b/drivers/phy/phy-simple.c
+@@ -0,0 +1,128 @@
++/*
++ * Simple PHY driver
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++
++struct simple_phy {
++	spinlock_t slock;
++	u32 on_value;
++	u32 off_value;
++	u32 mask;
++	void __iomem *regs;
++};
++
++static int sphy_set(struct simple_phy *sphy, bool on)
++{
++	u32 reg;
++
++	spin_lock(&sphy->slock);
++
++	reg = readl(sphy->regs);
++	reg &= ~sphy->mask;
++	reg |= sphy->mask & (on ? sphy->on_value : sphy->off_value);
++	writel(reg, sphy->regs);
++
++	spin_unlock(&sphy->slock);
++
++	return 0;
++}
++
++static int simple_phy_power_on(struct phy *phy)
++{
++	return sphy_set(phy_get_drvdata(phy), 1);
++}
++
++static int simple_phy_power_off(struct phy *phy)
++{
++	return sphy_set(phy_get_drvdata(phy), 0);
++}
++
++static struct phy_ops simple_phy_ops = {
++	.power_on	= simple_phy_power_on,
++	.power_off	= simple_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static int simple_phy_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct simple_phy *sphy;
++	struct resource *res;
++	struct phy_provider *phy_provider;
++	struct phy *phy;
++
++	sphy = devm_kzalloc(dev, sizeof(*sphy), GFP_KERNEL);
++	if (!sphy)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	sphy->regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR(sphy->regs)) {
++		dev_err(dev, "failed to ioremap registers\n");
++		return PTR_ERR(sphy->regs);
++	}
++
++	spin_lock_init(&sphy->slock);
++
++	phy_provider = devm_of_phy_provider_register(dev, NULL);
++	if (IS_ERR(phy_provider)) {
++		dev_err(dev, "failed to register PHY provider\n");
++		return PTR_ERR(phy_provider);
++	}
++
++	phy = devm_phy_create(dev, &simple_phy_ops, NULL);
++	if (IS_ERR(phy)) {
++		dev_err(dev, "failed to create PHY\n");
++		return PTR_ERR(phy);
++	}
++
++	sphy->mask = 1;
++	sphy->on_value = ~0;
++	sphy->off_value = 0;
++
++	of_property_read_u32(dev->of_node, "mask", &sphy->mask);
++	of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
++	of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
++
++	phy_set_drvdata(phy, sphy);
++
++	dev_info(dev, "probe successful\n");
++
++	return 0;
++}
++
++static const struct of_device_id simple_phy_of_match[] = {
++	{ .compatible = "simple-phy" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, simple_phy_of_match);
++
++static struct platform_driver simple_phy_driver = {
++	.probe	= simple_phy_probe,
++	.driver = {
++		.of_match_table	= simple_phy_of_match,
++		.name  = "simple-phy",
++		.owner = THIS_MODULE,
++	}
++};
++module_platform_driver(simple_phy_driver);
++
++MODULE_DESCRIPTION("Simple PHY driver");
++MODULE_AUTHOR("Tomasz Stanislawski <t.stanislaws@samsung.com>");
++MODULE_LICENSE("GPL v2");
 -- 
 1.7.9.5
 
