@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3JUJKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:10:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39675 "EHLO
+	id S1755088Ab3JUJKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:10:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39679 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754035Ab3JUIwB (ORCPT
+	by vger.kernel.org with ESMTP id S1753994Ab3JUIwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:01 -0400
+	Mon, 21 Oct 2013 04:52:02 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Joerg Kalisch" <the_force@gmx.de>,
-        "Christian Lamparter" <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Anton Blanchard" <anton@samba.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.882356935@decadent.org.uk>
+Message-ID: <lsq.1382345188.668359650@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 091/149] p54usb: add USB ID for Corega WLUSB2GTST USB
- adapter
+Subject: [PATCH 3.2 097/149] powerpc: Fix parameter clobber in
+ csum_partial_copy_generic()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,28 +34,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
+commit d9813c3681a36774b254c0cdc9cce53c9e22c756 upstream.
 
-Added USB ID for Corega WLUSB2GTST USB adapter.
+The csum_partial_copy_generic() uses register r7 to adjust the remaining
+bytes to process.  Unfortunately, r7 also holds a parameter, namely the
+address of the flag to set in case of access exceptions while reading
+the source buffer.  Lacking a quantum implementation of PowerPC, this
+commit instead uses register r9 to do the adjusting, leaving r7's
+pointer uncorrupted.
 
-Reported-by: Joerg Kalisch <the_force@gmx.de>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/p54/p54usb.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/lib/checksum_64.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
-+	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
- 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
- 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -272,8 +272,8 @@ _GLOBAL(csum_partial_copy_generic)
+ 	rldicl. r6,r3,64-1,64-2		/* r6 = (r3 & 0x3) >> 1 */
+ 	beq	.Lcopy_aligned
+ 
+-	li	r7,4
+-	sub	r6,r7,r6
++	li	r9,4
++	sub	r6,r9,r6
+ 	mtctr	r6
+ 
+ 1:
 
