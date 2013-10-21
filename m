@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab3JUXko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 19:40:44 -0400
-Received: from gherkin.frus.com ([192.158.254.49]:48830 "EHLO gherkin.frus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab3JUXkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 19:40:43 -0400
-Date: Mon, 21 Oct 2013 18:40:41 -0500
-From: Bob Tracy <rct@gherkin.frus.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [BUG] 3.12.0-rcX IPv6 panic
-Message-ID: <20131021234041.GA12350@gherkin.frus.com>
-References: <20131021131846.GA5769@gherkin.frus.com>
- <20131021155252.GA24158@order.stressinduktion.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131021155252.GA24158@order.stressinduktion.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752736Ab3JUXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 19:41:16 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34197 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab3JUXlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 19:41:13 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH 1/3] tty: xuartps: Fix "may be used uninitialized" build warning
+Date: Mon, 21 Oct 2013 16:40:59 -0700
+Message-Id: <1382398861-21542-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 05:52:52PM +0200, Hannes Frederic Sowa wrote:
-> On Mon, Oct 21, 2013 at 08:18:46AM -0500, Bob Tracy wrote:
-> > Actually, a regression: the 3.11 kernel is rock-solid stable on my
-> > Alpha.
-> > 
-> > Beginning with 3.12.0-rc1, I can reliably trigger a kernel panic by
-> > executing the gogo6.net "gw6c" IPv6 client program.  If the networking
-> > layer is active, an "Oops" will eventually (within a day) occur regardless
-> > of whether I attempt to run "gw6c".  3.12.0-rcX is stable as long as I
-> > leave networking completely disabled.  The error has persisted up through
-> > -rc6.  Apologies for not mentioning this earlier, but the state of my
-> > PWS-433au has been questionable, and I wanted to make sure I had a
-> > legitimate bug sighting.
-> > 
-> > I'll have to transcribe the panic backtrace by hand: nothing makes it
-> > into any of the system logs :-(.  I *can* recall that every backtrace
-> > I've seen thus far has included one of the skb_copy() variants near the
-> > top of the list (first or second function).
-> 
-> Try to capture the panic via serial console. Otherwise a picture
-> would give us a first hint. Please watch out for lines like
-> skb_(over|under)_panic.
+Initialize varibles for which a 'may be used uninitalized' warning is
+issued.
 
-I'll get a screen capture of some kind for you within the next day or
-so.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+The warning is actually a false positive. The variables are passed to a
+function per reference. That function uses those variables to return
+values, which then are used by the caller. Is there a way to
+avoid the initialization and the build warning alltogether?
+---
+ drivers/tty/serial/xilinx_uartps.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> gw6c is a tunnel client? Can you post ip -6 tunnel ls?
+diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+index c7c96c2f149c..5ac6c480df43 100644
+--- a/drivers/tty/serial/xilinx_uartps.c
++++ b/drivers/tty/serial/xilinx_uartps.c
+@@ -389,7 +389,7 @@ static unsigned int xuartps_set_baud_rate(struct uart_port *port,
+ 		unsigned int baud)
+ {
+ 	unsigned int calc_baud;
+-	u32 cd, bdiv;
++	u32 cd = 0, bdiv = 0;
+ 	u32 mreg;
+ 	int div8;
+ 	struct xuartps *xuartps = port->private_data;
+-- 
+1.8.4.1
 
-Assuming you meant "show [NAME]" (no "ls" option for the tunnel object),
-that yields the following with "gw6c" running on a 3.11.0 kernel:
-
-smirkin:~# ip -6 tunnel show sit1
-sit1: any/ipv6 remote 4056:5874:: local 4500:0:0:4000:4029:: encaplimit 0 hoplimit 0 tclass 0x00 flowlabel 0x00000 (flowinfo 0x00000000)
-
-I'm running the gw6c client in gateway mode: the Alpha is my IPv6
-gateway/firewall.
-
---Bob
