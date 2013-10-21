@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab3JUITT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:19:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36000 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752614Ab3JUITR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:19:17 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] serial: sirf: remove duplicate defines
-Date: Mon, 21 Oct 2013 10:19:14 +0200
-Message-Id: <1382343554-3320-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752938Ab3JUITx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:19:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48396 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752907Ab3JUITv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:19:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="377578166"
+Date: Mon, 21 Oct 2013 12:56:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Matt Porter <matt@ohporter.com>, Mark Brown <broonie@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jyri Sarha <jsarha@ti.com>, Lars Peter-Clausen <lars@metafoo.de>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/3] dma: edma: Split out PaRAM set calculations into
+ its own function
+Message-ID: <20131021072612.GN14013@intel.com>
+References: <1379977515-3794-1-git-send-email-joelf@ti.com>
+ <1379977515-3794-2-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379977515-3794-2-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes duplicate defines in drivers/tty/serial/sirfsoc_uart.h
+On Mon, Sep 23, 2013 at 06:05:13PM -0500, Joel Fernandes wrote:
+> PaRAM set calculation is abstracted into its own function to
+> enable better reuse for other DMA cases such as cyclic. We adapt
+> the Slave SG case to use the new function.
+> 
+> This provides a much cleaner abstraction to the internals of the
+> PaRAM set. However, any PaRAM attributes that are not common to
+> all DMA types must be set separately such as setting of interrupts.
+> This function takes care of the most-common attributes.
+> 
+> Also added comments clarifying A-sync case calculations.
+Applied, thanks
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/tty/serial/sirfsoc_uart.h | 12 ------------
- 1 file changed, 12 deletions(-)
-
-diff --git a/drivers/tty/serial/sirfsoc_uart.h b/drivers/tty/serial/sirfsoc_uart.h
-index fb8d0a0..b7d679c 100644
---- a/drivers/tty/serial/sirfsoc_uart.h
-+++ b/drivers/tty/serial/sirfsoc_uart.h
-@@ -368,15 +368,6 @@ struct sirfsoc_uart_register sirfsoc_uart = {
- #define SIRFSOC_UART_NR				6
- #define SIRFSOC_PORT_TYPE			0xa5
- 
--/* Baud Rate Calculation */
--#define SIRF_MIN_SAMPLE_DIV			0xf
--#define SIRF_MAX_SAMPLE_DIV			0x3f
--#define SIRF_IOCLK_DIV_MAX			0xffff
--#define SIRF_SAMPLE_DIV_SHIFT			16
--#define SIRF_IOCLK_DIV_MASK			0xffff
--#define SIRF_SAMPLE_DIV_MASK			0x3f0000
--#define SIRF_BAUD_RATE_SUPPORT_NR		18
--
- /* Uart Common Use Macro*/
- #define SIRFSOC_RX_DMA_BUF_SIZE	256
- #define BYTES_TO_ALIGN(dma_addr)	((unsigned long)(dma_addr) & 0x3)
-@@ -453,9 +444,6 @@ struct sirfsoc_uart_port {
- 	int				rx_issued;
- };
- 
--/* Hardware Flow Control */
--#define SIRFUART_AFC_CTRL_RX_THD	0x70
--
- /* Register Access Control */
- #define portaddr(port, reg)		((port)->membase + (reg))
- #define rd_regb(port, reg)		(__raw_readb(portaddr(port, reg)))
--- 
-1.8.1.2
-
+--
+~Vinod
