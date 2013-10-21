@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab3JUKrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:47:04 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:55458 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab3JUKrB (ORCPT
+	id S1753267Ab3JUKsC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:48:02 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14031 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab3JUKr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:47:01 -0400
+	Mon, 21 Oct 2013 06:47:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 21 Oct 2013 03:47:58 -0700
+Message-ID: <52650CB2.9030409@nvidia.com>
+Date: Mon, 21 Oct 2013 16:44:58 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAFkjPTkKeEFmVWoPFXhAkBwwO67M1K-c1Q2OUvajSArTSgrFvg@mail.gmail.com>
-References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
-	<1380411144-9236-5-git-send-email-geyslan@gmail.com>
-	<CAFkjPTkKeEFmVWoPFXhAkBwwO67M1K-c1Q2OUvajSArTSgrFvg@mail.gmail.com>
-Date: Mon, 21 Oct 2013 08:47:01 -0200
-Message-ID: <CAGG-pUSHj5uumz01mReeD+gpg--fkZCS18gMbW2FBjmufjcEDg@mail.gmail.com>
-Subject: Re: [PATCH] 9p: fix return value in case of error in v9fs_fid_xattr_set
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: rminnich@sandia.gov, Latchesar Ionkov <lucho@ionkov.net>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Florian Lobmaier <florian.lobmaier@ams.com>
+Subject: Re: [PATCH V5 3/3] drivers/rtc/rtc-as3722: add RTC driver
+References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com> <1381321761-8898-4-git-send-email-ldewangan@nvidia.com> <20131010152446.1715e64b70ddd0281a3971e9@linux-foundation.org> <20131010224748.GW21581@sirena.org.uk>
+In-Reply-To: <20131010224748.GW21581@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At first, thanks for reply.
+On Friday 11 October 2013 04:17 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Oct 10, 2013 at 03:24:46PM -0700, Andrew Morton wrote:
+>
+>>> +#ifdef CONFIG_PM
+>> Most (but not all!) rtc drivers use CONFIG_PM_SLEEP.  People have madly
+>> mucked with CONFIG_PM* and I don't know the difference and I don't know
+>> what's going on and I don't know of a convenient place to go to find
+>> out.  If you work it out, please be sure to tell me!  But as soon as I
+>> figure it out I'm sure they'll go and madly muck with it again.
+> The two effective options for this stuff are PM_SLEEP (for system
+> suspend) and PM_RUNTIME (for runtime suspend which RTCs are unlikely to
+> use I guess).  PM mostly just enables selection of the other two.
 
-2013/10/20 Eric Van Hensbergen <ericvh@gmail.com>:
-> On Sat, Sep 28, 2013 at 6:32 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
->>
->> In case of error in the p9_client_write, the function v9fs_fid_xattr_set
->> should return its negative value, what was never being done.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> ---
->>  fs/9p/xattr.c | 9 ++++-----
->>  1 file changed, 4 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
->> index 3c28cdf..0788388 100644
->> --- a/fs/9p/xattr.c
->> +++ b/fs/9p/xattr.c
->> @@ -149,11 +149,10 @@ int v9fs_fid_xattr_set(struct p9_fid *fid, const
->> char *name,
->>                         write_count = value_len;
->>                 write_count = p9_client_write(fid, ((char *)value)+offset,
->>                                         NULL, offset, write_count);
->> -               if (write_count < 0) {
->> -                       /* error in xattr write */
->> -                       retval = write_count;
->> -                       break;
->> -               }
->> +               /* error in xattr write */
->> +               if (write_count < 0)
->> +                       return write_count;
->> +
->>
->
->
-> So, I'm convinced that there's a problem here, but I think the solution in
-> the patch is incomplete.  Simply returning wouldn't clunk the fid.  I think
-> the right approach is likely to keep the break, clunk and return an error if
-> either the p9_client_write or the p9_client_clunk fails.
->
-> I suppose you could make a claim that v9fs_fid_xattr_set shouldn't be
-> clunking the fid -- but considering it's cloned the fid in its function
-> body, it does seem like it shoudl also be cleaning up after itself.
->
-
-Right. I'll centralize the exiting assuring that fid will be clunked
-in case of fails.
-
->     -eric
->
->
->       -eric
->
+I think, correct defs is  CONFIG_PM_SLEEP here. I will re-spin this patch.
