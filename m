@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3JUIfv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:35:51 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:53341 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab3JUIfu convert rfc822-to-8bit (ORCPT
+	id S1752946Ab3JUIjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:39:31 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8840 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3JUIj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:35:50 -0400
+	Mon, 21 Oct 2013 04:39:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 01:34:51 -0700
+Date: Mon, 21 Oct 2013 11:39:19 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 01/15] ARM: tegra30: add missing CLK IDs
+Message-ID: <20131021083919.GE25591@tbergstrom-lnx.Nvidia.com>
+References: <1382102719-5531-1-git-send-email-pdeschrijver@nvidia.com>
+ <1382102719-5531-2-git-send-email-pdeschrijver@nvidia.com>
+ <52644BBF.2050704@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <20130906093800.GF32654@lee--X1>
-References: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
-	<20130906093800.GF32654@lee--X1>
-Date: Mon, 21 Oct 2013 14:05:50 +0530
-Message-ID: <CAK9yfHz8S-kM7pS9kakPEbqCyX006Jx-BUg9992z6gzBJbyRwA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] ab8500-charger: Check return value of regulator_enable
-From: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, anton@enomsg.org,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52644BBF.2050704@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 September 2013 15:08, Lee Jones <lee.jones@linaro.org> wrote:
-> On Fri, 06 Sep 2013, Sachin Kamat wrote:
->
->> Check the return value of regulator_enable to silence the following
->> type of warnings:
->> drivers/power/ab8500_charger.c:1390:20: warning: ignoring return value
->> of ‘regulator_enable’, declared with attribute warn_unused_result
->> [-Wunused-result]
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> ---
->> Compile tested.
->>
->> Changes since v2:
->> * removed redundant assignment to false.
->> Changes since v1:
->> * converted dev_err and return to dev_warn as suggested by Lee Jones.
->> ---
->>
->>  drivers/power/ab8500_charger.c |   16 ++++++++++++----
->>  1 file changed, 12 insertions(+), 4 deletions(-)
->
-> Looks good now.
->
-> Acked-by: Lee Jones <lee.jones@linaro.org>
->
+On Sun, Oct 20, 2013 at 11:31:43PM +0200, Stephen Warren wrote:
+> On 10/18/2013 02:25 PM, Peter De Schrijver wrote:
+> > The Tegra30 clock bindings lack few IDs for audio and clk_out muxes.
+> 
+> Is there a list of changes for V5?
+> 
 
-Ping on this series, Anton..
+Yes. See 'Changes since v4' maybe I should give it a different title next
+time...
 
+> Don't forget that I gave tested-by/acked-by for V4(?), unless you've
+> changed so much you consider that to no longer apply?
 
--- 
-With warm regards,
-Sachin
+No. Nothing major.
