@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3JUIxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:53:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39842 "EHLO
+	id S1754662Ab3JUIxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:53:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39886 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754393Ab3JUIxJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754516Ab3JUIxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:53:09 -0400
+	Mon, 21 Oct 2013 04:53:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Jason Wang" <jasowang@redhat.com>
+CC: akpm@linux-foundation.org, "Lino Sanfilippo" <LinoSanfilippo@gmx.de>,
+        "Boyd Yang" <boyd.yang@gmail.com>, "Eric Paris" <eparis@redhat.com>,
+        "Lino Sanfilippo" <LinoSanfilipp@gmx.de>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.983974510@decadent.org.uk>
+Message-ID: <lsq.1382345188.177963512@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 129/149] macvtap: do not zerocopy if iov needs more
- pages than MAX_SKB_FRAGS
+Subject: [PATCH 3.2 135/149] fanotify: dont merge permission events
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,123 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6 upstream.
+commit 03a1cec1f17ac1a6041996b3e40f96b5a2f90e1b upstream.
 
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
+Boyd Yang reported a problem for the case that multiple threads of the same
+thread group are waiting for a reponse for a permission event.
+In this case it is possible that some of the threads are never woken up, even
+if the response for the event has been received
+(see http://marc.info/?l=linux-kernel&m=131822913806350&w=2).
 
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
+The reason is that we are currently merging permission events if they belong to
+the same thread group. But we are not prepared to wake up more than one waiter
+for each event. We do
 
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
+wait_event(group->fanotify_data.access_waitq, event->response ||
+			atomic_read(&group->fanotify_data.bypass_perm));
+and after that
+  event->response = 0;
 
-We can do further optimization on top.
+which is the reason that even if we woke up all waiters for the same event
+some of them may see event->response being already set 0 again, then go back to
+sleep and block forever.
 
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
+With this patch we avoid that more than one thread is waiting for a response
+by not merging permission events for the same thread group any more.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: callback only takes one argument]
+Reported-by: Boyd Yang <boyd.yang@gmail.com>
+Signed-off-by: Lino Sanfilippo <LinoSanfilipp@gmx.de>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvtap.c | 62 ++++++++++++++++++++++++++++++---------------------
- 1 file changed, 37 insertions(+), 25 deletions(-)
+ fs/notify/fanotify/fanotify.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -641,6 +641,28 @@ static int macvtap_skb_to_vnet_hdr(const
- 	return 0;
- }
- 
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
-+{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
-+
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
-+}
- 
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-@@ -687,31 +709,15 @@ static ssize_t macvtap_get_user(struct m
- 	if (unlikely(count > UIO_MAXIOV))
- 		goto err;
- 
--	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < vnet_hdr_len)
--				copylen = 0;
--			else
--				copylen -= vnet_hdr_len;
--		}
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
--		 * The rest buffer is mapped from userspace.
--		 */
--		if (copylen < vnet_hdr.hdr_len)
--			copylen = vnet_hdr.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-+		    <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
-+
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = vnet_hdr.hdr_len;
- 	}
-@@ -723,9 +729,15 @@ static ssize_t macvtap_get_user(struct m
- 
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
- 						   len);
-+		if (!err && m && m->msg_control) {
-+			struct ubuf_info *uarg = m->msg_control;
-+			uarg->callback(uarg);
-+		}
-+	}
-+
- 	if (err)
- 		goto err_kfree;
- 
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index f35794b..aeb5b5a 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -18,6 +18,12 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
+ 	    old->tgid == new->tgid) {
+ 		switch (old->data_type) {
+ 		case (FSNOTIFY_EVENT_PATH):
++#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
++			/* dont merge two permission events */
++			if ((old->mask & FAN_ALL_PERM_EVENTS) &&
++			    (new->mask & FAN_ALL_PERM_EVENTS))
++				return false;
++#endif
+ 			if ((old->path.mnt == new->path.mnt) &&
+ 			    (old->path.dentry == new->path.dentry))
+ 				return true;
 
