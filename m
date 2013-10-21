@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab3JUJdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:33:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39297 "EHLO
+	id S1756049Ab3JUJdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:33:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39291 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753230Ab3JUIuW (ORCPT
+	by vger.kernel.org with ESMTP id S1753153Ab3JUIuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:50:22 -0400
+	Mon, 21 Oct 2013 04:50:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
         "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "=?UTF-8?Q?Linus=20L=C3=BCssing?=" <linus.luessing@web.de>
+        "Ding Tianhong" <dingtianhong@huawei.com>,
+        "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>,
+        "P J P" <ppandit@redhat.com>, "George Kargiotakis" <kargig@void.gr>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.842275523@decadent.org.uk>
+Message-ID: <lsq.1382345188.194004417@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 012/149] net: bridge: convert MLDv2 Query MRC into 
- msecs_to_jiffies for max_delay
+Subject: [PATCH 3.2 009/149] ipv6: remove max_addresses check from 
+ ipv6_create_tempaddr
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,44 +35,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 2d98c29b6fb3de44d9eaa73c09f9cf7209346383 ]
+[ Upstream commit 4b08a8f1bd8cb4541c93ec170027b4d0782dab52 ]
 
-While looking into MLDv1/v2 code, I noticed that bridging code does
-not convert it's max delay into jiffies for MLDv2 messages as we do
-in core IPv6' multicast code.
+Because of the max_addresses check attackers were able to disable privacy
+extensions on an interface by creating enough autoconfigured addresses:
 
-RFC3810, 5.1.3. Maximum Response Code says:
+<http://seclists.org/oss-sec/2012/q4/292>
 
-  The Maximum Response Code field specifies the maximum time allowed
-  before sending a responding Report. The actual time allowed, called
-  the Maximum Response Delay, is represented in units of milliseconds,
-  and is derived from the Maximum Response Code as follows: [...]
+But the check is not actually needed: max_addresses protects the
+kernel to install too many ipv6 addresses on an interface and guards
+addrconf_prefix_rcv to install further addresses as soon as this limit
+is reached. We only generate temporary addresses in direct response of
+a new address showing up. As soon as we filled up the maximum number of
+addresses of an interface, we stop installing more addresses and thus
+also stop generating more temp addresses.
 
-As we update timers that work with jiffies, we need to convert it.
+Even if the attacker tries to generate a lot of temporary addresses
+by announcing a prefix and removing it again (lifetime == 0) we won't
+install more temp addresses, because the temporary addresses do count
+to the maximum number of addresses, thus we would stop installing new
+autoconfigured addresses when the limit is reached.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Linus Lüssing <linus.luessing@web.de>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+This patch fixes CVE-2013-0343 (but other layer-2 attacks are still
+possible).
+
+Thanks to Ding Tianhong to bring this topic up again.
+
+Cc: Ding Tianhong <dingtianhong@huawei.com>
+Cc: George Kargiotakis <kargig@void.gr>
+Cc: P J P <ppandit@redhat.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bridge/br_multicast.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/addrconf.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index b81500c..a06deca 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1155,7 +1155,8 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 		mld2q = (struct mld2_query *)icmp6_hdr(skb);
- 		if (!mld2q->mld2q_nsrcs)
- 			group = &mld2q->mld2q_mca;
--		max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(mld2q->mld2q_mrc) : 1;
-+
-+		max_delay = max(msecs_to_jiffies(MLDV2_MRC(ntohs(mld2q->mld2q_mrc))), 1UL);
- 	}
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 314bda2..5d41293 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -913,12 +913,10 @@ retry:
+ 	if (ifp->flags & IFA_F_OPTIMISTIC)
+ 		addr_flags |= IFA_F_OPTIMISTIC;
  
- 	if (!group)
+-	ift = !max_addresses ||
+-	      ipv6_count_addresses(idev) < max_addresses ?
+-		ipv6_add_addr(idev, &addr, tmp_plen,
+-			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
+-			      addr_flags) : NULL;
+-	if (!ift || IS_ERR(ift)) {
++	ift = ipv6_add_addr(idev, &addr, tmp_plen,
++			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
++			    addr_flags);
++	if (IS_ERR(ift)) {
+ 		in6_ifa_put(ifp);
+ 		in6_dev_put(idev);
+ 		printk(KERN_INFO
 
