@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3JUJEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:04:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39791 "EHLO
+	id S1755324Ab3JUJFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:05:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39785 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753119Ab3JUIwf (ORCPT
+	by vger.kernel.org with ESMTP id S1754256Ab3JUIwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:35 -0400
+	Mon, 21 Oct 2013 04:52:34 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ricardo Ribalda" <ricardo.ribalda@gmail.com>,
+CC: akpm@linux-foundation.org,
+        "Salam Noureddine" <noureddine@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.381487203@decadent.org.uk>
+Message-ID: <lsq.1382345188.207415708@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 113/149] ll_temac: Reset dma descriptors indexes on
- ndo_open
+Subject: [PATCH 3.2 111/149] ipv4 igmp: use in_dev_put in timer handlers
+ instead of  __in_dev_put
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,43 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
+[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
 
-The dma descriptors indexes are only initialized on the probe function.
+It is possible for the timer handlers to run after the call to
+ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
+function in order to do proper cleanup when the refcnt reaches 0.
+Otherwise, the refcnt can reach zero without the in_device being
+destroyed and we end up leaking a reference to the net_device and
+see messages like the following,
 
-If a packet is on the buffer when temac_stop is called, the dma
-descriptors indexes can be left on a incorrect state where no other
-package can be sent.
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
 
-So an interface could be left in an usable state after ifdow/ifup.
+Tested on linux-3.4.43.
 
-This patch makes sure that the descriptors indexes are in a proper
-status when the device is open.
-
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/xilinx/ll_temac_main.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv4/igmp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 2681b53..e26945d 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -308,6 +308,12 @@ static int temac_dma_bd_init(struct net_device *ndev)
- 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
- 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 24cf7da..75b0860 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -705,7 +705,7 @@ static void igmp_gq_timer_expire(unsigned long data)
  
-+	/* Init descriptor indexes */
-+	lp->tx_bd_ci = 0;
-+	lp->tx_bd_next = 0;
-+	lp->tx_bd_tail = 0;
-+	lp->rx_bd_ci = 0;
-+
- 	return 0;
+ 	in_dev->mr_gq_running = 0;
+ 	igmpv3_send_report(in_dev, NULL);
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
  
- out:
+ static void igmp_ifc_timer_expire(unsigned long data)
+@@ -717,7 +717,7 @@ static void igmp_ifc_timer_expire(unsigned long data)
+ 		in_dev->mr_ifc_count--;
+ 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+ 	}
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
+ 
+ static void igmp_ifc_event(struct in_device *in_dev)
 
