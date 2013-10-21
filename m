@@ -1,285 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3JUWnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:43:32 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49398 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3JUWnY (ORCPT
+	id S1753152Ab3JUWnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:43:41 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58963 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3JUWnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:43:24 -0400
+	Mon, 21 Oct 2013 18:43:32 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
         James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v2 02/23] keys: change asymmetric keys to use common hash definitions
-Date: Mon, 21 Oct 2013 18:42:47 -0400
-Message-Id: <1382395388-8108-3-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 08/23] ima: provide dedicated hash algo allocation function
+Date: Mon, 21 Oct 2013 18:42:53 -0400
+Message-Id: <1382395388-8108-9-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102122-6688-0000-0000-000002BE751E
+x-cbid: 13102122-8236-0000-0000-000002F7D1A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-This patch makes use of the newly defined common hash algorithm info,
-replacing, for example, PKEY_HASH with HASH_ALGO.
-
-Changelog:
-- Lindent fixes - Mimi
+This patch provides dedicated hash algo allocation and
+deallocation function which can be used by different clients.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- crypto/asymmetric_keys/Kconfig            |  1 +
- crypto/asymmetric_keys/public_key.c       | 12 ------------
- crypto/asymmetric_keys/rsa.c              | 14 +++++++-------
- crypto/asymmetric_keys/x509_cert_parser.c | 12 ++++++------
- crypto/asymmetric_keys/x509_parser.h      |  2 ++
- crypto/asymmetric_keys/x509_public_key.c  |  9 ++++-----
- include/crypto/public_key.h               | 18 ++++--------------
- kernel/module_signing.c                   |  8 ++++----
- 8 files changed, 28 insertions(+), 48 deletions(-)
+ security/integrity/ima/ima_crypto.c | 43 +++++++++++++++++++++++++------------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 862b01f..82e7d6b 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -13,6 +13,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	tristate "Asymmetric public-key crypto algorithm subtype"
- 	select MPILIB
- 	select PUBLIC_KEY_ALGO_RSA
-+	select CRYPTO_HASH_INFO
- 	help
- 	  This option provides support for asymmetric public key type handling.
- 	  If signature generation and/or verification are to be used,
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index 49ac8d8..97eb001 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -36,18 +36,6 @@ const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST] = {
- };
- EXPORT_SYMBOL_GPL(pkey_algo);
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index 872c669..e5d3ebf 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -39,6 +39,28 @@ int ima_init_crypto(void)
+ 	return 0;
+ }
  
--const char *const pkey_hash_algo_name[PKEY_HASH__LAST] = {
--	[PKEY_HASH_MD4]		= "md4",
--	[PKEY_HASH_MD5]		= "md5",
--	[PKEY_HASH_SHA1]	= "sha1",
--	[PKEY_HASH_RIPE_MD_160]	= "rmd160",
--	[PKEY_HASH_SHA256]	= "sha256",
--	[PKEY_HASH_SHA384]	= "sha384",
--	[PKEY_HASH_SHA512]	= "sha512",
--	[PKEY_HASH_SHA224]	= "sha224",
--};
--EXPORT_SYMBOL_GPL(pkey_hash_algo_name);
--
- const char *const pkey_id_type_name[PKEY_ID_TYPE__LAST] = {
- 	[PKEY_ID_PGP]		= "PGP",
- 	[PKEY_ID_X509]		= "X509",
-diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index 4a6a069..90a17f5 100644
---- a/crypto/asymmetric_keys/rsa.c
-+++ b/crypto/asymmetric_keys/rsa.c
-@@ -73,13 +73,13 @@ static const struct {
- 	size_t size;
- } RSA_ASN1_templates[PKEY_HASH__LAST] = {
- #define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
--	[PKEY_HASH_MD5]		= _(MD5),
--	[PKEY_HASH_SHA1]	= _(SHA1),
--	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
--	[PKEY_HASH_SHA256]	= _(SHA256),
--	[PKEY_HASH_SHA384]	= _(SHA384),
--	[PKEY_HASH_SHA512]	= _(SHA512),
--	[PKEY_HASH_SHA224]	= _(SHA224),
-+	[HASH_ALGO_MD5]		= _(MD5),
-+	[HASH_ALGO_SHA1]	= _(SHA1),
-+	[HASH_ALGO_RIPE_MD_160]	= _(RIPE_MD_160),
-+	[HASH_ALGO_SHA256]	= _(SHA256),
-+	[HASH_ALGO_SHA384]	= _(SHA384),
-+	[HASH_ALGO_SHA512]	= _(SHA512),
-+	[HASH_ALGO_SHA224]	= _(SHA224),
- #undef _
- };
- 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 144201c..2989316 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -154,32 +154,32 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
- 		return -ENOPKG; /* Unsupported combination */
- 
- 	case OID_md4WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_MD5;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_MD5;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 
- 	case OID_sha1WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA1;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA1;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 
- 	case OID_sha256WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA256;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA256;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 
- 	case OID_sha384WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA384;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA384;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 
- 	case OID_sha512WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA512;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA512;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 
- 	case OID_sha224WithRSAEncryption:
--		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA224;
-+		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA224;
- 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
- 		break;
- 	}
-diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
-index 87d9cc2..04c81bd 100644
---- a/crypto/asymmetric_keys/x509_parser.h
-+++ b/crypto/asymmetric_keys/x509_parser.h
-@@ -21,6 +21,8 @@ struct x509_certificate {
- 	char		*authority;		/* Authority key fingerprint as hex */
- 	struct tm	valid_from;
- 	struct tm	valid_to;
-+	enum pkey_algo	pkey_algo : 8;		/* Public key algorithm */
-+	enum hash_algo sig_hash_algo : 8;	/* Signature hash algorithm */
- 	const void	*tbs;			/* Signed data */
- 	unsigned	tbs_size;		/* Size of signed data */
- 	unsigned	raw_sig_size;		/* Size of sigature */
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 6abc27f..0a6bfad 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -96,7 +96,7 @@ int x509_get_sig_params(struct x509_certificate *cert)
- 	/* Allocate the hashing algorithm we're going to need and find out how
- 	 * big the hash operational data will be.
- 	 */
--	tfm = crypto_alloc_shash(pkey_hash_algo_name[cert->sig.pkey_hash_algo], 0, 0);
-+	tfm = crypto_alloc_shash(hash_algo_name[cert->sig.pkey_hash_algo], 0, 0);
- 	if (IS_ERR(tfm))
- 		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
- 
-@@ -199,7 +199,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 	    cert->sig.pkey_hash_algo >= PKEY_HASH__LAST ||
- 	    !pkey_algo[cert->pub->pkey_algo] ||
- 	    !pkey_algo[cert->sig.pkey_algo] ||
--	    !pkey_hash_algo_name[cert->sig.pkey_hash_algo]) {
-+	    !hash_algo_name[cert->sig.pkey_hash_algo]) {
- 		ret = -ENOPKG;
- 		goto error_free_cert;
- 	}
-@@ -213,9 +213,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 		 cert->valid_to.tm_year + 1900, cert->valid_to.tm_mon + 1,
- 		 cert->valid_to.tm_mday, cert->valid_to.tm_hour,
- 		 cert->valid_to.tm_min,  cert->valid_to.tm_sec);
--	pr_devel("Cert Signature: %s + %s\n",
--		 pkey_algo_name[cert->sig.pkey_algo],
--		 pkey_hash_algo_name[cert->sig.pkey_hash_algo]);
-+	pr_devel("Cert Signature: %s\n",
-+		 hash_algo_name[cert->sig.pkey_hash_algo]);
- 
- 	if (!cert->fingerprint) {
- 		pr_warn("Cert for '%s' must have a SubjKeyId extension\n",
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index b34fda4..fc09732 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -15,6 +15,7 @@
- #define _LINUX_PUBLIC_KEY_H
- 
- #include <linux/mpi.h>
-+#include <crypto/hash_info.h>
- 
- enum pkey_algo {
- 	PKEY_ALGO_DSA,
-@@ -25,19 +26,8 @@ enum pkey_algo {
- extern const char *const pkey_algo_name[PKEY_ALGO__LAST];
- extern const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST];
- 
--enum pkey_hash_algo {
--	PKEY_HASH_MD4,
--	PKEY_HASH_MD5,
--	PKEY_HASH_SHA1,
--	PKEY_HASH_RIPE_MD_160,
--	PKEY_HASH_SHA256,
--	PKEY_HASH_SHA384,
--	PKEY_HASH_SHA512,
--	PKEY_HASH_SHA224,
--	PKEY_HASH__LAST
--};
--
--extern const char *const pkey_hash_algo_name[PKEY_HASH__LAST];
-+/* asymmetric key implementation supports only up to SHA224 */
-+#define PKEY_HASH__LAST		(HASH_ALGO_SHA224 + 1)
- 
- enum pkey_id_type {
- 	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-@@ -91,7 +81,7 @@ struct public_key_signature {
- 	u8 digest_size;			/* Number of bytes in digest */
- 	u8 nr_mpi;			/* Occupancy of mpi[] */
- 	enum pkey_algo pkey_algo : 8;
--	enum pkey_hash_algo pkey_hash_algo : 8;
-+	enum hash_algo pkey_hash_algo : 8;
- 	union {
- 		MPI mpi[2];
- 		struct {
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index 0b6b870..be5b8fa 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -29,7 +29,7 @@
-  */
- struct module_signature {
- 	u8	algo;		/* Public-key crypto algorithm [enum pkey_algo] */
--	u8	hash;		/* Digest algorithm [enum pkey_hash_algo] */
-+	u8	hash;		/* Digest algorithm [enum hash_algo] */
- 	u8	id_type;	/* Key identifier type [enum pkey_id_type] */
- 	u8	signer_len;	/* Length of signer's name */
- 	u8	key_id_len;	/* Length of key identifier */
-@@ -40,7 +40,7 @@ struct module_signature {
++static struct crypto_shash *ima_alloc_tfm(enum hash_algo algo)
++{
++	struct crypto_shash *tfm = ima_shash_tfm;
++	int rc;
++
++	if (algo != ima_hash_algo && algo < HASH_ALGO__LAST) {
++		tfm = crypto_alloc_shash(hash_algo_name[algo], 0, 0);
++		if (IS_ERR(tfm)) {
++			rc = PTR_ERR(tfm);
++			pr_err("Can not allocate %s (reason: %d)\n",
++			       hash_algo_name[algo], rc);
++		}
++	}
++	return tfm;
++}
++
++static void ima_free_tfm(struct crypto_shash *tfm)
++{
++	if (tfm != ima_shash_tfm)
++		crypto_free_shash(tfm);
++}
++
  /*
-  * Digest the module contents.
+  * Calculate the MD5/SHA1 file digest
   */
--static struct public_key_signature *mod_make_digest(enum pkey_hash_algo hash,
-+static struct public_key_signature *mod_make_digest(enum hash_algo hash,
- 						    const void *mod,
- 						    unsigned long modlen)
+@@ -57,6 +79,8 @@ static int ima_calc_file_hash_tfm(struct file *file,
+ 	desc.shash.tfm = tfm;
+ 	desc.shash.flags = 0;
+ 
++	hash->length = crypto_shash_digestsize(tfm);
++
+ 	rc = crypto_shash_init(&desc.shash);
+ 	if (rc != 0)
+ 		return rc;
+@@ -98,25 +122,16 @@ out:
+ 
+ int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
  {
-@@ -55,7 +55,7 @@ static struct public_key_signature *mod_make_digest(enum pkey_hash_algo hash,
- 	/* Allocate the hashing algorithm we're going to need and find out how
- 	 * big the hash operational data will be.
- 	 */
--	tfm = crypto_alloc_shash(pkey_hash_algo_name[hash], 0, 0);
-+	tfm = crypto_alloc_shash(hash_algo_name[hash], 0, 0);
- 	if (IS_ERR(tfm))
- 		return (PTR_ERR(tfm) == -ENOENT) ? ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
+-	struct crypto_shash *tfm = ima_shash_tfm;
++	struct crypto_shash *tfm;
+ 	int rc;
  
-@@ -218,7 +218,7 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
- 		return -ENOPKG;
+-	if (hash->algo != ima_hash_algo && hash->algo < HASH_ALGO__LAST) {
+-		tfm = crypto_alloc_shash(hash_algo_name[hash->algo], 0, 0);
+-		if (IS_ERR(tfm)) {
+-			rc = PTR_ERR(tfm);
+-			pr_err("Can not allocate %s (reason: %d)\n",
+-			       hash_algo_name[hash->algo], rc);
+-			return rc;
+-		}
+-	}
+-
+-	hash->length = crypto_shash_digestsize(tfm);
++	tfm = ima_alloc_tfm(hash->algo);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
  
- 	if (ms.hash >= PKEY_HASH__LAST ||
--	    !pkey_hash_algo_name[ms.hash])
-+	    !hash_algo_name[ms.hash])
- 		return -ENOPKG;
+ 	rc = ima_calc_file_hash_tfm(file, hash, tfm);
  
- 	key = request_asymmetric_key(sig, ms.signer_len,
+-	if (tfm != ima_shash_tfm)
+-		crypto_free_shash(tfm);
++	ima_free_tfm(tfm);
+ 
+ 	return rc;
+ }
 -- 
 1.8.1.4
 
