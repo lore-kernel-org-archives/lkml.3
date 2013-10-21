@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab3JUIwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:52:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39807 "EHLO
+	id S1754391Ab3JUIwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:52:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39813 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754289Ab3JUIwn (ORCPT
+	by vger.kernel.org with ESMTP id S1754374Ab3JUIwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:43 -0400
+	Mon, 21 Oct 2013 04:52:51 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Kirill Tkhai" <tkhai@yandex.ru>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Michal Marek" <mmarek@suse.cz>, "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Daniel Santos" <daniel.santos@pobox.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.988528069@decadent.org.uk>
+Message-ID: <lsq.1382345188.85266989@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 117/149] sparc64: Fix off by one in trampoline TLB
- mapping  installation loop.
+Subject: [PATCH 3.2 120/149] kernel-doc: bugfix - multi-line macros
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +33,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Daniel Santos <daniel.santos@pobox.com>
 
-[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
+commit 654784284430bf2739985914b65e09c7c35a7273 upstream.
 
-Reported-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Prior to this patch the following code breaks:
+
+/**
+ * multiline_example - this breaks kernel-doc
+ */
+ #define multiline_example( \
+myparam)
+
+Producing this error:
+
+Error(somefile.h:983): cannot understand prototype: 'multiline_example( \ '
+
+This patch fixes the issue by appending all lines ending in a blackslash
+(optionally followed by whitespace), removing the backslash and any
+whitespace after it prior to appending (just like the C pre-processor
+would).
+
+This fixes a break in kerel-doc introduced by the additions to rbtree.h.
+
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/kernel/trampoline_64.S | 2 --
- 1 file changed, 2 deletions(-)
+ scripts/kernel-doc | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/sparc/kernel/trampoline_64.S b/arch/sparc/kernel/trampoline_64.S
-index da1b781..8fa84a3 100644
---- a/arch/sparc/kernel/trampoline_64.S
-+++ b/arch/sparc/kernel/trampoline_64.S
-@@ -131,7 +131,6 @@ startup_continue:
- 	clr		%l5
- 	sethi		%hi(num_kernel_image_mappings), %l6
- 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
--	add		%l6, 1, %l6
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -2044,6 +2044,9 @@ sub process_file($) {
  
- 	mov		15, %l7
- 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
-@@ -224,7 +223,6 @@ niagara_lock_tlb:
- 	clr		%l5
- 	sethi		%hi(num_kernel_image_mappings), %l6
- 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
--	add		%l6, 1, %l6
- 
- 1:
- 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
+     $section_counter = 0;
+     while (<IN>) {
++	while (s/\\\s*$//) {
++	    $_ .= <IN>;
++	}
+ 	if ($state == 0) {
+ 	    if (/$doc_start/o) {
+ 		$state = 1;		# next line is always the function name
 
