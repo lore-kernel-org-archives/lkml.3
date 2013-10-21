@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3JUIvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:51:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39405 "EHLO
+	id S1753691Ab3JUIvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:51:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39446 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753113Ab3JUIvC (ORCPT
+	by vger.kernel.org with ESMTP id S1753612Ab3JUIvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:02 -0400
+	Mon, 21 Oct 2013 04:51:18 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Anton Blanchard" <anton@samba.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org, "Felix Fietkau" <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.730769455@decadent.org.uk>
+Message-ID: <lsq.1382345188.382292296@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 024/149] powerpc: Handle unaligned ldbrx/stdbrx
+Subject: [PATCH 3.2 020/149] ath9k: always clear ps filter bit on new assoc
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,49 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 230aef7a6a23b6166bd4003bfff5af23c9bd381f upstream.
+commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
 
-Normally when we haven't implemented an alignment handler for
-a load or store instruction the process will be terminated.
+Otherwise in some cases, EAPOL frames might be filtered during the
+initial handshake, causing delays and assoc failures.
 
-The alignment handler uses the DSISR (or a pseudo one) to locate
-the right handler. Unfortunately ldbrx and stdbrx overlap lfs and
-stfs so we incorrectly think ldbrx is an lfs and stdbrx is an
-stfs.
-
-This bug is particularly nasty - instead of terminating the
-process we apply an incorrect fixup and continue on.
-
-With more and more overlapping instructions we should stop
-creating a pseudo DSISR and index using the instruction directly,
-but for now add a special case to catch ldbrx/stdbrx.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/align.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/ath/ath9k/xmit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/kernel/align.c
-+++ b/arch/powerpc/kernel/align.c
-@@ -764,6 +764,16 @@ int fix_alignment(struct pt_regs *regs)
- 	nb = aligninfo[instr].len;
- 	flags = aligninfo[instr].flags;
- 
-+	/* ldbrx/stdbrx overlap lfs/stfs in the DSISR unfortunately */
-+	if (IS_XFORM(instruction) && ((instruction >> 1) & 0x3ff) == 532) {
-+		nb = 8;
-+		flags = LD+SW;
-+	} else if (IS_XFORM(instruction) &&
-+		   ((instruction >> 1) & 0x3ff) == 660) {
-+		nb = 8;
-+		flags = ST+SW;
-+	}
-+
- 	/* Byteswap little endian loads and stores */
- 	swiz = 0;
- 	if (regs->msr & MSR_LE) {
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2423,6 +2423,7 @@ void ath_tx_node_init(struct ath_softc *
+ 	for (acno = 0, ac = &an->ac[acno];
+ 	     acno < WME_NUM_AC; acno++, ac++) {
+ 		ac->sched    = false;
++		ac->clear_ps_filter = true;
+ 		ac->txq = sc->tx.txq_map[acno];
+ 		INIT_LIST_HEAD(&ac->tid_q);
+ 	}
 
