@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3JUVrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 17:47:20 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:45438 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab3JUVrR (ORCPT
+	id S1752826Ab3JUVra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 17:47:30 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55935 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab3JUVr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 17:47:17 -0400
-Date: Mon, 21 Oct 2013 14:47:12 -0700
+	Mon, 21 Oct 2013 17:47:27 -0400
+Date: Mon, 21 Oct 2013 14:47:22 -0700
 From: Ning Qu <quning@google.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ning Qu <quning@google.com>, Ning Qu <quning@gmail.com>
-Subject: [PATCHv2 06/13] mm, thp, tmpfs: request huge page in shm_fault when
- needed
-Message-ID: <20131021214712.GG29870@hippobay.mtv.corp.google.com>
+Subject: [PATCHv2 07/13] mm, thp, tmpfs: initial support for huge page in
+ write_begin/write_end in tmpfs
+Message-ID: <20131021214722.GH29870@hippobay.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -33,68 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the function to request huge page in shm_fault when needed.
-And it will fall back to regular page if huge page can't be
-satisfied or allocated.
-
-If small page requested but huge page is found, the huge page will
-be splitted.
+For now we try to grab a huge cache page if the minimum requirements have been
+satisfied.
 
 Signed-off-by: Ning Qu <quning@gmail.com>
 ---
- mm/shmem.c | 28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ mm/shmem.c | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
 diff --git a/mm/shmem.c b/mm/shmem.c
-index b80ace7..0dd6689 100644
+index 0dd6689..af56731 100644
 --- a/mm/shmem.c
 +++ b/mm/shmem.c
-@@ -1469,19 +1469,43 @@ unlock:
- static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	struct inode *inode = file_inode(vma->vm_file);
-+	struct page *page = NULL;
- 	int error;
- 	int ret = VM_FAULT_LOCKED;
+@@ -1635,8 +1635,20 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
+ 	struct inode *inode = mapping->host;
+ 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
  	gfp_t gfp = mapping_gfp_mask(inode->i_mapping);
-+	bool must_use_thp = vmf->flags & FAULT_FLAG_TRANSHUGE;
-+	int flags = AOP_FLAG_TRANSHUGE;
- 
--	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, gfp,
--				0, &ret);
-+retry_find:
-+	error = shmem_getpage(inode, vmf->pgoff, &page, SGP_CACHE, gfp,
-+				flags, &ret);
- 	if (error)
- 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
- 
-+	/* Split huge page if we don't want huge page to be here */
-+	if (!must_use_thp && PageTransCompound(page)) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+		split_huge_page(compound_trans_head(page));
-+		page = NULL;
-+		goto retry_find;
-+	}
++	int ret = 0;
++	int getpage_flags = 0;
 +
-+	if (must_use_thp && !PageTransHuge(page)) {
-+		/*
-+		 * Caller asked for huge page, but we have small page
-+		 * by this offset. Fallback to small pages.
-+		 */
-+		unlock_page(page);
-+		page_cache_release(page);
-+		return VM_FAULT_FALLBACK;
-+	}
++	/*
++	 * Do not allocate a huge page in the first huge page range in page
++	 * cache. This way we can avoid most small files overhead.
++	 */
++	if (pos >= HPAGE_PMD_SIZE)
++		getpage_flags |= AOP_FLAG_TRANSHUGE;
+ 
+-	return shmem_getpage(inode, index, pagep, SGP_WRITE, gfp, 0, NULL);
++	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, gfp,
++				getpage_flags, NULL);
 +
- 	if (ret & VM_FAULT_MAJOR) {
- 		count_vm_event(PGMAJFAULT);
- 		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
- 	}
-+	vmf->page = page;
- 	return ret;
++	return ret;
  }
  
+ static int
+@@ -1650,10 +1662,18 @@ shmem_write_end(struct file *file, struct address_space *mapping,
+ 		i_size_write(inode, pos + copied);
+ 
+ 	if (!PageUptodate(page)) {
+-		if (copied < PAGE_CACHE_SIZE) {
+-			unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-			zero_user_segments(page, 0, from,
+-					from + copied, PAGE_CACHE_SIZE);
++		if (copied < len) {
++			unsigned from;
++			if (PageTransHugeCache(page)) {
++				from = pos & ~HPAGE_PMD_MASK;
++				zero_huge_user(page, 0, from);
++				zero_huge_user(page, from + copied,
++					       HPAGE_PMD_SIZE);
++			} else {
++				from = pos & ~PAGE_CACHE_MASK;
++				zero_user_segments(page, 0, from,
++						from + copied, PAGE_CACHE_SIZE);
++			}
+ 		}
+ 		SetPageUptodate(page);
+ 	}
 -- 
 1.8.4
 
