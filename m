@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3JUOMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:12:36 -0400
-Received: from mail-ye0-f181.google.com ([209.85.213.181]:33889 "EHLO
-	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3JUOMf (ORCPT
+	id S1753365Ab3JUOSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:18:51 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49828 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab3JUOSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:12:35 -0400
-Date: Mon, 21 Oct 2013 11:12:28 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
-Message-ID: <20131021141228.GA2245@ghostprotocols.net>
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
- <1382099356-4918-10-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382099356-4918-10-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Oct 2013 10:18:49 -0400
+X-AuditID: cbfee61a-b7f836d0000025d7-ff-526537c7c229
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+To: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org, kyungmin.park@samsung.com,
+        t.figa@samsung.com, kishon@ti.com, sw0312.kim@samsung.com,
+        inki.dae@samsung.com, rahul.sharma@samsung.com, kgene.kim@samsung.com,
+        s.nawrocki@samsung.com, thomas.abraham@linaro.org,
+        mturquette@linaro.org, Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: [RFC 00/12] Add DRM Exynos HDMI on SoCs from Exynos4 family
+Date: Mon, 21 Oct 2013 16:18:19 +0200
+Message-id: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd3j5qlBBnunKVjMP3KO1eLK1/ds
+	FpPuT2Cx6F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLpxMusllMWXSY1eLwm3ZWixmTX7JZ
+	rJ/xmsViXvtLVotjM5YwOvB73Lm2h83jfvdxJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllq
+	kb5dAlfG/oM/mQqWiFXsPtfE3MC4VqCLkZNDQsBE4sGsFlYIW0ziwr31bCC2kMAiRiCnuouR
+	C8juYpK4cv8eWBEbUMOxJZ8ZQWwRgUSJX813mUGKmAUOMUnsbpkC5HBwCAu4SHw46QdSwyKg
+	KjG/6whYL6+Au8Tmv6fZIZbJSzy938c2gZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95Pzc
+	TYzgoHsmtYNxZYPFIUYBDkYlHt4Al5QgIdbEsuLK3EOMEhzMSiK8VaapQUK8KYmVValF+fFF
+	pTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYTU1qM7PX8Gbxz9V322bNcvRu
+	5eo1cSXFU9cfu9fo8OKf7vX52t3T70qrJ1ZmP3O7d1rw0k2DL5OOzQ9JXimo8/r19kXTvKW9
+	83PsnNc5vffq+/TqmVWSzHS9ZQ1nDfdUXYnYuvf02X1G8wyf8LbdLGC7s83YoG3RQyEvB65r
+	Skdd3Q/fZv8XqMRSnJFoqMVcVJwIAE34qNI2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter escreveu:
-> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
-> was not passed around.
- 
-<SNIP>
+This patchset adds support for HDMI at SoCs from Exynos4 family. The patches
+are rebased on kishon/next. Additionally, The patchset contains small fixes to
+PHY and CLK frameworks.  I preferred to keep all the patches together for the
+first version of the RFC.
 
-> index c873e03..699cdb7 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -706,7 +706,7 @@ $(LIB_FILE): $(LIB_OBJS)
->  TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
->  
->  $(LIBTRACEEVENT): $(TE_SOURCES)
-> -	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
-> +	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
+The interesting part might be 'propagation of clk_set_parent()'.  This feature
+allows to remove the usage of artificial clocks in drivers.  Such a situation
+happens for Exynos HDMI and 'mout_hdmi' where the clock is not even mentioned in
+some versions of SoC's documentation. Since enabling and setting rate can be
+propagated I think that clk_set_parent() should also be propagated. This would
+simplify driver's code and make it less dependant on SoC's version.
 
-So are we unconditionally set -g and -Wall?
+Another interesting feature refers to simple PHY driver.  This driver register
+a PHY interface that operates by setting a special bit in platform register.
+This situation is very common in Exynos SoCs.  The current version supports
+only one phy per node.  The code might be modified to support multiple phys
+from single simple-phy provider to avoid creation of multiple nodes in DT.
 
-And by making CFLAGS be $(EXTRA_CFLAGS) implies EXTRA_CFLAGS already
-contains "$(CFLAGS)?
+All comments are welcome.
 
-- Arnaldo
+Regards,
+Tomasz Stanislawski
 
->  
->  $(LIBTRACEEVENT)-clean:
->  	$(call QUIET_CLEAN, libtraceevent)
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index c516d6b..c94a06b 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -92,7 +92,7 @@ endif
->  
->  feature_check = $(eval $(feature_check_code))
->  define feature_check_code
-> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
->  endef
->  
->  feature_set = $(eval $(feature_set_code))
-> @@ -169,7 +169,7 @@ ifeq ($(feature-all), 1)
->    #
->    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
->  else
-> -  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-> +  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
->    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
->  endif
->  
-> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-> index 452b67c..353c00c 100644
-> --- a/tools/perf/config/feature-checks/Makefile
-> +++ b/tools/perf/config/feature-checks/Makefile
-> @@ -31,7 +31,7 @@ CC := $(CC) -MD
->  
->  all: $(FILES)
->  
-> -BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
-> +BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
->  
->  ###############################
->  
-> -- 
-> 1.7.11.7
+
+Tomasz Stanislawski (12):
+  clk: propagate parent change up one level
+  clk: exynos4: export sclk_hdmiphy clock
+  clk: exynos4: enable clk_set_parent() propagation for sclk_hdmi and
+    sclk_mixer clocks
+  phy: Add simple-phy driver
+  phy: use of_phy_simple_xlate for NULL xlate function
+  Revert "drm/exynos: add mout_hdmi clock in hdmi driver to change
+    parent"
+  drm: exynos: hdmi: use hdmiphy as PHY
+  drm: exynos: hdmi: simplify extracting hpd-gpio from DT
+  drm: exynos: add compatibles for HDMI and Mixer chips and exynos4210
+    SoC
+  arm: dts: exynos4: add i2c controller for HDMIPHY
+  arm: dts: exynos4: add HDMI devices
+  arm: dts: universal_c210: add HDMI devices
+
+ .../devicetree/bindings/clock/exynos4-clock.txt    |    1 +
+ arch/arm/boot/dts/exynos4.dtsi                     |   43 +++++++
+ arch/arm/boot/dts/exynos4210-universal_c210.dts    |   53 ++++++++
+ arch/arm/boot/dts/exynos4210.dtsi                  |    4 +
+ drivers/clk/clk.c                                  |    6 +
+ drivers/clk/samsung/clk-exynos4.c                  |   10 +-
+ drivers/gpu/drm/exynos/exynos_hdmi.c               |   41 +++----
+ drivers/gpu/drm/exynos/exynos_mixer.c              |    3 +
+ drivers/phy/Kconfig                                |    5 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-core.c                             |    2 +-
+ drivers/phy/phy-simple.c                           |  128 ++++++++++++++++++++
+ include/linux/clk-provider.h                       |    1 +
+ 13 files changed, 269 insertions(+), 29 deletions(-)
+ create mode 100644 drivers/phy/phy-simple.c
+
+-- 
+1.7.9.5
+
