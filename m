@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab3JUKEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:04:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35793 "EHLO arroyo.ext.ti.com"
+	id S1753086Ab3JUKSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:18:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab3JUKEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:04:02 -0400
-Message-ID: <5264FBE8.4070704@ti.com>
-Date: Mon, 21 Oct 2013 15:33:20 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752810Ab3JUKSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 06:18:10 -0400
+Date: Mon, 21 Oct 2013 12:19:51 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        Mark Lord <kernel@start.ca>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH RFC v2 29/29] vmxnet3: Make use of
+ pcim_enable_msix_range() interface
+Message-ID: <20131021101951.GA4221@dhcp-26-207.brq.redhat.com>
+References: <cover.1382103786.git.agordeev@redhat.com>
+ <75788c5da384b16633fdab43d37a277aa92f38fd.1382103786.git.agordeev@redhat.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B7398@saturn3.aculab.com>
 MIME-Version: 1.0
-To: Benoit Cousson <bcousson@baylibre.com>
-CC: Nishanth Menon <nm@ti.com>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <tony@atomide.com>, <swarren@wwwdotorg.org>,
-        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: dts: omap5-uevm: remove always_on, boot_on from
- smps10_out1
-References: <1381402195-29257-1-git-send-email-kishon@ti.com> <525E9206.9010501@ti.com> <525E9434.1090006@ti.com> <526043E3.3070302@baylibre.com>
-In-Reply-To: <526043E3.3070302@baylibre.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7398@saturn3.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 October 2013 01:39 AM, Benoit Cousson wrote:
-> Hi Kishon,
-> 
-> On 16/10/2013 15:27, Nishanth Menon wrote:
->> On 10/16/2013 08:17 AM, Kishon Vijay Abraham I wrote:
->>> Benoit,
->>>
->>> On Thursday 10 October 2013 04:19 PM, Kishon Vijay Abraham I wrote:
->>>> smps10 should be enabled only in the case of host mode. So stop
->>>> doing always_on, boot_on from smps10_out1. The driver will enable it in host
->>>> mode.
->>>
->>> Can you take this patch too?
->>
->> Acked-by: Nishanth Menon <nm@ti.com>
-> 
-> I've just applied it.
+On Mon, Oct 21, 2013 at 09:51:32AM +0100, David Laight wrote:
+> > Subject: [PATCH RFC v2 29/29] vmxnet3: Make use of pcim_enable_msix_range() interface
+> AFAICT the old code either used the requested number or the minimum number.
+> The new code seems to claim an intermediate number of interrupts - but probably
+> only uses the minimum number.
 
-Thanks :-)
+Yes, you are right. I missed the vectors = vector_threshold assignment.
+This driver is inapplicable as an example.
 
--Kishon
-> 
-> Thanks,
-> Benoit
-> 
-> 
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
