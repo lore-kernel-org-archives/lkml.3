@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab3JUMRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 08:17:40 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:62008 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab3JUMRj (ORCPT
+	id S1753498Ab3JUMU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 08:20:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35393 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab3JUMUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 08:17:39 -0400
-From: Libin <huawei.libin@huawei.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <guohanjun@huawei.com>,
-        <xiexiuqi@huawei.com>, <huawei.libin@huawei.com>
-Subject: [PATCH] sched/rt: Fix comment of task_tick_rt()
-Date: Mon, 21 Oct 2013 20:15:43 +0800
-Message-ID: <1382357743-54136-1-git-send-email-huawei.libin@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+	Mon, 21 Oct 2013 08:20:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1382304926-1641-3-git-send-email-prarit@redhat.com>
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com>
+	<1382304926-1641-3-git-send-email-prarit@redhat.com>
+Date: Mon, 21 Oct 2013 20:20:50 +0800
+Message-ID: <CACVXFVMjEnkk8zYycsk6t4WiWOJ_NT1AKFoK7p5mQnFkw9KE-g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] intel_microcode, Fix long microcode load time when
+ firmware file is missing
+From: Ming Lei <ming.lei@canonical.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        herrmann.der.user@googlemail.com, tigran@aivazian.fsnet.co.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Bin <huawei.libin@huawei.com>
+On Mon, Oct 21, 2013 at 5:35 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+> If no firmware is found on the system that matches the processor, the
+> microcode module can take hours to load.  For example on recent kernels
+> when loading the microcode module on an Intel system:
+>
+> [  239.532116] microcode: CPU0 sig=0x306e4, pf=0x1, revision=0x413
+> [  299.693447] microcode: CPU1 sig=0x306e4, pf=0x1, revision=0x413
+> [  359.821972] microcode: CPU2 sig=0x306e4, pf=0x1, revision=0x413
+> [  419.960263] microcode: CPU3 sig=0x306e4, pf=0x1, revision=0x413
+> [  480.090024] microcode: CPU4 sig=0x306e4, pf=0x1, revision=0x413
+> ...
+> [ 2825.151364] microcode: CPU43 sig=0x306e4, pf=0x1, revision=0x413
+> [ 2885.280863] microcode: CPU44 sig=0x306e4, pf=0x1, revision=0x413
+> [ 2945.410719] microcode: CPU45 sig=0x306e4, pf=0x1, revision=0x413
+> [ 3005.540541] microcode: CPU46 sig=0x306e4, pf=0x1, revision=0x413
+> [ 3065.670405] microcode: CPU47 sig=0x306e4, pf=0x1, revision=0x413
+> ...
+> etc.
+>
+> Similarly there is a 60 second "hang" when loading the AMD module, which
+> isn't as bad as the Intel situation, but it is a noticeable delay in the
+> system boot and can be improved upon.
+>
+> Using request_firmware_nowait() seems more appropriate here and then we
+> can avoid these delays, resulting in very quick load times for the
+> microcode.
 
-This issue was introduced by 454c7999(sched/rt: Fix SCHED_RR across
-cgroups) that missing the word 'not'. Fix it.
+request_firmware_nowait() should be a good idea for the problem, but
+why do you pass FW_ACTION_NOHOTPLUG as uevent?  It is used now
+by drivers which requires their own user-space applications to handle
+the request by polling the firmware device under sysfs.
 
-Signed-off-by: Li Bin <huawei.libin@huawei.com>
----
- kernel/sched/rt.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+So I am wondering if your microcode case belongs to the above case
+of FW_ACTION_NOHOTPLUG?
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..fa4cf84 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1931,8 +1931,8 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	p->rt.time_slice = sched_rr_timeslice;
- 
- 	/*
--	 * Requeue to the end of queue if we (and all of our ancestors) are the
--	 * only element on the queue
-+	 * Requeue to the end of queue if we (and all of our ancestors) are not
-+	 * the only element on the queue
- 	 */
- 	for_each_sched_rt_entity(rt_se) {
- 		if (rt_se->run_list.prev != rt_se->run_list.next) {
--- 
-1.8.2.1
+And why don't you pass FW_ACTION_HOTPLUG? and you are sure
+that udev isn't required to handle your microcode update request?
 
 
+Thanks,
+--
+Ming Lei
