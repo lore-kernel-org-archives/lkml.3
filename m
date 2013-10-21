@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3JUIzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:55:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39910 "EHLO
+	id S1754782Ab3JUIzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:55:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39909 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754636Ab3JUIxc (ORCPT
+	by vger.kernel.org with ESMTP id S1754637Ab3JUIxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Oct 2013 04:53:32 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Huang Ying" <ying.huang@intel.com>,
-        "Lv Zheng" <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "Henrik Rydberg" <rydberg@euromail.se>,
+        "Guenter Roeck" <guenter.roeck@ericsson.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.138469147@decadent.org.uk>
+Message-ID: <lsq.1382345188.843886656@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 147/149] ACPI / IPMI: Fix atomic context requirement
- of ipmi_msg_handler()
+Subject: [PATCH 3.2 144/149] hwmon: (applesmc) Silence uninitialized warnings
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,180 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
+commit 0fc86eca1b338d06ec500b34ef7def79c32b602b upstream.
 
-This patch fixes the issues indicated by the test results that
-ipmi_msg_handler() is invoked in atomic context.
+Some error paths do not set a result, leading to the (false)
+assumption that the value may be used uninitialized. Set results for
+those paths as well.
 
-BUG: scheduling while atomic: kipmi0/18933/0x10000100
-Modules linked in: ipmi_si acpi_ipmi ...
-CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
-Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
- ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
- ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
- 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
-Call Trace:
- <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
- [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
- [<ffffffff814c73e0>] __schedule+0x83/0x59c
- [<ffffffff81058853>] __cond_resched+0x22/0x2d
- [<ffffffff814c794b>] _cond_resched+0x14/0x1d
- [<ffffffff814c6d82>] mutex_lock+0x11/0x32
- [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
- [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
- [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
- [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
- [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
- [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
- [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
- ...
-
-Also Tony Camuso says:
-
- We were getting occasional "Scheduling while atomic" call traces
- during boot on some systems. Problem was first seen on a Cisco C210
- but we were able to reproduce it on a Cisco c220m3. Setting
- CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
- tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
-
- =================================
- [ INFO: inconsistent lock state ]
- 2.6.32-415.el6.x86_64-debug-splck #1
- ---------------------------------
- inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
- ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
-  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
- {SOFTIRQ-ON-W} state was registered at:
-   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
-   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
-   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
-   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
-   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
-   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
-
-The fix implemented by this change has been tested by Tony:
-
- Tested the patch in a boot loop with lockdep debug enabled and never
- saw the problem in over 400 reboots.
-
-Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Reviewed-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/acpi_ipmi.c | 24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/hwmon/applesmc.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
-index f40acef..a6977e1 100644
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -39,6 +39,7 @@
- #include <linux/ipmi.h>
- #include <linux/device.h>
- #include <linux/pnp.h>
-+#include <linux/spinlock.h>
- 
- MODULE_AUTHOR("Zhao Yakui");
- MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
-@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
- 	struct list_head head;
- 	/* the IPMI request message list */
- 	struct list_head tx_msg_list;
--	struct mutex	tx_msg_lock;
-+	spinlock_t	tx_msg_lock;
- 	acpi_handle handle;
- 	struct pnp_dev *pnp_dev;
- 	ipmi_user_t	user_interface;
-@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct acpi_ipmi_msg *tx_msg,
- 	struct kernel_ipmi_msg *msg;
- 	struct acpi_ipmi_buffer *buffer;
- 	struct acpi_ipmi_device *device;
-+	unsigned long flags;
- 
- 	msg = &tx_msg->tx_message;
- 	/*
-@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct acpi_ipmi_msg *tx_msg,
- 
- 	/* Get the msgid */
- 	device = tx_msg->device;
--	mutex_lock(&device->tx_msg_lock);
-+	spin_lock_irqsave(&device->tx_msg_lock, flags);
- 	device->curr_msgid++;
- 	tx_msg->tx_msgid = device->curr_msgid;
--	mutex_unlock(&device->tx_msg_lock);
-+	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
- }
- 
- static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 	int msg_found = 0;
- 	struct acpi_ipmi_msg *tx_msg;
- 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-+	unsigned long flags;
- 
- 	if (msg->user != ipmi_device->user_interface) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
-@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 		ipmi_free_recv_msg(msg);
- 		return;
- 	}
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
- 		if (msg->msgid == tx_msg->tx_msgid) {
- 			msg_found = 1;
-@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 		}
- 	}
- 
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	if (!msg_found) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
- 			"returned.\n", msg->msgid);
-@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
- 	struct acpi_ipmi_device *ipmi_device = handler_context;
- 	int err, rem_time;
- 	acpi_status status;
-+	unsigned long flags;
- 	/*
- 	 * IPMI opregion message.
- 	 * IPMI message is firstly written to the BMC and system software
-@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
- 		return AE_NO_MEMORY;
- 
- 	acpi_format_ipmi_msg(tx_msg, address, value);
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	err = ipmi_request_settime(ipmi_device->user_interface,
- 					&tx_msg->addr,
- 					tx_msg->tx_msgid,
-@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
- 	status = AE_OK;
- 
- end_label:
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_del(&tx_msg->head);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	kfree(tx_msg);
- 	return status;
- }
-@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct acpi_ipmi_device *ipmi_device)
- 
- 	INIT_LIST_HEAD(&ipmi_device->head);
- 
--	mutex_init(&ipmi_device->tx_msg_lock);
-+	spin_lock_init(&ipmi_device->tx_msg_lock);
- 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
- 	ipmi_install_space_handler(ipmi_device);
- 
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 1b13085..f082e48 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -344,8 +344,10 @@ static int applesmc_get_lower_bound(unsigned int *lo, const char *key)
+ 	while (begin != end) {
+ 		int middle = begin + (end - begin) / 2;
+ 		entry = applesmc_get_entry_by_index(middle);
+-		if (IS_ERR(entry))
++		if (IS_ERR(entry)) {
++			*lo = 0;
+ 			return PTR_ERR(entry);
++		}
+ 		if (strcmp(entry->key, key) < 0)
+ 			begin = middle + 1;
+ 		else
+@@ -364,8 +366,10 @@ static int applesmc_get_upper_bound(unsigned int *hi, const char *key)
+ 	while (begin != end) {
+ 		int middle = begin + (end - begin) / 2;
+ 		entry = applesmc_get_entry_by_index(middle);
+-		if (IS_ERR(entry))
++		if (IS_ERR(entry)) {
++			*hi = smcreg.key_count;
+ 			return PTR_ERR(entry);
++		}
+ 		if (strcmp(key, entry->key) < 0)
+ 			end = middle;
+ 		else
 
