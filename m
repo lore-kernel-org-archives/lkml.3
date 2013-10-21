@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab3JUROJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 13:14:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22851 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab3JUROH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 13:14:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="396241817"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "bp@alien8.de" <bp@alien8.de>, "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chen Gong <gong.chen@linux.intel.com>
-Subject: RE: [PATCH v3 8/9] ACPI, APEI, CPER: Cleanup CPER memory error
- output format
-Thread-Topic: [PATCH v3 8/9] ACPI, APEI, CPER: Cleanup CPER memory error
- output format
-Thread-Index: AQHOy92plRjhtpgznEKRMXMo82fJkJn60SKAgAGIuQCAA3dMgP//l3xQ
-Date: Mon, 21 Oct 2013 17:14:05 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D45B22@ORSMSX106.amr.corp.intel.com>
-References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com>
- <1382084624-10857-9-git-send-email-gong.chen@linux.intel.com>
- <52612311.2000303@linux.vnet.ibm.com>
- <20131019112658.GB16597@gchen.bj.intel.com>
- <526554D3.9050902@linux.vnet.ibm.com>
-In-Reply-To: <526554D3.9050902@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1751781Ab3JURXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 13:23:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42985 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751649Ab3JURXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 13:23:21 -0400
+Date: Mon, 21 Oct 2013 13:23:19 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vishal Annapurve <vannapurve@nvidia.com>
+cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+In-Reply-To: <113ACA888B71994BB56E5CF3704953486D65F419AE@BGMAIL02.nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1310211321320.1185-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9LHEDDo001213
 
->>>> +	if (severity != CPER_SEV_FATAL)
->>>
->>> Shouldn't this just be (severity == CPER_SEV_CORRECTED)?
+On Sat, 19 Oct 2013, Vishal Annapurve wrote:
 
+> Hi,
+> 
+> Attaching the new patch which will replace all the occurrences of DID_ABORT
+> with DID_TIMOUT in USB Storage whenever it sees US_FLIDX_TIMED_OUT bit
+> is set.
 
->> IMO, only fatal error can't be handlered gracefully in current
->> kernel plus H/W. Once it can be recovered by H/W and OS, we
->> can call it recovered.
+It seems okay, but you forgot to update the isd200.c and
+cypress_atacb.c files.
 
-> Sure, but we don't recover in all scenarios. So, calling it corrected 
-> seems incorrect to me.
+Also, in the future please put your patches inline with the rest of the 
+email, not as a separate attachment.
 
-Even if we recovered from a UC error (which is by no means a sure
-thing) ... I don't think the "requires no further action" message applies.
+Alan Stern
 
-Soft single bit errors are common (well, common-ish ... they should still
-be somewhat rare by most objective standard).  Double bit errors are
-much rarer ... and are very unlikely to be the result of two single bit errors
-happening to be inside the same cache line.  I'd recommend further investigation
-of the source of a UC error (even one that is "recovered" in software).
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
