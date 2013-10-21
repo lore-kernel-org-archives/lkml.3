@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3JUJGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:06:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39755 "EHLO
+	id S1754218Ab3JUIwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:52:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39740 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754194Ab3JUIwZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754183Ab3JUIwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:25 -0400
+	Mon, 21 Oct 2013 04:52:20 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Steffen Klassert" <steffen.klassert@secunet.com>,
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
         "Daniel Borkmann" <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "Vlad Yasevich" <vyasevich@gmail.com>,
-        "Alan Chester" <alan.chester@tekelec.com>,
-        "Alexey Dobriyan" <adobriyan@gmail.com>
+        "Neil Horman" <nhorman@tuxdriver.com>,
+        "Michio Honda" <micchie@sfc.wide.ad.jp>,
+        "Vlad Yasevich" <vyasevich@gmail.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.776964173@decadent.org.uk>
+Message-ID: <lsq.1382345188.420144098@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 104/149] net: sctp: fix ipv6 ipsec encryption bug in 
- sctp_v6_xmit
+Subject: [PATCH 3.2 102/149] net: sctp: fix smatch warning in 
+ sctp_send_asconf_del_ip
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -40,190 +38,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 95ee62083cb6453e056562d91f597552021e6ae7 ]
+[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
 
-Alan Chester reported an issue with IPv6 on SCTP that IPsec traffic is not
-being encrypted, whereas on IPv4 it is. Setting up an AH + ESP transport
-does not seem to have the desired effect:
+This was originally reported in [1] and posted by Neil Horman [2], he said:
 
-SCTP + IPv4:
+  Fix up a missed null pointer check in the asconf code. If we don't find
+  a local address, but we pass in an address length of more than 1, we may
+  dereference a NULL laddr pointer. Currently this can't happen, as the only
+  users of the function pass in the value 1 as the addrcnt parameter, but
+  its not hot path, and it doesn't hurt to check for NULL should that ever
+  be the case.
 
-  22:14:20.809645 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 116)
-    192.168.0.2 > 192.168.0.5: AH(spi=0x00000042,sumlen=16,seq=0x1): ESP(spi=0x00000044,seq=0x1), length 72
-  22:14:20.813270 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 340)
-    192.168.0.5 > 192.168.0.2: AH(spi=0x00000043,sumlen=16,seq=0x1):
+The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
+from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
+while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
+so that we do *not* find a single address in the association's bind address
+list that is not in the packed array of addresses. If this happens when we
+have an established association with ASCONF-capable peers, then we could get
+a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
+and call later sctp_make_asconf_update_ip() with NULL laddr.
 
-SCTP + IPv6:
+BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
+and return with an error earlier. As this is incredably unintuitive and error
+prone, add a check to catch at least future bugs here. As Neil says, its not
+hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
+single-homed host").
 
-  22:31:19.215029 IP6 (class 0x02, hlim 64, next-header SCTP (132) payload length: 364)
-    fe80::222:15ff:fe87:7fc.3333 > fe80::92e6:baff:fe0d:5a54.36767: sctp
-    1) [INIT ACK] [init tag: 747759530] [rwnd: 62464] [OS: 10] [MIS: 10]
+ [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
+ [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
 
-Moreover, Alan says:
-
-  This problem was seen with both Racoon and Racoon2. Other people have seen
-  this with OpenSwan. When IPsec is configured to encrypt all upper layer
-  protocols the SCTP connection does not initialize. After using Wireshark to
-  follow packets, this is because the SCTP packet leaves Box A unencrypted and
-  Box B believes all upper layer protocols are to be encrypted so it drops
-  this packet, causing the SCTP connection to fail to initialize. When IPsec
-  is configured to encrypt just SCTP, the SCTP packets are observed unencrypted.
-
-In fact, using `socat sctp6-listen:3333 -` on one end and transferring "plaintext"
-string on the other end, results in cleartext on the wire where SCTP eventually
-does not report any errors, thus in the latter case that Alan reports, the
-non-paranoid user might think he's communicating over an encrypted transport on
-SCTP although he's not (tcpdump ... -X):
-
-  ...
-  0x0030: 5d70 8e1a 0003 001a 177d eb6c 0000 0000  ]p.......}.l....
-  0x0040: 0000 0000 706c 6169 6e74 6578 740a 0000  ....plaintext...
-
-Only in /proc/net/xfrm_stat we can see XfrmInTmplMismatch increasing on the
-receiver side. Initial follow-up analysis from Alan's bug report was done by
-Alexey Dobriyan. Also thanks to Vlad Yasevich for feedback on this.
-
-SCTP has its own implementation of sctp_v6_xmit() not calling inet6_csk_xmit().
-This has the implication that it probably never really got updated along with
-changes in inet6_csk_xmit() and therefore does not seem to invoke xfrm handlers.
-
-SCTP's IPv4 xmit however, properly calls ip_queue_xmit() to do the work. Since
-a call to inet6_csk_xmit() would solve this problem, but result in unecessary
-route lookups, let us just use the cached flowi6 instead that we got through
-sctp_v6_get_dst(). Since all SCTP packets are being sent through sctp_packet_transmit(),
-we do the route lookup / flow caching in sctp_transport_route(), hold it in
-tp->dst and skb_dst_set() right after that. If we would alter fl6->daddr in
-sctp_v6_xmit() to np->opt->srcrt, we possibly could run into the same effect
-of not having xfrm layer pick it up, hence, use fl6_update_dst() in sctp_v6_get_dst()
-instead to get the correct source routed dst entry, which we assign to the skb.
-
-Also source address routing example from 625034113 ("sctp: fix sctp to work with
-ipv6 source address routing") still works with this patch! Nevertheless, in RFC5095
-it is actually 'recommended' to not use that anyway due to traffic amplification [1].
-So it seems we're not supposed to do that anyway in sctp_v6_xmit(). Moreover, if
-we overwrite the flow destination here, the lower IPv6 layer will be unable to
-put the correct destination address into IP header, as routing header is added in
-ipv6_push_nfrag_opts() but then probably with wrong final destination. Things aside,
-result of this patch is that we do not have any XfrmInTmplMismatch increase plus on
-the wire with this patch it now looks like:
-
-SCTP + IPv6:
-
-  08:17:47.074080 IP6 2620:52:0:102f:7a2b:cbff:fe27:1b0a > 2620:52:0:102f:213:72ff:fe32:7eba:
-    AH(spi=0x00005fb4,seq=0x1): ESP(spi=0x00005fb5,seq=0x1), length 72
-  08:17:47.074264 IP6 2620:52:0:102f:213:72ff:fe32:7eba > 2620:52:0:102f:7a2b:cbff:fe27:1b0a:
-    AH(spi=0x00003d54,seq=0x1): ESP(spi=0x00003d55,seq=0x1), length 296
-
-This fixes Kernel Bugzilla 24412. This security issue seems to be present since
-2.6.18 kernels. Lets just hope some big passive adversary in the wild didn't have
-its fun with that. lksctp-tools IPv6 regression test suite passes as well with
-this patch.
-
- [1] http://www.secdev.org/conf/IPv6_RH_security-csw07.pdf
-
-Reported-by: Alan Chester <alan.chester@tekelec.com>
-Reported-by: Alexey Dobriyan <adobriyan@gmail.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Michio Honda <micchie@sfc.wide.ad.jp>
+Acked-By: Neil Horman <nhorman@tuxdriver.com>
 Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/ipv6.c | 42 +++++++++++++-----------------------------
- 1 file changed, 13 insertions(+), 29 deletions(-)
+ net/sctp/socket.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
-index 8104278..0b6a391 100644
---- a/net/sctp/ipv6.c
-+++ b/net/sctp/ipv6.c
-@@ -205,45 +205,24 @@ out:
- 		in6_dev_put(idev);
- }
- 
--/* Based on tcp_v6_xmit() in tcp_ipv6.c. */
- static int sctp_v6_xmit(struct sk_buff *skb, struct sctp_transport *transport)
- {
- 	struct sock *sk = skb->sk;
- 	struct ipv6_pinfo *np = inet6_sk(sk);
--	struct flowi6 fl6;
--
--	memset(&fl6, 0, sizeof(fl6));
--
--	fl6.flowi6_proto = sk->sk_protocol;
--
--	/* Fill in the dest address from the route entry passed with the skb
--	 * and the source address from the transport.
--	 */
--	ipv6_addr_copy(&fl6.daddr, &transport->ipaddr.v6.sin6_addr);
--	ipv6_addr_copy(&fl6.saddr, &transport->saddr.v6.sin6_addr);
--
--	fl6.flowlabel = np->flow_label;
--	IP6_ECN_flow_xmit(sk, fl6.flowlabel);
--	if (ipv6_addr_type(&fl6.saddr) & IPV6_ADDR_LINKLOCAL)
--		fl6.flowi6_oif = transport->saddr.v6.sin6_scope_id;
--	else
--		fl6.flowi6_oif = sk->sk_bound_dev_if;
--
--	if (np->opt && np->opt->srcrt) {
--		struct rt0_hdr *rt0 = (struct rt0_hdr *) np->opt->srcrt;
--		ipv6_addr_copy(&fl6.daddr, rt0->addr);
--	}
-+	struct flowi6 *fl6 = &transport->fl.u.ip6;
- 
- 	SCTP_DEBUG_PRINTK("%s: skb:%p, len:%d, src:%pI6 dst:%pI6\n",
- 			  __func__, skb, skb->len,
--			  &fl6.saddr, &fl6.daddr);
-+			  &fl6->saddr, &fl6->daddr);
- 
--	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
-+	IP6_ECN_flow_xmit(sk, fl6->flowlabel);
- 
- 	if (!(transport->param_flags & SPP_PMTUD_ENABLE))
- 		skb->local_df = 1;
- 
--	return ip6_xmit(sk, skb, &fl6, np->opt, np->tclass);
-+	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
-+
-+	return ip6_xmit(sk, skb, fl6, np->opt, np->tclass);
- }
- 
- /* Returns the dst cache entry for the given source and destination ip
-@@ -256,10 +235,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 	struct dst_entry *dst = NULL;
- 	struct flowi6 *fl6 = &fl->u.ip6;
- 	struct sctp_bind_addr *bp;
-+	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct sctp_sockaddr_entry *laddr;
- 	union sctp_addr *baddr = NULL;
- 	union sctp_addr *daddr = &t->ipaddr;
- 	union sctp_addr dst_saddr;
-+	struct in6_addr *final_p, final;
- 	__u8 matchlen = 0;
- 	__u8 bmatchlen;
- 	sctp_scope_t scope;
-@@ -282,7 +263,8 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 		SCTP_DEBUG_PRINTK("SRC=%pI6 - ", &fl6->saddr);
- 	}
- 
--	dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
-+	final_p = fl6_update_dst(fl6, np->opt, &final);
-+	dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
- 	if (!asoc || saddr)
- 		goto out;
- 
-@@ -333,10 +315,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index ba0108f..c53d01e 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -814,6 +814,9 @@ static int sctp_send_asconf_del_ip(struct sock		*sk,
+ 			goto skip_mkasconf;
  		}
- 	}
- 	rcu_read_unlock();
-+
- 	if (baddr) {
- 		ipv6_addr_copy(&fl6->saddr, &baddr->v6.sin6_addr);
- 		fl6->fl6_sport = baddr->v6.sin6_port;
--		dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
-+		final_p = fl6_update_dst(fl6, np->opt, &final);
-+		dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
- 	}
  
- out:
++		if (laddr == NULL)
++			return -EINVAL;
++
+ 		/* We do not need RCU protection throughout this loop
+ 		 * because this is done under a socket lock from the
+ 		 * setsockopt call.
 
