@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3JUJYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:24:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39452 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753614Ab3JUIvS (ORCPT
+	id S1755834Ab3JUJYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:24:18 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:62681 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab3JUJX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:18 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 21 Oct 2013 05:23:58 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Tobias" <dan.g.tob@gmail.com>,
-        "Alex Deucher" <alexander.deucher@amd.com>,
-        "Ondrej Zary" <linux@rainbow-software.org>
-Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.679141933@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 045/149] drm/radeon: fix resume on some rs4xx boards (v2)
-In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
-X-SA-Exim-Connect-IP: 212.20.242.100
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20131018154644.GC25034@n2100.arm.linux.org.uk>
+References: <cover.1382104514.git.viresh.kumar@linaro.org>
+	<fb85256f34e1a61c6c2c37c3e6fa8b1398bad683.1382104515.git.viresh.kumar@linaro.org>
+	<20131018154644.GC25034@n2100.arm.linux.org.uk>
+Date: Mon, 21 Oct 2013 14:53:57 +0530
+Message-ID: <CAKohpok-wy7FnGfyVTp2whrDZuezh2okA+FXVWqwg5wc8bBM9w@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 29/34] cpufreq: sa11x0: Convert to light weight
+ ->target_index() routine
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.52-rc1 review patch.  If anyone has any objections, please let me know.
+On 18 October 2013 21:16, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Oct 18, 2013 at 07:29:52PM +0530, Viresh Kumar wrote:
+>> This patch converts existing .target() to newly defined light weight
+>> .target_index() routine for this driver.
+>>
+>> CPUFreq core will call cpufreq_frequency_table_target() before calling this
+>> routine and will pass index to it.
+>>
+>> Some existing routines are no more required and so are removed now.
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>
+> I think I acked this patch.  Please ensure that my ack appears on all
+> that I did ack, thanks.
 
-------------------
+Yeah. I am sure you did Ack it and I applied your Ack in one of my branches.
+But somehow I screwed up and only your Ack was missing in the patches
+I sent.. Others weren't missed.
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Will handle this along with Rafael and will not miss any of your Acks.
 
-commit acf88deb8ddbb73acd1c3fa32fde51af9153227f upstream.
-
-Setting MC_MISC_CNTL.GART_INDEX_REG_EN causes hangs on
-some boards on resume.  The systems seem to work fine
-without touching this bit so leave it as is.
-
-v2: read-modify-write the GART_INDEX_REG_EN bit.
-I suspect the problem is that we are losing the other
-settings in the register.
-
-fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=52952
-
-Reported-by: Ondrej Zary <linux@rainbow-software.org>
-Tested-by: Daniel Tobias <dan.g.tob@gmail.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/gpu/drm/radeon/rs400.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
---- a/drivers/gpu/drm/radeon/rs400.c
-+++ b/drivers/gpu/drm/radeon/rs400.c
-@@ -174,10 +174,13 @@ int rs400_gart_enable(struct radeon_devi
- 	/* FIXME: according to doc we should set HIDE_MMCFG_BAR=0,
- 	 * AGPMODE30=0 & AGP30ENHANCED=0 in NB_CNTL */
- 	if ((rdev->family == CHIP_RS690) || (rdev->family == CHIP_RS740)) {
--		WREG32_MC(RS480_MC_MISC_CNTL,
--			  (RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN));
-+		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
-+		tmp |= RS480_GART_INDEX_REG_EN | RS690_BLOCK_GFX_D3_EN;
-+		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
- 	} else {
--		WREG32_MC(RS480_MC_MISC_CNTL, RS480_GART_INDEX_REG_EN);
-+		tmp = RREG32_MC(RS480_MC_MISC_CNTL);
-+		tmp |= RS480_GART_INDEX_REG_EN;
-+		WREG32_MC(RS480_MC_MISC_CNTL, tmp);
- 	}
- 	/* Enable gart */
- 	WREG32_MC(RS480_AGP_ADDRESS_SPACE_SIZE, (RS480_GART_EN | size_reg));
-
+Thanks..
