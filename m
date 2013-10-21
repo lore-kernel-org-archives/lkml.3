@@ -1,228 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3JUWn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:43:29 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39985 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab3JUWnY (ORCPT
+	id S1754021Ab3JUWvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:51:14 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49430 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3JUWn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:43:24 -0400
+	Mon, 21 Oct 2013 18:43:28 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
         James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v2 01/23] crypto: provide single place for hash algo information
-Date: Mon, 21 Oct 2013 18:42:46 -0400
-Message-Id: <1382395388-8108-2-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 05/23] ima: pass full xattr with the signature
+Date: Mon, 21 Oct 2013 18:42:50 -0400
+Message-Id: <1382395388-8108-6-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102122-1344-0000-0000-000002A32407
+x-cbid: 13102122-6688-0000-0000-000002BE7546
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-This patch provides a single place for information about hash algorithms,
-such as hash sizes and kernel driver names, which will be used by IMA
-and the public key code.
-
-Changelog:
-- Fix sparse and checkpatch warnings
-- Move hash algo enums to uapi for userspace signing functions.
+For possibility to use xattr type for new signature formats,
+pass full xattr to the signature verification function.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- crypto/Kconfig                 |  3 +++
- crypto/Makefile                |  1 +
- crypto/hash_info.c             | 56 ++++++++++++++++++++++++++++++++++++++++++
- include/crypto/hash_info.h     | 40 ++++++++++++++++++++++++++++++
- include/uapi/linux/hash_info.h | 37 ++++++++++++++++++++++++++++
- 5 files changed, 137 insertions(+)
- create mode 100644 crypto/hash_info.c
- create mode 100644 include/crypto/hash_info.h
- create mode 100644 include/uapi/linux/hash_info.h
+ security/integrity/digsig.c           | 5 +++--
+ security/integrity/evm/evm_main.c     | 4 ++--
+ security/integrity/ima/ima_appraise.c | 2 +-
+ security/integrity/integrity.h        | 1 +
+ 4 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 69ce573..ba061b0 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1386,6 +1386,9 @@ config CRYPTO_USER_API_SKCIPHER
- 	  This option enables the user-spaces interface for symmetric
- 	  key cipher algorithms.
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 198e609..b4af4eb 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -44,9 +44,10 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 		}
+ 	}
  
-+config CRYPTO_HASH_INFO
-+	bool
-+
- source "drivers/crypto/Kconfig"
- source crypto/asymmetric_keys/Kconfig
+-	switch (sig[0]) {
++	switch (sig[1]) {
+ 	case 1:
+-		return digsig_verify(keyring[id], sig, siglen,
++		/* v1 API expect signature without xattr type */
++		return digsig_verify(keyring[id], sig + 1, siglen - 1,
+ 				     digest, digestlen);
+ 	case 2:
+ 		return asymmetric_verify(keyring[id], sig, siglen,
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index af9b685..336b3dd 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -123,7 +123,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 		goto out;
+ 	}
  
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 80019ba..b3a7e80 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -104,3 +104,4 @@ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
- obj-$(CONFIG_XOR_BLOCKS) += xor.o
- obj-$(CONFIG_ASYNC_CORE) += async_tx/
- obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys/
-+obj-$(CONFIG_CRYPTO_HASH_INFO) += hash_info.o
-diff --git a/crypto/hash_info.c b/crypto/hash_info.c
-new file mode 100644
-index 0000000..3e7ff46
---- /dev/null
-+++ b/crypto/hash_info.c
-@@ -0,0 +1,56 @@
-+/*
-+ * Hash Info: Hash algorithms information
-+ *
-+ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+
-+#include <linux/export.h>
-+#include <crypto/hash_info.h>
-+
-+const char *const hash_algo_name[HASH_ALGO__LAST] = {
-+	[HASH_ALGO_MD4]		= "md4",
-+	[HASH_ALGO_MD5]		= "md5",
-+	[HASH_ALGO_SHA1]	= "sha1",
-+	[HASH_ALGO_RIPE_MD_160]	= "rmd160",
-+	[HASH_ALGO_SHA256]	= "sha256",
-+	[HASH_ALGO_SHA384]	= "sha384",
-+	[HASH_ALGO_SHA512]	= "sha512",
-+	[HASH_ALGO_SHA224]	= "sha224",
-+	[HASH_ALGO_RIPE_MD_128]	= "rmd128",
-+	[HASH_ALGO_RIPE_MD_256]	= "rmd256",
-+	[HASH_ALGO_RIPE_MD_320]	= "rmd320",
-+	[HASH_ALGO_WP_256]	= "wp256",
-+	[HASH_ALGO_WP_384]	= "wp384",
-+	[HASH_ALGO_WP_512]	= "wp512",
-+	[HASH_ALGO_TGR_128]	= "tgr128",
-+	[HASH_ALGO_TGR_160]	= "tgr160",
-+	[HASH_ALGO_TGR_192]	= "tgr192",
-+};
-+EXPORT_SYMBOL_GPL(hash_algo_name);
-+
-+const int hash_digest_size[HASH_ALGO__LAST] = {
-+	[HASH_ALGO_MD4]		= MD5_DIGEST_SIZE,
-+	[HASH_ALGO_MD5]		= MD5_DIGEST_SIZE,
-+	[HASH_ALGO_SHA1]	= SHA1_DIGEST_SIZE,
-+	[HASH_ALGO_RIPE_MD_160]	= RMD160_DIGEST_SIZE,
-+	[HASH_ALGO_SHA256]	= SHA256_DIGEST_SIZE,
-+	[HASH_ALGO_SHA384]	= SHA384_DIGEST_SIZE,
-+	[HASH_ALGO_SHA512]	= SHA512_DIGEST_SIZE,
-+	[HASH_ALGO_SHA224]	= SHA224_DIGEST_SIZE,
-+	[HASH_ALGO_RIPE_MD_128]	= RMD128_DIGEST_SIZE,
-+	[HASH_ALGO_RIPE_MD_256]	= RMD256_DIGEST_SIZE,
-+	[HASH_ALGO_RIPE_MD_320]	= RMD320_DIGEST_SIZE,
-+	[HASH_ALGO_WP_256]	= WP256_DIGEST_SIZE,
-+	[HASH_ALGO_WP_384]	= WP384_DIGEST_SIZE,
-+	[HASH_ALGO_WP_512]	= WP512_DIGEST_SIZE,
-+	[HASH_ALGO_TGR_128]	= TGR128_DIGEST_SIZE,
-+	[HASH_ALGO_TGR_160]	= TGR160_DIGEST_SIZE,
-+	[HASH_ALGO_TGR_192]	= TGR192_DIGEST_SIZE,
-+};
-+EXPORT_SYMBOL_GPL(hash_digest_size);
-diff --git a/include/crypto/hash_info.h b/include/crypto/hash_info.h
-new file mode 100644
-index 0000000..e1e5a3e
---- /dev/null
-+++ b/include/crypto/hash_info.h
-@@ -0,0 +1,40 @@
-+/*
-+ * Hash Info: Hash algorithms information
-+ *
-+ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+
-+#ifndef _CRYPTO_HASH_INFO_H
-+#define _CRYPTO_HASH_INFO_H
-+
-+#include <crypto/sha.h>
-+#include <crypto/md5.h>
-+
-+#include <uapi/linux/hash_info.h>
-+
-+/* not defined in include/crypto/ */
-+#define RMD128_DIGEST_SIZE      16
-+#define RMD160_DIGEST_SIZE	20
-+#define RMD256_DIGEST_SIZE      32
-+#define RMD320_DIGEST_SIZE      40
-+
-+/* not defined in include/crypto/ */
-+#define WP512_DIGEST_SIZE	64
-+#define WP384_DIGEST_SIZE	48
-+#define WP256_DIGEST_SIZE	32
-+
-+/* not defined in include/crypto/ */
-+#define TGR128_DIGEST_SIZE 16
-+#define TGR160_DIGEST_SIZE 20
-+#define TGR192_DIGEST_SIZE 24
-+
-+extern const char *const hash_algo_name[HASH_ALGO__LAST];
-+extern const int hash_digest_size[HASH_ALGO__LAST];
-+
-+#endif /* _CRYPTO_HASH_INFO_H */
-diff --git a/include/uapi/linux/hash_info.h b/include/uapi/linux/hash_info.h
-new file mode 100644
-index 0000000..ca18c45
---- /dev/null
-+++ b/include/uapi/linux/hash_info.h
-@@ -0,0 +1,37 @@
-+/*
-+ * Hash Info: Hash algorithms information
-+ *
-+ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+
-+#ifndef _UAPI_LINUX_HASH_INFO_H
-+#define _UAPI_LINUX_HASH_INFO_H
-+
-+enum hash_algo {
-+	HASH_ALGO_MD4,
-+	HASH_ALGO_MD5,
-+	HASH_ALGO_SHA1,
-+	HASH_ALGO_RIPE_MD_160,
-+	HASH_ALGO_SHA256,
-+	HASH_ALGO_SHA384,
-+	HASH_ALGO_SHA512,
-+	HASH_ALGO_SHA224,
-+	HASH_ALGO_RIPE_MD_128,
-+	HASH_ALGO_RIPE_MD_256,
-+	HASH_ALGO_RIPE_MD_320,
-+	HASH_ALGO_WP_256,
-+	HASH_ALGO_WP_384,
-+	HASH_ALGO_WP_512,
-+	HASH_ALGO_TGR_128,
-+	HASH_ALGO_TGR_160,
-+	HASH_ALGO_TGR_192,
-+	HASH_ALGO__LAST
-+};
-+
-+#endif /* _UAPI_LINUX_HASH_INFO_H */
+-	xattr_len = rc - 1;
++	xattr_len = rc;
+ 
+ 	/* check value type */
+ 	switch (xattr_data->type) {
+@@ -143,7 +143,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 		if (rc)
+ 			break;
+ 		rc = integrity_digsig_verify(INTEGRITY_KEYRING_EVM,
+-					xattr_data->digest, xattr_len,
++					(const char *)xattr_data, xattr_len,
+ 					calc.digest, sizeof(calc.digest));
+ 		if (!rc) {
+ 			/* we probably want to replace rsa with hmac here */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 00708a3..e1865a6 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -205,7 +205,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 	case EVM_IMA_XATTR_DIGSIG:
+ 		iint->flags |= IMA_DIGSIG;
+ 		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
+-					     xattr_value->digest, rc - 1,
++					     (const char *)xattr_value, rc,
+ 					     iint->ima_hash.digest,
+ 					     iint->ima_hash.length);
+ 		if (rc == -EOPNOTSUPP) {
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index ea23189..aead6b2 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -74,6 +74,7 @@ struct ima_digest_data {
+  * signature format v2 - for using with asymmetric keys
+  */
+ struct signature_v2_hdr {
++	uint8_t type;		/* xattr type */
+ 	uint8_t version;	/* signature format version */
+ 	uint8_t	hash_algo;	/* Digest algorithm [enum pkey_hash_algo] */
+ 	uint32_t keyid;		/* IMA key identifier - not X509/PGP specific */
 -- 
 1.8.1.4
 
