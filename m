@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab3JULp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:45:57 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:14651 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab3JULpz (ORCPT
+	id S1753677Ab3JULqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:46:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37233 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753202Ab3JULqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:45:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Oct 2013 04:45:55 -0700
-Message-ID: <52651A51.6030908@nvidia.com>
-Date: Mon, 21 Oct 2013 17:43:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 21 Oct 2013 07:46:53 -0400
+Message-ID: <5265142B.5050000@free-electrons.com>
+Date: Mon, 21 Oct 2013 13:46:51 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: "mturquette@linaro.org" <mturquette@linaro.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "nm@ti.com" <nm@ti.com>
-Subject: Re: [PATCH V4] clk: palmas: add clock driver for palmas
-References: <1381316687-1756-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1381316687-1756-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: davem@davemloft.net, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mac80211: document IEEE80211_HW_SUPPORTS_HT_CCK_RATES
+References: <1382251529-22540-1-git-send-email-michael.opdenacker@free-electrons.com> <1382350961.14310.42.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1382350961.14310.42.camel@jlt4.sipsolutions.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Hi Johannes,
 
-On Wednesday 09 October 2013 04:34 PM, Laxman Dewangan wrote:
-> Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
-> which can be enable/disable through software.
->
-> Add clock driver support for the Palmas 32KHz clocks.
+On 10/21/2013 12:22 PM, Johannes Berg wrote:
+> On Sun, 2013-10-20 at 08:45 +0200, Michael Opdenacker wrote:
+>> This patch documents the IEEE80211_HW_SUPPORTS_HT_CCK_RATES flag
+>> in ieee80211_hw_flags.
+>>
+>> Without this, you get countless warnings in "make htmldocs".
+> I already have an equivalent patch with correct documentation :)
 
-
-Can you please review this version? I have taken care of all earlier 
-feedbacks.
+Great! Then let's use your patch :)
 
 Thanks,
-Laxman
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
