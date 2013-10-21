@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3JULmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:42:08 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:63174 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab3JULmF (ORCPT
+	id S1753391Ab3JULow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:44:52 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42945 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3JULov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:42:05 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-ec-5265130b6afc
-Message-id: <1382355719.8172.0.camel@AMDC1943>
-Subject: Re: [PATCH] spi/s3c64xx: Fix doubled clock disable on suspend
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Mon, 21 Oct 2013 13:41:59 +0200
-In-reply-to: <5264F709.2000409@samsung.com>
-References: <1382348117-6666-1-git-send-email-k.kozlowski@samsung.com>
- <5264F709.2000409@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xK7rcwqlBBiu6zS0mrTvAZDH14RM2
-	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dk0fjxJrvF4TftrA6cHn9XvWD22LSqk81j85J6
-	j74tqxg9Pm+SC2CN4rJJSc3JLEst0rdL4MpoW3WWraCBueLzhHVsDYwHmboYOTkkBEwkHu1r
-	Z4ewxSQu3FvP1sXIxSEksJRRYvqrN+wQzmdGifarUxhBqngF9CQmnP7FDGILC7hJ/Pu7CizO
-	JmAssXn5EjYQW0RAX2LJqotgk5gFZjNJ3J8yG6yIRUBVYtf+TrDVnALaEse/97OC2EIC6RJt
-	q7eCncEsoC4xad4iZoiTlCR2t3dCxeUlNq95ywxxhKDEj8n3WCYwCsxC0jILSdksJGULGJlX
-	MYqmliYXFCel5xrqFSfmFpfmpesl5+duYoSE/pcdjIuPWR1iFOBgVOLhDXBJCRJiTSwrrsw9
-	xCjBwawkwvv5I1CINyWxsiq1KD++qDQntfgQIxMHp1QDY3XFl69pmye7G1+5p1LLv1vggNv3
-	K4e/CmnrKm0OMstm2cXS+aGmsvCx9+nZq6TnWkRtv7LPpV2c/QyvRfiPPW/YZ4SoRhcucHs1
-	8+AvBc8P3d2zmtqeWwq7TuZPUtghYL7Bf9HjZeE3j2pXa96ound4/3L+T8ofw8KX1K3ub7vu
-	xZzJ5LwhW4mlOCPRUIu5qDgRAPDIH3xbAgAA
+	Mon, 21 Oct 2013 07:44:51 -0400
+Subject: [PATCH 0/3] sched: Fixes for task placement in SMT threads
+To: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 21 Oct 2013 17:14:32 +0530
+Message-ID: <20131021114002.13291.31478.stgit@drishya>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102111-5140-0000-0000-00000406D858
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-21 at 11:42 +0200, Sylwester Nawrocki wrote:
-> pm_runtime_{get,put}* must not be called from drivers's system suspend/resume
-> callbacks. Please use pm_runtime_suspended() to check device runtime PM status
-> in s3c64xx_spi_{suspend,resume} callbacks and handle the clocks appropriately.
+Hi,
 
-Thanks for review, I will send fixed patch.
+The following series fixes scheduler loadbalancing issues where we are
+missing opportunity to place tasks in SMT threads optimally especially
+on a POWER7 system.
 
-Best regards,
-Krzysztof
+PATCH 1/3, Fixes the scenario where load balancing fails to move tasks
+away from the cpus in a domain which has SHARE_PKG_RESOURCES set even
+under the presence of idle cpus in other domains.
+
+PATCH 2/3, ensures lower order SMT threads are used for the
+SD_ASYM_PACKING load balancing case.
+
+PATCH 3/3, tries to fix the problem that is explained in its
+changelog. The following experiment expose the scenario:
+
+A task placement test was conducted on a POWER7 as well as multi-core
+x86 system. At the beginning, tasks are pinned to all the threads
+within a core and later only the tasks pinned to the secondary threads
+in a core are unpinned. This leaves the primary thread with tasks that
+are unmovable, while the rest are free to be moved.
+
+Under the above setup, load balancing today does not move the unpinned
+tasks away from the secondary threads of the core in the above
+experiment although there are other idle cpus. The PATCH 3/3 fixes
+this situation and improves task placement even if some of the tasks
+in a core are pinned.
+
+This series applies on v3.12-rc6 and tested on x86 and powerpc.
+
+--Vaidy
+
+---
+
+Preeti U Murthy (2):
+      sched: Fix nohz_kick_needed to consider the nr_busy of the parent domain's group
+      sched: Aggressive balance in domains whose groups share package resources
+
+Vaidyanathan Srinivasan (1):
+      sched: Fix asymmetric scheduling for POWER7
+
+
+ kernel/sched/fair.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
