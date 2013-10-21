@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3JUJC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:02:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59478 "EHLO mga14.intel.com"
+	id S1755290Ab3JUJDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:03:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46011 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3JUJC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 05:02:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="310472180"
-Message-ID: <5264ED95.2020101@intel.com>
-Date: Mon, 21 Oct 2013 12:02:13 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754697Ab3JUJC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 05:02:58 -0400
+Message-ID: <5264EDB7.6030104@ti.com>
+Date: Mon, 21 Oct 2013 14:32:47 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-10-git-send-email-adrian.hunter@intel.com> <20131020204251.GA12044@krava> <5264C140.1020903@intel.com> <20131021084658.GA2958@krava.brq.redhat.com>
-In-Reply-To: <20131021084658.GA2958@krava.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Arokux X <arokux@gmail.com>
+CC: <peter.chen@freescale.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, <rbyshko@gmail.com>
+Subject: Re: When USB PHY framework should be used?
+References: <CAPNxggauvgpWR5HK4Z-Osv7-mB-Tf3-vfyXQDMiTx08K2M=nJQ@mail.gmail.com> <52579592.1020209@ti.com> <CAPNxgga6xSPrGPWnKJuamMURQdrX0_Hkhx_ZDdS2dcUgs72EKw@mail.gmail.com> <52591F7A.1020400@ti.com> <CAPNxggbJkXK_RhaWSfXZKFc=iy-2UmkEukCsbOUzYSmbcqmoKw@mail.gmail.com>
+In-Reply-To: <CAPNxggbJkXK_RhaWSfXZKFc=iy-2UmkEukCsbOUzYSmbcqmoKw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/10/13 11:46, Jiri Olsa wrote:
-> On Mon, Oct 21, 2013 at 08:53:04AM +0300, Adrian Hunter wrote:
->> On 20/10/13 23:42, Jiri Olsa wrote:
->>> On Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter wrote:
->>>> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
->>>> was not passed around.
->>>
->>> this breaks feature detection for me on x86_64,
->>> I've got following errors misdetection with this patch:
->>>
->>> ...                       libperl: [ OFF ]
-> 
-> how about this one?
++Roman
 
-I will check it out.
+Hi,
 
+Sorry for the late reply..
+
+On Monday 14 October 2013 11:47 PM, Arokux X wrote:
+> Dear Kishon,
 > 
->>> ...                       on-exit: [ OFF ]
->>>
->>> and the build fails as well:
->>>
->>>   CC       builtin-stat.o
->>> builtin-record.c:42:12: error: static declaration of ‘on_exit’ follows non-static declaration
->>> In file included from util/util.h:51:0,
->>>                  from builtin.h:4,
->>>                  from builtin-record.c:8:
->>> /usr/include/stdlib.h:536:12: note: previous declaration of ‘on_exit’ was here
->>> make[1]: *** [builtin-record.o] Error 1
->>> make[1]: *** Waiting for unfinished jobs....
->>> make: *** [all] Error 2
+> On Sat, Oct 12, 2013 at 12:07 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> Hi,
 >>
->> That is fixed in patch 11: perf tools: Fix test_on_exit for 32-bit build
+>> On Friday 11 October 2013 10:52 PM, Arokux X wrote:
+>>>> I think you should have a wrapper driver to EHCI/OHCI to handle this reset.
+>>>
+>>> Thank you Kishon and Peter for the quick replies. Is there any good
+>>> example of such a wrapper driver in the kernel already?
+>>
+>> can you explain how your IP actually looks like? Do you have separate address
+>> space for EHCI and OHCI? Do you have any common address space for doing some
+>> configuration (USB host in OMAP used to have it)? Where does PHY registers
+>> reside exactly?
 > 
-> hum, could we apply those patches in reverse order?
-> I think the notion is not to break build deliberatelly
-> for the bisection sake.
+> The knowledge I have about the IP is derived from the source code of
+> the different kernel trees some of which were leaked and the others
+> released by Allwinner. I cannot really see similarities to the other
+> USB IPs supported by the mainline kernel since I have zero experience
+> with kernel development and this simple bus glue driver is going to be
+> my first contribution.
+> 
+> USB Host Controller as available in Allwinner SoCs supports EHCI and
+> OHCI. The address spaces of EHCI and OHCI are separate. Let the
+> address of the host controller be X, then EHCI is at X and OHCI is at
+> X+OHCI_OFFSET, where OHCI_OFFSET = 0x100.
+> 
+> The driver in the vendor's tree also touches the address X + 0x800 and
+> enables DMA burst, similar to the SAMSUNG S5P USB HOST EHCI Controller
+> [1].
+> 
+> In addition another memory location is touched to configure the PHY.
+> At that place two things occur [2]: "adjust PHY's magnitude and rate"
+> and adjusting the threshold of the disconnect. (Both are translated
+> from Chinese and I'm not sure whether the former is correct).
+> 
+> There are either two or one USB Host Controllers in a SoC. For each
+> controller there are EHCI and OHCI gatable clocks, one common clock
+> for all the PHYs and one reset bit for each PHY.
 
-Oh, I had thought it was a 32-bit only problem.
-Yes, I will re-order the patches.
+>From whatever I could understand, you have a USB HOST controller (each HOST
+controller has an EHCI controller and a companion OHCI controller?). There are
+separate clocks for each of EHCI and OHCI controller. EHCI and OHCI has
+separate PHYs. Both these PHYs are fed by the same common clock. And you have a
+separate reset bits for each of the PHYs.
+And when you have a second USB HOST controller, you have a new instance of the
+same thing as before?
 
+Thanks
+Kishon
