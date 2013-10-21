@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3JUIvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:51:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39446 "EHLO
+	id S1753774Ab3JUIve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:51:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39523 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753612Ab3JUIvS (ORCPT
+	by vger.kernel.org with ESMTP id S1753694Ab3JUIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:18 -0400
+	Mon, 21 Oct 2013 04:51:27 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Felix Fietkau" <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.382292296@decadent.org.uk>
+Message-ID: <lsq.1382345188.541937954@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 020/149] ath9k: always clear ps filter bit on new assoc
+Subject: [PATCH 3.2 062/149] drm/radeon/atom: workaround vbios bug in
+ transmitter table on rs880 (v2)
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,28 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 026d5b07c03458f9c0ccd19c3850564a5409c325 upstream.
+commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
 
-Otherwise in some cases, EAPOL frames might be filtered during the
-initial handshake, causing delays and assoc failures.
+The OUTPUT_ENABLE action jumps past the point in the coder where
+the data_offset is set on certain rs780 cards.  This worked
+previously because the OUTPUT_ENABLE action is always called
+immediately after the ENABLE action so the data_offset remained
+set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
+(drm/radeon/atom: initialize more atom interpretor elements to 0),
+we explictly reset data_offset to 0 between atom calls which then
+caused this to fail.  The fix is to just skip calling the
+OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
+action does the same thing and more.  Ultimately, we could
+probably drop the OUTPUT_ENABLE action all together on DCE3
+asics.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
+
+v2: only rs880 seems to be affected
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/atombios_encoders.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -2423,6 +2423,7 @@ void ath_tx_node_init(struct ath_softc *
- 	for (acno = 0, ac = &an->ac[acno];
- 	     acno < WME_NUM_AC; acno++, ac++) {
- 		ac->sched    = false;
-+		ac->clear_ps_filter = true;
- 		ac->txq = sc->tx.txq_map[acno];
- 		INIT_LIST_HEAD(&ac->tid_q);
- 	}
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1385,8 +1385,12 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+-			/* some early dce3.2 boards have a bug in their transmitter control table */
+-			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
++			/* some dce3.x boards have a bug in their transmitter control table.
++			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
++			 * does the same thing and more.
++			 */
++			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
++			    (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
