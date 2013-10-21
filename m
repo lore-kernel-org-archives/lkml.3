@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab3JUCqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 22:46:36 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:22710 "EHLO
+	id S1752703Ab3JUCrO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 22:47:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56684 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752267Ab3JUCqd (ORCPT
+	by vger.kernel.org with ESMTP id S1752244Ab3JUCqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 Oct 2013 22:46:33 -0400
-Message-Id: <20131021024429.189874455@goodmis.org>
+Message-Id: <20131021024630.485773104@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 20 Oct 2013 22:44:29 -0400
+Date: Sun, 20 Oct 2013 22:44:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/6] tracing: Various updates
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Konovalov <andreyknvl@google.com>
+Subject: [for-next][PATCH 2/6] tracing: Fix potential out-of-bounds in trace_get_user()
+References: <20131021024429.189874455@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-Fix-potential-out-of-bounds-in-trace_get_use.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has been a long time coming. I'm sure there's more patches that
-I missed, as my inbox got a bit large while I worked on some internal
-stuff.
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Anyway, I got this part out. If you sent me a patch and it's not here,
-please ping me again, otherwise I'll probably miss the 3.12 window for it.
-I will get to it eventually, but there's a lot of noise to sort through.
+Andrey reported the following report:
 
--- Steve
+ERROR: AddressSanitizer: heap-buffer-overflow on address ffff8800359c99f3
+ffff8800359c99f3 is located 0 bytes to the right of 243-byte region [ffff8800359c9900, ffff8800359c99f3)
+Accessed by thread T13003:
+  #0 ffffffff810dd2da (asan_report_error+0x32a/0x440)
+  #1 ffffffff810dc6b0 (asan_check_region+0x30/0x40)
+  #2 ffffffff810dd4d3 (__tsan_write1+0x13/0x20)
+  #3 ffffffff811cd19e (ftrace_regex_release+0x1be/0x260)
+  #4 ffffffff812a1065 (__fput+0x155/0x360)
+  #5 ffffffff812a12de (____fput+0x1e/0x30)
+  #6 ffffffff8111708d (task_work_run+0x10d/0x140)
+  #7 ffffffff810ea043 (do_exit+0x433/0x11f0)
+  #8 ffffffff810eaee4 (do_group_exit+0x84/0x130)
+  #9 ffffffff810eafb1 (SyS_exit_group+0x21/0x30)
+  #10 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+Allocated by thread T5167:
+  #0 ffffffff810dc778 (asan_slab_alloc+0x48/0xc0)
+  #1 ffffffff8128337c (__kmalloc+0xbc/0x500)
+  #2 ffffffff811d9d54 (trace_parser_get_init+0x34/0x90)
+  #3 ffffffff811cd7b3 (ftrace_regex_open+0x83/0x2e0)
+  #4 ffffffff811cda7d (ftrace_filter_open+0x2d/0x40)
+  #5 ffffffff8129b4ff (do_dentry_open+0x32f/0x430)
+  #6 ffffffff8129b668 (finish_open+0x68/0xa0)
+  #7 ffffffff812b66ac (do_last+0xb8c/0x1710)
+  #8 ffffffff812b7350 (path_openat+0x120/0xb50)
+  #9 ffffffff812b8884 (do_filp_open+0x54/0xb0)
+  #10 ffffffff8129d36c (do_sys_open+0x1ac/0x2c0)
+  #11 ffffffff8129d4b7 (SyS_open+0x37/0x50)
+  #12 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
 
-Head SHA1: 29ad23b00474c34e3b5040dda508c78d33a1a3eb
-29ad23b00474c34e3b5040dda508c78d33a1a3eb
+Shadow bytes around the buggy address:
+  ffff8800359c9700: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  ffff8800359c9780: fd fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa
+  ffff8800359c9800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>ffff8800359c9980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00[03]fb
+  ffff8800359c9a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9b00: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  ffff8800359c9b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  ffff8800359c9c00: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap redzone:          fa
+  Heap kmalloc redzone:  fb
+  Freed heap region:     fd
+  Shadow gap:            fe
+
+The out-of-bounds access happens on 'parser->buffer[parser->idx] = 0;'
+
+Although the crash happened in ftrace_regex_open() the real bug
+occurred in trace_get_user() where there's an incrementation to
+parser->idx without a check against the size. The way it is triggered
+is if userspace sends in 128 characters (EVENT_BUF_SIZE + 1), the loop
+that reads the last character stores it and then breaks out because
+there is no more characters. Then the last character is read to determine
+what to do next, and the index is incremented without checking size.
+
+Then the caller of trace_get_user() usually nulls out the last character
+with a zero, but since the index is equal to the size, it writes a nul
+character after the allocated space, which can corrupt memory.
+
+Luckily, only root user has write access to this file.
+
+Link: http://lkml.kernel.org/r/20131009222323.04fd1a0d@gandalf.local.home
+
+Reported-by: Andrey Konovalov <andreyknvl@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index d5f7c4d..063a92b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -843,9 +843,12 @@ int trace_get_user(struct trace_parser *parser, const char __user *ubuf,
+ 	if (isspace(ch)) {
+ 		parser->buffer[parser->idx] = 0;
+ 		parser->cont = false;
+-	} else {
++	} else if (parser->idx < parser->size - 1) {
+ 		parser->cont = true;
+ 		parser->buffer[parser->idx++] = ch;
++	} else {
++		ret = -EINVAL;
++		goto out;
+ 	}
+ 
+ 	*ppos += read;
+-- 
+1.8.4.rc3
 
 
-Namhyung Kim (4):
-      ftrace: Get rid of ftrace_graph_filter_enabled
-      ftrace: Introduce struct ftrace_graph_data
-      ftrace: Narrow down the protected area of graph_lock
-      ftrace: Add set_graph_notrace filter
-
-Steven Rostedt (1):
-      tracing: Fix potential out-of-bounds in trace_get_user()
-
-Wang YanQing (1):
-      tracing: Show more exact help information about snapshot
-
-----
- include/linux/ftrace.h               |   1 +
- kernel/trace/ftrace.c                | 140 ++++++++++++++++++++++++++---------
- kernel/trace/trace.c                 |   7 +-
- kernel/trace/trace.h                 |  25 ++++++-
- kernel/trace/trace_functions_graph.c |  56 +++++++++++++-
- 5 files changed, 186 insertions(+), 43 deletions(-)
