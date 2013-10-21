@@ -1,106 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab3JULoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:44:55 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34142 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab3JULox (ORCPT
+	id S1753464Ab3JULo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:44:59 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61712 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3JULo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:44:53 -0400
-Subject: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy of
- the parent domain's group
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 21 Oct 2013 17:14:42 +0530
-Message-ID: <20131021114442.13291.99344.stgit@drishya>
-In-Reply-To: <20131021114002.13291.31478.stgit@drishya>
-References: <20131021114002.13291.31478.stgit@drishya>
-User-Agent: StGit/0.15
+	Mon, 21 Oct 2013 07:44:56 -0400
+Message-ID: <526513B5.5050203@gmail.com>
+Date: Mon, 21 Oct 2013 07:44:53 -0400
+From: Austin S Hemmelgarn <ahferroin7@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Borislav Petkov <bp@alien8.de>
+CC: Linux-Kernel mailing list <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Linux Torvalds <torvalds@osdl.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCHv2] x86: add kconfig options for newer 64-bit processors
+References: <526325C9.7030705@gmail.com> <20131020091813.GA4972@pd.tnic> <52646E0E.6040204@gmail.com> <20131021105401.GA5019@nazgul.tnic>
+In-Reply-To: <20131021105401.GA5019@nazgul.tnic>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102111-7014-0000-0000-000003CCAEED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-
-In nohz_kick_needed() there are checks around the flags
-SD_SHARE_PKG_RESOURCES which decide to initiate nohz_balance if the
-domains with this flag set have more than one cpu busy. Therefore at
-every domain, a check has to be made on nr_busy of that domain. This
-means the sum of the nr_busy of each group in that domain needs to be
-checked, since nr_busy is a parameter which is associated with
-a group.  However in the current implementation of nohz_kick_needed(),
-the nr_busy is being checked for just the group to which the cpu that
-has initiated this check belongs to. This will give us the wrong count
-of the number of busy cpus in that domain.
-
-The following commit which fixed the sgp->nr_busy_cpus computation
-actually exposed the bug in nohz_kick_needed() which worked when
-nr_busy was incorrectly > 1
-
-25f55d9d01ad7a7ad248fd5af1d22675ffd202c5
-sched: Fix init NOHZ_IDLE flag
-
-To illustrate the scenario,  consider a core, whose domain will have
-the SD_SHARE_PKG_RESOURCES set. We want to kick nohz_idle_balance when
-we find that more than one thread in the core is busy. With the
-current implementation of nohz_kick_needed(), at this domain(sd), the
-nr_busy will be 1 always since it returns this parameter for
-sd->groups which encompasses a single thread, while we want this
-parameter for sd->parent->groups which will rightly point to the
-number of busy threads in the core.
-
-This patch also ensures that the order of check for
-SD_SHARE_PKG_RESOURCE comes before the check for ASYM_PACKING.
-Priority is given to avoid more than one busy thread in a core as much
-as possible before attempting asymmetric packing.
-
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7c70201..12f0eab 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5807,12 +5807,19 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
--		struct sched_group *sg = sd->groups;
--		struct sched_group_power *sgp = sg->sgp;
--		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
--
--		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
--			goto need_kick_unlock;
-+		struct sched_domain *sd_parent = sd->parent;
-+		struct sched_group *sg;
-+		struct sched_group_power *sgp;
-+		int nr_busy;
-+
-+		if (sd_parent) {
-+			sg = sd_parent->groups;
-+			sgp = sg->sgp;
-+			nr_busy = atomic_read(&sgp->nr_busy_cpus);
-+
-+			if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
-+				goto need_kick_unlock;
-+		}
- 
- 		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
- 		    && (cpumask_first_and(nohz.idle_cpus_mask,
-
+On 2013-10-21 06:54, Borislav Petkov wrote:
+> On Sun, Oct 20, 2013 at 07:58:06PM -0400, Austin S Hemmelgarn wrote:
+>> I am not trying to say that this provides any improvement in speed (or
+>> at least the AMD options, the one for Intel Ivy Bridge processors does
+>> appear to do better in this respect).
+>
+> "Does appear" is not a very good answer - you need to give concrete
+> benchmark results which people can repeat on their own and confirm your
+> observations.
+>
+Specifically, boot time was reduced by approximately half a second
+(measured as time from starting init till having a usable graphical
+login), and the system ran approximately 1 degree cooler under heavy
+load (namely a full GCC+binutils bootstrap with one job per virtual CPU
+core).
+>> As I stated in the comments just before the patch itself, "...testing
+>> of MPILEDRIVER seems to indicate an improvement to energy efficiency
+>> over GENERIC_CPU as it causes the on cpu power sensor to consistently
+>> read an average of 1.5 watts lower under idle load than when
+>> using GENERIC_CPU (this corresponds to about 5% decrease in power
+>> consumption on a idle-tickless system, and about 2% on a non-dynticks
+>> system.).". While this result is dependent on a large number of
+>> factors (not the least of which being that I have my CPU over-clocked
+>> to the point that the lowest C-state runs at 1.4GHz, which really
+>> hurts energy efficiency) it is still a positive result, and most of
+>> the equivalent options primarily improve energy efficiency.
+>
+> Again, how exactly do I reproduce your observations on my boxes? I need
+> a step-by-step walk through please.
+>
+Using lm_sensors with CONFIG_FAM15H_POWER enabled, simply run the
+command `sensors` a couple of times on an idle system as root comparing
+the values between having CONFIG_MPILEDRIVER=y and CONFIG_GENERIC_CPU=y.
+For this specific case I recorded the wattage values at one minute
+intervals for 2 hours on both and took the arithmetic mean of the 120
+data points in each case.
+>> Also, you have to understand that my target audience isn't the
+>> mainstream distros,...
+>
+> Well, if your target audience is only a very small fraction of the linux
+> users, then we don't need this in the mainline kernel in the first
+> place, do we?
+>
+Just because the target audience isn't the mainstream distros doesn't
+mean that it's a very small fraction of the Linux users, based on just
+the number of systems running Linux, Google is probably the biggest
+user, followed closely by supercomputers.  I know that most
+supercomputer operators do run custom builds of the kernel because they
+need maximal efficiency, and Google is also known to run custom kernel
+builds to try and increase performance.  These are my primary intended
+audience followed closely by users of Gentoo and similar distros that
+build the kernel locally in preference to distributing pre-built kernel
+images.
+> Thanks.
+>
+Something else to keep in mind, the effects of -mtune=generic change
+over time, as these processors become less common, the optimizations
+done by -mtune=generic will shift away from them.  The reason that many
+of the equivalent options in the kernel currently provide as much
+benefit as they do is that gcc no longer tries to create machine code
+that is tuned for them unless you tell it to.
