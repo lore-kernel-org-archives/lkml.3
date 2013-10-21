@@ -1,177 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab3JUWul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:50:41 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36841 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3JUWnb (ORCPT
+	id S1752714Ab3JUWn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:43:29 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39985 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3JUWnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:43:31 -0400
+	Mon, 21 Oct 2013 18:43:24 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
         James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v2 07/23] ima: differentiate between template hash and file data hash sizes
-Date: Mon, 21 Oct 2013 18:42:52 -0400
-Message-Id: <1382395388-8108-8-git-send-email-zohar@linux.vnet.ibm.com>
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 01/23] crypto: provide single place for hash algo information
+Date: Mon, 21 Oct 2013 18:42:46 -0400
+Message-Id: <1382395388-8108-2-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102122-0928-0000-0000-000002A8F4F1
+x-cbid: 13102122-1344-0000-0000-000002A32407
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPM v1.2 limits the template hash size to 20 bytes.  This
-patch differentiates between the template hash size, as defined
-in the ima_template_entry, and the file data hash size, as
-defined in the ima_template_data.  Subsequent patches add support
-for different file data hash algorithms.
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-Change log:
-- hash digest definition in ima_store_template() should be TPM_DIGEST_SIZE
+This patch provides a single place for information about hash algorithms,
+such as hash sizes and kernel driver names, which will be used by IMA
+and the public key code.
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Changelog:
+- Fix sparse and checkpatch warnings
+- Move hash algo enums to uapi for userspace signing functions.
+
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- security/integrity/ima/ima.h        |  2 +-
- security/integrity/ima/ima_api.c    |  2 +-
- security/integrity/ima/ima_crypto.c |  4 ++--
- security/integrity/ima/ima_fs.c     | 10 +++++-----
- security/integrity/ima/ima_init.c   |  2 +-
- security/integrity/ima/ima_queue.c  |  4 ++--
- 6 files changed, 12 insertions(+), 12 deletions(-)
+ crypto/Kconfig                 |  3 +++
+ crypto/Makefile                |  1 +
+ crypto/hash_info.c             | 56 ++++++++++++++++++++++++++++++++++++++++++
+ include/crypto/hash_info.h     | 40 ++++++++++++++++++++++++++++++
+ include/uapi/linux/hash_info.h | 37 ++++++++++++++++++++++++++++
+ 5 files changed, 137 insertions(+)
+ create mode 100644 crypto/hash_info.c
+ create mode 100644 include/crypto/hash_info.h
+ create mode 100644 include/uapi/linux/hash_info.h
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index efcdef2..52393ed 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -49,7 +49,7 @@ struct ima_template_data {
- };
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 69ce573..ba061b0 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1386,6 +1386,9 @@ config CRYPTO_USER_API_SKCIPHER
+ 	  This option enables the user-spaces interface for symmetric
+ 	  key cipher algorithms.
  
- struct ima_template_entry {
--	u8 digest[IMA_DIGEST_SIZE];	/* sha1 or md5 measurement hash */
-+	u8 digest[TPM_DIGEST_SIZE];	/* sha1 or md5 measurement hash */
- 	const char *template_name;
- 	int template_len;
- 	struct ima_template_data template;
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 5a7942e..2cc5dcc 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -46,7 +46,7 @@ int ima_store_template(struct ima_template_entry *entry,
- 	int result;
- 	struct {
- 		struct ima_digest_data hdr;
--		char digest[IMA_MAX_DIGEST_SIZE];
-+		char digest[TPM_DIGEST_SIZE];
- 	} hash;
++config CRYPTO_HASH_INFO
++	bool
++
+ source "drivers/crypto/Kconfig"
+ source crypto/asymmetric_keys/Kconfig
  
- 	memset(entry->digest, 0, sizeof(entry->digest));
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 2fd1786..872c669 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -155,7 +155,7 @@ static void __init ima_pcrread(int idx, u8 *pcr)
-  */
- int __init ima_calc_boot_aggregate(char *digest)
- {
--	u8 pcr_i[IMA_DIGEST_SIZE];
-+	u8 pcr_i[TPM_DIGEST_SIZE];
- 	int rc, i;
- 	struct {
- 		struct shash_desc shash;
-@@ -173,7 +173,7 @@ int __init ima_calc_boot_aggregate(char *digest)
- 	for (i = TPM_PCR0; i < TPM_PCR8; i++) {
- 		ima_pcrread(i, pcr_i);
- 		/* now accumulate with current aggregate */
--		rc = crypto_shash_update(&desc.shash, pcr_i, IMA_DIGEST_SIZE);
-+		rc = crypto_shash_update(&desc.shash, pcr_i, TPM_DIGEST_SIZE);
- 	}
- 	if (!rc)
- 		crypto_shash_final(&desc.shash, digest);
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index 5f0fd11..c35cfb5 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -133,7 +133,7 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	ima_putc(m, &pcr, sizeof pcr);
- 
- 	/* 2nd: template digest */
--	ima_putc(m, e->digest, IMA_DIGEST_SIZE);
-+	ima_putc(m, e->digest, TPM_DIGEST_SIZE);
- 
- 	/* 3rd: template name size */
- 	namelen = strlen(e->template_name);
-@@ -167,11 +167,11 @@ static const struct file_operations ima_measurements_ops = {
- 	.release = seq_release,
- };
- 
--static void ima_print_digest(struct seq_file *m, u8 *digest)
-+static void ima_print_digest(struct seq_file *m, u8 *digest, int size)
- {
- 	int i;
- 
--	for (i = 0; i < IMA_DIGEST_SIZE; i++)
-+	for (i = 0; i < size; i++)
- 		seq_printf(m, "%02x", *(digest + i));
- }
- 
-@@ -182,7 +182,7 @@ void ima_template_show(struct seq_file *m, void *e, enum ima_show_type show)
- 
- 	switch (show) {
- 	case IMA_SHOW_ASCII:
--		ima_print_digest(m, entry->digest);
-+		ima_print_digest(m, entry->digest, IMA_DIGEST_SIZE);
- 		seq_printf(m, " %s\n", entry->file_name);
- 		break;
- 	case IMA_SHOW_BINARY:
-@@ -212,7 +212,7 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	seq_printf(m, "%2d ", CONFIG_IMA_MEASURE_PCR_IDX);
- 
- 	/* 2nd: SHA1 template hash */
--	ima_print_digest(m, e->digest);
-+	ima_print_digest(m, e->digest, TPM_DIGEST_SIZE);
- 
- 	/* 3th:  template name */
- 	seq_printf(m, " %s ", e->template_name);
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 162ea72..9d0243c 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -74,7 +74,7 @@ err_out:
- 
- int __init ima_init(void)
- {
--	u8 pcr_i[IMA_DIGEST_SIZE];
-+	u8 pcr_i[TPM_DIGEST_SIZE];
- 	int rc;
- 
- 	ima_used_chip = 0;
-diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-index ff63fe0..e63ff33 100644
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -50,7 +50,7 @@ static struct ima_queue_entry *ima_lookup_digest_entry(u8 *digest_value)
- 	key = ima_hash_key(digest_value);
- 	rcu_read_lock();
- 	hlist_for_each_entry_rcu(qe, &ima_htable.queue[key], hnext) {
--		rc = memcmp(qe->entry->digest, digest_value, IMA_DIGEST_SIZE);
-+		rc = memcmp(qe->entry->digest, digest_value, TPM_DIGEST_SIZE);
- 		if (rc == 0) {
- 			ret = qe;
- 			break;
-@@ -106,7 +106,7 @@ static int ima_pcr_extend(const u8 *hash)
- int ima_add_template_entry(struct ima_template_entry *entry, int violation,
- 			   const char *op, struct inode *inode)
- {
--	u8 digest[IMA_DIGEST_SIZE];
-+	u8 digest[TPM_DIGEST_SIZE];
- 	const char *audit_cause = "hash_added";
- 	char tpm_audit_cause[AUDIT_CAUSE_LEN_MAX];
- 	int audit_info = 1;
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 80019ba..b3a7e80 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -104,3 +104,4 @@ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
+ obj-$(CONFIG_XOR_BLOCKS) += xor.o
+ obj-$(CONFIG_ASYNC_CORE) += async_tx/
+ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys/
++obj-$(CONFIG_CRYPTO_HASH_INFO) += hash_info.o
+diff --git a/crypto/hash_info.c b/crypto/hash_info.c
+new file mode 100644
+index 0000000..3e7ff46
+--- /dev/null
++++ b/crypto/hash_info.c
+@@ -0,0 +1,56 @@
++/*
++ * Hash Info: Hash algorithms information
++ *
++ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++
++#include <linux/export.h>
++#include <crypto/hash_info.h>
++
++const char *const hash_algo_name[HASH_ALGO__LAST] = {
++	[HASH_ALGO_MD4]		= "md4",
++	[HASH_ALGO_MD5]		= "md5",
++	[HASH_ALGO_SHA1]	= "sha1",
++	[HASH_ALGO_RIPE_MD_160]	= "rmd160",
++	[HASH_ALGO_SHA256]	= "sha256",
++	[HASH_ALGO_SHA384]	= "sha384",
++	[HASH_ALGO_SHA512]	= "sha512",
++	[HASH_ALGO_SHA224]	= "sha224",
++	[HASH_ALGO_RIPE_MD_128]	= "rmd128",
++	[HASH_ALGO_RIPE_MD_256]	= "rmd256",
++	[HASH_ALGO_RIPE_MD_320]	= "rmd320",
++	[HASH_ALGO_WP_256]	= "wp256",
++	[HASH_ALGO_WP_384]	= "wp384",
++	[HASH_ALGO_WP_512]	= "wp512",
++	[HASH_ALGO_TGR_128]	= "tgr128",
++	[HASH_ALGO_TGR_160]	= "tgr160",
++	[HASH_ALGO_TGR_192]	= "tgr192",
++};
++EXPORT_SYMBOL_GPL(hash_algo_name);
++
++const int hash_digest_size[HASH_ALGO__LAST] = {
++	[HASH_ALGO_MD4]		= MD5_DIGEST_SIZE,
++	[HASH_ALGO_MD5]		= MD5_DIGEST_SIZE,
++	[HASH_ALGO_SHA1]	= SHA1_DIGEST_SIZE,
++	[HASH_ALGO_RIPE_MD_160]	= RMD160_DIGEST_SIZE,
++	[HASH_ALGO_SHA256]	= SHA256_DIGEST_SIZE,
++	[HASH_ALGO_SHA384]	= SHA384_DIGEST_SIZE,
++	[HASH_ALGO_SHA512]	= SHA512_DIGEST_SIZE,
++	[HASH_ALGO_SHA224]	= SHA224_DIGEST_SIZE,
++	[HASH_ALGO_RIPE_MD_128]	= RMD128_DIGEST_SIZE,
++	[HASH_ALGO_RIPE_MD_256]	= RMD256_DIGEST_SIZE,
++	[HASH_ALGO_RIPE_MD_320]	= RMD320_DIGEST_SIZE,
++	[HASH_ALGO_WP_256]	= WP256_DIGEST_SIZE,
++	[HASH_ALGO_WP_384]	= WP384_DIGEST_SIZE,
++	[HASH_ALGO_WP_512]	= WP512_DIGEST_SIZE,
++	[HASH_ALGO_TGR_128]	= TGR128_DIGEST_SIZE,
++	[HASH_ALGO_TGR_160]	= TGR160_DIGEST_SIZE,
++	[HASH_ALGO_TGR_192]	= TGR192_DIGEST_SIZE,
++};
++EXPORT_SYMBOL_GPL(hash_digest_size);
+diff --git a/include/crypto/hash_info.h b/include/crypto/hash_info.h
+new file mode 100644
+index 0000000..e1e5a3e
+--- /dev/null
++++ b/include/crypto/hash_info.h
+@@ -0,0 +1,40 @@
++/*
++ * Hash Info: Hash algorithms information
++ *
++ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++
++#ifndef _CRYPTO_HASH_INFO_H
++#define _CRYPTO_HASH_INFO_H
++
++#include <crypto/sha.h>
++#include <crypto/md5.h>
++
++#include <uapi/linux/hash_info.h>
++
++/* not defined in include/crypto/ */
++#define RMD128_DIGEST_SIZE      16
++#define RMD160_DIGEST_SIZE	20
++#define RMD256_DIGEST_SIZE      32
++#define RMD320_DIGEST_SIZE      40
++
++/* not defined in include/crypto/ */
++#define WP512_DIGEST_SIZE	64
++#define WP384_DIGEST_SIZE	48
++#define WP256_DIGEST_SIZE	32
++
++/* not defined in include/crypto/ */
++#define TGR128_DIGEST_SIZE 16
++#define TGR160_DIGEST_SIZE 20
++#define TGR192_DIGEST_SIZE 24
++
++extern const char *const hash_algo_name[HASH_ALGO__LAST];
++extern const int hash_digest_size[HASH_ALGO__LAST];
++
++#endif /* _CRYPTO_HASH_INFO_H */
+diff --git a/include/uapi/linux/hash_info.h b/include/uapi/linux/hash_info.h
+new file mode 100644
+index 0000000..ca18c45
+--- /dev/null
++++ b/include/uapi/linux/hash_info.h
+@@ -0,0 +1,37 @@
++/*
++ * Hash Info: Hash algorithms information
++ *
++ * Copyright (c) 2013 Dmitry Kasatkin <d.kasatkin@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ */
++
++#ifndef _UAPI_LINUX_HASH_INFO_H
++#define _UAPI_LINUX_HASH_INFO_H
++
++enum hash_algo {
++	HASH_ALGO_MD4,
++	HASH_ALGO_MD5,
++	HASH_ALGO_SHA1,
++	HASH_ALGO_RIPE_MD_160,
++	HASH_ALGO_SHA256,
++	HASH_ALGO_SHA384,
++	HASH_ALGO_SHA512,
++	HASH_ALGO_SHA224,
++	HASH_ALGO_RIPE_MD_128,
++	HASH_ALGO_RIPE_MD_256,
++	HASH_ALGO_RIPE_MD_320,
++	HASH_ALGO_WP_256,
++	HASH_ALGO_WP_384,
++	HASH_ALGO_WP_512,
++	HASH_ALGO_TGR_128,
++	HASH_ALGO_TGR_160,
++	HASH_ALGO_TGR_192,
++	HASH_ALGO__LAST
++};
++
++#endif /* _UAPI_LINUX_HASH_INFO_H */
 -- 
 1.8.1.4
 
