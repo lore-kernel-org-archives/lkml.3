@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3JUKxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:53:52 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:37521 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab3JUKxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:53:50 -0400
+	id S1753353Ab3JUKyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:54:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35890 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753244Ab3JUKyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 06:54:03 -0400
+Date: Mon, 21 Oct 2013 12:54:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: Linux-Kernel mailing list <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Linux Torvalds <torvalds@osdl.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCHv2] x86: add kconfig options for newer 64-bit processors
+Message-ID: <20131021105401.GA5019@nazgul.tnic>
+References: <526325C9.7030705@gmail.com>
+ <20131020091813.GA4972@pd.tnic>
+ <52646E0E.6040204@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFkjPTmg26H0RGdHmR2u-wuJF=Jhd4PbbG1hVrBucuWyZDgNAw@mail.gmail.com>
-References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
-	<1380411144-9236-8-git-send-email-geyslan@gmail.com>
-	<CAFkjPTmg26H0RGdHmR2u-wuJF=Jhd4PbbG1hVrBucuWyZDgNAw@mail.gmail.com>
-Date: Mon, 21 Oct 2013 08:53:50 -0200
-Message-ID: <CAGG-pUTVh06YcpkW06jp-nB1YaqOtm3GYgEXeLS7iF33RG5AsA@mail.gmail.com>
-Subject: Re: [PATCH] 9p: proper use of the 'name' variable
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: rminnich@sandia.gov, Latchesar Ionkov <lucho@ionkov.net>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52646E0E.6040204@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/20 Eric Van Hensbergen <ericvh@gmail.com>:
-> I reckon we should probably just get rid of name if its not being used.  I
-> doubt the indirection is going to hurt anything here.
->
->      -eric
->
+On Sun, Oct 20, 2013 at 07:58:06PM -0400, Austin S Hemmelgarn wrote:
+> I am not trying to say that this provides any improvement in speed (or
+> at least the AMD options, the one for Intel Ivy Bridge processors does
+> appear to do better in this respect).
 
-Eric, you're right. Once that there's not assignment to name, the
-cycles are the same.
-I'll get rid of name var.
+"Does appear" is not a very good answer - you need to give concrete
+benchmark results which people can repeat on their own and confirm your
+observations.
 
->
->
-> On Sat, Sep 28, 2013 at 6:32 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
->>
->> The 'name' variable was assigned but never used. Hence puts its
->> assignment to the top and makes proper use of its value.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> ---
->>  fs/9p/vfs_inode_dotl.c | 8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
->> index 6803758..86b6944 100644
->> --- a/fs/9p/vfs_inode_dotl.c
->> +++ b/fs/9p/vfs_inode_dotl.c
->> @@ -772,8 +772,10 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
->> inode *dir,
->>         struct p9_fid *dfid, *oldfid;
->>         struct v9fs_session_info *v9ses;
->>
->> +       name = (char *) dentry->d_name.name;
->> +
->>         p9_debug(P9_DEBUG_VFS, "dir ino: %lu, old_name: %s, new_name:
->> %s\n",
->> -                dir->i_ino, old_dentry->d_name.name,
->> dentry->d_name.name);
->> +                dir->i_ino, old_dentry->d_name.name, name);
->>
->>         v9ses = v9fs_inode2v9ses(dir);
->>         dir_dentry = dentry->d_parent;
->> @@ -785,9 +787,7 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
->> inode *dir,
->>         if (IS_ERR(oldfid))
->>                 return PTR_ERR(oldfid);
->>
->> -       name = (char *) dentry->d_name.name;
->> -
->> -       err = p9_client_link(dfid, oldfid, (char *)dentry->d_name.name);
->> +       err = p9_client_link(dfid, oldfid, name);
->>
->>         if (err < 0) {
->>                 p9_debug(P9_DEBUG_VFS, "p9_client_link failed %d\n", err);
->> --
->> 1.8.4
->>
->
+> As I stated in the comments just before the patch itself, "...testing
+> of MPILEDRIVER seems to indicate an improvement to energy efficiency
+> over GENERIC_CPU as it causes the on cpu power sensor to consistently
+> read an average of 1.5 watts lower under idle load than when
+> using GENERIC_CPU (this corresponds to about 5% decrease in power
+> consumption on a idle-tickless system, and about 2% on a non-dynticks
+> system.).". While this result is dependent on a large number of
+> factors (not the least of which being that I have my CPU over-clocked
+> to the point that the lowest C-state runs at 1.4GHz, which really
+> hurts energy efficiency) it is still a positive result, and most of
+> the equivalent options primarily improve energy efficiency.
+
+Again, how exactly do I reproduce your observations on my boxes? I need
+a step-by-step walk through please.
+
+> Also, you have to understand that my target audience isn't the
+> mainstream distros,...
+
+Well, if your target audience is only a very small fraction of the linux
+users, then we don't need this in the mainline kernel in the first
+place, do we?
+
+Thanks.
