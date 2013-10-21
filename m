@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3JUJFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:05:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39785 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754256Ab3JUIwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754263Ab3JUIwe (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Oct 2013 04:52:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39771 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753119Ab3JUIwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:52:30 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Salam Noureddine" <noureddine@aristanetworks.com>,
+CC: akpm@linux-foundation.org, "Peter Korsgaard" <peter@korsgaard.com>,
+        "Joseph Chang" <joseph_chang@davicom.com.tw>,
         "David S. Miller" <davem@davemloft.net>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.207415708@decadent.org.uk>
+Message-ID: <lsq.1382345188.799628867@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 111/149] ipv4 igmp: use in_dev_put in timer handlers
- instead of  __in_dev_put
+Subject: [PATCH 3.2 109/149] dm9601: fix IFF_ALLMULTI handling
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,48 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Peter Korsgaard <peter@korsgaard.com>
 
-[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
+[ Upstream commit bf0ea6380724beb64f27a722dfc4b0edabff816e ]
 
-It is possible for the timer handlers to run after the call to
-ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
-function in order to do proper cleanup when the refcnt reaches 0.
-Otherwise, the refcnt can reach zero without the in_device being
-destroyed and we end up leaking a reference to the net_device and
-see messages like the following,
+Pass-all-multicast is controlled by bit 3 in RX control, not bit 2
+(pass undersized frames).
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
-
-Tested on linux-3.4.43.
-
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
+Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/igmp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/usb/dm9601.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 24cf7da..75b0860 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -705,7 +705,7 @@ static void igmp_gq_timer_expire(unsigned long data)
+diff --git a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
+index fbc0e4d..136ecf3 100644
+--- a/drivers/net/usb/dm9601.c
++++ b/drivers/net/usb/dm9601.c
+@@ -384,7 +384,7 @@ static void dm9601_set_multicast(struct net_device *net)
+ 		rx_ctl |= 0x02;
+ 	} else if (net->flags & IFF_ALLMULTI ||
+ 		   netdev_mc_count(net) > DM_MAX_MCAST) {
+-		rx_ctl |= 0x04;
++		rx_ctl |= 0x08;
+ 	} else if (!netdev_mc_empty(net)) {
+ 		struct netdev_hw_addr *ha;
  
- 	in_dev->mr_gq_running = 0;
- 	igmpv3_send_report(in_dev, NULL);
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
- 
- static void igmp_ifc_timer_expire(unsigned long data)
-@@ -717,7 +717,7 @@ static void igmp_ifc_timer_expire(unsigned long data)
- 		in_dev->mr_ifc_count--;
- 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
- 	}
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
- 
- static void igmp_ifc_event(struct in_device *in_dev)
 
