@@ -1,143 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab3JUWnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:43:22 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44115 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543Ab3JUWnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:43:21 -0400
+	id S1752868Ab3JUWnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:43:32 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49398 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3JUWnY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 18:43:24 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>
-Subject: [PATCH v2 00/23] ima: larger digests and extensible template support
-Date: Mon, 21 Oct 2013 18:42:45 -0400
-Message-Id: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 02/23] keys: change asymmetric keys to use common hash definitions
+Date: Mon, 21 Oct 2013 18:42:47 -0400
+Message-Id: <1382395388-8108-3-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102122-7182-0000-0000-000008D5914F
+x-cbid: 13102122-6688-0000-0000-000002BE751E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds support for additional hash algorithms with larger
-digests, as well as support for additional file metadata in the IMA
-measurement list.  The existing IMA measurement list entries, which are
-exposed to userspace via the securityfs ascii/binary_runtime_measurement
-lists, are fixed length, containing a file data hash, limited to a 20 byte
-digest, and a pathname, limited to 255 characters.  Adding larger digest
-support for signature verification, without the template changes, would result
-in hashing the file twice, once for appraising the file signature and, again,
-for the measurement list.
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-This patch set defines an extensible template architecture with support for
-larger hash algorithms.  A description of the new template architecture is
-described in the "ima: new templates management mechanism" patch description
-and, with more detail, in Documentation/security/IMA-templates.txt.  The
-two initial templates defined are: the original 'ima', for backwards
-compatibility, and 'ima-ng', which eliminates the digest and pathname size
-limitations.  Additional templates, that include other file metadata (eg.
-uid/gid, LSM subject/object labels, file data signatures) will be posted
-separately.
-
-Two changes were made, since posting this patch set back in July
-http://marc.info/?l=linux-security-module&m=137410629309961&w=2.  Namely, the
-measurement list can now be walked and verified, without understanding the
-template field data specifics; and "mutable" files can be labeled based on
-different hash algorithms.  Walking and verifying the measurement list without
-understanding the template field data specifics, will allow new templates to
-be defined in the kernel, without breaking userspace applications.  Defining a
-new extended attribute format, which includes the file hash algorithm,
-eliminates the need for relabeling "mutable" files.
+This patch makes use of the newly defined common hash algorithm info,
+replacing, for example, PKEY_HASH with HASH_ALGO.
 
 Changelog:
-- fix lindent, sparse, checkpath warnings/errors
-- define a new extended attribute type, which includes the file data
-  hash algorithm.
-- template changes:
-  - simplify walking the binary measurement list
-  - simplify calculating the template data hash
-  - simplify parsing measurement entries by always prefixing the
-    template data hash with the hash algorithm.
+- Lindent fixes - Mimi
 
-Mimi
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ crypto/asymmetric_keys/Kconfig            |  1 +
+ crypto/asymmetric_keys/public_key.c       | 12 ------------
+ crypto/asymmetric_keys/rsa.c              | 14 +++++++-------
+ crypto/asymmetric_keys/x509_cert_parser.c | 12 ++++++------
+ crypto/asymmetric_keys/x509_parser.h      |  2 ++
+ crypto/asymmetric_keys/x509_public_key.c  |  9 ++++-----
+ include/crypto/public_key.h               | 18 ++++--------------
+ kernel/module_signing.c                   |  8 ++++----
+ 8 files changed, 28 insertions(+), 48 deletions(-)
 
-Dmitry Kasatkin (10):
-  crypto: provide single place for hash algo information
-  keys: change asymmetric keys to use common hash definitions
-  ima: provide support for arbitrary hash algorithms
-  ima: read and use signature hash algorithm
-  ima: pass full xattr with the signature
-  ima: use dynamically allocated hash storage
-  ima: provide dedicated hash algo allocation function
-  ima: support arbitrary hash algorithms in ima_calc_buffer_hash
-  ima: ima_calc_boot_agregate must use SHA1
-  ima: provide hash algo info in the xattr
-
-Mimi Zohar (4):
-  ima: differentiate between template hash and file data hash sizes
-  ima: add audit log support for larger hashes
-  ima: add Kconfig default measurement list template
-  ima: enable support for larger default filedata hash algorithms
-
-Roberto Sassu (9):
-  ima: pass the file descriptor to ima_add_violation()
-  ima: pass the filename argument up to ima_add_template_entry()
-  ima: define new function ima_alloc_init_template() to API
-  ima: new templates management mechanism
-  ima: define template fields library and new helpers
-  ima: define new template ima-ng and template fields d-ng and n-ng
-  ima: switch to new template management mechanism
-  ima: defer determining the appraisal hash algorithm for 'ima' template
-  ima: define kernel parameter 'ima_template=' to change configured
-    default
-
- Documentation/kernel-parameters.txt       |  11 +-
- Documentation/security/00-INDEX           |   2 +
- Documentation/security/IMA-templates.txt  |  87 +++++++++
- crypto/Kconfig                            |   3 +
- crypto/Makefile                           |   1 +
- crypto/asymmetric_keys/Kconfig            |   1 +
- crypto/asymmetric_keys/public_key.c       |  12 --
- crypto/asymmetric_keys/rsa.c              |  14 +-
- crypto/asymmetric_keys/x509_cert_parser.c |  12 +-
- crypto/asymmetric_keys/x509_public_key.c  |   6 +-
- crypto/hash_info.c                        |  56 ++++++
- include/crypto/hash_info.h                |  40 ++++
- include/crypto/public_key.h               |  18 +-
- include/uapi/linux/hash_info.h            |  37 ++++
- kernel/module_signing.c                   |   8 +-
- security/integrity/digsig.c               |   5 +-
- security/integrity/digsig_asymmetric.c    |  11 --
- security/integrity/evm/evm_main.c         |   4 +-
- security/integrity/iint.c                 |   2 +
- security/integrity/ima/Kconfig            |  61 ++++++
- security/integrity/ima/Makefile           |   2 +-
- security/integrity/ima/ima.h              |  95 +++++++--
- security/integrity/ima/ima_api.c          | 129 ++++++++----
- security/integrity/ima/ima_appraise.c     | 100 ++++++++--
- security/integrity/ima/ima_crypto.c       | 134 +++++++++++--
- security/integrity/ima/ima_fs.c           |  64 +++---
- security/integrity/ima/ima_init.c         |  37 ++--
- security/integrity/ima/ima_main.c         |  50 ++++-
- security/integrity/ima/ima_queue.c        |  10 +-
- security/integrity/ima/ima_template.c     | 175 +++++++++++++++++
- security/integrity/ima/ima_template_lib.c | 313 ++++++++++++++++++++++++++++++
- security/integrity/ima/ima_template_lib.h |  39 ++++
- security/integrity/integrity.h            |  38 +++-
- 33 files changed, 1368 insertions(+), 209 deletions(-)
- create mode 100644 Documentation/security/IMA-templates.txt
- create mode 100644 crypto/hash_info.c
- create mode 100644 include/crypto/hash_info.h
- create mode 100644 include/uapi/linux/hash_info.h
- create mode 100644 security/integrity/ima/ima_template.c
- create mode 100644 security/integrity/ima/ima_template_lib.c
- create mode 100644 security/integrity/ima/ima_template_lib.h
-
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 862b01f..82e7d6b 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -13,6 +13,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	tristate "Asymmetric public-key crypto algorithm subtype"
+ 	select MPILIB
+ 	select PUBLIC_KEY_ALGO_RSA
++	select CRYPTO_HASH_INFO
+ 	help
+ 	  This option provides support for asymmetric public key type handling.
+ 	  If signature generation and/or verification are to be used,
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 49ac8d8..97eb001 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -36,18 +36,6 @@ const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST] = {
+ };
+ EXPORT_SYMBOL_GPL(pkey_algo);
+ 
+-const char *const pkey_hash_algo_name[PKEY_HASH__LAST] = {
+-	[PKEY_HASH_MD4]		= "md4",
+-	[PKEY_HASH_MD5]		= "md5",
+-	[PKEY_HASH_SHA1]	= "sha1",
+-	[PKEY_HASH_RIPE_MD_160]	= "rmd160",
+-	[PKEY_HASH_SHA256]	= "sha256",
+-	[PKEY_HASH_SHA384]	= "sha384",
+-	[PKEY_HASH_SHA512]	= "sha512",
+-	[PKEY_HASH_SHA224]	= "sha224",
+-};
+-EXPORT_SYMBOL_GPL(pkey_hash_algo_name);
+-
+ const char *const pkey_id_type_name[PKEY_ID_TYPE__LAST] = {
+ 	[PKEY_ID_PGP]		= "PGP",
+ 	[PKEY_ID_X509]		= "X509",
+diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
+index 4a6a069..90a17f5 100644
+--- a/crypto/asymmetric_keys/rsa.c
++++ b/crypto/asymmetric_keys/rsa.c
+@@ -73,13 +73,13 @@ static const struct {
+ 	size_t size;
+ } RSA_ASN1_templates[PKEY_HASH__LAST] = {
+ #define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
+-	[PKEY_HASH_MD5]		= _(MD5),
+-	[PKEY_HASH_SHA1]	= _(SHA1),
+-	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
+-	[PKEY_HASH_SHA256]	= _(SHA256),
+-	[PKEY_HASH_SHA384]	= _(SHA384),
+-	[PKEY_HASH_SHA512]	= _(SHA512),
+-	[PKEY_HASH_SHA224]	= _(SHA224),
++	[HASH_ALGO_MD5]		= _(MD5),
++	[HASH_ALGO_SHA1]	= _(SHA1),
++	[HASH_ALGO_RIPE_MD_160]	= _(RIPE_MD_160),
++	[HASH_ALGO_SHA256]	= _(SHA256),
++	[HASH_ALGO_SHA384]	= _(SHA384),
++	[HASH_ALGO_SHA512]	= _(SHA512),
++	[HASH_ALGO_SHA224]	= _(SHA224),
+ #undef _
+ };
+ 
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 144201c..2989316 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -154,32 +154,32 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+ 		return -ENOPKG; /* Unsupported combination */
+ 
+ 	case OID_md4WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_MD5;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_MD5;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 
+ 	case OID_sha1WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA1;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA1;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 
+ 	case OID_sha256WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA256;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA256;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 
+ 	case OID_sha384WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA384;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA384;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 
+ 	case OID_sha512WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA512;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA512;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 
+ 	case OID_sha224WithRSAEncryption:
+-		ctx->cert->sig.pkey_hash_algo = PKEY_HASH_SHA224;
++		ctx->cert->sig.pkey_hash_algo = HASH_ALGO_SHA224;
+ 		ctx->cert->sig.pkey_algo = PKEY_ALGO_RSA;
+ 		break;
+ 	}
+diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
+index 87d9cc2..04c81bd 100644
+--- a/crypto/asymmetric_keys/x509_parser.h
++++ b/crypto/asymmetric_keys/x509_parser.h
+@@ -21,6 +21,8 @@ struct x509_certificate {
+ 	char		*authority;		/* Authority key fingerprint as hex */
+ 	struct tm	valid_from;
+ 	struct tm	valid_to;
++	enum pkey_algo	pkey_algo : 8;		/* Public key algorithm */
++	enum hash_algo sig_hash_algo : 8;	/* Signature hash algorithm */
+ 	const void	*tbs;			/* Signed data */
+ 	unsigned	tbs_size;		/* Size of signed data */
+ 	unsigned	raw_sig_size;		/* Size of sigature */
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 6abc27f..0a6bfad 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -96,7 +96,7 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ 	/* Allocate the hashing algorithm we're going to need and find out how
+ 	 * big the hash operational data will be.
+ 	 */
+-	tfm = crypto_alloc_shash(pkey_hash_algo_name[cert->sig.pkey_hash_algo], 0, 0);
++	tfm = crypto_alloc_shash(hash_algo_name[cert->sig.pkey_hash_algo], 0, 0);
+ 	if (IS_ERR(tfm))
+ 		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
+ 
+@@ -199,7 +199,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 	    cert->sig.pkey_hash_algo >= PKEY_HASH__LAST ||
+ 	    !pkey_algo[cert->pub->pkey_algo] ||
+ 	    !pkey_algo[cert->sig.pkey_algo] ||
+-	    !pkey_hash_algo_name[cert->sig.pkey_hash_algo]) {
++	    !hash_algo_name[cert->sig.pkey_hash_algo]) {
+ 		ret = -ENOPKG;
+ 		goto error_free_cert;
+ 	}
+@@ -213,9 +213,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 		 cert->valid_to.tm_year + 1900, cert->valid_to.tm_mon + 1,
+ 		 cert->valid_to.tm_mday, cert->valid_to.tm_hour,
+ 		 cert->valid_to.tm_min,  cert->valid_to.tm_sec);
+-	pr_devel("Cert Signature: %s + %s\n",
+-		 pkey_algo_name[cert->sig.pkey_algo],
+-		 pkey_hash_algo_name[cert->sig.pkey_hash_algo]);
++	pr_devel("Cert Signature: %s\n",
++		 hash_algo_name[cert->sig.pkey_hash_algo]);
+ 
+ 	if (!cert->fingerprint) {
+ 		pr_warn("Cert for '%s' must have a SubjKeyId extension\n",
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index b34fda4..fc09732 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -15,6 +15,7 @@
+ #define _LINUX_PUBLIC_KEY_H
+ 
+ #include <linux/mpi.h>
++#include <crypto/hash_info.h>
+ 
+ enum pkey_algo {
+ 	PKEY_ALGO_DSA,
+@@ -25,19 +26,8 @@ enum pkey_algo {
+ extern const char *const pkey_algo_name[PKEY_ALGO__LAST];
+ extern const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST];
+ 
+-enum pkey_hash_algo {
+-	PKEY_HASH_MD4,
+-	PKEY_HASH_MD5,
+-	PKEY_HASH_SHA1,
+-	PKEY_HASH_RIPE_MD_160,
+-	PKEY_HASH_SHA256,
+-	PKEY_HASH_SHA384,
+-	PKEY_HASH_SHA512,
+-	PKEY_HASH_SHA224,
+-	PKEY_HASH__LAST
+-};
+-
+-extern const char *const pkey_hash_algo_name[PKEY_HASH__LAST];
++/* asymmetric key implementation supports only up to SHA224 */
++#define PKEY_HASH__LAST		(HASH_ALGO_SHA224 + 1)
+ 
+ enum pkey_id_type {
+ 	PKEY_ID_PGP,		/* OpenPGP generated key ID */
+@@ -91,7 +81,7 @@ struct public_key_signature {
+ 	u8 digest_size;			/* Number of bytes in digest */
+ 	u8 nr_mpi;			/* Occupancy of mpi[] */
+ 	enum pkey_algo pkey_algo : 8;
+-	enum pkey_hash_algo pkey_hash_algo : 8;
++	enum hash_algo pkey_hash_algo : 8;
+ 	union {
+ 		MPI mpi[2];
+ 		struct {
+diff --git a/kernel/module_signing.c b/kernel/module_signing.c
+index 0b6b870..be5b8fa 100644
+--- a/kernel/module_signing.c
++++ b/kernel/module_signing.c
+@@ -29,7 +29,7 @@
+  */
+ struct module_signature {
+ 	u8	algo;		/* Public-key crypto algorithm [enum pkey_algo] */
+-	u8	hash;		/* Digest algorithm [enum pkey_hash_algo] */
++	u8	hash;		/* Digest algorithm [enum hash_algo] */
+ 	u8	id_type;	/* Key identifier type [enum pkey_id_type] */
+ 	u8	signer_len;	/* Length of signer's name */
+ 	u8	key_id_len;	/* Length of key identifier */
+@@ -40,7 +40,7 @@ struct module_signature {
+ /*
+  * Digest the module contents.
+  */
+-static struct public_key_signature *mod_make_digest(enum pkey_hash_algo hash,
++static struct public_key_signature *mod_make_digest(enum hash_algo hash,
+ 						    const void *mod,
+ 						    unsigned long modlen)
+ {
+@@ -55,7 +55,7 @@ static struct public_key_signature *mod_make_digest(enum pkey_hash_algo hash,
+ 	/* Allocate the hashing algorithm we're going to need and find out how
+ 	 * big the hash operational data will be.
+ 	 */
+-	tfm = crypto_alloc_shash(pkey_hash_algo_name[hash], 0, 0);
++	tfm = crypto_alloc_shash(hash_algo_name[hash], 0, 0);
+ 	if (IS_ERR(tfm))
+ 		return (PTR_ERR(tfm) == -ENOENT) ? ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
+ 
+@@ -218,7 +218,7 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
+ 		return -ENOPKG;
+ 
+ 	if (ms.hash >= PKEY_HASH__LAST ||
+-	    !pkey_hash_algo_name[ms.hash])
++	    !hash_algo_name[ms.hash])
+ 		return -ENOPKG;
+ 
+ 	key = request_asymmetric_key(sig, ms.signer_len,
 -- 
 1.8.1.4
 
