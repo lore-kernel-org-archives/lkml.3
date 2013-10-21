@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab3JUKvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 06:51:48 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19803 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3JUKvp (ORCPT
+	id S1753200Ab3JUKxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 06:53:52 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:37521 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab3JUKxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 06:51:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 21 Oct 2013 03:47:08 -0700
-Message-ID: <52650DA2.60609@nvidia.com>
-Date: Mon, 21 Oct 2013 16:48:58 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 21 Oct 2013 06:53:50 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: Re: [PATCH V5 1/3] mfd: add support for ams AS3722 PMIC
-References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com> <1381321761-8898-2-git-send-email-ldewangan@nvidia.com> <525580A8.5050902@wwwdotorg.org>
-In-Reply-To: <525580A8.5050902@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAFkjPTmg26H0RGdHmR2u-wuJF=Jhd4PbbG1hVrBucuWyZDgNAw@mail.gmail.com>
+References: <1380411144-9236-1-git-send-email-geyslan@gmail.com>
+	<1380411144-9236-8-git-send-email-geyslan@gmail.com>
+	<CAFkjPTmg26H0RGdHmR2u-wuJF=Jhd4PbbG1hVrBucuWyZDgNAw@mail.gmail.com>
+Date: Mon, 21 Oct 2013 08:53:50 -0200
+Message-ID: <CAGG-pUTVh06YcpkW06jp-nB1YaqOtm3GYgEXeLS7iF33RG5AsA@mail.gmail.com>
+Subject: Re: [PATCH] 9p: proper use of the 'name' variable
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: rminnich@sandia.gov, Latchesar Ionkov <lucho@ionkov.net>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee/Samuel,
+2013/10/20 Eric Van Hensbergen <ericvh@gmail.com>:
+> I reckon we should probably just get rid of name if its not being used.  I
+> doubt the indirection is going to hurt anything here.
+>
+>      -eric
+>
 
-On Wednesday 09 October 2013 09:43 PM, Stephen Warren wrote:
-> On 10/09/2013 06:29 AM, Laxman Dewangan wrote:
->> The ams AS3722 is a compact system PMU suitable for mobile phones,
->> tablets etc. It has 4 DC/DC step-down regulators, 3 DC/DC step-down
->> controller, 11 LDOs, RTC, automatic battery, temperature and
->> over-current monitoring, 8 GPIOs, ADC and a watchdog.
+Eric, you're right. Once that there's not assignment to name, the
+cycles are the same.
+I'll get rid of name var.
+
+>
+>
+> On Sat, Sep 28, 2013 at 6:32 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
 >>
->> Add MFD core driver for the AS3722 to support core functionality.
-> OK, I think the binding here is about clear enough, so the binding,
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-
-
-I saw that Lee has already acked this (V4) for the nondt side.
-
-As there is no issue on dt side also, can it be apply please?
-
-
+>> The 'name' variable was assigned but never used. Hence puts its
+>> assignment to the top and makes proper use of its value.
+>>
+>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>> ---
+>>  fs/9p/vfs_inode_dotl.c | 8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+>> index 6803758..86b6944 100644
+>> --- a/fs/9p/vfs_inode_dotl.c
+>> +++ b/fs/9p/vfs_inode_dotl.c
+>> @@ -772,8 +772,10 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
+>> inode *dir,
+>>         struct p9_fid *dfid, *oldfid;
+>>         struct v9fs_session_info *v9ses;
+>>
+>> +       name = (char *) dentry->d_name.name;
+>> +
+>>         p9_debug(P9_DEBUG_VFS, "dir ino: %lu, old_name: %s, new_name:
+>> %s\n",
+>> -                dir->i_ino, old_dentry->d_name.name,
+>> dentry->d_name.name);
+>> +                dir->i_ino, old_dentry->d_name.name, name);
+>>
+>>         v9ses = v9fs_inode2v9ses(dir);
+>>         dir_dentry = dentry->d_parent;
+>> @@ -785,9 +787,7 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct
+>> inode *dir,
+>>         if (IS_ERR(oldfid))
+>>                 return PTR_ERR(oldfid);
+>>
+>> -       name = (char *) dentry->d_name.name;
+>> -
+>> -       err = p9_client_link(dfid, oldfid, (char *)dentry->d_name.name);
+>> +       err = p9_client_link(dfid, oldfid, name);
+>>
+>>         if (err < 0) {
+>>                 p9_debug(P9_DEBUG_VFS, "p9_client_link failed %d\n", err);
+>> --
+>> 1.8.4
+>>
+>
