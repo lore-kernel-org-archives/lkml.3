@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3JUJBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:01:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39823 "EHLO
+	id S1755246Ab3JUJCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:02:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39804 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754410Ab3JUIw5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754302Ab3JUIwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:57 -0400
+	Mon, 21 Oct 2013 04:52:41 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Julius Werner" <jwerner@chromium.org>
+CC: akpm@linux-foundation.org, "David Miller" <davem@davemloft.net>,
+        "Kirill Tkhai" <tkhai@yandex.ru>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.991940657@decadent.org.uk>
+Message-ID: <lsq.1382345188.938159896@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 123/149] usb: core: don't try to reset_device() a port
- that got just disconnected
+Subject: [PATCH 3.2 115/149] sparc64: Fix ITLB handler of null page
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,58 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 481f2d4f89f87a0baa26147f323380e31cfa7c44 upstream.
+[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
 
-The USB hub driver's event handler contains a check to catch SuperSpeed
-devices that transitioned into the SS.Inactive state and tries to fix
-them with a reset. It decides whether to do a plain hub port reset or
-call the usb_reset_device() function based on whether there was a device
-attached to the port.
+1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
 
-However, there are device/hub combinations (found with a JetFlash
-Transcend mass storage stick (8564:1000) on the root hub of an Intel
-LynxPoint PCH) which can transition to the SS.Inactive state on
-disconnect (and stay there long enough for the host to notice). In this
-case, above-mentioned reset check will call usb_reset_device() on the
-stale device data structure. The kernel will send pointless LPM control
-messages to the no longer connected device address and can even cause
-several 5 second khubd stalls on some (buggy?) host controllers, before
-finally accepting the device's fate amongst a flurry of error messages.
+2)Handle page #0 only, don't handle page #1: bleu -> blu
 
-This patch makes the choice of reset dependent on the port status that
-has just been read from the hub in addition to the existence of an
-in-kernel data structure for the device, and only proceeds with the more
-extensive reset if both are valid.
+ (KERNBASE is 0x400000, so #1 does not exist too. But everything
+  is possible in the future. Fix to not to have problems later.)
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+3)Remove unused kvmap_itlb_nonlinear.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/ktlb.S | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3749,7 +3749,8 @@ static void hub_events(void)
- 					hub->hdev->children[i - 1];
+diff --git a/arch/sparc/kernel/ktlb.S b/arch/sparc/kernel/ktlb.S
+index 79f3103..7c00735 100644
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -25,11 +25,10 @@ kvmap_itlb:
+ 	 */
+ kvmap_itlb_4v:
  
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev) {
-+				if (!udev || !(portstatus &
-+						USB_PORT_STAT_CONNECTION)) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
-@@ -3759,8 +3760,8 @@ static void hub_events(void)
- 					usb_lock_device(udev);
- 					status = usb_reset_device(udev);
- 					usb_unlock_device(udev);
-+					connect_change = 0;
- 				}
--				connect_change = 0;
- 			}
+-kvmap_itlb_nonlinear:
+ 	/* Catch kernel NULL pointer calls.  */
+ 	sethi		%hi(PAGE_SIZE), %g5
+ 	cmp		%g4, %g5
+-	bleu,pn		%xcc, kvmap_dtlb_longpath
++	blu,pn		%xcc, kvmap_itlb_longpath
+ 	 nop
  
- 			if (connect_change)
+ 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
 
