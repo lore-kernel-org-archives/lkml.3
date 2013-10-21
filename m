@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab3JUGFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 02:05:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49775 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab3JUGFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 02:05:07 -0400
-Message-ID: <5264C48A.80900@oracle.com>
-Date: Mon, 21 Oct 2013 14:07:06 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752746Ab3JUGIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 02:08:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47555 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752280Ab3JUGH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 02:07:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="377534206"
+Message-ID: <5264C494.9070003@intel.com>
+Date: Mon, 21 Oct 2013 09:07:16 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>, Steffen Maier <maier@linux.vnet.ibm.com>
-CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
- in the middle
-References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com> <525BEF2B.2030907@suse.de> <525BF256.6060707@suse.de> <525C0CAE.3030803@linux.vnet.ibm.com> <525E37CA.2000605@suse.de>
-In-Reply-To: <525E37CA.2000605@suse.de>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 03/19] perf record: Improve write_output error message
+References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-4-git-send-email-adrian.hunter@intel.com> <20131020204316.GB12044@krava>
+In-Reply-To: <20131020204316.GB12044@krava>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2013 02:52 PM, Hannes Reinecke wrote:
-> But seeing that this approach raises quite some issues I've attached a
-> different patch. Vaughan, could you test with that, too? Should be
-> functionally equivalent to the previous one. Cheers, Hannes 
-Hi Hannes,
+On 20/10/13 23:43, Jiri Olsa wrote:
+> On Fri, Oct 18, 2013 at 03:29:00PM +0300, Adrian Hunter wrote:
+>> Improve the error message from write_output() to say
+>> what failed to write and give the error number.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>  tools/perf/builtin-record.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index 92ca541..d269dfa 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -88,7 +88,7 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
+>>  		int ret = write(rec->output, buf, size);
+>>  
+>>  		if (ret < 0) {
+>> -			pr_err("failed to write\n");
+>> +			pr_err("failed to write perf data, error: %m\n");
+> 
+> is this some kind of format magic? ;-) you wanted
 
-We only tested the later patch which returns _TARGET_PRESENT after
-parsing sense, it works as expected.
+It is a glibc extension.
 
-About the cause of this issue, admin said he is configuring a
-active-active cluster mode storage. Each node has it own LUN pool and a
-set of rule to control which node can access the pool.
-LUN7 is owned and can only be able to manipulated by the other node, but
-can be seen by this node for a misconfig. So it presents itself in
-REPORT_LUN but return NOT_READY when accessed through this node.
-Do you still regard this as a misbehave in response to INQUIRY?
+> to print out 'ret' value, right?
 
-Thanks,
-Vaughan
+No, errno
+
