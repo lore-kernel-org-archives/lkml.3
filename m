@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab3JUF1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 01:27:37 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:37784 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab3JUF1g (ORCPT
+	id S1752707Ab3JUFdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 01:33:53 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:38815 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab3JUFdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 01:27:36 -0400
-Date: Mon, 21 Oct 2013 07:27:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/3] x86/vdso: Optimize setup_additional_pages()
-Message-ID: <20131021052731.GA14476@gmail.com>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
- <1382057438-3306-4-git-send-email-davidlohr@hp.com>
- <20131018060501.GA3411@gmail.com>
- <1382327556.2402.23.camel@buesod1.americas.hpqcorp.net>
+	Mon, 21 Oct 2013 01:33:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382327556.2402.23.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 21 Oct 2013 13:33:50 +0800
+Message-ID: <CAPgLHd9XPcwT+PXQsKqQRJxTNvJRi4FC-pOojp6ngHC=q6J4=w@mail.gmail.com>
+Subject: [PATCH -next] staging: sep: add missing misc_deregister() on error in sep_register_driver_with_fs()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, peterhuewe@gmx.de, wfp5p@virginia.edu,
+        yongjun_wei@trendmicro.com.cn, devendra.aaru@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+Add the missing misc_deregister() before return from
+sep_register_driver_with_fs() in the error handling case.
 
-> > 2)
-> > 
-> > I don't see the justification: this code gets executed in exec() where 
-> > a new mm has just been allocated. There's only a single user of the mm 
-> > and thus the critical section width of mmap_sem is more or less 
-> > irrelevant.
-> > 
-> > mmap_sem critical section size only matters for codepaths that 
-> > threaded programs can hit.
-> 
-> Yes, I was surprised by the performance boost I noticed when running 
-> this patch. This weekend I re-ran the tests (including your 4/3 patch) 
-> and noticed that while we're still getting some benefits (more like in 
-> the +5% throughput range), it's not as good as I originally reported. I 
-> believe the reason is because I had ran the tests on the vanilla kernel 
-> without the max clock frequency, so the comparison was obviously not 
-> fair. That said, I still think it's worth adding this patch, as it does 
-> help at a micro-optimization level, and it's one less mmap_sem user we 
-> have to worry about.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/sep/sep_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-But it's a mmap_sem user that is essentially _guaranteed_ to have only a 
-single user at that point, in the exec() path!
+diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
+index 11f5b21..5f8c0a8 100644
+--- a/drivers/staging/sep/sep_main.c
++++ b/drivers/staging/sep/sep_main.c
+@@ -4075,6 +4075,7 @@ static int sep_register_driver_with_fs(struct sep_device *sep)
+ 	if (ret_val) {
+ 		dev_warn(&sep->pdev->dev, "sysfs attribute1 fails for SEP %x\n",
+ 			ret_val);
++		misc_deregister(&sep->miscdev_sep);
+ 		return ret_val;
+ 	}
+ 
 
-So I don't see how this can show _any_ measurable speedup, let alone a 5% 
-speedup in a macro test. If our understanding is correct then the patch 
-does nothing but shuffle around a flag setting operation. (the mmap_sem is 
-equivalent to setting a single flag, in the single-user case.)
-
-Now, if our understanding is incorrect then we need to improve our 
-understanding.
-
-Thanks,
-
-	Ingo
