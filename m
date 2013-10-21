@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3JUWfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:35:09 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:49474 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab3JUWdz (ORCPT
+	id S1752904Ab3JUWfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:35:25 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63715 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752837Ab3JUWfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:33:55 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [RFC v2 2/6] percpu_rw_semaphore: add percpu_down_read_trylock()
-Date: Tue, 22 Oct 2013 00:33:24 +0200
-Message-Id: <1382394808-20611-3-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1382394808-20611-1-git-send-email-dh.herrmann@gmail.com>
-References: <1382394808-20611-1-git-send-email-dh.herrmann@gmail.com>
+	Mon, 21 Oct 2013 18:35:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Geyslan G. Bem" <geyslan@gmail.com>, kernel-br@googlegroups.com,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "open list:CPU FREQUENCY DRI..." <cpufreq@vger.kernel.org>,
+        "open list:CPU FREQUENCY DRI..." <linux-pm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: intel_pstate: fix possible integer overflow
+Date: Tue, 22 Oct 2013 00:47:18 +0200
+Message-ID: <1734089.XZ0ga7sQd1@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52654EA6.6020805@gmail.com>
+References: <1382239876-12688-1-git-send-email-geyslan@gmail.com> <52654EA6.6020805@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is basically a copy of percpu_down_read() but does not sleep if a
-writer is already active. Same semantics as classic down_read_trylock().
+On Monday, October 21, 2013 08:56:22 AM Dirk Brandewie wrote:
+> On 10/19/2013 08:31 PM, Geyslan G. Bem wrote:
+> > The expression 'pstate << 8' is evaluated using 32-bit arithmetic while
+> > 'val' expects an expression of type u64.
+> >
+> > Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- include/linux/percpu-rwsem.h |  1 +
- lib/percpu-rwsem.c           | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+Actually, isn't (pstate << 8) guaranteed not to overflow?
 
-diff --git a/include/linux/percpu-rwsem.h b/include/linux/percpu-rwsem.h
-index 3e88c9a..2f752bd 100644
---- a/include/linux/percpu-rwsem.h
-+++ b/include/linux/percpu-rwsem.h
-@@ -16,6 +16,7 @@ struct percpu_rw_semaphore {
- };
- 
- extern void percpu_down_read(struct percpu_rw_semaphore *);
-+extern int percpu_down_read_trylock(struct percpu_rw_semaphore *);
- extern void percpu_up_read(struct percpu_rw_semaphore *);
- 
- extern void percpu_down_write(struct percpu_rw_semaphore *);
-diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
-index 893586c..596f44b 100644
---- a/lib/percpu-rwsem.c
-+++ b/lib/percpu-rwsem.c
-@@ -92,6 +92,26 @@ void percpu_down_read(struct percpu_rw_semaphore *brw)
- }
- EXPORT_SYMBOL(percpu_down_read);
- 
-+int percpu_down_read_trylock(struct percpu_rw_semaphore *brw)
-+{
-+	int r;
-+
-+	if (likely(update_fast_ctr(brw, +1))) {
-+		rwsem_acquire_read(&brw->rw_sem.dep_map, 0, 0, _RET_IP_);
-+		return 1;
-+	}
-+
-+	r = down_read_trylock(&brw->rw_sem);
-+	if (r) {
-+		atomic_inc(&brw->slow_read_ctr);
-+		/* avoid up_read()->rwsem_release() */
-+		__up_read(&brw->rw_sem);
-+	}
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(percpu_down_read_trylock);
-+
- void percpu_up_read(struct percpu_rw_semaphore *brw)
- {
- 	rwsem_release(&brw->rw_sem.dep_map, 1, _RET_IP_);
+> > ---
+> >   drivers/cpufreq/intel_pstate.c | 2 +-
+> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> > index badf620..43446b5 100644
+> > --- a/drivers/cpufreq/intel_pstate.c
+> > +++ b/drivers/cpufreq/intel_pstate.c
+> > @@ -395,7 +395,7 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+> >   	trace_cpu_frequency(pstate * 100000, cpu->cpu);
+> >
+> >   	cpu->pstate.current_pstate = pstate;
+> > -	val = pstate << 8;
+> > +	val = (u64)pstate << 8;
+> >   	if (limits.no_turbo)
+> >   		val |= (u64)1 << 32;
+> >
+> >
+> 
 -- 
-1.8.4.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
