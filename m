@@ -1,159 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3JUIoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:44:44 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:42427 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab3JUIon convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 21 Oct 2013 04:44:43 -0400
-Message-Id: <5265059502000078000FC4F6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 21 Oct 2013 09:44:37 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <arjan@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] x86: unify copy_to_user() and add size checking to
- it
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753099Ab3JUIrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:47:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784Ab3JUIri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:47:38 -0400
+Date: Mon, 21 Oct 2013 10:46:58 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
+Message-ID: <20131021084658.GA2958@krava.brq.redhat.com>
+References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
+ <1382099356-4918-10-git-send-email-adrian.hunter@intel.com>
+ <20131020204251.GA12044@krava>
+ <5264C140.1020903@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5264C140.1020903@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similarly to copy_from_user(), where the range check is to protect
-against kernel memory corruption, copy_to_user() can benefit from such
-checking too: Here it protects against kernel information leaks.
+On Mon, Oct 21, 2013 at 08:53:04AM +0300, Adrian Hunter wrote:
+> On 20/10/13 23:42, Jiri Olsa wrote:
+> > On Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter wrote:
+> >> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
+> >> was not passed around.
+> > 
+> > this breaks feature detection for me on x86_64,
+> > I've got following errors misdetection with this patch:
+> > 
+> > ...                       libperl: [ OFF ]
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
----
- arch/x86/include/asm/uaccess.h    |   30 ++++++++++++++++++++++++++++++
- arch/x86/include/asm/uaccess_32.h |    3 ---
- arch/x86/include/asm/uaccess_64.h |   10 ----------
- arch/x86/lib/usercopy_32.c        |    5 ++---
- 4 files changed, 32 insertions(+), 16 deletions(-)
+how about this one?
 
---- 3.12-rc6-x86.orig/arch/x86/include/asm/uaccess.h
-+++ 3.12-rc6-x86/arch/x86/include/asm/uaccess.h
-@@ -544,6 +544,8 @@ extern struct movsl_mask {
- 
- unsigned long __must_check _copy_from_user(void *to, const void __user *from,
- 					   unsigned n);
-+unsigned long __must_check _copy_to_user(void __user *to, const void *from,
-+					 unsigned n);
- 
- #ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
- # define copy_user_diag __compiletime_error
-@@ -553,6 +555,8 @@ unsigned long __must_check _copy_from_us
- 
- extern void copy_user_diag("copy_from_user() buffer size is too small")
- copy_from_user_overflow(void);
-+extern void copy_user_diag("copy_to_user() buffer size is too small")
-+copy_to_user_overflow(void) __asm__("copy_from_user_overflow");
- 
- #undef copy_user_diag
- 
-@@ -563,6 +567,11 @@ __compiletime_warning("copy_from_user() 
- __copy_from_user_overflow(void) __asm__("copy_from_user_overflow");
- #define __copy_from_user_overflow(size, count) __copy_from_user_overflow()
- 
-+extern void
-+__compiletime_warning("copy_to_user() buffer size is not provably correct")
-+__copy_to_user_overflow(void) __asm__("copy_from_user_overflow");
-+#define __copy_to_user_overflow(size, count) __copy_to_user_overflow()
-+
- #else
- 
- static inline void
-@@ -571,6 +580,8 @@ __copy_from_user_overflow(int size, unsi
- 	WARN(1, "Buffer overflow detected (%d < %lu)!\n", size, count);
- }
- 
-+#define __copy_to_user_overflow __copy_from_user_overflow
-+
- #endif
- 
- static inline unsigned long __must_check
-@@ -608,7 +619,26 @@ copy_from_user(void *to, const void __us
- 	return n;
- }
- 
-+static inline unsigned long __must_check
-+copy_to_user(void __user *to, const void *from, unsigned long n)
-+{
-+	int sz = __compiletime_object_size(from);
-+
-+	might_fault();
-+
-+	/* See the comment in copy_from_user() above. */
-+	if (likely(sz < 0 || sz >= n))
-+		n = _copy_to_user(to, from, n);
-+	else if(__builtin_constant_p(n))
-+		copy_to_user_overflow();
-+	else
-+		__copy_to_user_overflow(sz, n);
-+
-+	return n;
-+}
-+
- #undef __copy_from_user_overflow
-+#undef __copy_to_user_overflow
- 
- #endif /* _ASM_X86_UACCESS_H */
- 
---- 3.12-rc6-x86.orig/arch/x86/include/asm/uaccess_32.h
-+++ 3.12-rc6-x86/arch/x86/include/asm/uaccess_32.h
-@@ -184,7 +184,4 @@ __copy_from_user_inatomic_nocache(void *
-        return __copy_from_user_ll_nocache_nozero(to, from, n);
- }
- 
--unsigned long __must_check copy_to_user(void __user *to,
--					const void *from, unsigned long n);
--
- #endif /* _ASM_X86_UACCESS_32_H */
---- 3.12-rc6-x86.orig/arch/x86/include/asm/uaccess_64.h
-+++ 3.12-rc6-x86/arch/x86/include/asm/uaccess_64.h
-@@ -46,19 +46,9 @@ copy_user_generic(void *to, const void *
- }
- 
- __must_check unsigned long
--_copy_to_user(void __user *to, const void *from, unsigned len);
--__must_check unsigned long
- copy_in_user(void __user *to, const void __user *from, unsigned len);
- 
- static __always_inline __must_check
--int copy_to_user(void __user *dst, const void *src, unsigned size)
--{
--	might_fault();
--
--	return _copy_to_user(dst, src, size);
--}
--
--static __always_inline __must_check
- int __copy_from_user(void *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
---- 3.12-rc6-x86.orig/arch/x86/lib/usercopy_32.c
-+++ 3.12-rc6-x86/arch/x86/lib/usercopy_32.c
-@@ -654,14 +654,13 @@ EXPORT_SYMBOL(__copy_from_user_ll_nocach
-  * Returns number of bytes that could not be copied.
-  * On success, this will be zero.
-  */
--unsigned long
--copy_to_user(void __user *to, const void *from, unsigned long n)
-+unsigned long _copy_to_user(void __user *to, const void *from, unsigned n)
- {
- 	if (access_ok(VERIFY_WRITE, to, n))
- 		n = __copy_to_user(to, from, n);
- 	return n;
- }
--EXPORT_SYMBOL(copy_to_user);
-+EXPORT_SYMBOL(_copy_to_user);
- 
- /**
-  * copy_from_user: - Copy a block of data from user space.
+> > ...                       on-exit: [ OFF ]
+> > 
+> > and the build fails as well:
+> > 
+> >   CC       builtin-stat.o
+> > builtin-record.c:42:12: error: static declaration of ‘on_exit’ follows non-static declaration
+> > In file included from util/util.h:51:0,
+> >                  from builtin.h:4,
+> >                  from builtin-record.c:8:
+> > /usr/include/stdlib.h:536:12: note: previous declaration of ‘on_exit’ was here
+> > make[1]: *** [builtin-record.o] Error 1
+> > make[1]: *** Waiting for unfinished jobs....
+> > make: *** [all] Error 2
+> 
+> That is fixed in patch 11: perf tools: Fix test_on_exit for 32-bit build
 
+hum, could we apply those patches in reverse order?
+I think the notion is not to break build deliberatelly
+for the bisection sake.
 
+jirka
