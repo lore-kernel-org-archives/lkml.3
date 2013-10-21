@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3JUHYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 03:24:10 -0400
-Received: from asix.com.tw ([210.243.224.51]:52004 "EHLO freebsd2.asix.com.tw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750876Ab3JUHYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 03:24:08 -0400
-X-Greylist: delayed 2590 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Oct 2013 03:24:08 EDT
-From: freddy@asix.com.tw
-To: davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        louis@asix.com.tw, allan@asix.com.tw
-Cc: Freddy Xin <freddy@asix.com.tw>
-Subject: [PATCH 1/1] [PATCH] ax88179_178a: Correct the RX error definition in RX header
-Date: Mon, 21 Oct 2013 14:37:40 +0800
-Message-Id: <1382337460-2036-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752728Ab3JUH3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 03:29:34 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:37750 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab3JUH3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 03:29:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381775807-20144-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1381775807-20144-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Date: Mon, 21 Oct 2013 12:59:30 +0530
+Message-ID: <CAKohpom-KBME6fa3BUmKfZSgJxYngD7RG+CD3vHHKdtWtrtOxA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: s3c64xx: Rename index to driver_data
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
+On 15 October 2013 00:06, Charles Keepax
+<ckeepax@opensource.wolfsonmicro.com> wrote:
+> The index field of cpufreq_frequency_table has been renamed to driver
+> data in this commit:
+>
+> commit 5070158804b5339c71809f5e673cea1cfacd804d
+> cpufreq: rename index as driver_data in cpufreq_frequency_table
+>
+> This patch updates the s3c64xx driver to match.
+>
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/cpufreq/s3c64xx-cpufreq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
+> index 8a72b0c..15631f9 100644
+> --- a/drivers/cpufreq/s3c64xx-cpufreq.c
+> +++ b/drivers/cpufreq/s3c64xx-cpufreq.c
+> @@ -166,7 +166,7 @@ static void __init s3c64xx_cpufreq_config_regulator(void)
+>                 if (freq->frequency == CPUFREQ_ENTRY_INVALID)
+>                         continue;
+>
+> -               dvfs = &s3c64xx_dvfs_table[freq->index];
+> +               dvfs = &s3c64xx_dvfs_table[freq->driver_data];
+>                 found = 0;
+>
+>                 for (i = 0; i < count; i++) {
 
-Correct the definition of AX_RXHDR_CRC_ERR and
-AX_RXHDR_DROP_ERR. They are BIT29 and BIT31 in pkt_hdr
-seperately.
-Add VID:DID for Samsung USB Ethernet Adapter.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Signed-off-by: Freddy Xin <freddy@asix.com.tw>
----
- drivers/net/usb/ax88179_178a.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 3569293..846cc19 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -36,8 +36,8 @@
- #define AX_RXHDR_L4_TYPE_TCP			16
- #define AX_RXHDR_L3CSUM_ERR			2
- #define AX_RXHDR_L4CSUM_ERR			1
--#define AX_RXHDR_CRC_ERR			((u32)BIT(31))
--#define AX_RXHDR_DROP_ERR			((u32)BIT(30))
-+#define AX_RXHDR_CRC_ERR			((u32)BIT(29))
-+#define AX_RXHDR_DROP_ERR			((u32)BIT(31))
- #define AX_ACCESS_MAC				0x01
- #define AX_ACCESS_PHY				0x02
- #define AX_ACCESS_EEPROM			0x04
-@@ -1406,6 +1406,19 @@ static const struct driver_info sitecom_info = {
- 	.tx_fixup = ax88179_tx_fixup,
- };
- 
-+static const struct driver_info samsung_info = {
-+	.description = "Samsung USB Ethernet Adapter",
-+	.bind = ax88179_bind,
-+	.unbind = ax88179_unbind,
-+	.status = ax88179_status,
-+	.link_reset = ax88179_link_reset,
-+	.reset = ax88179_reset,
-+	.stop = ax88179_stop,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.rx_fixup = ax88179_rx_fixup,
-+	.tx_fixup = ax88179_tx_fixup,
-+};
-+
- static const struct usb_device_id products[] = {
- {
- 	/* ASIX AX88179 10/100/1000 */
-@@ -1418,7 +1431,11 @@ static const struct usb_device_id products[] = {
- }, {
- 	/* Sitecom USB 3.0 to Gigabit Adapter */
- 	USB_DEVICE(0x0df6, 0x0072),
--	.driver_info = (unsigned long) &sitecom_info,
-+	.driver_info = (unsigned long)&sitecom_info,
-+}, {
-+	/* Samsung USB Ethernet Adapter */
-+	USB_DEVICE(0x04e8, 0xa100),
-+	.driver_info = (unsigned long)&samsung_info,
- },
- 	{ },
- };
--- 
-1.7.10.4
-
+@Rafael: Can you please get this in 3.12 as a bug fix?
