@@ -1,119 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3JUDua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 23:50:30 -0400
-Received: from ozlabs.org ([203.10.76.45]:50513 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab3JUDu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 23:50:29 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] init: fix in-place parameter modification regression
-In-Reply-To: <20131018091921.GA7301@shrek.podlesie.net>
-References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net> <1381750442.3247.48.camel@hornet> <20131014125001.GA6015@shrek.podlesie.net> <87wqlbjkz5.fsf@rustcorp.com.au> <20131018091921.GA7301@shrek.podlesie.net>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 21 Oct 2013 12:27:10 +1030
-Message-ID: <871u3fmlmx.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752635Ab3JUDwx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 23:52:53 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:16779 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab3JUDwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 23:52:51 -0400
+Message-ID: <1382327556.2402.23.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 4/3] x86/vdso: Optimize setup_additional_pages()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 20 Oct 2013 20:52:36 -0700
+In-Reply-To: <20131018060501.GA3411@gmail.com>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	 <1382057438-3306-4-git-send-email-davidlohr@hp.com>
+	 <20131018060501.GA3411@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Mazur <krzysiek@podlesie.net> writes:
-> On Fri, Oct 18, 2013 at 02:20:38PM +1030, Rusty Russell wrote:
->> Back when there was almost no parameter parsing support, everyone got
->> used to keeping pointers into the original.  Making everyone kstrdup()
->> seems like gratuitous churn which is likely to make more bugs.
->> 
->> Your fix means __setup() gets treated specially, in that only it can
->> mangle the command line.  That makes sense.  But it introduces another
->> regression: normal parsing functions can't keep pointers, since that's
->> now __initdata.
->> 
->> There are two possible solutions:
->> (1) Audit all __setup to make sure they copy if they want to mangle.
->>     There are about 750 of them, but many are trivial.
->> (2) alloc_bootmem() a third commandline for parsing.
->> 
->> Now, many functions of form __setup("XXX=") should be turned into
->> module_param anyway.
->> 
->> I suggest we do (2) for the moment, and start sweeping through cleaning
->> up __setup() in the longer term.
->> 
->
-> Yes, the buffer cannot be __initdata. I'm sending an updated patch.
->
->
-> However, keeping pointers to buffer, that will be reinitialized
-> in next initcall parameters parsing pass, might cause some race
-> conditions.
+Hi Ingo,
 
-Thanks, applied.
+On Fri, 2013-10-18 at 08:05 +0200, Ingo Molnar wrote:
+> * Davidlohr Bueso <davidlohr@hp.com> wrote:
+> 
+> > --- a/arch/x86/vdso/vma.c
+> > +++ b/arch/x86/vdso/vma.c
+> > @@ -154,12 +154,17 @@ static int setup_additional_pages(struct linux_binprm *bprm,
+> >  				  unsigned size)
+> >  {
+> >  	struct mm_struct *mm = current->mm;
+> > +	struct vm_area_struct *vma;
+> >  	unsigned long addr;
+> >  	int ret;
+> >  
+> >  	if (!vdso_enabled)
+> >  		return 0;
+> >  
+> > +	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+> > +	if (unlikely(!vma))
+> > +		return -ENOMEM;
+> > +
+> >  	down_write(&mm->mmap_sem);
+> >  	addr = vdso_addr(mm->start_stack, size);
+> >  	addr = get_unmapped_area(NULL, addr, size, 0, 0);
+> > @@ -173,14 +178,17 @@ static int setup_additional_pages(struct linux_binprm *bprm,
+> >  	ret = install_special_mapping(mm, addr, size,
+> >  				      VM_READ|VM_EXEC|
+> >  				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+> > -				      pages);
+> > +				      pages, &vma);
+> >  	if (ret) {
+> >  		current->mm->context.vdso = NULL;
+> >  		goto up_fail;
+> >  	}
+> >  
+> > +	up_write(&mm->mmap_sem);
+> > +	return ret;
+> >  up_fail:
+> >  	up_write(&mm->mmap_sem);
+> > +	kmem_cache_free(vm_area_cachep, vma);
+> >  	return ret;
+> >  }
+> >  
+> 
+> 1)
+> 
+> Beyond the simplification that Linus suggested, why not introduce a new 
+> function, named 'install_special_mapping_vma()' or so, and convert 
+> architectures one by one, without pressure to get it all done (and all 
+> correct) in a single patch?
+> 
 
-Cheers,
-Rusty.
+Hmm I'd normally take this approach but updating the callers from all
+architectures was so straightforward and monotonous that I think it's
+easier to just do it all at once. Andrew had suggested using linux-next
+for testing, so if some arch breaks (in the not-compiling sense), the
+maintainer or I can easily address the issue.
 
-> Thanks,
-> Krzysiek
->
-> -- >8 --
-> Subject: [PATCH v2] init: fix in-place parameter modification regression
->
-> Before commit 026cee0086fe1df4cf74691cf273062cc769617d
-> ("params: <level>_initcall-like kernel parameters") the __setup
-> parameter parsing code could modify parameter in the
-> static_command_line buffer and such modifications were kept. After
-> that commit such modifications are destroyed during per-initcall level
-> parameter parsing because the same static_command_line buffer is used
-> and only parameters for appropriate initcall level are parsed.
->
-> That change broke at least parsing "ubd" parameter in the ubd driver
-> when the COW file is used.
->
-> Now the separate buffer is used for per-initcall parameter parsing.
->
-> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-> ---
->  init/main.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/init/main.c b/init/main.c
-> index 63d3e8f..c093b5c 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -132,6 +132,8 @@ char __initdata boot_command_line[COMMAND_LINE_SIZE];
->  char *saved_command_line;
->  /* Command line for parameter parsing */
->  static char *static_command_line;
-> +/* Command line for per-initcall parameter parsing */
-> +static char *initcall_command_line;
->  
->  static char *execute_command;
->  static char *ramdisk_execute_command;
-> @@ -348,6 +350,7 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
->  static void __init setup_command_line(char *command_line)
->  {
->  	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
-> +	initcall_command_line = alloc_bootmem(strlen (boot_command_line)+1);
->  	static_command_line = alloc_bootmem(strlen (command_line)+1);
->  	strcpy (saved_command_line, boot_command_line);
->  	strcpy (static_command_line, command_line);
-> @@ -745,9 +748,9 @@ static void __init do_initcall_level(int level)
->  	extern const struct kernel_param __start___param[], __stop___param[];
->  	initcall_t *fn;
->  
-> -	strcpy(static_command_line, saved_command_line);
-> +	strcpy(initcall_command_line, saved_command_line);
->  	parse_args(initcall_level_names[level],
-> -		   static_command_line, __start___param,
-> +		   initcall_command_line, __start___param,
->  		   __stop___param - __start___param,
->  		   level, level,
->  		   &repair_env_string);
-> -- 
-> 1.8.4.1.635.g55556a5
+> 2)
+> 
+> I don't see the justification: this code gets executed in exec() where a 
+> new mm has just been allocated. There's only a single user of the mm and 
+> thus the critical section width of mmap_sem is more or less irrelevant.
+> 
+> mmap_sem critical section size only matters for codepaths that threaded 
+> programs can hit.
+> 
+
+Yes, I was surprised by the performance boost I noticed when running
+this patch. This weekend I re-ran the tests (including your 4/3 patch)
+and noticed that while we're still getting some benefits (more like in
+the +5% throughput range), it's not as good as I originally reported. I
+believe the reason is because I had ran the tests on the vanilla kernel
+without the max clock frequency, so the comparison was obviously not
+fair. That said, I still think it's worth adding this patch, as it does
+help at a micro-optimization level, and it's one less mmap_sem user we
+have to worry about.
+
+> 3)
+> 
+> But, if we do all that, a couple of other (micro-)optimizations are 
+> possible in setup_additional_pages() as well:
+
+I've rebased your patch on top of mine and things ran fine over the
+weekend, didn't notice anything unusual - see below. I've *not* added
+your SoB tag, so if you think it's good to go, please go ahead and add
+it.
+
+> 
+>  - vdso_addr(), which is actually much _more_ expensive than kmalloc() 
+>    because on most distros it will call into the RNG, can also be done 
+>    outside the mmap_sem.
+> 
+>  - the error paths can all be merged and the common case can be made 
+>    fall-through.
+> 
+>  - use 'mm' consistently instead of repeating 'current->mm'
+> 
+>  - set 'mm->context.vdso' only once we know it's all a success, and do it 
+>    outside the lock
+> 
+>  - add a few comments about which operations are locked, which unlocked, 
+>    and why. Please double check the assumptions I documented there.
+> 
+> See the diff attached below. (Totally untested and all that.)
+> 
+> Also note that I think, in theory, if exec() guaranteed the privacy and 
+> single threadedness of the new mm, we could probably do _all_ of this 
+> unlocked. Right now I don't think this is guaranteed: ptrace() users might 
+> look up the new PID and might interfere on the MM via 
+> PTRACE_PEEK*/PTRACE_POKE*.
+> 
+> ( Furthermore, /proc/ might also give early access to aspects of the mm - 
+>   although no manipulation of the mm is possible there. )
+
+I was not aware of this, thanks for going into more details.
+
+> 
+> If such privacy of the new mm was guaranteed then that would also remove 
+> the need to move the allocation out of install_special_mapping().
+> 
+> But, I don't think it all matters, due to #2 - and your changes actively 
+> complicate setup_pages(), which makes this security sensitive code a bit 
+> more fragile. We can still do it out of sheer principle, I just don't see 
+> where it's supposed to help scale better.
+
+I think that trying to guarantee new mm privacy would actually
+complicate things much more than this patch, which is quite simple. And,
+as you imply, it's not worthwhile for these code paths.
+
+Thanks,
+Davidlohr
+
+8<------------------------------------------
+From: Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 4/3] x86/vdso: Optimize setup_additional_pages()
+
+(micro-)optimizations are possible in setup_additional_pages() as well:
+
+- vdso_addr(), which is actually much _more_ expensive than kmalloc()
+ because on most distros it will call into the RNG, can also be done
+ outside the mmap_sem.
+
+- the error paths can all be merged and the common case can be made
+ fall-through.
+
+- use 'mm' consistently instead of repeating 'current->mm'
+
+- set 'mm->context.vdso' only once we know it's all a success, and do it
+ outside the lock
+
+- add a few comments about which operations are locked, which unlocked,
+ and why. Please double check the assumptions I documented there.
+
+[rebased on top of "vdso: preallocate new vmas" patch]
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ arch/x86/vdso/vma.c | 39 +++++++++++++++++++++++++--------------
+ 1 file changed, 25 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index fc189de..5af8597 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -158,36 +158,47 @@ static int setup_additional_pages(struct linux_binprm *bprm,
+ 	unsigned long addr;
+ 	int ret;
+ 
+-	if (!vdso_enabled)
++	if (unlikely(!vdso_enabled))
+ 		return 0;
+ 
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+ 	if (unlikely(!vma))
+ 		return -ENOMEM;
+ 
+-	down_write(&mm->mmap_sem);
++	/*
++	 * Do this outside the MM lock - we are in exec() with a new MM,
++	 * nobody else can use these fields of the mm:
++	 */
+ 	addr = vdso_addr(mm->start_stack, size);
+-	addr = get_unmapped_area(NULL, addr, size, 0, 0);
+-	if (IS_ERR_VALUE(addr)) {
+-		ret = addr;
+-		goto up_fail;
+-	}
+ 
+-	current->mm->context.vdso = (void *)addr;
++	/*
++	 * This must be done under the MM lock - there might be parallel
++	 * accesses to this mm, such as ptrace().
++	 *
++	 * [ This could be further optimized if exec() reliably inhibited
++	 *   all early access to the mm. ]
++	 */
++	down_write(&mm->mmap_sem);
++	addr = get_unmapped_area(NULL, addr, size, 0, 0);
++	if (IS_ERR_VALUE(addr))
++		goto up_fail_addr;
+ 
+ 	ret = install_special_mapping(mm, addr, size,
+ 				      VM_READ|VM_EXEC|
+ 				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+ 				      pages, vma);
+-	if (ret) {
+-		current->mm->context.vdso = NULL;
+-		goto up_fail;
+-	}
+-
+ 	up_write(&mm->mmap_sem);
++	if (ret)
++		goto fail;
++
++	mm->context.vdso = (void *)addr;
+ 	return ret;
+-up_fail:
++
++up_fail_addr:
++	ret = addr;
+ 	up_write(&mm->mmap_sem);
++fail:
++	mm->context.vdso = NULL;
+ 	kmem_cache_free(vm_area_cachep, vma);
+ 	return ret;
+ }
+-- 
+1.8.1.4
+
+
+
