@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab3JUTPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 15:15:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39506 "EHLO mga11.intel.com"
+	id S1752540Ab3JUTPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 15:15:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1334 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab3JUTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 15:15:20 -0400
+	id S1752281Ab3JUTPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 15:15:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,541,1378882800"; 
-   d="scan'208";a="414681937"
+   d="scan'208";a="414681986"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 4/8] mei: wd: host_init propagate error codes from called functions
-Date: Mon, 21 Oct 2013 22:05:39 +0300
-Message-Id: <1382382343-12066-5-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 8/8] mei: print correct device state during unexpected reset
+Date: Mon, 21 Oct 2013 22:05:43 +0300
+Message-Id: <1382382343-12066-9-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382382343-12066-1-git-send-email-tomas.winkler@intel.com>
 References: <1382382343-12066-1-git-send-email-tomas.winkler@intel.com>
@@ -23,51 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Propagate error codes from called functions, they are correct.
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
+Move the unexpected state print to the beginning of mei_reset,
+thus printing right state.
+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/wd.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/misc/mei/init.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index b892143..9e35421 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -60,7 +60,7 @@ static void mei_wd_set_start_timeout(struct mei_device *dev, u16 timeout)
- int mei_wd_host_init(struct mei_device *dev)
- {
- 	struct mei_cl *cl = &dev->wd_cl;
--	int i;
-+	int id;
- 	int ret;
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 4c93e3d..7dfc7a4 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -147,6 +147,10 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 			dev->dev_state != MEI_DEV_POWER_DOWN &&
+ 			dev->dev_state != MEI_DEV_POWER_UP);
  
- 	mei_cl_init(cl, dev);
-@@ -70,19 +70,19 @@ int mei_wd_host_init(struct mei_device *dev)
++	if (unexpected)
++		dev_warn(&dev->pdev->dev, "unexpected reset: dev_state = %s\n",
++			 mei_dev_state_str(dev->dev_state));
++
+ 	ret = mei_hw_reset(dev, interrupts_enabled);
+ 	if (ret) {
+ 		dev_err(&dev->pdev->dev, "hw reset failed disabling the device\n");
+@@ -186,10 +190,6 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 	dev->rd_msg_hdr = 0;
+ 	dev->wd_pending = false;
  
- 
- 	/* check for valid client id */
--	i = mei_me_cl_by_uuid(dev, &mei_wd_guid);
--	if (i < 0) {
-+	id = mei_me_cl_by_uuid(dev, &mei_wd_guid);
-+	if (id < 0) {
- 		dev_info(&dev->pdev->dev, "wd: failed to find the client\n");
--		return -ENOENT;
-+		return id;
- 	}
- 
--	cl->me_client_id = dev->me_clients[i].client_id;
-+	cl->me_client_id = dev->me_clients[id].client_id;
- 
- 	ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
- 
- 	if (ret < 0) {
- 		dev_info(&dev->pdev->dev, "wd: failed link client\n");
--		return -ENOENT;
-+		return ret;
- 	}
- 
- 	cl->state = MEI_FILE_CONNECTING;
+-	if (unexpected)
+-		dev_warn(&dev->pdev->dev, "unexpected reset: dev_state = %s\n",
+-			 mei_dev_state_str(dev->dev_state));
+-
+ 	if (!interrupts_enabled) {
+ 		dev_dbg(&dev->pdev->dev, "intr not enabled end of reset\n");
+ 		return;
 -- 
 1.8.3.1
 
