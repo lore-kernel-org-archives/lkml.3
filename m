@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab3JUJGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:06:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39752 "EHLO
+	id S1754734Ab3JUJHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:07:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39749 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754188Ab3JUIwY (ORCPT
+	by vger.kernel.org with ESMTP id S1754056Ab3JUIwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:24 -0400
+	Mon, 21 Oct 2013 04:52:22 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Dmitry Vyukov" <dvyukov@google.com>,
-        "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "=?UTF-8?Q?Peter=20Bostr=C3=B6m?=" <peter.bostrom@netrounds.com>,
+        "Roger Luethi" <rl@hellgate.ch>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.34625965@decadent.org.uk>
+Message-ID: <lsq.1382345188.750802206@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 107/149] ipv6: udp packets following an UFO enqueued
- packet  need also be handled by UFO
+Subject: [PATCH 3.2 108/149] via-rhine: fix VLAN priority field (PCP, IEEE
+ 802.1p)
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,123 +33,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Roger Luethi <rl@hellgate.ch>
 
-[ Upstream commit 2811ebac2521ceac84f2bdae402455baa6a7fb47 ]
+[ Upstream commit 207070f5221e2a901d56a49df9cde47d9b716cd7 ]
 
-In the following scenario the socket is corked:
-If the first UDP packet is larger then the mtu we try to append it to the
-write queue via ip6_ufo_append_data. A following packet, which is smaller
-than the mtu would be appended to the already queued up gso-skb via
-plain ip6_append_data. This causes random memory corruptions.
+Outgoing packets sent by via-rhine have their VLAN PCP field off by one
+(when hardware acceleration is enabled). The TX descriptor expects only VID
+and PCP (without a CFI/DEI bit).
 
-In ip6_ufo_append_data we also have to be careful to not queue up the
-same skb multiple times. So setup the gso frame only when no first skb
-is available.
+Peter Boström noticed and reported the bug.
 
-This also fixes a shortcoming where we add the current packet's length to
-cork->length but return early because of a packet > mtu with dontfrag set
-(instead of sutracting it again).
-
-Found with trinity.
-
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: Roger Luethi <rl@hellgate.ch>
+Cc: Peter Boström <peter.bostrom@netrounds.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ip6_output.c | 53 +++++++++++++++++++++------------------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index db60043..91d0711 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1125,6 +1125,8 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 	 * udp datagram
- 	 */
- 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL) {
-+		struct frag_hdr fhdr;
+diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+index f34dd99..f37e0ae 100644
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -32,7 +32,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #define DRV_NAME	"via-rhine"
+-#define DRV_VERSION	"1.5.0"
++#define DRV_VERSION	"1.5.1"
+ #define DRV_RELDATE	"2010-10-09"
+ 
+ 
+@@ -1518,7 +1518,12 @@ static netdev_tx_t rhine_start_tx(struct sk_buff *skb,
+ 		cpu_to_le32(TXDESC | (skb->len >= ETH_ZLEN ? skb->len : ETH_ZLEN));
+ 
+ 	if (unlikely(vlan_tx_tag_present(skb))) {
+-		rp->tx_ring[entry].tx_status = cpu_to_le32((vlan_tx_tag_get(skb)) << 16);
++		u16 vid_pcp = vlan_tx_tag_get(skb);
 +
- 		skb = sock_alloc_send_skb(sk,
- 			hh_len + fragheaderlen + transhdrlen + 20,
- 			(flags & MSG_DONTWAIT), &err);
-@@ -1145,12 +1147,6 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 
- 		skb->ip_summed = CHECKSUM_PARTIAL;
- 		skb->csum = 0;
--	}
--
--	err = skb_append_datato_frags(sk,skb, getfrag, from,
--				      (length - transhdrlen));
--	if (!err) {
--		struct frag_hdr fhdr;
- 
- 		/* Specify the length of each IPv6 datagram fragment.
- 		 * It has to be a multiple of 8.
-@@ -1161,15 +1157,10 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 		ipv6_select_ident(&fhdr, rt);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
--
--		return 0;
++		/* drop CFI/DEI bit, register needs VID and PCP */
++		vid_pcp = (vid_pcp & VLAN_VID_MASK) |
++			  ((vid_pcp & VLAN_PRIO_MASK) >> 1);
++		rp->tx_ring[entry].tx_status = cpu_to_le32((vid_pcp) << 16);
+ 		/* request tagging */
+ 		rp->tx_ring[entry].desc_length |= cpu_to_le32(0x020000);
  	}
--	/* There is not enough support do UPD LSO,
--	 * so follow normal path
--	 */
--	kfree_skb(skb);
- 
--	return err;
-+	return skb_append_datato_frags(sk, skb, getfrag, from,
-+				       (length - transhdrlen));
- }
- 
- static inline struct ipv6_opt_hdr *ip6_opt_dup(struct ipv6_opt_hdr *src,
-@@ -1342,27 +1333,27 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	 * --yoshfuji
- 	 */
- 
--	cork->length += length;
--	if (length > mtu) {
--		int proto = sk->sk_protocol;
--		if (dontfrag && (proto == IPPROTO_UDP || proto == IPPROTO_RAW)){
--			ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
--			return -EMSGSIZE;
--		}
--
--		if (proto == IPPROTO_UDP &&
--		    (rt->dst.dev->features & NETIF_F_UFO)) {
-+	if ((length > mtu) && dontfrag && (sk->sk_protocol == IPPROTO_UDP ||
-+					   sk->sk_protocol == IPPROTO_RAW)) {
-+		ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
-+		return -EMSGSIZE;
-+	}
- 
--			err = ip6_ufo_append_data(sk, getfrag, from, length,
--						  hh_len, fragheaderlen,
--						  transhdrlen, mtu, flags, rt);
--			if (err)
--				goto error;
--			return 0;
--		}
-+	skb = skb_peek_tail(&sk->sk_write_queue);
-+	cork->length += length;
-+	if (((length > mtu) ||
-+	     (skb && skb_is_gso(skb))) &&
-+	    (sk->sk_protocol == IPPROTO_UDP) &&
-+	    (rt->dst.dev->features & NETIF_F_UFO)) {
-+		err = ip6_ufo_append_data(sk, getfrag, from, length,
-+					  hh_len, fragheaderlen,
-+					  transhdrlen, mtu, flags, rt);
-+		if (err)
-+			goto error;
-+		return 0;
- 	}
- 
--	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
-+	if (!skb)
- 		goto alloc_new_skb;
- 
- 	while (length > 0) {
 
