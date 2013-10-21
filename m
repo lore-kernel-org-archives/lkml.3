@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3JUXlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 19:41:42 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35168 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab3JUXlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 19:41:14 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 2/3] tty: xuartps: Fix build error due to missing forward declaration
-Date: Mon, 21 Oct 2013 16:41:00 -0700
-Message-Id: <1382398861-21542-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752351Ab3JUXum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 19:50:42 -0400
+Received: from mout.gmx.net ([212.227.17.21]:52151 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573Ab3JUXuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 19:50:40 -0400
+MIME-Version: 1.0
+Message-ID: <trinity-77042b98-668c-487b-a742-63606ea159f2-1382399439150@3capp-gmx-bs07>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>
+Cc: "Ashley Lai" <adlai@linux.vnet.ibm.com>,
+        "Ashley Lai" <ashley@ashleylai.com>,
+        "Leonidas Da Silva Barbosa" <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, "Rajiv Andrade" <mail@srajiv.net>,
+        tpmdd-devel@lists.sourceforge.net, "Sirrix AG" <tpmdd@sirrix.com>
+Subject: Aw: Re: [tpmdd-devel] TPM patches for 3.12
+Content-Type: text/plain; charset=UTF-8
+Date: Tue, 22 Oct 2013 01:50:39 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <20131020170017.GA32542@obsidianresearch.com>
+References: <20131006193120.GA26137@obsidianresearch.com>
+ <20131017145724.GA6528@obsidianresearch.com>
+ <1382260018.11008.5.camel@fishsauce>,
+ <20131020170017.GA32542@obsidianresearch.com>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:/na/Ma/TKR/kvYbzIMcCb6XFWSLDt36lRva8tlXdn5y
+ HAlY9Rb+10Ww0ndTmCKeZmNIVUYVQo0UWn/Ee8QtJPuF1Cmml9
+ F5aYCuzk9ckh8p32LVDfxrKKIdQZjCupt7xwJfqlJTGK2fSCnp
+ AwPIpzhgY6J1RXuDRkzem0PTehRu+CKR2cJDwl/5kWnRWPZkKa
+ cbU2smYfIRxGHtyE3Ez8yOLWM6bWFFqE0rZpoIIRpbPfSxkHmb
+ CcnbHanuhvU47aMA/g05eJmlsbXw7xReZEpDI3AwmGTy4r/wQY Ms+jOk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_PM_SLEEP is enabled and CONFIG_SERIAL_XILINX_PS_UART_CONSOLE
-is not, a forward declaration of the uart_driver struct is not
-included, leading to a build error due to an undeclared variable.
-Fixing this by moving the definition of the struct uart_driver before
-the definition of the suspend/resume callbacks.
+Hi Jason, Ashley,
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/tty/serial/xilinx_uartps.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+I just pushed the changes to my github tree 
+https://github.com/PeterHuewe/linux-tpmdd/commits/for-james 
+along with some additional changes:
 
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 5ac6c480df43..ca4a2f1fbca9 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -1198,6 +1198,20 @@ console_initcall(xuartps_console_init);
- 
- #endif /* CONFIG_SERIAL_XILINX_PS_UART_CONSOLE */
- 
-+/** Structure Definitions
-+ */
-+static struct uart_driver xuartps_uart_driver = {
-+	.owner		= THIS_MODULE,		/* Owner */
-+	.driver_name	= XUARTPS_NAME,		/* Driver name */
-+	.dev_name	= XUARTPS_TTY_NAME,	/* Node name */
-+	.major		= XUARTPS_MAJOR,	/* Major number */
-+	.minor		= XUARTPS_MINOR,	/* Minor number */
-+	.nr		= XUARTPS_NR_PORTS,	/* Number of UART ports */
-+#ifdef CONFIG_SERIAL_XILINX_PS_UART_CONSOLE
-+	.cons		= &xuartps_console,	/* Console */
-+#endif
-+};
-+
- #ifdef CONFIG_PM_SLEEP
- /**
-  * xuartps_suspend - suspend event
-@@ -1311,20 +1325,6 @@ static int xuartps_resume(struct device *device)
- 
- static SIMPLE_DEV_PM_OPS(xuartps_dev_pm_ops, xuartps_suspend, xuartps_resume);
- 
--/** Structure Definitions
-- */
--static struct uart_driver xuartps_uart_driver = {
--	.owner		= THIS_MODULE,		/* Owner */
--	.driver_name	= XUARTPS_NAME,		/* Driver name */
--	.dev_name	= XUARTPS_TTY_NAME,	/* Node name */
--	.major		= XUARTPS_MAJOR,	/* Major number */
--	.minor		= XUARTPS_MINOR,	/* Minor number */
--	.nr		= XUARTPS_NR_PORTS,	/* Number of UART ports */
--#ifdef CONFIG_SERIAL_XILINX_PS_UART_CONSOLE
--	.cons		= &xuartps_console,	/* Console */
--#endif
--};
--
- /* ---------------------------------------------------------------------
-  * Platform bus binding
-  */
--- 
-1.8.4.1
+- before the rename I made tpm.c checkpatch clean ;)
 
+- I did some cleanup on the indention / white spaces of both Kconfig and bindings for both new drivers
+- corrected the module name for the nuvoton i2c module
+
+I detected similar problems with other entries in the kconfig so I
+- did also correct the module name for the infineon i2c module (d'oh, my fault ;)
+- and also corrected it for the stm i2c module
+- cleaned the indention on the st i2c module
+
+I'm currently compile testing it again, I definitely need a newer/faster (small/portable) laptop 
+(donations welcome ;) - e.g. a 11" ultrabook ;)
+
+Jason, can you please review and test my changes - 
+I'd probably send the pull request out tomorrow then.
+(giving me also the chance to think again whether I should add myself to MAINTAINERS or not ;)
+
+Thanks,
+Peter
