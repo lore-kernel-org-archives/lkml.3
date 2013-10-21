@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3JUIwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:52:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39740 "EHLO
+	id S1754890Ab3JUJGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:06:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39752 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754183Ab3JUIwU (ORCPT
+	by vger.kernel.org with ESMTP id S1754188Ab3JUIwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:20 -0400
+	Mon, 21 Oct 2013 04:52:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Daniel Borkmann" <dborkman@redhat.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
-        "Michio Honda" <micchie@sfc.wide.ad.jp>,
-        "Vlad Yasevich" <vyasevich@gmail.com>
+CC: akpm@linux-foundation.org,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Dmitry Vyukov" <dvyukov@google.com>,
+        "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.420144098@decadent.org.uk>
+Message-ID: <lsq.1382345188.34625965@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 102/149] net: sctp: fix smatch warning in 
- sctp_send_asconf_del_ip
+Subject: [PATCH 3.2 107/149] ipv6: udp packets following an UFO enqueued
+ packet  need also be handled by UFO
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,61 +35,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
+[ Upstream commit 2811ebac2521ceac84f2bdae402455baa6a7fb47 ]
 
-This was originally reported in [1] and posted by Neil Horman [2], he said:
+In the following scenario the socket is corked:
+If the first UDP packet is larger then the mtu we try to append it to the
+write queue via ip6_ufo_append_data. A following packet, which is smaller
+than the mtu would be appended to the already queued up gso-skb via
+plain ip6_append_data. This causes random memory corruptions.
 
-  Fix up a missed null pointer check in the asconf code. If we don't find
-  a local address, but we pass in an address length of more than 1, we may
-  dereference a NULL laddr pointer. Currently this can't happen, as the only
-  users of the function pass in the value 1 as the addrcnt parameter, but
-  its not hot path, and it doesn't hurt to check for NULL should that ever
-  be the case.
+In ip6_ufo_append_data we also have to be careful to not queue up the
+same skb multiple times. So setup the gso frame only when no first skb
+is available.
 
-The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
-from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
-while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
-so that we do *not* find a single address in the association's bind address
-list that is not in the packed array of addresses. If this happens when we
-have an established association with ASCONF-capable peers, then we could get
-a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
-and call later sctp_make_asconf_update_ip() with NULL laddr.
+This also fixes a shortcoming where we add the current packet's length to
+cork->length but return early because of a packet > mtu with dontfrag set
+(instead of sutracting it again).
 
-BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
-and return with an error earlier. As this is incredably unintuitive and error
-prone, add a check to catch at least future bugs here. As Neil says, its not
-hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
-single-homed host").
+Found with trinity.
 
- [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
- [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Michio Honda <micchie@sfc.wide.ad.jp>
-Acked-By: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/socket.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv6/ip6_output.c | 53 +++++++++++++++++++++------------------------------
+ 1 file changed, 22 insertions(+), 31 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index ba0108f..c53d01e 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -814,6 +814,9 @@ static int sctp_send_asconf_del_ip(struct sock		*sk,
- 			goto skip_mkasconf;
- 		}
- 
-+		if (laddr == NULL)
-+			return -EINVAL;
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index db60043..91d0711 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1125,6 +1125,8 @@ static inline int ip6_ufo_append_data(struct sock *sk,
+ 	 * udp datagram
+ 	 */
+ 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL) {
++		struct frag_hdr fhdr;
 +
- 		/* We do not need RCU protection throughout this loop
- 		 * because this is done under a socket lock from the
- 		 * setsockopt call.
+ 		skb = sock_alloc_send_skb(sk,
+ 			hh_len + fragheaderlen + transhdrlen + 20,
+ 			(flags & MSG_DONTWAIT), &err);
+@@ -1145,12 +1147,6 @@ static inline int ip6_ufo_append_data(struct sock *sk,
+ 
+ 		skb->ip_summed = CHECKSUM_PARTIAL;
+ 		skb->csum = 0;
+-	}
+-
+-	err = skb_append_datato_frags(sk,skb, getfrag, from,
+-				      (length - transhdrlen));
+-	if (!err) {
+-		struct frag_hdr fhdr;
+ 
+ 		/* Specify the length of each IPv6 datagram fragment.
+ 		 * It has to be a multiple of 8.
+@@ -1161,15 +1157,10 @@ static inline int ip6_ufo_append_data(struct sock *sk,
+ 		ipv6_select_ident(&fhdr, rt);
+ 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
+ 		__skb_queue_tail(&sk->sk_write_queue, skb);
+-
+-		return 0;
+ 	}
+-	/* There is not enough support do UPD LSO,
+-	 * so follow normal path
+-	 */
+-	kfree_skb(skb);
+ 
+-	return err;
++	return skb_append_datato_frags(sk, skb, getfrag, from,
++				       (length - transhdrlen));
+ }
+ 
+ static inline struct ipv6_opt_hdr *ip6_opt_dup(struct ipv6_opt_hdr *src,
+@@ -1342,27 +1333,27 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	 * --yoshfuji
+ 	 */
+ 
+-	cork->length += length;
+-	if (length > mtu) {
+-		int proto = sk->sk_protocol;
+-		if (dontfrag && (proto == IPPROTO_UDP || proto == IPPROTO_RAW)){
+-			ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
+-			return -EMSGSIZE;
+-		}
+-
+-		if (proto == IPPROTO_UDP &&
+-		    (rt->dst.dev->features & NETIF_F_UFO)) {
++	if ((length > mtu) && dontfrag && (sk->sk_protocol == IPPROTO_UDP ||
++					   sk->sk_protocol == IPPROTO_RAW)) {
++		ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
++		return -EMSGSIZE;
++	}
+ 
+-			err = ip6_ufo_append_data(sk, getfrag, from, length,
+-						  hh_len, fragheaderlen,
+-						  transhdrlen, mtu, flags, rt);
+-			if (err)
+-				goto error;
+-			return 0;
+-		}
++	skb = skb_peek_tail(&sk->sk_write_queue);
++	cork->length += length;
++	if (((length > mtu) ||
++	     (skb && skb_is_gso(skb))) &&
++	    (sk->sk_protocol == IPPROTO_UDP) &&
++	    (rt->dst.dev->features & NETIF_F_UFO)) {
++		err = ip6_ufo_append_data(sk, getfrag, from, length,
++					  hh_len, fragheaderlen,
++					  transhdrlen, mtu, flags, rt);
++		if (err)
++			goto error;
++		return 0;
+ 	}
+ 
+-	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
++	if (!skb)
+ 		goto alloc_new_skb;
+ 
+ 	while (length > 0) {
 
