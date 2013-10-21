@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab3JUR5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 13:57:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab3JUR5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 13:57:21 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Subject: [patch] blk-mq: zero out ctx_map during initialization
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 21 Oct 2013 13:57:19 -0400
-Message-ID: <x491u3ecxs0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751950Ab3JUR76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 13:59:58 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49197 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab3JUR74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 13:59:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Reply-To: mceier+kernel@gmail.com
+In-Reply-To: <52656971.3020509@ti.com>
+References: <5265640C.4070201@cogentembedded.com>
+	<1382377504-24688-1-git-send-email-mceier+kernel@gmail.com>
+	<52656971.3020509@ti.com>
+Date: Mon, 21 Oct 2013 19:59:54 +0200
+X-Google-Sender-Auth: IDwoo3k7hdAR6OpfSozVSckoV3U
+Message-ID: <CAJTyqKOAB8yy96sK=jQJv2TbCHn6JVqNSba-16z6RpWbhpM4dg@mail.gmail.com>
+Subject: Re: [PATCH] davinci_emac.c: Fix IFF_ALLMULTI setup
+From: Mariusz Ceier <mceier+kernel@gmail.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Lad Prabhakar <prabhakar.csengg@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jiri Pirko <jiri@resnulli.us>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Yes of course ;) This was my first patch for the kernel. I will
+remember about v2 tag next time.
 
-ctx_map may contain random garbage, leading to (potentially chronic but
-harmless) false positives in blk_mq_hctx_has_pending.
+Thanks,
+Mariusz Ceier
 
-Note: I have not observed this in practice, just by code inspection.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 923e9e1..e9be5ed 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1197,7 +1197,7 @@ static int blk_mq_init_hw_queues(struct request_queue *q,
- 			break;
- 
- 		num_maps = ALIGN(nr_cpu_ids, BITS_PER_LONG) / BITS_PER_LONG;
--		hctx->ctx_map = kmalloc_node(num_maps * sizeof(unsigned long),
-+		hctx->ctx_map = kzalloc_node(num_maps * sizeof(unsigned long),
- 						GFP_KERNEL, node);
- 		if (!hctx->ctx_map)
- 			break;
+On 21 October 2013 19:50, Mugunthan V N <mugunthanvnm@ti.com> wrote:
+> On Monday 21 October 2013 11:15 PM, Mariusz Ceier wrote:
+>> When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+>> emac_dev_mcast_set should only enable RX of multicasts and reset
+>> MACHASH registers.
+>>
+>> It does this, but afterwards it either sets up multicast MACs
+>> filtering or disables RX of multicasts and resets MACHASH registers
+>> again, rendering IFF_ALLMULTI flag useless.
+>>
+>> This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+>> disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
+>>
+>> Tested with kernel 2.6.37.
+>>
+>> Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
+>> ---
+> Can you add [PATCH v2] in your subject in future so that it will be
+> easier to the maintainer to pick the latest version of the patch.
+>
+> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+>
+> Regards
+> Mugunthan V N
