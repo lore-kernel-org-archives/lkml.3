@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3JUVTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 17:19:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43256 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3JUVTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 17:19:22 -0400
-Date: Mon, 21 Oct 2013 17:19:21 -0400 (EDT)
-Message-Id: <20131021.171921.650196864241149083.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: nf_tables*.h: Remove extern from function prototypes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1382245531.2041.37.camel@joe-AO722>
-References: <cover.1382129045.git.joe@perches.com>
-	<1382245531.2041.37.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752613Ab3JUVWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 17:22:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46457 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab3JUVWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 17:22:49 -0400
+Message-ID: <52659B24.4030809@suse.com>
+Date: Mon, 21 Oct 2013 17:22:44 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linux.com>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kobject: export kobj_sysfs_ops
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 21 Oct 2013 14:19:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 19 Oct 2013 22:05:31 -0700
+struct kobj_attribute implements the baseline attribute functionality
+that can be used all over the place. We should export the ops associated
+with it. I have a series of patches on the linux-btrfs list that depend
+on using kobj_sysfs_ops rather than re-implement them.
 
-> There are a mix of function prototypes with and without extern
-> in the kernel sources.  Standardize on not using extern for
-> function prototypes.
-> 
-> Function prototypes don't need to be written with extern.
-> extern is assumed by the compiler.  Its use is as unnecessary as
-> using auto to declare automatic/local variables in a block.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
 
-I'll apply this directly, thanks Joe.
+ lib/kobject.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/lib/kobject.c	2013-10-21 16:09:51.868220920 -0400
++++ b/lib/kobject.c	2013-10-21 16:10:00.216037635 -0400
+@@ -726,6 +726,7 @@ const struct sysfs_ops kobj_sysfs_ops =
+ 	.show	= kobj_attr_show,
+ 	.store	= kobj_attr_store,
+ };
++EXPORT_SYMBOL_GPL(kobj_sysfs_ops);
+ 
+ /**
+  * kset_register - initialize and add a kset.
+
+
+
+-- 
+Jeff Mahoney
+SUSE Labs
