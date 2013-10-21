@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3JUNuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 09:50:51 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33947 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3JUNut (ORCPT
+	id S1753574Ab3JUNyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 09:54:17 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5823 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3JUNyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 09:50:49 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-ee-5265313805af
-Message-id: <52653132.4090803@samsung.com>
-Date: Mon, 21 Oct 2013 15:50:42 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] spi/s3c64xx: Do not ignore return value of
- spi_master_resume/suspend
-References: <1382362971-16763-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1382362971-16763-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xK7oWhqlBBt3POSymPnzCZvH6haFF
-	74KrbBZnm96wW2x6fI3V4vKuOWwWM87vY7Jo/HiT3YHDY9OqTjaPzUvqPfq2rGL0+LxJLoAl
-	issmJTUnsyy1SN8ugSvj24K7LAXfmCp6b31kamA8xNTFyMkhIWAi8fntO2YIW0ziwr31bF2M
-	XBxCAksZJe6tfgpWJCTwiVHi9z0OEJtXQEti6qK7bCA2i4CqxPnJlxlBbDYBQ4neo31gtqhA
-	mMTRpp+sEPWCEj8m32MBsUUEKiSezm5lBlnALLCZUWLCqVNgg4QF4iVOTVvFCrHMXWLSuxlg
-	F3EKeEicfHEc7AhmAR2J/a3T2CBseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpamlxQnJSe
-	a6RXnJhbXJqXrpecn7uJERLiX3cwLj1mdYhRgINRiYc3wCUlSIg1say4MvcQowQHs5II7+eP
-	QCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mns5Bm988C995YXPfldaC901s27WWszIom+s9qYz5
-	0fvfevnVPf+m7lkQI7g+I67nSsVnLa/G9SEG25zPZSZe0J/AzVi5TXLjpu8qrK7n13HkLLh8
-	d67Oo/e53yezhK2W4St7tiGzxLDtFY83c2ruz/bg3zGSL//4vf3bmTrlVXue13G2vjnrlViK
-	MxINtZiLihMB5zLre08CAAA=
+	Mon, 21 Oct 2013 09:54:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 21 Oct 2013 06:54:14 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v6 01/15] ARM: tegra30: add missing CLK IDs
+Date: Mon, 21 Oct 2013 16:53:40 +0300
+Message-ID: <1382363634-10870-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1382363634-10870-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/10/13 15:42, Krzysztof Kozlowski wrote:
-> During PM resume and suspend do not ignore the return value of
-> spi_master_suspend() or spi_master_resume(). Instead pass it further.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+The Tegra30 clock bindings lack few IDs for audio and clk_out muxes.
 
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ include/dt-bindings/clock/tegra30-car.h |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/include/dt-bindings/clock/tegra30-car.h b/include/dt-bindings/clock/tegra30-car.h
+index e40fae8..2244582 100644
+--- a/include/dt-bindings/clock/tegra30-car.h
++++ b/include/dt-bindings/clock/tegra30-car.h
+@@ -260,6 +260,14 @@
+ /* 298 */
+ /* 299 */
+ #define TEGRA30_CLK_CLK_OUT_1_MUX 300
+-#define TEGRA30_CLK_CLK_MAX 301
++#define TEGRA30_CLK_CLK_OUT_2_MUX 301
++#define TEGRA30_CLK_CLK_OUT_3_MUX 302
++#define TEGRA30_CLK_AUDIO0_MUX 303
++#define TEGRA30_CLK_AUDIO1_MUX 304
++#define TEGRA30_CLK_AUDIO2_MUX 305
++#define TEGRA30_CLK_AUDIO3_MUX 306
++#define TEGRA30_CLK_AUDIO4_MUX 307
++#define TEGRA30_CLK_SPDIF_MUX 308
++#define TEGRA30_CLK_CLK_MAX 309
+ 
+ #endif	/* _DT_BINDINGS_CLOCK_TEGRA30_CAR_H */
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
