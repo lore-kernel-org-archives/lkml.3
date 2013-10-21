@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3JUOUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 10:20:30 -0400
-Received: from mail-gg0-f172.google.com ([209.85.161.172]:53923 "EHLO
-	mail-gg0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab3JUOTn (ORCPT
+	id S1754212Ab3JUOUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 10:20:40 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:52967 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab3JUOUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 10:19:43 -0400
-Date: Mon, 21 Oct 2013 11:14:28 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 13/19] perf tools: Fix libunwind build and feature
- detection for 32-bit build
-Message-ID: <20131021141428.GB2245@ghostprotocols.net>
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com>
- <1382099356-4918-14-git-send-email-adrian.hunter@intel.com>
- <20131020204346.GD12044@krava>
+	Mon, 21 Oct 2013 10:20:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131020204346.GD12044@krava>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131021065804.GX3521@intel.com>
+References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
+	<1382326010-4554-3-git-send-email-bleung@chromium.org>
+	<20131021065804.GX3521@intel.com>
+Date: Mon, 21 Oct 2013 07:20:33 -0700
+X-Google-Sender-Auth: UQucmANVi14iFG1GkXpeP9KjYWo
+Message-ID: <CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
+From: Benson Leung <bleung@chromium.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: wsa@the-dreams.de, khali@linux-fr.org, andriy.shevchenko@linux.intel.com,
+        jacmet@sunsite.dk, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Oct 20, 2013 at 10:43:46PM +0200, Jiri Olsa escreveu:
-> On Fri, Oct 18, 2013 at 03:29:10PM +0300, Adrian Hunter wrote:
-> > Use -lunwind-x86 instead of -lunwind-x86_64 for 32-bit build.
+On Sun, Oct 20, 2013 at 11:58 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> Is there any real value in having names like "i2c-designware-pci-0"
+> available? I would just drop the whole naming dance instead...
 
-> > Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+I'd like some way of distinguishing between the two busses by name. It
+seems sensible to name them 0 and 1 since that's how they are referred
+to on schematics.
 
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
+In the chromeos_laptop driver, I do by-name matching of i2c busses to
+find busses and instantiate devices, so there is value to have each
+named something predictable.
 
-Doesn't apply because it depends on a patch in this series that I made a
-question about, the "CFLAGS=-g ... one, but then can we avoid touching
-this feature_check_code line with feature specific stuff, i.e. can't we
-just touch LDFLAGS or CFLAGS?
-
-- Arnaldo
-
---- tools/perf/config/Makefile
-+++ tools/perf/config/Makefile
-@@ -94,7 +96,7 @@
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(CFLAGS)" LDFLAGS=$(LDFLAGS) LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
