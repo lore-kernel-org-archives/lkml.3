@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3JUVQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 17:16:28 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:48670 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3JUVQ1 (ORCPT
+	id S1752107Ab3JUVSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 17:18:32 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43236 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3JUVSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 17:16:27 -0400
-Message-ID: <526599A8.9090501@gmail.com>
-Date: Mon, 21 Oct 2013 23:16:24 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: The development of GNU GRUB <grub-devel@gnu.org>
-CC: Daniel Kiper <daniel.kiper@oracle.com>, boris.ostrovsky@oracle.com,
-        david.woodhouse@intel.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        keir@xen.org, konrad.wilk@oracle.com, pjones@redhat.com,
-        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-In-Reply-To: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2TUVERMCVQOSRRMSJPDAL"
+	Mon, 21 Oct 2013 17:18:31 -0400
+Date: Mon, 21 Oct 2013 17:18:29 -0400 (EDT)
+Message-Id: <20131021.171829.2297768337604122109.davem@davemloft.net>
+To: gamerh2o@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] net: remove function sk_reset_txq()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131020013757.GA25265@will>
+References: <20131020013757.GA25265@will>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 21 Oct 2013 14:18:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2TUVERMCVQOSRRMSJPDAL
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+From: ZHAO Gang <gamerh2o@gmail.com>
+Date: Sun, 20 Oct 2013 09:37:57 +0800
 
-Mail is big, I think I got your essential points but I didn't read it who=
-le.
-On 21.10.2013 14:57, Daniel Kiper wrote:
-> Hi,
->=20
-> During work on multiboot2 protocol support for Xen it was discovered
-> that memory map passed via relevant tag could not represent wide range
-> of memory types available on EFI platforms. Additionally, GRUB2
-> implementation calls ExitBootServices() on them just before jumping
-> into loaded image. In this situation loaded system could not clearly
-> identify reserved memory regions, EFI runtime services regions and othe=
-rs.
->=20
-Will a multiboot2 tag with whole EFI memory map solve your problem?
-> Additionally, it should be mentioned that there is no possibility or it=
- could
-> be very difficult to implement secure boot on EFI platforms using GRUB2=
- as boot
-> loader because, as it was mentioned earlier, it calls ExitBootServices(=
-).
->=20
-GRUB has generic support for signing kernels/modules/whatsoever using
-GnuPG signatures. You'd just have to ship xen.sig and kernel.sig. This
-method doesn't have any controversy associated with EFI stuff but at
-this particular case does exactly the same thing: verify signature.
-multiboot2 is mainly memory structure specification so probably how the
-files are checked is outside of its scope. But it's possible to add
-specification on how to embed signatures in kernel.
+> What sk_reset_txq() does is just calls function sk_tx_queue_reset(),
+> and sk_reset_txq() is used only in sock.h, by dst_negative_advice().
+> Let dst_negative_advice() calls sk_tx_queue_reset() directly so we
+> can remove unneeded sk_reset_txq().
+> 
+> Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+> change a typo in patch description: sock.c -> sock.h
 
+This patch does not apply cleanly to net-next, please fix this up
+and resubmit.
 
-------enig2TUVERMCVQOSRRMSJPDAL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iF4EAREKAAYFAlJlmagACgkQNak7dOguQgnuFQEAgHdQsQF5mxk2SeZ1oAxhoIfH
-iR3GubT/Yr3itSw3zEcBAJTNALqQcgRb4Y6oEFex8N+nex7sfa4bkBuMJeVdhtwO
-=GXi1
------END PGP SIGNATURE-----
-
-------enig2TUVERMCVQOSRRMSJPDAL--
+Thanks.
