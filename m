@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3JUIvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:51:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39396 "EHLO
+	id S1755904Ab3JUJZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:25:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39437 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753477Ab3JUIvC (ORCPT
+	by vger.kernel.org with ESMTP id S1753480Ab3JUIvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:51:02 -0400
+	Mon, 21 Oct 2013 04:51:11 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "Kees Cook" <keescook@chromium.org>
+CC: akpm@linux-foundation.org, "Maxim Patlasov" <mpatlasov@parallels.com>,
+        "Maxim Patlasov" <MPatlasov@parallels.com>,
+        "Miklos Szeredi" <mszeredi@suse.cz>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.966669635@decadent.org.uk>
+Message-ID: <lsq.1382345188.840678647@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 039/149] HID: validate HID report id size
+Subject: [PATCH 3.2 048/149] fuse: postpone end_page_writeback() in
+ fuse_writepage_locked()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,76 +33,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit 43622021d2e2b82ea03d883926605bdd0525e1d1 upstream.
+commit 4a4ac4eba1010ef9a804569058ab29e3450c0315 upstream.
 
-The "Report ID" field of a HID report is used to build indexes of
-reports. The kernel's index of these is limited to 256 entries, so any
-malicious device that sets a Report ID greater than 255 will trigger
-memory corruption on the host:
+The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
 
-[ 1347.156239] BUG: unable to handle kernel paging request at ffff88094958a878
-[ 1347.156261] IP: [<ffffffff813e4da0>] hid_register_report+0x2a/0x8b
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs shrinking truncate(2) intended to purge the page.
+3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
+   the original page by end_page_writeback.
+4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
+   is free.
+5) Ordinary write(2) extends i_size back to cover the page. Note that
+   fuse_send_write_pages do wait for fuse writeback, but for another
+   page->index.
+6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
+   fuse_send_writepage is supposed to crop inarg->size of the request,
+   but it doesn't because i_size has already been extended back.
 
-CVE-2013-2888
+Moving end_page_writeback to the end of fuse_writepage_locked fixes the
+race because now the fact that truncate_pagecache is successfully returned
+infers that fuse_writepage_locked has already called end_page_writeback.
+And this, in turn, infers that fuse_flush_writepages has already called
+fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
+could not extend it because of i_mutex held by ftruncate(2).
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: use dbg_hid() not hid_err()]
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-core.c | 10 +++++++---
- include/linux/hid.h    |  4 +++-
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ fs/fuse/file.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -59,6 +59,8 @@ struct hid_report *hid_register_report(s
- 	struct hid_report_enum *report_enum = device->report_enum + type;
- 	struct hid_report *report;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1251,7 +1251,6 @@ static int fuse_writepage_locked(struct
  
-+	if (id >= HID_MAX_IDS)
-+		return NULL;
- 	if (report_enum->report_id_hash[id])
- 		return report_enum->report_id_hash[id];
+ 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+-	end_page_writeback(page);
  
-@@ -380,8 +382,10 @@ static int hid_parser_global(struct hid_
+ 	spin_lock(&fc->lock);
+ 	list_add(&req->writepages_entry, &fi->writepages);
+@@ -1259,6 +1258,8 @@ static int fuse_writepage_locked(struct
+ 	fuse_flush_writepages(inode);
+ 	spin_unlock(&fc->lock);
  
- 	case HID_GLOBAL_ITEM_TAG_REPORT_ID:
- 		parser->global.report_id = item_udata(item);
--		if (parser->global.report_id == 0) {
--			dbg_hid("report_id 0 is invalid\n");
-+		if (parser->global.report_id == 0 ||
-+		    parser->global.report_id >= HID_MAX_IDS) {
-+			dbg_hid("report_id %u is invalid\n",
-+				parser->global.report_id);
- 			return -1;
- 		}
- 		return 0;
-@@ -552,7 +556,7 @@ static void hid_device_release(struct de
- 	for (i = 0; i < HID_REPORT_TYPES; i++) {
- 		struct hid_report_enum *report_enum = device->report_enum + i;
- 
--		for (j = 0; j < 256; j++) {
-+		for (j = 0; j < HID_MAX_IDS; j++) {
- 			struct hid_report *report = report_enum->report_id_hash[j];
- 			if (report)
- 				hid_free_report(report);
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -416,10 +416,12 @@ struct hid_report {
- 	struct hid_device *device;			/* associated device */
- };
- 
-+#define HID_MAX_IDS 256
++	end_page_writeback(page);
 +
- struct hid_report_enum {
- 	unsigned numbered;
- 	struct list_head report_list;
--	struct hid_report *report_id_hash[256];
-+	struct hid_report *report_id_hash[HID_MAX_IDS];
- };
+ 	return 0;
  
- #define HID_REPORT_TYPES 3
+ err_free:
 
