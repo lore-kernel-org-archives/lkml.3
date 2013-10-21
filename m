@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab3JUUx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 16:53:28 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:58765 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab3JUUx1 (ORCPT
+	id S1751661Ab3JUU5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 16:57:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25438 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3JUU5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 16:53:27 -0400
-Message-ID: <52659443.2050203@linaro.org>
-Date: Mon, 21 Oct 2013 22:53:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 21 Oct 2013 16:57:49 -0400
+Date: Mon, 21 Oct 2013 13:53:09 -0700 (PDT)
+From: Seth Goldberg <seth.goldberg@oracle.com>
+X-X-Sender: sethg@bergsoft
+To: The development of GNU GRUB <grub-devel@gnu.org>
+cc: boris.ostrovsky@oracle.com, david.woodhouse@intel.com,
+        ian.campbell@citrix.com, jbeulich@suse.com, keir@xen.org,
+        konrad.wilk@oracle.com, pjones@redhat.com,
+        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
+        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+In-Reply-To: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+Message-ID: <alpine.GSO.2.00.1310211348530.2162@oretfbsg>
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Marc Pignat <marc.pignat@hevs.ch>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, kernel@pengutronix.de,
-        John Stulz <john.stultz@linaro.org>,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] fixes for integer rounding in timer core
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de> <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de> <5253D9A1.1080106@pengutronix.de> <20131008153147.GR10079@pengutronix.de> <20131014073436.GX10079@pengutronix.de> <20131021071240.GI10079@pengutronix.de>
-In-Reply-To: <20131021071240.GI10079@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2013 09:12 AM, Uwe Kleine-König wrote:
-> Hello,
+
+
+Quoting Daniel Kiper, who wrote the following on Mon, 21 Oct 2013:
+
+> Hi,
 >
-> [added Daniel Lezcano to To:]
+> During work on multiboot2 protocol support for Xen it was discovered
+> that memory map passed via relevant tag could not represent wide range
+> of memory types available on EFI platforms. Additionally, GRUB2
+> implementation calls ExitBootServices() on them just before jumping
+> into loaded image. In this situation loaded system could not clearly
+> identify reserved memory regions, EFI runtime services regions and others.
+
+   Yes, that is exactly why we added full support to pass the entire UEFI 
+memory map via a new tag.
+
 >
-> On Mon, Oct 14, 2013 at 09:34:37AM +0200, Uwe Kleine-König wrote:
->> On Tue, Oct 08, 2013 at 05:31:47PM +0200, Uwe Kleine-König wrote:
->>>> What's the status of this patch?
->>> I pinged Thomas about it already via irc, but I didn't get a response up
->>> to now. It would be great to get that into 3.12. To make it easy for
->>> Thomas, here is a pull request that includes the fix and converts
->>> at91rm9200 back to clockevents_config_and_register dropping one of the
->>> workarounds for the fixed bug.
+> Normally, on EFI platform, system requires access to at least EFI runtime
+> services. However, it is not possible to identify them in GRUB2
+> implementation of multiboot2 protocol because they are marked as reserved,
+> like memory mapped IO regions, really reserved memory regions and others.
+> Additionally, it is not possible to get memory map directly from EFI (similar
+> solution is used on legacy BIOS platforms in Xen case) because ExitBootServices()
+> was earlier called by GRUB2. So there is only one chance to do that today.
+> Loaded image could map all reserved regions. However, this is not final
+> solution because it could be dangerous. So this is rather workaround which
+> should be used on currently existing multiboot2 protocol implementation only.
+> At this stage extra tag could be added to multiboot2 protocol to pass plain
+> EFI memory map to loaded image too. However, this solution requires some
+> coordination with GRUB2 upstream and could take some time.
 
-[ ... ]
+   This is precisely what we did, and though there is a risk of using a tag 
+that is not accepted upstream, we did what we needed to do, since we ship the 
+boot loader with the OS and don't have to be concerned with making it work 
+with some arbitrary already-installed loader.
 
->>> ----------------------------------------------------------------
->>> The first patch in this pull request fixes an old integer rounding bug in the
->>> timer core that was (and still is) worked around in a few arch's timer code.
->>> The second patch drops such a work around now that the core is fixed.
->> It would be nice to get that fix into 3.12, but Thomas stopped
->> responding nearly a month ago---his last mail in this thread[1] dates back
->> to September 20.
-> Still no sign of life from Thomas.
 >
->> Can one of you please take it directly?
-> Daniel, would you care to take it?
+> Additionally, it should be mentioned that there is no possibility or it could
+> be very difficult to implement secure boot on EFI platforms using GRUB2 as boot
+> loader because, as it was mentioned earlier, it calls ExitBootServices().
+>
+> At first there was a plan to use upstream GRUB2 as a reference multiboot2 protocol
+> implementation. However, during discussion on LPC 2013 it was stated that every
+> distribution uses tons of patches for GRUB2. So distros GRUB2 implementation
+> substantially deviates form upstream. One of this deviation is linuxefi module
+> which enables usage of secure boot protocol on EFI platforms with shim. However,
+> it should be mentioned that this module still uses Linux x86 boot protocol.
+> So I think that similar solution could be used in multiboot2 protocol case.
+>
+> Separate multiboot2efi module should be established. It should verify system
+> kernel and all loaded modules using shim on EFI platforms with enabled secure boot
+> (this step should be omitted on platforms without secure boot). If verification
+> is successfully completed GRUB2 should transfer control to loaded image. Later
+> it should get system memory map directly from EFI, do other needed things, call
+> ExitBootServices() and finally start loaded system. I think that this proposal
+> could solve above mentioned problems. Additionally, I think that multiboot2 protocol
+> should be extended by adding extra tag which will be used to pass plain EFI memory
+> map to loaded image. Just in case (we could also use this as transitional thing
+> as I mentioned above). Work on this solution should be coordinated with upstream
+> GRUB2 guys to ease its later introduction in distros and to avoid another deviation.
+>
 
-Yes, sure.
+   I'm not sure we even need a separate command -- it adds complexity for no 
+reason.  It's reasonable to just perform the validation if we're on a UEFI 
+platform and secure boot is enabled.  MAYBE an arg to the multiboot2 command 
+would be useful for testing, but I'd rather not have any way for secure boot 
+to be circumvented, lest a piece of malware only needs to write a new 
+menuentry with the non-secure-boot multiboot2 command and make it the default.
 
-   -- Daniel
+  Thanks,
+  --S
 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> At first I am going to prepare multiboot2 protocol implementation for Xen (there
+> is about 80% of code ready) with above mentioned workaround. Later I am going
+> to work on multiboot2efi module.
+>
+> What do you think about that?
+> Any comments, suggestions, objections?
+>
+> Daniel
+>
+> _______________________________________________
+> Grub-devel mailing list
+> Grub-devel@gnu.org
+> https://lists.gnu.org/mailman/listinfo/grub-devel
+>
