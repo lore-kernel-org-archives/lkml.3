@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab3JUVWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 17:22:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab3JUVWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 17:22:49 -0400
-Message-ID: <52659B24.4030809@suse.com>
-Date: Mon, 21 Oct 2013 17:22:44 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751989Ab3JUV1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 17:27:21 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:64691 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3JUV1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 17:27:20 -0400
+Message-ID: <52659C34.6010508@gmail.com>
+Date: Mon, 21 Oct 2013 23:27:16 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-To: Greg KH <gregkh@linux.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kobject: export kobj_sysfs_ops
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: The development of GNU GRUB <grub-devel@gnu.org>
+CC: Seth Goldberg <seth.goldberg@oracle.com>, keir@xen.org,
+        david.woodhouse@intel.com, stefano.stabellini@eu.citrix.com,
+        linux-kernel@vger.kernel.org, ross.philipson@citrix.com,
+        jbeulich@suse.com, boris.ostrovsky@oracle.com, xen-devel@lists.xen.org,
+        richard.l.maliszewski@intel.com, ian.campbell@citrix.com
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl> <alpine.GSO.2.00.1310211348530.2162@oretfbsg>
+In-Reply-To: <alpine.GSO.2.00.1310211348530.2162@oretfbsg>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2PDWWOOPFOAROEORGODRU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct kobj_attribute implements the baseline attribute functionality
-that can be used all over the place. We should export the ops associated
-with it. I have a series of patches on the linux-btrfs list that depend
-on using kobj_sysfs_ops rather than re-implement them.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2PDWWOOPFOAROEORGODRU
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
+On 21.10.2013 22:53, Seth Goldberg wrote:
+>=20
+>=20
+> Quoting Daniel Kiper, who wrote the following on Mon, 21 Oct 2013:
+>=20
+>> Hi,
+>>
+>> During work on multiboot2 protocol support for Xen it was discovered
+>> that memory map passed via relevant tag could not represent wide range=
 
- lib/kobject.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/lib/kobject.c	2013-10-21 16:09:51.868220920 -0400
-+++ b/lib/kobject.c	2013-10-21 16:10:00.216037635 -0400
-@@ -726,6 +726,7 @@ const struct sysfs_ops kobj_sysfs_ops =
- 	.show	= kobj_attr_show,
- 	.store	= kobj_attr_store,
- };
-+EXPORT_SYMBOL_GPL(kobj_sysfs_ops);
- 
- /**
-  * kset_register - initialize and add a kset.
-
+>> of memory types available on EFI platforms. Additionally, GRUB2
+>> implementation calls ExitBootServices() on them just before jumping
+>> into loaded image. In this situation loaded system could not clearly
+>> identify reserved memory regions, EFI runtime services regions and
+>> others.
+>=20
+>   Yes, that is exactly why we added full support to pass the entire UEF=
+I
+> memory map via a new tag.
+>=20
+Can you send this patch? Or provide a link to publically available
+source? I think we can accept it with probably just minor changes.
 
 
--- 
-Jeff Mahoney
-SUSE Labs
+------enig2PDWWOOPFOAROEORGODRU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iF4EAREKAAYFAlJlnDQACgkQNak7dOguQgkeTQEAm3P4kiG965hqIu0AmvKuBgxe
+viWMF+Irlm/ntfuug3EBAKax39HHiu9vnHRT0anXBomCrexYPDyOr0HW/F26EXuy
+=MyhS
+-----END PGP SIGNATURE-----
+
+------enig2PDWWOOPFOAROEORGODRU--
