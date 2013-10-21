@@ -1,32 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3JUIwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:52:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39705 "EHLO
+	id S1754122Ab3JUIwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:52:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39695 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754059Ab3JUIwI (ORCPT
+	by vger.kernel.org with ESMTP id S1753992Ab3JUIwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:08 -0400
+	Mon, 21 Oct 2013 04:52:05 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Darren Hart" <dvhart@linux.intel.com>,
-        "Josh Boyer" <jwboyer@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Matt Fleming" <matt.fleming@intel.com>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>,
-        "Josh Triplett" <josh@joshtriplett.org>,
-        "Tom Zanussi" <tom.zanussi@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        "Ingo Molnar" <mingo@kernel.org>
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?Q?Lothar=20Wa=C3=9Fmann?=" <LW@KARO-electronics.de>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.784004876@decadent.org.uk>
+Message-ID: <lsq.1382345188.205668698@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 081/149] x86, efi: Don't map Boot Services on i386
+Subject: [PATCH 3.2 094/149] can: flexcan: fix flexcan_chip_start() on imx6
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -39,86 +32,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 700870119f49084da004ab588ea2b799689efaf7 upstream.
+commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
 
-Add patch to fix 32bit EFI service mapping (rhbz 726701)
+In the flexcan_chip_start() function first the flexcan core is going through
+the soft reset sequence, then the RX FIFO is enabled.
 
-Multiple people are reporting hitting the following WARNING on i386,
+With the hardware is put into FIFO mode, message buffers 1...7 are reserved by
+the FIFO engine. The remaining message buffers are in reset default values.
+This patch removes the bogus initialization of the message buffers, as it
+causes an imprecise external abort on imx6.
 
-  WARNING: at arch/x86/mm/ioremap.c:102 __ioremap_caller+0x3d3/0x440()
-  Modules linked in:
-  Pid: 0, comm: swapper Not tainted 3.9.0-rc7+ #95
-  Call Trace:
-   [<c102b6af>] warn_slowpath_common+0x5f/0x80
-   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
-   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
-   [<c102b6ed>] warn_slowpath_null+0x1d/0x20
-   [<c1023fb3>] __ioremap_caller+0x3d3/0x440
-   [<c106007b>] ? get_usage_chars+0xfb/0x110
-   [<c102d937>] ? vprintk_emit+0x147/0x480
-   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
-   [<c102406a>] ioremap_cache+0x1a/0x20
-   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
-   [<c1418593>] efi_enter_virtual_mode+0x1e4/0x3de
-   [<c1407984>] start_kernel+0x286/0x2f4
-   [<c1407535>] ? repair_env_string+0x51/0x51
-   [<c1407362>] i386_start_kernel+0x12c/0x12f
-
-Due to the workaround described in commit 916f676f8 ("x86, efi: Retain
-boot service code until after switching to virtual mode") EFI Boot
-Service regions are mapped for a period during boot. Unfortunately, with
-the limited size of the i386 direct kernel map it's possible that some
-of the Boot Service regions will not be directly accessible, which
-causes them to be ioremap()'d, triggering the above warning as the
-regions are marked as E820_RAM in the e820 memmap.
-
-There are currently only two situations where we need to map EFI Boot
-Service regions,
-
-  1. To workaround the firmware bug described in 916f676f8
-  2. To access the ACPI BGRT image
-
-but since we haven't seen an i386 implementation that requires either,
-this simple fix should suffice for now.
-
-[ Added to changelog - Matt ]
-
-Reported-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
-Acked-by: Tom Zanussi <tom.zanussi@intel.com>
-Acked-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
+Tested-by: Lothar Waßmann <LW@KARO-electronics.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/platform/efi/efi.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/net/can/flexcan.c | 12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -703,10 +703,13 @@ void __init efi_enter_virtual_mode(void)
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -666,7 +666,6 @@ static int flexcan_chip_start(struct net
+ {
+ 	struct flexcan_priv *priv = netdev_priv(dev);
+ 	struct flexcan_regs __iomem *regs = priv->base;
+-	unsigned int i;
+ 	int err;
+ 	u32 reg_mcr, reg_ctrl;
  
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
--		    md->type != EFI_BOOT_SERVICES_CODE &&
--		    md->type != EFI_BOOT_SERVICES_DATA)
--			continue;
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
-+#ifdef CONFIG_X86_64
-+			if (md->type != EFI_BOOT_SERVICES_CODE &&
-+			    md->type != EFI_BOOT_SERVICES_DATA)
-+#endif
-+				continue;
-+		}
+@@ -732,17 +731,6 @@ static int flexcan_chip_start(struct net
+ 	dev_dbg(dev->dev.parent, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
+ 	flexcan_write(reg_ctrl, &regs->ctrl);
  
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
+-	for (i = 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
+-		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
+-		flexcan_write(0, &regs->cantxfg[i].can_id);
+-		flexcan_write(0, &regs->cantxfg[i].data[0]);
+-		flexcan_write(0, &regs->cantxfg[i].data[1]);
+-
+-		/* put MB into rx queue */
+-		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+-			&regs->cantxfg[i].can_ctrl);
+-	}
+-
+ 	/* acceptance mask/acceptance code (accept everything) */
+ 	flexcan_write(0x0, &regs->rxgmask);
+ 	flexcan_write(0x0, &regs->rx14mask);
 
