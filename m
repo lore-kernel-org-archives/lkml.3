@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3JUIxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:53:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39846 "EHLO
+	id S1754744Ab3JUIxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:53:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39925 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754516Ab3JUIxO (ORCPT
+	by vger.kernel.org with ESMTP id S1754656Ab3JUIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:53:14 -0400
+	Mon, 21 Oct 2013 04:53:34 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Greg Ungerer" <gerg@uclinux.org>
+CC: akpm@linux-foundation.org, "Ian Abbott" <abbotti@mev.co.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.30450496@decadent.org.uk>
+Message-ID: <lsq.1382345188.202434105@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 126/149] m68knommu: clean up linker script
+Subject: [PATCH 3.2 146/149] staging: comedi: ni_65xx: (bug fix) confine
+ insn_bits to one subdevice
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,270 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Ungerer <gerg@uclinux.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit f84f52a5c15db7d14a534815f27253b001735183 upstream.
+commit 677a31565692d596ef42ea589b53ba289abf4713 upstream.
 
-There is a lot of years of collected cruft in the m68knommu linker script.
-Clean it all up and use the well defined linker script support macros.
+The `insn_bits` handler `ni_65xx_dio_insn_bits()` has a `for` loop that
+currently writes (optionally) and reads back up to 5 "ports" consisting
+of 8 channels each.  It reads up to 32 1-bit channels but can only read
+and write a whole port at once - it needs to handle up to 5 ports as the
+first channel it reads might not be aligned on a port boundary.  It
+breaks out of the loop early if the next port it handles is beyond the
+final port on the card.  It also breaks out early on the 5th port in the
+loop if the first channel was aligned.  Unfortunately, it doesn't check
+that the current port it is dealing with belongs to the comedi subdevice
+the `insn_bits` handler is acting on.  That's a bug.
 
-Support is maintained for building both ROM/FLASH based and RAM based setups.
-No major changes to section layouts, though the rodata section is now lumped
-in with the read/write data section.
+Redo the `for` loop to terminate after the final port belonging to the
+subdevice, changing the loop variable in the process to simplify things
+a bit.  The `for` loop could now try and handle more than 5 ports if the
+subdevice has more than 40 channels, but the test `if (bitshift >= 32)`
+ensures it will break out early after 4 or 5 ports (depending on whether
+the first channel is aligned on a port boundary).  (`bitshift` will be
+between -7 and 7 inclusive on the first iteration, increasing by 8 for
+each subsequent operation.)
 
-Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[Ian Abbott: This patch applies to kernels 2.6.34.y through to 3.5.y
+ inclusive.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/m68k/kernel/vmlinux-nommu.lds | 200 +++++++++----------------------------
- 1 file changed, 49 insertions(+), 151 deletions(-)
+ drivers/staging/comedi/drivers/ni_65xx.c | 25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
-diff --git a/arch/m68k/kernel/vmlinux-nommu.lds b/arch/m68k/kernel/vmlinux-nommu.lds
-index 8e66ccb..40e02d9 100644
---- a/arch/m68k/kernel/vmlinux-nommu.lds
-+++ b/arch/m68k/kernel/vmlinux-nommu.lds
-@@ -1,195 +1,93 @@
- /*
-  *	vmlinux.lds.S -- master linker script for m68knommu arch
-  *
-- *	(C) Copyright 2002-2006, Greg Ungerer <gerg@snapgear.com>
-+ *	(C) Copyright 2002-2012, Greg Ungerer <gerg@snapgear.com>
-  *
-  *	This linker script is equipped to build either ROM loaded or RAM
-  *	run kernels.
-  */
- 
--#include <asm-generic/vmlinux.lds.h>
--#include <asm/page.h>
--#include <asm/thread_info.h>
--
- #if defined(CONFIG_RAMKERNEL)
--#define	RAM_START	CONFIG_KERNELBASE
--#define	RAM_LENGTH	(CONFIG_RAMBASE + CONFIG_RAMSIZE - CONFIG_KERNELBASE)
--#define	TEXT		ram
--#define	DATA		ram
--#define	INIT		ram
--#define	BSSS		ram
--#endif
--#if defined(CONFIG_ROMKERNEL) || defined(CONFIG_HIMEMKERNEL)
--#define	RAM_START	CONFIG_RAMBASE
--#define	RAM_LENGTH	CONFIG_RAMSIZE
--#define	ROMVEC_START	CONFIG_ROMVEC
--#define	ROMVEC_LENGTH	CONFIG_ROMVECSIZE
--#define	ROM_START	CONFIG_ROMSTART
--#define	ROM_LENGTH	CONFIG_ROMSIZE
--#define	TEXT		rom
--#define	DATA		ram
--#define	INIT		ram
--#define	BSSS		ram
-+#define	KTEXT_ADDR	CONFIG_KERNELBASE
- #endif
--
--#ifndef DATA_ADDR
--#define	DATA_ADDR
-+#if defined(CONFIG_ROMKERNEL)
-+#define	KTEXT_ADDR	CONFIG_ROMSTART
-+#define	KDATA_ADDR	CONFIG_KERNELBASE
-+#define	LOAD_OFFSET	KDATA_ADDR + (ADDR(.text) + SIZEOF(.text))
- #endif
- 
-+#include <asm/page.h>
-+#include <asm/thread_info.h>
-+#include <asm-generic/vmlinux.lds.h>
- 
- OUTPUT_ARCH(m68k)
- ENTRY(_start)
- 
--MEMORY {
--	ram	: ORIGIN = RAM_START, LENGTH = RAM_LENGTH
--#ifdef ROM_START
--	romvec	: ORIGIN = ROMVEC_START, LENGTH = ROMVEC_LENGTH
--	rom	: ORIGIN = ROM_START, LENGTH = ROM_LENGTH
--#endif
--}
--
- jiffies = jiffies_64 + 4;
- 
- SECTIONS {
- 
--#ifdef ROMVEC_START
--	. = ROMVEC_START ;
-+#ifdef CONFIG_ROMVEC
-+	. = CONFIG_ROMVEC;
- 	.romvec : {
--		__rom_start = . ;
-+		__rom_start = .;
- 		_romvec = .;
-+		*(.romvec)
- 		*(.data..initvect)
--	} > romvec
-+	}
- #endif
- 
-+	. = KTEXT_ADDR;
+--- a/drivers/staging/comedi/drivers/ni_65xx.c
++++ b/drivers/staging/comedi/drivers/ni_65xx.c
+@@ -411,29 +411,25 @@ static int ni_65xx_dio_insn_bits(struct
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+-	unsigned base_bitfield_channel;
+-	const unsigned max_ports_per_bitfield = 5;
++	int base_bitfield_channel;
+ 	unsigned read_bits = 0;
+-	unsigned j;
++	int last_port_offset = ni_65xx_port_by_channel(s->n_chan - 1);
++	int port_offset;
 +
-+	_text = .;
-+	_stext = .;
- 	.text : {
--		_text = .;
--		_stext = . ;
- 		HEAD_TEXT
- 		TEXT_TEXT
- 		SCHED_TEXT
- 		LOCK_TEXT
--		*(.text..lock)
- 		*(.fixup)
-+		. = ALIGN(16);
-+	}
-+	_etext = .;
+ 	if (insn->n != 2)
+ 		return -EINVAL;
+ 	base_bitfield_channel = CR_CHAN(insn->chanspec);
+-	for (j = 0; j < max_ports_per_bitfield; ++j) {
+-		const unsigned port_offset =
+-			ni_65xx_port_by_channel(base_bitfield_channel) + j;
+-		const unsigned port =
+-			sprivate(s)->base_port + port_offset;
+-		unsigned base_port_channel;
++	for (port_offset = ni_65xx_port_by_channel(base_bitfield_channel);
++	     port_offset <= last_port_offset; port_offset++) {
++		unsigned port = sprivate(s)->base_port + port_offset;
++		int base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		unsigned port_mask, port_data, port_read_bits;
+-		int bitshift;
+-		if (port >= ni_65xx_total_num_ports(board(dev)))
++		int bitshift = base_port_channel - base_bitfield_channel;
 +
-+#ifdef KDATA_ADDR
-+	. = KDATA_ADDR;
-+#endif
-+
-+	_sdata = .;
-+	RO_DATA_SECTION(PAGE_SIZE)
-+	RW_DATA_SECTION(16, PAGE_SIZE, THREAD_SIZE)
-+	_edata = .;
- 
--		. = ALIGN(16);          /* Exception table              */
--		__start___ex_table = .;
--		*(__ex_table)
--		__stop___ex_table = .;
--
--		*(.rodata) *(.rodata.*)
--		*(__vermagic)		/* Kernel version magic */
--		*(.rodata1)
--		*(.rodata.str1.1)
--
--		/* Kernel symbol table: Normal symbols */
--		. = ALIGN(4);
--		__start___ksymtab = .;
--		*(SORT(___ksymtab+*))
--		__stop___ksymtab = .;
--
--		/* Kernel symbol table: GPL-only symbols */
--		__start___ksymtab_gpl = .;
--		*(SORT(___ksymtab_gpl+*))
--		__stop___ksymtab_gpl = .;
--
--		/* Kernel symbol table: Normal unused symbols */
--		__start___ksymtab_unused = .;
--		*(SORT(___ksymtab_unused+*))
--		__stop___ksymtab_unused = .;
--
--		/* Kernel symbol table: GPL-only unused symbols */
--		__start___ksymtab_unused_gpl = .;
--		*(SORT(___ksymtab_unused_gpl+*))
--		__stop___ksymtab_unused_gpl = .;
--
--		/* Kernel symbol table: GPL-future symbols */
--		__start___ksymtab_gpl_future = .;
--		*(SORT(___ksymtab_gpl_future+*))
--		__stop___ksymtab_gpl_future = .;
--
--		/* Kernel symbol table: Normal symbols */
--		__start___kcrctab = .;
--		*(SORT(___kcrctab+*))
--		__stop___kcrctab = .;
--
--		/* Kernel symbol table: GPL-only symbols */
--		__start___kcrctab_gpl = .;
--		*(SORT(___kcrctab_gpl+*))
--		__stop___kcrctab_gpl = .;
--
--		/* Kernel symbol table: Normal unused symbols */
--		__start___kcrctab_unused = .;
--		*(SORT(___kcrctab_unused+*))
--		__stop___kcrctab_unused = .;
--
--		/* Kernel symbol table: GPL-only unused symbols */
--		__start___kcrctab_unused_gpl = .;
--		*(SORT(___kcrctab_unused_gpl+*))
--		__stop___kcrctab_unused_gpl = .;
--
--		/* Kernel symbol table: GPL-future symbols */
--		__start___kcrctab_gpl_future = .;
--		*(SORT(___kcrctab_gpl_future+*))
--		__stop___kcrctab_gpl_future = .;
--
--		/* Kernel symbol table: strings */
--		*(__ksymtab_strings)
--
--		/* Built-in module parameters */
--		. = ALIGN(4) ;
--		__start___param = .;
--		*(__param)
--		__stop___param = .;
--
--		/* Built-in module versions */
--		. = ALIGN(4) ;
--		__start___modver = .;
--		*(__modver)
--		__stop___modver = .;
--
--		. = ALIGN(4) ;
--		_etext = . ;
--	} > TEXT
--
--	.data DATA_ADDR : {
--		. = ALIGN(4);
--		_sdata = . ;
--		DATA_DATA
--		CACHELINE_ALIGNED_DATA(32)
--		PAGE_ALIGNED_DATA(PAGE_SIZE)
--		*(.data..shared_aligned)
--		INIT_TASK_DATA(THREAD_SIZE)
--		_edata = . ;
--	} > DATA
-+	EXCEPTION_TABLE(16)
-+	NOTES
- 
-+	. = ALIGN(PAGE_SIZE);
-+	__init_begin = .;
-+	INIT_TEXT_SECTION(PAGE_SIZE)
-+	INIT_DATA_SECTION(16)
-+	PERCPU_SECTION(16)
- 	.m68k_fixup : {
- 		__start_fixup = .;
- 		*(.m68k_fixup)
- 		__stop_fixup = .;
--	} > DATA
--	NOTES > DATA
--
--	.init.text : {
--		. = ALIGN(PAGE_SIZE);
--		__init_begin = .;
--	} > INIT
--	INIT_TEXT_SECTION(PAGE_SIZE) > INIT
--	INIT_DATA_SECTION(16) > INIT
-+	}
- 	.init.data : {
- 		. = ALIGN(PAGE_SIZE);
- 		__init_end = .;
--	} > INIT
--
--	.bss : {
--		. = ALIGN(4);
--		_sbss = . ;
--		*(.bss)
--		*(COMMON)
--		. = ALIGN(4) ;
--		_ebss = . ;
--	 	_end = . ;
--	} > BSSS
-+	}
-+
-+	_sbss = .;
-+	BSS_SECTION(0, 0, 0)
-+	_ebss = .;
-+
-+	_end = .;
-+
-+	STABS_DEBUG
-+	.comment 0 : { *(.comment) }
- 
-+	/* Sections to be discarded */
- 	DISCARDS
- }
- 
++		if (bitshift >= 32)
+ 			break;
+-		base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		port_mask = data[0];
+ 		port_data = data[1];
+-		bitshift = base_port_channel - base_bitfield_channel;
+-		if (bitshift >= 32 || bitshift <= -32)
+-			break;
+ 		if (bitshift > 0) {
+ 			port_mask >>= bitshift;
+ 			port_data >>= bitshift;
 
