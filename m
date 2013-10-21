@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab3JUI4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:56:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39901 "EHLO
+	id S1754828Ab3JUI4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:56:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39904 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754627Ab3JUIxb (ORCPT
+	by vger.kernel.org with ESMTP id S1754630Ab3JUIxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Oct 2013 04:53:31 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Florian Wolter" <wolly84@web.de>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+CC: akpm@linux-foundation.org, "Mike Miller" <mike.miller@hp.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.689153462@decadent.org.uk>
+Message-ID: <lsq.1382345188.994552199@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 143/149] xhci: Fix race between ep halt and URB
- cancellation
+Subject: [PATCH 3.2 142/149] cciss: fix info leak in cciss_ioctl32_passthru()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,38 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Wolter <wolly84@web.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
-user process, because the stopped_td variable was overwritten in the
-handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
-refuse the reset and communication with device can not run over this endpoint.
-https://bugzilla.kernel.org/show_bug.cgi?id=60699
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
-Signed-off-by: Florian Wolter <wolly84@web.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+This was assigned CVE-2013-2147.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/cciss.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -879,8 +879,12 @@ remove_finished_td:
- 		/* Otherwise ring the doorbell(s) to restart queued transfers */
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
--	ep->stopped_td = NULL;
--	ep->stopped_trb = NULL;
-+
-+	/* Clear stopped_td and stopped_trb if endpoint is not halted */
-+	if (!(ep->ep_state & EP_HALTED)) {
-+		ep->stopped_td = NULL;
-+		ep->stopped_trb = NULL;
-+	}
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1186,6 +1186,7 @@ static int cciss_ioctl32_passthru(struct
+ 	int err;
+ 	u32 cp;
  
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 
