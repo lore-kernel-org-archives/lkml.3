@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab3JUITx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:19:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48396 "EHLO mga03.intel.com"
+	id S1752996Ab3JUIUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:20:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26418 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab3JUITv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:19:51 -0400
+	id S1752975Ab3JUIUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 04:20:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="377578166"
-Date: Mon, 21 Oct 2013 12:56:12 +0530
+   d="scan'208";a="377578277"
+Date: Mon, 21 Oct 2013 12:56:45 +0530
 From: Vinod Koul <vinod.koul@intel.com>
 To: Joel Fernandes <joelf@ti.com>
 Cc: Matt Porter <matt@ohporter.com>, Mark Brown <broonie@linaro.org>,
@@ -21,31 +21,27 @@ Cc: Matt Porter <matt@ohporter.com>, Mark Brown <broonie@linaro.org>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/3] dma: edma: Split out PaRAM set calculations into
- its own function
-Message-ID: <20131021072612.GN14013@intel.com>
+Subject: Re: [PATCH 3/3] dma: edma: Increase maximum SG limit to 20
+Message-ID: <20131021072645.GO14013@intel.com>
 References: <1379977515-3794-1-git-send-email-joelf@ti.com>
- <1379977515-3794-2-git-send-email-joelf@ti.com>
+ <1379977515-3794-4-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379977515-3794-2-git-send-email-joelf@ti.com>
+In-Reply-To: <1379977515-3794-4-git-send-email-joelf@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 23, 2013 at 06:05:13PM -0500, Joel Fernandes wrote:
-> PaRAM set calculation is abstracted into its own function to
-> enable better reuse for other DMA cases such as cyclic. We adapt
-> the Slave SG case to use the new function.
+On Mon, Sep 23, 2013 at 06:05:15PM -0500, Joel Fernandes wrote:
+> davinci-pcm uses 16 as the no.of periods. With this, in EDMA we have to
+> allocate atleast 17 slots: 1 slot for channel, and 16 slots the periods.
 > 
-> This provides a much cleaner abstraction to the internals of the
-> PaRAM set. However, any PaRAM attributes that are not common to
-> all DMA types must be set separately such as setting of interrupts.
-> This function takes care of the most-common attributes.
-> 
-> Also added comments clarifying A-sync case calculations.
+> Due to this, the MAX_NR_SG limitation causes problems, set it to 20 to make
+> cyclic DMA work when davinci-pcm is converted to use DMA Engine. Also add
+> a comment clarifying this.
+
 Applied, thanks
 
 --
