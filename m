@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3JUIxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:53:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39923 "EHLO
+	id S1754707Ab3JUIxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 04:53:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39920 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754657Ab3JUIxe (ORCPT
+	by vger.kernel.org with ESMTP id S1754651Ab3JUIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Oct 2013 04:53:34 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Zheng Liu" <wenqing.lz@taobao.com>,
-        "Jan Kara" <jack@suse.cz>, "Jiri Slaby" <jslaby@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Claudiu Manoil" <claudiu.manoil@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.665280719@decadent.org.uk>
+Message-ID: <lsq.1382345188.733635373@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 145/149] ext4: avoid hang when mounting non-journal
- filesystems  with orphan list
+Subject: [PATCH 3.2 149/149] gianfar: Change default HW Tx queue
+ scheduling mode
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,47 +32,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Claudiu Manoil <claudiu.manoil@freescale.com>
 
-commit 0e9a9a1ad619e7e987815d20262d36a2f95717ca upstream.
+commit b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c upstream.
 
-When trying to mount a file system which does not contain a journal,
-but which does have a orphan list containing an inode which needs to
-be truncated, the mount call with hang forever in
-ext4_orphan_cleanup() because ext4_orphan_del() will return
-immediately without removing the inode from the orphan list, leading
-to an uninterruptible loop in kernel code which will busy out one of
-the CPU's on the system.
+This is primarily to address transmission timeout occurrences, when
+multiple H/W Tx queues are being used concurrently. Because in
+the priority scheduling mode the controller does not service the
+Tx queues equally (but in ascending index order), Tx timeouts are
+being triggered rightaway for a basic test with multiple simultaneous
+connections like:
+iperf -c <server_ip> -n 100M -P 8
 
-This can be trivially reproduced by trying to mount the file system
-found in tests/f_orphan_extents_inode/image.gz from the e2fsprogs
-source tree.  If a malicious user were to put this on a USB stick, and
-mount it on a Linux desktop which has automatic mounts enabled, this
-could be considered a potential denial of service attack.  (Not a big
-deal in practice, but professional paranoids worry about such things,
-and have even been known to allocate CVE numbers for such problems.)
+resulting in kernel trace:
+NETDEV WATCHDOG: eth1 (fsl-gianfar): transmit queue <X> timed out
+------------[ cut here ]------------
+WARNING: at net/sched/sch_generic.c:255
+...
+and controller reset during intense traffic, and possibly further
+complications.
 
--js: This is a fix for CVE-2013-2015.
+This patch changes the default H/W Tx scheduling setting (TXSCHED)
+for multi-queue devices, from priority scheduling mode to a weighted
+round robin mode with equal weights for all H/W Tx queues, and
+addresses the issue above.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
-Acked-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Claudiu Manoil <claudiu.manoil@freescale.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/freescale/gianfar.c | 11 ++++++++++-
+ drivers/net/ethernet/freescale/gianfar.h | 11 ++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2054,7 +2054,8 @@ int ext4_orphan_del(handle_t *handle, st
- 	int err = 0;
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -397,7 +397,13 @@ static void gfar_init_mac(struct net_dev
+ 	if (ndev->features & NETIF_F_IP_CSUM)
+ 		tctrl |= TCTRL_INIT_CSUM;
  
- 	/* ext4_handle_valid() assumes a valid handle_t pointer */
--	if (handle && !ext4_handle_valid(handle))
-+	if (handle && !ext4_handle_valid(handle) &&
-+	    !(EXT4_SB(inode->i_sb)->s_mount_state & EXT4_ORPHAN_FS))
- 		return 0;
+-	tctrl |= TCTRL_TXSCHED_PRIO;
++	if (priv->prio_sched_en)
++		tctrl |= TCTRL_TXSCHED_PRIO;
++	else {
++		tctrl |= TCTRL_TXSCHED_WRRS;
++		gfar_write(&regs->tr03wt, DEFAULT_WRRS_WEIGHT);
++		gfar_write(&regs->tr47wt, DEFAULT_WRRS_WEIGHT);
++	}
  
- 	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
+ 	gfar_write(&regs->tctrl, tctrl);
+ 
+@@ -1157,6 +1163,9 @@ static int gfar_probe(struct platform_de
+ 	priv->rx_filer_enable = 1;
+ 	/* Enable most messages by default */
+ 	priv->msg_enable = (NETIF_MSG_IFUP << 1 ) - 1;
++	/* use pritority h/w tx queue scheduling for single queue devices */
++	if (priv->num_tx_queues == 1)
++		priv->prio_sched_en = 1;
+ 
+ 	/* Carrier starts down, phylib will bring it up */
+ 	netif_carrier_off(dev);
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -304,8 +304,16 @@ extern const char gfar_driver_version[];
+ #define TCTRL_TFCPAUSE		0x00000008
+ #define TCTRL_TXSCHED_MASK	0x00000006
+ #define TCTRL_TXSCHED_INIT	0x00000000
++/* priority scheduling */
+ #define TCTRL_TXSCHED_PRIO	0x00000002
++/* weighted round-robin scheduling (WRRS) */
+ #define TCTRL_TXSCHED_WRRS	0x00000004
++/* default WRRS weight and policy setting,
++ * tailored to the tr03wt and tr47wt registers:
++ * equal weight for all Tx Qs, measured in 64byte units
++ */
++#define DEFAULT_WRRS_WEIGHT	0x18181818
++
+ #define TCTRL_INIT_CSUM		(TCTRL_TUCSEN | TCTRL_IPCSEN)
+ 
+ #define IEVENT_INIT_CLEAR	0xffffffff
+@@ -1101,7 +1109,8 @@ struct gfar_private {
+ 		extended_hash:1,
+ 		bd_stash_en:1,
+ 		rx_filer_enable:1,
+-		wol_en:1; /* Wake-on-LAN enabled */
++		wol_en:1, /* Wake-on-LAN enabled */
++		prio_sched_en:1; /* Enable priorty based Tx scheduling in Hw */
+ 	unsigned short padding;
+ 
+ 	/* PHY stuff */
 
