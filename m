@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3JUJCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 05:02:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39804 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754302Ab3JUIwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:41 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755266Ab3JUJC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:02:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59478 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754302Ab3JUJC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 05:02:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="310472180"
+Message-ID: <5264ED95.2020101@intel.com>
+Date: Mon, 21 Oct 2013 12:02:13 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Miller" <davem@davemloft.net>,
-        "Kirill Tkhai" <tkhai@yandex.ru>
-Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.938159896@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 115/149] sparc64: Fix ITLB handler of null page
-In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
-X-SA-Exim-Connect-IP: 212.20.242.100
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
+References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-10-git-send-email-adrian.hunter@intel.com> <20131020204251.GA12044@krava> <5264C140.1020903@intel.com> <20131021084658.GA2958@krava.brq.redhat.com>
+In-Reply-To: <20131021084658.GA2958@krava.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.52-rc1 review patch.  If anyone has any objections, please let me know.
+On 21/10/13 11:46, Jiri Olsa wrote:
+> On Mon, Oct 21, 2013 at 08:53:04AM +0300, Adrian Hunter wrote:
+>> On 20/10/13 23:42, Jiri Olsa wrote:
+>>> On Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter wrote:
+>>>> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
+>>>> was not passed around.
+>>>
+>>> this breaks feature detection for me on x86_64,
+>>> I've got following errors misdetection with this patch:
+>>>
+>>> ...                       libperl: [ OFF ]
+> 
+> how about this one?
 
-------------------
+I will check it out.
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+> 
+>>> ...                       on-exit: [ OFF ]
+>>>
+>>> and the build fails as well:
+>>>
+>>>   CC       builtin-stat.o
+>>> builtin-record.c:42:12: error: static declaration of ‘on_exit’ follows non-static declaration
+>>> In file included from util/util.h:51:0,
+>>>                  from builtin.h:4,
+>>>                  from builtin-record.c:8:
+>>> /usr/include/stdlib.h:536:12: note: previous declaration of ‘on_exit’ was here
+>>> make[1]: *** [builtin-record.o] Error 1
+>>> make[1]: *** Waiting for unfinished jobs....
+>>> make: *** [all] Error 2
+>>
+>> That is fixed in patch 11: perf tools: Fix test_on_exit for 32-bit build
+> 
+> hum, could we apply those patches in reverse order?
+> I think the notion is not to break build deliberatelly
+> for the bisection sake.
 
-[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
-
-1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
-
-2)Handle page #0 only, don't handle page #1: bleu -> blu
-
- (KERNBASE is 0x400000, so #1 does not exist too. But everything
-  is possible in the future. Fix to not to have problems later.)
-
-3)Remove unused kvmap_itlb_nonlinear.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/sparc/kernel/ktlb.S | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/sparc/kernel/ktlb.S b/arch/sparc/kernel/ktlb.S
-index 79f3103..7c00735 100644
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -25,11 +25,10 @@ kvmap_itlb:
- 	 */
- kvmap_itlb_4v:
- 
--kvmap_itlb_nonlinear:
- 	/* Catch kernel NULL pointer calls.  */
- 	sethi		%hi(PAGE_SIZE), %g5
- 	cmp		%g4, %g5
--	bleu,pn		%xcc, kvmap_dtlb_longpath
-+	blu,pn		%xcc, kvmap_itlb_longpath
- 	 nop
- 
- 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
+Oh, I had thought it was a 32-bit only problem.
+Yes, I will re-order the patches.
 
