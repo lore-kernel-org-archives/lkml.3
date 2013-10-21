@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3JUIwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 04:52:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39703 "EHLO
+	id S1755074Ab3JUJJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 05:09:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39714 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754058Ab3JUIwH (ORCPT
+	by vger.kernel.org with ESMTP id S1754064Ab3JUIwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 04:52:07 -0400
+	Mon, 21 Oct 2013 04:52:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Madhavan Srinivasan" <maddy@linux.vnet.ibm.com>,
+CC: akpm@linux-foundation.org, "Nishanth Aravamudan" <nacc@linux.vnet.ibm.com>,
+        "Nishanth Aravamudan" <nacc@us.ibm.com>,
         "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Mon, 21 Oct 2013 09:46:28 +0100
-Message-ID: <lsq.1382345188.871863470@decadent.org.uk>
+Message-ID: <lsq.1382345188.579162159@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 099/149] powerpc/sysfs: Disable writing to PURR in
- guest mode
+Subject: [PATCH 3.2 100/149] powerpc/iommu: Use GFP_KERNEL instead of
+ GFP_ATOMIC in iommu_init_table()
 In-Reply-To: <lsq.1382345187.199780875@decadent.org.uk>
 X-SA-Exim-Connect-IP: 212.20.242.100
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,71 +33,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
+commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
 
-arch/powerpc/kernel/sysfs.c exports PURR with write permission.
-This may be valid for kernel in phyp mode. But writing to
-the file in guest mode causes crash due to a priviledge violation
+Under heavy (DLPAR?) stress, we tripped this panic() in
+arch/powerpc/kernel/iommu.c::iommu_init_table():
 
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
+	if (!page)
+		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+
+Before the panic() we got a page allocation failure for an order-2
+allocation. There appears to be memory free, but perhaps not in the
+ATOMIC context. I looked through all the call-sites of
+iommu_init_table() and didn't see any obvious reason to need an ATOMIC
+allocation. Most call-sites in fact have an explicit GFP_KERNEL
+allocation shortly before the call to iommu_init_table(), indicating we
+are not in an atomic context. There is some indirection for some paths,
+but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
+
+With this change under the same conditions, we have not been able to
+reproduce the panic.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - CPUs are sysdev and we must use the sysdev API]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/sysfs.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/iommu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -18,6 +18,7 @@
- #include <asm/machdep.h>
- #include <asm/smp.h>
- #include <asm/pmc.h>
-+#include <asm/firmware.h>
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -495,7 +495,7 @@ struct iommu_table *iommu_init_table(str
+ 	/* number of bytes needed for the bitmap */
+ 	sz = (tbl->it_size + 7) >> 3;
  
- #include "cacheinfo.h"
- 
-@@ -178,14 +179,24 @@ SYSFS_PMCSETUP(purr, SPRN_PURR);
- SYSFS_PMCSETUP(spurr, SPRN_SPURR);
- SYSFS_PMCSETUP(dscr, SPRN_DSCR);
- 
-+/*
-+  Lets only enable read for phyp resources and
-+  enable write when needed with a separate function.
-+  Lets be conservative and default to pseries.
-+*/
- static SYSDEV_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
- static SYSDEV_ATTR(spurr, 0600, show_spurr, NULL);
- static SYSDEV_ATTR(dscr, 0600, show_dscr, store_dscr);
--static SYSDEV_ATTR(purr, 0600, show_purr, store_purr);
-+static SYSDEV_ATTR(purr, 0400, show_purr, store_purr);
- 
- unsigned long dscr_default = 0;
- EXPORT_SYMBOL(dscr_default);
- 
-+static void add_write_permission_dev_attr(struct sysdev_attribute *attr)
-+{
-+	attr->attr.mode |= 0200;
-+}
-+
- static ssize_t show_dscr_default(struct sysdev_class *class,
- 		struct sysdev_class_attribute *attr, char *buf)
- {
-@@ -394,8 +405,11 @@ static void __cpuinit register_cpu_onlin
- 	if (cpu_has_feature(CPU_FTR_MMCRA))
- 		sysdev_create_file(s, &attr_mmcra);
- 
--	if (cpu_has_feature(CPU_FTR_PURR))
-+	if (cpu_has_feature(CPU_FTR_PURR)) {
-+		if (!firmware_has_feature(FW_FEATURE_LPAR))
-+			add_write_permission_dev_attr(&attr_purr);
- 		sysdev_create_file(s, &attr_purr);
-+	}
- 
- 	if (cpu_has_feature(CPU_FTR_SPURR))
- 		sysdev_create_file(s, &attr_spurr);
+-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
++	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
+ 	if (!page)
+ 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+ 	tbl->it_map = page_address(page);
 
