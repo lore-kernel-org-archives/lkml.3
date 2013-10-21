@@ -1,418 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab3JUDOl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Oct 2013 23:14:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19473 "EHLO mga02.intel.com"
+	id S1752445Ab3JUDUE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Oct 2013 23:20:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51655 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab3JUDOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Oct 2013 23:14:40 -0400
+	id S1752267Ab3JUDUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Oct 2013 23:20:02 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="422103290"
-Date: Mon, 21 Oct 2013 11:14:50 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, bitbucket@online.de, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: [tip:sched/core] sched, idle: Fix the idle polling state logic
-Message-ID: <20131021031450.GA29682@yliu-dev.sh.intel.com>
-References: <tip-nc03imb0etuefmzybzj7sprf@git.kernel.org>
+X-IronPort-AV: E=Sophos;i="4.93,536,1378882800"; 
+   d="scan'208";a="419931099"
+Message-ID: <52649D84.9010306@intel.com>
+Date: Mon, 21 Oct 2013 11:20:36 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+Organization: Intel, Shanghai, PRC
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-nc03imb0etuefmzybzj7sprf@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jarkko.nikula@linux.intel.com,
+        mika.westerberg@linux.intel.com
+Subject: Re: [PATCH 1/3] ACPI: add module autoloading support for ACPI enumerated
+ devices
+References: <1381741834-7334-1-git-send-email-rui.zhang@intel.com>
+In-Reply-To: <1381741834-7334-1-git-send-email-rui.zhang@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 09:38:19AM -0700, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  ea8117478918a4734586d35ff530721b682425be
-> Gitweb:     http://git.kernel.org/tip/ea8117478918a4734586d35ff530721b682425be
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Wed, 11 Sep 2013 12:43:13 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 25 Sep 2013 13:53:10 +0200
+On 10/14/2013 05:10 PM, Zhang Rui wrote:
+> An ACPI enumerated device may have its compatible id strings.
 > 
-> sched, idle: Fix the idle polling state logic
+> To support the compatible ACPI ids (acpi_device->pnp.ids),
+> we introduced acpi_driver_match_device() to match
+> the driver->acpi_match_table and acpi_device->pnp.ids.
 > 
-> Mike reported that commit 7d1a9417 ("x86: Use generic idle loop")
-> regressed several workloads and caused excessive reschedule
-> interrupts.
-
-Hi,
-
-JFYI, this patch does reduce interruptes in our test:
-
-   platform: Sandbridge
-   testcase: aim7/creat-clo
-
-   * --  with this patch
-   O --  without this patch
-                                    interrupts.RES
-
-   1.2e+08 ++---------------------------------------------------------------+
-           |                                                                |
-     1e+08 O+   O    O    O    O    O    O    O    O    O    O              |
-           |                                                                |
-           |                                                                |
-     8e+07 ++                                                               |
-           |                                                                |
-     6e+07 ++                                                               |
-           |                                                                |
-     4e+07 ++                                                               |
-           |                                                                |
-           |                                                                |
-     2e+07 ++                                                               |
-           *....*....*....*....*....*....   ..*....*....*....*....*....*....*
-         0 ++----------------------------*----------------------------------+
-
-
-
-                                   vmstat.system.in
-
-   160000 ++----------------------------------------------------------------+
-          O         O         O                                             |
-   140000 ++   O                   O    O     O    O    O    O              |
-   120000 ++             O                                                  |
-          |                                                                 |
-   100000 ++                                                                |
-          |                                                                 |
-    80000 ++                                                                |
-          |                                                                 |
-    60000 ++                                                                |
-    40000 ++                                                                |
-          |                                                                 |
-    20000 *+...*....*....*....*....*....         ..*....*....*....*....*....*
-          |                             *.....*..                           |
-        0 ++----------------------------------------------------------------+
-
-
-	--yliu
-
+> For those drivers, MODULE_DEVICE_TABLE(acpi, xxx) is used to
+> exports the driver module alias in the format of
+> "acpi:device_compatible_ids".
+> But in the mean time, the current code does not export the
+> ACPI compatible strings as part of the module_alias for the
+> ACPI enumerated devices, which will break the module autoloading.
 > 
-> The patch in question failed to notice that the x86 code had an
-> inverted sense of the polling state versus the new generic code (x86:
-> default polling, generic: default !polling).
+> Take the following piece of code for example,
+> static const struct acpi_device_id xxx_acpi_match[] = {
+>         { "INTABCD", 0 },
+>         { }
+> };
+> MODULE_DEVICE_TABLE(acpi, xxx_acpi_match);
 > 
-> Fix the two prominent x86 mwait based idle drivers and introduce a few
-> new generic polling helpers (fixing the wrong smp_mb__after_clear_bit
-> usage).
+> If this piece of code is used in a platform driver for
+> an ACPI enumerated platform device, the platform driver module_alias
+> is "acpi:INTABCD", but the uevent attribute of its platform device node
+> is "platform:INTABCD:00" (PREFIX:pdev->name).
+> If this piece of code is used in an i2c driver for an ACPI enumerated
+> i2c device, the i2c driver module_alias is "acpi:INTABCD", but
+> the uevent of its i2c device node is "i2c:INTABCD:00" (PREFIX:client->name).
 > 
-> Also switch the idle routines to using tif_need_resched() which is an
-> immediate TIF_NEED_RESCHED test as opposed to need_resched which will
-> end up being slightly different.
+> The reason why the module autoloading is not broken for now is that
+> the uevent file of the ACPI device node is "acpi:INTABCD".
+> Thus it is the ACPI device node creation that loads the platform/i2c driver.
 > 
-> Reported-by: Mike Galbraith <bitbucket@online.de>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: lenb@kernel.org
-> Cc: tglx@linutronix.de
-> Link: http://lkml.kernel.org/n/tip-nc03imb0etuefmzybzj7sprf@git.kernel.org
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> So this is a problem that will affect us the day when the ACPI bus
+> is removed from device model.
+> 
+> This patch introduces a new function to exporting ACPI ids as the
+> module_alias, for the ACPI enumerate devices.
+> 
+> For any drivers using MODULE_DEVICE_TALBE(acpi, blabla), the uevent file
+> of its associated device must be fixed by invoking this function.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 > ---
->  arch/x86/kernel/process.c     |  6 ++--
->  drivers/acpi/processor_idle.c | 46 ++++++-------------------
->  drivers/idle/intel_idle.c     |  2 +-
->  include/linux/sched.h         | 78 +++++++++++++++++++++++++++++++++++++++----
->  include/linux/thread_info.h   |  2 ++
->  kernel/cpu/idle.c             |  9 +++--
->  6 files changed, 91 insertions(+), 52 deletions(-)
+>  drivers/acpi/scan.c  |   24 ++++++++++++++++++++++++
+>  include/linux/acpi.h |    8 ++++++++
+>  2 files changed, 32 insertions(+)
 > 
-> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> index c83516b..3fb8d95 100644
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -391,9 +391,9 @@ static void amd_e400_idle(void)
->  		 * The switch back from broadcast mode needs to be
->  		 * called with interrupts disabled.
->  		 */
-> -		 local_irq_disable();
-> -		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> -		 local_irq_enable();
-> +		local_irq_disable();
-> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> +		local_irq_enable();
->  	} else
->  		default_idle();
->  }
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index f98dd00..c7414a5 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -119,17 +119,10 @@ static struct dmi_system_id processor_power_dmi_table[] = {
->   */
->  static void acpi_safe_halt(void)
->  {
-> -	current_thread_info()->status &= ~TS_POLLING;
-> -	/*
-> -	 * TS_POLLING-cleared state must be visible before we
-> -	 * test NEED_RESCHED:
-> -	 */
-> -	smp_mb();
-> -	if (!need_resched()) {
-> +	if (!tif_need_resched()) {
->  		safe_halt();
->  		local_irq_disable();
->  	}
-> -	current_thread_info()->status |= TS_POLLING;
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 407ad13..db6f879 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -111,6 +111,30 @@ static int create_modalias(struct acpi_device *acpi_dev, char *modalias,
+>  	return len;
 >  }
 >  
->  #ifdef ARCH_APICTIMER_STOPS_ON_C3
-> @@ -737,6 +730,11 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
->  	if (unlikely(!pr))
->  		return -EINVAL;
->  
-> +	if (cx->entry_method == ACPI_CSTATE_FFH) {
-> +		if (current_set_polling_and_test())
-> +			return -EINVAL;
-> +	}
-> +
->  	lapic_timer_state_broadcast(pr, cx, 1);
->  	acpi_idle_do_entry(cx);
->  
-> @@ -790,18 +788,9 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
->  	if (unlikely(!pr))
->  		return -EINVAL;
->  
-> -	if (cx->entry_method != ACPI_CSTATE_FFH) {
-> -		current_thread_info()->status &= ~TS_POLLING;
-> -		/*
-> -		 * TS_POLLING-cleared state must be visible before we test
-> -		 * NEED_RESCHED:
-> -		 */
-> -		smp_mb();
-> -
-> -		if (unlikely(need_resched())) {
-> -			current_thread_info()->status |= TS_POLLING;
-> +	if (cx->entry_method == ACPI_CSTATE_FFH) {
-> +		if (current_set_polling_and_test())
->  			return -EINVAL;
-> -		}
->  	}
->  
->  	/*
-> @@ -819,9 +808,6 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
->  
->  	sched_clock_idle_wakeup_event(0);
->  
-> -	if (cx->entry_method != ACPI_CSTATE_FFH)
-> -		current_thread_info()->status |= TS_POLLING;
-> -
->  	lapic_timer_state_broadcast(pr, cx, 0);
->  	return index;
->  }
-> @@ -858,18 +844,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  		}
->  	}
->  
-> -	if (cx->entry_method != ACPI_CSTATE_FFH) {
-> -		current_thread_info()->status &= ~TS_POLLING;
-> -		/*
-> -		 * TS_POLLING-cleared state must be visible before we test
-> -		 * NEED_RESCHED:
-> -		 */
-> -		smp_mb();
-> -
-> -		if (unlikely(need_resched())) {
-> -			current_thread_info()->status |= TS_POLLING;
-> +	if (cx->entry_method == ACPI_CSTATE_FFH) {
-> +		if (current_set_polling_and_test())
->  			return -EINVAL;
-> -		}
->  	}
->  
->  	acpi_unlazy_tlb(smp_processor_id());
-> @@ -915,9 +892,6 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  
->  	sched_clock_idle_wakeup_event(0);
->  
-> -	if (cx->entry_method != ACPI_CSTATE_FFH)
-> -		current_thread_info()->status |= TS_POLLING;
-> -
->  	lapic_timer_state_broadcast(pr, cx, 0);
->  	return index;
->  }
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index fa6964d..f116d66 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -359,7 +359,7 @@ static int intel_idle(struct cpuidle_device *dev,
->  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
->  
-> -	if (!need_resched()) {
-> +	if (!current_set_polling_and_test()) {
->  
->  		__monitor((void *)&current_thread_info()->flags, 0, 0);
->  		smp_mb();
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index b5344de..e783ec5 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2479,34 +2479,98 @@ static inline int tsk_is_polling(struct task_struct *p)
->  {
->  	return task_thread_info(p)->status & TS_POLLING;
->  }
-> -static inline void current_set_polling(void)
-> +static inline void __current_set_polling(void)
->  {
->  	current_thread_info()->status |= TS_POLLING;
->  }
->  
-> -static inline void current_clr_polling(void)
-> +static inline bool __must_check current_set_polling_and_test(void)
+> +int acpi_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
 > +{
-> +	__current_set_polling();
+> +	struct acpi_device *acpi_dev;
+> +	int result;
+> +	int len;
 > +
-> +	/*
-> +	 * Polling state must be visible before we test NEED_RESCHED,
-> +	 * paired by resched_task()
-> +	 */
-> +	smp_mb();
+> +	result = acpi_bus_get_device(ACPI_HANDLE(dev), &acpi_dev);
+> +	if (result)
+> +		return result;
 > +
-> +	return unlikely(tif_need_resched());
+> +	if (list_empty(&acpi_dev->pnp.ids))
+> +		return 0;
+> +
+> +	if (add_uevent_var(env, "MODALIAS="))
+> +		return -ENOMEM;
+> +	len = create_modalias(acpi_dev, &env->buf[env->buflen - 1],
+> +				sizeof(env->buf) - env->buflen);
+> +	if (len >= (sizeof(env->buf) - env->buflen))
+> +		return -ENOMEM;
+> +	env->buflen += len;
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(acpi_device_uevent_modalias);
+
+Looks like this function shares a lot with the existing
+acpi_device_uevent, so perhaps worth making some resue of the exising
+code? e.g. seperate the common code into a function and then have the
+two functions call it.
+
+-Aaron
+
+> +
+>  static ssize_t
+>  acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, char *buf) {
+>  	struct acpi_device *acpi_dev = to_acpi_device(dev);
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index a5db4ae..117fa26 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -401,6 +401,8 @@ static inline bool acpi_driver_match_device(struct device *dev,
+>  	return !!acpi_match_device(drv->acpi_match_table, dev);
+>  }
+>  
+> +int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
+> +
+>  #define ACPI_PTR(_ptr)	(_ptr)
+>  
+>  #else	/* !CONFIG_ACPI */
+> @@ -471,6 +473,12 @@ static inline bool acpi_driver_match_device(struct device *dev,
+>  	return false;
+>  }
+>  
+> +static inline int acpi_device_uevent_modalias(struct device *dev,
+> +				struct kobj_uevent_env *env)
+> +{
+> +	return -ENODEV;
 > +}
 > +
-> +static inline void __current_clr_polling(void)
->  {
->  	current_thread_info()->status &= ~TS_POLLING;
-> -	smp_mb__after_clear_bit();
-> +}
-> +
-> +static inline bool __must_check current_clr_polling_and_test(void)
-> +{
-> +	__current_clr_polling();
-> +
-> +	/*
-> +	 * Polling state must be visible before we test NEED_RESCHED,
-> +	 * paired by resched_task()
-> +	 */
-> +	smp_mb();
-> +
-> +	return unlikely(tif_need_resched());
->  }
->  #elif defined(TIF_POLLING_NRFLAG)
->  static inline int tsk_is_polling(struct task_struct *p)
->  {
->  	return test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
->  }
-> -static inline void current_set_polling(void)
-> +
-> +static inline void __current_set_polling(void)
->  {
->  	set_thread_flag(TIF_POLLING_NRFLAG);
->  }
+>  #define ACPI_PTR(_ptr)	(NULL)
 >  
-> -static inline void current_clr_polling(void)
-> +static inline bool __must_check current_set_polling_and_test(void)
-> +{
-> +	__current_set_polling();
-> +
-> +	/*
-> +	 * Polling state must be visible before we test NEED_RESCHED,
-> +	 * paired by resched_task()
-> +	 *
-> +	 * XXX: assumes set/clear bit are identical barrier wise.
-> +	 */
-> +	smp_mb__after_clear_bit();
-> +
-> +	return unlikely(tif_need_resched());
-> +}
-> +
-> +static inline void __current_clr_polling(void)
->  {
->  	clear_thread_flag(TIF_POLLING_NRFLAG);
->  }
-> +
-> +static inline bool __must_check current_clr_polling_and_test(void)
-> +{
-> +	__current_clr_polling();
-> +
-> +	/*
-> +	 * Polling state must be visible before we test NEED_RESCHED,
-> +	 * paired by resched_task()
-> +	 */
-> +	smp_mb__after_clear_bit();
-> +
-> +	return unlikely(tif_need_resched());
-> +}
-> +
->  #else
->  static inline int tsk_is_polling(struct task_struct *p) { return 0; }
-> -static inline void current_set_polling(void) { }
-> -static inline void current_clr_polling(void) { }
-> +static inline void __current_set_polling(void) { }
-> +static inline void __current_clr_polling(void) { }
-> +
-> +static inline bool __must_check current_set_polling_and_test(void)
-> +{
-> +	return unlikely(tif_need_resched());
-> +}
-> +static inline bool __must_check current_clr_polling_and_test(void)
-> +{
-> +	return unlikely(tif_need_resched());
-> +}
->  #endif
->  
->  /*
-> diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-> index a629e4b..fddbe20 100644
-> --- a/include/linux/thread_info.h
-> +++ b/include/linux/thread_info.h
-> @@ -118,6 +118,8 @@ static inline __deprecated void set_need_resched(void)
->  	 */
->  }
->  
-> +#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
-> +
->  #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
->  /*
->   * An arch can define its own version of set_restore_sigmask() to get the
-> diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-> index e695c0a..c261409 100644
-> --- a/kernel/cpu/idle.c
-> +++ b/kernel/cpu/idle.c
-> @@ -44,7 +44,7 @@ static inline int cpu_idle_poll(void)
->  	rcu_idle_enter();
->  	trace_cpu_idle_rcuidle(0, smp_processor_id());
->  	local_irq_enable();
-> -	while (!need_resched())
-> +	while (!tif_need_resched())
->  		cpu_relax();
->  	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
->  	rcu_idle_exit();
-> @@ -92,8 +92,7 @@ static void cpu_idle_loop(void)
->  			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
->  				cpu_idle_poll();
->  			} else {
-> -				current_clr_polling();
-> -				if (!need_resched()) {
-> +				if (!current_clr_polling_and_test()) {
->  					stop_critical_timings();
->  					rcu_idle_enter();
->  					arch_cpu_idle();
-> @@ -103,7 +102,7 @@ static void cpu_idle_loop(void)
->  				} else {
->  					local_irq_enable();
->  				}
-> -				current_set_polling();
-> +				__current_set_polling();
->  			}
->  			arch_cpu_idle_exit();
->  		}
-> @@ -129,7 +128,7 @@ void cpu_startup_entry(enum cpuhp_state state)
->  	 */
->  	boot_init_stack_canary();
->  #endif
-> -	current_set_polling();
-> +	__current_set_polling();
->  	arch_cpu_idle_prepare();
->  	cpu_idle_loop();
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  #endif	/* !CONFIG_ACPI */
+> 
+
