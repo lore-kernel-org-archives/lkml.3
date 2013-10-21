@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab3JULZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 07:25:48 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:54233 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3JULZq (ORCPT
+	id S1753437Ab3JUL0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 07:26:33 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:20813 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab3JUL0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 07:25:46 -0400
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 0/2] percpu: remove this_cpu_xor()
-Date: Mon, 21 Oct 2013 13:25:35 +0200
-Message-Id: <1382354737-59872-1-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.8.3.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102111-4966-0000-0000-0000073EA546
+	Mon, 21 Oct 2013 07:26:31 -0400
+Message-ID: <52650F60.5080402@huawei.com>
+Date: Mon, 21 Oct 2013 19:26:24 +0800
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: <linux-kernel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 00/23 v2] cleanup: introduce br/netdev/netif/wiphy_<foo>_ratelimited()
+ and use them to simplify code
+References: <1382068363-10088-1-git-send-email-wangkefeng.wang@huawei.com> <1382069482.22110.164.camel@joe-AO722>
+In-Reply-To: <1382069482.22110.164.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.221]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While optimizing and testing s390's this_cpu ops I realized that
-this_cpu_xor() generates broken code ("or" instead of "xor").
+On 10/18 12:11, Joe Perches wrote:
+> (resending to lists only because of multiple X's in the subject line)
+> 
+> On Fri, 2013-10-18 at 11:52 +0800, Kefeng Wang wrote:
+>> v1-v2:
+>>
+>>   Introduce macro br/netdev/netif/wiphy_XXX_ratelimited() according
+>>   to Joe Perches's advice. The macros are similar to net_XXX_ratelimited()
+>>   which is more clarifying than net_ratelimited_function(), then use them
+>>   to simplify code.
+> 
+> There are some conceptual differences between these
+> implementations and other <foo>_ratelimited uses.
+> 
+> For every other subsystem but net, there is a per-location
+> struct ratelimit_state.
 
-Since there is not a single user in the whole kernel tree it seems
-to be a good opportunity to simply remove it instead of fixing it.
+yes, but I think I just changed net subsystem. Macro DEFINE_RATELIMIT_STATE used
+DEFAULT_RATELIMIT_INTERVAL and DEFAULT_RATELIMIT_BURST, so what do you think?
+Could anyone give me some advises ?
 
-These two patches only remove the generic and x86 variant. It doesn't
-touch s390 since it would only generate a merge conflict later on.
-I will take care of s390 anyway if the consensus is that it should be
-removed.
+> Here you've made the global net_ratelimit_state replace all
+> of these individual structs so there is some new interaction.
+> 
+> Dunno if that's good or bad.
+> 
+> 
+> 
+> 
+> 
 
-Heiko Carstens (2):
-  percpu: remove this_cpu_xor() implementation
-  x86: remove this_cpu_xor() implementation
-
- arch/x86/include/asm/percpu.h |  8 --------
- include/linux/percpu.h        | 32 --------------------------------
- 2 files changed, 40 deletions(-)
-
--- 
-1.8.3.4
 
