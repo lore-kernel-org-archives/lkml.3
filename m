@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3JUFxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 01:53:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60685 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634Ab3JUFxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 01:53:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="422142819"
-Message-ID: <5264C140.1020903@intel.com>
-Date: Mon, 21 Oct 2013 08:53:04 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752699Ab3JUGFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 02:05:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49775 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab3JUGFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 02:05:07 -0400
+Message-ID: <5264C48A.80900@oracle.com>
+Date: Mon, 21 Oct 2013 14:07:06 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/19] perf tools: Fix 32-bit cross build
-References: <1382099356-4918-1-git-send-email-adrian.hunter@intel.com> <1382099356-4918-10-git-send-email-adrian.hunter@intel.com> <20131020204251.GA12044@krava>
-In-Reply-To: <20131020204251.GA12044@krava>
+To: Hannes Reinecke <hare@suse.de>, Steffen Maier <maier@linux.vnet.ibm.com>
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
+ in the middle
+References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com> <525BEF2B.2030907@suse.de> <525BF256.6060707@suse.de> <525C0CAE.3030803@linux.vnet.ibm.com> <525E37CA.2000605@suse.de>
+In-Reply-To: <525E37CA.2000605@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/10/13 23:42, Jiri Olsa wrote:
-> On Fri, Oct 18, 2013 at 03:29:06PM +0300, Adrian Hunter wrote:
->> Setting EXTRA_CFLAGS=-m32 did not work because CFLAGS
->> was not passed around.
-> 
-> this breaks feature detection for me on x86_64,
-> I've got following errors misdetection with this patch:
-> 
-> ...                       libperl: [ OFF ]
-> ...                       on-exit: [ OFF ]
-> 
-> and the build fails as well:
-> 
->   CC       builtin-stat.o
-> builtin-record.c:42:12: error: static declaration of ‘on_exit’ follows non-static declaration
-> In file included from util/util.h:51:0,
->                  from builtin.h:4,
->                  from builtin-record.c:8:
-> /usr/include/stdlib.h:536:12: note: previous declaration of ‘on_exit’ was here
-> make[1]: *** [builtin-record.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [all] Error 2
+On 10/16/2013 02:52 PM, Hannes Reinecke wrote:
+> But seeing that this approach raises quite some issues I've attached a
+> different patch. Vaughan, could you test with that, too? Should be
+> functionally equivalent to the previous one. Cheers, Hannes 
+Hi Hannes,
 
-That is fixed in patch 11: perf tools: Fix test_on_exit for 32-bit build
+We only tested the later patch which returns _TARGET_PRESENT after
+parsing sense, it works as expected.
 
+About the cause of this issue, admin said he is configuring a
+active-active cluster mode storage. Each node has it own LUN pool and a
+set of rule to control which node can access the pool.
+LUN7 is owned and can only be able to manipulated by the other node, but
+can be seen by this node for a misconfig. So it presents itself in
+REPORT_LUN but return NOT_READY when accessed through this node.
+Do you still regard this as a misbehave in response to INQUIRY?
+
+Thanks,
+Vaughan
