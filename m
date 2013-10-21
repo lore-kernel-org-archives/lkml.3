@@ -1,152 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab3JUWuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 18:50:01 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58995 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab3JUWnf (ORCPT
+	id S1752776Ab3JUWnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 18:43:31 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33855 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab3JUWn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 18:43:35 -0400
+	Mon, 21 Oct 2013 18:43:26 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Roberto Sassu <roberto.sassu@polito.it>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
         James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v2 12/23] ima: pass the filename argument up to ima_add_template_entry()
-Date: Mon, 21 Oct 2013 18:42:57 -0400
-Message-Id: <1382395388-8108-13-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 04/23] ima: read and use signature hash algorithm
+Date: Mon, 21 Oct 2013 18:42:49 -0400
+Message-Id: <1382395388-8108-5-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102122-8236-0000-0000-000002F7D1CD
+x-cbid: 13102122-1542-0000-0000-0000027C6A11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-Pass the filename argument to ima_add_template_entry() in order to
-eliminate a dependency on template specific data (third argument of
-integrity_audit_msg).
+All files on the filesystem, currently, are hashed using the same hash
+algorithm.  In preparation for files from different packages being
+signed using different hash algorithms, this patch adds support for
+reading the signature hash algorithm from the 'security.ima' extended
+attribute and calculates the appropriate file data hash based on it.
 
-This change is required because, with the new template management
-mechanism, the generation of a new measurement entry will be performed
-by new specific functions (introduced in next patches) and the current IMA
-code will not be aware anymore of how data is stored in the entry payload.
+Changelog:
+- fix scripts Lindent and checkpatch msgs - Mimi
+- fix md5 support for older version, which occupied 20 bytes in the
+  xattr, not the expected 16 bytes.  Fix the comparison to compare
+  only the first 16 bytes.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- security/integrity/ima/ima.h       | 5 +++--
- security/integrity/ima/ima_api.c   | 9 +++++----
- security/integrity/ima/ima_init.c  | 3 ++-
- security/integrity/ima/ima_queue.c | 6 +++---
- 4 files changed, 13 insertions(+), 10 deletions(-)
+ security/integrity/digsig_asymmetric.c | 11 ---------
+ security/integrity/ima/ima.h           | 29 +++++++++++++++++++---
+ security/integrity/ima/ima_api.c       | 12 ++++++++-
+ security/integrity/ima/ima_appraise.c  | 45 ++++++++++++++++++++++++++++------
+ security/integrity/ima/ima_main.c      | 11 +++++++--
+ security/integrity/integrity.h         | 11 +++++++++
+ 6 files changed, 94 insertions(+), 25 deletions(-)
 
+diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
+index b475466..9eae480 100644
+--- a/security/integrity/digsig_asymmetric.c
++++ b/security/integrity/digsig_asymmetric.c
+@@ -20,17 +20,6 @@
+ #include "integrity.h"
+ 
+ /*
+- * signature format v2 - for using with asymmetric keys
+- */
+-struct signature_v2_hdr {
+-	uint8_t version;	/* signature format version */
+-	uint8_t	hash_algo;	/* Digest algorithm [enum pkey_hash_algo] */
+-	uint32_t keyid;		/* IMA key identifier - not X509/PGP specific*/
+-	uint16_t sig_size;	/* signature size */
+-	uint8_t sig[0];		/* signature payload */
+-} __packed;
+-
+-/*
+  * Request an asymmetric key.
+  */
+ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
 diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index d7bec6f..27d2ffb 100644
+index eb86032..efcdef2 100644
 --- a/security/integrity/ima/ima.h
 +++ b/security/integrity/ima/ima.h
-@@ -69,7 +69,8 @@ int ima_fs_init(void);
- void ima_fs_cleanup(void);
- int ima_inode_alloc(struct inode *inode);
- int ima_add_template_entry(struct ima_template_entry *entry, int violation,
--			   const char *op, struct inode *inode);
-+			   const char *op, struct inode *inode,
-+			   const unsigned char *filename);
- int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash);
- int ima_calc_buffer_hash(const void *data, int len,
- 			 struct ima_digest_data *hash);
-@@ -107,7 +108,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
- void ima_audit_measurement(struct integrity_iint_cache *iint,
+@@ -99,7 +99,9 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ int ima_get_action(struct inode *inode, int mask, int function);
+ int ima_must_measure(struct inode *inode, int mask, int function);
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+-			    struct file *file);
++			    struct file *file,
++			    struct evm_ima_xattr_data **xattr_value,
++			    int *xattr_len);
+ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
  			   const unsigned char *filename);
- int ima_store_template(struct ima_template_entry *entry, int violation,
--		       struct inode *inode);
-+		       struct inode *inode, const unsigned char *filename);
- void ima_template_show(struct seq_file *m, void *e, enum ima_show_type show);
- const char *ima_d_path(struct path *path, char **pathbuf);
+ void ima_audit_measurement(struct integrity_iint_cache *iint,
+@@ -132,17 +134,25 @@ void ima_delete_rules(void);
  
+ #ifdef CONFIG_IMA_APPRAISE
+ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+-			     struct file *file, const unsigned char *filename);
++			     struct file *file, const unsigned char *filename,
++			     struct evm_ima_xattr_data *xattr_value,
++			     int xattr_len);
+ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
+ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
+ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
+ 					   int func);
++void ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value, int xattr_len,
++		       struct ima_digest_data *hash);
++int ima_read_xattr(struct dentry *dentry,
++		   struct evm_ima_xattr_data **xattr_value);
+ 
+ #else
+ static inline int ima_appraise_measurement(int func,
+ 					   struct integrity_iint_cache *iint,
+ 					   struct file *file,
+-					   const unsigned char *filename)
++					   const unsigned char *filename,
++					   struct evm_ima_xattr_data *xattr_value,
++					   int xattr_len)
+ {
+ 	return INTEGRITY_UNKNOWN;
+ }
+@@ -163,6 +173,19 @@ static inline enum integrity_status ima_get_cache_status(struct integrity_iint_c
+ {
+ 	return INTEGRITY_UNKNOWN;
+ }
++
++static inline void ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
++				     int xattr_len,
++				     struct ima_digest_data *hash)
++{
++}
++
++static inline int ima_read_xattr(struct dentry *dentry,
++				 struct evm_ima_xattr_data **xattr_value)
++{
++	return 0;
++}
++
+ #endif
+ 
+ /* LSM based policy rules require audit */
 diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 98160a3..a0fe504 100644
+index e531fe2..1dba98e 100644
 --- a/security/integrity/ima/ima_api.c
 +++ b/security/integrity/ima/ima_api.c
-@@ -40,7 +40,8 @@ static const char *IMA_TEMPLATE_NAME = "ima";
-  * Returns 0 on success, error code otherwise
+@@ -139,17 +139,27 @@ int ima_must_measure(struct inode *inode, int mask, int function)
+  * Return 0 on success, error code otherwise
   */
- int ima_store_template(struct ima_template_entry *entry,
--		       int violation, struct inode *inode)
-+		       int violation, struct inode *inode,
-+		       const unsigned char *filename)
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+-			    struct file *file)
++			    struct file *file,
++			    struct evm_ima_xattr_data **xattr_value,
++			    int *xattr_len)
  {
- 	const char *op = "add_template_measure";
- 	const char *audit_cause = "hashing_error";
-@@ -67,7 +68,7 @@ int ima_store_template(struct ima_template_entry *entry,
+ 	struct inode *inode = file_inode(file);
+ 	const char *filename = file->f_dentry->d_name.name;
+ 	int result = 0;
+ 
++	if (xattr_value)
++		*xattr_len = ima_read_xattr(file->f_dentry, xattr_value);
++
+ 	if (!(iint->flags & IMA_COLLECTED)) {
+ 		u64 i_version = file_inode(file)->i_version;
+ 
+ 		/* use default hash algorithm */
+ 		iint->ima_hash.algo = ima_hash_algo;
++
++		if (xattr_value)
++			ima_get_hash_algo(*xattr_value, *xattr_len,
++					  &iint->ima_hash);
++
+ 		result = ima_calc_file_hash(file, &iint->ima_hash);
+ 		if (!result) {
+ 			iint->version = i_version;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 3833b0fa..00708a3 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -107,6 +107,34 @@ static void ima_cache_flags(struct integrity_iint_cache *iint, int func)
+ 	}
+ }
+ 
++void ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value, int xattr_len,
++		       struct ima_digest_data *hash)
++{
++	struct signature_v2_hdr *sig;
++
++	if (!xattr_value || xattr_len < 0 || xattr_len <= 1 + sizeof(*sig))
++		return;
++
++	sig = (typeof(sig)) xattr_value->digest;
++
++	if (xattr_value->type != EVM_IMA_XATTR_DIGSIG || sig->version != 2)
++		return;
++
++	hash->algo = sig->hash_algo;
++}
++
++int ima_read_xattr(struct dentry *dentry,
++		   struct evm_ima_xattr_data **xattr_value)
++{
++	struct inode *inode = dentry->d_inode;
++
++	if (!inode->i_op->getxattr)
++		return 0;
++
++	return vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)xattr_value,
++				  0, GFP_NOFS);
++}
++
+ /*
+  * ima_appraise_measurement - appraise file measurement
+  *
+@@ -116,23 +144,22 @@ static void ima_cache_flags(struct integrity_iint_cache *iint, int func)
+  * Return 0 on success, error code otherwise
+  */
+ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+-			     struct file *file, const unsigned char *filename)
++			     struct file *file, const unsigned char *filename,
++			     struct evm_ima_xattr_data *xattr_value,
++			     int xattr_len)
+ {
+ 	struct dentry *dentry = file->f_dentry;
+ 	struct inode *inode = dentry->d_inode;
+-	struct evm_ima_xattr_data *xattr_value = NULL;
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	const char *op = "appraise_data";
+ 	char *cause = "unknown";
+-	int rc;
++	int rc = xattr_len;
+ 
+ 	if (!ima_appraise)
+ 		return 0;
+ 	if (!inode->i_op->getxattr)
+ 		return INTEGRITY_UNKNOWN;
+ 
+-	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)&xattr_value,
+-				0, GFP_NOFS);
+ 	if (rc <= 0) {
+ 		if (rc && rc != -ENODATA)
+ 			goto out;
+@@ -159,7 +186,10 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 			status = INTEGRITY_FAIL;
+ 			break;
  		}
- 		memcpy(entry->digest, hash.hdr.digest, hash.hdr.length);
+-		if (rc - 1 == iint->ima_hash.length)
++		if (xattr_len - 1 >= iint->ima_hash.length)
++			/* xattr length may be longer. md5 hash in previous
++			   version occupied 20 bytes in xattr, instead of 16
++			 */
+ 			rc = memcmp(xattr_value->digest,
+ 				    iint->ima_hash.digest,
+ 				    iint->ima_hash.length);
+@@ -207,7 +237,6 @@ out:
+ 		ima_cache_flags(iint, func);
  	}
--	result = ima_add_template_entry(entry, violation, op, inode);
-+	result = ima_add_template_entry(entry, violation, op, inode, filename);
- 	return result;
+ 	ima_set_cache_status(iint, func, status);
+-	kfree(xattr_value);
+ 	return status;
  }
  
-@@ -96,7 +97,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- 	}
- 	memset(&entry->template, 0, sizeof(entry->template));
- 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
--	result = ima_store_template(entry, violation, inode);
-+	result = ima_store_template(entry, violation, inode, filename);
- 	if (result < 0)
- 		kfree(entry);
- err_out:
-@@ -248,7 +249,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	       (strlen(filename) > IMA_EVENT_NAME_LEN_MAX) ?
- 	       file->f_dentry->d_name.name : filename);
+@@ -223,7 +252,7 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
+ 	if (iint->flags & IMA_DIGSIG)
+ 		return;
  
--	result = ima_store_template(entry, violation, inode);
-+	result = ima_store_template(entry, violation, inode, filename);
- 	if (!result || result == -EEXIST)
- 		iint->flags |= IMA_MEASURED;
- 	if (result < 0)
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 77cd500..d42fac3 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -71,7 +71,8 @@ static void __init ima_add_boot_aggregate(void)
- 		memcpy(entry->template.digest, hash.hdr.digest,
- 		       hash.hdr.length);
+-	rc = ima_collect_measurement(iint, file);
++	rc = ima_collect_measurement(iint, file, NULL, NULL);
+ 	if (rc < 0)
+ 		return;
+ 
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 7708c21..95b5df2 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -149,6 +149,8 @@ static int process_measurement(struct file *file, const char *filename,
+ 	char *pathbuf = NULL;
+ 	const char *pathname = NULL;
+ 	int rc = -ENOMEM, action, must_appraise, _func;
++	struct evm_ima_xattr_data *xattr_value = NULL, **xattr_ptr = NULL;
++	int xattr_len = 0;
+ 
+ 	if (!ima_initialized || !S_ISREG(inode->i_mode))
+ 		return 0;
+@@ -187,7 +189,10 @@ static int process_measurement(struct file *file, const char *filename,
+ 		goto out_digsig;
  	}
--	result = ima_store_template(entry, violation, NULL);
-+	result = ima_store_template(entry, violation, NULL,
-+				    boot_aggregate_name);
- 	if (result < 0)
- 		kfree(entry);
- 	return;
-diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-index e63ff33..d85e997 100644
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -104,7 +104,8 @@ static int ima_pcr_extend(const u8 *hash)
-  * and extend the pcr.
-  */
- int ima_add_template_entry(struct ima_template_entry *entry, int violation,
--			   const char *op, struct inode *inode)
-+			   const char *op, struct inode *inode,
-+			   const unsigned char *filename)
- {
- 	u8 digest[TPM_DIGEST_SIZE];
- 	const char *audit_cause = "hash_added";
-@@ -141,8 +142,7 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
- 	}
+ 
+-	rc = ima_collect_measurement(iint, file);
++	if (action & IMA_APPRAISE_SUBMASK)
++		xattr_ptr = &xattr_value;
++
++	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
+ 	if (rc != 0)
+ 		goto out_digsig;
+ 
+@@ -198,7 +203,8 @@ static int process_measurement(struct file *file, const char *filename,
+ 	if (action & IMA_MEASURE)
+ 		ima_store_measurement(iint, file, pathname);
+ 	if (action & IMA_APPRAISE_SUBMASK)
+-		rc = ima_appraise_measurement(_func, iint, file, pathname);
++		rc = ima_appraise_measurement(_func, iint, file, pathname,
++					      xattr_value, xattr_len);
+ 	if (action & IMA_AUDIT)
+ 		ima_audit_measurement(iint, pathname);
+ 	kfree(pathbuf);
+@@ -207,6 +213,7 @@ out_digsig:
+ 		rc = -EACCES;
  out:
- 	mutex_unlock(&ima_extend_list_mutex);
--	integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode,
--			    entry->template.file_name,
-+	integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode, filename,
- 			    op, audit_cause, result, audit_info);
- 	return result;
- }
+ 	mutex_unlock(&inode->i_mutex);
++	kfree(xattr_value);
+ 	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE))
+ 		return -EACCES;
+ 	return 0;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 0b02ea8..ea23189 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -70,6 +70,17 @@ struct ima_digest_data {
+ 	u8 digest[IMA_MAX_DIGEST_SIZE];
+ } __packed;
+ 
++/*
++ * signature format v2 - for using with asymmetric keys
++ */
++struct signature_v2_hdr {
++	uint8_t version;	/* signature format version */
++	uint8_t	hash_algo;	/* Digest algorithm [enum pkey_hash_algo] */
++	uint32_t keyid;		/* IMA key identifier - not X509/PGP specific */
++	uint16_t sig_size;	/* signature size */
++	uint8_t sig[0];		/* signature payload */
++} __packed;
++
+ /* integrity data associated with an inode */
+ struct integrity_iint_cache {
+ 	struct rb_node rb_node;	/* rooted in integrity_iint_tree */
 -- 
 1.8.1.4
 
