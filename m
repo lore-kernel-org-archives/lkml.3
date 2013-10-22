@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3JVOek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:34:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53864 "EHLO
+	id S1754561Ab3JVOej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:34:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53891 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3JVO2t (ORCPT
+	with ESMTP id S1753663Ab3JVO2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:28:49 -0400
+	Tue, 22 Oct 2013 10:28:51 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/26] perf record: Improve write_output error message
-Date: Tue, 22 Oct 2013 11:28:18 -0300
-Message-Id: <1382452114-1243-11-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 06/26] perf tools: Introduce filename__read_int helper
+Date: Tue, 22 Oct 2013 11:28:14 -0300
+Message-Id: <1382452114-1243-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -30,40 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Improve the error message from write_output() to say what failed to
-write and give the error number.
+Just opens a file and calls atoi() in at most its first 64 bytes.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+To read things like /proc/sys/kernel/perf_event_paranoid.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-4-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/n/tip-669q04c5tou5pnt8jtiz6y2r@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/util.c | 17 +++++++++++++++++
+ tools/perf/util/util.h |  2 ++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 92ca5419073b..d269dfa3ab08 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -88,7 +88,7 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
- 		int ret = write(rec->output, buf, size);
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 8dc8cf39f4ed..c25e57b3acb2 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -394,3 +394,20 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
  
- 		if (ret < 0) {
--			pr_err("failed to write\n");
-+			pr_err("failed to write perf data, error: %m\n");
- 			return -1;
- 		}
+ 	return (unsigned long) -1;
+ }
++
++int filename__read_int(const char *filename, int *value)
++{
++	char line[64];
++	int fd = open(filename, O_RDONLY), err = -1;
++
++	if (fd < 0)
++		return -1;
++
++	if (read(fd, line, sizeof(line)) > 0) {
++		*value = atoi(line);
++		err = 0;
++	}
++
++	close(fd);
++	return err;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 42dfba70fbfc..c8f362daba87 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -305,4 +305,6 @@ struct dso;
  
+ char *get_srcline(struct dso *dso, unsigned long addr);
+ void free_srcline(char *srcline);
++
++int filename__read_int(const char *filename, int *value);
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
 1.8.1.4
 
