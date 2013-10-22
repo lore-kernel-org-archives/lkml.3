@@ -1,313 +1,484 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3JVAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 20:01:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60698 "EHLO mga02.intel.com"
+	id S1753315Ab3JVACW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 20:02:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64284 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab3JVABc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 20:01:32 -0400
+	id S1753006Ab3JVACT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 20:02:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="422609662"
-Message-ID: <5265C0CD.5030705@linux.intel.com>
-Date: Mon, 21 Oct 2013 17:03:25 -0700
+   d="scan'208";a="422609981"
+Message-ID: <5265C0F6.5080807@linux.intel.com>
+Date: Mon, 21 Oct 2013 17:04:06 -0700
 From: Bin Gao <bin.gao@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] drivers/misc: add rawio pci driver
+Subject: [PATCH 3/4] drivers/misc: add rawio iomem driver
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With pci rawio driver, you can read/write any pci config space register
-by debug fs interface. This driver is based on the rawio framework.
+With iomem rawio driver, you can read/write memory mapped registers
+from any I/O device via debug fs interface.
+This driver is based on the rawio framework.
 
 Signed-off-by: Bin Gao <bin.gao@intel.com>
 ---
- drivers/misc/rawio/Kconfig     |  15 +++
- drivers/misc/rawio/Makefile    |   1 +
- drivers/misc/rawio/rawio_pci.c | 235
-+++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 251 insertions(+)
- create mode 100644 drivers/misc/rawio/rawio_pci.c
+ drivers/misc/rawio/Kconfig       |  12 ++
+ drivers/misc/rawio/Makefile      |   1 +
+ drivers/misc/rawio/rawio_iomem.c | 401
++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 414 insertions(+)
+ create mode 100644 drivers/misc/rawio/rawio_iomem.c
 
 diff --git a/drivers/misc/rawio/Kconfig b/drivers/misc/rawio/Kconfig
-index fd4272e..47be40a 100644
+index 47be40a..38e8a52 100644
 --- a/drivers/misc/rawio/Kconfig
 +++ b/drivers/misc/rawio/Kconfig
-@@ -19,3 +19,18 @@ menuconfig RAWIO
- 	  be called rawio.
+@@ -33,4 +33,16 @@ config RAWIO_PCI
+ 	  To compile this driver as a module, choose M: the module will
+ 	  be called rawio_pci.
 
- 	  If you are not sure, say N here.
-+
-+if RAWIO
-+
-+config RAWIO_PCI
-+	tristate "rawio PCI driver"
-+	depends on RAWIO && PCI
++config RAWIO_IOMEM
++	tristate "rawio I/O memory driver"
++	depends on RAWIO
 +	default no
 +	help
-+	  This option enables the rawio PCI driver.
-+	  With this driver, you can read or write any PCI device's
-+	  configuration space via debugfs.
-+	  To compile this driver as a module, choose M: the module will
-+	  be called rawio_pci.
++	  This option enables the rawio I/O memory driver.
++	  With this driver, you can read or write registers of a memory
++	  mapped I/O devices.
 +
-+endif # RAWIO
++	  To compile this driver as a module, choose M: the module will
++	  be called rawio_iomem.
++
+ endif # RAWIO
 diff --git a/drivers/misc/rawio/Makefile b/drivers/misc/rawio/Makefile
-index c21453c..0933ca6 100644
+index 0933ca6..5f86257 100644
 --- a/drivers/misc/rawio/Makefile
 +++ b/drivers/misc/rawio/Makefile
-@@ -1 +1,2 @@
+@@ -1,2 +1,3 @@
  obj-$(CONFIG_RAWIO)		+= rawio.o
-+obj-$(CONFIG_RAWIO_PCI)		+= rawio_pci.o
-diff --git a/drivers/misc/rawio/rawio_pci.c b/drivers/misc/rawio/rawio_pci.c
+ obj-$(CONFIG_RAWIO_PCI)		+= rawio_pci.o
++obj-$(CONFIG_RAWIO_IOMEM)	+= rawio_iomem.o
+diff --git a/drivers/misc/rawio/rawio_iomem.c
+b/drivers/misc/rawio/rawio_iomem.c
 new file mode 100644
-index 0000000..052ad1b
+index 0000000..eaae773
 --- /dev/null
-+++ b/drivers/misc/rawio/rawio_pci.c
-@@ -0,0 +1,235 @@
++++ b/drivers/misc/rawio/rawio_iomem.c
+@@ -0,0 +1,401 @@
 +/*
-+ * rawio_pci.c - a driver to read/write pci configuration space
-registers based
-+ *               on the rawio framework.
-+ *
-+ * 1: byte, 2: word, 4: dword
-+ *
-+ * read pci config space registers
-+ * echo "r[1|2|4] pci <domain> <bus> <dev> <func> <reg> [<len>]" >
-+ *				/sys/kernel/debug/rawio_cmd
-+ * cat /sys/kernel/debug/rawio_output
-+ * e.g. echo "r1 pci 0 0 3 0 8 12" > /sys/kernel/debug/rawio_cmd
-+ *      cat /sys/kernel/debug/rawio_output
-+ *
-+ * write a pci config space register:
-+ * echo "w[1|2|4] pci <domain> <bus> <dev> <func> <reg> <val>" >
-+ *				/sys/kernel/debug/rawio_output
-+ * cat /sys/kernel/debug/rawio_output
-+ * e.g. echo "w pci 0 0 0x11 2 0x10 0xffffffff" >
-/sys/kernel/debug/rawio_cmd
-+ *      cat /sys/kernel/debug/rawio_output
-+ *
++ * rawio_iomem.c - a driver to read or write a device's I/O memory,
+based on
++ *                 the rawio debugfs framework.
 + *
 + * Copyright (c) 2013 Bin Gao <bin.gao@intel.com>
 + *
 + * This file is released under the GPLv2
 + *
++ *
++ * 1: byte, 2: word, 4: dword
++ *
++ * I/O mem read:
++ * echo "r[1|2|4] iomem <physical_addr> [<len>]" >
+/sys/kernel/debug/rawio_cmd
++ * cat /sys/kernel/debug/rawio_output
++ * e.g. echo "r iomem 0xff003040 20" > /sys/kernel/debug/rawio_cmd
++ *      cat /sys/kernel/debug/rawio_output
++ *
++ * I/O mem write:
++ * echo "w[1|2|4] iomem <physical_addr> <val>" >
+/sys/kernel/debug/rawio_cmd
++ * cat /sys/kernel/debug/rawio_output
++ * e.g. echo "w2 iomem 0xff003042 0xb03f" > /sys/kernel/debug/rawio_cmd
++ *      cat /sys/kernel/debug/rawio_output
 + */
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
 +#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/err.h>
 +#include <linux/pm_runtime.h>
 +#include <linux/pci.h>
-+#include <linux/delay.h>
++#include <linux/pnp.h>
++#include <linux/platform_device.h>
++#include <linux/acpi.h>
 +#include <linux/rawio.h>
 +
-+static int pci_prepare(int pci_domain, unsigned int pci_bus,
-+		u8 pci_dev, u8 pci_func, enum width width,
-+		u16 pci_reg, u16 len, struct pci_dev **ppdev)
++/*
++ * On some platforms, a read or write to a device which is in a low power
++ * state will cause a system error, or even cause a system reboot.
++ * To address this, we use runtime PM APIs to bring up the device to
++ * runnint state before use and put back to original state after use.
++ *
++ * We could use lookup_resource() to map an physical address to a device,
++ * but there are some problems:
++ * 1) lookup_resource() is not exported, so a kernel module can't use it;
++ * 2) To use the 'name' field of 'struct resource' to match a device is
++ *    not reliable;
++ * So we rather walk known device types than look up the resrouce list
++ * to map a physical address(I/O memory address) to a device.
++ */
++
++/* return true if range(start: m2, size: n2) is in range(start: m1,
+size: n1) */
++#define IN_RANGE(m1, n1, m2, n2) \
++	(((m2 >= m1) && (m2 < (m1 + n1))) && \
++	(((m2 + n2) >= m1) && ((m2 + n2) < (m1 + n1))))
++
++struct dev_walker {
++	resource_size_t addr;
++	resource_size_t size;
++	struct device *dev;
++	int error;
++};
++
++#ifdef CONFIG_PCI
++int walk_pci_devices(struct device *dev, void *data)
 +{
-+	struct pci_dev *pdev;
-+	int ret;
++	int i;
++	resource_size_t start, len;
++	struct pci_dev *pdev = (struct pci_dev *) to_pci_dev(dev);
++	struct dev_walker *walker = (struct dev_walker *) data;
 +
-+	if (((width == WIDTH_2) && (pci_reg & 0x1)) ||
-+		((width == WIDTH_4) && (pci_reg & 0x3))) {
-+		rawio_err("register address requires 2 bytes aligned for 16 bit
-access, and 4 bytes aligned for 32 bit access\n");
-+		return -EINVAL;
-+	}
-+
-+	pdev = pci_get_domain_bus_and_slot(pci_domain, pci_bus,
-+				PCI_DEVFN(pci_dev, pci_func));
-+	if (!pdev) {
-+		rawio_err("pci device %04x:%02x:%02x.%01x doesn't exist\n",
-+				pci_domain, pci_bus, pci_dev, pci_func);
++	if (!pdev)
 +		return -ENODEV;
++
++	walker->dev = NULL;
++	for (i = 0; i < 6; i++) {
++		start = pci_resource_start(pdev, i);
++		len = pci_resource_len(pdev, i);
++		if (IN_RANGE(start, len, walker->addr, walker->size)) {
++			walker->dev = dev;
++			return 1;
++		}
 +	}
 +
-+	if (((pci_reg >= 0x100) && !pci_is_pcie(pdev)) ||
-+				(pci_reg >= 0x1000)) {
-+		rawio_err("register address is out of range\n");
-+		return -EINVAL;
++	return 0;
++}
++#endif
++
++int walk_platform_devices(struct device *dev, void *data)
++{
++	int i;
++	struct resource *r;
++	resource_size_t start, len;
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct dev_walker *walker = (struct dev_walker *) data;
++
++	walker->dev = NULL;
++	for (i = 0; i < plat_dev->num_resources; i++) {
++		r = platform_get_resource(plat_dev, IORESOURCE_MEM, i);
++		if (!r)
++			continue;
++		start = r->start;
++		len = r->end - r->start + 1;
++		if (IN_RANGE(start, len, walker->addr, walker->size)) {
++			walker->dev = dev;
++			return 1;
++		}
 +	}
 +
-+	if ((((pci_reg + len * width) >= 0x100) && !pci_is_pcie(pdev)) ||
-+				((pci_reg + len * width) >= 0x1000)) {
-+		rawio_err("register address is out of range\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = pm_runtime_get_sync(&pdev->dev);
-+	if ((ret >= 0) || (ret == -EACCES))
-+		goto out;
-+
-+	rawio_err("can't put pci device %04x:%02x:%02x.%01xinto running state,
-pm_runtime_get_sync() returned %d\n",
-+			pci_domain, pci_bus, pci_dev, pci_func, ret);
-+	return -EBUSY;
-+
-+out:
-+	*ppdev = pdev;
 +	return 0;
 +}
 +
-+static void pci_finish(struct pci_dev *pdev)
++#if defined(CONFIG_PNP) && !defined(MODULE)
++int walk_pnp_devices(struct device *dev, void *data)
 +{
-+	pm_runtime_put_sync(&pdev->dev);
++	int i;
++	struct resource *r;
++	resource_size_t start, len;
++	struct pnp_dev *pnp_dev = (struct pnp_dev *) to_pnp_dev(dev);
++	struct dev_walker *walker = (struct dev_walker *) data;
++
++	walker->dev = NULL;
++	for (i = 0; (r = pnp_get_resource(pnp_dev, IORESOURCE_MEM, i)); i++) {
++		if (!pnp_resource_valid(r))
++			continue;
++
++		start = r->start;
++		len = r->end - r->start + 1;
++		if (IN_RANGE(start, len, walker->addr, walker->size)) {
++			walker->dev = dev;
++			return 1;
++		}
++	}
++
++	return 0;
++}
++#endif
++
++#ifdef CONFIG_ACPI
++static acpi_status do_walk_acpi_device(acpi_handle handle, u32
+nesting_level,
++				void *context, void **ret)
++{
++	struct dev_walker *walker = (struct dev_walker *) context;
++	struct acpi_device *adev = NULL;
++	resource_size_t start, len;
++	struct resource_list_entry *rentry;
++	struct list_head resource_list;
++	struct resource *resources;
++	int i, count;
++
++	acpi_bus_get_device(handle, &adev);
++	if (!adev)
++		return AE_CTRL_DEPTH;
++
++	/*
++	 * Simply skip this acpi device if it's already attached to
++	 * other bus types(e.g. platform dev or a pnp dev).
++	 */
++	if (adev->physical_node_count)
++		return 0;
++
++	INIT_LIST_HEAD(&resource_list);
++	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
++	if (count <= 0)
++		return AE_CTRL_DEPTH;
++
++	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
++	if (!resources) {
++		pr_err("rawio: No memory for resources\n");
++		acpi_dev_free_resource_list(&resource_list);
++		walker->error = -ENOMEM;
++		return AE_CTRL_TERMINATE;
++	}
++
++	count = 0;
++	list_for_each_entry(rentry, &resource_list, node)
++		resources[count++] = rentry->res;
++
++	acpi_dev_free_resource_list(&resource_list);
++
++	for (i = 0; i < count; i++) {
++		start = resources[i].start;
++		len = resources[i].end - resources[i].start + 1;
++		if (IN_RANGE(start, len, walker->addr, walker->size)) {
++			walker->dev = &adev->dev;
++			kfree(resources);
++			return AE_CTRL_TERMINATE;
++		}
++	}
++
++	kfree(resources);
++	return AE_CTRL_DEPTH;
++}
++#endif
++
++static struct device *walk_devices(resource_size_t addr,
+resource_size_t size)
++{
++	int ret;
++	struct dev_walker walker;
++
++	walker.addr = addr;
++	walker.size = size;
++	walker.dev = NULL;
++	walker.error = 0;
++
++#ifdef CONFIG_PCI
++	ret = bus_for_each_dev(&pci_bus_type, NULL, (void *)&walker,
++						walk_pci_devices);
++	if (ret == 1)
++		return  walker.dev;
++#endif
++
++	ret = bus_for_each_dev(&platform_bus_type, NULL, (void *)&walker,
++						walk_platform_devices);
++	if (ret == 1)
++		return walker.dev;
++
++#if defined(CONFIG_PNP) && !defined(MODULE)
++	ret = bus_for_each_dev(&pnp_bus_type, NULL, (void *)&walker,
++						walk_pnp_devices);
++	if (ret == 1)
++		return walker.dev;
++#endif
++
++#ifdef CONFIG_ACPI
++	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
++			NULL, do_walk_acpi_device, &walker, NULL);
++
++	if (walker.error)
++		return NULL;
++
++	if (walker.dev)
++		return walker.dev;
++#endif
++
++	return NULL;
 +}
 +
-+static int rawio_pci_read(struct rawio_driver *driver, int width,
++
++static int rawio_iomem_read(struct rawio_driver *driver, int width,
 +			u64 *input, u8 *postfix, int input_num,
 +			void **output, int *output_num)
 +{
-+	int i, ret, pci_domain;
-+	struct pci_dev *pdev;
-+	unsigned int pci_bus;
-+	u8 pci_dev, pci_func;
-+	u16 pci_reg, len;
++	int i, size, count;
++	phys_addr_t addr;
 +	void *buf;
++	void __iomem *va;
++	struct device *dev = NULL;
 +
-+	pci_domain = (int)input[0];
-+	pci_bus = (unsigned int)input[1];
-+	pci_dev = (u8)input[2];
-+	pci_func = (u8)input[3];
-+	pci_reg = (u16)input[4];
-+	len = 1;
-+	if (input_num == 6)
-+		len = (u16)input[5];
++	addr = (phys_addr_t)input[0];
++	count = 1;
++	if (input_num == 2)
++		count = (int)input[1];
++	size = width * count;
 +
-+	ret = pci_prepare(pci_domain, pci_bus, pci_dev, pci_func,
-+				width, pci_reg, len, &pdev);
-+	if (ret)
-+		return ret;
++	if (((width == WIDTH_2) && (addr & 0x1)) ||
++		((width == WIDTH_4) && (addr & 0x3)) ||
++		((width == WIDTH_8) && (addr & 0x7))) {
++		rawio_err("address requires 2 bytes aligned for 16 bit access, 4
+bytes aligned for 32 bit access and 8 bytes aligned for 64 bit access\n");
++		return -EINVAL;
++	}
 +
-+	buf = kzalloc(width * len, GFP_KERNEL);
++	va = ioremap_nocache(addr, size);
++	if (!va) {
++		rawio_err("can't map physical address %llx\n", addr);
++		return -EIO;
++	}
++
++	buf = kzalloc(size, GFP_KERNEL);
 +	if (buf == NULL) {
 +		rawio_err("can't alloc memory\n");
-+		pci_finish(pdev);
++		iounmap(va);
 +		return -ENOMEM;
 +	}
 +
-+	for (i = 0; i < len; i++) {
++	dev = walk_devices(addr, size);
++	if (dev)
++		pm_runtime_get_sync(dev);
++
++	for (i = 0; i < count; i++) {
 +		switch (width) {
 +		case WIDTH_1:
-+			pci_read_config_byte(pdev, pci_reg + i, (u8 *)buf + i);
++			*((u8 *)buf + i) = ioread8(va + i);
 +			break;
 +		case WIDTH_2:
-+			pci_read_config_word(pdev, pci_reg + i * 2,
-+						(u16 *)buf + i);
++			*((u16 *)buf + i) = ioread16(va + i * 2);
 +			break;
 +		case WIDTH_4:
-+			pci_read_config_dword(pdev, pci_reg + i * 4,
-+						(u32 *)buf + i);
++			*((u32 *)buf + i) = ioread32(va + i * 4);
 +			break;
 +		default:
 +			break;
 +		}
 +	}
 +
-+	pci_finish(pdev);
++	if (dev)
++		pm_runtime_put_sync(dev);
++	iounmap(va);
 +	*output = buf;
-+	*output_num = len;
++	*output_num = count;
 +	return 0;
 +}
 +
-+static int rawio_pci_write(struct rawio_driver *driver, int width,
++static int rawio_iomem_write(struct rawio_driver *driver, int width,
 +			u64 *input, u8 *postfix, int input_num)
 +{
-+	int ret, pci_domain;
-+	struct pci_dev *pdev;
-+	unsigned int pci_bus;
-+	u8 pci_dev, pci_func;
-+	u16 pci_reg;
-+	u32 value;
++	unsigned long val;
++	phys_addr_t addr;
++	void __iomem *va;
++	struct device *dev;
 +
-+	pci_domain = (int)input[0];
-+	pci_bus = (unsigned int)input[1];
-+	pci_dev = (u8)input[2];
-+	pci_func = (u8)input[3];
-+	pci_reg = (u16)input[4];
-+	value = (u32) input[5];
++	addr = (phys_addr_t)input[0];
++	val = (u64)input[1];
 +
-+	ret = pci_prepare(pci_domain, pci_bus, pci_dev, pci_func,
-+					width, pci_reg, 1, &pdev);
-+	if (ret)
-+		return ret;
++	if (((width == WIDTH_2) && (addr & 0x1)) ||
++		((width == WIDTH_4) && (addr & 0x3)) ||
++		((width == WIDTH_8) && (addr & 0x7))) {
++		rawio_err("address requires 2 bytes aligned for 16 bit access, 4
+bytes aligned for 32 bit access and 8 bytes aligned for 64 bit access\n");
++		return -EINVAL;
++	}
++
++	va = ioremap_nocache(addr, width);
++	if (!va) {
++		rawio_err("can't map physical address %llx\n", addr);
++		return -EIO;
++	}
++
++	dev = walk_devices(addr, 0);
++	if (dev)
++		pm_runtime_get_sync(dev);
 +
 +	switch (width) {
 +	case WIDTH_1:
-+		pci_write_config_byte(pdev, pci_reg, (u8) value);
++		 *(u8 *)va = (u8)val;
 +		break;
 +	case WIDTH_2:
-+		pci_write_config_word(pdev, pci_reg, (u16) value);
++		 *(u16 *)va = (u16)val;
 +		break;
 +	case WIDTH_4:
-+		pci_write_config_dword(pdev, pci_reg, value);
++		 *(u32 *)va = (u32)val;
 +		break;
 +	default:
 +		break;
 +	}
 +
-+	pci_finish(pdev);
++	if (dev)
++		pm_runtime_put_sync(dev);
++	iounmap(va);
 +	return 0;
 +}
 +
-+static struct rawio_ops rawio_pci_ops = {
-+	rawio_pci_read,
++static struct rawio_ops rawio_iomem_ops = {
++	rawio_iomem_read,
 +	NULL,
-+	rawio_pci_write,
++	rawio_iomem_write,
 +};
 +
-+static struct rawio_driver rawio_pci = {
++static struct rawio_driver rawio_iomem = {
 +	{NULL, NULL},
-+	"pci",
++	"iomem",
 +
 +	/* read */
-+	6, /* max args */
-+	{TYPE_S32, TYPE_U32, TYPE_U8, TYPE_U8, TYPE_U16, TYPE_S16}, /* types */
-+	5, /* min args */
-+
-+	{ 0, }, /* postfix */
++	2, /* max args */
++	{TYPE_U64, TYPE_S16}, /* args type */
++	1, /* min args */
++	{ 0, 0, }, /* args postfix */
 +
 +	/* write */
-+	6, /* max args */
-+	{TYPE_S32, TYPE_U32, TYPE_U8, TYPE_U8, TYPE_U16, TYPE_U32}, /* types */
-+	6, /* min args */
-+	{ 0, },
++	2, /* max args */
++	{TYPE_U64, TYPE_U64},
++	2, /* min args */
++	{ 0, 0, },
 +
-+	4, /* index of address arg */
++	0, /* index to address arg */
 +
-+	WIDTH_1 | WIDTH_2 | WIDTH_4, /* supported width */
-+	WIDTH_4, /* default width */
-+	"r[1|2|4] pci <domain> <bus> <dev> <func> <reg> [<len>]\n"
-+	"w[1|2|4] pci <domain> <bus> <dev> <func> <reg> <val>\n",
-+	&rawio_pci_ops,
++	WIDTH_1 | WIDTH_2 | WIDTH_4, /* supported access width*/
++	WIDTH_4, /* default access width */
++	"r[1|2|4] iomem <addr> [<len>]\nw[1|2|4] iomem <addr> <val>\n",
++	&rawio_iomem_ops,
 +	NULL
 +};
 +
-+static int __init rawio_pci_init(void)
++static int __init rawio_iomem_init(void)
 +{
-+	if (rawio_register_driver(&rawio_pci))
-+		return -ENODEV;
-+
-+	return 0;
++	return rawio_register_driver(&rawio_iomem);
 +}
-+module_init(rawio_pci_init);
++module_init(rawio_iomem_init);
 +
-+static void __exit rawio_pci_exit(void)
++static void __exit rawio_iomem_exit(void)
 +{
-+	rawio_unregister_driver(&rawio_pci);
++	rawio_unregister_driver(&rawio_iomem);
 +}
-+module_exit(rawio_pci_exit);
++module_exit(rawio_iomem_exit);
 +
-+MODULE_DESCRIPTION("Rawio PCI driver");
++MODULE_DESCRIPTION("Rawio I/O memory driver");
 +MODULE_VERSION("1.0");
 +MODULE_AUTHOR("Bin Gao <bin.gao@intel.com>");
 +MODULE_LICENSE("GPL v2");
