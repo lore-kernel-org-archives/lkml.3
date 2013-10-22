@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3JVHiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 03:38:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12361 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab3JVHfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 03:35:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="310958393"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 06/14] perf tools: Fix 32-bit cross build
-Date: Tue, 22 Oct 2013 10:34:10 +0300
-Message-Id: <1382427258-17495-7-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com>
-References: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754246Ab3JVHif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 03:38:35 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:45378 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab3JVHid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 03:38:33 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Denis Efremov <yefremov.denis@gmail.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] xfs:xfs_dir2_node.c: pointer use before check for null
+Date: Tue, 22 Oct 2013 11:36:15 +0400
+Message-Id: <1382427375-8863-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting EXTRA_CFLAGS=-m32 did not work because it
-was not passed around.
+Reorder of assert and args pointer dereference.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Found by Linux Driver Verification project (linuxtesting.org) -
+PVS-Studio analyzer.
+
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
 ---
- tools/perf/Makefile.perf                  | 2 +-
- tools/perf/config/Makefile                | 4 ++--
- tools/perf/config/feature-checks/Makefile | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/xfs/xfs_dir2_node.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 326a26e..e462598 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -707,7 +707,7 @@ $(LIB_FILE): $(LIB_OBJS)
- TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
- 
- $(LIBTRACEEVENT): $(TE_SOURCES)
--	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
- 
- $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 543aa95..2f1d7d7 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -96,7 +96,7 @@ endif
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
-@@ -173,7 +173,7 @@ ifeq ($(feature-all), 1)
-   #
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
- else
--  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-+  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
- endif
- 
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 452b67c..353c00c 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -31,7 +31,7 @@ CC := $(CC) -MD
- 
- all: $(FILES)
- 
--BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
-+BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
- 
- ###############################
- 
+diff --git a/fs/xfs/xfs_dir2_node.c b/fs/xfs/xfs_dir2_node.c
+index 4c3dba7..0ba7382 100644
+--- a/fs/xfs/xfs_dir2_node.c
++++ b/fs/xfs/xfs_dir2_node.c
+@@ -1365,8 +1365,8 @@ xfs_dir2_leafn_split(
+ 	 * Allocate space for a new leaf node.
+ 	 */
+ 	args = state->args;
+-	mp = args->dp->i_mount;
+ 	ASSERT(args != NULL);
++	mp = args->dp->i_mount;
+ 	ASSERT(oldblk->magic == XFS_DIR2_LEAFN_MAGIC);
+ 	error = xfs_da_grow_inode(args, &blkno);
+ 	if (error) {
 -- 
-1.7.11.7
+1.8.3.1
 
