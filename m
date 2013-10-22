@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3JVQc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:32:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16110 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab3JVQcy convert rfc822-to-8bit (ORCPT
+	id S1754691Ab3JVQdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:33:11 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43303 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab3JVQdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:32:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="311172956"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "rjw@sisk.pl" <rjw@sisk.pl>
-CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V2 Resend 13/34] cpufreq: ia64: Convert to light weight
- ->target_index() routine
-Thread-Topic: [PATCH V2 Resend 13/34] cpufreq: ia64: Convert to light weight
- ->target_index() routine
-Thread-Index: AQHOzAqalzlr6AkDEk2Xm7EKMcCVf5oA8Djw
-Date: Tue, 22 Oct 2013 16:32:35 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D46B71@ORSMSX106.amr.corp.intel.com>
-References: <cover.1382104514.git.viresh.kumar@linaro.org>
- <f05117ee651167f5513977940f0e6f0322a30311.1382104515.git.viresh.kumar@linaro.org>
-In-Reply-To: <f05117ee651167f5513977940f0e6f0322a30311.1382104515.git.viresh.kumar@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 22 Oct 2013 12:33:08 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 0/2] misc: atmel_pwm: fix probe dependencies
+Date: Tue, 22 Oct 2013 18:32:38 +0200
+Message-Id: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch converts existing .target() to newly defined light weight
-> .target_index() routine for this driver.
->
-> CPUFreq core will call cpufreq_frequency_table_target() before calling this
-> routine and will pass index to it.
->
-> Cc: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
+atmel_pwm driver to have bound to any pwm-device before their devices
+are probed.
 
-Tested-by: Tony Luck <tony.luck@intel.com>
+The first patch adds deferred-probing support to the atmel_pwm driver to
+handle such dependencies. Note that the atmel-pwm-bl driver in
+linux-next supports deferred probing since commit 9d3fde86b ("backlight:
+atmel-pwm-bl: fix deferred probe from __init").
 
--Tony
+Although deferred probing is sufficient to deal with the dependency
+problem, relying on deferred probing for the backlight driver is not
+desirable as it may cause unnecessary delays before enabling the
+backlight at boot. The second patch fixes this by making sure
+pwm-devices are probed before any backlight devices.
+
+Johan
+
+Johan Hovold (2):
+  misc: atmel_pwm: add deferred-probing support
+  misc: atmel_pwm: set initcall level to subsys
+
+ drivers/misc/atmel_pwm.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+-- 
+1.8.4
 
