@@ -1,205 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3JVPdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:33:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44577 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825Ab3JVPdO (ORCPT
+	id S1754073Ab3JVPdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:33:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45470 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab3JVPdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:33:14 -0400
-Date: Tue, 22 Oct 2013 08:33:13 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH, RFC] what's the point of mtd_inodefs?
-Message-ID: <20131022153313.GA11923@infradead.org>
+	Tue, 22 Oct 2013 11:33:35 -0400
+Date: Tue, 22 Oct 2013 16:32:58 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "grub-devel@gnu.org" <grub-devel@gnu.org>,
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Peter Jones <pjones@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+Message-ID: <20131022153258.GA12260@srcf.ucam.org>
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+ <20131021135437.GD1283@fenchurch.internal.datastacks.com>
+ <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
+ <1382433990.1657.66.camel@hastur.hellion.org.uk>
+ <5266620602000078000FCA48@nat28.tlf.novell.com>
+ <1382435127.1657.70.camel@hastur.hellion.org.uk>
+ <526668A502000078000FCA7B@nat28.tlf.novell.com>
+ <20131022134252.GA27302@phenom.dumpdata.com>
+ <20131022144309.GA18547@phenom.dumpdata.com>
+ <1382455537.8512.11.camel@shinybook.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1382455537.8512.11.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been looking at mtdchar as part of a bigger series touching all
-kidns of places and really wonder what the point of mtd_inodefs is.
+On Tue, Oct 22, 2013 at 03:25:39PM +0000, Woodhouse, David wrote:
 
-We use it to make the file->f_mapping of the mtdchar device point to
-the mapping of it's inodes, but there's nothing special happening with
-mtd_inodefs inodes.  It seems to me like simply switching the
-backing_dev_info to the mtd one, similarly to what we do for /dev/mem
-and friends would be enough for mtdchar.
+> Oh, ignore that. You want the *actual* PE executable entry point, as it
+> would get invoked by a real UEFI firmware.
 
-If this works for the intended use case I'd love to add this series
-to my to be posted series as it would simplify it greatly.
+There are two problems with this:
 
+1) The kernel will only boot if it's signed with a key in db, not a key 
+in MOK.
+2) grub will read the kernel, but the kernel will have to read the 
+initramfs using EFI calls. That means your initramfs must be on a FAT 
+partition.
 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index 684bfa3..a7c9f37 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -48,7 +48,6 @@ static DEFINE_MUTEX(mtd_mutex);
-  */
- struct mtd_file_info {
- 	struct mtd_info *mtd;
--	struct inode *ino;
- 	enum mtd_file_modes mode;
- };
- 
-@@ -58,10 +57,6 @@ static loff_t mtdchar_lseek(struct file *file, loff_t offset, int orig)
- 	return fixed_size_llseek(file, offset, orig, mfi->mtd->size);
- }
- 
--static int count;
--static struct vfsmount *mnt;
--static struct file_system_type mtd_inodefs_type;
--
- static int mtdchar_open(struct inode *inode, struct file *file)
- {
- 	int minor = iminor(inode);
-@@ -69,7 +64,6 @@ static int mtdchar_open(struct inode *inode, struct file *file)
- 	int ret = 0;
- 	struct mtd_info *mtd;
- 	struct mtd_file_info *mfi;
--	struct inode *mtd_ino;
- 
- 	pr_debug("MTD_open\n");
- 
-@@ -77,60 +71,42 @@ static int mtdchar_open(struct inode *inode, struct file *file)
- 	if ((file->f_mode & FMODE_WRITE) && (minor & 1))
- 		return -EACCES;
- 
--	ret = simple_pin_fs(&mtd_inodefs_type, &mnt, &count);
--	if (ret)
--		return ret;
--
- 	mutex_lock(&mtd_mutex);
--	mtd = get_mtd_device(NULL, devnum);
- 
-+	mtd = get_mtd_device(NULL, devnum);
- 	if (IS_ERR(mtd)) {
- 		ret = PTR_ERR(mtd);
--		goto out;
-+		goto out_unlock;
- 	}
- 
- 	if (mtd->type == MTD_ABSENT) {
- 		ret = -ENODEV;
--		goto out1;
--	}
--
--	mtd_ino = iget_locked(mnt->mnt_sb, devnum);
--	if (!mtd_ino) {
--		ret = -ENOMEM;
--		goto out1;
-+		goto out_put_device;
- 	}
--	if (mtd_ino->i_state & I_NEW) {
--		mtd_ino->i_private = mtd;
--		mtd_ino->i_mode = S_IFCHR;
--		mtd_ino->i_data.backing_dev_info = mtd->backing_dev_info;
--		unlock_new_inode(mtd_ino);
--	}
--	file->f_mapping = mtd_ino->i_mapping;
- 
- 	/* You can't open it RW if it's not a writeable device */
- 	if ((file->f_mode & FMODE_WRITE) && !(mtd->flags & MTD_WRITEABLE)) {
- 		ret = -EACCES;
--		goto out2;
-+		goto out_put_device;
- 	}
- 
- 	mfi = kzalloc(sizeof(*mfi), GFP_KERNEL);
- 	if (!mfi) {
- 		ret = -ENOMEM;
--		goto out2;
-+		goto out_put_device;
- 	}
--	mfi->ino = mtd_ino;
- 	mfi->mtd = mtd;
-+
- 	file->private_data = mfi;
-+	file->f_mapping->backing_dev_info = mtd->backing_dev_info;
-+
- 	mutex_unlock(&mtd_mutex);
- 	return 0;
- 
--out2:
--	iput(mtd_ino);
--out1:
-+out_put_device:
- 	put_mtd_device(mtd);
--out:
-+out_unlock:
- 	mutex_unlock(&mtd_mutex);
--	simple_release_fs(&mnt, &count);
- 	return ret;
- } /* mtdchar_open */
- 
-@@ -147,12 +123,9 @@ static int mtdchar_close(struct inode *inode, struct file *file)
- 	if ((file->f_mode & FMODE_WRITE))
- 		mtd_sync(mtd);
- 
--	iput(mfi->ino);
--
- 	put_mtd_device(mtd);
- 	file->private_data = NULL;
- 	kfree(mfi);
--	simple_release_fs(&mnt, &count);
- 
- 	return 0;
- } /* mtdchar_close */
-@@ -1147,24 +1120,6 @@ static const struct file_operations mtd_fops = {
- #endif
- };
- 
--static const struct super_operations mtd_ops = {
--	.drop_inode = generic_delete_inode,
--	.statfs = simple_statfs,
--};
--
--static struct dentry *mtd_inodefs_mount(struct file_system_type *fs_type,
--				int flags, const char *dev_name, void *data)
--{
--	return mount_pseudo(fs_type, "mtd_inode:", &mtd_ops, NULL, MTD_INODE_FS_MAGIC);
--}
--
--static struct file_system_type mtd_inodefs_type = {
--       .name = "mtd_inodefs",
--       .mount = mtd_inodefs_mount,
--       .kill_sb = kill_anon_super,
--};
--MODULE_ALIAS_FS("mtd_inodefs");
--
- int __init init_mtdchar(void)
- {
- 	int ret;
-@@ -1174,26 +1129,12 @@ int __init init_mtdchar(void)
- 	if (ret < 0) {
- 		pr_err("Can't allocate major number %d for MTD\n",
- 		       MTD_CHAR_MAJOR);
--		return ret;
- 	}
--
--	ret = register_filesystem(&mtd_inodefs_type);
--	if (ret) {
--		pr_err("Can't register mtd_inodefs filesystem, error %d\n",
--		       ret);
--		goto err_unregister_chdev;
--	}
--
--	return ret;
--
--err_unregister_chdev:
--	__unregister_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS, "mtd");
- 	return ret;
- }
- 
- void __exit cleanup_mtdchar(void)
- {
--	unregister_filesystem(&mtd_inodefs_type);
- 	__unregister_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS, "mtd");
- }
- 
+If you're happy with those limitations then just use the chainloader 
+command. If you're not, use the linuxefi command.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
