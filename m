@@ -1,170 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3JVIfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31457 "EHLO mx1.redhat.com"
+	id S1752270Ab3JVIhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:37:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46739 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab3JVIfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:35:45 -0400
-Message-ID: <526638D4.1030403@redhat.com>
-Date: Tue, 22 Oct 2013 16:35:32 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751000Ab3JVIhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:37:02 -0400
+Date: Tue, 22 Oct 2013 10:37:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>,
+        "joe@perches.com" <joe@perches.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "arozansk@redhat.com" <arozansk@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
+ platform
+Message-ID: <20131022083702.GB10268@nazgul.tnic>
+References: <20131019095753.GA26338@pd.tnic>
+ <52657a78162905670f@agluck-desk.sc.intel.com>
+ <CA+8MBbLnxAiV-ccpn_HUiiP9Fp7qXWqy_i+RPu6mUTAxzV4uHA@mail.gmail.com>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [virtio-net] BUG: sleeping function called from invalid context
- at kernel/mutex.c:616
-References: <20131020023418.GA6737@localhost>
-In-Reply-To: <20131020023418.GA6737@localhost>
-Content-Type: multipart/mixed;
- boundary="------------010000020201060606020407"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+8MBbLnxAiV-ccpn_HUiiP9Fp7qXWqy_i+RPu6mUTAxzV4uHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010000020201060606020407
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 10/20/2013 10:34 AM, Fengguang Wu wrote:
-> Greetings,
+On Mon, Oct 21, 2013 at 03:39:20PM -0700, Tony Luck wrote:
+> I folded that back into the series. Also switched out the test on
+> whether to print the "No further action is required" message to only
+> do so for corrected errors. Cleaned up some of the commit messages,
 >
-> I got the below dmesg and the first bad commit is
+> The result is sitting at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git eMCA
 >
-> commit 3ab098df35f8b98b6553edc2e40234af512ba877
-> Author: Jason Wang <jasowang@redhat.com>
-> Date:   Tue Oct 15 11:18:58 2013 +0800
->
->     virtio-net: don't respond to cpu hotplug notifier if we're not ready
->     
->     We're trying to re-configure the affinity unconditionally in cpu hotplug
->     callback. This may lead the issue during resuming from s3/s4 since
->     
->     - virt queues haven't been allocated at that time.
->     - it's unnecessary since thaw method will re-configure the affinity.
->     
->     Fix this issue by checking the config_enable and do nothing is we're not ready.
->     
->     The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
->     (virtio-net: reset virtqueue affinity when doing cpu hotplug).
->     
->     Cc: Rusty Russell <rusty@rustcorp.com.au>
->     Cc: Michael S. Tsirkin <mst@redhat.com>
->     Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->     Acked-by: Michael S. Tsirkin <mst@redhat.com>
->     Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->     Signed-off-by: Jason Wang <jasowang@redhat.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
->
-> [  622.944441] CPU0 attaching NULL sched-domain.
-> [  622.944446] CPU1 attaching NULL sched-domain.
-> [  622.944485] CPU0 attaching NULL sched-domain.
-> [  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
-> [  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
-> [  622.950796] no locks held by migration/1/10.
-> [  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
-> [  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
-> [  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
-> [  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
-> [  622.950805] Call Trace:
-> [  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
-> [  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
-> [  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
-> [  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
-> [  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
-> [  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
-> [  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
-> [  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
-> [  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
-> [  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
-> [  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
-> [  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
-> [  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
-> [  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
-> [  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
-> [  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
-> [  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
-> [  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
-> [  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
-> [  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
-> [  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
-> [  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> [  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
-> [  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> [  622.950876] smpboot: CPU 1 is now offline
-> [  623.194556] SMP alternatives: lockdep: fixing up alternatives
-> [  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
- 
-Thanks for the testing Fengguang, could you please try the attached
-patch to see if it works?
+> Anything we missed?
 
---------------010000020201060606020407
-Content-Type: text/x-patch;
- name="0001-virtio-net-fix.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-virtio-net-fix.patch"
+Doesn't look so, at a first glance. But I agree with you - this stuff
+will be subject to change as we go along and we make up our mind about
+what exactly is sufficient and necessary to do proper decoding.
 
->From 01e6c3f71c202aa02e4feda169e7cc9fb24193f5 Mon Sep 17 00:00:00 2001
-From: Jason Wang <jasowang@redhat.com>
-Date: Mon, 21 Oct 2013 20:39:09 +0800
-Subject: [PATCH] virtio-net: fix
+I like the idea of keeping an open mind about it. :-)
 
----
- drivers/net/virtio_net.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 9fbdfcd..bbc9cb8 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
- 
--	mutex_lock(&vi->config_lock);
--
--	if (!vi->config_enable)
--		goto done;
--
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- 		break;
- 	}
- 
--done:
--	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
- 
-@@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
- 	struct virtnet_info *vi = vdev->priv;
- 	int i;
- 
-+	unregister_hotcpu_notifier(&vi->nb);
-+
- 	/* Prevent config work handler from accessing the device */
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = false;
-@@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
- 	virtnet_set_queues(vi, vi->curr_queue_pairs);
- 	rtnl_unlock();
- 
-+	err = register_hotcpu_notifier(&vi->nb);
-+	if (err)
-+		return err;
-+
- 	return 0;
- }
- #endif
--- 
-1.8.1.2
-
-
---------------010000020201060606020407--
+Thanks.
