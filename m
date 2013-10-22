@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3JVM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:56:24 -0400
-Received: from ring0.de ([91.143.88.219]:36121 "EHLO smtp.ring0.de"
+	id S1754148Ab3JVM4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:56:32 -0400
+Received: from ring0.de ([91.143.88.219]:36134 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab3JVM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:56:21 -0400
+	id S1753179Ab3JVM43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 08:56:29 -0400
 X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
 From: Sebastian Reichel <sre@debian.org>
@@ -20,37 +20,39 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 1/2] Documentation: DTS: bq27xxx are trivial i2c devices
-Date: Tue, 22 Oct 2013 14:56:16 +0200
-Message-Id: <1382446577-28270-1-git-send-email-sre@debian.org>
+Subject: [PATCH 2/2] DTS: ARM: OMAP3-N900: Add bq27200 battery monitor
+Date: Tue, 22 Oct 2013 14:56:17 +0200
+Message-Id: <1382446577-28270-2-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382446577-28270-1-git-send-email-sre@debian.org>
+References: <1382446577-28270-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add all chips supported by the bq27xxx driver to the list
-of trivial i2c devices.
+Support the bq27200 battery monitor chip.
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- Documentation/devicetree/bindings/i2c/trivial-devices.txt | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/omap3-n900.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index ad6a738..d3a29ce 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -58,6 +58,9 @@ stm,m41t00		Serial Access TIMEKEEPER
- stm,m41t62		Serial real-time clock (RTC) with alarm
- stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
- taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
--ti,tsc2003		I2C Touch-Screen Controller
-+ti,bq27200		Battery Monitor
-+ti,bq27500		Battery Monitor
-+ti,bq27425		Battery Monitor
- ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
- ti,tmp275		Digital Temperature Sensor
-+ti,tsc2003		I2C Touch-Screen Controller
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 60cb33f..992338c 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -240,6 +240,11 @@
+ 	pinctrl-0 = <&i2c2_pins>;
+ 
+ 	clock-frequency = <100000>;
++
++	bq27200: bq27200@55 {
++		compatible = "ti,bq27200";
++		reg = <0x55>;
++	};
+ };
+ 
+ &i2c3 {
 -- 
 1.8.4.rc3
 
