@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3JVKUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 06:20:25 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:45722 "EHLO
-	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751438Ab3JVKUX (ORCPT
+	id S1752350Ab3JVKZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 06:25:38 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57425 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab3JVKZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 06:20:23 -0400
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 06:20:23 EDT
-Message-ID: <52664FB6.4000004@atmel.com>
-Date: Tue, 22 Oct 2013 18:13:10 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 22 Oct 2013 06:25:36 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: <plagnioj@jcrosoft.com>, <nicolas.ferre@atmel.com>,
-        <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCH v5] PWM: atmel-pwm: add PWM controller driver
-References: <1380532240-18650-1-git-send-email-voice.shen@atmel.com> <20131008131727.GB12839@ulmo.nvidia.com>
-In-Reply-To: <20131008131727.GB12839@ulmo.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+In-Reply-To: <CANOOhLRCC360exKKePsJGxYqx3ULZf1Ac0y16hsnPQNP69OHwA@mail.gmail.com>
+References: <1382239876-12688-1-git-send-email-geyslan@gmail.com>
+	<1734089.XZ0ga7sQd1@vostro.rjw.lan>
+	<5265AE27.90600@gmail.com>
+	<7950903.3bCg8Tn2fH@vostro.rjw.lan>
+	<CANOOhLRCC360exKKePsJGxYqx3ULZf1Ac0y16hsnPQNP69OHwA@mail.gmail.com>
+Date: Tue, 22 Oct 2013 08:25:36 -0200
+Message-ID: <CAGG-pUSmM3E8iYg2dKPMzLmH4tLQkzjdxGRHMup5z0xKkXonTQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: intel_pstate: fix possible integer overflow
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "open list:CPU FREQUENCY DRI..." <cpufreq@vger.kernel.org>,
+        "open list:CPU FREQUENCY DRI..." <linux-pm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-
-On 10/8/2013 21:17, Thierry Reding wrote:
-> On Mon, Sep 30, 2013 at 05:10:40PM +0800, Bo Shen wrote:
->> Add Atmel PWM controller driver based on PWM framework.
->>
->> This is the basic function implementation of Atmel PWM controller.
->> It can work with PWM based led and backlight.
->>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->>
->> ---
->> Changes in v5:
->>    - call clk_disable directly, if so, it won't cause more than one channel
->>      enabled, the clock can not be disabled.
->>
->> Changes in v4:
->>    - check the return value of clk_prepare()
->>    - change channel register size as constant
->>
->> Changes in v3:
->>    - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
->>    - Add PWM led example in binding documentation
->>    - Using micro replace hard code
->>
->> Changes in v2:
->>    - Address the comments from Thierry Reding
->>
->>   .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 +++
->>   drivers/pwm/Kconfig                                |    9 +
->>   drivers/pwm/Makefile                               |    1 +
->>   drivers/pwm/pwm-atmel.c                            |  344 ++++++++++++++++++++
->>   4 files changed, 395 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
->>   create mode 100644 drivers/pwm/pwm-atmel.c
+2013/10/21 Dirk Brandewie <dirk.brandewie@gmail.com>:
 >
-> I haven't seen an Acked-by from the device tree bindings maintainers on
-> this. I've Cc'ed them, so hopefully one of them has time to review.
+>
+> On Monday, October 21, 2013, Rafael J. Wysocki wrote:
+>>
+>> On Monday, October 21, 2013 03:43:51 PM Dirk Brandewie wrote:
+>> > On 10/21/2013 03:47 PM, Rafael J. Wysocki wrote:
+>> > > On Monday, October 21, 2013 08:56:22 AM Dirk Brandewie wrote:
+>> > >> On 10/19/2013 08:31 PM, Geyslan G. Bem wrote:
+>> > >>> The expression 'pstate << 8' is evaluated using 32-bit arithmetic
+>> > >>> while
+>> > >>> 'val' expects an expression of type u64.
+>> > >>>
+>> > >>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>> > >> Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>> > >
+>> > > Actually, isn't (pstate << 8) guaranteed not to overflow?
+>> > >
+>> >
+>> > Yes, I was assuming this was caught by a static checking tool.
+>>
 
-Any comments?
+Yes, it was caught by Coverity, and I didn't debug the possibles pstate's.
 
-Best Regards,
-Bo Shen
+>> What was caught by the tool was the fact that 1UL << 32 might overflow on
+>> 32-bit, so using BIT(32) wasn't correct.
+
+This is the entire output:
+
+CID 1108110 (#1 of 1): Unintentional integer overflow
+(OVERFLOW_BEFORE_WIDEN)overflow_before_widen: Potentially overflowing
+expression "pstate << 8" with type "int" (32 bits, signed) is
+evaluated using 32-bit arithmetic before being used in a context which
+expects an expression of type "u64" (64 bits, unsigned). To avoid
+overflow, cast the left operand to "u64" before performing the left
+shift.
+
+>>
+>> > I didn't see a downside to giving the compilier complete information.
+>>
+>> Well, in that case the function's argument should be u64 rather than int.
+>>
+>> Either you know that it won't overflow, in which case the explicit type
+>> casting doesn't change anything, or you are not sure, in which case it's
+>> better to use u64 as the original type anyway in my opinion.
+>
+>
+> pstate << 8 can't overflow we can drop this
+
+I realized that are five calls to intel_pstate_set_pstate()
+
+/drivers/cpufreq/intel_pstate.c:410
+/drivers/cpufreq/intel_pstate.c:417
+/drivers/cpufreq/intel_pstate.c:432
+/drivers/cpufreq/intel_pstate.c:514
+/drivers/cpufreq/intel_pstate.c:566
+
+I really don't know if the values that pstate assumes could cause
+overflow. And I really don't know if these values may change in the
+future. So I have assumed that the most careful is to cast, making the
+code error proof.
+
+But you know the code, thus know what is better. ;)
+
+Cheers.
+
+>
+>>
+>> Thanks!
+>>
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
