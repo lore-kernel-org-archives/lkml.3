@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab3JVOdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:33:04 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36379 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752696Ab3JVOc5 (ORCPT
+	id S1753811Ab3JVO2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:28:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53888 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab3JVO2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:32:57 -0400
-Date: Tue, 22 Oct 2013 15:32:43 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "idos@codeaurora.org" <idos@codeaurora.org>,
-        "mgautam@codeaurora.org" <mgautam@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v6 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DW PHY's
-Message-ID: <20131022143242.GA4691@kartoffel>
-References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
- <1381131897-13910-3-git-send-email-iivanov@mm-sol.com>
- <52527D38.1070505@mm-sol.com>
- <1381246952.24031.83.camel@iivanov-dev.int.mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381246952.24031.83.camel@iivanov-dev.int.mm-sol.com>
-Thread-Topic: [PATCH v6 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DW PHY's
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Oct 2013 10:28:51 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/26] perf evsel: Add missing decrement in id sample parsing
+Date: Tue, 22 Oct 2013 11:28:17 -0300
+Message-Id: <1382452114-1243-10-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
+References: <1382452114-1243-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-> > > +   phy->sleep_a_clk = devm_clk_get(phy->dev, "sleep_a");
-> >
-> > What means the "_a" in clock name?
-> 
-> They are 2 PHY's on 8074 chip. This drivers is supposed to
-> operate on PHY 0, thus sleep_a. PHY 1 is using sleep_b. Take a look
-> here http://www.spinics.net/lists/arm-kernel/msg276945.html
+The final array decrement in id sample parsing is missing, which may
+trip up the next person adding a sample format, so add it in.
 
-When you say two PHYs, do you mean the HS PHY and the SS PHY?
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1382099356-4918-5-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Or are there two HS PHYs? If so, would the other HS PHY have a sleep_b clock?
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 291b18ac236a..ec0cc1e21c62 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1218,6 +1218,7 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 
+ 		sample->pid = u.val32[0];
+ 		sample->tid = u.val32[1];
++		array--;
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.1.4
 
-The clock-names property should describe the clocks from the view of the device
-itself. As we're describing the PHY in isolation, rather than a big block that
-contains the PHY, the presesnce or absence of other PHYs should not affect the
-name. If the "_a" suffix is only to differentiate the instance of PHY, it
-should be dropped.
-
-Thanks,
-Mark.
