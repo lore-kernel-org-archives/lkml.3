@@ -1,218 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab3JVT1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:27:50 -0400
-Received: from www84.your-server.de ([213.133.104.84]:43836 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab3JVT1s (ORCPT
+	id S1755028Ab3JVT3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:29:06 -0400
+Received: from smtprelay0034.hostedemail.com ([216.40.44.34]:47837 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753690Ab3JVT3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:27:48 -0400
-From: Stefani Seibold <stefani@seibold.net>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, mingo@redhat.com,
-        peterz@infradead.org
-Cc: stefani@seibold.net
-Subject: [PATCH] add new prctl for a per process wide close on exec
-Date: Tue, 22 Oct 2013 21:27:18 +0200
-Message-Id: <1382470038-1220-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.4
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 22 Oct 2013 15:29:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4427:4659:5007:6119:6120:7652:7809:7901:7903:7904:9025:10004:10400:10848:11232:11658:11914:12050:12324:12517:12519:12555:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: death49_14b9f49f89d2d
+X-Filterd-Recvd-Size: 2480
+Message-ID: <1382470141.2041.98.camel@joe-AO722>
+Subject: Re: [PATCH 01/15] tpm: MAINTAINERS: Add myself as tpm maintainer
+From: Joe Perches <joe@perches.com>
+To: Ashley D Lai <adlai@linux.vnet.ibm.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, james.l.morris@oracle.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 22 Oct 2013 12:29:01 -0700
+In-Reply-To: <1382469734.3742.3.camel@buffalo>
+References: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
+	 <1382469734.3742.3.camel@buffalo>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small patch adds a runtime prctl config option for a per process wide
-"close on exec" without breaking existing code.
+On Tue, 2013-10-22 at 14:22 -0500, Ashley D Lai wrote:
+> On Tue, 2013-10-22 at 19:53 +0200, Peter Huewe wrote:
+> > Since I'm actively maintaining the tpm subsystem for a few months now,
+> > it's time to step up and be an official maintainer for the tpm subsystem,
+> > atleast until I hear something different from my company.
+> > 
+> > The maintaining is done solely in my private time, out of private interest.
+> > Speaking only on behalf of myself, trying to be as vendor neutral as possible.
+> > 
+> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> > ---
+> >  MAINTAINERS |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 4fde706..936adb4 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -8475,6 +8475,7 @@ F:	drivers/media/usb/tm6000/
+> >  TPM DEVICE DRIVER
+> >  M:	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+> >  M:	Ashley Lai <ashley@ashleylai.com>
+> > +M:	Peter Huewe <peterhuewe@gmx.de>
+> >  M:	Rajiv Andrade <mail@srajiv.net>
+> >  W:	http://tpmdd.sourceforge.net
+> >  M:	Marcel Selhorst <tpmdd@selhorst.net>
+> 
+> Peter has been a great help on maintaining the tpm driver.  Thanks for
+> volunteering, you have my support on this.
 
-With this feature a developer can decide if the application will pass all non
-"close on exec" file descriptors to a new process or not.
-
-The mode of the process wide "close on exec" can be set with PR_SET_CLOEXEC and
-PR_GET_CLOEXEC returns the current mode. Mode is one of the following:
-
-- PR_CLOEXEC_DEFAULT closes only the fd's marked as "close on exec" in
-   the child process, this is the linux default behaviour.
-
-- PR_CLOEXEC_ONCE closes all fd's expect 0, 1 and 2 which are regular
-   handled as in PR_CLOEXEC_DEFAULT and reset the mode of the child to
-   PR_CLOEXEC_DEFAULT.
-
-- PR_CLOEXEC_INHERIT is like PR_CLOEXEC_ONCE, but the mode will stay in the
-   child
-
-STDIO file descriptors will be passed to the child process depending on the
-..._CLOEXEC flag. So the new modes should be compatible to regular code.
-
-This patch will increase security since no developers can review all libraries
-which there are using. Also in a team of developers it is not always possible
-to have a full survey over the code which is produced. Or the output of a code
-generators and so one. This patch allows a kind of preventive measures.
-
-It can also prevent resource occupation. Imagine a long running process (a
-daemon) is execute from the application after open some file desciptors. For
-example libpcsclite.so will not open the socket with SOCK_CLOEXEC. Or a device
-driver which alows only a single open. In both cases the resource cannot
-reopened after a close. Sigh!
-
-What do you think?
-
-ChangeLog:
-
-2013-10-21	First release to the mailing list
-2013-10-22	Fix fork for non main threads
-
-The patch is against 3.12.0-rc6
-
-Greetings,
-Stefani
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- fs/exec.c                  |  2 ++
- fs/file.c                  | 12 +++++++++++-
- include/linux/sched.h      |  6 ++++++
- include/uapi/linux/prctl.h | 18 ++++++++++++++++++
- kernel/fork.c              |  3 +++
- kernel/sys.c               | 32 ++++++++++++++++++++++++++++++++
- 6 files changed, 72 insertions(+), 1 deletion(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 8875dd1..c8af524 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1546,6 +1546,8 @@ static int do_execve_common(const char *filename,
- 	/* execve succeeded */
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
-+	if (!current->cloexec_inherit)
-+		current->cloexec = 0;
- 	acct_update_integrals(current);
- 	free_bprm(bprm);
- 	if (displaced)
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..7372252 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -622,7 +622,17 @@ void do_close_on_exec(struct files_struct *files)
- 		fdt = files_fdtable(files);
- 		if (fd >= fdt->max_fds)
- 			break;
--		set = fdt->close_on_exec[i];
-+		if (!current->cloexec)
-+			set = fdt->close_on_exec[i];
-+		else {
-+			set = fdt->open_fds[i];
-+
-+			/* special handling for stdio */
-+			if (!i) {
-+				set &= ~7;
-+				set |= fdt->close_on_exec[i] & 7;
-+			}
-+		}
- 		if (!set)
- 			continue;
- 		fdt->close_on_exec[i] = 0;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e27baee..469e6f8 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1112,6 +1112,12 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
- 
-+	/* close non stdio on exec */
-+	unsigned cloexec:1;
-+
-+	/* inherit cloexec flag on exec */
-+	unsigned cloexec_inherit:1;
-+
- 	pid_t pid;
- 	pid_t tgid;
- 
-diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
-index 289760f..e1c2d66 100644
---- a/include/uapi/linux/prctl.h
-+++ b/include/uapi/linux/prctl.h
-@@ -149,4 +149,22 @@
- 
- #define PR_GET_TID_ADDRESS	40
- 
-+/*
-+ * PR_CLOEXEC allows to configure the inheritance of the non stdio file
-+ * handles to a child process:
-+ *
-+ * - PR_CLOEXEC_DEFAULT: close only the fd's marked with as close on exec
-+ *    in the child process
-+ * - PR_CLOEXEC_ONCE: close all fd's expect 0, 1 and 2 which are regular
-+ *    handled as in PR_CLOEXEC_DEFAULT and reset the mode of the child to
-+ *    PR_CLOEXEC_DEFAULT
-+ * - PR_CLOEXEC_INHERIT: like PR_CLOEXEC_ONCE, but the mode will stay in the
-+ *    child process
-+ */
-+#define PR_SET_CLOEXEC		41
-+#define PR_GET_CLOEXEC		42
-+# define PR_CLOEXEC_DEFAULT		1
-+# define PR_CLOEXEC_ONCE		2
-+# define PR_CLOEXEC_INHERIT		3
-+
- #endif /* _LINUX_PRCTL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 086fe73..1aacf2e 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1190,6 +1190,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	if (!p)
- 		goto fork_out;
- 
-+	p->cloexec = current->group_leader->cloexec;
-+	p->cloexec_inherit = current->group_leader->cloexec_inherit;
-+
- 	ftrace_graph_init_task(p);
- 	get_seccomp_filter(p);
- 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c18ecca..7e53e14 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1999,6 +1999,38 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		if (arg2 || arg3 || arg4 || arg5)
- 			return -EINVAL;
- 		return current->no_new_privs ? 1 : 0;
-+	case PR_SET_CLOEXEC:
-+		if (arg3 || arg4 || arg5)
-+			return -EINVAL;
-+		switch(arg2) {
-+		case PR_CLOEXEC_DEFAULT:
-+			current->group_leader->cloexec = 0;
-+			current->group_leader->cloexec_inherit = 0;
-+			break;
-+		case PR_CLOEXEC_ONCE:
-+			current->group_leader->cloexec = 1;
-+			current->group_leader->cloexec_inherit = 0;
-+			break;
-+		case PR_CLOEXEC_INHERIT:
-+			current->group_leader->cloexec = 1;
-+			current->group_leader->cloexec_inherit = 1;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		break;
-+	case PR_GET_CLOEXEC:
-+		if (arg2 || arg3 || arg4 || arg5)
-+			return -EINVAL;
-+		if (!current->group_leader->cloexec)
-+			error = PR_CLOEXEC_DEFAULT;
-+		else {
-+			if (!current->group_leader->cloexec_inherit)
-+				error = PR_CLOEXEC_ONCE;
-+			else
-+				error = PR_CLOEXEC_INHERIT;
-+		}
-+		break;
- 	default:
- 		error = -EINVAL;
- 		break;
--- 
-1.8.4
+It'd be nice if all the M entries were clustered
+together and probably nice too if the
+W:	http://www.sirrix.com
+entry removed.  I didn't notice anything useful
+there about the driver.
+Maybe there's a specific page about the driver
+buried on the corporate website.  If so, that
+specific page should be linked instead.
 
