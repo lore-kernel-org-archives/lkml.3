@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3JVT7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:59:38 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52077 "EHLO e8.ny.us.ibm.com"
+	id S1755148Ab3JVUMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:12:00 -0400
+Received: from packetmixer.de ([83.151.30.3]:51973 "EHLO m25s01.vlinux.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755172Ab3JVT7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:59:37 -0400
-Message-ID: <5266D922.1030601@linux.vnet.ibm.com>
-Date: Tue, 22 Oct 2013 14:59:30 -0500
-From: Joel Schopp <jschopp@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Peter Huewe <PeterHuewe@gmx.de>
-CC: tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>
-Subject: Re: Aw: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as
- tpm maintainer
-References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>, <5266BC18.1080308@linux.vnet.ibm.com> <trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
-In-Reply-To: <trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102219-0320-0000-0000-0000017787FE
+	id S1754702Ab3JVUL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 16:11:58 -0400
+From: Simon Wunderlich <sw@simonwunderlich.de>
+To: linux-wireless@vger.kernel.org
+Cc: Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
+        Dirk Gouders <dirk@gouders.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Simon Wunderlich <sw@simonwunderlich.de>
+Subject: [PATCH 3.12] cfg80211: fix ibss wext chandef creation
+Date: Tue, 22 Oct 2013 22:02:46 +0200
+Message-Id: <1382472166-19563-1-git-send-email-sw@simonwunderlich.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The wext internal chandefs for ibss should be created using the
+cfg80211_chandef_create() functions. Otherwise the center_freq1 field
+will not be set and cfg80211_chandef_valid() will spit a warning and
+report the chandef as invalid when it should be used.
 
->> I have no objection to you adding yourself here. I do think we should
->> probably also cut the list down at the same time as I don't think all
->> the listed maintainers are active anymore. Also, the list is getting a
->> bit unwieldy. If everyone maintains it nobody maintains it.
-> 
-> I agree with you here, this was also the reason I took it over when Kent stepped down and noone else stepped in of the current maintainers, leaving the subsystem more or less unmaintained.
+Reported-by: Dirk Gouders <dirk@gouders.net>
+Signed-off-by: Simon Wunderlich <sw@simonwunderlich.de>
+Cc: Johannes Berg <johannes.berg@intel.com>
+---
+ net/wireless/ibss.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-FYI I'm one of the two people who took over co-maintaining TrouSerS
-after Kent stepped down.  I am also reviewing tpm device driver patches
-that go by, but I am glad others more knowledgeable about those drivers
-such as you are there to be the maintainers.  Thanks for stepping up.
+diff --git a/net/wireless/ibss.c b/net/wireless/ibss.c
+index 39bff7d..a710019 100644
+--- a/net/wireless/ibss.c
++++ b/net/wireless/ibss.c
+@@ -246,7 +246,7 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
+ 
+ 	/* try to find an IBSS channel if none requested ... */
+ 	if (!wdev->wext.ibss.chandef.chan) {
+-		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
++		struct ieee80211_channel *new_chan = NULL;
+ 
+ 		for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
+ 			struct ieee80211_supported_band *sband;
+@@ -262,16 +262,19 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
+ 					continue;
+ 				if (chan->flags & IEEE80211_CHAN_DISABLED)
+ 					continue;
+-				wdev->wext.ibss.chandef.chan = chan;
++				new_chan = chan;
+ 				break;
+ 			}
+ 
+-			if (wdev->wext.ibss.chandef.chan)
++			if (new_chan)
+ 				break;
+ 		}
+ 
+-		if (!wdev->wext.ibss.chandef.chan)
++		if (!new_chan)
+ 			return -EINVAL;
++
++		cfg80211_chandef_create(&wdev->wext.ibss.chandef, new_chan,
++					NL80211_CHAN_NO_HT);
+ 	}
+ 
+ 	/* don't join -- SSID is not there */
+@@ -345,8 +348,8 @@ int cfg80211_ibss_wext_siwfreq(struct net_device *dev,
+ 		return err;
+ 
+ 	if (chan) {
+-		wdev->wext.ibss.chandef.chan = chan;
+-		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
++		cfg80211_chandef_create(&wdev->wext.ibss.chandef, chan,
++					NL80211_CHAN_NO_HT);
+ 		wdev->wext.ibss.channel_fixed = true;
+ 	} else {
+ 		/* cfg80211_ibss_wext_join will pick one if needed */
+-- 
+1.7.10.4
 
