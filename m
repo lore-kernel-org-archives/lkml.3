@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab3JVUMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 16:12:00 -0400
-Received: from packetmixer.de ([83.151.30.3]:51973 "EHLO m25s01.vlinux.de"
+	id S1755050Ab3JVUL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:11:59 -0400
+Received: from packetmixer.de ([83.151.30.3]:38338 "EHLO m25s01.vlinux.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754702Ab3JVUL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754467Ab3JVUL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Oct 2013 16:11:58 -0400
+X-Greylist: delayed 655 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 16:11:58 EDT
 From: Simon Wunderlich <sw@simonwunderlich.de>
-To: linux-wireless@vger.kernel.org
-Cc: Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
-        Dirk Gouders <dirk@gouders.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
+To: Dirk Gouders <dirk@gouders.net>
+Subject: Re: [BUG bisected] WARNING: CPU: 0 PID: 1550 at net/wireless/chan.c:373 cfg80211_chandef_usable+0x30/0x15f()
+Date: Tue, 22 Oct 2013 22:00:55 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
         Johannes Berg <johannes.berg@intel.com>,
-        Simon Wunderlich <sw@simonwunderlich.de>
-Subject: [PATCH 3.12] cfg80211: fix ibss wext chandef creation
-Date: Tue, 22 Oct 2013 22:02:46 +0200
-Message-Id: <1382472166-19563-1-git-send-email-sw@simonwunderlich.de>
-X-Mailer: git-send-email 1.7.10.4
+        Linux Kernel <linux-kernel@vger.kernel.org>
+References: <gifvruyge3.fsf@karga.hank.lab> <20131022132303.GA14762@pandem0nium> <ghzjq1pcc3.fsf@lena.gouders.net>
+In-Reply-To: <ghzjq1pcc3.fsf@lena.gouders.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310222200.55773.sw@simonwunderlich.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wext internal chandefs for ibss should be created using the
-cfg80211_chandef_create() functions. Otherwise the center_freq1 field
-will not be set and cfg80211_chandef_valid() will spit a warning and
-report the chandef as invalid when it should be used.
+Hey Dirk,
 
-Reported-by: Dirk Gouders <dirk@gouders.net>
-Signed-off-by: Simon Wunderlich <sw@simonwunderlich.de>
-Cc: Johannes Berg <johannes.berg@intel.com>
----
- net/wireless/ibss.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+> No need for censorship, I did some quick tests and stripped down my
+> wpa_supplicant.conf to a single entry.  With this configuration I get a
+> lot of traces:
+> 
+> ctrl_interface=/var/run/wpa_supplicant
+> eapol_version=1
+> ap_scan=1
+> fast_reauth=1
+> 
+> network={
+> 	frequency=2412
+> 	group=TKIP
+> 	key_mgmt=NONE
+> 	mode=1
+> 	pairwise=NONE
+> 	ssid="Nokia_n9"
+> }
+> 
+> I will also attach a dmesg output of my tests.
+> 
+> >  * your wpa_supplicant command line parameters when running
+> 
+> It is running with a wpa_cli like this:
+> 
+> /usr/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf \
+>     -W -B -i wlp4s0 -P /var/run/wpa_supplicant-wlp4s0.pid
+> /usr/bin/wpa_cli -a /etc/wpa_supplicant/wpa_cli.sh \
+>     -p /var/run/wpa_supplicant -i wlp4s0 -P /var/run/wpa_cli-wlp4s0.pid -B
+> 
 
-diff --git a/net/wireless/ibss.c b/net/wireless/ibss.c
-index 39bff7d..a710019 100644
---- a/net/wireless/ibss.c
-+++ b/net/wireless/ibss.c
-@@ -246,7 +246,7 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
- 
- 	/* try to find an IBSS channel if none requested ... */
- 	if (!wdev->wext.ibss.chandef.chan) {
--		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
-+		struct ieee80211_channel *new_chan = NULL;
- 
- 		for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
- 			struct ieee80211_supported_band *sband;
-@@ -262,16 +262,19 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
- 					continue;
- 				if (chan->flags & IEEE80211_CHAN_DISABLED)
- 					continue;
--				wdev->wext.ibss.chandef.chan = chan;
-+				new_chan = chan;
- 				break;
- 			}
- 
--			if (wdev->wext.ibss.chandef.chan)
-+			if (new_chan)
- 				break;
- 		}
- 
--		if (!wdev->wext.ibss.chandef.chan)
-+		if (!new_chan)
- 			return -EINVAL;
-+
-+		cfg80211_chandef_create(&wdev->wext.ibss.chandef, new_chan,
-+					NL80211_CHAN_NO_HT);
- 	}
- 
- 	/* don't join -- SSID is not there */
-@@ -345,8 +348,8 @@ int cfg80211_ibss_wext_siwfreq(struct net_device *dev,
- 		return err;
- 
- 	if (chan) {
--		wdev->wext.ibss.chandef.chan = chan;
--		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
-+		cfg80211_chandef_create(&wdev->wext.ibss.chandef, chan,
-+					NL80211_CHAN_NO_HT);
- 		wdev->wext.ibss.channel_fixed = true;
- 	} else {
- 		/* cfg80211_ibss_wext_join will pick one if needed */
--- 
-1.7.10.4
+Thanks a lot for this, I could reproduce the issue and fix it, will send the fix 
+in a minute - please try and report back. 
 
+Just two notes on your setup in case you are interested:
+
+ * Your wpa-supplicant setup looks a little like an old WPA-NONE setup, but 
+this is not supported anymore and will not encrypt your messages. Please have 
+a look at IBSS/RSN if you want encryption.
+ * Your wpa_supplicant uses the old wext interface to the kernel. This is 
+deprecated, it would better to use the (not so) new nl80211 interface instead. 
+You will also get goodies such as 802.11n rates in ad-hoc mode if your 
+hardware supports it. :)
+
+Thanks again for reporting,
+   Simon
