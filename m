@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3JVPRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:17:06 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29286 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752533Ab3JVPRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:17:04 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ug2LUbO2cZ3yrExjIPbil
-Date: Tue, 22 Oct 2013 08:17:00 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: bcousson@baylibre.com, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/6] Revert "ARM: OMAP2+: Provide alias to USB PHY
- clock"
-Message-ID: <20131022151659.GO15154@atomide.com>
-References: <1381226799-29158-1-git-send-email-rogerq@ti.com>
- <1381226799-29158-6-git-send-email-rogerq@ti.com>
- <52550180.1000506@ti.com>
- <20131009151522.GA8313@atomide.com>
- <5256703F.1070806@ti.com>
+	id S1753588Ab3JVPU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:20:58 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:41447 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752262Ab3JVPU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 11:20:57 -0400
+Message-ID: <526697FD.1090406@sgi.com>
+Date: Tue, 22 Oct 2013 10:21:33 -0500
+From: Rich Johnston <rjohnston@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5256703F.1070806@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: Namjae Jeon <linkinjeon@gmail.com>, <viro@zeniv.linux.org.uk>,
+        <mtk.manpages@gmail.com>, <tytso@mit.edu>, <adilger.kernel@dilger.ca>,
+        <bpm@sgi.com>, <elder@kernel.org>, <hch@infradead.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <xfs@oss.sgi.com>, <a.sangwan@samsung.com>,
+        <linux-fsdevel@vger.kernel.org>, <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH RESEND 4/7] xfsprogs: xfsio: add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+References: <1381090418-2829-1-git-send-email-linkinjeon@gmail.com> <52616EC6.7030400@sgi.com> <20131018224404.GX4446@dastard>
+In-Reply-To: <20131018224404.GX4446@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.55]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [131010 02:23]:
-> On 10/09/2013 06:15 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [131009 00:19]:
-> >> Hi Tony,
-> >>
-> >> On 10/08/2013 01:06 PM, Roger Quadros wrote:
-> >>> This reverts commit 741532c4a995be11815cb72d4d7a48f442a22fea.
-> >>>
-> >>> The proper clock reference is provided in device tree so we
-> >>> no longer need this.
-> >>
-> >> Could you please Ack this one? I think it is best if it goes through Benoit's tree.
-> > 
-> > I could queue this into my board removal series that will be
-> > based on Benoit's branch if that works for you. And this
-> > also seems to depend on the omap-for-v3.13/quirk branch
-> > that moves all the legacy pdata handling into pdata-quirks.c.
-> 
-> OK Tony. Thanks.
+This commit was reverted
 
-Actually, can you please update this patch against branch
-omap-for-v3.13/board-removal-take2 and check the
-omap5_uevm_legacy_init() part as well?
+commit 19e73c9d220728617816c47a1671cc931c40e45b
+Author: Rich Johnston <rjohnston@sgi.com>
+Date:   Tue Oct 22 10:15:20 2013 -0500
 
-Tony
+     Revert "[RESEND, 4/7] xfsprogs: xfsio: add support 
+FALLOC_FL_COLLAPSE_RANGE for fallocate"
+
+     This reverts commit e64190f8440286a815060524777b435e06a7b364 until we
+     have the fallocate API support merged into the kernel. The kernel
+     code is still under review.
+
