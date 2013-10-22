@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3JVWTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:19:17 -0400
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:41588 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab3JVWTP (ORCPT
+	id S1755288Ab3JVWXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:23:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34171 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748Ab3JVWXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:19:15 -0400
-X-Greylist: delayed 1388 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 18:19:15 EDT
-Date: Tue, 22 Oct 2013 23:56:03 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: tech-board-discuss@lists.linux-foundation.org,
-        ksummit-2013-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Standing for the Linux Foundation Technical Advisory Board
-Message-ID: <20131022215603.GA5554@suse.cz>
+	Tue, 22 Oct 2013 18:23:38 -0400
+Date: Wed, 23 Oct 2013 00:23:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 3/3] sched: Aggressive balance in domains whose groups
+ share package resources
+Message-ID: <20131022222326.GL2490@laptop.programming.kicks-ass.net>
+References: <20131021114002.13291.31478.stgit@drishya>
+ <20131021114502.13291.60794.stgit@drishya>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131021114502.13291.60794.stgit@drishya>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 21, 2013 at 05:15:02PM +0530, Vaidyanathan Srinivasan wrote:
+>  kernel/sched/fair.c |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 828ed97..bbcd96b 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5165,6 +5165,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>  {
+>  	int ld_moved, cur_ld_moved, active_balance = 0;
+>  	struct sched_group *group;
+> +	struct sched_domain *child;
+> +	int share_pkg_res = 0;
+>  	struct rq *busiest;
+>  	unsigned long flags;
+>  	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
+> @@ -5190,6 +5192,10 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>  
+>  	schedstat_inc(sd, lb_count[idle]);
+>  
+> +	child = sd->child;
+> +	if (child && child->flags & SD_SHARE_PKG_RESOURCES)
+> +		share_pkg_res = 1;
+> +
+>  redo:
+>  	if (!should_we_balance(&env)) {
+>  		*continue_balancing = 0;
+> @@ -5202,6 +5208,7 @@ redo:
+>  		goto out_balanced;
+>  	}
+>  
+> +redo_grp:
+>  	busiest = find_busiest_queue(&env, group);
+>  	if (!busiest) {
+>  		schedstat_inc(sd, lb_nobusyq[idle]);
+> @@ -5292,6 +5299,11 @@ more_balance:
+>  			if (!cpumask_empty(cpus)) {
+>  				env.loop = 0;
+>  				env.loop_break = sched_nr_migrate_break;
+> +				if (share_pkg_res &&
+> +					cpumask_intersects(cpus,
+> +						to_cpumask(group->cpumask)))
 
-I am standing for the Linux Foundation Technical advisory board.
+sched_group_cpus()
 
-Since I'm not attending LinuxCon EU, nor the Kernel Summit, I won't be
-there for the TAB election at the evening event either, hence I'll try
-to introduce myself in this email.
+> +					goto redo_grp;
+> +
+>  				goto redo;
+>  			}
+>  			goto out_balanced;
+> @@ -5318,9 +5330,15 @@ more_balance:
+>  			 */
+>  			if (!cpumask_test_cpu(this_cpu,
+>  					tsk_cpus_allowed(busiest->curr))) {
+> +				cpumask_clear_cpu(cpu_of(busiest), cpus);
+>  				raw_spin_unlock_irqrestore(&busiest->lock,
+>  							    flags);
+>  				env.flags |= LBF_ALL_PINNED;
+> +				if (share_pkg_res &&
+> +					cpumask_intersects(cpus,
+> +						to_cpumask(group->cpumask)))
+> +					goto redo_grp;
+> +
+>  				goto out_one_pinned;
+>  			}
 
-My first encounter with Linux was Slackware in 1993 with kernel 0.99,
-installed from a stack of floppies, and while it was still very young,
-the possibility to improve it was a reason to forget about DOS, Xenix,
-SINIX, SCO UNIX and LynxOS that I was using back then.
-
-And I did. Initially just a few patches to the (now gone) ARCnet
-drivers, then a joystick driver rewrite, eventually a rewrite of the
-whole input subsystem and a bunch of work on USB. I rewrote a bunch of
-IDE drivers. For a few years I was maintaining the Input and HID
-subsystems of the Linux kernel, until my other duties forced me to hand
-that over to their present excellent maintainers. I was also a member of
-the team that worked on a port of Linux to the x86-64 architecture,
-achieving a successful boot when the first silicion was available.
-
-I used Linux to power autonomous robots, figuring out the
-limits of its realtime behavior and after a few less than successful
-attempts, eventually scored a 4th place in the Eurobot Open robotics
-championship.
-
-My day job today is that of a Director of SUSE Labs, a department within
-SUSE development that focuses on developing core open source projects:
-the Linux kernel, the GNU toolchain, including GCC and glibc and Samba.
-My work is to create an environment where open source hackers thrive
-inside SUSE, allowing us to contribute to open source projects, while
-creating a stable foundation for each release of SUSE's enterprise
-distribution.
-
-While the time I can devote to real hacking and coding is limited today,
-I still love going very much technical and solving problems by looking
-at them from new perspectives: When secure boot came around, I designed
-the MOK concept, which allows users to manage their own keys even in the
-absence of any help from the platform, returning to them the freedom
-that was threatened.
-
-This I'm offering my time, my helping hand and my thoughts to the TAB,
-hoping that I can contribute to solving any future problems Linux and
-the Linux Foundation may face.
-
-Vojtech Pavlik
+Man this retry logic is getting annoying.. isn't there anything saner we
+can do?
