@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3JVJ7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 05:59:38 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52287 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3JVJ7h convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Tue, 22 Oct 2013 05:59:37 -0400
-Message-Id: <526668A502000078000FCA7B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 22 Oct 2013 10:59:33 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <ian.campbell@citrix.com>
-Cc: <ross.philipson@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <grub-devel@gnu.org>, <david.woodhouse@intel.com>,
-        <richard.l.maliszewski@intel.com>, <xen-devel@lists.xen.org>,
-        <boris.ostrovsky@oracle.com>, "Daniel Kiper" <daniel.kiper@oracle.com>,
-        <konrad.wilk@oracle.com>, "Peter Jones" <pjones@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <keir@xen.org>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
- <20131021135437.GD1283@fenchurch.internal.datastacks.com>
- <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
- <1382433990.1657.66.camel@hastur.hellion.org.uk>
- <5266620602000078000FCA48@nat28.tlf.novell.com>
- <1382435127.1657.70.camel@hastur.hellion.org.uk>
-In-Reply-To: <1382435127.1657.70.camel@hastur.hellion.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751950Ab3JVKIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 06:08:17 -0400
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:37265 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab3JVKIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 06:08:15 -0400
+Message-ID: <52664E7E.6090504@synopsys.com>
+Date: Tue, 22 Oct 2013 15:37:58 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@huawei.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 02/25] smp, alpha: kill SMP single function call
+ interrupt
+References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-3-git-send-email-liuj97@gmail.com>
+In-Reply-To: <1378915649-16395-3-git-send-email-liuj97@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.243]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.10.13 at 11:45, Ian Campbell <ian.campbell@citrix.com> wrote:
-> On Tue, 2013-10-22 at 10:31 +0100, Jan Beulich wrote:
->> >>> On 22.10.13 at 11:26, Ian Campbell <ian.campbell@citrix.com> wrote:
->> > AIUI "efilinux" is somewhat badly named and does not use the Linux Boot
->> > Protocol (i.e. the (b)zImage stuff with real mode entry point) either.
->> > It actually loads and executes the kernel binary as a PE/COFF executable
->> > (the native UEFI binary executable format). xen.efi is a PE/COFF binary
->> > too and could equally well be launched by linuxefi in this way.
->> 
->> Except that unless I'm mistaken "linuxefi" still expects to find certain
->> Linux-specific internal data structures inside the PE image, which I
->> don't see us wanting to be emulating. That's the main difference to
->> "chainloader" afaict.
+Hi Jiang,
+
+On 09/11/2013 09:37 PM, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
 > 
-> Ah, I'd been led to believe it was just the lack of a call to
-> ExitBootServices, but I didn't check. What you say sounds completely
-> plausible.
+> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" has unified the way to handle
+> single and multiple cross-CPU function calls. Now only one interrupt
+> is needed for architecture specific code to support generic SMP function
+> call interfaces, so kill the redundant single function call interrupt.
 > 
-> Do you know what sort of Linux specific data structures are we talking
-> about?
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 
-The setup header I would assume (i.e. the bits surrounding the
-"HdrS" signature). But I'm only guessing anyway.
+What's the status of this series - seemed useful to me. Are you planning to get it
+merged in 3.13
 
-Jan
-
+-Vineet
