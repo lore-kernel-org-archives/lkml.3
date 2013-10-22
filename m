@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3JVQP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:15:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29263 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753987Ab3JVQMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:12:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="378374487"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        mingo@kernel.org
-Subject: [PATCH 08/11] asmlinkage, mutex: Mark __visible
-Date: Tue, 22 Oct 2013 09:12:23 -0700
-Message-Id: <1382458346-24811-9-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
-References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
+	id S1754090Ab3JVQUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:20:42 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:61484 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3JVQUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 12:20:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131022154802.GA25490@localhost>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	<20131022154802.GA25490@localhost>
+Date: Tue, 22 Oct 2013 17:20:40 +0100
+X-Google-Sender-Auth: gd96B2V6H1gY6dSVs2-QNtdEfj4
+Message-ID: <CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
+Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Tue, Oct 22, 2013 at 4:48 PM,  <walken@google.com> wrote:
 
-Various kernel/mutex.c functions can be called from
-inline assembler, so they should be all global and
-__visible
+>
+> Generally the problems I see with mmap_sem are related to long latency
+> operations. Specifically, the mmap_sem write side is currently held
+> during the entire munmap operation, which iterates over user pages to
+> free them, and can take hundreds of milliseconds for large VMAs.
 
-Cc: mingo@kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- kernel/mutex.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+So this would be the *perfect* place to just downgrade the semaphore
+from a write to a read.
 
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 6d647ae..ffba8e9 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -67,8 +67,7 @@ EXPORT_SYMBOL(__mutex_init);
-  * We also put the fastpath first in the kernel image, to make sure the
-  * branch is predicted by the CPU as default-untaken.
-  */
--static __used noinline void __sched
--__mutex_lock_slowpath(atomic_t *lock_count);
-+__visible void __sched __mutex_lock_slowpath(atomic_t *lock_count);
- 
- /**
-  * mutex_lock - acquire the mutex
-@@ -225,7 +224,8 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
- }
- #endif
- 
--static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
-+__visible __used noinline
-+void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
- 
- /**
-  * mutex_unlock - release the mutex
-@@ -746,7 +746,7 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
- /*
-  * Release the lock, slowpath:
-  */
--static __used noinline void
-+__visible void
- __mutex_unlock_slowpath(atomic_t *lock_count)
- {
- 	__mutex_unlock_common_slowpath(lock_count, 1);
-@@ -803,7 +803,7 @@ int __sched mutex_lock_killable(struct mutex *lock)
- }
- EXPORT_SYMBOL(mutex_lock_killable);
- 
--static __used noinline void __sched
-+__visible void __sched
- __mutex_lock_slowpath(atomic_t *lock_count)
- {
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
--- 
-1.8.3.1
+Do the vma ops under the write semaphore, then downgrade it to a
+read-sem, and do the page teardown with just mmap_sem held for
+reading..
 
+Comments? Anybody want to try that? It should be fairly
+straightforward, and we had a somewhat similar issue when it came to
+mmap() having to populate the mapping for mlock. For that case, it was
+sufficient to just move the "populate" phase outside the lock entirely
+(for that case, we actually drop the write lock and then take the
+read-lock and re-lookup the vma, for unmap we'd have to do a proper
+downgrade so that there is no window where the virtual address area
+could be re-allocated)
+
+The big issue is that we'd have to split up do_munmap() into those two
+phases, since right now callers take the write semaphore before
+calling it, and drop it afterwards. And some callers do it in a loop.
+But we should be fairly easily able to make the *common* case (ie
+normal "munmap()") do something like
+
+    down_write(&mm->mmap_sem);
+    phase1_munmap(..);
+    downgrade_write(&mm->mmap_sem);
+    phase2_munmap(..);
+    up_read(&mm->mmap_sem);
+
+instead of what it does now (which is to just do
+down_write()/up_write() around do_munmap()).
+
+I don't see any fundamental problems, but maybe there's some really
+annoying detail that makes this nasty (right now we do
+"remove_vma_list() -> remove_vma()" *after* tearing down the page
+tables, and since that calls the ->close function, I think it has to
+be done that way. I'm wondering if any of that code relies on the
+mmap_sem() being held for exclusively for writing. I don't see why it
+possibly could, but..
+
+So maybe I'm being overly optimistic and it's not as easy as just
+splitting do_mmap() into two phases, but it really *looks* like it
+might be just a ten-liner or so.. And if a real munmap() is the common
+case (as opposed to a do_munmap() that gets triggered by somebody
+doing a "mmap()" on top of an old mapping), then we'd at least allow
+page faults from other threads to be done concurrently with tearing
+down the page tables for the unmapped vma..
+
+             Linus
