@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3JVG0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 02:26:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64215 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3JVG0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 02:26:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="378119505"
-Subject: [SCSI] scsi_lib: avoid the "rejecting I/O to offline device" print
- storm
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bitbucket@online.de, chuansheng.liu@intel.com,
-        dongxing.zhang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Oct 2013 23:51:40 +0800
-Message-ID: <1382457100.26153.69.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753154Ab3JVGcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 02:32:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23544 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab3JVGcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 02:32:52 -0400
+X-IronPort-AV: E=Sophos;i="4.93,546,1378828800"; 
+   d="scan'208";a="8824572"
+Message-ID: <52661AB2.8050501@cn.fujitsu.com>
+Date: Tue, 22 Oct 2013 14:26:58 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Haicheng Li <haicheng.li@linux.intel.com>
+CC: Gao feng <gaofeng@cn.fujitsu.com>, Kim <jaegeuk.kim@samsung.com>,
+        f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] f2fs: introduce f2fs_kmem_cache_alloc to hide the unfailed
+ kmem cache allocation
+References: <5264D6C7.9000202@cn.fujitsu.com> <5265F5E6.3000604@cn.fujitsu.com> <20131022051636.GJ21006@hli22-desktop> <52660E62.9090409@cn.fujitsu.com> <20131022061540.GL21006@hli22-desktop>
+In-Reply-To: <20131022061540.GL21006@hli22-desktop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/22 14:30:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/22 14:30:18,
+	Serialize complete at 2013/10/22 14:30:18
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/22/2013 02:15 PM, Haicheng Li wrote:
 
-When handling the scsi_request_fn(), when the sd offline happened, sometimes
-we will hit the print storm as below:
-<3>[   95.365837] sd 0:0:0:0: rejecting I/O to offline device
-<3>[   95.368633] sd 0:0:0:0: rejecting I/O to offline device
-<3>[   95.369881] sd 0:0:0:0: rejecting I/O to offline device
-<3>[   95.371088] sd 0:0:0:0: rejecting I/O to offline device
-...
-<3>[   99.026230] sd 0:0:0:0: rejecting I/O to offline device
-<3>[   99.027196] sd 0:0:0:0: rejecting I/O to offline device
-<3>[   99.028240] sd 0:0:0:0: rejecting I/O to offline device
+> On Tue, Oct 22, 2013 at 01:34:26PM +0800, Gu Zheng wrote:
+>> On 10/22/2013 01:16 PM, Haicheng Li wrote:
+>>
+>>> On Tue, Oct 22, 2013 at 11:49:58AM +0800, Gao feng wrote:
+>>>> On 10/21/2013 03:24 PM, Gu Zheng wrote:
+>>>>> +static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
+>>>>> +						gfp_t flags)
+>>>>> +{
+>>>>> +	void *entry = kmem_cache_alloc(cachep, flags);
+>>>>> +retry:
+>>>>
+>>>> retry after kmem_cache_alloc?
+>>>
+>>> Good catch.
+>>>
+>>> Sorry for the carelessness in my previous review. 
+>>> Besides this, I also found another issue as below:
+>>>  
+>>>> On Mon, Oct 21, 2013 at 03:24:55PM +0800, Gu Zheng wrote: 
+>>>>> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c 
+>>>>> index ef80f79..fe3cf8e 100644 
+>>>>> --- a/fs/f2fs/node.c 
+>>>>> +++ b/fs/f2fs/node.c 
+>>>>> @@ -1308,11 +1308,7 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build) 
+>>>>>     if (allocated) 
+>>>>>             return 0; 
+>>>>>  retry: 
+>>> -retry?
+>>
+>> Can be removed here, this tag still used by front goto jumping. But it
+>> seems that we need to use another suitable name rather than "retry".
+> 
+> how about like this?
+> ---
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index fe3cf8e..4fa3fd5 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1296,18 +1296,17 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
+>  	if (nid == 0)
+>  		return 0;
+>  
+> -	if (!build)
+> -		goto retry;
+> +	if (build) {
+> +		/* do not add allocated nids */
+> +		read_lock(&nm_i->nat_tree_lock);
+> +		ne = __lookup_nat_cache(nm_i, nid);
+> +		if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
+> +			allocated = true;
+> +		read_unlock(&nm_i->nat_tree_lock);
+> +		if (allocated)
+> +			return 0;
+> +	}
 
-In our case, the print last almost 4s, and it causes irq is disbled for 4s,
-bring system unstable.
+Good, it's more neat, I'll take this, thanks.:)
 
-Here we create sd_printk_ratelimited to replace it.
+Regards,
+Gu
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/scsi/scsi_lib.c    |    2 +-
- include/scsi/scsi_device.h |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index d1549b7..7d8d476 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1570,7 +1570,7 @@ static void scsi_request_fn(struct request_queue *q)
- 			break;
- 
- 		if (unlikely(!scsi_device_online(sdev))) {
--			sdev_printk(KERN_ERR, sdev,
-+			sdev_printk_ratelimited(KERN_ERR, sdev,
- 				    "rejecting I/O to offline device\n");
- 			scsi_kill_request(req, q);
- 			continue;
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index d65fbec..0d7d1be 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -7,6 +7,7 @@
- #include <linux/blkdev.h>
- #include <scsi/scsi.h>
- #include <linux/atomic.h>
-+#include <linux/ratelimit.h>
- 
- struct device;
- struct request_queue;
-@@ -235,6 +236,15 @@ struct scsi_dh_data {
- #define sdev_printk(prefix, sdev, fmt, a...)	\
- 	dev_printk(prefix, &(sdev)->sdev_gendev, fmt, ##a)
- 
-+#define sdev_printk_ratelimited(prefix, sdev, fmt, a...)               \
-+do {                                                                   \
-+       static DEFINE_RATELIMIT_STATE(_rs,                              \
-+                                       DEFAULT_RATELIMIT_INTERVAL,     \
-+                                       DEFAULT_RATELIMIT_BURST);       \
-+       if (__ratelimit(&_rs))                                          \
-+               dev_printk(prefix, &(sdev)->sdev_gendev, fmt, ##a);     \
-+} while (0)
-+
- #define scmd_printk(prefix, scmd, fmt, a...)				\
-         (scmd)->request->rq_disk ?					\
- 	sdev_printk(prefix, (scmd)->device, "[%s] " fmt,		\
--- 
-1.7.9.5
-
+>  
+> -	/* do not add allocated nids */
+> -	read_lock(&nm_i->nat_tree_lock);
+> -	ne = __lookup_nat_cache(nm_i, nid);
+> -	if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
+> -		allocated = true;
+> -	read_unlock(&nm_i->nat_tree_lock);
+> -	if (allocated)
+> -		return 0;
+> -retry:
+>  	i = f2fs_kmem_cache_alloc(free_nid_slab, GFP_NOFS);
+>  	i->nid = nid;
+>  	i->state = NID_NEW;
+> 
 
 
