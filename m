@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3JVQUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:20:42 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:61484 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3JVQUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:20:41 -0400
+	id S1754281Ab3JVQX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:23:57 -0400
+Received: from mout.gmx.net ([212.227.15.19]:57066 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025Ab3JVQXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 12:23:55 -0400
+Message-ID: <5266A698.10400@gmx.de>
+Date: Tue, 22 Oct 2013 18:23:52 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131022154802.GA25490@localhost>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
-	<20131022154802.GA25490@localhost>
-Date: Tue, 22 Oct 2013 17:20:40 +0100
-X-Google-Sender-Auth: gd96B2V6H1gY6dSVs2-QNtdEfj4
-Message-ID: <CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs at
+ in histfs
+References: <526696BF.6050909@gmx.de> <CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>
+In-Reply-To: <CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:XNMe9WSCdi1JqhLGWzRE3QRsk21d0IwMvOla/PczJ4uIFbZWrD5
+ uapzRIdRye3eOxaRXUejGeiTSL+EWYp7ijiX4HOxHM7TBWgJgLt9TihNBMlF0pwCBSlnVhY
+ 815JhAVeA96IddN86b3ZQdOIiHLQ4yQtO9zWnTEDuYMRE6Cm4F82/oXja87Q6ML6pvoCLwt
+ tp8gjtsMxqTsV5IhdXhNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 4:48 PM,  <walken@google.com> wrote:
+On 10/22/2013 06:12 PM, Richard Weinberger wrote:
+> On Tue, Oct 22, 2013 at 5:16 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+>>
+>> When I fuzz testing a 32 bit UML at a 32 bit host (guest 3.12.-rc6-x, host 3.11.6) with trinity
+>> and use hostfs for the victom files for trinity. then trintiy often hangs while trying to finish.
+>>
+>> At the host I do have 1 process eating 100% CPU power of 1 core. A back trace of thet linux process at the hosts gives :
+>>
+>> tfoerste@n22 ~ $ sudo gdb /usr/local/bin/linux-v3.12-rc6-57-g69c88dc 16749 -n -batch -ex bt
+>> radix_tree_next_chunk (root=0x21, iter=0x47647c60, flags=12) at lib/radix-tree.c:769
+>> 769                                     while (++offset < RADIX_TREE_MAP_SIZE) {
+>> #0  radix_tree_next_chunk (root=0x21, iter=0x47647c60, flags=12) at lib/radix-tree.c:769
+>> #1  0x080cc13e in find_get_pages (mapping=0x483ed240, start=0, nr_pages=14, pages=0xc) at mm/filemap.c:844
+>> #2  0x080d5caa in pagevec_lookup (pvec=0x47647cc4, mapping=0x21, start=33, nr_pages=33) at mm/swap.c:914
+>> #3  0x080d609a in truncate_inode_pages_range (mapping=0x483ed240, lstart=0, lend=-1) at mm/truncate.c:241
+>> #4  0x080d643f in truncate_inode_pages (mapping=0x21, lstart=51539607585) at mm/truncate.c:358
+>> #5  0x08260838 in hostfs_evict_inode (inode=0x483ed188) at fs/hostfs/hostfs_kern.c:242
+>> #6  0x0811a8cf in evict (inode=0x483ed188) at fs/inode.c:549
+>> #7  0x0811b2ad in iput_final (inode=<optimized out>) at fs/inode.c:1391
+>> #8  iput (inode=0x483ed188) at fs/inode.c:1409
+>> #9  0x08117648 in dentry_iput (dentry=<optimized out>) at fs/dcache.c:331
+>> #10 d_kill (dentry=0x47d6d580, parent=0x47d95d10) at fs/dcache.c:477
+>> #11 0x08118068 in dentry_kill (dentry=<optimized out>, unlock_on_failure=<optimized out>) at fs/dcache.c:586
+>> #12 dput (dentry=0x47d6d580) at fs/dcache.c:641
+>> #13 0x08104903 in __fput (file=0x47471840) at fs/file_table.c:264
+>> #14 0x0810496b in ____fput (work=0x47471840) at fs/file_table.c:282
+>> #15 0x08094496 in task_work_run () at kernel/task_work.c:123
+>> #16 0x0807efd2 in exit_task_work (task=<optimized out>) at include/linux/task_work.h:21
+>> #17 do_exit (code=1196535808) at kernel/exit.c:787
+>> #18 0x0807f5dd in do_group_exit (exit_code=0) at kernel/exit.c:920
+>> #19 0x0807f649 in SYSC_exit_group (error_code=<optimized out>) at kernel/exit.c:931
+>> #20 SyS_exit_group (error_code=0) at kernel/exit.c:929
+>> #21 0x08062984 in handle_syscall (r=0x4763b1d4) at arch/um/kernel/skas/syscall.c:35
+>> #22 0x08074fb5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+>> #23 userspace (regs=0x4763b1d4) at arch/um/os-Linux/skas/process.c:431
+>> #24 0x0805f750 in fork_handler () at arch/um/kernel/process.c:160
+>> #25 0x00000000 in ?? ()
+>>
+> 
+> That trace is identical to the one you reported yesterday.
+> But this time no nfs is in the game, right?
+> 
 
->
-> Generally the problems I see with mmap_sem are related to long latency
-> operations. Specifically, the mmap_sem write side is currently held
-> during the entire munmap operation, which iterates over user pages to
-> free them, and can take hundreds of milliseconds for large VMAs.
+Right - I could narrow down it in the meanwhile to hostfs only. First I
+argued if NFS sometimes might force the issue to happen later but in the
+mean while I don't think so.
 
-So this would be the *perfect* place to just downgrade the semaphore
-from a write to a read.
 
-Do the vma ops under the write semaphore, then downgrade it to a
-read-sem, and do the page teardown with just mmap_sem held for
-reading..
+>> Last message of trinity's watchdog are :
+>>
+>> ...
+>> [watchdog] exit_reason=2, but 2 children still running.
+>> Bailing main loop. Exit reason: Reached maximum syscall count.
+>> [watchdog] Reached limit 10001. Telling children to exit.
+>> [watchdog] [1516] Watchdog exiting
+>>
+>>
+>> I'm unsure if this is only UML specific, interesting for the fs people or mm or ... ?
+>>
+>>
+>> --
+>> MfG/Sincerely
+>> Toralf Förster
+>> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+>>
+>> ------------------------------------------------------------------------------
+>> October Webinars: Code for Performance
+>> Free Intel webinars can help you accelerate application performance.
+>> Explore tips for MPI, OpenMP, advanced profiling, and more. Get the most from
+>> the latest Intel processors and coprocessors. See abstracts and register >
+>> http://pubads.g.doubleclick.net/gampad/clk?id=60135991&iu=/4140/ostg.clktrk
+>> _______________________________________________
+>> User-mode-linux-devel mailing list
+>> User-mode-linux-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/user-mode-linux-devel
+> 
+> 
+> 
 
-Comments? Anybody want to try that? It should be fairly
-straightforward, and we had a somewhat similar issue when it came to
-mmap() having to populate the mapping for mlock. For that case, it was
-sufficient to just move the "populate" phase outside the lock entirely
-(for that case, we actually drop the write lock and then take the
-read-lock and re-lookup the vma, for unmap we'd have to do a proper
-downgrade so that there is no window where the virtual address area
-could be re-allocated)
 
-The big issue is that we'd have to split up do_munmap() into those two
-phases, since right now callers take the write semaphore before
-calling it, and drop it afterwards. And some callers do it in a loop.
-But we should be fairly easily able to make the *common* case (ie
-normal "munmap()") do something like
-
-    down_write(&mm->mmap_sem);
-    phase1_munmap(..);
-    downgrade_write(&mm->mmap_sem);
-    phase2_munmap(..);
-    up_read(&mm->mmap_sem);
-
-instead of what it does now (which is to just do
-down_write()/up_write() around do_munmap()).
-
-I don't see any fundamental problems, but maybe there's some really
-annoying detail that makes this nasty (right now we do
-"remove_vma_list() -> remove_vma()" *after* tearing down the page
-tables, and since that calls the ->close function, I think it has to
-be done that way. I'm wondering if any of that code relies on the
-mmap_sem() being held for exclusively for writing. I don't see why it
-possibly could, but..
-
-So maybe I'm being overly optimistic and it's not as easy as just
-splitting do_mmap() into two phases, but it really *looks* like it
-might be just a ten-liner or so.. And if a real munmap() is the common
-case (as opposed to a do_munmap() that gets triggered by somebody
-doing a "mmap()" on top of an old mapping), then we'd at least allow
-page faults from other threads to be done concurrently with tearing
-down the page tables for the unmapped vma..
-
-             Linus
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
