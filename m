@@ -1,471 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3JVNPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 09:15:39 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26448 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab3JVNPh (ORCPT
+	id S1753146Ab3JVNXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 09:23:12 -0400
+Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:38491 "EHLO
+	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab3JVNXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 09:15:37 -0400
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Brian Norris <computersforpeace@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Topic: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Index: AQHOzyiczXccMKf72E2y9hcK5+vClg==
-Date: Tue, 22 Oct 2013 13:14:17 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C084C81@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
- <20131020120603.GA18678@localhost>
-In-Reply-To: <20131020120603.GA18678@localhost>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.21]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 22 Oct 2013 09:23:10 -0400
+Date: Tue, 22 Oct 2013 15:23:03 +0200
+From: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
+To: Dirk Gouders <dirk@gouders.net>
+Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, sw@simonwunderlich.de
+Subject: Re: [BUG bisected] WARNING: CPU: 0 PID: 1550 at
+ net/wireless/chan.c:373 cfg80211_chandef_usable+0x30/0x15f()
+Message-ID: <20131022132303.GA14762@pandem0nium>
+References: <gifvruyge3.fsf@karga.hank.lab>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <gifvruyge3.fsf@karga.hank.lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-purgate: clean
+X-purgate-type: clean
+X-purgate-ID: 154106::1382448185-00007495-496CD30A/0-0/0-0
+X-Scan-AV: cora.hrz.tu-chemnitz.de;2013-10-22 15:23:05;4cec88815c2f28cb41b15f2ce03e9fd5
+X-Scan-SA: cora.hrz.tu-chemnitz.de;2013-10-22 15:23:05;9a5a83e1433d51edd1ca147cc7570418
+X-Spam-Score: -1.0 (-)
+X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
+ Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
+ * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+ --- Ende Textanalyse
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9MDFlZT006122
 
-From: CaiZhiyong <caizhiyong@huawei.com>
-Subject: mtd: cmdlinepart: use cmdline partition parser lib
 
-In the previous version, adjust the cmdline parser code to library-style
-code, and move it to a separate file "block/cmdline-parser.c", we can use
-it in some client code. there is no any functionality change in the adjusting.
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-this patch use cmdline parser lib.
+Hey Dirk,
 
-For further information, see "https://lkml.org/lkml/2013/8/6/550"
+thanks a lot for your report. I have looked at your trace and the patch
+again, but so far I'm not sure where the problem comes from. Could you
+please help by providing:
 
-Signed-off-by: CaiZhiyong <caizhiyong@huawei.com>
----
- drivers/mtd/Kconfig       |   1 +
- drivers/mtd/cmdlinepart.c | 343 +++++-----------------------------------------
- 2 files changed, 39 insertions(+), 305 deletions(-)
+ * your wpa_supplicant config (censor your passwords!) - I guess you have
+   some ad-hoc networks configured?
+ * your wpa_supplicant command line parameters when running
+ * environment infos - are there IBSS networks next to your notebook?
 
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 5fab4e6e..daf544a 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -75,6 +75,7 @@ endif # MTD_REDBOOT_PARTS
- 
- config MTD_CMDLINE_PARTS
- 	tristate "Command line partition table parsing"
-+	select BLK_CMDLINE_PARSER
- 	depends on MTD
- 	---help---
- 	  Allow generic configuration of the MTD partition tables via the kernel
-diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
-index 721caeb..ba934a4 100644
---- a/drivers/mtd/cmdlinepart.c
-+++ b/drivers/mtd/cmdlinepart.c
-@@ -47,344 +47,79 @@
-  * 1 NOR Flash with 2 partitions, 1 NAND with one
-  * edb7312-nor:256k(ARMboot)ro,-(root);edb7312-nand:-(home)
-  */
-+ /*
-+  * Copyright Â© 2013 Cai Zhiyong <caizhiyong@huawei.com>
-+  * Rewrite the cmdline parser code, adjust it to a library-style code.
-+  * this module only use the cmdline parser lib.
-+  */
- 
- #include <linux/kernel.h>
--#include <linux/slab.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/partitions.h>
- #include <linux/module.h>
- #include <linux/err.h>
-+#include <linux/cmdline-parser.h>
- 
--/* error message prefix */
--#define ERRP "mtd: "
--
--/* debug macro */
--#if 0
--#define dbg(x) do { printk("DEBUG-CMDLINE-PART: "); printk x; } while(0)
--#else
--#define dbg(x)
--#endif
--
--
--/* special size referring to all the remaining space in a partition */
--#define SIZE_REMAINING ULLONG_MAX
--#define OFFSET_CONTINUOUS ULLONG_MAX
--
--struct cmdline_mtd_partition {
--	struct cmdline_mtd_partition *next;
--	char *mtd_id;
--	int num_parts;
--	struct mtd_partition *parts;
--};
--
--/* mtdpart_setup() parses into here */
--static struct cmdline_mtd_partition *partitions;
--
--/* the command line passed to mtdpart_setup() */
- static char *mtdparts;
--static char *cmdline;
--static int cmdline_parsed;
-+static struct cmdline_parts *mtd_cmdline_parts;
- 
--/*
-- * Parse one partition definition for an MTD. Since there can be many
-- * comma separated partition definitions, this function calls itself
-- * recursively until no more partition definitions are found. Nice side
-- * effect: the memory to keep the mtd_partition structs and the names
-- * is allocated upon the last definition being found. At that point the
-- * syntax has been verified ok.
-- */
--static struct mtd_partition * newpart(char *s,
--				      char **retptr,
--				      int *num_parts,
--				      int this_part,
--				      unsigned char **extra_mem_ptr,
--				      int extra_mem_size)
-+static int add_part(int slot, struct cmdline_subpart *subpart, void *param)
- {
--	struct mtd_partition *parts;
--	unsigned long long size, offset = OFFSET_CONTINUOUS;
--	char *name;
--	int name_len;
--	unsigned char *extra_mem;
--	char delim;
--	unsigned int mask_flags;
--
--	/* fetch the partition size */
--	if (*s == '-') {
--		/* assign all remaining space to this partition */
--		size = SIZE_REMAINING;
--		s++;
--	} else {
--		size = memparse(s, &s);
--		if (size < PAGE_SIZE) {
--			printk(KERN_ERR ERRP "partition size too small (%llx)\n",
--			       size);
--			return ERR_PTR(-EINVAL);
--		}
--	}
--
--	/* fetch partition name and flags */
--	mask_flags = 0; /* this is going to be a regular partition */
--	delim = 0;
--
--	/* check for offset */
--	if (*s == '@') {
--		s++;
--		offset = memparse(s, &s);
--	}
-+	struct mtd_partition *mtdpart = &((struct mtd_partition *)param)[slot];
- 
--	/* now look for name */
--	if (*s == '(')
--		delim = ')';
-+	mtdpart->offset = subpart->from;
-+	mtdpart->size = subpart->size;
-+	mtdpart->name = subpart->name;
-+	mtdpart->mask_flags = 0;
- 
--	if (delim) {
--		char *p;
-+	if (subpart->flags & PF_RDONLY)
-+		mtdpart->mask_flags |= MTD_WRITEABLE;
- 
--		name = ++s;
--		p = strchr(name, delim);
--		if (!p) {
--			printk(KERN_ERR ERRP "no closing %c found in partition name\n", delim);
--			return ERR_PTR(-EINVAL);
--		}
--		name_len = p - name;
--		s = p + 1;
--	} else {
--		name = NULL;
--		name_len = 13; /* Partition_000 */
--	}
--
--	/* record name length for memory allocation later */
--	extra_mem_size += name_len + 1;
--
--	/* test for options */
--	if (strncmp(s, "ro", 2) == 0) {
--		mask_flags |= MTD_WRITEABLE;
--		s += 2;
--	}
-+	if (subpart->flags & PF_POWERUP_LOCK)
-+		mtdpart->mask_flags |= MTD_POWERUP_LOCK;
- 
--	/* if lk is found do NOT unlock the MTD partition*/
--	if (strncmp(s, "lk", 2) == 0) {
--		mask_flags |= MTD_POWERUP_LOCK;
--		s += 2;
--	}
--
--	/* test if more partitions are following */
--	if (*s == ',') {
--		if (size == SIZE_REMAINING) {
--			printk(KERN_ERR ERRP "no partitions allowed after a fill-up partition\n");
--			return ERR_PTR(-EINVAL);
--		}
--		/* more partitions follow, parse them */
--		parts = newpart(s + 1, &s, num_parts, this_part + 1,
--				&extra_mem, extra_mem_size);
--		if (IS_ERR(parts))
--			return parts;
--	} else {
--		/* this is the last partition: allocate space for all */
--		int alloc_size;
--
--		*num_parts = this_part + 1;
--		alloc_size = *num_parts * sizeof(struct mtd_partition) +
--			     extra_mem_size;
--
--		parts = kzalloc(alloc_size, GFP_KERNEL);
--		if (!parts)
--			return ERR_PTR(-ENOMEM);
--		extra_mem = (unsigned char *)(parts + *num_parts);
--	}
--
--	/* enter this partition (offset will be calculated later if it is zero at this point) */
--	parts[this_part].size = size;
--	parts[this_part].offset = offset;
--	parts[this_part].mask_flags = mask_flags;
--	if (name)
--		strlcpy(extra_mem, name, name_len + 1);
--	else
--		sprintf(extra_mem, "Partition_%03d", this_part);
--	parts[this_part].name = extra_mem;
--	extra_mem += name_len + 1;
--
--	dbg(("partition %d: name <%s>, offset %llx, size %llx, mask flags %x\n",
--	     this_part, parts[this_part].name, parts[this_part].offset,
--	     parts[this_part].size, parts[this_part].mask_flags));
--
--	/* return (updated) pointer to extra_mem memory */
--	if (extra_mem_ptr)
--		*extra_mem_ptr = extra_mem;
--
--	/* return (updated) pointer command line string */
--	*retptr = s;
--
--	/* return partition table */
--	return parts;
-+	return 0;
- }
- 
--/*
-- * Parse the command line.
-- */
--static int mtdpart_setup_real(char *s)
-+static int __init mtdpart_setup(char *s)
- {
--	cmdline_parsed = 1;
--
--	for( ; s != NULL; )
--	{
--		struct cmdline_mtd_partition *this_mtd;
--		struct mtd_partition *parts;
--		int mtd_id_len, num_parts;
--		char *p, *mtd_id;
--
--		mtd_id = s;
--
--		/* fetch <mtd-id> */
--		p = strchr(s, ':');
--		if (!p) {
--			printk(KERN_ERR ERRP "no mtd-id\n");
--			return -EINVAL;
--		}
--		mtd_id_len = p - mtd_id;
--
--		dbg(("parsing <%s>\n", p+1));
--
--		/*
--		 * parse one mtd. have it reserve memory for the
--		 * struct cmdline_mtd_partition and the mtd-id string.
--		 */
--		parts = newpart(p + 1,		/* cmdline */
--				&s,		/* out: updated cmdline ptr */
--				&num_parts,	/* out: number of parts */
--				0,		/* first partition */
--				(unsigned char**)&this_mtd, /* out: extra mem */
--				mtd_id_len + 1 + sizeof(*this_mtd) +
--				sizeof(void*)-1 /*alignment*/);
--		if (IS_ERR(parts)) {
--			/*
--			 * An error occurred. We're either:
--			 * a) out of memory, or
--			 * b) in the middle of the partition spec
--			 * Either way, this mtd is hosed and we're
--			 * unlikely to succeed in parsing any more
--			 */
--			 return PTR_ERR(parts);
--		 }
--
--		/* align this_mtd */
--		this_mtd = (struct cmdline_mtd_partition *)
--				ALIGN((unsigned long)this_mtd, sizeof(void *));
--		/* enter results */
--		this_mtd->parts = parts;
--		this_mtd->num_parts = num_parts;
--		this_mtd->mtd_id = (char*)(this_mtd + 1);
--		strlcpy(this_mtd->mtd_id, mtd_id, mtd_id_len + 1);
--
--		/* link into chain */
--		this_mtd->next = partitions;
--		partitions = this_mtd;
--
--		dbg(("mtdid=<%s> num_parts=<%d>\n",
--		     this_mtd->mtd_id, this_mtd->num_parts));
--
--
--		/* EOS - we're done */
--		if (*s == 0)
--			break;
--
--		/* does another spec follow? */
--		if (*s != ';') {
--			printk(KERN_ERR ERRP "bad character after partition (%c)\n", *s);
--			return -EINVAL;
--		}
--		s++;
--	}
--
--	return 0;
-+	mtdparts = s;
-+	return 1;
- }
-+__setup("mtdparts=", mtdpart_setup);
- 
--/*
-- * Main function to be called from the MTD mapping driver/device to
-- * obtain the partitioning information. At this point the command line
-- * arguments will actually be parsed and turned to struct mtd_partition
-- * information. It returns partitions for the requested mtd device, or
-- * the first one in the chain if a NULL mtd_id is passed in.
-- */
- static int parse_cmdline_partitions(struct mtd_info *master,
- 				    struct mtd_partition **pparts,
- 				    struct mtd_part_parser_data *data)
- {
--	unsigned long long offset;
--	int i, err;
--	struct cmdline_mtd_partition *part;
--	const char *mtd_id = master->name;
-+	struct cmdline_parts *parts;
- 
--	/* parse command line */
--	if (!cmdline_parsed) {
--		err = mtdpart_setup_real(cmdline);
--		if (err)
--			return err;
--	}
-+	if (mtdparts) {
-+		if (mtd_cmdline_parts)
-+			cmdline_parts_free(&mtd_cmdline_parts);
- 
--	/*
--	 * Search for the partition definition matching master->name.
--	 * If master->name is not set, stop at first partition definition.
--	 */
--	for (part = partitions; part; part = part->next) {
--		if ((!mtd_id) || (!strcmp(part->mtd_id, mtd_id)))
--			break;
-+		if (cmdline_parts_parse(&mtd_cmdline_parts, mtdparts)) {
-+			mtdparts = NULL;
-+			return -EINVAL;
-+		}
-+		mtdparts = NULL;
- 	}
- 
--	if (!part)
-+	if (!mtd_cmdline_parts)
- 		return 0;
- 
--	for (i = 0, offset = 0; i < part->num_parts; i++) {
--		if (part->parts[i].offset == OFFSET_CONTINUOUS)
--			part->parts[i].offset = offset;
--		else
--			offset = part->parts[i].offset;
--
--		if (part->parts[i].size == SIZE_REMAINING)
--			part->parts[i].size = master->size - offset;
--
--		if (offset + part->parts[i].size > master->size) {
--			printk(KERN_WARNING ERRP
--			       "%s: partitioning exceeds flash size, truncating\n",
--			       part->mtd_id);
--			part->parts[i].size = master->size - offset;
--		}
--		offset += part->parts[i].size;
--
--		if (part->parts[i].size == 0) {
--			printk(KERN_WARNING ERRP
--			       "%s: skipping zero sized partition\n",
--			       part->mtd_id);
--			part->num_parts--;
--			memmove(&part->parts[i], &part->parts[i + 1],
--				sizeof(*part->parts) * (part->num_parts - i));
--			i--;
--		}
--	}
-+	parts = cmdline_parts_find(mtd_cmdline_parts, master->name);
-+	if (!parts)
-+		return 0;
- 
--	*pparts = kmemdup(part->parts, sizeof(*part->parts) * part->num_parts,
--			  GFP_KERNEL);
-+	*pparts = kzalloc(sizeof(**pparts) * parts->nr_subparts, GFP_KERNEL);
- 	if (!*pparts)
- 		return -ENOMEM;
- 
--	return part->num_parts;
-+	return cmdline_parts_set(parts, master->size, 0, add_part,
-+				 (void *)*pparts);
- }
- 
--
--/*
-- * This is the handler for our kernel parameter, called from
-- * main.c::checksetup(). Note that we can not yet kmalloc() anything,
-- * so we only save the commandline for later processing.
-- *
-- * This function needs to be visible for bootloaders.
-- */
--static int __init mtdpart_setup(char *s)
--{
--	cmdline = s;
--	return 1;
--}
--
--__setup("mtdparts=", mtdpart_setup);
--
- static struct mtd_part_parser cmdline_parser = {
- 	.owner = THIS_MODULE,
- 	.parse_fn = parse_cmdline_partitions,
-@@ -393,8 +128,6 @@ static struct mtd_part_parser cmdline_parser = {
- 
- static int __init cmdline_parser_init(void)
- {
--	if (mtdparts)
--		mtdpart_setup(mtdparts);
- 	return register_mtd_parser(&cmdline_parser);
- }
- 
--- 
-1.8.1.5
+=46rom what I've seen so far:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ * the following warning in cfg80211_chandef_usable() fails:=20
+
+     if (WARN_ON(!cfg80211_chandef_valid(chandef)))
+
+ * cfg80211_chandef_usable() is most probably called by
+   cfg80211_reg_can_beacon(), which is called from __ieee80211_sta_join_ibs=
+s()
+ * the worker appearently creates the IBSS network using ifibss->chandef,
+   which appearently turns out to be invalid.
+ * ifibss->chandef gets initialized from in ieee80211_ibss_join() from the =
+upper
+   level parameters and is not changed later.
+ * at least nl80211 calls reg_can_bacon() as well and checks the chandef be=
+fore
+   proceeding. wext looks ok too.
+
+Therefore I'm not sure how the chandef gets broken ...
+
+Thanks,
+	Simon
+
+On Mon, Oct 21, 2013 at 02:09:40PM +0200, Dirk Gouders wrote:
+> Hello Simon, all,
+>=20
+> Recently, I noticed many traces (find a sample attached) in situations
+> when wpa_supplicant is running but no appropriate access-point available.
+>=20
+> I started a bisect and ended at commit 3aede78aad2a7e
+> (mac80211: change IBSS channel state to chandef).
+>=20
+> Please let me know if you need more information to inspect this problem.
+>=20
+> Best regards,
+>=20
+> Dirk
+>=20
+> ------------------------------------------------------------------------
+> Oct 21 13:56:06 lena kernel: ------------[ cut here ]------------
+> Oct 21 13:56:06 lena kernel: WARNING: CPU: 0 PID: 1550 at net/wireless/ch=
+an.c:373 cfg80211_chandef_usable+0x30/0x15f()
+> Oct 21 13:56:06 lena kernel: Modules linked in: brcmsmac cordic brcmutil =
+bcma
+> Oct 21 13:56:06 lena kernel: CPU: 0 PID: 1550 Comm: kworker/u4:5 Tainted:=
+ G        W    3.12.0-rc6+ #20
+> Oct 21 13:56:06 lena kernel: Hardware name: LENOVO 08946MG/MoutCook, BIOS=
+ 33CN14WW        05/10/2010
+> Oct 21 13:56:06 lena kernel: Workqueue: phy0 ieee80211_iface_work
+> Oct 21 13:56:06 lena kernel: 0000000000000000 0000000000000009 ffffffff81=
+61e3c7 0000000000000000
+> Oct 21 13:56:06 lena kernel: ffffffff81068b00 ffff88006f8be7c0 ffffffff81=
+5e79e4 0000000000000000
+> Oct 21 13:56:06 lena kernel: 000000000000000f ffff8800703e5dc2 ffff880070=
+3e5d50 ffff88006f8bc200
+> Oct 21 13:56:06 lena kernel: Call Trace:
+> Oct 21 13:56:06 lena kernel: [<ffffffff8161e3c7>] ? dump_stack+0x50/0x80
+> Oct 21 13:56:06 lena kernel: [<ffffffff81068b00>] ? warn_slowpath_common+=
+0x73/0x8b
+> Oct 21 13:56:06 lena kernel: [<ffffffff815e79e4>] ? cfg80211_chandef_usab=
+le+0x30/0x15f
+> Oct 21 13:56:06 lena kernel: [<ffffffff815e79e4>] ? cfg80211_chandef_usab=
+le+0x30/0x15f
+> Oct 21 13:56:06 lena kernel: [<ffffffff815f7c2e>] ? __ieee80211_sta_join_=
+ibss+0x162/0x6e2
+> Oct 21 13:56:06 lena kernel: [<ffffffff8161b8cd>] ? printk+0x4f/0x54
+> Oct 21 13:56:06 lena kernel: [<ffffffff815f8439>] ? ieee80211_sta_create_=
+ibss+0xc8/0xce
+> Oct 21 13:56:06 lena kernel: [<ffffffff815f91ed>] ? ieee80211_ibss_work+0=
+x255/0x3c5
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107addb>] ? process_one_work+0x1c=
+7/0x2e6
+> Oct 21 13:56:06 lena kernel: [<ffffffff81078c58>] ? pwq_activate_delayed_=
+work+0x1e/0x28
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107b346>] ? worker_thread+0x1cb/0=
+x2c4
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107b17b>] ? rescuer_thread+0x25c/=
+0x25c
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107ff37>] ? kthread+0xad/0xb5
+> Oct 21 13:56:06 lena kernel: [<ffffffff81080000>] ? kthread_create_on_nod=
+e+0xc1/0x115
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107fe8a>] ? kthread_freezable_sho=
+uld_stop+0x3b/0x3b
+> Oct 21 13:56:06 lena kernel: [<ffffffff816247bc>] ? ret_from_fork+0x7c/0x=
+b0
+> Oct 21 13:56:06 lena kernel: [<ffffffff8107fe8a>] ? kthread_freezable_sho=
+uld_stop+0x3b/0x3b
+> Oct 21 13:56:06 lena kernel: ---[ end trace ade89af8f1b5d90f ]---
+> ------------------------------------------------------------------------
+
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlJmfDcACgkQrzg/fFk7axbz1wCfaV4X4NCQtVAWaC32CABwK1V3
+gT8AmwQmY+mRz8RwDkjrl2hqpv0allHE
+=GbY/
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
