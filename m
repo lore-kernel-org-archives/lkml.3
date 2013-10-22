@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3JVSio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 14:38:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58665 "EHLO
+	id S1754763Ab3JVSlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 14:41:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58693 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab3JVSim (ORCPT
+	with ESMTP id S1753269Ab3JVSlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 14:38:42 -0400
-Date: Tue, 22 Oct 2013 14:38:39 -0400 (EDT)
-Message-Id: <20131022.143839.2085832416728125724.davem@davemloft.net>
-To: sebastian@breakpoint.cc
-Cc: andi@firstfloor.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: wan: sbni: remove assembly crc32 code
+	Tue, 22 Oct 2013 14:41:35 -0400
+Date: Tue, 22 Oct 2013 14:41:33 -0400 (EDT)
+Message-Id: <20131022.144133.745472492011974869.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, linux-kernel@vger.kernel.org,
+        amwang@redhat.com
+Subject: Re: [PATCH] Revert "bridge: only expire the mdb entry when query
+ is received"
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131022183625.GA4382@breakpoint.cc>
-References: <1382458346-24811-12-git-send-email-andi@firstfloor.org>
-	<20131022.135928.2040131908206663695.davem@davemloft.net>
-	<20131022183625.GA4382@breakpoint.cc>
+In-Reply-To: <1382223537-10844-1-git-send-email-linus.luessing@web.de>
+References: <1382223537-10844-1-git-send-email-linus.luessing@web.de>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 11:38:42 -0700 (PDT)
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 11:41:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Date: Tue, 22 Oct 2013 20:36:25 +0200
+From: Linus Lüssing <linus.luessing@web.de>
+Date: Sun, 20 Oct 2013 00:58:57 +0200
 
+> While this commit was a good attempt to fix issues occuring when no
+> multicast querier is present, this commit still has two more issues:
 > 
-> There is also a C function doing the same thing. Unless the asm code is
-> 110% faster we could stick to the C function.
+> 1) There are cases where mdb entries do not expire even if there is a
+> querier present. The bridge will unnecessarily continue flooding
+> multicast packets on the according ports.
 > 
-> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> 2) Never removing an mdb entry could be exploited for a Denial of
+> Service by an attacker on the local link, slowly, but steadily eating up
+> all memory.
+> 
+> Actually, this commit became obsolete with
+> "bridge: disable snooping if there is no querier" (b00589af3b)
+> which included fixes for a few more cases.
+> 
+> Therefore reverting the following commits (the commit stated in the
+> commit message plus three of its follow up fixes):
+> 
+> ---
+> Revert "bridge: update mdb expiration timer upon reports."
+> This reverts commit f144febd93d5ee534fdf23505ab091b2b9088edc.
+> Revert "bridge: do not call setup_timer() multiple times"
+> This reverts commit 1faabf2aab1fdaa1ace4e8c829d1b9cf7bfec2f1.
+> Revert "bridge: fix some kernel warning in multicast timer"
+> This reverts commit c7e8e8a8f7a70b343ca1e0f90a31e35ab2d16de1.
+> Revert "bridge: only expire the mdb entry when query is received"
+> This reverts commit 9f00b2e7cf241fa389733d41b615efdaa2cb0f5b.
 > ---
 > 
-> On Tue, Oct 22, 2013 at 01:59:28PM -0400, David Miller wrote:
->> 
->> Is it really impossible to use the generic crc32 support instead of this
->> unsightly custom inline assembler?
-> 
-> Since you asked for this here step 1.
+> CC: Cong Wang <amwang@redhat.com>
+> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 
-If it's that simple, this is definitely what we should do.
-
-On the off chance, is there anyone actually able to test this
-change? :-)))
+Applied, thanks a lot.
