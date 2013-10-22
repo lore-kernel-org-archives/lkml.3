@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3JVOdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:33:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53910 "EHLO
+	id S1754448Ab3JVOeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:34:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53905 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab3JVO2x (ORCPT
+	with ESMTP id S1753727Ab3JVO2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:28:53 -0400
+	Tue, 22 Oct 2013 10:28:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,18 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/26] perf trace: Improve event processing exit
-Date: Tue, 22 Oct 2013 11:28:12 -0300
-Message-Id: <1382452114-1243-5-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH 01/26] perf scripting perl: Fix build error on Fedora 12
+Date: Tue, 22 Oct 2013 11:28:09 -0300
+Message-Id: <1382452114-1243-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,11 +35,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We need to differentiate SIGCHLD from SIGINT, the later should cause as
-immediate as possible exit, while the former should wait to process the
-events that may be perceived in the ring buffer after the SIGCHLD is
-handled.
+Cast __u64 to u64 to silence this warning on older distros, such as
+Fedora 12:
 
+    CC       /tmp/build/perf/util/scripting-engines/trace-event-perl.o
+  cc1: warnings being treated as errors
+  util/scripting-engines/trace-event-perl.c: In function ‘perl_process_tracepoint’:
+  util/scripting-engines/trace-event-perl.c:285: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 2 has type ‘__u64’
+  make[1]: *** [/tmp/build/perf/util/scripting-engines/trace-event-perl.o] Error 1
+  make: *** [install] Error 2
+  make: Leaving directory `/home/acme/git/linux/tools/perf'
+  [acme@fedora12 linux]$
+
+Reported-by: Waiman Long <Waiman.Long@hp.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -43,64 +56,28 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vf6n57ewm3mjy2sz6r491hus@git.kernel.org
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/n/tip-nlxofdqcdjfm0w9o6bgq4kqv@git.kernel.org
+Link: http://lkml.kernel.org/r/1381265120-58532-1-git-send-email-Waiman.Long@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ tools/perf/util/scripting-engines/trace-event-perl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 86d2b1f2399c..ec8289570f4f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1098,10 +1098,12 @@ static size_t trace__fprintf_tstamp(struct trace *trace, u64 tstamp, FILE *fp)
- }
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index a85e4ae5f3ac..c0c9795c4f02 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -282,7 +282,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
  
- static bool done = false;
-+static bool interrupted = false;
+ 	event = find_cache_event(evsel);
+ 	if (!event)
+-		die("ug! no event found for type %" PRIu64, evsel->attr.config);
++		die("ug! no event found for type %" PRIu64, (u64)evsel->attr.config);
  
--static void sig_handler(int sig __maybe_unused)
-+static void sig_handler(int sig)
- {
- 	done = true;
-+	interrupted = sig == SIGINT;
- }
+ 	pid = raw_field_value(event, "common_pid", data);
  
- static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thread,
-@@ -1771,24 +1773,23 @@ again:
- 			handler = evsel->handler.func;
- 			handler(trace, evsel, &sample);
- 
--			if (done)
--				goto out_unmap_evlist;
-+			if (interrupted)
-+				goto out_disable;
- 		}
- 	}
- 
- 	if (trace->nr_events == before) {
--		if (done)
--			goto out_unmap_evlist;
-+		int timeout = done ? 100 : -1;
- 
--		poll(evlist->pollfd, evlist->nr_fds, -1);
-+		if (poll(evlist->pollfd, evlist->nr_fds, timeout) > 0)
-+			goto again;
-+	} else {
-+		goto again;
- 	}
- 
--	if (done)
--		perf_evlist__disable(evlist);
--	else
--		goto again;
-+out_disable:
-+	perf_evlist__disable(evlist);
- 
--out_unmap_evlist:
- 	if (!err) {
- 		if (trace->summary)
- 			trace__fprintf_thread_summary(trace, trace->output);
 -- 
 1.8.1.4
 
