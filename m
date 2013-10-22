@@ -1,199 +1,558 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3JVNCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 09:02:14 -0400
-Received: from ring0.de ([91.143.88.219]:36211 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823Ab3JVNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 09:02:08 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Milo Kim <milo.kim@ti.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-omap@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 1/2] leds: lp55xx: handle enable pin in driver
-Date: Tue, 22 Oct 2013 15:01:35 +0200
-Message-Id: <1382446896-28436-2-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382446896-28436-1-git-send-email-sre@debian.org>
-References: <1382446896-28436-1-git-send-email-sre@debian.org>
+	id S1753694Ab3JVND3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 09:03:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45994 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab3JVND0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 09:03:26 -0400
+Message-ID: <5266779A.2040302@baylibre.com>
+Date: Tue, 22 Oct 2013 15:03:22 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Mark Jackson <mpfj-list@newflow.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v3] Add support for Newflow NanoBone board
+References: <524E7905.4060907@newflow.co.uk>
+In-Reply-To: <524E7905.4060907@newflow.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the handling of the chip's enable pin from the board
-code into the driver. It also updates all board-code files using the
-driver to incorporate this change.
+Hi Mark,
 
-This is needed for device tree support of the enable pin.
+On 04/10/2013 10:15, Mark Jackson wrote:
+> NanoBone Specification:
+> -----------------------
+> CPU:
+>    TI AM335x
+>
+> Memory:
+>    256MB DDR3
+>    128MB NOR flash
+>    128KB FRAM
+>
+> Ethernet:
+>    2 x 10/100 connected to SMSC LAN8710 PHY
+>
+> USB:
+>    1 x USB2.0 Type A
+>
+> I2C:
+>    2Kbit EEPROM (Microchip 24AA02)
+>    RTC (Maxim DS1338)
+>    GPIO Expander (Microchip MCP23017)
+>
+> Expansion connector:
+>    6 x UART
+>    1 x MMC/SD
+>    1 x USB2.0
+>
+> Signed-off-by: Mark Jackson <mpfj@newflow.co.uk>
+> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- .../devicetree/bindings/leds/leds-lp55xx.txt       |  1 +
- arch/arm/mach-omap2/board-rx51-peripherals.c       | 20 +----------------
- arch/arm/mach-ux500/board-mop500.c                 |  2 ++
- drivers/leds/leds-lp55xx-common.c                  | 25 +++++++++++-----------
- include/linux/platform_data/leds-lp55xx.h          |  6 ++----
- 5 files changed, 19 insertions(+), 35 deletions(-)
+Thanks I've just applied it.
 
-diff --git a/Documentation/devicetree/bindings/leds/leds-lp55xx.txt b/Documentation/devicetree/bindings/leds/leds-lp55xx.txt
-index a61727f..5fb7b21 100644
---- a/Documentation/devicetree/bindings/leds/leds-lp55xx.txt
-+++ b/Documentation/devicetree/bindings/leds/leds-lp55xx.txt
-@@ -10,6 +10,7 @@ Each child has own specific current settings
- - max-cur: Maximun current at each led channel.
- 
- Optional properties:
-+- enable-gpio: GPIO attached to the chip's enable pin
- - label: Used for naming LEDs
- - pwr-sel: LP8501 specific property. Power selection for output channels.
-          0: D1~9 are connected to VDD
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index f6fe388..68dc998 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -211,29 +211,11 @@ static struct lp55xx_led_config rx51_lp5523_led_config[] = {
- 	}
- };
- 
--static int rx51_lp5523_setup(void)
--{
--	return gpio_request_one(RX51_LP5523_CHIP_EN_GPIO, GPIOF_DIR_OUT,
--			"lp5523_enable");
--}
--
--static void rx51_lp5523_release(void)
--{
--	gpio_free(RX51_LP5523_CHIP_EN_GPIO);
--}
--
--static void rx51_lp5523_enable(bool state)
--{
--	gpio_set_value(RX51_LP5523_CHIP_EN_GPIO, !!state);
--}
--
- static struct lp55xx_platform_data rx51_lp5523_platform_data = {
- 	.led_config		= rx51_lp5523_led_config,
- 	.num_channels		= ARRAY_SIZE(rx51_lp5523_led_config),
- 	.clock_mode		= LP55XX_CLOCK_AUTO,
--	.setup_resources	= rx51_lp5523_setup,
--	.release_resources	= rx51_lp5523_release,
--	.enable			= rx51_lp5523_enable,
-+	.enable_gpio		= RX51_LP5523_CHIP_EN_GPIO,
- };
- #endif
- 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index ad0806e..703dec2 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -297,6 +297,7 @@ static struct lp55xx_platform_data __initdata lp5521_pri_data = {
-        .led_config     = &lp5521_pri_led[0],
-        .num_channels   = 3,
-        .clock_mode     = LP55XX_CLOCK_EXT,
-+       .enable_gpio    = -1,
- };
- 
- static struct lp55xx_led_config lp5521_sec_led[] = {
-@@ -322,6 +323,7 @@ static struct lp55xx_platform_data __initdata lp5521_sec_data = {
-        .led_config     = &lp5521_sec_led[0],
-        .num_channels   = 3,
-        .clock_mode     = LP55XX_CLOCK_EXT,
-+       .enable_gpio    = -1,
- };
- 
- /* I2C0 devices only available on the first HREF/MOP500 */
-diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
-index 351825b..5160f8e 100644
---- a/drivers/leds/leds-lp55xx-common.c
-+++ b/drivers/leds/leds-lp55xx-common.c
-@@ -20,6 +20,8 @@
- #include <linux/module.h>
- #include <linux/platform_data/leds-lp55xx.h>
- #include <linux/slab.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
- 
- #include "leds-lp55xx-common.h"
- 
-@@ -406,18 +408,18 @@ int lp55xx_init_device(struct lp55xx_chip *chip)
- 	if (!pdata || !cfg)
- 		return -EINVAL;
- 
--	if (pdata->setup_resources) {
--		ret = pdata->setup_resources();
-+	if (gpio_is_valid(pdata->enable_gpio)) {
-+		ret = devm_gpio_request_one(dev, pdata->enable_gpio,
-+					    GPIOF_DIR_OUT, "lp5523_enable");
- 		if (ret < 0) {
--			dev_err(dev, "setup resoure err: %d\n", ret);
-+			dev_err(dev, "could not acquire enable gpio (err=%d)\n",
-+				ret);
- 			goto err;
- 		}
--	}
- 
--	if (pdata->enable) {
--		pdata->enable(0);
-+		gpio_set_value(pdata->enable_gpio, 0);
- 		usleep_range(1000, 2000); /* Keep enable down at least 1ms */
--		pdata->enable(1);
-+		gpio_set_value(pdata->enable_gpio, 1);
- 		usleep_range(1000, 2000); /* 500us abs min. */
- 	}
- 
-@@ -458,11 +460,8 @@ void lp55xx_deinit_device(struct lp55xx_chip *chip)
- 	if (chip->clk)
- 		clk_disable_unprepare(chip->clk);
- 
--	if (pdata->enable)
--		pdata->enable(0);
--
--	if (pdata->release_resources)
--		pdata->release_resources();
-+	if (gpio_is_valid(pdata->enable_gpio))
-+		gpio_set_value(pdata->enable_gpio, 0);
- }
- EXPORT_SYMBOL_GPL(lp55xx_deinit_device);
- 
-@@ -593,6 +592,8 @@ int lp55xx_of_populate_pdata(struct device *dev, struct device_node *np)
- 	of_property_read_string(np, "label", &pdata->label);
- 	of_property_read_u8(np, "clock-mode", &pdata->clock_mode);
- 
-+	pdata->enable_gpio = of_get_named_gpio(np, "enable-gpio", 0);
-+
- 	/* LP8501 specific */
- 	of_property_read_u8(np, "pwr-sel", (u8 *)&pdata->pwr_sel);
- 
-diff --git a/include/linux/platform_data/leds-lp55xx.h b/include/linux/platform_data/leds-lp55xx.h
-index 51a2ff5..820a5c7 100644
---- a/include/linux/platform_data/leds-lp55xx.h
-+++ b/include/linux/platform_data/leds-lp55xx.h
-@@ -66,10 +66,8 @@ struct lp55xx_platform_data {
- 	/* Clock configuration */
- 	u8 clock_mode;
- 
--	/* Platform specific functions */
--	int (*setup_resources)(void);
--	void (*release_resources)(void);
--	void (*enable)(bool state);
-+	/* optional enable GPIO */
-+	int enable_gpio;
- 
- 	/* Predefined pattern data */
- 	struct lp55xx_predef_pattern *patterns;
+Regards,
+Benoit
+
+> ---
+> Changes in v3:
+> - Added MMC support
+> - Fixed regulator limits
+>
+> Changes in v2:
+> - Reworked to use existing device nodes as suggested by Javier
+>
+>   MAINTAINERS                       |    6 +
+>   arch/arm/boot/dts/Makefile        |    1 +
+>   arch/arm/boot/dts/am335x-nano.dts |  431 +++++++++++++++++++++++++++++++++++++
+>   3 files changed, 438 insertions(+)
+>   create mode 100644 arch/arm/boot/dts/am335x-nano.dts
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index e61c2e8..8a4c9d9 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6062,6 +6062,12 @@ L:	linux-omap@vger.kernel.org
+>   S:	Maintained
+>   F:	drivers/gpio/gpio-omap.c
+>
+> +OMAP/NEWFLOW NANOBONE MACHINE SUPPORT
+> +M:	Mark Jackson <mpfj@newflow.co.uk>
+> +L:	linux-omap@vger.kernel.org
+> +S:	Maintained
+> +F:	arch/arm/boot/dts/am335x-nano.dts
+> +
+>   OMFS FILESYSTEM
+>   M:	Bob Copeland <me@bobcopeland.com>
+>   L:	linux-karma-devel@lists.sourceforge.net
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index e95af3f..543e837 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -184,6 +184,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>   	am335x-evmsk.dtb \
+>   	am335x-bone.dtb \
+>   	am335x-boneblack.dtb \
+> +	am335x-nano.dtb \
+>   	am3517-evm.dtb \
+>   	am3517_mt_ventoux.dtb \
+>   	am43x-epos-evm.dtb
+> diff --git a/arch/arm/boot/dts/am335x-nano.dts b/arch/arm/boot/dts/am335x-nano.dts
+> new file mode 100644
+> index 0000000..9907b49
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/am335x-nano.dts
+> @@ -0,0 +1,431 @@
+> +/*
+> + * Copyright (C) 2013 Newflow Ltd - http://www.newflow.co.uk/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +#include "am33xx.dtsi"
+> +
+> +/ {
+> +	model = "Newflow AM335x NanoBone";
+> +	compatible = "ti,am33xx";
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			cpu0-supply = <&dcdc2_reg>;
+> +		};
+> +	};
+> +
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x80000000 0x10000000>; /* 256 MB */
+> +	};
+> +
+> +	leds {
+> +		compatible = "gpio-leds";
+> +
+> +		led@0 {
+> +			label = "nanobone:green:usr1";
+> +			gpios = <&gpio1 5 0>;
+> +			default-state = "off";
+> +		};
+> +	};
+> +};
+> +
+> +&am33xx_pinmux {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&misc_pins>;
+> +
+> +	misc_pins: misc_pins {
+> +		pinctrl-single,pins = <
+> +			0x15c (PIN_OUTPUT | MUX_MODE7)	/* spi0_cs0.gpio0_5 */
+> +		>;
+> +	};
+> +
+> +	gpmc_pins: gpmc_pins {
+> +		pinctrl-single,pins = <
+> +			0x0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad0.gpmc_ad0 */
+> +			0x4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad1.gpmc_ad1 */
+> +			0x8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad2.gpmc_ad2 */
+> +			0xc (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad3.gpmc_ad3 */
+> +			0x10 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad4.gpmc_ad4 */
+> +			0x14 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad5.gpmc_ad5 */
+> +			0x18 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad6.gpmc_ad6 */
+> +			0x1c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad7.gpmc_ad7 */
+> +			0x20 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad8.gpmc_ad8 */
+> +			0x24 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad9.gpmc_ad9 */
+> +			0x28 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad10.gpmc_ad10 */
+> +			0x2c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad11.gpmc_ad11 */
+> +			0x30 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad12.gpmc_ad12 */
+> +			0x34 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad13.gpmc_ad13 */
+> +			0x38 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad14.gpmc_ad14 */
+> +			0x3c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad15.gpmc_ad15 */
+> +
+> +			0x70 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_wait0.gpmc_wait0 */
+> +			0x7c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn0.gpmc_csn0 */
+> +			0x80 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn1.gpmc_csn1 */
+> +			0x84 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn2.gpmc_csn2 */
+> +			0x88 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn3.gpmc_csn3 */
+> +
+> +			0x90 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_advn_ale.gpmc_advn_ale */
+> +			0x94 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_oen_ren.gpmc_oen_ren */
+> +			0x98 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_wen.gpmc_wen */
+> +			0x9c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_ben0_cle.gpmc_ben0_cle */
+> +
+> +			0xa4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data1.gpmc_a1 */
+> +			0xa8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data2.gpmc_a2 */
+> +			0xac (PIN_OUTPUT | MUX_MODE1)		/* lcd_data3.gpmc_a3 */
+> +			0xb0 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data4.gpmc_a4 */
+> +			0xb4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data5.gpmc_a5 */
+> +			0xb8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_data6.gpmc_a6 */
+> +			0xbc (PIN_OUTPUT | MUX_MODE1)		/* lcd_data7.gpmc_a7 */
+> +
+> +			0xe0 (PIN_OUTPUT | MUX_MODE1)		/* lcd_vsync.gpmc_a8 */
+> +			0xe4 (PIN_OUTPUT | MUX_MODE1)		/* lcd_hsync.gpmc_a9 */
+> +			0xe8 (PIN_OUTPUT | MUX_MODE1)		/* lcd_pclk.gpmc_a10 */
+> +		>;
+> +	};
+> +
+> +	i2c0_pins: i2c0_pins {
+> +		pinctrl-single,pins = <
+> +			0x188 (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
+> +			0x18c (PIN_INPUT_PULLDOWN | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
+> +		>;
+> +	};
+> +
+> +	uart0_pins: uart0_pins {
+> +		pinctrl-single,pins = <
+> +			0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
+> +			0x174 (PIN_OUTPUT | MUX_MODE0)		/* uart0_txd.uart0_txd */
+> +		>;
+> +	};
+> +
+> +	uart1_pins: uart1_pins {
+> +		pinctrl-single,pins = <
+> +			0x178 (PIN_OUTPUT | MUX_MODE7)		/* uart1_ctsn.uart1_ctsn */
+> +			0x17c (PIN_OUTPUT | MUX_MODE7)		/* uart1_rtsn.uart1_rtsn */
+> +			0x180 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart1_rxd.uart1_rxd */
+> +			0x184 (PIN_OUTPUT | MUX_MODE0)		/* uart1_txd.uart1_txd */
+> +		>;
+> +	};
+> +
+> +	uart2_pins: uart2_pins {
+> +		pinctrl-single,pins = <
+> +			0xc0 (PIN_INPUT_PULLUP | MUX_MODE7)	/* lcd_data8.gpio2[14] */
+> +			0xc4 (PIN_OUTPUT | MUX_MODE7)		/* lcd_data9.gpio2[15] */
+> +			0x150 (PIN_INPUT | MUX_MODE1)		/* spi0_sclk.uart2_rxd */
+> +			0x154 (PIN_OUTPUT | MUX_MODE1)		/* spi0_d0.uart2_txd */
+> +		>;
+> +	};
+> +
+> +	uart3_pins: uart3_pins {
+> +		pinctrl-single,pins = <
+> +			0xc8 (PIN_INPUT_PULLUP | MUX_MODE6)	/* lcd_data10.uart3_ctsn */
+> +			0xcc (PIN_OUTPUT | MUX_MODE6)		/* lcd_data11.uart3_rtsn */
+> +			0x160 (PIN_INPUT | MUX_MODE1)		/* spi0_cs1.uart3_rxd */
+> +			0x164 (PIN_OUTPUT | MUX_MODE1)		/* ecap0_in_pwm0_out.uart3_txd */
+> +		>;
+> +	};
+> +
+> +	uart4_pins: uart4_pins {
+> +		pinctrl-single,pins = <
+> +			0xd0 (PIN_INPUT_PULLUP | MUX_MODE6)	/* lcd_data12.uart4_ctsn */
+> +			0xd4 (PIN_OUTPUT | MUX_MODE6)		/* lcd_data13.uart4_rtsn */
+> +			0x168 (PIN_INPUT | MUX_MODE1)		/* uart0_ctsn.uart4_rxd */
+> +			0x16c (PIN_OUTPUT | MUX_MODE1)		/* uart0_rtsn.uart4_txd */
+> +		>;
+> +	};
+> +
+> +	uart5_pins: uart5_pins {
+> +		pinctrl-single,pins = <
+> +			0xd8 (PIN_INPUT | MUX_MODE4)		/* lcd_data14.uart5_rxd */
+> +			0x144 (PIN_OUTPUT | MUX_MODE3)		/* rmiii1_refclk.uart5_txd */
+> +		>;
+> +	};
+> +
+> +	mmc1_pins: mmc1_pins {
+> +		pinctrl-single,pins = <
+> +			0xf0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat0.mmc0_dat0 */
+> +			0xf4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat1.mmc0_dat1 */
+> +			0xf8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat2.mmc0_dat2 */
+> +			0xfc (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_dat3.mmc0_dat3 */
+> +			0x100 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_clk.mmc0_clk */
+> +			0x104 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc0_cmd.mmc0_cmd */
+> +			0x1e8 (PIN_INPUT_PULLUP | MUX_MODE7)	/* emu1.gpio3[8] */
+> +			0x1a0 (PIN_INPUT_PULLUP | MUX_MODE7)	/* mcasp0_aclkr.gpio3[18] */
+> +		>;
+> +	};
+> +};
+> +
+> +&uart0 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart0_pins>;
+> +	status = "okay";
+> +};
+> +
+> +&uart1 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart1_pins>;
+> +	status = "okay";
+> +	rts-gpio = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+> +	rs485-rts-active-high;
+> +	rs485-rx-during-tx;
+> +	rs485-rts-delay = <1 1>;
+> +	linux,rs485-enabled-at-boot-time;
+> +};
+> +
+> +&uart2 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart2_pins>;
+> +	status = "okay";
+> +	rts-gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>;
+> +	rs485-rts-active-high;
+> +	rs485-rts-delay = <1 1>;
+> +	linux,rs485-enabled-at-boot-time;
+> +};
+> +
+> +&uart3 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart3_pins>;
+> +	status = "okay";
+> +};
+> +
+> +&uart4 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart4_pins>;
+> +	status = "okay";
+> +};
+> +
+> +&uart5 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&uart5_pins>;
+> +	status = "okay";
+> +};
+> +
+> +&i2c0 {
+> +	status = "okay";
+> +	pinctrl-names = "default";
+> +	clock-frequency = <400000>;
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&i2c0_pins>;
+> +
+> +	gpio@20 {
+> +		compatible = "mcp,mcp23017";
+> +		reg = <0x20>;
+> +	};
+> +
+> +	tps: tps@24 {
+> +		reg = <0x24>;
+> +	};
+> +
+> +	eeprom@53 {
+> +		compatible = "mcp,24c02";
+> +		reg = <0x53>;
+> +		pagesize = <8>;
+> +	};
+> +
+> +	rtc@68 {
+> +		compatible = "dallas,ds1307";
+> +		reg = <0x68>;
+> +	};
+> +};
+> +
+> +&elm {
+> +	status = "okay";
+> +};
+> +
+> +&gpmc {
+> +	compatible = "ti,am3352-gpmc";
+> +	ti,hwmods = "gpmc";
+> +	status = "okay";
+> +	gpmc,num-waitpins = <2>;
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&gpmc_pins>;
+> +
+> +	#address-cells = <2>;
+> +	#size-cells = <1>;
+> +	ranges = <0 0 0x08000000 0x08000000>;	/* CS0: NOR 128M */
+> +
+> +	nor@0,0 {
+> +		reg = <0 0x00000000 0x08000000>;
+> +		compatible = "cfi-flash";
+> +		linux,mtd-name = "spansion,s29gl010p11t";
+> +		bank-width = <2>;
+> +
+> +		gpmc,mux-add-data = <2>;
+> +
+> +		gpmc,sync-clk-ps = <0>;
+> +		gpmc,cs-on-ns = <0>;
+> +		gpmc,cs-rd-off-ns = <160>;
+> +		gpmc,cs-wr-off-ns = <160>;
+> +		gpmc,adv-on-ns = <10>;
+> +		gpmc,adv-rd-off-ns = <30>;
+> +		gpmc,adv-wr-off-ns = <30>;
+> +		gpmc,oe-on-ns = <40>;
+> +		gpmc,oe-off-ns = <160>;
+> +		gpmc,we-on-ns = <40>;
+> +		gpmc,we-off-ns = <160>;
+> +		gpmc,rd-cycle-ns = <160>;
+> +		gpmc,wr-cycle-ns = <160>;
+> +		gpmc,access-ns = <150>;
+> +		gpmc,page-burst-access-ns = <10>;
+> +		gpmc,cycle2cycle-samecsen;
+> +		gpmc,cycle2cycle-delay-ns = <20>;
+> +		gpmc,wr-data-mux-bus-ns = <70>;
+> +		gpmc,wr-access-ns = <80>;
+> +
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +
+> +		/*
+> +		MTD partition table
+> +		===================
+> +		+------------+-->0x00000000-> U-Boot start
+> +		|            |
+> +		|            |-->0x000BFFFF-> U-Boot end
+> +		|            |-->0x000C0000-> ENV1 start
+> +		|            |
+> +		|            |-->0x000DFFFF-> ENV1 end
+> +		|            |-->0x000E0000-> ENV2 start
+> +		|            |
+> +		|            |-->0x000FFFFF-> ENV2 end
+> +		|            |-->0x00100000-> Kernel start
+> +		|            |
+> +		|            |-->0x004FFFFF-> Kernel end
+> +		|            |-->0x00500000-> File system start
+> +		|            |
+> +		|            |-->0x014FFFFF-> File system end
+> +		|            |-->0x01500000-> User data start
+> +		|            |
+> +		|            |-->0x03FFFFFF-> User data end
+> +		|            |-->0x04000000-> Data storage start
+> +		|            |
+> +		+------------+-->0x08000000-> NOR end (Free end)
+> +		*/
+> +		partition@0 {
+> +			label = "boot";
+> +			reg = <0x00000000 0x000c0000>; /* 768KB */
+> +		};
+> +
+> +		partition@1 {
+> +			label = "env1";
+> +			reg = <0x000c0000 0x00020000>; /* 128KB */
+> +		};
+> +
+> +		partition@2 {
+> +			label = "env2";
+> +			reg = <0x000e0000 0x00020000>; /* 128KB */
+> +		};
+> +
+> +		partition@3 {
+> +			label = "kernel";
+> +			reg = <0x00100000 0x00400000>; /* 4MB */
+> +		};
+> +
+> +		partition@4 {
+> +			label = "rootfs";
+> +			reg = <0x00500000 0x01000000>; /* 16MB */
+> +		};
+> +
+> +		partition@5 {
+> +			label = "user";
+> +			reg = <0x01500000 0x02b00000>; /* 43MB */
+> +		};
+> +
+> +		partition@6 {
+> +			label = "data";
+> +			reg = <0x04000000 0x04000000>; /* 64MB */
+> +		};
+> +	};
+> +};
+> +
+> +&mac {
+> +	dual_emac = <1>;
+> +};
+> +
+> +&cpsw_emac0 {
+> +	phy_id = <&davinci_mdio>, <0>;
+> +	dual_emac_res_vlan = <1>;
+> +};
+> +
+> +&cpsw_emac1 {
+> +	phy_id = <&davinci_mdio>, <1>;
+> +	dual_emac_res_vlan = <2>;
+> +};
+> +
+> +&mmc1 {
+> +	status = "okay";
+> +	vmmc-supply = <&ldo4_reg>;
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&mmc1_pins>;
+> +	bus-width = <4>;
+> +	cd-gpios = <&gpio3 8 0>;
+> +	wp-gpios = <&gpio3 18 0>;
+> +};
+> +
+> +#include "tps65217.dtsi"
+> +
+> +&tps {
+> +	regulators {
+> +		dcdc1_reg: regulator@0 {
+> +			/* +1.5V voltage with ±4% tolerance */
+> +			regulator-min-microvolt = <1450000>;
+> +			regulator-max-microvolt = <1550000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		dcdc2_reg: regulator@1 {
+> +			/* VDD_MPU voltage limits 0.95V - 1.1V with ±4% tolerance */
+> +			regulator-name = "vdd_mpu";
+> +			regulator-min-microvolt = <915000>;
+> +			regulator-max-microvolt = <1140000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		dcdc3_reg: regulator@2 {
+> +			/* VDD_CORE voltage limits 0.95V - 1.1V with ±4% tolerance */
+> +			regulator-name = "vdd_core";
+> +			regulator-min-microvolt = <915000>;
+> +			regulator-max-microvolt = <1140000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		ldo1_reg: regulator@3 {
+> +			/* +1.8V voltage with ±4% tolerance */
+> +			regulator-min-microvolt = <1750000>;
+> +			regulator-max-microvolt = <1870000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		ldo2_reg: regulator@4 {
+> +			/* +3.3V voltage with ±4% tolerance */
+> +			regulator-min-microvolt = <3175000>;
+> +			regulator-max-microvolt = <3430000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		ldo3_reg: regulator@5 {
+> +			/* +1.8V voltage with ±4% tolerance */
+> +			regulator-min-microvolt = <1750000>;
+> +			regulator-max-microvolt = <1870000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		ldo4_reg: regulator@6 {
+> +			/* +3.3V voltage with ±4% tolerance */
+> +			regulator-min-microvolt = <3175000>;
+> +			regulator-max-microvolt = <3430000>;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +	};
+> +};
+>
+
+
 -- 
-1.8.4.rc3
-
+Beno�t Cousson
+BayLibre
+Embedded Linux Technology Lab
+www.baylibre.com
