@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3JVClv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 22:41:51 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:58672 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab3JVClu (ORCPT
+	id S1753178Ab3JVCnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 22:43:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39613 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab3JVCnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 22:41:50 -0400
-Message-ID: <5265E5E6.30908@gmail.com>
-Date: Tue, 22 Oct 2013 10:41:42 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 21 Oct 2013 22:43:20 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: rpurdie@rpsys.net, jg1.han@samsung.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
-References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com> <5260BD8C.7000200@gmail.com>
-In-Reply-To: <5260BD8C.7000200@gmail.com>
+In-Reply-To: <5265395C.2040807@redhat.com>
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com>
+	<1382304926-1641-3-git-send-email-prarit@redhat.com>
+	<CACVXFVMjEnkk8zYycsk6t4WiWOJ_NT1AKFoK7p5mQnFkw9KE-g@mail.gmail.com>
+	<52651D8C.3090203@redhat.com>
+	<CACVXFVOqM6BLv914G-PHyYXZR4-wqgosdLUiF=KuESx2+8UQ2A@mail.gmail.com>
+	<5265395C.2040807@redhat.com>
+Date: Tue, 22 Oct 2013 10:43:18 +0800
+Message-ID: <CACVXFVP+RdNp_tkdfEBicE1S-92mwrS2w24pZ9pYu-5tR9ghTA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] intel_microcode, Fix long microcode load time when
+ firmware file is missing
+From: Ming Lei <ming.lei@canonical.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        tigran@aivazian.fsnet.co.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Thierry...
+On Mon, Oct 21, 2013 at 10:25 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>
+>
+> On 10/21/2013 08:32 AM, Ming Lei wrote:
+>> On Mon, Oct 21, 2013 at 8:26 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>>
+>>>> And why don't you pass FW_ACTION_HOTPLUG? and you are sure
+>>>> that udev isn't required to handle your microcode update request?
+>>>>
+>>>
+>>> AFAICT in both cases, udev wasn't required to handle the cpu microcode update.
+>>> Both drivers use CMH to load the firmware which removes the need for udev to do
+>>> anything.  Admittedly maybe I've missed some odd use case but I don't think it
+>>> is necessary.
+>>
+>> OK, so I guess the CMH still need uevent to get notified, right?
+>
+> The code as it is _currently_ written does not use uevents to load the processor
+> firmware.  ie) call_usermodehelper does not need uevent to get notified, so I
+> think FW_ACTION_NOHOTPLUG is correct.
 
-Mark
-On 10/18/2013 12:48 PM, Mark Zhang wrote:
-> On 10/17/2013 03:14 PM, Thierry Reding wrote:
->> On Thu, Oct 17, 2013 at 02:49:57PM +0800, Mark Zhang wrote:
->>> Hi,
->>>
->>> This is the first time I send mail to linux-pwm, I didn't read through
->>> the mails in this list, so if somebody already asked this question, I'm
->>> sorry about that.
->>>
->>> I wanna set some fops in "struct platform_pwm_backlight_data". But the
->>> currrent probe function in pwm_bl.c says:
->>>
->>> -------
->>> if (!data) {
->>> 	ret = pwm_backlight_parse_dt(&pdev->dev, &defdata);
->>> 	if (ret < 0) {
->>> 		dev_err(&pdev->dev, "failed to find platform data\n");
->>> 		return ret;
->>> 	}
->>>
->>> 	data = &defdata;
->>> }
->>> -------
->>>
->>> This looks like if we set the platform data for pwm backlight device,
->>> "pwm_backlight_parse_dt" will never have a chance to be called, which
->>> means the stuffs I defined in backlight DT node will be ignored.
->>>
->>> If I don't set the platform data for pwm backlight device, according to
->>> the pwm_backlight_probe, I will never have a chance to set some fops
->>> which I need(like "notify", "check_fb"...).
->>>
->>> So, what I suppose to do now? Maybe there is a way to set function
->>> pointers in DT?
->>
->> Perhaps you could describe in more detail what you need the functions
->> for.
->>
-> 
-> Okay, I just want to set the "notify" function pointer in "struct
-> platform_pwm_backlight_data", because I want to tune the brightness
-> value before the pwm-bl sets the brightness to hardware. I don't know
-> how to do that, unless we define the platform data explicitly.
-> 
-> Mark
->> Generally you're not supposed to mix DT and platform data. Without more
->> info that's about all I can say.
->>
->> Thierry
->>
+You need to make sure your patch won't break userspace in old
+distribution with your _currently_ code.
+
+Actually if udev isn't used in your user space, the timeout issue
+won't be triggered because it is blocked by udev.
+
+Thanks,
+--
+Ming Lei
