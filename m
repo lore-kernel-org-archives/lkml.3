@@ -1,33 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3JVPLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:11:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38518 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab3JVPLH (ORCPT
+	id S1753483Ab3JVPLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:11:33 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:60335 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab3JVPLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:11:07 -0400
+	Tue, 22 Oct 2013 11:11:13 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>
-Subject: linux-next: Tree for Oct 22
-Date: Tue, 22 Oct 2013 17:08:34 +0200
-Message-Id: <1382454517-4074-1-git-send-email-treding@nvidia.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the usb tree
+Date: Tue, 22 Oct 2013 17:08:37 +0200
+Message-Id: <1382454517-4074-4-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382454517-4074-1-git-send-email-treding@nvidia.com>
+References: <1382454517-4074-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Today's linux-next merge of the usb tree got a conflict in
 
-I've uploaded today's linux-next tree to the master branch of the
-repository below:
+	drivers/Kconfig
 
-        git://gitorious.org/thierryreding/linux-next.git
+caused by commits ff76496 (drivers: phy: add generic PHY framework) and
+12cc4b38 (PowerCap: Add to drivers Kconfig and Makefile).
 
-A next-20131022 tag is also provided for convenience.
+I fixed it up (see below). Please verify that the resolution look good.
 
-Gained a couple new conflicts, fixed more build failures. ARM seems to
-be in pretty good shape, as is the 64-bit x86 allmodconfig.
-
+Thanks,
 Thierry
+---
+diff --cc drivers/Kconfig
+index 969e987,8f45144..97536a2
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@@ -166,6 -166,6 +166,8 @@@ source "drivers/reset/Kconfig
+  
+  source "drivers/fmc/Kconfig"
+  
+ +source "drivers/powercap/Kconfig"
+ +
++ source "drivers/phy/Kconfig"
++ 
+  endmenu
