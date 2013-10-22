@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3JVTtC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:49:02 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:40778 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab3JVTs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:48:59 -0400
+	id S1755088Ab3JVTwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:52:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23679 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754038Ab3JVTwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 15:52:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
+   d="scan'208";a="420988133"
+Date: Tue, 22 Oct 2013 13:52:25 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: Matias Bjorling <m@bjorling.me>
+cc: Keith Busch <keith.busch@intel.com>, axboe@kernel.dk,
+        willy@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH 3/3] NVMe: Convert to blk-mq
+In-Reply-To: <5266CA29.2020308@bjorling.me>
+Message-ID: <alpine.LRH.2.03.1310221315430.4763@AMR>
+References: <1382102062-22270-1-git-send-email-m@bjorling.me> <1382102062-22270-4-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1310180837140.4763@AMR> <526186AE.3080006@bjorling.me> <alpine.LRH.2.03.1310221011570.4763@AMR> <5266CA29.2020308@bjorling.me>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1382470976.3742.7.camel@buffalo>
-References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
-	<5266BC18.1080308@linux.vnet.ibm.com>
-	<trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
-	<1382470976.3742.7.camel@buffalo>
-Date: Tue, 22 Oct 2013 12:48:58 -0700
-Message-ID: <CAA25o9SBX3busjmO5aRFiawEW6mtADEfyuz3ebthF5gcC_qzCQ@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm maintainer
-From: Luigi Semenzato <semenzato@google.com>
-To: Ashley D Lai <adlai@linux.vnet.ibm.com>
-Cc: Peter Huewe <PeterHuewe@gmx.de>,
-        Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Sirrix AG <tpmdd@sirrix.com>,
-        Rajiv Andrade <mail@srajiv.net>, tpmdd-devel@lists.sourceforge.net,
-        Leonidas@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1380390316-1382471549=:4763"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know how to reach Rajiv.  Let me ping him.  (I am not copying him
-here for privacy.)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Tue, Oct 22, 2013 at 12:42 PM, Ashley D Lai <adlai@linux.vnet.ibm.com> wrote:
-> On Tue, 2013-10-22 at 21:33 +0200, Peter Huewe wrote:
->> Hi Joel,
->>
->> > Gesendet: Dienstag, 22. Oktober 2013 um 19:55 Uhr
->> > Von: "Joel Schopp" <jschopp@linux.vnet.ibm.com>
->>
->> > I have no objection to you adding yourself here. I do think we should
->> > probably also cut the list down at the same time as I don't think all
->> > the listed maintainers are active anymore. Also, the list is getting a
->> > bit unwieldy. If everyone maintains it nobody maintains it.
->>
->> I agree with you here, this was also the reason I took it over when Kent stepped down and noone else stepped in of the current maintainers, leaving the subsystem more or less unmaintained.
->>
->> About the removing the other maintainers:
->> I already thought about that too and contacted the "maintainers" -
->> I got a response back from Ashley (as its part of her job to look after the subsystem) and Marcel, stating that they are atleast looking at the patches.
->> No response from Rajiv, Leonidas or Sirrix :(
->>
->>
->> Thanks,
->> Peter
->>
+--8323328-1380390316-1382471549=:4763
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 22 Oct 2013, Matias Bjorling wrote:
+> Den 22-10-2013 18:55, Keith Busch skrev:
+>> On Fri, 18 Oct 2013, Matias Bjørling wrote:
+>>> On 10/18/2013 05:13 PM, Keith Busch wrote:
+>>>> On Fri, 18 Oct 2013, Matias Bjorling wrote:
+>>>>> The nvme driver implements itself as a bio-based driver. This primarily
+>>>>> because of high lock congestion for high-performance nvm devices. To
+>>>>> remove the congestion within the traditional block layer, a multi-queue
+>>>>> block layer is being implemented.
+>> 
+>>>>> -    result = nvme_map_bio(nvmeq, iod, bio, dma_dir, psegs);
+>>>>> -    if (result <= 0)
+>>>>> +    if (nvme_map_rq(nvmeq, iod, rq, dma_dir))
+>>>>>         goto free_cmdid;
+>>>>> -    length = result;
+>>>>> 
+>>>>> -    cmnd->rw.command_id = cmdid;
+>>>>> +    length = blk_rq_bytes(rq);
+>>>>> +
+>>>>> +    cmnd->rw.command_id = rq->tag;
+>>>> 
+>>>> The command ids have to be unique on a submission queue. Since each
+>>>> namespace's blk-mq has its own 'tags' used as command ids here but share
+>>>> submission queues, what's stopping the tags for commands sent to 
+>>>> namespace
+>>>> 1 from clashing with tags for namespace 2?
+>>>> 
+>>>> I think this would work better if one blk-mq was created per device
+>>>> rather than namespace. It would fix the tag problem above and save a
+>>>> lot of memory potentially wasted on millions of requests allocated that
+>>>> can't be used.
+>>> 
+>>> You're right. I didn't see the connection. In v3 I'll push struct 
+>>> request_queue to nvme_dev and map the queues appropriately. It will also 
+>>> fix the command id issues.
+>> 
+>> Just anticipating a possible issue with the suggestion. Will this separate
+>> the logical block size from the request_queue? Each namespace can have
+>> a different format, so the block size and request_queue can't be tied
+>> together like it currently is for this to work.
 >
-> Rajiv has moved on to a different company.  Haven't heard from him for a
-> while.
+> If only a couple of different logical sizes are to be expected (1-4), we can 
+> keep a list of already initialized request queues, and use the one that match 
+> an already initialized?
+
+The spec allows a namespace to have up to 16 different block formats and
+they need not be the same 16 as another namespace on the same device.
+
+>From a practical standpoint, I don't think devices will support more
+than a few formats, but even if you kept it to that many request queues,
+you just get back to conflicting command id tags and some wasted memory.
+
 >
-> --Ashley Lai
->
->
-> ------------------------------------------------------------------------------
-> October Webinars: Code for Performance
-> Free Intel webinars can help you accelerate application performance.
-> Explore tips for MPI, OpenMP, advanced profiling, and more. Get the most from
-> the latest Intel processors and coprocessors. See abstracts and register >
-> http://pubads.g.doubleclick.net/gampad/clk?id=60135991&iu=/4140/ostg.clktrk
-> _______________________________________________
-> tpmdd-devel mailing list
-> tpmdd-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
+> Axboe, do you know of a better solution?
+
+--8323328-1380390316-1382471549=:4763--
