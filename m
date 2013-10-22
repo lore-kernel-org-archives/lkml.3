@@ -1,155 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3JVMsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:48:52 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:43396 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab3JVMst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:48:49 -0400
-Message-ID: <5266742D.9050604@baylibre.com>
-Date: Tue, 22 Oct 2013 14:48:45 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+	id S1753600Ab3JVMtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:49:45 -0400
+Received: from ring0.de ([91.143.88.219]:36019 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab3JVMtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 08:49:43 -0400
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        =?UTF-8?B?J1BhbGkgUm9ow6FyJw==?= <pali.rohar@gmail.com>,
-        =?UTF-8?B?J9CY0LI=?=
-	 =?UTF-8?B?0LDQudC70L4g0JTQuNC80LjRgtGA0L7Qsic=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>
-Subject: Re: [RFCv3 7/7] ARM: dts: N900: Add SSI information
-References: <1381091235-18293-1-git-send-email-sre@debian.org> <1381091235-18293-8-git-send-email-sre@debian.org>
-In-Reply-To: <1381091235-18293-8-git-send-email-sre@debian.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
+Subject: [PATCH] ARM: dts: N900: GPIO key definitions
+Date: Tue, 22 Oct 2013 14:49:38 +0200
+Message-Id: <1382446178-27638-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Add device tree node for the GPIO keys provided by the
+N900 board. This is a simple conversion of the existing
+board code.
 
-Thanks to Tony, I've just realized that I missed all your patches, that 
-for some reason ended-up in my junk folder :-(
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ arch/arm/boot/dts/omap3-n900.dts | 48 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-That being said, I cannot apply any of your DTS patches! What base 
-branch are you using?
-
-Could you repost all your pending DTS patches in one series rebased on 
-top of my for_3.13/dts?
-
-Thanks,
-Benoit
-
-On 06/10/2013 22:27, Sebastian Reichel wrote:
-> Add SSI device tree data for OMAP3 and Nokia N900.
->
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->   arch/arm/boot/dts/omap3-n900.dts | 12 ++++++++++
->   arch/arm/boot/dts/omap3.dtsi     | 47 ++++++++++++++++++++++++++++++++++++++++
->   2 files changed, 59 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-> index 0582356..0fbb77e 100644
-> --- a/arch/arm/boot/dts/omap3-n900.dts
-> +++ b/arch/arm/boot/dts/omap3-n900.dts
-> @@ -186,6 +186,18 @@
->   	power = <50>;
->   };
->
-> +&ssi_port1 {
-> +	ti,ssi-cawake-gpio = <&gpio5 23 GPIO_ACTIVE_HIGH>; /* 151 */
-> +
-> +	ssi-char {
-> +		compatible = "ssi-char";
-> +	};
-> +};
-> +
-> +&ssi_port2 {
-> +	status = "disabled";
-> +};
-> +
->   &uart1 {
->   	pinctrl-names = "default";
->   	pinctrl-0 = <&uart1_pins>;
-> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-> index 7d95cda..9f60b82 100644
-> --- a/arch/arm/boot/dts/omap3.dtsi
-> +++ b/arch/arm/boot/dts/omap3.dtsi
-> @@ -532,5 +532,52 @@
->   			num-eps = <16>;
->   			ram-bits = <12>;
->   		};
-> +
-> +		ssi: ssi-controller@48058000 {
-> +			compatible = "ti,omap3-ssi";
-> +			ti,hwmods = "ssi";
-> +
-> +			reg = <0x48058000 0x1000>,
-> +			      <0x48059000 0x1000>;
-> +			reg-names = "sys",
-> +				    "gdd";
-> +
-> +			interrupts = <71>;
-> +			interrupt-names = "gdd_mpu";
-> +
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +
-> +			ssi_port1: ssi-port@0 {
-> +				compatible = "ti,omap3-ssi-port";
-> +
-> +				reg = <0x4805a000 0x800>,
-> +				      <0x4805a800 0x800>;
-> +				reg-names = "tx",
-> +					    "rx";
-> +
-> +				interrupt-parent = <&intc>;
-> +				interrupts = <67>,
-> +					     <68>;
-> +				interrupt-names = "mpu_irq0",
-> +						  "mpu_irq1";
-> +			};
-> +
-> +			ssi_port2: ssi-port@1 {
-> +				compatible = "ti,omap3-ssi-port";
-> +
-> +				reg = <0x4805b000 0x800>,
-> +				      <0x4805b800 0x800>;
-> +				reg-names = "tx",
-> +					    "rx";
-> +
-> +				interrupt-parent = <&intc>;
-> +				interrupts = <69>,
-> +					     <70>;
-> +				interrupt-names = "mpu_irq0",
-> +						  "mpu_irq1";
-> +			};
-> +		};
->   	};
->   };
->
-
-
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 30ac779..2841002 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -26,6 +26,54 @@
+ 		reg = <0x80000000 0x10000000>; /* 256 MB */
+ 	};
+ 
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		camera_lens_cover {
++			label = "Camera Lens Cover";
++			gpios = <&gpio4 14 GPIO_ACTIVE_LOW>; /* 110 */
++			linux,input-type = <5>; /* EV_SW */
++			linux,code = <0x09>; /* SW_CAMERA_LENS_COVER */
++			gpio-key,wakeup;
++		};
++
++		camera_focus {
++			label = "Camera Focus";
++			gpios = <&gpio3 4 GPIO_ACTIVE_LOW>; /* 68 */
++			linux,code = <0x210>; /* KEY_CAMERA_FOCUS */
++			gpio-key,wakeup;
++		};
++
++		camera_capture {
++			label = "Camera Capture";
++			gpios = <&gpio3 5 GPIO_ACTIVE_LOW>; /* 69 */
++			linux,code = <0xd4>; /* KEY_CAMERA */
++			gpio-key,wakeup;
++		};
++
++		lock_button {
++			label = "Lock Button";
++			gpios = <&gpio4 17 GPIO_ACTIVE_LOW>; /* 113 */
++			linux,code = <0x98>; /* KEY_SCREENLOCK */
++			gpio-key,wakeup;
++		};
++
++		keypad_slide {
++			label = "Keypad Slide";
++			gpios = <&gpio3 7 GPIO_ACTIVE_LOW>; /* 71 */
++			linux,input-type = <5>; /* EV_SW */
++			linux,code = <0x0a>; /* SW_KEYPAD_SLIDE */
++			gpio-key,wakeup;
++		};
++
++		proximity_sensor {
++			label = "Proximity Sensor";
++			gpios = <&gpio3 25 GPIO_ACTIVE_HIGH>; /* 89 */
++			linux,input-type = <5>; /* EV_SW */
++			linux,code = <0x0b>; /* SW_FRONT_PROXIMITY */
++		};
++	};
++
+ };
+ 
+ &omap3_pmx_core {
 -- 
-Benoît Cousson
-BayLibre
-Embedded Linux Technology Lab
-www.baylibre.com
+1.8.4.rc3
+
