@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab3JVVIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:08:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8268 "EHLO mga14.intel.com"
+	id S1755636Ab3JVVJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 17:09:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25607 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab3JVVI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:08:26 -0400
+	id S1755485Ab3JVVI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:08:29 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="311285540"
-Subject: [PATCH v2 09/13] async_pq: convert to dmaengine_unmap_data
+X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
+   d="scan'208";a="415395900"
+Subject: [PATCH v2 11/13] NTB: convert to dmaengine_unmap_data
 From: Dan Williams <dan.j.williams@intel.com>
 To: dmaengine@vger.kernel.org
-Cc: linux@arm.linux.org.uk, b.zolnierkie@samsung.com, vinod.koul@intel.com,
+Cc: dave.jiang@intel.com, b.zolnierkie@samsung.com, vinod.koul@intel.com,
         t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, dave.jiang@intel.com
-Date: Tue, 22 Oct 2013 14:08:23 -0700
-Message-ID: <20131022210823.31296.2823.stgit@viggo.jf.intel.com>
-In-Reply-To: <1382117733-16720-10-git-send-email-b.zolnierkie@samsung.com>
-References: <1382117733-16720-10-git-send-email-b.zolnierkie@samsung.com>
+        kyungmin.park@samsung.com, linux@arm.linux.org.uk, jon.mason@intel.com
+Date: Tue, 22 Oct 2013 14:08:28 -0700
+Message-ID: <20131022210828.31348.41879.stgit@viggo.jf.intel.com>
+In-Reply-To: <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
+References: <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
 User-Agent: StGit/0.17-1-g7c57
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,14 +27,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+
 Use the generic unmap object to unmap dma buffers.
 
+As NTB can be compiled without DMA_ENGINE support add
+stub functions to <linux/dmaengine.h> for dma_set_unmap(),
+dmaengine_get_unmap_data() and dmaengine_unmap_put().
+
+Cc: Dan Williams <dan.j.williams@intel.com>
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
 Cc: Dave Jiang <dave.jiang@intel.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bzolnier: keep temporary dma_dest array in do_async_gen_syndrome()]
+Cc: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
@@ -44,219 +49,174 @@ Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 	2/ cc maintainers of affected drivers
 	3/ fixup some mail addresses
 
- crypto/async_tx/async_pq.c |  117 ++++++++++++++++++++++++--------------------
- drivers/dma/dmaengine.c    |    5 ++
- 2 files changed, 69 insertions(+), 53 deletions(-)
+ drivers/ntb/ntb_transport.c |   63 +++++++++++++++++++++++++++++++------------
+ include/linux/dmaengine.h   |   15 ++++++++++
+ 2 files changed, 61 insertions(+), 17 deletions(-)
 
-diff --git a/crypto/async_tx/async_pq.c b/crypto/async_tx/async_pq.c
-index 91d5d385899e..8cdbf33bd046 100644
---- a/crypto/async_tx/async_pq.c
-+++ b/crypto/async_tx/async_pq.c
-@@ -46,49 +46,25 @@ static struct page *pq_scribble_page;
-  * do_async_gen_syndrome - asynchronously calculate P and/or Q
-  */
- static __async_inline struct dma_async_tx_descriptor *
--do_async_gen_syndrome(struct dma_chan *chan, struct page **blocks,
--		      const unsigned char *scfs, unsigned int offset, int disks,
--		      size_t len, dma_addr_t *dma_src,
-+do_async_gen_syndrome(struct dma_chan *chan,
-+		      const unsigned char *scfs, int disks,
-+		      struct dmaengine_unmap_data *unmap,
-+		      enum dma_ctrl_flags dma_flags,
- 		      struct async_submit_ctl *submit)
- {
- 	struct dma_async_tx_descriptor *tx = NULL;
- 	struct dma_device *dma = chan->device;
--	enum dma_ctrl_flags dma_flags = 0;
- 	enum async_tx_flags flags_orig = submit->flags;
- 	dma_async_tx_callback cb_fn_orig = submit->cb_fn;
- 	dma_async_tx_callback cb_param_orig = submit->cb_param;
- 	int src_cnt = disks - 2;
--	unsigned char coefs[src_cnt];
- 	unsigned short pq_src_cnt;
- 	dma_addr_t dma_dest[2];
- 	int src_off = 0;
--	int idx;
--	int i;
+diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
+index 12a9e83c008b..fc6bbf1e16d9 100644
+--- a/drivers/ntb/ntb_transport.c
++++ b/drivers/ntb/ntb_transport.c
+@@ -1034,7 +1034,7 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	struct dma_chan *chan = qp->dma_chan;
+ 	struct dma_device *device;
+ 	size_t pay_off, buff_off;
+-	dma_addr_t src, dest;
++	struct dmaengine_unmap_data *unmap;
+ 	dma_cookie_t cookie;
+ 	void *buf = entry->buf;
+ 	unsigned long flags;
+@@ -1054,27 +1054,41 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	if (!is_dma_copy_aligned(device, pay_off, buff_off, len))
+ 		goto err1;
  
--	/* DMAs use destinations as sources, so use BIDIRECTIONAL mapping */
--	if (P(blocks, disks))
--		dma_dest[0] = dma_map_page(dma->dev, P(blocks, disks), offset,
--					   len, DMA_BIDIRECTIONAL);
--	else
--		dma_flags |= DMA_PREP_PQ_DISABLE_P;
--	if (Q(blocks, disks))
--		dma_dest[1] = dma_map_page(dma->dev, Q(blocks, disks), offset,
--					   len, DMA_BIDIRECTIONAL);
--	else
--		dma_flags |= DMA_PREP_PQ_DISABLE_Q;
--
--	/* convert source addresses being careful to collapse 'empty'
--	 * sources and update the coefficients accordingly
--	 */
--	for (i = 0, idx = 0; i < src_cnt; i++) {
--		if (blocks[i] == NULL)
--			continue;
--		dma_src[idx] = dma_map_page(dma->dev, blocks[i], offset, len,
--					    DMA_TO_DEVICE);
--		coefs[idx] = scfs[i];
--		idx++;
--	}
--	src_cnt = idx;
-+	dma_flags |= DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP;
-+	if (submit->flags & ASYNC_TX_FENCE)
-+		dma_flags |= DMA_PREP_FENCE;
+-	dest = dma_map_single(device->dev, buf, len, DMA_FROM_DEVICE);
+-	if (dma_mapping_error(device->dev, dest))
++	unmap = dmaengine_get_unmap_data(device->dev, 2, GFP_NOIO);
++	if (!unmap)
+ 		goto err1;
  
- 	while (src_cnt > 0) {
- 		submit->flags = flags_orig;
-@@ -100,28 +76,25 @@ do_async_gen_syndrome(struct dma_chan *chan, struct page **blocks,
- 		if (src_cnt > pq_src_cnt) {
- 			submit->flags &= ~ASYNC_TX_ACK;
- 			submit->flags |= ASYNC_TX_FENCE;
--			dma_flags |= DMA_COMPL_SKIP_DEST_UNMAP;
- 			submit->cb_fn = NULL;
- 			submit->cb_param = NULL;
- 		} else {
--			dma_flags &= ~DMA_COMPL_SKIP_DEST_UNMAP;
- 			submit->cb_fn = cb_fn_orig;
- 			submit->cb_param = cb_param_orig;
- 			if (cb_fn_orig)
- 				dma_flags |= DMA_PREP_INTERRUPT;
- 		}
--		if (submit->flags & ASYNC_TX_FENCE)
--			dma_flags |= DMA_PREP_FENCE;
+-	src = dma_map_single(device->dev, offset, len, DMA_TO_DEVICE);
+-	if (dma_mapping_error(device->dev, src))
++	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(offset),
++				      pay_off, len, DMA_TO_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[0]))
+ 		goto err2;
  
--		/* Since we have clobbered the src_list we are committed
--		 * to doing this asynchronously.  Drivers force forward
--		 * progress in case they can not provide a descriptor
-+		/* Drivers force forward progress in case they can not provide
-+		 * a descriptor
- 		 */
- 		for (;;) {
-+			dma_dest[0] = unmap->addr[disks - 2];
-+			dma_dest[1] = unmap->addr[disks - 1];
- 			tx = dma->device_prep_dma_pq(chan, dma_dest,
--						     &dma_src[src_off],
-+						     &unmap->addr[src_off],
- 						     pq_src_cnt,
--						     &coefs[src_off], len,
-+						     &scfs[src_off], unmap->len,
- 						     dma_flags);
- 			if (likely(tx))
- 				break;
-@@ -129,6 +102,7 @@ do_async_gen_syndrome(struct dma_chan *chan, struct page **blocks,
- 			dma_async_issue_pending(chan);
- 		}
- 
-+		dma_set_unmap(tx, unmap);
- 		async_tx_submit(chan, tx, submit);
- 		submit->depend_tx = tx;
- 
-@@ -188,10 +162,6 @@ do_sync_gen_syndrome(struct page **blocks, unsigned int offset, int disks,
-  * set to NULL those buffers will be replaced with the raid6_zero_page
-  * in the synchronous path and omitted in the hardware-asynchronous
-  * path.
-- *
-- * 'blocks' note: if submit->scribble is NULL then the contents of
-- * 'blocks' may be overwritten to perform address conversions
-- * (dma_map_page() or page_address()).
-  */
- struct dma_async_tx_descriptor *
- async_gen_syndrome(struct page **blocks, unsigned int offset, int disks,
-@@ -202,26 +172,69 @@ async_gen_syndrome(struct page **blocks, unsigned int offset, int disks,
- 						      &P(blocks, disks), 2,
- 						      blocks, src_cnt, len);
- 	struct dma_device *device = chan ? chan->device : NULL;
--	dma_addr_t *dma_src = NULL;
-+	struct dmaengine_unmap_data *unmap = NULL;
- 
- 	BUG_ON(disks > 255 || !(P(blocks, disks) || Q(blocks, disks)));
- 
--	if (submit->scribble)
--		dma_src = submit->scribble;
--	else if (sizeof(dma_addr_t) <= sizeof(struct page *))
--		dma_src = (dma_addr_t *) blocks;
-+	if (device)
-+		unmap = dmaengine_get_unmap_data(device->dev, disks, GFP_NOIO);
- 
--	if (dma_src && device &&
-+	if (unmap &&
- 	    (src_cnt <= dma_maxpq(device, 0) ||
- 	     dma_maxpq(device, DMA_PREP_CONTINUE) > 0) &&
- 	    is_dma_pq_aligned(device, offset, 0, len)) {
-+		struct dma_async_tx_descriptor *tx;
-+		enum dma_ctrl_flags dma_flags = 0;
-+		unsigned char coefs[src_cnt];
-+		int i, j;
+-	flags = DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SRC_UNMAP_SINGLE |
++	unmap->to_cnt = 1;
 +
- 		/* run the p+q asynchronously */
- 		pr_debug("%s: (async) disks: %d len: %zu\n",
- 			 __func__, disks, len);
--		return do_async_gen_syndrome(chan, blocks, raid6_gfexp, offset,
--					     disks, len, dma_src, submit);
++	unmap->addr[1] = dma_map_page(device->dev, virt_to_page(buf),
++				      buff_off, len, DMA_FROM_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[1]))
++		goto err2;
 +
-+		/* convert source addresses being careful to collapse 'empty'
-+		 * sources and update the coefficients accordingly
-+		 */
-+		unmap->len = len;
-+		for (i = 0, j = 0; i < src_cnt; i++) {
-+			if (blocks[i] == NULL)
-+				continue;
-+			unmap->addr[j] = dma_map_page(device->dev, blocks[i], offset,
-+						      len, DMA_TO_DEVICE);
-+			coefs[j] = raid6_gfexp[i];
-+			unmap->to_cnt++;
-+			j++;
-+		}
++	unmap->from_cnt = 1;
 +
-+		/*
-+		 * DMAs use destinations as sources,
-+		 * so use BIDIRECTIONAL mapping
-+		 */
-+		unmap->bidi_cnt++;
-+		if (P(blocks, disks))
-+			unmap->addr[j++] = dma_map_page(device->dev, P(blocks, disks),
-+							offset, len, DMA_BIDIRECTIONAL);
-+		else {
-+			unmap->addr[j++] = 0;
-+			dma_flags |= DMA_PREP_PQ_DISABLE_P;
-+		}
-+
-+		unmap->bidi_cnt++;
-+		if (Q(blocks, disks))
-+			unmap->addr[j++] = dma_map_page(device->dev, Q(blocks, disks),
-+						       offset, len, DMA_BIDIRECTIONAL);
-+		else {
-+			unmap->addr[j++] = 0;
-+			dma_flags |= DMA_PREP_PQ_DISABLE_Q;
-+		}
-+
-+		tx = do_async_gen_syndrome(chan, coefs, j, unmap, dma_flags, submit);
-+		dmaengine_unmap_put(unmap);
-+		return tx;
- 	}
++	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
+ 		DMA_PREP_INTERRUPT;
+-	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
++	txd = device->device_prep_dma_memcpy(chan, unmap->addr[1],
++					     unmap->addr[0], len, flags);
+ 	if (!txd)
+-		goto err3;
++		goto err2;
+ 
+ 	txd->callback = ntb_rx_copy_callback;
+ 	txd->callback_param = entry;
++	dma_set_unmap(txd, unmap);
+ 
+ 	cookie = dmaengine_submit(txd);
+ 	if (dma_submit_error(cookie))
+ 		goto err3;
  
 +	dmaengine_unmap_put(unmap);
 +
- 	/* run the pq synchronously */
- 	pr_debug("%s: (sync) disks: %d len: %zu\n", __func__, disks, len);
+ 	qp->last_cookie = cookie;
  
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 54138b57b37c..f878c808466e 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -953,9 +953,12 @@ static void dmaengine_unmap(struct kref *kref)
- 		dma_unmap_page(dev, unmap->addr[i], unmap->len,
- 			       DMA_FROM_DEVICE);
- 	cnt += unmap->bidi_cnt;
--	for (; i < cnt; i++)
-+	for (; i < cnt; i++) {
-+		if (unmap->addr[i] == 0)
-+			continue;
- 		dma_unmap_page(dev, unmap->addr[i], unmap->len,
- 			       DMA_BIDIRECTIONAL);
-+	}
- 	mempool_free(unmap, __get_unmap_pool(cnt)->pool);
- }
+ 	qp->rx_async++;
+@@ -1082,9 +1096,9 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
+ 	return;
  
+ err3:
+-	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err2:
+-	dma_unmap_single(device->dev, dest, len, DMA_FROM_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err1:
+ 	/* If the callbacks come out of order, the writing of the index to the
+ 	 * last completed will be out of order.  This may result in the
+@@ -1245,7 +1259,8 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+ 	struct dma_chan *chan = qp->dma_chan;
+ 	struct dma_device *device;
+ 	size_t dest_off, buff_off;
+-	dma_addr_t src, dest;
++	struct dmaengine_unmap_data *unmap;
++	dma_addr_t dest;
+ 	dma_cookie_t cookie;
+ 	void __iomem *offset;
+ 	size_t len = entry->len;
+@@ -1273,28 +1288,42 @@ static void ntb_async_tx(struct ntb_transport_qp *qp,
+ 	if (!is_dma_copy_aligned(device, buff_off, dest_off, len))
+ 		goto err;
+ 
+-	src = dma_map_single(device->dev, buf, len, DMA_TO_DEVICE);
+-	if (dma_mapping_error(device->dev, src))
++	unmap = dmaengine_get_unmap_data(device->dev, 1, GFP_NOIO);
++	if (!unmap)
+ 		goto err;
+ 
+-	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_PREP_INTERRUPT;
+-	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
++	unmap->addr[0] = dma_map_page(device->dev, virt_to_page(buf),
++				      buff_off, len, DMA_TO_DEVICE);
++	if (dma_mapping_error(device->dev, unmap->addr[0]))
++		goto err1;
++
++	unmap->to_cnt = 1;
++
++	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
++		DMA_PREP_INTERRUPT;
++	txd = device->device_prep_dma_memcpy(chan, dest, unmap->addr[0], len,
++					    flags);
+ 	if (!txd)
+ 		goto err1;
+ 
+ 	txd->callback = ntb_tx_copy_callback;
+ 	txd->callback_param = entry;
++	dma_set_unmap(txd, unmap);
+ 
+ 	cookie = dmaengine_submit(txd);
+ 	if (dma_submit_error(cookie))
+-		goto err1;
++		goto err2;
++
++	dmaengine_unmap_put(unmap);
+ 
+ 	dma_async_issue_pending(chan);
+ 	qp->tx_async++;
+ 
+ 	return;
++err2:
++	dmaengine_unmap_put(unmap);
+ err1:
+-	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
++	dmaengine_unmap_put(unmap);
+ err:
+ 	ntb_memcpy_tx(entry, offset);
+ 	qp->tx_memcpy++;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index dc98bc5d4929..3782cdb782a8 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -457,6 +457,7 @@ struct dma_async_tx_descriptor {
+ #endif
+ };
+ 
++#ifdef CONFIG_DMA_ENGINE
+ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+ 				 struct dmaengine_unmap_data *unmap)
+ {
+@@ -467,6 +468,20 @@ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+ struct dmaengine_unmap_data *
+ dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags);
+ void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap);
++#else
++static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
++				 struct dmaengine_unmap_data *unmap)
++{
++}
++static inline struct dmaengine_unmap_data *
++dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
++{
++	return NULL;
++}
++static inline void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap)
++{
++}
++#endif
+ 
+ static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
+ {
 
