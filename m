@@ -1,71 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab3JVIeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:34:50 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54836 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3JVIer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:34:47 -0400
-Date: Tue, 22 Oct 2013 09:34:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20131022083401.GB20821@sirena.org.uk>
-References: <1382362971-16763-1-git-send-email-k.kozlowski@samsung.com>
+	id S1752064Ab3JVIfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174Ab3JVIfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:35:45 -0400
+Message-ID: <526638D4.1030403@redhat.com>
+Date: Tue, 22 Oct 2013 16:35:32 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
-Content-Disposition: inline
-In-Reply-To: <1382362971-16763-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Don't feed the bats tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 77.221.165.98
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi/s3c64xx: Do not ignore return value of
- spi_master_resume/suspend
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [virtio-net] BUG: sleeping function called from invalid context
+ at kernel/mutex.c:616
+References: <20131020023418.GA6737@localhost>
+In-Reply-To: <20131020023418.GA6737@localhost>
+Content-Type: multipart/mixed;
+ boundary="------------010000020201060606020407"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------010000020201060606020407
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
---IrhDeMKUP4DT/M7F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 10/20/2013 10:34 AM, Fengguang Wu wrote:
+> Greetings,
+>
+> I got the below dmesg and the first bad commit is
+>
+> commit 3ab098df35f8b98b6553edc2e40234af512ba877
+> Author: Jason Wang <jasowang@redhat.com>
+> Date:   Tue Oct 15 11:18:58 2013 +0800
+>
+>     virtio-net: don't respond to cpu hotplug notifier if we're not ready
+>     
+>     We're trying to re-configure the affinity unconditionally in cpu hotplug
+>     callback. This may lead the issue during resuming from s3/s4 since
+>     
+>     - virt queues haven't been allocated at that time.
+>     - it's unnecessary since thaw method will re-configure the affinity.
+>     
+>     Fix this issue by checking the config_enable and do nothing is we're not ready.
+>     
+>     The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
+>     (virtio-net: reset virtqueue affinity when doing cpu hotplug).
+>     
+>     Cc: Rusty Russell <rusty@rustcorp.com.au>
+>     Cc: Michael S. Tsirkin <mst@redhat.com>
+>     Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>     Acked-by: Michael S. Tsirkin <mst@redhat.com>
+>     Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>     Signed-off-by: Jason Wang <jasowang@redhat.com>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+> [  622.944441] CPU0 attaching NULL sched-domain.
+> [  622.944446] CPU1 attaching NULL sched-domain.
+> [  622.944485] CPU0 attaching NULL sched-domain.
+> [  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
+> [  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
+> [  622.950796] no locks held by migration/1/10.
+> [  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
+> [  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
+> [  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
+> [  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
+> [  622.950805] Call Trace:
+> [  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
+> [  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
+> [  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
+> [  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
+> [  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
+> [  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
+> [  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
+> [  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
+> [  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
+> [  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
+> [  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
+> [  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
+> [  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
+> [  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
+> [  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
+> [  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
+> [  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
+> [  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
+> [  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
+> [  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
+> [  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
+> [  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+> [  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
+> [  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+> [  622.950876] smpboot: CPU 1 is now offline
+> [  623.194556] SMP alternatives: lockdep: fixing up alternatives
+> [  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
+ 
+Thanks for the testing Fengguang, could you please try the attached
+patch to see if it works?
 
-On Mon, Oct 21, 2013 at 03:42:49PM +0200, Krzysztof Kozlowski wrote:
-> During PM resume and suspend do not ignore the return value of
-> spi_master_suspend() or spi_master_resume(). Instead pass it further.
+--------------010000020201060606020407
+Content-Type: text/x-patch;
+ name="0001-virtio-net-fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-virtio-net-fix.patch"
 
-Applied both, thanks.
+>From 01e6c3f71c202aa02e4feda169e7cc9fb24193f5 Mon Sep 17 00:00:00 2001
+From: Jason Wang <jasowang@redhat.com>
+Date: Mon, 21 Oct 2013 20:39:09 +0800
+Subject: [PATCH] virtio-net: fix
 
---IrhDeMKUP4DT/M7F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+ drivers/net/virtio_net.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 9fbdfcd..bbc9cb8 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+ {
+ 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+ 
+-	mutex_lock(&vi->config_lock);
+-
+-	if (!vi->config_enable)
+-		goto done;
+-
+ 	switch(action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+ 		break;
+ 	}
+ 
+-done:
+-	mutex_unlock(&vi->config_lock);
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
+ 	struct virtnet_info *vi = vdev->priv;
+ 	int i;
+ 
++	unregister_hotcpu_notifier(&vi->nb);
++
+ 	/* Prevent config work handler from accessing the device */
+ 	mutex_lock(&vi->config_lock);
+ 	vi->config_enable = false;
+@@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
+ 	virtnet_set_queues(vi, vi->curr_queue_pairs);
+ 	rtnl_unlock();
+ 
++	err = register_hotcpu_notifier(&vi->nb);
++	if (err)
++		return err;
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.8.1.2
 
-iQIcBAEBAgAGBQJSZjh2AAoJELSic+t+oim9sRoP/Ay1CyZUecRw/nViX/66ZvNS
-QJhvI+1zo9wLvokdZtQUzGubzDlntCN+PEblO7kqRlmEqXAou80t9qjOmhMADsMr
-7QqGGrl5UK0eNs7VFpQMEkh/iYpRARwCtee5D2bP7uwobkeGJxnwovYllEw0Fw/7
-AVcGzk22Pjp2lr+KxrVCe3/tfXxZC8L2+mq3xL3S6A1GQNBDkO2Vff/9KWQaZ3Va
-O2TFu150L0A9SO+Q06wXN+ggF9ETNsRSfAvJcWz2JRIyKNlUsSC3bBtBq5t22k3X
-Lse7As428HnF4xcxzM640k+aKJMwrwD8ewkZuzJwJ9dE3NbWDw6KyMcKjzMreQNb
-bhkHFGiGw2OvFWnTNX7vED/CFR1MQxt3R/rjyokfax6HPD5HlTe/VwLaKJ3An/Xf
-JSf97qxCuFlcyuO3XrawpUbwT9jruN0aB8Fs6PPX0RrrpijrrqySMj/U0LhnAFPZ
-m3UOqB8Aix8FQ8nign1SH9nhKcIQlOuAKgJLVPO3ToxQepv+6Rk0ubX2KOOq28pt
-9ikaLBK3T7uv5w3+QMcvIVxJmR59wOulKputvxq4iawQuyHLUPBFs1rPU3IKMUlx
-iS4NtYljoEQs1RDFmMLHM7IBfGR7h1qHrqshNYSkcVltn3fRt7UlO86sLwZFwDpp
-LiTK6c7CgKxwiO6+Vkzv
-=D5GZ
------END PGP SIGNATURE-----
 
---IrhDeMKUP4DT/M7F--
+--------------010000020201060606020407--
