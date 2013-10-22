@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3JVHnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 03:43:25 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:24545
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753508Ab3JVHnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 03:43:24 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Peter Chen <peter.chen@freescale.com>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <b29396@freescale.com>, <shawn.guo@linaro.org>, <peter.chen@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 1/1] mfd: syscon: return -ENXIO if CONFIG_MFD_SYSCON is not enabled
-Date: Tue, 22 Oct 2013 15:27:37 +0800
-Message-ID: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753693Ab3JVHp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 03:45:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41199 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab3JVHp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 03:45:57 -0400
+Message-ID: <52662D3B.5050204@ti.com>
+Date: Tue, 22 Oct 2013 10:46:03 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Jyri Sarha <jsarha@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: dts: am4372: Add McASP nodes
+References: <1382348758-1083-1-git-send-email-peter.ujfalusi@ti.com> <526579FB.10005@cogentembedded.com>
+In-Reply-To: <526579FB.10005@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms may not define CONFIG_MFD_SYSCON (or haven't syscon),
-it can fix build error for those platforms.
+Hi,
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
----
- include/linux/mfd/syscon.h |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+On 10/21/2013 10:01 PM, Sergei Shtylyov wrote:
 
-diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-index b473577..60bf0fb 100644
---- a/include/linux/mfd/syscon.h
-+++ b/include/linux/mfd/syscon.h
-@@ -17,10 +17,34 @@
- 
- struct device_node;
- 
-+#if IS_ENABLED(CONFIG_MFD_SYSCON)
- extern struct regmap *syscon_node_to_regmap(struct device_node *np);
- extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_phandle(
- 					struct device_node *np,
- 					const char *property);
-+#else
-+static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
-+{
-+	return ERR_PTR(-ENXIO);
-+}
-+
-+static inline struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
-+{
-+	return ERR_PTR(-ENXIO);
-+}
-+
-+static inline struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
-+{
-+	return ERR_PTR(-ENXIO);
-+}
-+static inline struct regmap *syscon_regmap_lookup_by_phandle(
-+					struct device_node *np,
-+					const char *property)
-+{
-+	return ERR_PTR(-ENXIO);
-+}
-+#endif
-+
- #endif /* __LINUX_MFD_SYSCON_H__ */
+>> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+>> index c328d5c..defaad1 100644
+>> --- a/arch/arm/boot/dts/am4372.dtsi
+>> +++ b/arch/arm/boot/dts/am4372.dtsi
+>> @@ -633,5 +633,32 @@
+>>               dma-names = "tx", "rx";
+>>           };
+>>
+>> +        mcasp0: mcasp@48038000 {
+> 
+>    According to ePAPR spec [1], "the name of a node should be somewhat
+> generic, reflecting the function of the device and not its
+> precise programming model". In this case probably "sound"?
+
+We use the 'sound' node name for the sound card itself. The case with McASP is
+a bit complicated. It can operate in I2S mode (and similar protocols like RJM,
+LJM, TDM) or it can interface with S/PDIF, IEC60958-1, AES-3 codecs.
+The mode we put McASP depends on the external components, so the same McASP
+can be used in I2S mode in one board while on the other it can be S/PDIF.
+It would have been convenient if I could use 'i2s' as node name but it is not
+true for McASP (Tegra, Exynos for example have I2S, AC97, S/PDIF as separate IP).
+
+IMHO the 'mcasp' is still the best node name for this IP. McASP stands for:
+'Multichannel Audio Serial Port' and this is pretty much what McASP is.
+
 -- 
-1.7.1
-
-
+Péter
