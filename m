@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab3JVRyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:54:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58420 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3JVRyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:54:47 -0400
-Date: Tue, 22 Oct 2013 13:54:42 -0400 (EDT)
-Message-Id: <20131022.135442.1072093301788210177.davem@davemloft.net>
-To: aaro.koskinen@iki.fi
-Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
-References: <20130617055839.GB3073@blackmetal.musicnaut.iki.fi>
-	<20130803.134042.2228681844349448961.davem@davemloft.net>
-	<20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 10:54:47 -0700 (PDT)
+	id S1754899Ab3JVRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:54:28 -0400
+Received: from mout.gmx.net ([212.227.15.18]:56234 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825Ab3JVRyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 13:54:22 -0400
+From: Peter Huewe <peterhuewe@gmx.de>
+To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
+        adlai@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 02/15] tpm: ibmvtpm: Use %zd formatting for size_t format arguments
+Date: Tue, 22 Oct 2013 19:53:47 +0200
+Message-Id: <1382464440-7579-2-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
+References: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
+X-Provags-ID: V03:K0:VggJv7crAr/lOcRQqVIAJobqhfHR6SOimRKV13l3s+NHI1s7Qqp
+ 32vDML83Nmfz8bqbmc9ePaP4OZapbBfzqmkyNPTMiGTjJoL+KWdAX6wK72otgKP4VecJvyh
+ hrxwMYD3cH51hG7jbI3C/hq88barVH5FmvElUs1Pc33A0aMh5mCnhnYp2Yy55G4+XiHUx/K
+ oV73+nt9e/B+9Qv0StDZQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date: Tue, 22 Oct 2013 20:46:12 +0300
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-> Hi,
-> 
-> On Sat, Aug 03, 2013 at 01:40:42PM -0700, David Miller wrote:
->> > On Mon, Jun 17, 2013 at 08:32:25AM +0300, Aaro Koskinen wrote:
->> >> On Mon, Jun 17, 2013 at 12:06:00AM +0300, Meelis Roos wrote:
->> >> > Got this in 3.10-rc6 whil testing debian unstable upgrade with aptitude. 
->> >> > 3.10-rc5 did not exhibit this (nor any other kernel recently tried, 
->> >> > including most -rc's). Does not seem to be reproducible.
->> >> 
->> >> I get this regularly on Ultrasparc during long compilations. It's been
->> >> there with all recent kernels (probably at least since 3.8). Latest I
->> >> saw with 3.10-rc5.
->> > 
->> > Two examples:
->> 
->> Thanks for the reports, I'm actively looking into this.
-> 
-> Got this again with 3.12-rc5 while doing GCC 4.8.2 bootstrap (during
-> make check phase):
- ...
-> The box didn't die yet... Let's hope it will let GCC testsuite to finish.
+This suppresses compile warnings on 32 bit builds.
 
-Thanks for reporting this again, it's in my long TODO list to look into
-still.
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/tpm_ibmvtpm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+index 56b07c3..838f043 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.c
++++ b/drivers/char/tpm/tpm_ibmvtpm.c
+@@ -98,7 +98,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+ 
+ 	if (count < len) {
+ 		dev_err(ibmvtpm->dev,
+-			"Invalid size in recv: count=%ld, crq_size=%d\n",
++			"Invalid size in recv: count=%zd, crq_size=%d\n",
+ 			count, len);
+ 		return -EIO;
+ 	}
+@@ -136,7 +136,7 @@ static int tpm_ibmvtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
+ 
+ 	if (count > ibmvtpm->rtce_size) {
+ 		dev_err(ibmvtpm->dev,
+-			"Invalid size in send: count=%ld, rtce_size=%d\n",
++			"Invalid size in send: count=%zd, rtce_size=%d\n",
+ 			count, ibmvtpm->rtce_size);
+ 		return -EIO;
+ 	}
+-- 
+1.7.5.4
+
