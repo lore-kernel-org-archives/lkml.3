@@ -1,154 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab3JVLPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:15:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41864 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3JVLPj (ORCPT
+	id S1752765Ab3JVLQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:16:21 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:24060 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3JVLQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:15:39 -0400
-Date: Tue, 22 Oct 2013 12:15:35 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [ 109/171 ] userns: Dont allow creation if the user is chrooted
-Message-ID: <20131022111535.GC4263@hercules>
-References: <20130411202503.783159048@goodmis.org>
- <20130411202604.189219756@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411202604.189219756@goodmis.org>
+	Tue, 22 Oct 2013 07:16:19 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f3d6d000001c4a-d7-52665e8135a8
+Content-transfer-encoding: 8BIT
+Message-id: <1382440544.992.64.camel@kjgkr>
+Subject: Re: [PATCH] f2fs: delete and free dirty dir freeing inode entry when
+ sync dirty dir inodes
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Oct 2013 20:15:44 +0900
+In-reply-to: <5264D574.6000105@cn.fujitsu.com>
+References: <5264D574.6000105@cn.fujitsu.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t8zY93GuLQgg7tXdS2etx9gtri0yN1i
+	z96TLBaXd81hc2Dx+H9wErPH7gWfmTw+b5ILYI7isklJzcksSy3St0vgypgy8SRjQQdXRc/u
+	C2wNjE0cXYycHBICJhJzbzSwQdhiEhfurQeyuTiEBJYxSkxrOMnYxcgBVjR9Dj9IjZDAIkaJ
+	o389QWxeAUGJH5PvsYCUMAvISxy5lA0SZhZQl5g0bxEzRPkrRomriyQhyrUlpt99wARiCwuk
+	ShxY/5kVpJUNKL55vwFEuaLE2/13WUFsEQE1iWfvLjGBXMMs0M0ocXb9K3aQBIuAqsSE7XfB
+	bE4BPYmfi9tYIZp1JRofNoLN5xcQlTi8cDszxFtKErvbO9lBBkkIHGKXOLOxjwVikIDEt8mH
+	WCBelJXYdACqXlLi4IobLBMYJWYh+XIWwpezkHy5gJF5FaNoakFyQXFSepGJXnFibnFpXrpe
+	cn7uJkZIrE3YwXjvgPUhxmSgjROZpUST84GxmlcSb2hsZmRhamJqbGRuaUaasJI4r9qjpCAh
+	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjFZrbih9XvD5Xx3vVEae50mnWy0Cp9zYfiLg4OQt
+	vN1N8w76RMz7FpbIVy0ieuHZqtm7vTun2rxffpXdmc2uu9F8aoNqgXK4qPa6ynRmOa3nLb22
+	ryynLQ+2+bN6o61fi0tDoZ1TTYdSqUHG7rg9661ablnOPbys+saXUxwc79ttW2+mWJ0xVGIp
+	zkg01GIuKk4EAJwCJIjLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAd3GuLQgg/+PNC2etx9gtri0yN1i
+	z96TLBaXd81hc2Dx+H9wErPH7gWfmTw+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8yYMvEkY0EHV0XP7gtsDYxNHF2MHBwSAiYS0+fwdzFyApliEhfurWcDsYUE
+	FjFKHP3rCWLzCghK/Jh8jwWknFlAXuLIpWyQMLOAusSkeYuYIcpfMUpcXSQJUa4tMf3uAyYQ
+	W1ggVeLA+s+sIK1sQPHN+w0gyhUl3u6/ywpiiwioSTx7dwmonAtoZDejxNn1r9hBEiwCqhIT
+	tt8FszkF9CR+Lm5jhWjWlWh82Ag2n19AVOLwwu3MEOcrSexu72SfwCg0C8nVsxCunoXk6gWM
+	zKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgiP5mfQOxlUNFocYBTgYlXh4M6xSg4RYE8uK
+	K3MPMUpwMCuJ8Db7pgUJ8aYkVlalFuXHF5XmpBYfYkwGOnwis5Rocj4wyeSVxBsam5gZWRqZ
+	WRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2NgOF/AetsjkyY1yO66Nu/KwR/n
+	Kxf+/hHv92Kp371vJnyhR2cGlqtrxDUxVc7PSI3izLzDU76O9cp9dwXP3g3LnpQ93pG77NXn
+	th1nmiYn884WOqsW8/ax4rTTmz6Vi8oc9jff1iM0f/88ebulMY8WKJ8IzjWxODFzrSC7/Ipd
+	C7/pW53o/rheiaU4I9FQi7moOBEAJFgKRCgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 04:26:52PM -0400, Steven Rostedt wrote:
-> 3.6.11.2 stable review patch.
-> If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> [ Upstream commit 3151527ee007b73a0ebd296010f1c0454a919c7d ]
+2013-10-21 (월), 15:19 +0800, Gu Zheng:
+> In sync_dirty_dir_inodes(), remove_dirty_dir_inode() will be called
+> in the callback of filemap_flush to delete and free dirty dir inode entry.
+> But for the freeing inode entry, missed this step after sbumit data bio,
+> and this may lead to a dead loop if these is freeing inode entry in
+> dir_inode_list. So add the delete and free step to fix it.
 
-While looking at some security bugs, I came across this one
-(CVE-2013-1956).  All the references I could find refer to the 3.8
-kernel only, and this was the only backport I could find to older
-stable kernels.
+Hi Gu,
 
-Could someone clarify if this fix should be included in other stable
-kernels?  Or the only affected kernels were the 3.8.0 to 3.8.5?
-
-Cheers,
---
-Luis
+This dirty inode will be removed by f2fs_evict_inode() after submitting
+any pending bio, f2fs_submit_bio().
+Thanks,
 
 > 
-> Guarantee that the policy of which files may be access that is
-> established by setting the root directory will not be violated by
-> user namespaces by verifying that the root directory points to the
-> root of the mount namespace at the time of user namespace creation.
-> 
-> Changing the root is a privileged operation, and as a matter of policy
-> it serves to limit unprivileged processes to files below the current
-> root directory.
-> 
-> For reasons of simplicity and comprehensibility the privilege to
-> change the root directory is gated solely on the CAP_SYS_CHROOT
-> capability in the user namespace.  Therefore when creating a user
-> namespace we must ensure that the policy of which files may be access
-> can not be violated by changing the root directory.
-> 
-> Anyone who runs a processes in a chroot and would like to use user
-> namespace can setup the same view of filesystems with a mount
-> namespace instead.  With this result that this is not a practical
-> limitation for using user namespaces.
-> 
-> Cc: stable@vger.kernel.org
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Reported-by: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 > ---
->  fs/namespace.c            |   25 +++++++++++++++++++++++++
->  include/linux/fs_struct.h |    2 ++
->  kernel/user_namespace.c   |    9 +++++++++
->  3 files changed, 36 insertions(+)
+>  fs/f2fs/checkpoint.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
 > 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 7bdf790..c48b0d3 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -2681,3 +2681,28 @@ bool our_mnt(struct vfsmount *mnt)
->  {
->  	return check_mnt(real_mount(mnt));
->  }
+> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> index 8d16071..f61838f 100644
+> --- a/fs/f2fs/checkpoint.c
+> +++ b/fs/f2fs/checkpoint.c
+> @@ -600,7 +600,16 @@ retry:
+>  		 * wribacking dentry pages in the freeing inode.
+>  		 */
+>  		f2fs_submit_bio(sbi, DATA, true);
 > +
-> +bool current_chrooted(void)
-> +{
-> +	/* Does the current process have a non-standard root */
-> +	struct path ns_root;
-> +	struct path fs_root;
-> +	bool chrooted;
+> +		spin_lock(&sbi->dir_inode_lock);
+> +		list_del(&entry->list);
+> +#ifdef CONFIG_F2FS_STAT_FS
+> +		sbi->n_dirty_dirs--;
+> +#endif
+> +		spin_unlock(&sbi->dir_inode_lock);
+> +		kmem_cache_free(inode_entry_slab, entry);
+>  	}
 > +
-> +	/* Find the namespace root */
-> +	ns_root.mnt = &current->nsproxy->mnt_ns->root->mnt;
-> +	ns_root.dentry = ns_root.mnt->mnt_root;
-> +	path_get(&ns_root);
-> +	while (d_mountpoint(ns_root.dentry) && follow_down_one(&ns_root))
-> +		;
-> +
-> +	get_fs_root(current->fs, &fs_root);
-> +
-> +	chrooted = !path_equal(&fs_root, &ns_root);
-> +
-> +	path_put(&fs_root);
-> +	path_put(&ns_root);
-> +
-> +	return chrooted;
-> +}
-> +
-> diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
-> index 003dc0f..961cdaa 100644
-> --- a/include/linux/fs_struct.h
-> +++ b/include/linux/fs_struct.h
-> @@ -51,4 +51,6 @@ static inline void get_fs_root_and_pwd(struct fs_struct *fs, struct path *root,
->  	spin_unlock(&fs->lock);
+>  	goto retry;
 >  }
 >  
-> +extern bool current_chrooted(void);
-> +
->  #endif /* _LINUX_FS_STRUCT_H */
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index 8660231..a74dc5b 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -39,6 +39,15 @@ int create_user_ns(struct cred *new)
->  	kuid_t owner = new->euid;
->  	kgid_t group = new->egid;
->  
-> +	/*
-> +	 * Verify that we can not violate the policy of which files
-> +	 * may be accessed that is specified by the root directory,
-> +	 * by verifing that the root directory is at the root of the
-> +	 * mount namespace which allows all files to be accessed.
-> +	 */
-> +	if (current_chrooted())
-> +		return -EPERM;
-> +
->  	/* The creator needs a mapping in the parent user namespace
->  	 * or else we won't be able to reasonably tell userspace who
->  	 * created a user_namespace.
-> -- 
-> 1.7.10.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Jaegeuk Kim
+Samsung
+
