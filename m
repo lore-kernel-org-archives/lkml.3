@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3JVWxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:53:05 -0400
-Received: from ring0.de ([91.143.88.219]:38630 "EHLO smtp.ring0.de"
+	id S1756087Ab3JVWxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:53:51 -0400
+Received: from ring0.de ([91.143.88.219]:38615 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab3JVWuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:50:13 -0400
+	id S1751196Ab3JVWuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:50:09 -0400
 X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
 From: Sebastian Reichel <sre@debian.org>
@@ -13,9 +13,9 @@ To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 06/14] DTS: ARM: OMAP3-N900: Add vibrator device
-Date: Wed, 23 Oct 2013 00:49:35 +0200
-Message-Id: <1382482183-14426-7-git-send-email-sre@debian.org>
+Subject: [PATCH 03/14] DTS: ARM: OMAP3-N900: Add UART support
+Date: Wed, 23 Oct 2013 00:49:32 +0200
+Message-Id: <1382482183-14426-4-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1382482183-14426-1-git-send-email-sre@debian.org>
 References: <1382482183-14426-1-git-send-email-sre@debian.org>
@@ -23,31 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Nokia N900's vibrator.
+Add UART support to Nokia N900.
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- arch/arm/boot/dts/omap3-n900.dts | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/boot/dts/omap3-n900.dts | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 5082cb6..a02f64f 100644
+index 7dd6fb6..9226268 100644
 --- a/arch/arm/boot/dts/omap3-n900.dts
 +++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -142,6 +142,13 @@
- #include "twl4030.dtsi"
- #include "twl4030_omap3.dtsi"
+@@ -31,6 +31,20 @@
+ &omap3_pmx_core {
+ 	pinctrl-names = "default";
  
-+&twl {
-+	twl_audio: audio {
-+		compatible = "ti,twl4030-audio";
-+		ti,enable-vibra = <1>;
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			0x14a (PIN_INPUT | MUX_MODE0)		/* uart2_rx */
++			0x148 (PIN_OUTPUT | MUX_MODE0)		/* uart2_tx */
++		>;
 +	};
++
++	uart3_pins: pinmux_uart3_pins {
++		pinctrl-single,pins = <
++			0x16e (PIN_INPUT | MUX_MODE0)		/* uart3_rx */
++			0x170 (PIN_OUTPUT | MUX_MODE0)		/* uart3_tx */
++		>;
++	};
++
+ 	i2c1_pins: pinmux_i2c1_pins {
+ 		pinctrl-single,pins = <
+ 			0x18a (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl */
+@@ -127,3 +141,17 @@
+ 	mode = <2>;
+ 	power = <50>;
+ };
++
++&uart1 {
++	status = "disabled";
 +};
 +
- &twl_gpio {
- 	ti,pullups	= <0x0>;
- 	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2_pins>;
++};
++
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart3_pins>;
++};
 -- 
 1.8.4.rc3
 
