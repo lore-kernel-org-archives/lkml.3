@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3JVREO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:04:14 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:60750 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3JVREN (ORCPT
+	id S1754131Ab3JVRG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:06:27 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:40774 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3JVRGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:04:13 -0400
+	Tue, 22 Oct 2013 13:06:25 -0400
+Date: Tue, 22 Oct 2013 18:06:21 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
+Message-ID: <20131022170621.GB2620@lee--X1>
+References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
+ <20130807084054.GA18668@lee--X1>
+ <52667A6C.6000301@linutronix.de>
+ <20131022160523.GB24024@lee--X1>
+ <5266AA0F.1030603@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
-	<20131022154802.GA25490@localhost>
-	<CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
-Date: Tue, 22 Oct 2013 10:04:12 -0700
-Message-ID: <CANN689EyWqCsr2rDBtHohMYwXG81dny+iQBKSt4AWqjEWnUkow@mail.gmail.com>
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5266AA0F.1030603@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 9:20 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Oct 22, 2013 at 4:48 PM,  <walken@google.com> wrote:
->> Generally the problems I see with mmap_sem are related to long latency
->> operations. Specifically, the mmap_sem write side is currently held
->> during the entire munmap operation, which iterates over user pages to
->> free them, and can take hundreds of milliseconds for large VMAs.
->
-> So this would be the *perfect* place to just downgrade the semaphore
-> from a write to a read.
+On Tue, 22 Oct 2013, Sebastian Andrzej Siewior wrote:
 
-It's not as simple as that, because we currently rely on mmap_sem
-write side being held during page table teardown in order to exclude
-things like follow_page() which may otherwise access page tables while
-we are potentially freeing them.
+> On 10/22/2013 06:05 PM, Lee Jones wrote:
+> >> I added reg_se_cache to cache the content of REG_SE once and
+> >> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
+> >> after "work" has been done. So you need to know the old value or TSC may
+> >> disable ADC and the other way around.
+> > 
+> > Yep, it's initialised as '0'.
+> > 
+> > 12.5.1.15 STEPENABLE Register (offset = 54h) [reset = 0h]
+> 
+> Ehm yes but!. After init it is set to 0, correct. The value was never
+> read from the HW. It was always set via  am335x_tsc_se_set() to "cache
+> | argument" and written to HW from both sides (TSC, ADC). This
+> initialization is done at ->probe() time in both drivers.
+> 
+> The value remains (remained) constant over the whole time
+> so both drivers only called am335x_tsc_se_update() to set the value
+> (the enabled steps of both sides) back to the register (because after
+> the conversation the value was 0 according to my memory) and since
+> 32bit reads are atomic I didn't use a lock here.
 
-I do think it's solvable, but it gets complicated fast. Hugh & I have
-been talking about it; the approach I'm looking at would involve
-unwiring the page tables first (under protection of the mmap_sem write
-lock) and then iterating on the unwired page tables to free the data
-pages, issue TLB shootdowns and free the actual page tables (we
-probably don't need even the mmap_sem read side at that point). But,
-that's nowhere like a 10 line change anymore at that point...
+Hmm.. I'm starting to see what you mean.
+
+So what's the point of the read before write then?
+
+Why don't you use the cache all of the time?
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
