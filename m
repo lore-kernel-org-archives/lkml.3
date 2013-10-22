@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3JVM5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:57:38 -0400
-Received: from ring0.de ([91.143.88.219]:36082 "EHLO smtp.ring0.de"
+	id S1753323Ab3JVNBr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 09:01:47 -0400
+Received: from ring0.de ([91.143.88.219]:36192 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823Ab3JVMzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:55:11 -0400
+	id S1751446Ab3JVNBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 09:01:45 -0400
 X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
 From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, linux-input@vger.kernel.org
-Cc: =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+To: Sebastian Reichel <sre@ring0.de>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Milo Kim <milo.kim@ti.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-omap@vger.kernel.org,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 3/4] Input: twl4030-pwrbutton: simplify driver using devm_*
-Date: Tue, 22 Oct 2013 14:55:03 +0200
-Message-Id: <1382446504-27837-4-git-send-email-sre@debian.org>
+Subject: [PATCH 0/2] Add lp5523 DT support
+Date: Tue, 22 Oct 2013 15:01:34 +0200
+Message-Id: <1382446896-28436-1-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382446504-27837-1-git-send-email-sre@debian.org>
-References: <1382446504-27837-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use managed irq resource to simplify the driver.
+Hi,
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- drivers/input/misc/twl4030-pwrbutton.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+This patchset adds device tree support for the enable-pin
+of the lp55xx. The second part adds support for the LP5523
+to the Nokia N900's DTS file.
 
-diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index 4e7a810..4ab9243 100644
---- a/drivers/input/misc/twl4030-pwrbutton.c
-+++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -70,7 +70,7 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 	pwr->phys = "twl4030_pwrbutton/input0";
- 	pwr->dev.parent = &pdev->dev;
- 
--	err = request_threaded_irq(irq, NULL, powerbutton_irq,
-+	err = devm_request_threaded_irq(&pwr->dev, irq, NULL, powerbutton_irq,
- 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
- 			"twl4030_pwrbutton", pwr);
- 	if (err < 0) {
-@@ -81,15 +81,13 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 	err = input_register_device(pwr);
- 	if (err) {
- 		dev_err(&pdev->dev, "Can't register power button: %d\n", err);
--		goto free_irq;
-+		goto free_input_dev;
- 	}
- 
- 	platform_set_drvdata(pdev, pwr);
- 
- 	return 0;
- 
--free_irq:
--	free_irq(irq, pwr);
- free_input_dev:
- 	input_free_device(pwr);
- 	return err;
-@@ -98,9 +96,7 @@ free_input_dev:
- static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
- {
- 	struct input_dev *pwr = platform_get_drvdata(pdev);
--	int irq = platform_get_irq(pdev, 0);
- 
--	free_irq(irq, pwr);
- 	input_unregister_device(pwr);
- 
- 	return 0;
+I have tested the patchset only using DT boot, since
+non-DT boot is currently broken for me.
+
+-- Sebastian
+
+Sebastian Reichel (2):
+  leds: lp55xx: handle enable pin in driver
+  DTS: ARM: OMAP3-N900: Add LP5523 support
+
+ .../devicetree/bindings/leds/leds-lp55xx.txt       |  1 +
+ arch/arm/boot/dts/omap3-n900.dts                   | 61 ++++++++++++++++++++++
+ arch/arm/mach-omap2/board-rx51-peripherals.c       | 20 +------
+ arch/arm/mach-ux500/board-mop500.c                 |  2 +
+ drivers/leds/leds-lp55xx-common.c                  | 25 ++++-----
+ include/linux/platform_data/leds-lp55xx.h          |  6 +--
+ 6 files changed, 80 insertions(+), 35 deletions(-)
+
 -- 
 1.8.4.rc3
 
