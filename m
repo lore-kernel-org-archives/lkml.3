@@ -1,128 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3JVVTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:19:48 -0400
-Received: from sandeen.net ([63.231.237.45]:56944 "EHLO sandeen.net"
+	id S1755128Ab3JVVZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 17:25:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61089 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753379Ab3JVVTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:19:47 -0400
-Message-ID: <5266EBF0.901@sandeen.net>
-Date: Tue, 22 Oct 2013 16:19:44 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753379Ab3JVVZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:25:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
+   d="scan'208";a="415403026"
+Date: Tue, 22 Oct 2013 22:24:47 +0100
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Michael wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84
+ put_online_cpus()
+Message-ID: <20131022212447.GA1373@localhost>
+References: <20131019005129.GA5979@localhost>
+ <20131022204632.GD2490@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-References: <5265956F.4010700@sandeen.net> <20131021224459.GE16161@dastard> <5265B4D2.3000907@sandeen.net> <20131021231849.GL10553@sgi.com> <20131021235601.GG4446@dastard> <5265C03B.50701@sandeen.net> <20131022001732.GI4446@dastard> <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com> <20131022203946.GB2797@dastard> <5266E4BD.8030601@sandeen.net> <20131022210300.GC2797@dastard>
-In-Reply-To: <20131022210300.GC2797@dastard>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022204632.GD2490@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/13 4:03 PM, Dave Chinner wrote:
-> On Tue, Oct 22, 2013 at 03:49:01PM -0500, Eric Sandeen wrote:
->> On 10/22/13 3:39 PM, Dave Chinner wrote:
->>> On Tue, Oct 22, 2013 at 08:12:51AM -0200, Geyslan Gregório Bem wrote:
->>>> 2013/10/21 Dave Chinner <david@fromorbit.com>:
->>>>> On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
->>>>>> On 10/21/13 6:56 PM, Dave Chinner wrote:
->>>>>>> On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
->>>>>
->>>>> Yes, but to continue the Devil's Advocate argument, the purpose of
->>>>> debug code isn't to enlightent the casual reader or drive-by
->>>>> patchers - it's to make life easier for people who actually spend
->>>>> time debugging the code. And the people who need the debug code
->>>>> are expected to understand why an ASSERT is not necessary. :)
->>>>>
->>>> Dave, Eric and Ben,
->>>>
->>>> This was catched by coverity (CID 102348).
->>>
->>> You should have put that in the patch description.
->>>
->>> Now I understand why there's been a sudden surge of irrelevant one
->>> line changes from random people that have never touched XFS before.
->>>
->>> <sigh>
->>>
->>> Ok, lets churn the code just to shut the stupid checker up. This
->>> doesn't fix a bug, it doesn't change behaviour, it just makes
->>> coverity happy. Convert it to the for loop plus ASSERT I mentioned
->>> in a previous message.
->>
->> You know, I respectfully disagree, but we might just have to agree
->> to disagree.  The code, as it stands, tests for a null ptr
->> and then dereferences it.  That's always going to raise some
->> eyebrows, coverity or not, debug code or not, drive by or not.
+On Tue, Oct 22, 2013 at 10:46:32PM +0200, Peter Zijlstra wrote:
+> On Sat, Oct 19, 2013 at 08:51:29AM +0800, Fengguang Wu wrote:
+> > Greetings,
+> > [   58.695502] ------------[ cut here ]------------
+> > [   58.697835] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus+0x43/0x70()
+> > [   58.702423] Modules linked in:
+> > [   58.704404] CPU: 0 PID: 3166 Comm: trinity-child0 Not tainted 3.12.0-rc5-01882-gf3db366 #1172
+> > [   58.708530] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> > [   58.710992]  0000000000000000 ffff88000acfbe50 ffffffff81a24643 0000000000000000
+> > [   58.715410]  ffff88000acfbe88 ffffffff810c3e6b ffffffff810c3fef 0000000000000000
+> > [   58.719826]  0000000000000000 0000000000006ee0 0000000000000ffc ffff88000acfbe98
+> > [   58.724348] Call Trace:
+> > [   58.726190]  [<ffffffff81a24643>] dump_stack+0x4d/0x66
+> > [   58.728531]  [<ffffffff810c3e6b>] warn_slowpath_common+0x7f/0x98
+> > [   58.731069]  [<ffffffff810c3fef>] ? put_online_cpus+0x43/0x70
+> > [   58.733664]  [<ffffffff810c3f32>] warn_slowpath_null+0x1a/0x1c
+> > [   58.736258]  [<ffffffff810c3fef>] put_online_cpus+0x43/0x70
+> > [   58.738686]  [<ffffffff810efd59>] sched_setaffinity+0x7d/0x1f9
+> > [   58.741210]  [<ffffffff810efce1>] ? sched_setaffinity+0x5/0x1f9
+> > [   58.743775]  [<ffffffff81a2f724>] ? _raw_spin_unlock_irq+0x2c/0x3e
+> > [   58.746417]  [<ffffffff810c7012>] ? do_setitimer+0x194/0x1f5
+> > [   58.748899]  [<ffffffff810eff37>] SyS_sched_setaffinity+0x62/0x71
+> > [   58.751481]  [<ffffffff81a373a9>] system_call_fastpath+0x16/0x1b
+> > [   58.754070] ---[ end trace 034818a1f6f06868 ]---
+> > [   58.757521] ------------[ cut here ]------------
 > 
->> So even for future developers, making the code more self-
->> documenting about this behavior would be a plus, whether it's by
->> comment, by explicit ASSERT(), or whatever.  (I don't think
->> that xfs_emerg() has quite enough context to make it obvious.)
+> Duh.. must've been blind or so..
 > 
-> Sure, but if weren't for the fact that Coverity warned about it,
-> nobody other that us people who work on the XFS code day in, day out
-> would have even cared about it.
-> 
-> That's kind of my point - again, as the Devil's Advocate - that
-> coverity is encouraging drive-by "fixes" by people who don't
-> actually understand any of the context, history and/or culture
-> surrounding the code being modified.
-
-They shouldn't have to, the code (or comments therein) should
-make it obvious.  ;)  (in a perfect world...)
-
-> I have no problems with real bugs being fixed, but if we are
-> modifying code for no gain other than closing "coverity doesn't like
-> it" bugs, then we *should* be questioning whether the change is
-> really necessary.
-
-But let's give Geyslan the benefit of the doubt, and realize that
-Coverity does find real things, and even if it originated w/ a
-Coverity CID, when one sees:
-
-	if (!a)
-		printk("a thing\n")
-
-	a = a->b = . . . 
-
-it looks suspicious to pretty much anyone.  I don't think Geyslan
-sent it to shut Coverity up, he sent it because it looked like
-a bug worth fixing (after Coverity spotted it).
-
-Let's not be too hard on him for trying; I appreciate it more
-than spelling fixes and whitespace cleanups.  ;)
-
-I agree that some Coverity CIDs are false, and we shouldn't
-mangle code just to make it happy, but I just don't think that's
-what's going on here.  Let's imagine Geyslan saw 10 other CIDs
-and elected not to send changes, because they didn't look like
-they needed fixing, but this one looked like a bona fide bug.
-
-> Asking the question may not change the outcome, but we need to ask
-> and answer the question regardless.
+> Does this make it go away
  
->> (We don't have to change code to shut up coverity; we can flag
->> it in the database and nobody else will see it.)
-> 
-> Only if you are the first to see it and make an executive decision
-> that it's not necessary to fix.... :/
+> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+>  	p = find_process_by_pid(pid);
+>  	if (!p) {
+>  		rcu_read_unlock();
+> -		put_online_cpus();
+>  		return -ESRCH;
 
-Or, you find it, send a patch that seems reasonable, get massive
-pushback, (hopefully) flag it, and resolve never come back to xfs
-again.  ;)
+Yes, it fixed the WARNING.
 
--Eric
- 
-> Cheers,
-> 
-> Dave.
-> 
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+
+// The tests was queued for Michael Wang and have just finished.
+
+There seems show up a new unreliable error "BUG:kernel_test_crashed".
+I'll increase test runs to confirm whether it's a new bug.
+
+/kernel/x86_64-lkp/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e                                  
++----------------------------------------------------------------------------------+-----------+--------------+--------------+
+|                                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
++----------------------------------------------------------------------------------+-----------+--------------+--------------+
+| good_boots                                                                       | 539       | 0            | 16           |
+| has_kernel_error_warning                                                         | 24        | 20           | 1            |
+| INFO:task_blocked_for_more_than_seconds                                          | 14        |              |              |
+| WARNING:CPU:PID:at_arch/x86/kernel/cpu/perf_event_intel.c:intel_pmu_handle_irq() | 1         |              |              |
+| INFO:NMI_handler(perf_event_nmi_handler)took_too_long_to_run:msecs               | 1         |              |              |
+| XFS(vde):xlog_verify_grant_tail:space_BBTOB(tail_blocks)                         | 5         |              |              |
+| Corruption_detected.Unmount_and_run_xfs_repair                                   | 5         |              |              |
+| metadata_I/O_error:block(xfs_trans_read_buf_map)error_numblks                    | 5         |              |              |
+| BUG:kernel_test_hang                                                             | 3         |              |              |
+| WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                | 0         | 20           |              |
+| BUG:kernel_test_crashed                                                          | 0         | 0            | 1            |
++----------------------------------------------------------------------------------+-----------+--------------+--------------+
+
+/kernel/x86_64-lkp-CONFIG_SCHED_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
+                                  
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+|                                                                                    | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+| good_boots                                                                         | 39        | 0            | 16           |
+| has_kernel_error_warning                                                           | 0         | 20           |              |
+| INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 1            |              |
+| INFO:task_blocked_for_more_than_seconds                                            | 0         | 6            |              |
+| INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 3            |              |
+| Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 3            |              |
+| WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                  | 0         | 12           |              |
+| BUG:kernel_test_crashed                                                            | 0         | 1            |              |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+
+/kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
+
++------------------------------------------------------------------+-----------+--------------+--------------+
+|                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
++------------------------------------------------------------------+-----------+--------------+--------------+
+| good_boots                                                       | 38        | 1            | 17           |
+| has_kernel_error_warning                                         | 1         | 20           | 1            |
+| Out_of_memory:Kill_process                                       | 1         |              |              |
+| Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes | 1         |              |              |
+| BUG:kernel_test_oops                                             | 1         |              |              |
+| WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                | 0         | 20           |              |
+| INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)      | 0         | 0            | 1            |
++------------------------------------------------------------------+-----------+--------------+--------------+
 
