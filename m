@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab3JVUrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 16:47:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60922 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3JVUrE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 16:47:04 -0400
-Date: Tue, 22 Oct 2013 22:46:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84
- put_online_cpus()
-Message-ID: <20131022204659.GE2490@laptop.programming.kicks-ass.net>
-References: <20131019005129.GA5979@localhost>
- <52649F5E.2080303@linux.vnet.ibm.com>
+	id S1754710Ab3JVUss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:48:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753966Ab3JVUsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 16:48:47 -0400
+Date: Wed, 23 Oct 2013 07:48:01 +1100
+From: Dave Chinner <dchinner@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Glauber Costa <glommer@openvz.org>
+Subject: Re: [PATCH] staging: ashmem: Fix ASHMEM_PURGE_ALL_CACHES return value
+Message-ID: <20131022204801.GC1969@devil.localdomain>
+References: <1382374687-4831-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52649F5E.2080303@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1382374687-4831-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 11:28:30AM +0800, Michael wang wrote:
-> Hi, Fengguang
+On Mon, Oct 21, 2013 at 09:58:07AM -0700, John Stultz wrote:
+> Hopefully this isn't too late for 3.12.
 > 
-> On 10/19/2013 08:51 AM, Fengguang Wu wrote:
-> > Greetings,
+> In commit 7dc19d5aff (convert shrinkers to new count/scan API)
+> the return value to PURGE_ALL_CACHES was dropped, causing -EPERM
+> to always be returned.
 > 
-> Will this do any helps?
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index c06b8d3..7c61f31 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct
-> cpumask *in_mask)
->         p = find_process_by_pid(pid);
->         if (!p) {
->                 rcu_read_unlock();
-> -               put_online_cpus();
->                 return -ESRCH;
->         }
+> This patch re-adds the ret assignment, setting it to the the
+> ashmem_shrink_count(), which is the lru_count.
 
-Just so..
+Looks sane.
+
+Acked-by: Dave Chinner <dchinner@redhat.com>
+
+-- 
+Dave Chinner
+dchinner@redhat.com
