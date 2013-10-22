@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750968Ab3JVEIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 00:08:11 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:59381 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750753Ab3JVEIJ (ORCPT
+	id S1751276Ab3JVEL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 00:11:58 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53032 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3JVEL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 00:08:09 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lib/genalloc: add a helper function for DMA buffer allocation
-Date: Tue, 22 Oct 2013 12:07:58 +0800
-Message-ID: <1382414878-14056-1-git-send-email-b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
+	Tue, 22 Oct 2013 00:11:57 -0400
+Date: Tue, 22 Oct 2013 12:11:24 +0800
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next] net: remove function sk_reset_txq()
+Message-ID: <20131022041124.GA14122@will>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using pool space for DMA buffer, there might be duplicated calling
-of gen_pool_alloc() and gen_pool_virt_to_phys() in each implementation.
+What sk_reset_txq() does is just calls function sk_tx_queue_reset(),
+and sk_reset_txq() is used only in sock.h, by dst_negative_advice().
+Let dst_negative_advice() calls sk_tx_queue_reset() directly so we
+can remove unneeded sk_reset_txq().
 
-Thus it's better to add a simple helper function, a compatible one to
-the common dma_alloc_coherent(), to save some code.
-
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
 ---
- include/linux/genalloc.h |  2 ++
- lib/genalloc.c           | 28 ++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
+ include/net/sock.h | 4 +---
+ net/core/sock.c    | 6 ------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index f8d41cb..1eda33d 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -94,6 +94,8 @@ static inline int gen_pool_add(struct gen_pool *pool, unsigned long addr,
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 1d37a80..db66682 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1752,8 +1752,6 @@ sk_dst_get(struct sock *sk)
+ 	return dst;
  }
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
-+extern void *gen_pool_dma_alloc(struct gen_pool *pool, size_t size,
-+		dma_addr_t *dma);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
- extern void gen_pool_for_each_chunk(struct gen_pool *,
- 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 26cf20b..dda3116 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -313,6 +313,34 @@ retry:
- EXPORT_SYMBOL(gen_pool_alloc);
  
- /**
-+ * gen_pool_dma_alloc - allocate special memory from the pool for DMA usage
-+ * @pool: pool to allocate from
-+ * @size: number of bytes to allocate from the pool
-+ * @dma: dma-view physical address
-+ *
-+ * Allocate the requested number of bytes from the specified pool.
-+ * Uses the pool allocation function (with first-fit algorithm by default).
-+ * Can not be used in NMI handler on architectures without
-+ * NMI-safe cmpxchg implementation.
-+ */
-+void *gen_pool_dma_alloc(struct gen_pool *pool, size_t size, dma_addr_t *dma)
-+{
-+	unsigned long vaddr;
-+
-+	if (!pool)
-+		return NULL;
-+
-+	vaddr = gen_pool_alloc(pool, size);
-+	if (!vaddr)
-+		return NULL;
-+
-+	*dma = gen_pool_virt_to_phys(pool, vaddr);
-+
-+	return (void *)vaddr;
-+}
-+EXPORT_SYMBOL(gen_pool_dma_alloc);
-+
-+/**
-  * gen_pool_free - free allocated special memory back to the pool
-  * @pool: pool to free to
-  * @addr: starting address of memory to free back to pool
+-extern void sk_reset_txq(struct sock *sk);
+-
+ static inline void dst_negative_advice(struct sock *sk)
+ {
+ 	struct dst_entry *ndst, *dst = __sk_dst_get(sk);
+@@ -1763,7 +1761,7 @@ static inline void dst_negative_advice(struct sock *sk)
+ 
+ 		if (ndst != dst) {
+ 			rcu_assign_pointer(sk->sk_dst_cache, ndst);
+-			sk_reset_txq(sk);
++			sk_tx_queue_clear(sk);
+ 		}
+ 	}
+ }
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 5b6beba..3f1545f 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -475,12 +475,6 @@ discard_and_relse:
+ }
+ EXPORT_SYMBOL(sk_receive_skb);
+ 
+-void sk_reset_txq(struct sock *sk)
+-{
+-	sk_tx_queue_clear(sk);
+-}
+-EXPORT_SYMBOL(sk_reset_txq);
+-
+ struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie)
+ {
+ 	struct dst_entry *dst = __sk_dst_get(sk);
 -- 
-1.8.4
-
+1.8.3.1
 
