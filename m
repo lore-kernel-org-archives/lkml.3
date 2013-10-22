@@ -1,147 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3JVXMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 19:12:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29993 "EHLO mga14.intel.com"
+	id S1754595Ab3JVXPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 19:15:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57334 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab3JVXMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 19:12:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,551,1378882800"; 
-   d="scan'208";a="415446207"
-Date: Tue, 22 Oct 2013 16:12:35 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: dmaengine@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
-        b.zolnierkie@samsung.com, Vinod Koul <vinod.koul@intel.com>,
-        t.figa@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kyungmin.park@samsung.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 11/13] NTB: convert to dmaengine_unmap_data
-Message-ID: <20131022231235.GE11192@jonmason-lab>
-References: <1382117733-16720-12-git-send-email-b.zolnierkie@samsung.com>
- <20131022210828.31348.41879.stgit@viggo.jf.intel.com>
- <CAPcyv4iWE=fETyu6zNuyy=RBKZ1-wSks5RjLqH3xfZmMwro5rA@mail.gmail.com>
+	id S1752196Ab3JVXPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 19:15:18 -0400
+Message-ID: <526706FC.2070105@redhat.com>
+Date: Tue, 22 Oct 2013 19:15:08 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4iWE=fETyu6zNuyy=RBKZ1-wSks5RjLqH3xfZmMwro5rA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ming Lei <ming.lei@canonical.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        tigran@aivazian.fsnet.co.uk
+Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
+ no uevent
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com>	<1382304926-1641-2-git-send-email-prarit@redhat.com>	<CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com>	<5265A9A4.2000100@redhat.com> <CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>
+In-Reply-To: <CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 02:29:36PM -0700, Dan Williams wrote:
-> On Fri, Oct 18, 2013 at 6:06 PM, Jon Mason <jon.mason@intel.com> wrote:
-> > On Fri, Oct 18, 2013 at 07:35:31PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> >> Use the generic unmap object to unmap dma buffers.
-> >>
-> >> As NTB can be compiled without DMA_ENGINE support add
-> >
-> > Seems like the stubs should be added outside of this patch.
+On 10/21/2013 10:35 PM, Ming Lei wrote:
+> On Tue, Oct 22, 2013 at 6:24 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>
+>>
+>> On 10/21/2013 08:24 AM, Ming Lei wrote:
+>>> On Mon, Oct 21, 2013 at 5:35 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>>> If request_firmware_nowait() is called with uevent == NULL, the firmware
+>>>> completion is never marked complete resulting in a hang in the process.
+>>>>
+>>>> If uevent is undefined, that means we're not waiting on anything and the
+>>>> process should just clean up and complete.  While we're at it, add a
+>>>> debug dev_dbg() to indicate that the FW has not been found.
+>>>>
+>>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>>>> Cc: x86@kernel.org
+>>>> Cc: herrmann.der.user@googlemail.com
+>>>> Cc: ming.lei@canonical.com
+>>>> Cc: tigran@aivazian.fsnet.co.uk
+>>>> ---
+>>>>  drivers/base/firmware_class.c |    6 +++++-
+>>>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>>>> index 10a4467..95778dc 100644
+>>>> --- a/drivers/base/firmware_class.c
+>>>> +++ b/drivers/base/firmware_class.c
+>>>> @@ -335,7 +335,8 @@ static bool fw_get_filesystem_firmware(struct device *device,
+>>>>                 set_bit(FW_STATUS_DONE, &buf->status);
+>>>>                 complete_all(&buf->completion);
+>>>>                 mutex_unlock(&fw_lock);
+>>>> -       }
+>>>> +       } else
+>>>> +               dev_dbg(device, "firmware: %s not found\n", buf->fw_id);
+>>>>
+>>>>         return success;
+>>>>  }
+>>>> @@ -886,6 +887,9 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>>>>                         schedule_delayed_work(&fw_priv->timeout_work, timeout);
+>>>>
+>>>>                 kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+>>>> +       } else {
+>>>> +               /* if there is no uevent then just cleanup */
+>>>> +               schedule_delayed_work(&fw_priv->timeout_work, 0);
+>>>>         }
+>>>
+>>> This may not a good idea and might break current NOHOTPLUG
+>>> users,
+>>
+>> Ming,
+>>
+>> The code is broken for all callers of request_firmware_nowait() with NOHOTPLUG
+>> and CONFIG_FW_LOADER_USER_HELPER=y.  AFAICT with the two existing cases of this
+>> usage in the kernel, both are broken and both are attempting to do the same
+>> thing that I'm doing in the x86 microcode ATM.
+>>
+>> This is the situation as I understand it and please correct me if I'm wrong
+>> about the execution path.  If I call request_firmware_nowait() with NOHOTPLUG I
+>> am essentially saying that there is no uevent associated with this firmware
+>> load; that is uevent = 0.  request_firmware_work_func() is called as scheduled
+>> task, which results in a call to _request_firmware().  _request_firmware() first
+>> calls _request_firmware_prepare() which eventually results in a call to
+>> __allocate_fw_buf() which does an init_completion(&buf->completion).
+>>
+>> Returning back up the stack to _request_firmware() we eventually call
+>> fw_get_filesystem_firmware().  _If the firmware does not exist_ success is false
+>> and the if (success) loop is not executed, and it is important to note that the
+>> complete_all(&buf->completion) is _not_ called.  fw_get_filesystem_firmware()
+>> returns an error so that fw_load_from_user_helper() is called from
+>> _request_firmware().
+>>
+>> fw_load_from_user_helper() eventually calls _request_firmware_load() and this is
+>> where we get into a problem.  fw_load_from_user_helper() calls all the file
+>> creation, etc., and then hits this chunk of code:
+>>
+>>         if (uevent) {
+>>                 dev_set_uevent_suppress(f_dev, false);
+>>                 dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
+>>                 if (timeout != MAX_SCHEDULE_TIMEOUT)
+>>                         schedule_delayed_work(&fw_priv->timeout_work, timeout);
+>>
+>>                 kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+>>         }
+>>
+>>         wait_for_completion(&buf->completion);
+>>
+>> As I previously said, we've been called with NOHOTPLUG, ie) uevent = 0.  That
+>> means we skip down to the wait_for_completion(&buf->completion) ... and we wait
+>> ... forever.
 > 
-> I think they are ok here as this is the only driver that uses them.
-> The alternative is a new api patch without a user.
+> Yes, it is exactly the previous design on NOHOTPLUG, because
+> firmware loader has to wait for the handling from user space, and
+> no one can predict when userspace comes because of no
+> notification. For example, the userspace may be 'some inputting
+> from shell by someone once he is free', :-) so it is difficult to set a
+> timeout explicitly for the handling.
 > 
-> > Also, the
-> > comment implies that NTB could not be compiled without DMA_ENGINE
-> > support before, which it could be.
+> But the requests can be killed before suspend & shutdown, so
+> it is still OK.
 > 
-> Hmm, I read it as "since NTB *can* be compiled without dmaengine here
-> are some stubs".
-
-This poses an overall question of whether it would simply be better to
-abstract all of the with/without DMA_ENGINE part and simply remap it
-to memcpy if DMA_ENGINE is not set (or if the DMA engine is
-hotplugged).  Of course, this is outside the scope of this patch.
-
-> >
-> >> stub functions to <linux/dmaengine.h> for dma_set_unmap(),
-> >> dmaengine_get_unmap_data() and dmaengine_unmap_put().
-> >>
-> >> Cc: Dan Williams <djbw@fb.com>
-> >> Cc: Vinod Koul <vinod.koul@intel.com>
-> >> Cc: Tomasz Figa <t.figa@samsung.com>
-> >> Cc: Dave Jiang <dave.jiang@intel.com>
-> >> Cc: Jon Mason <jon.mason@intel.com>
-> >> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-> >>  drivers/ntb/ntb_transport.c | 63 +++++++++++++++++++++++++++++++++------------
-> >>  include/linux/dmaengine.h   | 15 +++++++++++
-> >>  2 files changed, 61 insertions(+), 17 deletions(-)
-> >>
-> >> diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-> >> index 12a9e83..fc6bbf1 100644
-> >> --- a/drivers/ntb/ntb_transport.c
-> >> +++ b/drivers/ntb/ntb_transport.c
-> >> @@ -1034,7 +1034,7 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
-> >>       struct dma_chan *chan = qp->dma_chan;
-> >>       struct dma_device *device;
-> >>       size_t pay_off, buff_off;
-> >> -     dma_addr_t src, dest;
-> >> +     struct dmaengine_unmap_data *unmap;
-> >>       dma_cookie_t cookie;
-> >>       void *buf = entry->buf;
-> >>       unsigned long flags;
-> >> @@ -1054,27 +1054,41 @@ static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
-> >>       if (!is_dma_copy_aligned(device, pay_off, buff_off, len))
-> >>               goto err1;
-> >>
-> >> -     dest = dma_map_single(device->dev, buf, len, DMA_FROM_DEVICE);
-> >> -     if (dma_mapping_error(device->dev, dest))
-> >> +     unmap = dmaengine_get_unmap_data(device->dev, 2, GFP_NOIO);
-> >> +     if (!unmap)
-> >>               goto err1;
-> >>
-> >> -     src = dma_map_single(device->dev, offset, len, DMA_TO_DEVICE);
-> >> -     if (dma_mapping_error(device->dev, src))
-> >> +     unmap->addr[0] = dma_map_page(device->dev, virt_to_page(offset),
-> >> +                                   pay_off, len, DMA_TO_DEVICE);
-> >> +     if (dma_mapping_error(device->dev, unmap->addr[0]))
-> >>               goto err2;
-> >>
-> >> -     flags = DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SRC_UNMAP_SINGLE |
-> >> +     unmap->to_cnt = 1;
-> >> +
-> >> +     unmap->addr[1] = dma_map_page(device->dev, virt_to_page(buf),
-> >> +                                   buff_off, len, DMA_FROM_DEVICE);
-> >> +     if (dma_mapping_error(device->dev, unmap->addr[1]))
-> >> +             goto err2;
-> >> +
-> >> +     unmap->from_cnt = 1;
-> >> +
-> >> +     flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
-> >>               DMA_PREP_INTERRUPT;
-> >> -     txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
-> >> +     txd = device->device_prep_dma_memcpy(chan, unmap->addr[1],
-> >> +                                          unmap->addr[0], len, flags);
-> >
-> > I must say, as a user I dislike this interface much less than the
-> > previous.  Can we abstract all of this away in a helper function
-> > that simply takes the src, dest, and len, then maps and calls
-> > device_prep_dma_memcpy?  The driver does not keep track of the
-> > dmaengine_unmap_data, so the helper function could simply return an
-> > error if something isn't happy.  Thoughts?
-> 
-> Well, that's almost dma_async_memcpy_pg_to_pg, except NTB wants it's
-> own callback.  We could add a new helper that does
-> dma_async_memcpy_pg_to_pg() with callback, but I want to do a larger
-> reorganization of dmaengine to try to kill off the need to specify the
-> callback after ->prep().  Can we go with as is for now and cleanup
-> later?  The same is happening to the other clients in this patchset
-> (async_tx, dmatest, net_dma) in terms of picking up unmap
-> responsibility from the drivers.  It looks "worse" for each client at
-> this stage, but the overall effect is:
-> 
->    34 files changed, 538 insertions(+), 1157 deletions(-)
-
-That is fine.  It can be like this in the short term.
-
-Thanks,
-Jon
+> That is why NOHOTPLUG isn't encouraged to be taken, actually
+> I don't suggest you to do that too, :-)
+Okay ... I can certainly switch to HOTPLUG.
 
 > 
-> --
-> Dan
+> You need to make sure your approach won't break micro-code
+> update application in current/previous distributions.
+
+I've tested the following distributions today on a Dell PE 1850:  Ubuntu, SuSe,
+Linux Mint, and of course Fedora.  I do not see any issues with either the
+microcode update or the dell_rbu driver.  Unfortunately I do not have access to
+a system that uses the lattice-ecp3-config, however, from code inspection it
+looks like the driver looks at a specific place for the FW update and then
+applies it via the call function in request_firmware_nowait() so it looks like
+it is solid too.
+
+I think maybe this patchset should be split into two separate submits, one for
+the microcode and the second to figure out if the code really should wait
+indefinitely.  AFAICT neither use case in the kernel expects an indefinite wait.
+
+P.
+
+> 
+>>
+>> I can reproduce this by using a Dell PE 1850 & the dell_rbu module by doing the
+>> following:
+>>
+>> insmod dell_rbu.ko
+>> echo init > /sys/devices/platform/dell_rbu/image_type
+>> lsmod | grep dell_rbu
+>>
+>> (after an hour)
+>>
+>> [root@dell-pe1850-04 dell_rbu]# lsmod | grep dell_rbu
+>> dell_rbu               14315  1
+>> [root@dell-pe1850-04 dell_rbu]#
+>>
+>> ^^^ that use count is left because the thread is waiting with an existing module
+>> ref count.  For kicks I put a printk in the dell_rbu code or instrument the
+>> _request_firmware() code and did a reboot.  Since the completions are finished
+>> on system shutdown, I see the code continue to execute at the end of boot.
+> 
+> Right, so no obvious problem from user view, isn't it?
+
+Well, there is an issue that it is possible that the dell_rbu driver attempts to
+load the update BEFORE the update is available.  I have written some additional
+code to fix that.
+
+P.
