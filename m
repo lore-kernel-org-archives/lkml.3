@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3JVRyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:54:22 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:32947 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644Ab3JVRyU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:54:20 -0400
-Message-ID: <5266BBC7.9030207@mit.edu>
-Date: Tue, 22 Oct 2013 10:54:15 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: walken@google.com, Davidlohr Bueso <davidlohr@hp.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com> <20131022154802.GA25490@localhost>
-In-Reply-To: <20131022154802.GA25490@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754978Ab3JVRyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:54:37 -0400
+Received: from mout.gmx.net ([212.227.17.22]:59132 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754953Ab3JVRyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 13:54:36 -0400
+From: Peter Huewe <peterhuewe@gmx.de>
+To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
+        adlai@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 05/15] tpm: Use container_of to locate the tpm_chip in tpm_open
+Date: Tue, 22 Oct 2013 19:53:50 +0200
+Message-Id: <1382464440-7579-5-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
+References: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
+X-Provags-ID: V03:K0:x1tejRjRlQDe+L/5L4kGxntR+YIZEnMFQoj5jfcvgQPTJ6T9JNu
+ eRvnJQrQQAw7QqP/7rjfurymyKOxLkTZAUteNUlqnsCKNVZ/5BRgw+uI1Orr3/3QNlkRP+d
+ L8kXf0wpg525rabT/v8OEaX4i630Zbx6F0fyGQ2meNZ28XUzhiuAitAmDyGJM1PwJoMsKQi
+ MbODC1uRoEVJGCYtcRqtg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 08:48 AM, walken@google.com wrote:
-> On Thu, Oct 17, 2013 at 05:50:35PM -0700, Davidlohr Bueso wrote:
->> Linus recently pointed out[1] some of the amount of unnecessary work 
->> being done with the mmap_sem held. This patchset is a very initial 
->> approach on reducing some of the contention on this lock, and moving
->> work outside of the critical region.
->>
->> Patch 1 adds a simple helper function.
->>
->> Patch 2 moves out some trivial setup logic in mlock related calls.
->>
->> Patch 3 allows managing new vmas without requiring the mmap_sem for
->> vdsos. While it's true that there are many other scenarios where
->> this can be done, few are actually as straightforward as this in the
->> sense that we *always* end up allocating memory anyways, so there's really
->> no tradeoffs. For this reason I wanted to get this patch out in the open.
->>
->> There are a few points to consider when preallocating vmas at the start
->> of system calls, such as how many new vmas (ie: callers of split_vma can
->> end up calling twice, depending on the mm state at that point) or the probability
->> that we end up merging the vma instead of having to create a new one, like the 
->> case of brk or copy_vma. In both cases the overhead of creating and freeing
->> memory at every syscall's invocation might outweigh what we gain in not holding
->> the sem.
-> 
-> Hi Davidlohr,
-> 
-> I had a quick look at the patches and I don't see anything wrong with them.
-> However, I must also say that I have 99 problems with mmap_sem and the one
-> you're solving doesn't seem to be one of them, so I would be interested to
-> see performance numbers showing how much difference these changes make.
-> 
-> Generally the problems I see with mmap_sem are related to long latency
-> operations. Specifically, the mmap_sem write side is currently held
-> during the entire munmap operation, which iterates over user pages to
-> free them, and can take hundreds of milliseconds for large VMAs.
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-This is the leading cause of my "egads, something that should have been
-fast got delayed for several ms" detector firing.  I've been wondering:
+misc_open sets the file->private_date to the misc_dev when calling
+open. We can use container_of to go from the misc_dev back to the
+tpm_chip.
 
-Could we replace mmap_sem with some kind of efficient range lock?  The
-operations would be:
+Future clean ups will move tpm_open into a new file and this change
+means we do not have to export the tpm_chip list.
 
- - mm_lock_all_write (drop-in replacement for down_write(&...->mmap_sem))
- - mm_lock_all_read (same for down_read)
- - mm_lock_write_range(mm, start, end)
- - mm_lock_read_range(mm, start_end)
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/char/tpm/tpm.c |   21 ++++-----------------
+ 1 files changed, 4 insertions(+), 17 deletions(-)
 
-and corresponding unlock functions (that maybe take a cookie that the
-lock functions return or that take a pointer to some small on-stack data
-structure).
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 71eb8c7..c3ab508 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1170,38 +1170,25 @@ EXPORT_SYMBOL_GPL(wait_for_tpm_stat);
+  */
+ int tpm_open(struct inode *inode, struct file *file)
+ {
+-	int minor = iminor(inode);
+-	struct tpm_chip *chip = NULL, *pos;
+-
+-	rcu_read_lock();
+-	list_for_each_entry_rcu(pos, &tpm_chip_list, list) {
+-		if (pos->vendor.miscdev.minor == minor) {
+-			chip = pos;
+-			get_device(chip->dev);
+-			break;
+-		}
+-	}
+-	rcu_read_unlock();
+-
+-	if (!chip)
+-		return -ENODEV;
++	struct miscdevice *misc = file->private_data;
++	struct tpm_chip *chip = container_of(misc, struct tpm_chip,
++					     vendor.miscdev);
+ 
+ 	if (test_and_set_bit(0, &chip->is_open)) {
+ 		dev_dbg(chip->dev, "Another process owns this TPM\n");
+-		put_device(chip->dev);
+ 		return -EBUSY;
+ 	}
+ 
+ 	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
+ 	if (chip->data_buffer == NULL) {
+ 		clear_bit(0, &chip->is_open);
+-		put_device(chip->dev);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	atomic_set(&chip->data_pending, 0);
+ 
+ 	file->private_data = chip;
++	get_device(chip->dev);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(tpm_open);
+-- 
+1.7.5.4
 
-I think that all the mm functions except get_unmapped_area could use an
-interface like this, possibly with considerably less code than they use
-now.  get_unmapped_area is the main exception -- it would want trylock
-operations or something so it didn't get stuck.
-
-The easiest way to implement this that I can think of is a doubly-linked
-list or even just an array, which should be fine for a handful of
-threads.  Beyond that, I don't really know.  Creating a whole trie for
-these things would be expensive, and fine-grained locking on rbtree-like
-things isn't so easy.
-
-This could be a huge win: operations on non-overlapping addresses
-wouldn't get in each others' way, except for TLB shootdown interrupts.
-(Hey, CPU vendors: give us a real remote TLB shootdown mechanism!)
-
---Andy
