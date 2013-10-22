@@ -1,124 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3JVLYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:24:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56675 "EHLO
+	id S1753220Ab3JVLYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:24:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab3JVLYS (ORCPT
+	with ESMTP id S1751372Ab3JVLY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:24:18 -0400
-Date: Tue, 22 Oct 2013 12:25:43 +0100
+	Tue, 22 Oct 2013 07:24:28 -0400
+Date: Tue, 22 Oct 2013 12:25:52 +0100
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.67
-Message-ID: <20131022112543.GA5735@kroah.com>
+Subject: Re: Linux 3.4.67
+Message-ID: <20131022112552.GB5735@kroah.com>
+References: <20131022112543.GA5735@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131022112543.GA5735@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.4.67 kernel.
-
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
-mmary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                |    2=20
- arch/parisc/kernel/traps.c              |    6 +-
- arch/powerpc/kvm/book3s_hv_rmhandlers.S |    2=20
- drivers/char/random.c                   |    3 -
- drivers/gpu/drm/radeon/evergreen.c      |    2=20
- drivers/watchdog/ts72xx_wdt.c           |    3 -
- fs/ext4/xattr.c                         |    2=20
- fs/statfs.c                             |    2=20
- include/linux/random.h                  |    1=20
- init/main.c                             |    2=20
- mm/mmap.c                               |   77 +++++++++++++++++++++++++++=
-+++--
- sound/pci/hda/patch_realtek.c           |    1=20
- sound/usb/usx2y/usbusx2yaudio.c         |   22 +--------
- sound/usb/usx2y/usx2yhwdeppcm.c         |    7 --
- 14 files changed, 93 insertions(+), 39 deletions(-)
-
-Cyril Hrubis (1):
-      mm/mmap: check for RLIMIT_AS before unmapping
-
-Dan Carpenter (1):
-      watchdog: ts72xx_wdt: locking bug in ioctl
-
-Daniel Mack (1):
-      ALSA: snd-usb-usx2y: remove bogus frame checks
-
-Dave Jones (1):
-      ext4: fix memory leak in xattr
-
-Greg Kroah-Hartman (1):
-      Linux 3.4.67
-
-Helge Deller (1):
-      parisc: fix interruption handler to respect pagefault_disable()
-
-Linus Torvalds (2):
-      vfs: allow O_PATH file descriptors for fstatfs()
-      mm: do not grow the stack vma just because of an overrun on preceding=
- vma
-
-Paul Mackerras (1):
-      KVM: PPC: Book3S HV: Fix typo in saving DSCR
-
-Takashi Iwai (1):
-      ALSA: hda - Add fixup for ASUS N56VZ
-
-Theodore Ts'o (1):
-      random: run random_int_secret_init() run after all late_initcalls
-
-wojciech kapuscinski (1):
-      drm/radeon: fix hw contexts for SUMO2 asics
-
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZmC3AAoJEDjbvchgkmk+wSkP/2UX9ct3+VOjCab9+eYl+6Jg
-OM+gnpQ7Qo5ExJ/yXTQ2FJv31S3afNYRoeTMm5LhQCawPLEOr3DHjior1plvJTAw
-WGEBWMEgR4JToXvMFmVcMO4p7wKDD1eOhJ043ffW9pyVegjbTHQIF8x0y9wvSNog
-52wkf8DshZdHeoBTor43bgIGzeC7X7yVXczgBOTT911mBMAo/DEd0d6ff2hAdu+A
-ZnjWFn196aLRTEvkwe8IJiACJLm5OkkcAAZsv6e1rlW01wxbDaIsCYhbMA1UjThd
-8jdYjX/+0bWow/qmNKjfmTd405xGTmruC/s9UR2/kmERWDk9IwmRztTYlnK7eCpM
-JY6WpYE35XS/6okTPH8avtXdNgKzd1tqwuL8xZBoST0ssNbG1N8kXF53mbLyoott
-WCtatLj5xjV854IlGcOzGumufrzymCsPxISEWsvocSS26pbDd1aklEUL83mEnUMb
-sqi33XnpLcO4N/8lLYuNLLM8TNMB6M7z2syeMuHhtrvwrohler/ItyZHYi3kQ5hg
-zVBArqMbrKEF4O36EtTSPvJd6YS7XI7lZ9FHZIag30Zs1NqE4O+dBXeZyEwDri8g
-O3SGU7Z218+lz0RReWg5dmlvcZG2zgAcaAXgTJAueZ8z5KHVfHHAZGpowkrCdFNc
-b5ZBqWmgAXfjpV8w8zSQ
-=wt6m
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
+diff --git a/Makefile b/Makefile
+index e9587ab..9f440dd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 66
++SUBLEVEL = 67
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 45ba99f..71d7d72 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -810,14 +810,14 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
+ 	else {
+ 
+ 	    /*
+-	     * The kernel should never fault on its own address space.
++	     * The kernel should never fault on its own address space,
++	     * unless pagefault_disable() was called before.
+ 	     */
+ 
+-	    if (fault_space == 0) 
++	    if (fault_space == 0 && !in_atomic())
+ 	    {
+ 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
+ 		parisc_terminate("Kernel Fault", regs, code, fault_address);
+-	
+ 	    }
+ 	}
+ 
+diff --git a/arch/powerpc/kvm/book3s_hv_rmhandlers.S b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+index 24b23a4..126f38d 100644
+--- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
++++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+@@ -935,7 +935,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ BEGIN_FTR_SECTION
+ 	mfspr	r8, SPRN_DSCR
+ 	ld	r7, HSTATE_DSCR(r13)
+-	std	r8, VCPU_DSCR(r7)
++	std	r8, VCPU_DSCR(r9)
+ 	mtspr	SPRN_DSCR, r7
+ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ 
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index d98b2a6..817eeb6 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1435,12 +1435,11 @@ ctl_table random_table[] = {
+ 
+ static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
+ 
+-static int __init random_int_secret_init(void)
++int random_int_secret_init(void)
+ {
+ 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
+ 	return 0;
+ }
+-late_initcall(random_int_secret_init);
+ 
+ /*
+  * Get a random word for internal kernel use only. Similar to urandom but
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 15d1f08..ad72295 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1912,7 +1912,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
+ 		rdev->config.evergreen.sx_max_export_size = 256;
+ 		rdev->config.evergreen.sx_max_export_pos_size = 64;
+ 		rdev->config.evergreen.sx_max_export_smx_size = 192;
+-		rdev->config.evergreen.max_hw_contexts = 8;
++		rdev->config.evergreen.max_hw_contexts = 4;
+ 		rdev->config.evergreen.sq_num_cf_insts = 2;
+ 
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
+diff --git a/drivers/watchdog/ts72xx_wdt.c b/drivers/watchdog/ts72xx_wdt.c
+index 8df050d..1c53745 100644
+--- a/drivers/watchdog/ts72xx_wdt.c
++++ b/drivers/watchdog/ts72xx_wdt.c
+@@ -310,7 +310,8 @@ static long ts72xx_wdt_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	case WDIOC_GETSTATUS:
+ 	case WDIOC_GETBOOTSTATUS:
+-		return put_user(0, p);
++		error = put_user(0, p);
++		break;
+ 
+ 	case WDIOC_KEEPALIVE:
+ 		ts72xx_wdt_kick(wdt);
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index e712a8c..b1aa7fd 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1268,6 +1268,8 @@ retry:
+ 				    s_min_extra_isize) {
+ 					tried_min_extra_isize++;
+ 					new_extra_isize = s_min_extra_isize;
++					kfree(is); is = NULL;
++					kfree(bs); bs = NULL;
+ 					goto retry;
+ 				}
+ 				error = -1;
+diff --git a/fs/statfs.c b/fs/statfs.c
+index 43e6b6f..d1812b2 100644
+--- a/fs/statfs.c
++++ b/fs/statfs.c
+@@ -87,7 +87,7 @@ int user_statfs(const char __user *pathname, struct kstatfs *st)
+ 
+ int fd_statfs(int fd, struct kstatfs *st)
+ {
+-	struct file *file = fget(fd);
++	struct file *file = fget_raw(fd);
+ 	int error = -EBADF;
+ 	if (file) {
+ 		error = vfs_statfs(&file->f_path, st);
+diff --git a/include/linux/random.h b/include/linux/random.h
+index ac621ce..7e58ad2 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -56,6 +56,7 @@ extern void add_interrupt_randomness(int irq, int irq_flags);
+ extern void get_random_bytes(void *buf, int nbytes);
+ extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
++extern int random_int_secret_init(void);
+ 
+ #ifndef MODULE
+ extern const struct file_operations random_fops, urandom_fops;
+diff --git a/init/main.c b/init/main.c
+index 02c1384..db8e381 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -68,6 +68,7 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/slab.h>
+ #include <linux/perf_event.h>
++#include <linux/random.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -779,6 +780,7 @@ static void __init do_basic_setup(void)
+ 	do_ctors();
+ 	usermodehelper_enable();
+ 	do_initcalls();
++	random_int_secret_init();
+ }
+ 
+ static void __init do_pre_smp_initcalls(void)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index ed884dd..69367e4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -6,6 +6,7 @@
+  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
+  */
+ 
++#include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/backing-dev.h>
+ #include <linux/mm.h>
+@@ -392,6 +393,34 @@ find_vma_prepare(struct mm_struct *mm, unsigned long addr,
+ 	return vma;
+ }
+ 
++static unsigned long count_vma_pages_range(struct mm_struct *mm,
++		unsigned long addr, unsigned long end)
++{
++	unsigned long nr_pages = 0;
++	struct vm_area_struct *vma;
++
++	/* Find first overlaping mapping */
++	vma = find_vma_intersection(mm, addr, end);
++	if (!vma)
++		return 0;
++
++	nr_pages = (min(end, vma->vm_end) -
++		max(addr, vma->vm_start)) >> PAGE_SHIFT;
++
++	/* Iterate over the rest of the overlaps */
++	for (vma = vma->vm_next; vma; vma = vma->vm_next) {
++		unsigned long overlap_len;
++
++		if (vma->vm_start > end)
++			break;
++
++		overlap_len = min(end, vma->vm_end) - vma->vm_start;
++		nr_pages += overlap_len >> PAGE_SHIFT;
++	}
++
++	return nr_pages;
++}
++
+ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct rb_node **rb_link, struct rb_node *rb_parent)
+ {
+@@ -1245,6 +1274,23 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+ 	unsigned long charged = 0;
+ 	struct inode *inode =  file ? file->f_path.dentry->d_inode : NULL;
+ 
++	/* Check against address space limit. */
++	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
++		unsigned long nr_pages;
++
++		/*
++		 * MAP_FIXED may remove pages of mappings that intersects with
++		 * requested mapping. Account for the pages it would unmap.
++		 */
++		if (!(vm_flags & MAP_FIXED))
++			return -ENOMEM;
++
++		nr_pages = count_vma_pages_range(mm, addr, addr + len);
++
++		if (!may_expand_vm(mm, (len >> PAGE_SHIFT) - nr_pages))
++			return -ENOMEM;
++	}
++
+ 	/* Clear old maps */
+ 	error = -ENOMEM;
+ munmap_back:
+@@ -1255,10 +1301,6 @@ munmap_back:
+ 		goto munmap_back;
+ 	}
+ 
+-	/* Check against address space limit. */
+-	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
+-		return -ENOMEM;
+-
+ 	/*
+ 	 * Set 'VM_NORESERVE' if we should not account for the
+ 	 * memory use of this mapping.
+@@ -1833,9 +1875,28 @@ int expand_downwards(struct vm_area_struct *vma,
+ 	return error;
+ }
+ 
++/*
++ * Note how expand_stack() refuses to expand the stack all the way to
++ * abut the next virtual mapping, *unless* that mapping itself is also
++ * a stack mapping. We want to leave room for a guard page, after all
++ * (the guard page itself is not added here, that is done by the
++ * actual page faulting logic)
++ *
++ * This matches the behavior of the guard page logic (see mm/memory.c:
++ * check_stack_guard_page()), which only allows the guard page to be
++ * removed under these circumstances.
++ */
+ #ifdef CONFIG_STACK_GROWSUP
+ int expand_stack(struct vm_area_struct *vma, unsigned long address)
+ {
++	struct vm_area_struct *next;
++
++	address &= PAGE_MASK;
++	next = vma->vm_next;
++	if (next && next->vm_start == address + PAGE_SIZE) {
++		if (!(next->vm_flags & VM_GROWSUP))
++			return -ENOMEM;
++	}
+ 	return expand_upwards(vma, address);
+ }
+ 
+@@ -1858,6 +1919,14 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
+ #else
+ int expand_stack(struct vm_area_struct *vma, unsigned long address)
+ {
++	struct vm_area_struct *prev;
++
++	address &= PAGE_MASK;
++	prev = vma->vm_prev;
++	if (prev && prev->vm_end == address) {
++		if (!(prev->vm_flags & VM_GROWSDOWN))
++			return -ENOMEM;
++	}
+ 	return expand_downwards(vma, address);
+ }
+ 
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 353b32a..33abb78 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6832,6 +6832,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
++	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
+ 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
+ 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
+ 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 520ef96..711299c 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -295,19 +295,6 @@ static void usX2Y_error_urb_status(struct usX2Ydev *usX2Y,
+ 	usX2Y_clients_stop(usX2Y);
+ }
+ 
+-static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
+-				 struct snd_usX2Y_substream *subs, struct urb *urb)
+-{
+-	snd_printk(KERN_ERR
+-"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
+-"Most probably some urb of usb-frame %i is still missing.\n"
+-"Cause could be too long delays in usb-hcd interrupt handling.\n",
+-		   usb_get_current_frame_number(usX2Y->dev),
+-		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
+-		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
+-	usX2Y_clients_stop(usX2Y);
+-}
+-
+ static void i_usX2Y_urb_complete(struct urb *urb)
+ {
+ 	struct snd_usX2Y_substream *subs = urb->context;
+@@ -324,12 +311,9 @@ static void i_usX2Y_urb_complete(struct urb *urb)
+ 		usX2Y_error_urb_status(usX2Y, subs, urb);
+ 		return;
+ 	}
+-	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
+-		subs->completed_urb = urb;
+-	else {
+-		usX2Y_error_sequence(usX2Y, subs, urb);
+-		return;
+-	}
++
++	subs->completed_urb = urb;
++
+ 	{
+ 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
+ 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
+index 8e40b6e..1da1eca 100644
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
+ 		usX2Y_error_urb_status(usX2Y, subs, urb);
+ 		return;
+ 	}
+-	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
+-		subs->completed_urb = urb;
+-	else {
+-		usX2Y_error_sequence(usX2Y, subs, urb);
+-		return;
+-	}
+ 
++	subs->completed_urb = urb;
+ 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
+ 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
+ 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
