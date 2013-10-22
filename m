@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab3JVXxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 19:53:31 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:63640 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3JVXx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 19:53:29 -0400
-Message-ID: <52670FF4.8070701@gmail.com>
-Date: Tue, 22 Oct 2013 16:53:24 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754927Ab3JVXy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 19:54:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:39372 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753648Ab3JVXy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 19:54:56 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>, benh@kernel.crashing.org,
+        anton@samba.org, linux-kernel@vger.kernel.org,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Victor Kaplansky <VICTORK@il.ibm.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        michael@ellerman.id.au
+X-GPG-Fingerprint: 9B25 DC2A C58D 2C8D 47C2  457E 0887 E86F 32E6 BE16
+X-GPG-Fingerprint: 9365 87D7 A7EF 4721 420B  91D9 CD5B 874B EAC1 B3F5
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-scsi@vger.kernel.org, codalist@TELEMANN.coda.cs.cmu.edu,
-        linux-fsdevel@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        ocfs2-devel@oss.oracle.com, keyrings@linux-nfs.org, linux-mm@kvack.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 00/24] treewide: Convert use of typedef ctl_table to struct
- ctl_table
-References: <cover.1382480758.git.joe@perches.com>
-In-Reply-To: <cover.1382480758.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: perf events ring buffer memory barrier on powerpc
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Wed, 23 Oct 2013 10:54:54 +1100
+Message-ID: <12083.1382486094@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 03:29 PM, Joe Perches wrote:
-> Joe Perches (24):
->    arm: Convert use of typedef ctl_table to struct ctl_table
->    ia64: Convert use of typedef ctl_table to struct ctl_table
->    s390: Convert use of typedef ctl_table to struct ctl_table
->    tile: Convert use of typedef ctl_table to struct ctl_table
->    cdrom: Convert use of typedef ctl_table to struct ctl_table
->    random: Convert use of typedef ctl_table to struct ctl_table
->    infiniband: Convert use of typedef ctl_table to struct ctl_table
->    md: Convert use of typedef ctl_table to struct ctl_table
->    parport: Convert use of typedef ctl_table to struct ctl_table
->    scsi: Convert use of typedef ctl_table to struct ctl_table
->    coda: Convert use of typedef ctl_table to struct ctl_table
->    fscache: Convert use of typedef ctl_table to struct ctl_table
->    lockd: Convert use of typedef ctl_table to struct ctl_table
->    nfs: Convert use of typedef ctl_table to struct ctl_table
->    inotify: Convert use of typedef ctl_table to struct ctl_table
->    ntfs: Convert use of typedef ctl_table to struct ctl_table
->    ocfs2: Convert use of typedef ctl_table to struct ctl_table
->    proc: Convert use of typedef ctl_table to struct ctl_table
->    fs: Convert use of typedef ctl_table to struct ctl_table
->    key: Convert use of typedef ctl_table to struct ctl_table
->    ipc: Convert use of typedef ctl_table to struct ctl_table
->    kernel: Convert use of typedef ctl_table to struct ctl_table
->    mm: Convert use of typedef ctl_table to struct ctl_table
->    security:keys: Convert use of typedef ctl_table to struct ctl_table
+Frederic,
 
-After all this work, why not go ahead and remove the typedef?  That way 
-people won't add more users of this abomination.
+In the perf ring buffer code we have this in perf_output_get_handle():
 
-David Daney
+	if (!local_dec_and_test(&rb->nest))
+		goto out;
 
+	/*
+	 * Publish the known good head. Rely on the full barrier implied
+	 * by atomic_dec_and_test() order the rb->head read and this
+	 * write.
+	 */
+	rb->user_page->data_head = head;
 
+The comment says atomic_dec_and_test() but the code is
+local_dec_and_test().
 
->
->   arch/arm/kernel/isa.c              |  6 ++---
->   arch/ia64/kernel/crash.c           |  4 +--
->   arch/ia64/kernel/perfmon.c         |  6 ++---
->   arch/s390/appldata/appldata_base.c | 10 ++++----
->   arch/s390/kernel/debug.c           |  2 +-
->   arch/s390/mm/cmm.c                 |  8 +++---
->   arch/tile/kernel/proc.c            |  4 +--
->   drivers/cdrom/cdrom.c              | 10 ++++----
->   drivers/char/random.c              |  4 +--
->   drivers/infiniband/core/ucma.c     |  2 +-
->   drivers/md/md.c                    |  6 ++---
->   drivers/parport/procfs.c           | 52 ++++++++++++++++++--------------------
->   drivers/scsi/scsi_sysctl.c         |  6 ++---
->   fs/coda/sysctl.c                   |  4 +--
->   fs/dcache.c                        |  2 +-
->   fs/drop_caches.c                   |  2 +-
->   fs/eventpoll.c                     |  2 +-
->   fs/file_table.c                    |  4 +--
->   fs/fscache/main.c                  |  4 +--
->   fs/inode.c                         |  2 +-
->   fs/lockd/svc.c                     |  6 ++---
->   fs/nfs/nfs4sysctl.c                |  6 ++---
->   fs/nfs/sysctl.c                    |  6 ++---
->   fs/notify/inotify/inotify_user.c   |  2 +-
->   fs/ntfs/sysctl.c                   |  4 +--
->   fs/ocfs2/stackglue.c               |  8 +++---
->   fs/proc/proc_sysctl.c              |  2 +-
->   include/linux/key.h                |  2 +-
->   ipc/ipc_sysctl.c                   | 14 +++++-----
->   ipc/mq_sysctl.c                    | 10 ++++----
->   kernel/sysctl.c                    |  2 +-
->   kernel/utsname_sysctl.c            |  6 ++---
->   mm/page-writeback.c                |  2 +-
->   mm/page_alloc.c                    | 12 ++++-----
->   security/keys/sysctl.c             |  2 +-
->   35 files changed, 111 insertions(+), 113 deletions(-)
->
+On powerpc, local_dec_and_test() doesn't have a memory barrier but
+atomic_dec_and_test() does.  Is the comment wrong, or is
+local_dec_and_test() suppose to imply a memory barrier too and we have
+it wrongly implemented in powerpc?
 
+My guess is that local_dec_and_test() is correct but we to add an
+explicit memory barrier like below:
+
+(Kudos to Victor Kaplansky for finding this)
+
+Mikey
+
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index cd55144..95768c6 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -87,10 +87,10 @@ again:
+ 		goto out;
+ 
+ 	/*
+-	 * Publish the known good head. Rely on the full barrier implied
+-	 * by atomic_dec_and_test() order the rb->head read and this
+-	 * write.
++	 * Publish the known good head. We need a memory barrier to order the
++	 * order the rb->head read and this write.
+ 	 */
++	smp_mb ();
+ 	rb->user_page->data_head = head;
+ 
+ 	/*
