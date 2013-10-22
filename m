@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3JVTsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:48:51 -0400
-Received: from fallback3.mail.ru ([94.100.176.58]:42139 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab3JVTss (ORCPT
+	id S1755329Ab3JVTtC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:49:02 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:40778 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab3JVTs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:48:48 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?RGF2aWQgQ29oZW4=?= <david.a.cohen@linux.intel.com>
-Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, ning.li@intel.com,
-        ivan.gorinov@intel.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCAyLzJdIG1yc3RfbWF4MzExMDogZml4IFNQSSBVQVJUIGlu?=
- =?UTF-8?B?dGVycnVwdCBwYXJhbWV0ZXJz?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Tue, 22 Oct 2013 23:46:00 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1382471160.205404749@f402.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1382470930-13807-2-git-send-email-david.a.cohen@linux.intel.com>
-References: <1382470930-13807-1-git-send-email-david.a.cohen@linux.intel.com>
- <1382470930-13807-2-git-send-email-david.a.cohen@linux.intel.com>
+	Tue, 22 Oct 2013 15:48:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1382470976.3742.7.camel@buffalo>
+References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
+	<5266BC18.1080308@linux.vnet.ibm.com>
+	<trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
+	<1382470976.3742.7.camel@buffalo>
+Date: Tue, 22 Oct 2013 12:48:58 -0700
+Message-ID: <CAA25o9SBX3busjmO5aRFiawEW6mtADEfyuz3ebthF5gcC_qzCQ@mail.gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm maintainer
+From: Luigi Semenzato <semenzato@google.com>
+To: Ashley D Lai <adlai@linux.vnet.ibm.com>
+Cc: Peter Huewe <PeterHuewe@gmx.de>,
+        Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Sirrix AG <tpmdd@sirrix.com>,
+        Rajiv Andrade <mail@srajiv.net>, tpmdd-devel@lists.sourceforge.net,
+        Leonidas@google.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9MJmwgD008273
 
-> The change in the max3110 driver makes the IRQ handling threaded, now
-> the handler is called only once per received character. Without that
-> change, we had many (more than 100) interrupts per one received
-> character.
-> 
-> Unfortunately, SFI interface does not support IRQ polarity and
-> triggering modes, so we have to keep the hacks as hard-coded device
-> names and IRQ numbers until we switch to ACPI.
-> 
-> Edge-triggered IRQ still supported to keep old platforms working.
-> Use platform data to pass the irq mode argument.
-> 
-> Signed-off-by: Ivan Gorinov <ivan.gorinov@intel.com>
-> Signed-off-by: Li Ning <ning.li@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-...
-> +++ b/include/linux/serial_max3110.h
-> @@ -0,0 +1,16 @@
-> +#ifndef _LINUX_SERIAL_MAX3110_H
-> +#define _LINUX_SERIAL_MAX3110_H
-> +
-> +/**
-> + * struct plat_max3110 - MAX3110 SPI UART platform data
-> + * @irq_edge_trigger: if IRQ is edge triggered
-> + *
-> + * You should use this structure in your machine description to specify
-> + * how the MAX3110 is connected.
-> + *
-> + */
-> +struct plat_max3110 {
-> +	int irq_edge_triggered;
-> +};
-> +
-> +#endif
-> -- 
+I know how to reach Rajiv.  Let me ping him.  (I am not copying him
+here for privacy.)
 
-Is just resource->flags for IRQ can be reused for handle such case?
-
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Tue, Oct 22, 2013 at 12:42 PM, Ashley D Lai <adlai@linux.vnet.ibm.com> wrote:
+> On Tue, 2013-10-22 at 21:33 +0200, Peter Huewe wrote:
+>> Hi Joel,
+>>
+>> > Gesendet: Dienstag, 22. Oktober 2013 um 19:55 Uhr
+>> > Von: "Joel Schopp" <jschopp@linux.vnet.ibm.com>
+>>
+>> > I have no objection to you adding yourself here. I do think we should
+>> > probably also cut the list down at the same time as I don't think all
+>> > the listed maintainers are active anymore. Also, the list is getting a
+>> > bit unwieldy. If everyone maintains it nobody maintains it.
+>>
+>> I agree with you here, this was also the reason I took it over when Kent stepped down and noone else stepped in of the current maintainers, leaving the subsystem more or less unmaintained.
+>>
+>> About the removing the other maintainers:
+>> I already thought about that too and contacted the "maintainers" -
+>> I got a response back from Ashley (as its part of her job to look after the subsystem) and Marcel, stating that they are atleast looking at the patches.
+>> No response from Rajiv, Leonidas or Sirrix :(
+>>
+>>
+>> Thanks,
+>> Peter
+>>
+>
+> Rajiv has moved on to a different company.  Haven't heard from him for a
+> while.
+>
+> --Ashley Lai
+>
+>
+> ------------------------------------------------------------------------------
+> October Webinars: Code for Performance
+> Free Intel webinars can help you accelerate application performance.
+> Explore tips for MPI, OpenMP, advanced profiling, and more. Get the most from
+> the latest Intel processors and coprocessors. See abstracts and register >
+> http://pubads.g.doubleclick.net/gampad/clk?id=60135991&iu=/4140/ostg.clktrk
+> _______________________________________________
+> tpmdd-devel mailing list
+> tpmdd-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
