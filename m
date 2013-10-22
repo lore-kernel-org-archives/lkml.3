@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab3JVVGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:06:12 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:49796 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab3JVVGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:06:11 -0400
-Date: Tue, 22 Oct 2013 17:06:08 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/4] CPUFreq stats: Bug fixes
-In-Reply-To: <cover.1380190886.git.viresh.kumar@linaro.org>
-Message-ID: <alpine.LFD.2.03.1310221659450.1951@syhkavp.arg>
-References: <cover.1380190886.git.viresh.kumar@linaro.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1755343Ab3JVVII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 17:08:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8001 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753406Ab3JVVIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:08:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
+   d="scan'208";a="415395723"
+Subject: [PATCH v2 01/13] dmatest: make driver unmap also source buffers by
+ itself
+From: Dan Williams <dan.j.williams@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: dave.jiang@intel.com, b.zolnierkie@samsung.com, vinod.koul@intel.com,
+        t.figa@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, linux@arm.linux.org.uk,
+        andriy.shevchenko@linux.intel.com
+Date: Tue, 22 Oct 2013 14:08:01 -0700
+Message-ID: <20131022210801.31111.58095.stgit@viggo.jf.intel.com>
+In-Reply-To: <1382117733-16720-2-git-send-email-b.zolnierkie@samsung.com>
+References: <1382117733-16720-2-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: StGit/0.17-1-g7c57
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Sep 2013, Viresh Kumar wrote:
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-> There are several problems/bugs in cpufreq-stats specially with cpufreq drivers
-> as modules and suspend/resume path. These are mentioned well in changelogs.
-> 
-> These are tested over my thinkpad (acpi-cpufreq) in following way:
-> [1] offline+online all CPUs except boot cpu in a while loop
-> [2] then do suspend resume
-> [3] repeat [1] and [2] several times.
-> 
-> No issues found..
-> 
-> Also tested on my exynos board:
-> - Added cpufreq_unregister/register while loop in exynos-cpufreq.c so that we
->   continuously register/unregister driver... Stats were working fine now..
-> - Compile cpufreq-stats as module and insert/remove it several times after
->   removing above hack (as that doesn't let linux boot :) )..
-> 
-> @Nico: Can you remove the hacky code from IKS tree and test these instead to see
-> if we still have any issues?
+Make the driver DMA unmap also source buffers by itself
+(currently it DMA unmaps only destination buffers) as
+a preparation for introducing generic 'ummap' data.
 
-My testing of those patches took a long and winding path but finally I 
-was able to do it today.
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
 
-So for the 4 patches:
+ Resend to:
+	1/ add it to the new dmaengine patchwork
+	2/ cc maintainers of affected drivers
+	3/ fixup some mail addresses
 
-Tested-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
+ drivers/dma/dmatest.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 92f796cdc6ab..f4a2a25fae31 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -597,11 +597,10 @@ static int dmatest_func(void *data)
+ 	set_user_nice(current, 10);
+ 
+ 	/*
+-	 * src buffers are freed by the DMAEngine code with dma_unmap_single()
+-	 * dst buffers are freed by ourselves below
++	 * src and dst buffers are freed by ourselves below
+ 	 */
+-	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT
+-	      | DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SRC_UNMAP_SINGLE;
++	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT |
++		DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP;
+ 
+ 	while (!kthread_should_stop()
+ 	       && !(params->iterations && total_tests >= params->iterations)) {
+@@ -750,7 +749,8 @@ static int dmatest_func(void *data)
+ 			continue;
+ 		}
+ 
+-		/* Unmap by myself (see DMA_COMPL_SKIP_DEST_UNMAP above) */
++		/* Unmap by myself */
++		unmap_src(dev->dev, dma_srcs, len, src_cnt);
+ 		unmap_dst(dev->dev, dma_dsts, params->buf_size, dst_cnt);
+ 
+ 		error_count = 0;
 
-Nicolas
