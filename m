@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3JVTsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:48:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49684 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3JVTsj (ORCPT
+	id S1755292Ab3JVTsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:48:51 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:42139 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755167Ab3JVTss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:48:39 -0400
-Date: Tue, 22 Oct 2013 20:48:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, peterz@infradead.org
-Subject: Re: [PATCH] add new prctl for a per process wide close on exec
-Message-ID: <20131022194836.GZ13318@ZenIV.linux.org.uk>
-References: <1382470038-1220-1-git-send-email-stefani@seibold.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382470038-1220-1-git-send-email-stefani@seibold.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Oct 2013 15:48:48 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?RGF2aWQgQ29oZW4=?= <david.a.cohen@linux.intel.com>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, ning.li@intel.com,
+        ivan.gorinov@intel.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAyLzJdIG1yc3RfbWF4MzExMDogZml4IFNQSSBVQVJUIGlu?=
+ =?UTF-8?B?dGVycnVwdCBwYXJhbWV0ZXJz?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Tue, 22 Oct 2013 23:46:00 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1382471160.205404749@f402.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1382470930-13807-2-git-send-email-david.a.cohen@linux.intel.com>
+References: <1382470930-13807-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1382470930-13807-2-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9MJmwgD008273
 
-On Tue, Oct 22, 2013 at 09:27:18PM +0200, Stefani Seibold wrote:
-
-> This patch will increase security since no developers can review all libraries
-> which there are using. Also in a team of developers it is not always possible
-> to have a full survey over the code which is produced. Or the output of a code
-> generators and so one. This patch allows a kind of preventive measures.
+> The change in the max3110 driver makes the IRQ handling threaded, now
+> the handler is called only once per received character. Without that
+> change, we had many (more than 100) interrupts per one received
+> character.
 > 
-> It can also prevent resource occupation. Imagine a long running process (a
-> daemon) is execute from the application after open some file desciptors. For
-> example libpcsclite.so will not open the socket with SOCK_CLOEXEC. Or a device
-> driver which alows only a single open. In both cases the resource cannot
-> reopened after a close. Sigh!
+> Unfortunately, SFI interface does not support IRQ polarity and
+> triggering modes, so we have to keep the hacks as hard-coded device
+> names and IRQ numbers until we switch to ACPI.
 > 
-> What do you think?
+> Edge-triggered IRQ still supported to keep old platforms working.
+> Use platform data to pass the irq mode argument.
+> 
+> Signed-off-by: Ivan Gorinov <ivan.gorinov@intel.com>
+> Signed-off-by: Li Ning <ning.li@intel.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+...
+> +++ b/include/linux/serial_max3110.h
+> @@ -0,0 +1,16 @@
+> +#ifndef _LINUX_SERIAL_MAX3110_H
+> +#define _LINUX_SERIAL_MAX3110_H
+> +
+> +/**
+> + * struct plat_max3110 - MAX3110 SPI UART platform data
+> + * @irq_edge_trigger: if IRQ is edge triggered
+> + *
+> + * You should use this structure in your machine description to specify
+> + * how the MAX3110 is connected.
+> + *
+> + */
+> +struct plat_max3110 {
+> +	int irq_edge_triggered;
+> +};
+> +
+> +#endif
+> -- 
 
-That it's a bad idea.  Not to mention anything else, the same unreviewed
-libraries can get buggered if the program sets that "global close-on-exec"
-and it's not at all obvious whether the breakage from that change will be less
-or more dangerous than leaking opened files to children.
+Is just resource->flags for IRQ can be reused for handle such case?
 
-Al, fully expecting the Linux S-M crowd to jump on that one and come up with
-yet another one-shot LSM... ;-/
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
