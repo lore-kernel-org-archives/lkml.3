@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3JVDC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 23:02:26 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:60582 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab3JVDCY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 23:02:24 -0400
+	id S1753340Ab3JVDEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 23:04:38 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:60910 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752928Ab3JVDEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 23:04:37 -0400
+Date: Mon, 21 Oct 2013 21:04:22 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Ashley Lai <adlai@linux.vnet.ibm.com>, Ashley Lai <ashley@ashleylai.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        tpmdd-devel@lists.sourceforge.net, Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: Re: [tpmdd-devel] TPM patches for 3.12
+Message-ID: <20131022030422.GA19793@obsidianresearch.com>
+References: <20131006193120.GA26137@obsidianresearch.com>
+ <20131017145724.GA6528@obsidianresearch.com>
+ <1382260018.11008.5.camel@fishsauce>
+ <20131020170017.GA32542@obsidianresearch.com>
+ <trinity-77042b98-668c-487b-a742-63606ea159f2-1382399439150@3capp-gmx-bs07>
 MIME-Version: 1.0
-In-Reply-To: <1382223537-10844-1-git-send-email-linus.luessing@web.de>
-References: <1382223537-10844-1-git-send-email-linus.luessing@web.de>
-Date: Mon, 21 Oct 2013 20:02:23 -0700
-Message-ID: <CAM_iQpUq3EUu8GWsqbm_j9NonMGuWy0Qfimq1But9WrPsK8rbA@mail.gmail.com>
-Subject: Re: [PATCH] Revert "bridge: only expire the mdb entry when query is received"
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: =?UTF-8?Q?Linus_L=C3=BCssing?= <linus.luessing@web.de>
-Cc: Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <trinity-77042b98-668c-487b-a742-63606ea159f2-1382399439150@3capp-gmx-bs07>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 19, 2013 at 3:58 PM, Linus Lüssing <linus.luessing@web.de> wrote:
-> While this commit was a good attempt to fix issues occuring when no
-> multicast querier is present, this commit still has two more issues:
->
-> 1) There are cases where mdb entries do not expire even if there is a
-> querier present. The bridge will unnecessarily continue flooding
-> multicast packets on the according ports.
->
-> 2) Never removing an mdb entry could be exploited for a Denial of
-> Service by an attacker on the local link, slowly, but steadily eating up
-> all memory.
->
+On Tue, Oct 22, 2013 at 01:50:39AM +0200, Peter Huewe wrote:
 
-I raised the first issue too when I sent the patch, but Herbert said
-it is not a problem. So, I will leave this to Herbert to decide.
+> Jason, can you please review and test my changes - 
+> I'd probably send the pull request out tomorrow then.
+> (giving me also the chance to think again whether I should add myself to MAINTAINERS or not ;)
 
-For me, your patch makes sense.
+Looks Ok, there are no major diffs against what I had.
 
-Thanks.
+Do you need to add your sign off lines on these patches?
+ tpm: Rename tpm.c to tpm-interface.c
+ tpm: Merge the tpm-bios module with tpm.o
+
+Thanks,
+Jason
