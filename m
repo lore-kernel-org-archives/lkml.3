@@ -1,113 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3JVSCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 14:02:31 -0400
-Received: from mout.gmx.net ([212.227.15.19]:50539 "EHLO mout.gmx.net"
+	id S1755039Ab3JVSBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 14:01:09 -0400
+Received: from mout.gmx.net ([212.227.15.18]:60037 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab3JVSBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 14:01:21 -0400
+	id S1754026Ab3JVSBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 14:01:05 -0400
 From: Peter Huewe <peterhuewe@gmx.de>
 To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
         adlai@linux.vnet.ibm.com
 Cc: linux-kernel@vger.kernel.org,
         Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 11/15] tpm: Merge the tpm-bios module with tpm.o
-Date: Tue, 22 Oct 2013 20:00:36 +0200
-Message-Id: <1382464840-7639-11-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 08/15] tpm: Remove tpm_show_caps_1_2
+Date: Tue, 22 Oct 2013 20:00:33 +0200
+Message-Id: <1382464840-7639-8-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1382464840-7639-6-git-send-email-peterhuewe@gmx.de>
 References: <1382464840-7639-6-git-send-email-peterhuewe@gmx.de>
-X-Provags-ID: V03:K0:QUyzeDVPVKdzzH7Rlm5fZITlI35rOApFZ30nBx8quCE+cfRR5wq
- vb3BKvraSMLtuIdTSHZzX7/JjSgM1VRLzb9KQEStpwwb1NAYnTyP/dXDDhT4DYFFL4m59iK
- XhiIKJM8MBiUe+Gh7FI0t3TaML0VS+s3ACDIlfuqwlrp9b21mU7tEdhpsb/g2lLoA9Ixtlk
- BvJQib23tzb/dUNb2WPTg==
+X-Provags-ID: V03:K0:KRYxT1J0Y6ZnJ0EAfdnQHnuvwTP4xLkq9E+7fvz5MfFjclQZzDt
+ bqFSIc92u0XexgX2VPhW91prAS6BJTh6rY9rhjglw1NG4S3B0mu06bfRw7rKdw3B3c4iagc
+ AOywhYuqhv8tqM6vJQG0zHiOF4wueZih+oIhxO/4px4w3uNmXuqLh6twtyPry/jQHWekgGu
+ Xgm0+O0pY0Dylb7QRU7KA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-Now that we can have multiple .c files in the tpm module there is
-no reason for tpm-bios.
+The version of the TPM should not depend on the bus it is connected
+through. 1.1, 1.2 and soon 2.0 TPMS will be all be able to use the
+same bus interfaces.
 
-tpm-bios exported several functions: tpm_bios_log_setup,
-tpm_bios_log_teardown, tpm_add_ppi, and tpm_remove_ppi.
-
-They are only used by tpm, and if tpm-bios is built then
-tpm will unconditionally require them. Further, tpm-bios does
-nothing on its own, it has no module_init function.
-
-Thus we remove the exports and merge the modules to simplify things.
-
-The Makefile conditions are changed slightly to match the code,
-tpm_ppi is always required if CONFIG_ACPI is set.
+Make tpm_show_caps try the 1.2 capability first. If that fails then
+fall back to the 1.1 capability. This effectively auto-detects what
+interface the TPM supports at run-time.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/char/tpm/Makefile       |    7 +++----
- drivers/char/tpm/tpm_eventlog.c |    3 ---
- drivers/char/tpm/tpm_ppi.c      |    4 ----
- 3 files changed, 3 insertions(+), 11 deletions(-)
+ drivers/char/tpm/tpm.c              |   56 ++++++++++++++--------------------
+ drivers/char/tpm/tpm.h              |    2 -
+ drivers/char/tpm/tpm_i2c_infineon.c |    2 +-
+ drivers/char/tpm/tpm_i2c_stm_st33.c |    2 +-
+ drivers/char/tpm/tpm_ibmvtpm.c      |    2 +-
+ drivers/char/tpm/tpm_tis.c          |    2 +-
+ 6 files changed, 27 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index 83b8a9d..15df2f3 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -3,14 +3,13 @@
- #
- obj-$(CONFIG_TCG_TPM) += tpm.o
- tpm-y := tpm-interface.o
-+tpm-$(CONFIG_ACPI) += tpm_ppi.o
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index c3ab508..72f0c68 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1020,43 +1020,33 @@ ssize_t tpm_show_caps(struct device *dev, struct device_attribute *attr,
+ 	str += sprintf(str, "Manufacturer: 0x%x\n",
+ 		       be32_to_cpu(cap.manufacturer_id));
  
- ifdef CONFIG_ACPI
--	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
--	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o tpm_ppi.o
-+	tpm-y += tpm_eventlog.o tpm_acpi.o
- else
- ifdef CONFIG_TCG_IBMVTPM
--	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
--	tpm_bios-objs += tpm_eventlog.o tpm_of.o
-+	tpm-y += tpm_eventlog.o tpm_of.o
- endif
- endif
- obj-$(CONFIG_TCG_TIS) += tpm_tis.o
-diff --git a/drivers/char/tpm/tpm_eventlog.c b/drivers/char/tpm/tpm_eventlog.c
-index 84ddc55..59f7cb2 100644
---- a/drivers/char/tpm/tpm_eventlog.c
-+++ b/drivers/char/tpm/tpm_eventlog.c
-@@ -406,7 +406,6 @@ out_tpm:
- out:
- 	return NULL;
- }
--EXPORT_SYMBOL_GPL(tpm_bios_log_setup);
- 
- void tpm_bios_log_teardown(struct dentry **lst)
- {
-@@ -415,5 +414,3 @@ void tpm_bios_log_teardown(struct dentry **lst)
- 	for (i = 0; i < 3; i++)
- 		securityfs_remove(lst[i]);
- }
--EXPORT_SYMBOL_GPL(tpm_bios_log_teardown);
--MODULE_LICENSE("GPL");
-diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-index 2168d15..8e562dc 100644
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -452,12 +452,8 @@ int tpm_add_ppi(struct kobject *parent)
- {
- 	return sysfs_create_group(parent, &ppi_attr_grp);
- }
--EXPORT_SYMBOL_GPL(tpm_add_ppi);
- 
- void tpm_remove_ppi(struct kobject *parent)
- {
- 	sysfs_remove_group(parent, &ppi_attr_grp);
- }
--EXPORT_SYMBOL_GPL(tpm_remove_ppi);
+-	rc = tpm_getcap(dev, CAP_VERSION_1_1, &cap,
+-		        "attempting to determine the 1.1 version");
+-	if (rc)
+-		return 0;
+-	str += sprintf(str,
+-		       "TCG version: %d.%d\nFirmware version: %d.%d\n",
+-		       cap.tpm_version.Major, cap.tpm_version.Minor,
+-		       cap.tpm_version.revMajor, cap.tpm_version.revMinor);
+-	return str - buf;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_caps);
 -
--MODULE_LICENSE("GPL");
+-ssize_t tpm_show_caps_1_2(struct device * dev,
+-			  struct device_attribute * attr, char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-	char *str = buf;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_PROP_MANUFACTURER, &cap,
+-			"attempting to determine the manufacturer");
+-	if (rc)
+-		return 0;
+-	str += sprintf(str, "Manufacturer: 0x%x\n",
+-		       be32_to_cpu(cap.manufacturer_id));
++	/* Try to get a TPM version 1.2 TPM_CAP_VERSION_INFO */
+ 	rc = tpm_getcap(dev, CAP_VERSION_1_2, &cap,
+ 			 "attempting to determine the 1.2 version");
+-	if (rc)
+-		return 0;
+-	str += sprintf(str,
+-		       "TCG version: %d.%d\nFirmware version: %d.%d\n",
+-		       cap.tpm_version_1_2.Major, cap.tpm_version_1_2.Minor,
+-		       cap.tpm_version_1_2.revMajor,
+-		       cap.tpm_version_1_2.revMinor);
++	if (!rc) {
++		str += sprintf(str,
++			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
++			       cap.tpm_version_1_2.Major,
++			       cap.tpm_version_1_2.Minor,
++			       cap.tpm_version_1_2.revMajor,
++			       cap.tpm_version_1_2.revMinor);
++	} else {
++		/* Otherwise just use TPM_STRUCT_VER */
++		rc = tpm_getcap(dev, CAP_VERSION_1_1, &cap,
++				"attempting to determine the 1.1 version");
++		if (rc)
++			return 0;
++		str += sprintf(str,
++			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
++			       cap.tpm_version.Major,
++			       cap.tpm_version.Minor,
++			       cap.tpm_version.revMajor,
++			       cap.tpm_version.revMinor);
++	}
++
+ 	return str - buf;
+ }
+-EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
++EXPORT_SYMBOL_GPL(tpm_show_caps);
+ 
+ ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 0df18b5..f328478 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -59,8 +59,6 @@ extern ssize_t tpm_show_pcrs(struct device *, struct device_attribute *attr,
+ 				char *);
+ extern ssize_t tpm_show_caps(struct device *, struct device_attribute *attr,
+ 				char *);
+-extern ssize_t tpm_show_caps_1_2(struct device *, struct device_attribute *attr,
+-				char *);
+ extern ssize_t tpm_store_cancel(struct device *, struct device_attribute *attr,
+ 				const char *, size_t);
+ extern ssize_t tpm_show_enabled(struct device *, struct device_attribute *attr,
+diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
+index e33d8e5..fefd2aa 100644
+--- a/drivers/char/tpm/tpm_i2c_infineon.c
++++ b/drivers/char/tpm/tpm_i2c_infineon.c
+@@ -581,7 +581,7 @@ static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
+ static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
+ static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
+ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
+-static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
++static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
+ static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
+ static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+ static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index b2390b6..a0d6ceb5 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -584,7 +584,7 @@ static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
+ static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
+ static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
+ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
+-static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
++static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
+ static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
+ 
+ static struct attribute *stm_tpm_attrs[] = {
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+index 838f043..2783a42 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.c
++++ b/drivers/char/tpm/tpm_ibmvtpm.c
+@@ -419,7 +419,7 @@ static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
+ static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
+ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
+ 		   NULL);
+-static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
++static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
+ static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
+ static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+ static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 5796d01..1b74459 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -448,7 +448,7 @@ static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
+ static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
+ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
+ 		   NULL);
+-static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
++static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
+ static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
+ static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+ static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
 -- 
 1.7.5.4
 
