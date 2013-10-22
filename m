@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3JVL0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:26:20 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:34666 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3JVL0T (ORCPT
+	id S1752831Ab3JVL2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:28:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3JVL2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:26:19 -0400
-Date: Tue, 22 Oct 2013 07:25:51 -0400 (EDT)
-From: Oleg Nesterov <onestero@redhat.com>
-To: David Long <dave.long@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <1641249240.11471136.1382441151287.JavaMail.root@redhat.com>
-In-Reply-To: <5265F4EB.2060803@linaro.org>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-3-git-send-email-dave.long@linaro.org> <20131019170214.GA8324@redhat.com> <5265F4EB.2060803@linaro.org>
-Subject: Re: [PATCH v2 02/13] uprobes: allow ignoring of probe hits
+	Tue, 22 Oct 2013 07:28:51 -0400
+Date: Tue, 22 Oct 2013 12:30:16 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.101
+Message-ID: <20131022113016.GA5911@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC26 (Linux)/8.0.3_GA_5664)
-Thread-Topic: uprobes: allow ignoring of probe hits
-Thread-Index: AenQjQRSXqe6GV/zPeECt97aykg92Q==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for top-posting/formatting,
 
-Do you mean arch_uprobe_skip_sstep() ?
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, this __weak is wrong, already fixed in my tree. See
-http://marc.info/?l=linux-mips&m=138132052022388&w=2
+I'm announcing the release of the 3.0.101 kernel.
 
------ Original Message -----
-From: "David Long" <dave.long@linaro.org>
-To: "Oleg Nesterov" <oleg@redhat.com>
-Cc: linux-arm-kernel@lists.infradead.org, "Rabin Vincent" <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>, "Srikar Dronamraju" <srikar@linux.vnet.ibm.com>, "Ingo Molnar" <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Sent: Tuesday, 22 October, 2013 5:45:47 AM
-Subject: Re: [PATCH v2 02/13] uprobes: allow ignoring of probe hits
+All users of the 3.0 kernel series must upgrade.
 
-On 10/19/13 13:02, Oleg Nesterov wrote:
-> On 10/15, David Long wrote:
->>
->> @@ -1732,9 +1732,6 @@ static void handle_swbp(struct pt_regs *regs)
->>   		return;
->>   	}
->>
->> -	/* change it in advance for ->handler() and restart */
->> -	instruction_pointer_set(regs, bp_vaddr);
->> -
->
-> Well, this looks obviously wrong. This SET_IP() has the comment ;)
->
-> Note also that with this breaks __skip_sstep() on x86.
->
-> Oleg.
->
+This is the LAST 3.0.x longterm kernel release.
 
-Yes, and there's a missing weak stub function in there too.  It was a 
-surprise to me that declaring an external as weak means that it quietly 
-ignores the fact there is no definition for it at link time, and makes 
-it zero.  I think there may be some similar land mines elsewhere in the 
-kernel, unrelated to these changes or uprobes in general.
+It is now end-of-life.
 
-I have an updated version to go out with the v3 patches.  It is working 
-with v3.12-rc6 on x86 and ARM, to the extent I'm able to test it.
+I will NOT be doing any more 3.0.x kernel releases.  If you rely on the
+3.0.x kernel series, you should now move to the 3.10.x kernel series,
+or, at the worse case, 3.4.x.  Note, 3.4.x will only be maintained for
+one more year, so your time is limited on that as well.
 
--dl
+For more information about the longterm kernel releases, and what their
+lifetime is, please see:
+	https://www.kernel.org/category/releases.html
+
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                           |    4 ++--
+ arch/parisc/kernel/traps.c         |    6 +++---
+ drivers/char/random.c              |    3 +--
+ drivers/gpu/drm/radeon/evergreen.c |    2 +-
+ drivers/watchdog/ts72xx_wdt.c      |    3 ++-
+ fs/ext4/xattr.c                    |    2 ++
+ fs/statfs.c                        |    2 +-
+ include/linux/random.h             |    1 +
+ init/main.c                        |    2 ++
+ net/ipv6/inet6_connection_sock.c   |    2 +-
+ 10 files changed, 16 insertions(+), 11 deletions(-)
+
+Dan Carpenter (1):
+      watchdog: ts72xx_wdt: locking bug in ioctl
+
+Dave Jones (1):
+      ext4: fix memory leak in xattr
+
+Eric Dumazet (1):
+      ipv6: tcp: fix panic in SYN processing
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.101
+
+Helge Deller (1):
+      parisc: fix interruption handler to respect pagefault_disable()
+
+Linus Torvalds (1):
+      vfs: allow O_PATH file descriptors for fstatfs()
+
+Theodore Ts'o (1):
+      random: run random_int_secret_init() run after all late_initcalls
+
+wojciech kapuscinski (1):
+      drm/radeon: fix hw contexts for SUMO2 asics
+
+
+--pWyiEgJYm5f9v55/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSZmHIAAoJEDjbvchgkmk+mMUP/1OiKeOggXoi8BfidUi3/gpg
+YDrOgBUcxhuDlHk8sck2erUH1AE6gVOOjVw45iy4/K6mu4GmBZuX56XEbLgcgMdt
+yTdXFrXt3nypWHRsWj1B69F250xU34ghnaflZTSN7zy3lS9anKtD7xQonrwbRJm5
+JF6jFj/k5scxYtYuZERQzurbvM9Mpwdd9AvqOHfN/itQgj4GOTGlyFqUhcKB427T
+csGDDIlWGydBw9CzAhY3DO77UixvGndbfKUFV0t7vjdb01BnoyzyoCibi4fyxa/4
+aweGfSbDpCSf0UGnY+OInDlcs9lLqkVVVyVOh27w2uaXPaKcCqNhwPxFrKYJ0i3h
+btZTmmUbekIInrBWY0o6HzlpzVuRYtAgf6F3x1HvL7eXxbh+t9OhjlqmVikUBX+i
+hN15ZvU/SZzoqCiFdeUg4Af091hhzIh4/iu2hXYuEs73QrV5W3qPdVIR56ZBRm+j
+YOuqRt0oROaTe/hr/z5SObU8U7xZm83z/3UdVgrMxaWMbAsGHWq31TnCzW1hRfop
+uc4TMQq1FiTOBIxI1yTbSfnVzdSTNsLQpDAmCQYmBNissmLnmHoKrNkcwGJH8gLj
+0jnxQlnXLTa62vTAhM/yevfleIbhpfiGhbDy3jb/6v8gAeOKRk1vc5IFj/Xyf58o
+yLWHoANnv0KQIfCWrMI1
+=kGMG
+-----END PGP SIGNATURE-----
+
+--pWyiEgJYm5f9v55/--
