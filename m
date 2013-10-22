@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab3JVJDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 05:03:03 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:3617 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750988Ab3JVJDB (ORCPT
+	id S1752094Ab3JVJGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 05:06:00 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:63052 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3JVJF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 05:03:01 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Peter Chen <peter.chen@freescale.com>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <b29396@freescale.com>, <shawn.guo@linaro.org>, <peter.chen@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 1/1] mfd: syscon: return -ENOSYS if CONFIG_MFD_SYSCON is not enabled
-Date: Tue, 22 Oct 2013 16:46:25 +0800
-Message-ID: <1382431585-26649-1-git-send-email-peter.chen@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 22 Oct 2013 05:05:58 -0400
+Date: Tue, 22 Oct 2013 10:05:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jan =?iso-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
+Message-ID: <20131022090552.GE19112@lee--X1>
+References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
+ <20130821075828.GZ7656@atomide.com>
+ <1382198544.22609.8.camel@polaris.local>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382198544.22609.8.camel@polaris.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms may not define CONFIG_MFD_SYSCON (or haven't syscon),
-it can fix build error for these platforms.
+On Sat, 19 Oct 2013, Jan Lübbe wrote:
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+> On Wed, 2013-08-21 at 00:58 -0700, Tony Lindgren wrote:
+> > * Zubair Lutfullah <zubair.lutfullah@gmail.com> [130715 08:33]:
+> > > Did a grep for coordiante and replaced them all
+> > > with coordinate.
+> > > 
+> > > This applies to the mfd-next tree.
+> > 
+> > This should be safe to apply via the MFD tree as a non-critical
+> > fix assuming the bootloaders are not yet using this:
+> > 
+> > Acked-by: Tony Lindgren <tony@atomide.com>
+> 
+> It seems this didn't get applied. It fixes the touchscreen on a
+> BeagleBone black with the 7" LCD and we should avoid having people use
+> the wrong binding.
+> 
+> Samuel or Lee: Could you take this patch?
 
----
+This is the first time this patch has been sent to me.
 
-Changes for v2:
-- Using #ifdef instead of IS_ENABLED
-- Using ENOSYS instead of ENXIO as return val
+I need Dmitry's input (no pun intended) on how he's like to deal with
+this. At a bare minimum I'd like his Ack.
 
- include/linux/mfd/syscon.h |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-index b473577..8789fa3 100644
---- a/include/linux/mfd/syscon.h
-+++ b/include/linux/mfd/syscon.h
-@@ -17,10 +17,35 @@
- 
- struct device_node;
- 
-+#ifdef CONFIG_MFD_SYSCON
- extern struct regmap *syscon_node_to_regmap(struct device_node *np);
- extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_phandle(
- 					struct device_node *np,
- 					const char *property);
-+#else
-+static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+
-+static inline struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+
-+static inline struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+
-+static inline struct regmap *syscon_regmap_lookup_by_phandle(
-+					struct device_node *np,
-+					const char *property)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+#endif
-+
- #endif /* __LINUX_MFD_SYSCON_H__ */
 -- 
-1.7.1
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
