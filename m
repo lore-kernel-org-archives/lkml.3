@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab3JVIik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:38:40 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:51380 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3JVIii (ORCPT
+	id S1752069Ab3JVIk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:40:27 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:40948 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3JVIkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:38:38 -0400
-Date: Tue, 22 Oct 2013 09:38:33 +0100
+	Tue, 22 Oct 2013 04:40:25 -0400
+Date: Tue, 22 Oct 2013 09:40:20 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: sameo@linux.intel.com, b29396@freescale.com, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] mfd: syscon: return -ENXIO if CONFIG_MFD_SYSCON is
- not enabled
-Message-ID: <20131022083833.GC19112@lee--X1>
-References: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, broonie@kernel.org, linus.walleij@linaro.org,
+        akpm@linux-foundation.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
+        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
+        grant.likely@linaro.org, Florian Lobmaier <florian.lobmaier@ams.com>
+Subject: Re: [PATCH V5 REPOST] mfd: add support for ams AS3722 PMIC
+Message-ID: <20131022084020.GD19112@lee--X1>
+References: <1382427526-2390-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
+In-Reply-To: <1382427526-2390-1-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Some platforms may not define CONFIG_MFD_SYSCON (or haven't syscon),
-> it can fix build error for those platforms.
+On Tue, 22 Oct 2013, Laxman Dewangan wrote:
+
+> The ams AS3722 is a compact system PMU suitable for mobile phones,
+> tablets etc. It has 4 DC/DC step-down regulators, 3 DC/DC step-down
+> controller, 11 LDOs, RTC, automatic battery, temperature and
+> over-current monitoring, 8 GPIOs, ADC and a watchdog.
 > 
-> Signed-off-by: Peter Chen <peter.chen@freescale.com>
-> ---
->  include/linux/mfd/syscon.h |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
+> Add MFD core driver for the AS3722 to support core functionality.
 > 
-> diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-> index b473577..60bf0fb 100644
-> --- a/include/linux/mfd/syscon.h
-> +++ b/include/linux/mfd/syscon.h
-> @@ -17,10 +17,34 @@
->  
->  struct device_node;
->  
-> +#if IS_ENABLED(CONFIG_MFD_SYSCON)
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-I'd prefer #ifdef.
-
->  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
->  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
->  extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
->  extern struct regmap *syscon_regmap_lookup_by_phandle(
->  					struct device_node *np,
->  					const char *property);
-> +#else
-> +static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
-> +{
-> +	return ERR_PTR(-ENXIO);
-
-ENOSYS?
+Applied, thanks.
 
 -- 
 Lee Jones
