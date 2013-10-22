@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab3JVUjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 16:39:52 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21888 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149Ab3JVUjv (ORCPT
+	id S1755035Ab3JVUqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:46:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60908 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab3JVUqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 16:39:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqgGAIXhZlJ5LAy1/2dsb2JhbABZgweDTrZJhT+BKhd0giUBAQUyASMjEAgDGAklDwUlAyETGYdsuyEWjzgHgx+BCgOYCJIIgzgo
-Date: Wed, 23 Oct 2013 07:39:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: Eric Sandeen <sandeen@sandeen.net>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-Message-ID: <20131022203946.GB2797@dastard>
-References: <1382380366-26540-1-git-send-email-geyslan@gmail.com>
- <5265956F.4010700@sandeen.net>
- <20131021224459.GE16161@dastard>
- <5265B4D2.3000907@sandeen.net>
- <20131021231849.GL10553@sgi.com>
- <20131021235601.GG4446@dastard>
- <5265C03B.50701@sandeen.net>
- <20131022001732.GI4446@dastard>
- <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
+	Tue, 22 Oct 2013 16:46:36 -0400
+Date: Tue, 22 Oct 2013 22:46:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84
+ put_online_cpus()
+Message-ID: <20131022204632.GD2490@laptop.programming.kicks-ass.net>
+References: <20131019005129.GA5979@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131019005129.GA5979@localhost>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 08:12:51AM -0200, Geyslan Gregório Bem wrote:
-> 2013/10/21 Dave Chinner <david@fromorbit.com>:
-> > On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
-> >> On 10/21/13 6:56 PM, Dave Chinner wrote:
-> >> > On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
-> >
-> > Yes, but to continue the Devil's Advocate argument, the purpose of
-> > debug code isn't to enlightent the casual reader or drive-by
-> > patchers - it's to make life easier for people who actually spend
-> > time debugging the code. And the people who need the debug code
-> > are expected to understand why an ASSERT is not necessary. :)
-> >
-> Dave, Eric and Ben,
-> 
-> This was catched by coverity (CID 102348).
+On Sat, Oct 19, 2013 at 08:51:29AM +0800, Fengguang Wu wrote:
+> Greetings,
+> [   58.695502] ------------[ cut here ]------------
+> [   58.697835] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus+0x43/0x70()
+> [   58.702423] Modules linked in:
+> [   58.704404] CPU: 0 PID: 3166 Comm: trinity-child0 Not tainted 3.12.0-rc5-01882-gf3db366 #1172
+> [   58.708530] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   58.710992]  0000000000000000 ffff88000acfbe50 ffffffff81a24643 0000000000000000
+> [   58.715410]  ffff88000acfbe88 ffffffff810c3e6b ffffffff810c3fef 0000000000000000
+> [   58.719826]  0000000000000000 0000000000006ee0 0000000000000ffc ffff88000acfbe98
+> [   58.724348] Call Trace:
+> [   58.726190]  [<ffffffff81a24643>] dump_stack+0x4d/0x66
+> [   58.728531]  [<ffffffff810c3e6b>] warn_slowpath_common+0x7f/0x98
+> [   58.731069]  [<ffffffff810c3fef>] ? put_online_cpus+0x43/0x70
+> [   58.733664]  [<ffffffff810c3f32>] warn_slowpath_null+0x1a/0x1c
+> [   58.736258]  [<ffffffff810c3fef>] put_online_cpus+0x43/0x70
+> [   58.738686]  [<ffffffff810efd59>] sched_setaffinity+0x7d/0x1f9
+> [   58.741210]  [<ffffffff810efce1>] ? sched_setaffinity+0x5/0x1f9
+> [   58.743775]  [<ffffffff81a2f724>] ? _raw_spin_unlock_irq+0x2c/0x3e
+> [   58.746417]  [<ffffffff810c7012>] ? do_setitimer+0x194/0x1f5
+> [   58.748899]  [<ffffffff810eff37>] SyS_sched_setaffinity+0x62/0x71
+> [   58.751481]  [<ffffffff81a373a9>] system_call_fastpath+0x16/0x1b
+> [   58.754070] ---[ end trace 034818a1f6f06868 ]---
+> [   58.757521] ------------[ cut here ]------------
 
-You should have put that in the patch description.
+Duh.. must've been blind or so..
 
-Now I understand why there's been a sudden surge of irrelevant one
-line changes from random people that have never touched XFS before.
+Does this make it go away
 
-<sigh>
+---
+ kernel/sched/core.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Ok, lets churn the code just to shut the stupid checker up. This
-doesn't fix a bug, it doesn't change behaviour, it just makes
-coverity happy. Convert it to the for loop plus ASSERT I mentioned
-in a previous message.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c06b8d3..7c61f31 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 	p = find_process_by_pid(pid);
+ 	if (!p) {
+ 		rcu_read_unlock();
+-		put_online_cpus();
+ 		return -ESRCH;
+ 	}
+ 
