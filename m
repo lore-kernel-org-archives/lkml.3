@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3JVQFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:05:30 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:39074 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab3JVQF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:05:29 -0400
-Date: Tue, 22 Oct 2013 17:05:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
-Message-ID: <20131022160523.GB24024@lee--X1>
-References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
- <20130807084054.GA18668@lee--X1>
- <52667A6C.6000301@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52667A6C.6000301@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754332Ab3JVQIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:08:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18946 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753861Ab3JVQIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 12:08:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,549,1378882800"; 
+   d="scan'208";a="420878745"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        jeremy@goop.org
+Subject: [PATCH 3/7] x86, asmlinkage, paravirt: Don't rely on local assembler labels
+Date: Tue, 22 Oct 2013 09:07:55 -0700
+Message-Id: <1382458079-24450-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382458079-24450-1-git-send-email-andi@firstfloor.org>
+References: <1382458079-24450-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Oct 2013, Sebastian Andrzej Siewior wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On 08/07/2013 10:40 AM, Lee Jones wrote:
-> > On Mon, 05 Aug 2013, Zubair Lutfullah wrote:
-> > 
-> >> Reg_cache variable is used to lock step enable register
-> >> from being accessed and written by both TSC and ADC
-> >> at the same time.
-> >> However, it isn't updated anywhere in the code at all.
-> >>
-> >> If both TSC and ADC are used, eventually 1FFFF is always
-> >> written enabling all 16 steps uselessly causing a mess.
-> >>
-> >> Patch fixes it by correcting the locks and updates the
-> >> variable by reading the step enable register
-> >>
-> >> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> >> ---
-> >>  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > Better that it comes from somewhere.
-> 
-> I don't understand. All three functions are used before the patch has
-> been applied:
-> 
-> $ git grep -l am335x_tsc_se_set
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> 
-> $ git grep -l am335x_tsc_se_clr
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> 
-> $ git grep -l am335x_tsc_se_update
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> include/linux/mfd/ti_am335x_tscadc.h
-> 
-> It has been initialized to 0 by time the mfd part was loaded and
-> updated via …_set() from both parts (TSC & ADC). The lock ensured that
-> we never lose or add bits due to a race. So I don't understand why we
-> end up with 0x1FFFF.
-> Could some please explain to me how this can happen?
-> 
-> I added reg_se_cache to cache the content of REG_SE once and
-> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
-> after "work" has been done. So you need to know the old value or TSC may
-> disable ADC and the other way around.
+The paravirt patching code assumes that it can reference a
+local assembler label between two different top level assembler
+statements. This does not work with LTO
+where the assembler code may end up in different assembler files.
 
-Yep, it's initialised as '0'.
+Replace it with extern / global /asm linkage labels.
 
-12.5.1.15 STEPENABLE Register (offset = 54h) [reset = 0h]
+This also removes one redundant copy of the macro.
 
+Cc: jeremy@goop.org
+Cc: x86@kernel.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/paravirt_types.h | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index aab8f67..7549b8b 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -388,10 +388,11 @@ extern struct pv_lock_ops pv_lock_ops;
+ 	_paravirt_alt(insn_string, "%c[paravirt_typenum]", "%c[paravirt_clobber]")
+ 
+ /* Simple instruction patching code. */
+-#define DEF_NATIVE(ops, name, code) 					\
+-	extern const char start_##ops##_##name[] __visible,		\
+-			  end_##ops##_##name[] __visible;		\
+-	asm("start_" #ops "_" #name ": " code "; end_" #ops "_" #name ":")
++#define NATIVE_LABEL(a,x,b) "\n\t.globl " a #x "_" #b "\n" a #x "_" #b ":\n\t"
++
++#define DEF_NATIVE(ops, name, code)					\
++	__visible extern const char start_##ops##_##name[], end_##ops##_##name[];	\
++	asm(NATIVE_LABEL("start_", ops, name) code NATIVE_LABEL("end_", ops, name))
+ 
+ unsigned paravirt_patch_nop(void);
+ unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.1
+
