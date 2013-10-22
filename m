@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab3JVO2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:28:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53888 "EHLO
+	id S1753828Ab3JVOdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:33:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53910 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3JVO2v (ORCPT
+	with ESMTP id S1753794Ab3JVO2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:28:51 -0400
+	Tue, 22 Oct 2013 10:28:53 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/26] perf evsel: Add missing decrement in id sample parsing
-Date: Tue, 22 Oct 2013 11:28:17 -0300
-Message-Id: <1382452114-1243-10-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 04/26] perf trace: Improve event processing exit
+Date: Tue, 22 Oct 2013 11:28:12 -0300
+Message-Id: <1382452114-1243-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -30,40 +28,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The final array decrement in id sample parsing is missing, which may
-trip up the next person adding a sample format, so add it in.
+We need to differentiate SIGCHLD from SIGINT, the later should cause as
+immediate as possible exit, while the former should wait to process the
+events that may be perceived in the ring buffer after the SIGCHLD is
+handled.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/n/tip-vf6n57ewm3mjy2sz6r491hus@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-trace.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 291b18ac236a..ec0cc1e21c62 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1218,6 +1218,7 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 86d2b1f2399c..ec8289570f4f 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1098,10 +1098,12 @@ static size_t trace__fprintf_tstamp(struct trace *trace, u64 tstamp, FILE *fp)
+ }
  
- 		sample->pid = u.val32[0];
- 		sample->tid = u.val32[1];
-+		array--;
+ static bool done = false;
++static bool interrupted = false;
+ 
+-static void sig_handler(int sig __maybe_unused)
++static void sig_handler(int sig)
+ {
+ 	done = true;
++	interrupted = sig == SIGINT;
+ }
+ 
+ static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thread,
+@@ -1771,24 +1773,23 @@ again:
+ 			handler = evsel->handler.func;
+ 			handler(trace, evsel, &sample);
+ 
+-			if (done)
+-				goto out_unmap_evlist;
++			if (interrupted)
++				goto out_disable;
+ 		}
  	}
  
- 	return 0;
+ 	if (trace->nr_events == before) {
+-		if (done)
+-			goto out_unmap_evlist;
++		int timeout = done ? 100 : -1;
+ 
+-		poll(evlist->pollfd, evlist->nr_fds, -1);
++		if (poll(evlist->pollfd, evlist->nr_fds, timeout) > 0)
++			goto again;
++	} else {
++		goto again;
+ 	}
+ 
+-	if (done)
+-		perf_evlist__disable(evlist);
+-	else
+-		goto again;
++out_disable:
++	perf_evlist__disable(evlist);
+ 
+-out_unmap_evlist:
+ 	if (!err) {
+ 		if (trace->summary)
+ 			trace__fprintf_thread_summary(trace, trace->output);
 -- 
 1.8.1.4
 
