@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3JVRHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:07:44 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:62843 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab3JVRHk (ORCPT
+	id S1754420Ab3JVRIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:08:11 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:45533 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab3JVRHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:07:40 -0400
+	Tue, 22 Oct 2013 13:07:38 -0400
 From: Rostislav Lisovy <lisovy@gmail.com>
 To: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
         Sascha Hauer <kernel@pengutronix.de>
 Cc: pisa@cmp.felk.cvut.cz, Rostislav Lisovy <lisovy@gmail.com>
-Subject: [PATCH 4/4] ARM: dts: i.MX53: Devicetree for Voipac Baseboard using x53-dmm-668 module
-Date: Tue, 22 Oct 2013 19:07:23 +0200
-Message-Id: <1382461643-16790-5-git-send-email-lisovy@gmail.com>
+Subject: [PATCH 3/4] ARM: dts: i.MX53: dts for Voipac x53-dmm-668 module
+Date: Tue, 22 Oct 2013 19:07:22 +0200
+Message-Id: <1382461643-16790-4-git-send-email-lisovy@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
 References: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
@@ -22,19 +22,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Supported peripherals: Audio -- headphone output, LEDs, Buttons
-(using keyboard controller), SD-card.
+Enable UART1 and FEC
 
 Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
 
- create mode 100644 arch/arm/boot/dts/imx53-voipac-bsb.dts
+ create mode 100644 arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
 
-diff --git a/arch/arm/boot/dts/imx53-voipac-bsb.dts b/arch/arm/boot/dts/imx53-voipac-bsb.dts
+diff --git a/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
 new file mode 100644
-index 0000000..7b48462
+index 0000000..04695c9
 --- /dev/null
-+++ b/arch/arm/boot/dts/imx53-voipac-bsb.dts
-@@ -0,0 +1,135 @@
++++ b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
+@@ -0,0 +1,195 @@
 +/*
 + * Copyright 2013 Rostislav Lisovy <lisovy@gmail.com>, PiKRON s.r.o.
 + *
@@ -46,37 +45,31 @@ index 0000000..7b48462
 + * http://www.gnu.org/copyleft/gpl.html
 + */
 +
-+/dts-v1/;
-+#include "imx53-voipac-dmm-668.dtsi"
++#include "imx53.dtsi"
 +
 +/ {
-+	sound {
-+		compatible = "fsl,imx53-voipac-sgtl5000",
-+			     "fsl,imx-audio-sgtl5000";
-+		model = "imx53-voipac-sgtl5000";
-+		ssi-controller = <&ssi2>;
-+		audio-codec = <&sgtl5000>;
-+		audio-routing =
-+			"Headphone Jack", "HP_OUT";
-+		mux-int-port = <2>;
-+		mux-ext-port = <5>;
++	model = "Voipac i.MX53 X53-DMM-668";
++	compatible = "vp,imx53-dmm-668", "fsl,imx53";
++
++	memory@0 {
++		device_type = "memory";
++		reg = <0x70000000 0x20000000>;
 +	};
 +
-+	leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&led_pin_gpio>;
++	memory@1 {
++		device_type = "memory";
++		reg = <0xb0000000 0x20000000>;
++	};
 +
-+		led1 {
-+			label = "led-red";
-+			gpios = <&gpio3 29 0>;
-+			default-state = "off";
-+		};
++	regulators {
++		compatible = "simple-bus";
 +
-+		led2 {
-+			label = "led-orange";
-+			gpios = <&gpio2 31 0>;
-+			default-state = "off";
++		reg_3p3v: 3p3v {
++			compatible = "regulator-fixed";
++			regulator-name = "3P3V";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
 +		};
 +	};
 +};
@@ -88,86 +81,152 @@ index 0000000..7b48462
 +	hog {
 +		pinctrl_hog: hoggrp {
 +			fsl,pins = <
-+				/* SD2_CD */
-+				MX53_PAD_EIM_D25__GPIO3_25	0x80000000
-+				/* SD2_WP */
-+				MX53_PAD_EIM_A19__GPIO2_19 	0x80000000
-+			>;
-+		};
++				/* Make DA9053 regulator functional */
++				MX53_PAD_GPIO_16__GPIO7_11	0x80000000
 +
-+		led_pin_gpio: led_gpio@0 {
-+			fsl,pins = <
-+				MX53_PAD_EIM_D29__GPIO3_29	0x80000000
-+				MX53_PAD_EIM_EB3__GPIO2_31	0x80000000
-+			>;
-+		};
-+	};
++				/* FEC Power enable */
++				MX53_PAD_GPIO_11__GPIO4_1	0x80000000
 +
-+	/* Keyboard controller */
-+	kpp {
-+		pinctrl_kpp_1: kppgrp-1 {
-+			fsl,pins = <
-+				MX53_PAD_GPIO_9__KPP_COL_6	0xe8
-+				MX53_PAD_GPIO_4__KPP_COL_7	0xe8
-+				MX53_PAD_KEY_COL2__KPP_COL_2	0xe8
-+				MX53_PAD_KEY_COL3__KPP_COL_3	0xe8
-+				MX53_PAD_KEY_COL4__KPP_COL_4	0xe8
-+
-+				MX53_PAD_GPIO_2__KPP_ROW_6	0xe0
-+				MX53_PAD_GPIO_5__KPP_ROW_7	0xe0
-+				MX53_PAD_KEY_ROW2__KPP_ROW_2	0xe0
-+				MX53_PAD_KEY_ROW3__KPP_ROW_3	0xe0
-+				MX53_PAD_KEY_ROW4__KPP_ROW_4	0xe0
++				/* FEC RST */
++				MX53_PAD_GPIO_12__GPIO4_2	0x80000000
 +			>;
 +		};
 +	};
 +};
 +
-+&i2c3 {
++&uart1 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_i2c3_2>;
++	pinctrl-0 = <&pinctrl_uart1_2>;
++	status = "okay";
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c1_2>;
 +	status = "okay";
 +
-+	sgtl5000: codec@0a {
-+		compatible = "fsl,sgtl5000";
-+		reg = <0x0a>;
-+		VDDA-supply = <&reg_3p3v>;
-+		VDDIO-supply = <&reg_3p3v>;
-+		clocks = <&clks 150>;
++	pmic: dialog@48 {
++		compatible = "dlg,da9053-aa", "dlg,da9052";
++		reg = <0x48>;
++		interrupt-parent = <&gpio7>;
++		interrupts = <11 0x8>; /* low-level active IRQ at GPIO7_11 */
++
++		regulators {
++			buck1_reg: buck1 {
++				regulator-name = "BUCKCORE";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <1400000>;
++				regulator-always-on;
++			};
++
++			buck2_reg: buck2 {
++				regulator-name = "BUCKPRO";
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++			};
++
++			buck3_reg: buck3 {
++				regulator-name = "BUCKMEM";
++				regulator-min-microvolt = <1420000>;
++				regulator-max-microvolt = <1580000>;
++				regulator-always-on;
++			};
++
++			buck4_reg: buck4 {
++				regulator-name = "BUCKPERI";
++				regulator-min-microvolt = <2370000>;
++				regulator-max-microvolt = <2630000>;
++				regulator-always-on;
++			};
++
++			ldo1_reg: ldo1 {
++				regulator-name = "ldo1_1v3";
++				regulator-min-microvolt = <1250000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo2_reg: ldo2 {
++				regulator-name = "ldo2_1v3";
++				regulator-min-microvolt = <1250000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++			};
++
++			ldo3_reg: ldo3 {
++				regulator-name = "ldo3_3v3";
++				regulator-min-microvolt = <3250000>;
++				regulator-max-microvolt = <3350000>;
++				regulator-always-on;
++			};
++
++			ldo4_reg: ldo4 {
++				regulator-name = "ldo4_2v775";
++				regulator-min-microvolt = <2770000>;
++				regulator-max-microvolt = <2780000>;
++				regulator-always-on;
++			};
++
++			ldo5_reg: ldo5 {
++				regulator-name = "ldo5_3v3";
++				regulator-min-microvolt = <3250000>;
++				regulator-max-microvolt = <3350000>;
++				regulator-always-on;
++			};
++
++			ldo6_reg: ldo6 {
++				regulator-name = "ldo6_1v3";
++				regulator-min-microvolt = <1250000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++			};
++
++			ldo7_reg: ldo7 {
++				regulator-name = "ldo7_2v75";
++				regulator-min-microvolt = <2700000>;
++				regulator-max-microvolt = <2800000>;
++				regulator-always-on;
++			};
++
++			ldo8_reg: ldo8 {
++				regulator-name = "ldo8_1v8";
++				regulator-min-microvolt = <1750000>;
++				regulator-max-microvolt = <1850000>;
++				regulator-always-on;
++			};
++
++			ldo9_reg: ldo9 {
++				regulator-name = "ldo9_1v5";
++				regulator-min-microvolt = <1450000>;
++				regulator-max-microvolt = <1550000>;
++				regulator-always-on;
++			};
++
++			ldo10_reg: ldo10 {
++				regulator-name = "ldo10_1v3";
++				regulator-min-microvolt = <1250000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-always-on;
++			};
++		};
 +	};
 +};
 +
-+&kpp {
++&ecspi1 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_kpp_1>;
-+	linux,keymap = <
-+			0x0203003b	/* KEY_F1 */
-+			0x0603003c	/* KEY_F2 */
-+			0x0207003d	/* KEY_F3 */
-+			0x0607003e	/* KEY_F4 */
-+			>;
-+	keypad,num-rows = <8>;
-+	keypad,num-columns = <8>;
++	pinctrl-0 = <&pinctrl_ecspi1_1>;
++	fsl,spi-num-chipselects = <4>;
++	cs-gpios = <&gpio2 30 0>, <&gpio3 19 0>, <&gpio2 16 0>, <&gpio2 17 0>;
 +	status = "okay";
 +};
 +
-+&ssi2 {
-+	fsl,mode = "i2s-slave";
-+	status = "okay";
-+};
-+
-+&audmux {
++&fec {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_audmux_1>; /* SSI1 */
-+	status = "okay";
-+};
-+
-+&esdhc2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_esdhc2_1>;
-+	cd-gpios = <&gpio3 25 0>;
-+	wp-gpios = <&gpio2 19 0>;
-+	vmmc-supply = <&reg_3p3v>;
++	pinctrl-0 = <&pinctrl_fec_1>;
++	phy-mode = "rmii";
++	phy-reset-gpios = <&gpio4 2 0>;
 +	status = "okay";
 +};
 -- 
