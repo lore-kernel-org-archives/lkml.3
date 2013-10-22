@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3JVOeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:34:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53892 "EHLO
+	id S1754509Ab3JVOeg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:34:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53893 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab3JVO2v (ORCPT
+	with ESMTP id S1753690Ab3JVO2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Oct 2013 10:28:51 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/26] perf evlist: Fix perf_evlist__mmap comments
-Date: Tue, 22 Oct 2013 11:28:24 -0300
-Message-Id: <1382452114-1243-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/26] perf tools: Fix test_on_exit for 32-bit build
+Date: Tue, 22 Oct 2013 11:28:22 -0300
+Message-Id: <1382452114-1243-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -32,9 +32,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Put the comments into the correct kernel-doc format and correct
-reference to perf_evlist__read_on_cpu() which should be
-perf_evlist__mmap_read().
+builtin-record.c:42:12: error: static declaration of 'on_exit' follows non-static declaration
+In file included from util/util.h:51:0,
+                 from builtin.h:4,
+                 from builtin-record.c:8:
+/usr/include/stdlib.h:536:12: note: previous declaration of 'on_exit' was here
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -46,46 +48,22 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-16-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1382099356-4918-12-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ tools/perf/config/feature-checks/test-on-exit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 07ba0a43afd2..acef94a5ff9e 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -738,20 +738,17 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
- 	return 0;
- }
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+index 8f64ed3a58d9..8e88b16e6ded 100644
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ b/tools/perf/config/feature-checks/test-on-exit.c
+@@ -1,4 +1,5 @@
+ #include <stdio.h>
++#include <stdlib.h>
  
--/** perf_evlist__mmap - Create per cpu maps to receive events
-- *
-- * @evlist - list of events
-- * @pages - map length in pages
-- * @overwrite - overwrite older events?
-- *
-- * If overwrite is false the user needs to signal event consuption using:
-- *
-- *	struct perf_mmap *m = &evlist->mmap[cpu];
-- *	unsigned int head = perf_mmap__read_head(m);
-+/**
-+ * perf_evlist__mmap - Create mmaps to receive events.
-+ * @evlist: list of events
-+ * @pages: map length in pages
-+ * @overwrite: overwrite older events?
-  *
-- *	perf_mmap__write_tail(m, head)
-+ * If @overwrite is %false the user needs to signal event consumption using
-+ * perf_mmap__write_tail().  Using perf_evlist__mmap_read() does this
-+ * automatically.
-  *
-- * Using perf_evlist__read_on_cpu does this automatically.
-+ * Return: %0 on success, negative error code otherwise.
-  */
- int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 		      bool overwrite)
+ static void exit_fn(int status, void *__data)
+ {
 -- 
 1.8.1.4
 
