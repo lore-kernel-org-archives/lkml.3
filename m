@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab3JVQZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:25:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42794 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3JVQZP (ORCPT
+	id S1754507Ab3JVQ0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:26:03 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:61316 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3JVQ0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:25:15 -0400
-Date: Tue, 22 Oct 2013 12:24:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+	Tue, 22 Oct 2013 12:26:01 -0400
+Message-ID: <5266A716.6030908@gmail.com>
+Date: Tue, 22 Oct 2013 18:25:58 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: The development of GNU GRUB <grub-devel@gnu.org>
+CC: Daniel Kiper <daniel.kiper@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, "keir@xen.org" <keir@xen.org>,
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
         Jan Beulich <JBeulich@suse.com>,
         "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "grub-devel@gnu.org" <grub-devel@gnu.org>,
-        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
         "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        Peter Jones <pjones@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keir@xen.org" <keir@xen.org>
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>
 Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131022162412.GA19189@phenom.dumpdata.com>
-References: <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
- <1382433990.1657.66.camel@hastur.hellion.org.uk>
- <5266620602000078000FCA48@nat28.tlf.novell.com>
- <1382435127.1657.70.camel@hastur.hellion.org.uk>
- <526668A502000078000FCA7B@nat28.tlf.novell.com>
- <20131022134252.GA27302@phenom.dumpdata.com>
- <1382449985.18283.12.camel@hastur.hellion.org.uk>
- <7gf8ufyngxh0extp8a0ifnrp.1382451526144@email.android.com>
- <20131022145724.GA18763@phenom.dumpdata.com>
- <1382455307.18283.30.camel@hastur.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382455307.18283.30.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+References: <5266620602000078000FCA48@nat28.tlf.novell.com> <1382435127.1657.70.camel@hastur.hellion.org.uk> <526668A502000078000FCA7B@nat28.tlf.novell.com> <20131022134252.GA27302@phenom.dumpdata.com> <20131022144309.GA18547@phenom.dumpdata.com> <1382455537.8512.11.camel@shinybook.infradead.org> <20131022153258.GA12260@srcf.ucam.org> <1382456560.8512.24.camel@shinybook.infradead.org> <20131022160146.GH3626@debian70-amd64.local.net-space.pl> <1382458083.18283.34.camel@hastur.hellion.org.uk> <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
+In-Reply-To: <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2RUPVQVHDRIAXQILGQVTU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 04:21:47PM +0100, Ian Campbell wrote:
-> On Tue, 2013-10-22 at 10:57 -0400, Konrad Rzeszutek Wilk wrote:
-> > That 'that' is a standard PE/COFF image?  Could you please point me
-> > to the code that does that in GRUB2?
-> 
-> As I said earlier in the thread, it's a patch which is being carried by
-> all the distros. It is not in upstream grub.
-> 
-> For instance here is Debian's version:
->         http://anonscm.debian.org/loggerhead/pkg-grub/trunk/grub/download/head:/linuxefi.patch-20130129060348-21bhrqmbqj52c28w-1/linuxefi.patch
->         
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2RUPVQVHDRIAXQILGQVTU
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-That is the same patch that I see in Fedora's GRUB2.
+On 22.10.2013 18:14, Daniel Kiper wrote:
+>> > Are you (going to be) in Edinburgh? Matthew was just explaining a bu=
+nch
+>> > of this stuff to me, it might be useful for you to get it from the
+>> > horses mouth instead of laundered through my brain (which is a bit
+>> > addled afterwards ;-)).
+What and when happens in Edinburgh? It's close enough to me and I might
+be able to free myself if it's for collaboration with xen. I'd also like
+to discuss grant tables version issue for pvgrub2 (which is almost ready)=
 
-That patch _only_ boots PE/COFF images with the Linux x86/boot
-format. It won't boot standard PE/COFF images.
 
-> AIUI all the distros are carry basically the same patch.
 
-I concur.
-> 
-> Ian.
-> 
+------enig2RUPVQVHDRIAXQILGQVTU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iF4EAREKAAYFAlJmpxYACgkQNak7dOguQgkhLAD9GLxEfZDSCx4qU0+3CjUZZdNw
+KQ18lS8BEFpwc53n7LYA/jzCyRQfTzW2Jrc+P24vlKq6bvRwiLgxrAK39W8iArhq
+=YXoY
+-----END PGP SIGNATURE-----
+
+------enig2RUPVQVHDRIAXQILGQVTU--
