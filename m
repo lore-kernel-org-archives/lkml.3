@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab3JVTwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:52:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23679 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab3JVTwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:52:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
-   d="scan'208";a="420988133"
-Date: Tue, 22 Oct 2013 13:52:25 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Matias Bjorling <m@bjorling.me>
-cc: Keith Busch <keith.busch@intel.com>, axboe@kernel.dk,
-        willy@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH 3/3] NVMe: Convert to blk-mq
-In-Reply-To: <5266CA29.2020308@bjorling.me>
-Message-ID: <alpine.LRH.2.03.1310221315430.4763@AMR>
-References: <1382102062-22270-1-git-send-email-m@bjorling.me> <1382102062-22270-4-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1310180837140.4763@AMR> <526186AE.3080006@bjorling.me> <alpine.LRH.2.03.1310221011570.4763@AMR> <5266CA29.2020308@bjorling.me>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1755086Ab3JVT7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:59:19 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:49200 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab3JVT7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 15:59:03 -0400
+Date: Tue, 22 Oct 2013 17:58:56 -0200
+From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+To: tpmdd-devel@lists.sourceforge.net
+Cc: Peter Huewe <peterhuewe@gmx.de>, adlai@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm
+ maintainer
+Message-ID: <20131022195855.GA32169@bluepex.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1380390316-1382471549=:4763"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102219-8936-0000-0000-00000BA8B089
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Once I'm not contributing anything since I was singed to Maintainers
+in replace to Kent, please you can remove my name of there. 
 
---8323328-1380390316-1382471549=:4763
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
 
-On Tue, 22 Oct 2013, Matias Bjorling wrote:
-> Den 22-10-2013 18:55, Keith Busch skrev:
->> On Fri, 18 Oct 2013, Matias Bjørling wrote:
->>> On 10/18/2013 05:13 PM, Keith Busch wrote:
->>>> On Fri, 18 Oct 2013, Matias Bjorling wrote:
->>>>> The nvme driver implements itself as a bio-based driver. This primarily
->>>>> because of high lock congestion for high-performance nvm devices. To
->>>>> remove the congestion within the traditional block layer, a multi-queue
->>>>> block layer is being implemented.
->> 
->>>>> -    result = nvme_map_bio(nvmeq, iod, bio, dma_dir, psegs);
->>>>> -    if (result <= 0)
->>>>> +    if (nvme_map_rq(nvmeq, iod, rq, dma_dir))
->>>>>         goto free_cmdid;
->>>>> -    length = result;
->>>>> 
->>>>> -    cmnd->rw.command_id = cmdid;
->>>>> +    length = blk_rq_bytes(rq);
->>>>> +
->>>>> +    cmnd->rw.command_id = rq->tag;
->>>> 
->>>> The command ids have to be unique on a submission queue. Since each
->>>> namespace's blk-mq has its own 'tags' used as command ids here but share
->>>> submission queues, what's stopping the tags for commands sent to 
->>>> namespace
->>>> 1 from clashing with tags for namespace 2?
->>>> 
->>>> I think this would work better if one blk-mq was created per device
->>>> rather than namespace. It would fix the tag problem above and save a
->>>> lot of memory potentially wasted on millions of requests allocated that
->>>> can't be used.
->>> 
->>> You're right. I didn't see the connection. In v3 I'll push struct 
->>> request_queue to nvme_dev and map the queues appropriately. It will also 
->>> fix the command id issues.
->> 
->> Just anticipating a possible issue with the suggestion. Will this separate
->> the logical block size from the request_queue? Each namespace can have
->> a different format, so the block size and request_queue can't be tied
->> together like it currently is for this to work.
->
-> If only a couple of different logical sizes are to be expected (1-4), we can 
-> keep a list of already initialized request queues, and use the one that match 
-> an already initialized?
 
-The spec allows a namespace to have up to 16 different block formats and
-they need not be the same 16 as another namespace on the same device.
+Thanks,
+Leonidas.
 
->From a practical standpoint, I don't think devices will support more
-than a few formats, but even if you kept it to that many request queues,
-you just get back to conflicting command id tags and some wasted memory.
 
->
-> Axboe, do you know of a better solution?
+In-Reply-To: <5266BC18.1080308@linux.vnet.ibm.com>
 
---8323328-1380390316-1382471549=:4763--
+On Tue, Oct 22, 2013 at 12:55:36PM -0500, Joel Schopp wrote:
+> On 10/22/2013 12:36 PM, Peter Huewe wrote:
+> > Since I'm actively maintaining the tpm subsystem for a few months now,
+> > it's time to step up and be an official maintainer for the tpm subsystem,
+> > atleast until I hear something different from my company.
+> > 
+> > The maintaining is done solely in my private time, out of private interest.
+> > Speaking only on behalf of myself, trying to be as vendor neutral as possible.
+> > 
+> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> > ---
+> >  MAINTAINERS |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 4fde706..936adb4 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -8475,6 +8475,7 @@ F:	drivers/media/usb/tm6000/
+> >  TPM DEVICE DRIVER
+> >  M:	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+> >  M:	Ashley Lai <ashley@ashleylai.com>
+> > +M:	Peter Huewe <peterhuewe@gmx.de>
+> >  M:	Rajiv Andrade <mail@srajiv.net>
+> >  W:	http://tpmdd.sourceforge.net
+> >  M:	Marcel Selhorst <tpmdd@selhorst.net>
+> > 
+> 
+> I have no objection to you adding yourself here.  I do think we should
+> probably also cut the list down at the same time as I don't think all
+> the listed maintainers are active anymore.  Also, the list is getting a
+> bit unwieldy.  If everyone maintains it nobody maintains it.
+
