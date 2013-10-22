@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3JVQ5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:57:33 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45205 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab3JVQ5a (ORCPT
+	id S1753161Ab3JVQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:58:37 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:53765 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3JVQ6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:57:30 -0400
+	Tue, 22 Oct 2013 12:58:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1382446896-28436-2-git-send-email-sre@debian.org>
+In-Reply-To: <CACRpkdZzoQ4auk1Q1wB=H-i4Aw7tPaHf3J8Dsa3vA_0Wx65qtw@mail.gmail.com>
 References: <1382446896-28436-1-git-send-email-sre@debian.org>
 	<1382446896-28436-2-git-send-email-sre@debian.org>
-Date: Tue, 22 Oct 2013 18:57:29 +0200
-Message-ID: <CACRpkdZzoQ4auk1Q1wB=H-i4Aw7tPaHf3J8Dsa3vA_0Wx65qtw@mail.gmail.com>
+	<CACRpkdZzoQ4auk1Q1wB=H-i4Aw7tPaHf3J8Dsa3vA_0Wx65qtw@mail.gmail.com>
+Date: Tue, 22 Oct 2013 18:58:34 +0200
+Message-ID: <CACRpkda0+ZG0_0pGGziqyhL1kARxY3YtM-Hn-47DXdNP4WS9Nw@mail.gmail.com>
 Subject: Re: [PATCH 1/2] leds: lp55xx: handle enable pin in driver
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sebastian Reichel <sre@debian.org>
@@ -38,22 +39,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 3:01 PM, Sebastian Reichel <sre@debian.org> wrote:
+On Tue, Oct 22, 2013 at 6:57 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-> This patch moves the handling of the chip's enable pin from the board
-> code into the driver. It also updates all board-code files using the
-> driver to incorporate this change.
->
-> This is needed for device tree support of the enable pin.
->
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> BTW: should we disable the GPIO when remove()ing the module?
+> This is a topic of another patch but...
 
-Looks good to me.
-
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-BTW: should we disable the GPIO when remove()ing the module?
-This is a topic of another patch but...
+Bah forget this stupid comment, I misread it, obviously
+you're doing this.
 
 Yours,
 Linus Walleij
