@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab3JVKMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 06:12:54 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:40840 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3JVKMw (ORCPT
+	id S1752863Ab3JVKO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 06:14:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52868 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3JVKO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 06:12:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131022001732.GI4446@dastard>
-References: <1382380366-26540-1-git-send-email-geyslan@gmail.com>
-	<5265956F.4010700@sandeen.net>
-	<20131021224459.GE16161@dastard>
-	<5265B4D2.3000907@sandeen.net>
-	<20131021231849.GL10553@sgi.com>
-	<20131021235601.GG4446@dastard>
-	<5265C03B.50701@sandeen.net>
-	<20131022001732.GI4446@dastard>
-Date: Tue, 22 Oct 2013 08:12:51 -0200
-Message-ID: <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Eric Sandeen <sandeen@sandeen.net>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Oct 2013 06:14:26 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 1/4] dma: cppi41: restore more registers
+Date: Tue, 22 Oct 2013 12:14:03 +0200
+Message-Id: <1382436846-9057-2-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382436846-9057-1-git-send-email-bigeasy@linutronix.de>
+References: <1382436846-9057-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/21 Dave Chinner <david@fromorbit.com>:
-> On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
->> On 10/21/13 6:56 PM, Dave Chinner wrote:
->> > On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
->> >> Hey,
->> >>
->> >> On Mon, Oct 21, 2013 at 06:12:18PM -0500, Eric Sandeen wrote:
->> >>> On 10/21/13 5:44 PM, Dave Chinner wrote:
->> >>>> On Mon, Oct 21, 2013 at 03:58:23PM -0500, Eric Sandeen wrote:
->> >>>>> On 10/21/13 1:32 PM, Geyslan G. Bem wrote:
->> >>>>>> This patch puts a 'break' in the true branch, avoiding the 'icptr->ic_next'
->> >>>>>> dereferencing.
->> >>>>>
->> >>>>> Reviewed-by: Eric Sandeen <sandeen@redhat.com>
->> >>>>
->> >>>> Actually, NACK.
->> >>>
->> >>> I felt that one coming ;)
->> >>>
->> >>>>> Hm, yeah - cmn_err(CE_PANIC, " " ); used to BUG_ON, but the newer
->> >>>>> xfs_emerg() doesn't.
->> >>>>>
->> >>>>> Dave, was that intentional?
->> >>>>
->> >>>> Of course it was. ;) xfs_emerg() is only called from the debug code
->> >>>> in xlog_verify_iclog(), xlog_verify_tail_lsn and assfail().
->> >>>>
->> >>>> In the case of assfail(), it has it's own BUG() call, so it does
->> >>>> everything just fine.
->> >>>>
->> >>>> In the case of xlog_verify_iclog() when icptr is NULL, it will
->> >>>> panic immediately after the message is printed, just like the old
->> >>>> code. i.e. this patch isn't fixing anything we need fixed.
->> >>>
->> >>> A BUG() is probably warranted, then.
->> >>
->> >> I tend to agree with Eric on this point.  If we want to crash, I'd rather our
->> >> intent be very clear, rather than just see a null ptr deref.  ;)
->> >
->> > Sure. ASSERT() would be better and more consistent with the rest of
->> > the code. i.e:
->> >
->> >         for (i = 0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
->> >             ASSERT(icptr);
->> >
->> > <Devil's Advocate>
->> >
->> > However, I keep coming back to the fact that what we are checking is
->> > that the list is correctly circular and that and adding an
->> > ASSERT(icptr) to panic if a pointer chase finds a null pointer is
->> > kinda redundant, especially as:
->> >
->> >     - there's already 2 comments for the function indicating
->> >       that it is checking the validity of the pointers and that
->> >       they are circular....
->> >     - we have repeatedly, over many years, justified the removal
->> >       of ASSERT(ptr) from code like:
->> >
->> >             ASSERT(ptr);
->> >             foo = ptr->foo;
->> >
->> >       as it is redundant because production code will always
->> >       panic the machine in that situation via the dereference.
->> >       ASSERT() is for documenting assumptions and constraints
->> >       that are not obvious from the code context.
->> >
->> > IOWs, in this case the presence or absence of the ASSERT inside
->> > *debug-only code* doesn't add any addition value to debugging such
->> > problems, nor does it add any value in terms of documentation
->> > because it's clear from the comments in the debug code that it
->> > should not be NULL to begin with.
->> >
->> > </Devil's Advocate>
->>
->> I guess what's left as unclear is why we would prefer to panic
->> vs. handling the error, even if it's in debug code.  The caller can
->> handle errors, so blowing up here sure doesn't look intentional.
->
-> If the iclog list is corrupt and not circular, then we will simply
-> panic the next time it is iterated. Lots of log code iterates the
-> iclog list, such as log IO completion, switching iclogs, log forces,
-> etc.
->
->> Maybe the answer is it's debug code
->> and we want to drop to the debugger or generate a vmcore at that
->> point, but that's just been demonstrated as quite unclear to the
->> casual reader.  :)
->
-> Yes, but to continue the Devil's Advocate argument, the purpose of
-> debug code isn't to enlightent the casual reader or drive-by
-> patchers - it's to make life easier for people who actually spend
-> time debugging the code. And the people who need the debug code
-> are expected to understand why an ASSERT is not necessary. :)
->
-Dave, Eric and Ben,
+From: Daniel Mack <zonque@gmail.com>
 
-This was catched by coverity (CID 102348).
+With active users over suspend/resume cycles, it turns out that
+more registers, in particular DMA_TDFDQ and RXHPCRA0, have to be
+restored on resume.
 
-Well, I got it now that was intentional and changed it in Coverity Triage.
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/dma/cppi41.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-But I must assume that it is not the standard debugging, then I
-suggest you put at least a comment explaining why it does dereference
-after NULL check.
+diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+index 167c022..e53292d 100644
+--- a/drivers/dma/cppi41.c
++++ b/drivers/dma/cppi41.c
+@@ -141,6 +141,9 @@ struct cppi41_dd {
+ 	const struct chan_queues *queues_rx;
+ 	const struct chan_queues *queues_tx;
+ 	struct chan_queues td_queue;
++
++	/* context for suspend/resume */
++	unsigned int dma_tdfdq;
+ };
+ 
+ #define FIST_COMPLETION_QUEUE	93
+@@ -1050,6 +1053,7 @@ static int cppi41_suspend(struct device *dev)
+ {
+ 	struct cppi41_dd *cdd = dev_get_drvdata(dev);
+ 
++	cdd->dma_tdfdq = cppi_readl(cdd->ctrl_mem + DMA_TDFDQ);
+ 	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
+ 	disable_sched(cdd);
+ 
+@@ -1059,12 +1063,23 @@ static int cppi41_suspend(struct device *dev)
+ static int cppi41_resume(struct device *dev)
+ {
+ 	struct cppi41_dd *cdd = dev_get_drvdata(dev);
++	struct cppi41_channel *c;
+ 	int i;
+ 
+ 	for (i = 0; i < DESCS_AREAS; i++)
+ 		cppi_writel(cdd->descs_phys, cdd->qmgr_mem + QMGR_MEMBASE(i));
+ 
++	list_for_each_entry(c, &cdd->ddev.channels, chan.device_node)
++		if (!c->is_tx)
++			cppi_writel(c->q_num, c->gcr_reg + RXHPCRA0);
++
+ 	init_sched(cdd);
++
++	cppi_writel(cdd->dma_tdfdq, cdd->ctrl_mem + DMA_TDFDQ);
++	cppi_writel(cdd->scratch_phys, cdd->qmgr_mem + QMGR_LRAM0_BASE);
++	cppi_writel(QMGR_SCRATCH_SIZE, cdd->qmgr_mem + QMGR_LRAM_SIZE);
++	cppi_writel(0, cdd->qmgr_mem + QMGR_LRAM1_BASE);
++
+ 	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
+ 
+ 	return 0;
+-- 
+1.8.4.rc3
 
-Cheers.
-
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
