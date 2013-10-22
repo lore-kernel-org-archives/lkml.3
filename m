@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3JVQNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:13:14 -0400
+	id S1754743Ab3JVQNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:13:12 -0400
 Received: from mga02.intel.com ([134.134.136.20]:61399 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754304Ab3JVQNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754370Ab3JVQNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Oct 2013 12:13:04 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="396828245"
+X-IronPort-AV: E=Sophos;i="4.93,549,1378882800"; 
+   d="scan'208";a="415251785"
 From: Andi Kleen <andi@firstfloor.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        x86@kernel.org
-Subject: [PATCH 03/11] asmlinkage: Make jiffies visible
-Date: Tue, 22 Oct 2013 09:12:18 -0700
-Message-Id: <1382458346-24811-4-git-send-email-andi@firstfloor.org>
+        gleb@redhat.com, pbonzini@redhat.com, kvm@vger.kernel.org
+Subject: [PATCH 01/11] asmlinkage, kvm: Make kvm_rebooting visible
+Date: Tue, 22 Oct 2013 09:12:16 -0700
+Message-Id: <1382458346-24811-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
 References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
@@ -25,43 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Jiffies is referenced by the linker script, so it has to be visible.
+kvm_rebooting is referenced from assembler code, thus
+needs to be visible.
 
-Handled both the generic and the x86 version.
-
-Cc: x86@kernel.org
+Cc: gleb@redhat.com
+Cc: pbonzini@redhat.com
+Cc: kvm@vger.kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/time.c | 2 +-
- kernel/timer.c         | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ virt/kvm/kvm_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index 24d3c91..6ec91c0 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -23,7 +23,7 @@
- #include <asm/time.h>
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index a9dd682..6ca3564 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -95,7 +95,7 @@ static void hardware_disable_all(void);
  
- #ifdef CONFIG_X86_64
--DEFINE_VVAR(volatile unsigned long, jiffies) = INITIAL_JIFFIES;
-+__visible DEFINE_VVAR(volatile unsigned long, jiffies) = INITIAL_JIFFIES;
- #endif
+ static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
  
- unsigned long profile_pc(struct pt_regs *regs)
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 4296d13..a3ae2da 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -52,7 +52,7 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/timer.h>
+-bool kvm_rebooting;
++__visible bool kvm_rebooting;
+ EXPORT_SYMBOL_GPL(kvm_rebooting);
  
--u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
-+__visible u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
- 
- EXPORT_SYMBOL(jiffies_64);
- 
+ static bool largepages_enabled = true;
 -- 
 1.8.3.1
 
