@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab3JVFvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 01:51:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13320 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab3JVFvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 01:51:33 -0400
-X-IronPort-AV: E=Sophos;i="4.93,546,1378828800"; 
-   d="scan'208";a="8824078"
-Message-ID: <52660E62.9090409@cn.fujitsu.com>
-Date: Tue, 22 Oct 2013 13:34:26 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751517Ab3JVGBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 02:01:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53559 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab3JVGBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 02:01:42 -0400
+Date: Tue, 22 Oct 2013 07:03:05 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kobject: export kobj_sysfs_ops
+Message-ID: <20131022060305.GA14982@kroah.com>
+References: <52659B24.4030809@suse.com>
 MIME-Version: 1.0
-To: Haicheng Li <haicheng.li@linux.intel.com>
-CC: Gao feng <gaofeng@cn.fujitsu.com>, Kim <jaegeuk.kim@samsung.com>,
-        f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] f2fs: introduce f2fs_kmem_cache_alloc to hide the unfailed
- kmem cache allocation
-References: <5264D6C7.9000202@cn.fujitsu.com> <5265F5E6.3000604@cn.fujitsu.com> <20131022051636.GJ21006@hli22-desktop>
-In-Reply-To: <20131022051636.GJ21006@hli22-desktop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/22 13:37:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/22 13:49:04,
-	Serialize complete at 2013/10/22 13:49:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52659B24.4030809@suse.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 01:16 PM, Haicheng Li wrote:
+On Mon, Oct 21, 2013 at 05:22:44PM -0400, Jeff Mahoney wrote:
+> struct kobj_attribute implements the baseline attribute functionality
+> that can be used all over the place. We should export the ops associated
+> with it. I have a series of patches on the linux-btrfs list that depend
+> on using kobj_sysfs_ops rather than re-implement them.
 
-> On Tue, Oct 22, 2013 at 11:49:58AM +0800, Gao feng wrote:
->> On 10/21/2013 03:24 PM, Gu Zheng wrote:
->>> +static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
->>> +						gfp_t flags)
->>> +{
->>> +	void *entry = kmem_cache_alloc(cachep, flags);
->>> +retry:
->>
->> retry after kmem_cache_alloc?
-> 
-> Good catch.
-> 
-> Sorry for the carelessness in my previous review. 
-> Besides this, I also found another issue as below:
->  
->> On Mon, Oct 21, 2013 at 03:24:55PM +0800, Gu Zheng wrote: 
->>> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c 
->>> index ef80f79..fe3cf8e 100644 
->>> --- a/fs/f2fs/node.c 
->>> +++ b/fs/f2fs/node.c 
->>> @@ -1308,11 +1308,7 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build) 
->>>     if (allocated) 
->>>             return 0; 
->>>  retry: 
-> -retry?
+If you need this for other patches, would it be easier for you to just
+take this patch with the btrfs patches so that there's no dependancy on
+my tree for them?
 
-Can be removed here, this tag still used by front goto jumping. But it
-seems that we need to use another suitable name rather than "retry".
+If so, please add:
 
-Regards,
-Gu
-> 
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> 
+to this patch and pass it on, as I have no objection to it.
 
+thanks,
 
+greg k-h
