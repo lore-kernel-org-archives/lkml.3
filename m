@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3JVMHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:07:16 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:33279 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751372Ab3JVMHO (ORCPT
+	id S1752707Ab3JVMOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:14:42 -0400
+Received: from services.gouders.net ([141.101.32.176]:46051 "EHLO
+	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab3JVMOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:07:14 -0400
-Date: Tue, 22 Oct 2013 20:07:04 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v2 01/23] crypto: provide single place for hash algo
- information
-Message-ID: <20131022120704.GA9375@gondor.apana.org.au>
-References: <1382395388-8108-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1382395388-8108-2-git-send-email-zohar@linux.vnet.ibm.com>
- <20131022052458.GA5896@gondor.apana.org.au>
- <CACE9dm_Qvf5YaVvxDiDTMfAzZPA0hfqHOTxmvzUeEXCePUdJ2g@mail.gmail.com>
- <20131022113203.GA8965@gondor.apana.org.au>
- <CACE9dm-m4f7LYuTADmn_upUEoMjDUKMTBXdnKT=9j+RiqWSp4Q@mail.gmail.com>
+	Tue, 22 Oct 2013 08:14:40 -0400
+From: Dirk Gouders <dirk@gouders.net>
+To: Joe Perches <joe@perches.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC trivial] printk.c: /proc/vmcore instead of /proc/vmcoreinfo in comments?
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Tue, 22 Oct 2013 14:15:24 +0200
+Message-ID: <gik3h5tsbn.fsf@karga.hank.lab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm-m4f7LYuTADmn_upUEoMjDUKMTBXdnKT=9j+RiqWSp4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 12:57:02PM +0100, Dmitry Kasatkin wrote:
-> On Tue, Oct 22, 2013 at 12:32 PM, Herbert Xu
-> <herbert@gondor.apana.org.au> wrote:
-> > On Tue, Oct 22, 2013 at 12:29:56PM +0100, Dmitry Kasatkin wrote:
-> >>
-> >> We are not adding user-space interface.
-> >> We just need to algo definitions which are in sync between user space,
-> >> IMA/EVM and kernel module signing.
-> >> Module signing perl script uses hard coded values. We want to improve
-> >> it export them to user space.
-> >>
-> >> But please give us a hint, what crypto user-space API helps for us?
-> >
-> > OK, if you're not exporting the kernel asymmetric key code then
-> > that's fine.
-> 
-> Can we take this to mean acked-by you?
+--=-=-=
+Content-Type: text/plain
 
-FWIW I'm against introducing new interfaces using integer IDs
-for crypto algorithms.  Especially if such an interface is exposed
-to user-space.
+Hello Joe,
 
-You said that you're not currently using this as a kernel/user-space
-interface, which I can live with grudgingly.
+when having a look at printk.c, I noticed that two comments refer
+to /proc/vmcoreinfo and I wonder if that should not read /proc/vmcore.
 
-However, the fact that you've placed this file in uapi leads me to
-believe that at some future point in time there will be some sort
-of kernel/user-space interface using this.  Why else would they need
-to be in sync?
+While at it, a typo in one of those coments could also be fixed.
 
-Cheers,
+Best regards,
+
+Dirk
+
+
+--=-=-=
+Content-Type: text/plain
+Content-Disposition: inline;
+ filename=0001-printk.c-comments-should-refer-to-proc-vmcore-instea.patch
+Content-Description: Patch
+
+>From 2ef84ff3187633a3156c3a967c1dfc294292e492 Mon Sep 17 00:00:00 2001
+From: Dirk Gouders <dirk@gouders.net>
+Date: Tue, 22 Oct 2013 13:51:15 +0200
+Subject: [PATCH] printk.c: comments should refer to /proc/vmcore instead of
+ /proc/vmcoreinfo
+
+In one of those comments a typo was fixed, too.
+
+Signed-off-by: Dirk Gouders <dirk@gouders.net>
+---
+ kernel/printk/printk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b4e8500..694d1f9 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -705,9 +705,9 @@ const struct file_operations kmsg_fops = {
+ 
+ #ifdef CONFIG_KEXEC
+ /*
+- * This appends the listed symbols to /proc/vmcoreinfo
++ * This appends the listed symbols to /proc/vmcore
+  *
+- * /proc/vmcoreinfo is used by various utiilties, like crash and makedumpfile to
++ * /proc/vmcore is used by various utilities, like crash and makedumpfile to
+  * obtain access to symbols that are otherwise very difficult to locate.  These
+  * symbols are specifically used so that utilities can access and extract the
+  * dmesg log from a vmcore file after a crash.
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.8.3.2
+
+
+--=-=-=--
