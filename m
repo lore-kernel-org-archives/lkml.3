@@ -1,83 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab3JVSfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 14:35:52 -0400
-Received: from mail-gg0-f181.google.com ([209.85.161.181]:47392 "EHLO
-	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab3JVSfr (ORCPT
+	id S1754723Ab3JVSgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 14:36:45 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:36081 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754031Ab3JVSgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 14:35:47 -0400
-Date: Tue, 22 Oct 2013 15:35:39 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: perf test failing for "sample parsing"
-Message-ID: <20131022183539.GA18057@ghostprotocols.net>
+	Tue, 22 Oct 2013 14:36:43 -0400
+Date: Tue, 22 Oct 2013 20:36:25 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        netdev@vger.kernel.org
+Subject: [PATCH] net: wan: sbni: remove assembly crc32 code
+Message-ID: <20131022183625.GA4382@breakpoint.cc>
+References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
+ <1382458346-24811-12-git-send-email-andi@firstfloor.org>
+ <20131022.135928.2040131908206663695.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20131022.135928.2040131908206663695.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
 
-	I should've caught this when processing those patches, but
-please consider running 'perf test' before and after your future patch
-kits :-)
+There is also a C function doing the same thing. Unless the asm code is
+110% faster we could stick to the C function.
 
-[root@sandy ~]# perf test 22
-22: Test sample parsing                                    : FAILED!
-[root@sandy ~]# perf test -v 22
-22: Test sample parsing                                    :
---- start ---
-sample format has changed - test needs updating
----- end ----
-Test sample parsing: FAILED!
-[root@sandy ~]#
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
 
-	So I bisected it down to:
+On Tue, Oct 22, 2013 at 01:59:28PM -0400, David Miller wrote:
+> 
+> Is it really impossible to use the generic crc32 support instead of this
+> unsightly custom inline assembler?
 
-  commit fdfbbd07e91f8fe387140776f3fd94605f0c89e5
-  Author: Andi Kleen <ak@linux.intel.com>
-  Date:   Fri Sep 20 07:40:39 2013 -0700
+Since you asked for this here step 1.
 
-      perf: Add generic transaction flags
-    
-      Add a generic qualifier for transaction events, as a new sample
-      type that returns a flag word. This is particularly useful
-      for qualifying aborts: to distinguish aborts which happen
-      due to asynchronous events (like conflicts caused by another
-      CPU) versus instructions that lead to an abort.
+ drivers/net/wan/sbni.c | 89 --------------------------------------------------
+ 1 file changed, 89 deletions(-)
+
+diff --git a/drivers/net/wan/sbni.c b/drivers/net/wan/sbni.c
+index 5bbcb5e..388ddf6 100644
+--- a/drivers/net/wan/sbni.c
++++ b/drivers/net/wan/sbni.c
+@@ -148,10 +148,6 @@ static int  enslave( struct net_device *, struct net_device * );
+ static int  emancipate( struct net_device * );
+ #endif
  
-   extern void perf_output_sample(struct perf_output_handle *handle,
-  diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-  index 009a655..da48837 100644
-  --- a/include/uapi/linux/perf_event.h
-  +++ b/include/uapi/linux/perf_event.h
-  @@ -136,8 +136,9 @@ enum perf_event_sample_format {
-   	PERF_SAMPLE_WEIGHT			= 1U << 14,
-   	PERF_SAMPLE_DATA_SRC			= 1U << 15,
-   	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
-  +	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-   
-  -	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
-  +	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
+-#ifdef __i386__
+-#define ASM_CRC 1
+-#endif
+-
+ static const char  version[] =
+ 	"Granch SBNI12 driver ver 5.0.1  Jun 22 2001  Denis I.Timofeev.\n";
+ 
+@@ -1551,88 +1547,6 @@ __setup( "sbni=", sbni_setup );
+ 
+ /* -------------------------------------------------------------------------- */
+ 
+-#ifdef ASM_CRC
+-
+-static u32
+-calc_crc32( u32  crc,  u8  *p,  u32  len )
+-{
+-	register u32  _crc;
+-	_crc = crc;
+-	
+-	__asm__ __volatile__ (
+-		"xorl	%%ebx, %%ebx\n"
+-		"movl	%2, %%esi\n" 
+-		"movl	%3, %%ecx\n" 
+-		"movl	$crc32tab, %%edi\n"
+-		"shrl	$2, %%ecx\n"
+-		"jz	1f\n"
+-
+-		".align 4\n"
+-	"0:\n"
+-		"movb	%%al, %%bl\n"
+-		"movl	(%%esi), %%edx\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	%%dl, %%bl\n"
+-		"shrl	$8, %%edx\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	%%dl, %%bl\n"
+-		"shrl	$8, %%edx\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	%%dl, %%bl\n"
+-		"movb	%%dh, %%dl\n" 
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	%%dl, %%bl\n"
+-		"addl	$4, %%esi\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"decl	%%ecx\n"
+-		"jnz	0b\n"
+-
+-	"1:\n"
+-		"movl	%3, %%ecx\n"
+-		"andl	$3, %%ecx\n"
+-		"jz	2f\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	(%%esi), %%bl\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"decl	%%ecx\n"
+-		"jz	2f\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	1(%%esi), %%bl\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-
+-		"decl	%%ecx\n"
+-		"jz	2f\n"
+-
+-		"movb	%%al, %%bl\n"
+-		"shrl	$8, %%eax\n"
+-		"xorb	2(%%esi), %%bl\n"
+-		"xorl	(%%edi,%%ebx,4), %%eax\n"
+-	"2:\n"
+-		: "=a" (_crc)
+-		: "0" (_crc), "g" (p), "g" (len)
+-		: "bx", "cx", "dx", "si", "di"
+-	);
+-
+-	return  _crc;
+-}
+-
+-#else	/* ASM_CRC */
+-
+ static u32
+ calc_crc32( u32  crc,  u8  *p,  u32  len )
+ {
+@@ -1642,9 +1556,6 @@ calc_crc32( u32  crc,  u8  *p,  u32  len )
+ 	return  crc;
+ }
+ 
+-#endif	/* ASM_CRC */
+-
+-
+ static u32  crc32tab[] __attribute__ ((aligned(8))) = {
+ 	0xD202EF8D,  0xA505DF1B,  0x3C0C8EA1,  0x4B0BBE37,
+ 	0xD56F2B94,  0xA2681B02,  0x3B614AB8,  0x4C667A2E,
+-- 
+1.8.4.rc3
 
---------------------------------------------------------------------------------------
-
-
-	So I looked at tools/perf/tests/builtin-test.c for the "Test sample parsing"
-string and found the test__sample_parsing function, and fixed it there,
-patches sent to my perf/core branch.
-
-	This one was harmless, but there were problems that were caught
-by running 'perf test' while writing patchkits,
-
-Thanks,
-
-- Arnaldo
