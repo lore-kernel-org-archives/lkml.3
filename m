@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3JVWhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:37:50 -0400
-Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:56397 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754177Ab3JVWaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:30:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3868:3871:4321:5007:6261:10004:10026:10848:11026:11658:11914:12296:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fire93_34977000c151
-X-Filterd-Recvd-Size: 1793
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 01/24] arm: Convert use of typedef ctl_table to struct ctl_table
-Date: Tue, 22 Oct 2013 15:29:44 -0700
-Message-Id: <cc34e4e3e4f1475585e5971ffeaf7bad39791456.1382480758.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1382480758.git.joe@perches.com>
-References: <cover.1382480758.git.joe@perches.com>
+	id S1755093Ab3JVWuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:50:10 -0400
+Received: from ring0.de ([91.143.88.219]:38608 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199Ab3JVWuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:50:07 -0400
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+From: Sebastian Reichel <sre@debian.org>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
+Subject: [PATCH 02/14] DTS: ARM: OMAP3-N900: Fix i2c bus speed
+Date: Wed, 23 Oct 2013 00:49:31 +0200
+Message-Id: <1382482183-14426-3-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382482183-14426-1-git-send-email-sre@debian.org>
+References: <1382482183-14426-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This typedef is unnecessary and should just be removed.
+Fix the bus speed of i2c bus 2 and 3.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- arch/arm/kernel/isa.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/omap3-n900.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/isa.c b/arch/arm/kernel/isa.c
-index 3464859..9d1cf71 100644
---- a/arch/arm/kernel/isa.c
-+++ b/arch/arm/kernel/isa.c
-@@ -20,7 +20,7 @@
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index ad4edd9..7dd6fb6 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -78,14 +78,14 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c2_pins>;
  
- static unsigned int isa_membase, isa_portbase, isa_portshift;
- 
--static ctl_table ctl_isa_vars[4] = {
-+static struct ctl_table ctl_isa_vars[4] = {
- 	{
- 		.procname	= "membase",
- 		.data		= &isa_membase, 
-@@ -44,7 +44,7 @@ static ctl_table ctl_isa_vars[4] = {
- 
- static struct ctl_table_header *isa_sysctl_header;
- 
--static ctl_table ctl_isa[2] = {
-+static struct ctl_table ctl_isa[2] = {
- 	{
- 		.procname	= "isa",
- 		.mode		= 0555,
-@@ -52,7 +52,7 @@ static ctl_table ctl_isa[2] = {
- 	}, {}
+-	clock-frequency = <400000>;
++	clock-frequency = <100000>;
  };
  
--static ctl_table ctl_bus[2] = {
-+static struct ctl_table ctl_bus[2] = {
- 	{
- 		.procname	= "bus",
- 		.mode		= 0555,
+ &i2c3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c3_pins>;
+ 
+-	clock-frequency = <100000>;
++	clock-frequency = <400000>;
+ };
+ 
+ &mmc1 {
 -- 
-1.8.1.2.459.gbcd45b4.dirty
+1.8.4.rc3
 
