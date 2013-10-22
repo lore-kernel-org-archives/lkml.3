@@ -1,76 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3JVIxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:53:53 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50012 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab3JVIxw (ORCPT
+	id S1752186Ab3JVIyx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:54:53 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36519 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3JVIyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:53:52 -0400
-X-AuditID: 85900ec0-cff26b9000001514-4a-52663d1e6b87
-Message-ID: <52663D27.5000101@hitachi.com>
-Date: Tue, 22 Oct 2013 17:53:59 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Tue, 22 Oct 2013 04:54:51 -0400
+Message-ID: <52663D54.2020800@gmail.com>
+Date: Tue, 22 Oct 2013 10:54:44 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH V2 2/5] trace-cmd: Apply the trace-msg protocol
- for communication between a server and clients
-References: <20130913020627.28927.69090.stgit@yunodevel> <20130913020632.28927.18549.stgit@yunodevel> <20131017221953.4bc6d43e@gandalf.local.home>
-In-Reply-To: <20131017221953.4bc6d43e@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+To: The development of GNU GRUB <grub-devel@gnu.org>
+CC: Daniel Kiper <daniel.kiper@oracle.com>, boris.ostrovsky@oracle.com,
+        david.woodhouse@intel.com, ian.campbell@citrix.com, jbeulich@suse.com,
+        keir@xen.org, konrad.wilk@oracle.com, pjones@redhat.com,
+        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
+        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl> <526599A8.9090501@gmail.com>
+In-Reply-To: <526599A8.9090501@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2GFBTKWQHECNEFBKKVJOI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/18 11:19), Steven Rostedt wrote:
-> On Fri, 13 Sep 2013 11:06:32 +0900
-> Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
->
->
->> diff --git a/trace-msg.c b/trace-msg.c
->> new file mode 100644
->> index 0000000..cf82ff6
->> --- /dev/null
->> +++ b/trace-msg.c
->> @@ -0,0 +1,683 @@
->> +/*
->> + * trace-msg.c : define message protocol for communication between clients and
->> + *               a server
->> + *
->> + * Copyright (C) 2013 Hitachi, Ltd.
->> + * Created by Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
->> + *
->> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; version 2 of the License (not later!)
->> + *
->
-> BTW, as this can be used in a library, would be OK with re-licensing
-> this as the LGPL v2.1?
->
-> I try to keep all the helper C files as LGPL and the program files as
-> GPL. I would have made all of trace-cmd LGPL, but there was some code I
-> needed that was GPL, and I could only use it if I had the program as
-> GPL code.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2GFBTKWQHECNEFBKKVJOI
+Content-Type: multipart/mixed;
+ boundary="------------040608090004090503070807"
 
-No problem.
-When I resubmit this patch set, I'll change this license.
+This is a multi-part message in MIME format.
+--------------040608090004090503070807
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Yoshihiro YUNOMAE
+On 21.10.2013 23:16, Vladimir '=CF=86-coder/phcoder' Serbinenko wrote:
+> Mail is big, I think I got your essential points but I didn't read it w=
+hole.
+> On 21.10.2013 14:57, Daniel Kiper wrote:
+>> Hi,
+>>
+>> During work on multiboot2 protocol support for Xen it was discovered
+>> that memory map passed via relevant tag could not represent wide range=
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+>> of memory types available on EFI platforms. Additionally, GRUB2
+>> implementation calls ExitBootServices() on them just before jumping
+>> into loaded image. In this situation loaded system could not clearly
+>> identify reserved memory regions, EFI runtime services regions and oth=
+ers.
+>>
+> Will a multiboot2 tag with whole EFI memory map solve your problem?
+I added such a tag in documentation and wrote a patch for it (attached).
+Awaiting for someone to test it to commit
 
 
+--------------040608090004090503070807
+Content-Type: application/x-patch;
+ name="efi.diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="efi.diff"
+
+PT09IG1vZGlmaWVkIGZpbGUgJ2dydWItY29yZS9sb2FkZXIvaTM4Ni9tdWx0aWJvb3RfbWJp
+LmMnCi0tLSBncnViLWNvcmUvbG9hZGVyL2kzODYvbXVsdGlib290X21iaS5jCTIwMTMtMTAt
+MTQgMTQ6MzM6NDQgKzAwMDAKKysrIGdydWItY29yZS9sb2FkZXIvaTM4Ni9tdWx0aWJvb3Rf
+bWJpLmMJMjAxMy0xMC0yMiAwNjo1Nzo0NSArMDAwMApAQCAtMzYsNiArMzYsMTAgQEAKICNp
+bmNsdWRlIDxncnViL25ldC5oPgogI2luY2x1ZGUgPGdydWIvaTE4bi5oPgogCisjaWZkZWYg
+R1JVQl9NQUNISU5FX0VGSQorI2luY2x1ZGUgPGdydWIvZWZpL2VmaS5oPgorI2VuZGlmCisK
+IC8qIFRoZSBiaXRzIGluIHRoZSByZXF1aXJlZCBwYXJ0IG9mIGZsYWdzIGZpZWxkIHdlIGRv
+bid0IHN1cHBvcnQuICAqLwogI2RlZmluZSBVTlNVUFBPUlRFRF9GTEFHUwkJCTB4MDAwMGZm
+ZjgKIApAQCAtNTc5LDYgKzU4MywxMiBAQAogICBwdHJkZXN0ICs9IHNpemVvZiAoc3RydWN0
+IGdydWJfdmJlX21vZGVfaW5mb19ibG9jayk7CiAjZW5kaWYKIAorI2lmZGVmIEdSVUJfTUFD
+SElORV9FRkkKKyAgZXJyID0gZ3J1Yl9lZmlfZmluaXNoX2Jvb3Rfc2VydmljZXMgKE5VTEws
+IE5VTEwsIE5VTEwsIE5VTEwsIE5VTEwpOworICBpZiAoZXJyKQorICAgIHJldHVybiBlcnI7
+CisjZW5kaWYKKwogICByZXR1cm4gR1JVQl9FUlJfTk9ORTsKIH0KIAoKPT09IG1vZGlmaWVk
+IGZpbGUgJ2dydWItY29yZS9sb2FkZXIvbXVsdGlib290LmMnCi0tLSBncnViLWNvcmUvbG9h
+ZGVyL211bHRpYm9vdC5jCTIwMTMtMDktMjMgMTE6MzU6MzMgKzAwMDAKKysrIGdydWItY29y
+ZS9sb2FkZXIvbXVsdGlib290LmMJMjAxMy0xMC0yMiAwNjo1MTozMCArMDAwMApAQCAtMTMx
+LDEyICsxMzEsNiBAQAogICBpZiAoZXJyKQogICAgIHJldHVybiBlcnI7CiAKLSNpZmRlZiBH
+UlVCX01BQ0hJTkVfRUZJCi0gIGVyciA9IGdydWJfZWZpX2ZpbmlzaF9ib290X3NlcnZpY2Vz
+IChOVUxMLCBOVUxMLCBOVUxMLCBOVUxMLCBOVUxMKTsKLSAgaWYgKGVycikKLSAgICByZXR1
+cm4gZXJyOwotI2VuZGlmCi0KICNpZiBkZWZpbmVkIChfX2kzODZfXykgfHwgZGVmaW5lZCAo
+X194ODZfNjRfXykKICAgZ3J1Yl9yZWxvY2F0b3IzMl9ib290IChncnViX211bHRpYm9vdF9y
+ZWxvY2F0b3IsIHN0YXRlLCAwKTsKICNlbHNlCgo9PT0gbW9kaWZpZWQgZmlsZSAnZ3J1Yi1j
+b3JlL2xvYWRlci9tdWx0aWJvb3RfbWJpMi5jJwotLS0gZ3J1Yi1jb3JlL2xvYWRlci9tdWx0
+aWJvb3RfbWJpMi5jCTIwMTMtMTAtMTQgMTQ6MzM6NDQgKzAwMDAKKysrIGdydWItY29yZS9s
+b2FkZXIvbXVsdGlib290X21iaTIuYwkyMDEzLTEwLTIyIDA2OjU3OjU4ICswMDAwCkBAIC0y
+OTUsOSArMjk1LDU1IEBACiAjZW5kaWYKIH0KIAorI2lmZGVmIEdSVUJfTUFDSElORV9FRkkK
+Kworc3RhdGljIGdydWJfZWZpX3VpbnRuX3QgZWZpX21tYXBfc2l6ZSA9IDA7CisKKy8qIEZp
+bmQgdGhlIG9wdGltYWwgbnVtYmVyIG9mIHBhZ2VzIGZvciB0aGUgbWVtb3J5IG1hcC4gSXMg
+aXQgYmV0dGVyIHRvCisgICBtb3ZlIHRoaXMgY29kZSB0byBlZmkvbW0uYz8gICovCitzdGF0
+aWMgdm9pZAorZmluZF9lZmlfbW1hcF9zaXplICh2b2lkKQoreworICBlZmlfbW1hcF9zaXpl
+ID0gKDEgPDwgMTIpOworICB3aGlsZSAoMSkKKyAgICB7CisgICAgICBpbnQgcmV0OworICAg
+ICAgZ3J1Yl9lZmlfbWVtb3J5X2Rlc2NyaXB0b3JfdCAqbW1hcDsKKyAgICAgIGdydWJfZWZp
+X3VpbnRuX3QgZGVzY19zaXplOworICAgICAgZ3J1Yl9lZmlfdWludG5fdCBjdXJfbW1hcF9z
+aXplID0gZWZpX21tYXBfc2l6ZTsKKworICAgICAgbW1hcCA9IGdydWJfbWFsbG9jIChjdXJf
+bW1hcF9zaXplKTsKKyAgICAgIGlmICghIG1tYXApCisJcmV0dXJuOworCisgICAgICByZXQg
+PSBncnViX2VmaV9nZXRfbWVtb3J5X21hcCAoJmN1cl9tbWFwX3NpemUsIG1tYXAsIDAsICZk
+ZXNjX3NpemUsIDApOworICAgICAgZ3J1Yl9mcmVlIChtbWFwKTsKKworICAgICAgaWYgKHJl
+dCA8IDApCisJcmV0dXJuOworICAgICAgZWxzZSBpZiAocmV0ID4gMCkKKwlicmVhazsKKwor
+ICAgICAgaWYgKGVmaV9tbWFwX3NpemUgPCBjdXJfbW1hcF9zaXplKQorCWVmaV9tbWFwX3Np
+emUgPSBjdXJfbW1hcF9zaXplOworICAgICAgZWZpX21tYXBfc2l6ZSArPSAoMSA8PCAxMik7
+CisgICAgfQorCisgIC8qIEluY3JlYXNlIHRoZSBzaXplIGEgYml0IGZvciBzYWZldHksIGJl
+Y2F1c2UgR1JVQiBhbGxvY2F0ZXMgbW9yZSBvbgorICAgICBsYXRlciwgYW5kIEVGSSBpdHNl
+bGYgbWF5IGFsbG9jYXRlIG1vcmUuICAqLworICBlZmlfbW1hcF9zaXplICs9ICgzIDw8IDEy
+KTsKKworICBlZmlfbW1hcF9zaXplID0gQUxJR05fVVAgKGVmaV9tbWFwX3NpemUsIDQwOTYp
+OworfQorI2VuZGlmCisKIHN0YXRpYyBncnViX3NpemVfdAogZ3J1Yl9tdWx0aWJvb3RfZ2V0
+X21iaV9zaXplICh2b2lkKQogeworI2lmZGVmIEdSVUJfTUFDSElORV9FRkkKKyAgaWYgKCFl
+ZmlfbW1hcF9zaXplKQorICAgIGZpbmRfZWZpX21tYXBfc2l6ZSAoKTsgICAgCisjZW5kaWYK
+ICAgcmV0dXJuIDIgKiBzaXplb2YgKGdydWJfdWludDMyX3QpICsgc2l6ZW9mIChzdHJ1Y3Qg
+bXVsdGlib290X3RhZykKICAgICArIChzaXplb2YgKHN0cnVjdCBtdWx0aWJvb3RfdGFnX3N0
+cmluZykKICAgICAgICArIEFMSUdOX1VQIChjbWRsaW5lX3NpemUsIE1VTFRJQk9PVF9UQUdf
+QUxJR04pKQpAQCAtMzE4LDYgKzM2NCwxMCBAQAogICAgICsgQUxJR05fVVAgKHNpemVvZiAo
+c3RydWN0IG11bHRpYm9vdF90YWdfb2xkX2FjcGkpCiAJCSsgc2l6ZW9mIChzdHJ1Y3QgZ3J1
+Yl9hY3BpX3JzZHBfdjEwKSwgTVVMVElCT09UX1RBR19BTElHTikKICAgICArIGFjcGl2Ml9z
+aXplICgpCisjaWZkZWYgR1JVQl9NQUNISU5FX0VGSQorICAgICsgQUxJR05fVVAgKHNpemVv
+ZiAoc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXApCisJCSsgZWZpX21tYXBfc2l6ZSwg
+TVVMVElCT09UX1RBR19BTElHTikKKyNlbmRpZgogICAgICsgc2l6ZW9mIChzdHJ1Y3QgbXVs
+dGlib290X3RhZ192YmUpICsgTVVMVElCT09UX1RBR19BTElHTiAtIDEKICAgICArIHNpemVv
+ZiAoc3RydWN0IG11bHRpYm9vdF90YWdfYXBtKSArIE1VTFRJQk9PVF9UQUdfQUxJR04gLSAx
+OwogfQpAQCAtNzYwLDYgKzgxMCwyOCBAQAogICB9CiAjZW5kaWYKIAorI2lmZGVmIEdSVUJf
+TUFDSElORV9FRkkKKyAgeworICAgIHN0cnVjdCBtdWx0aWJvb3RfdGFnX2VmaV9tbWFwICp0
+YWcgPSAoc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXAgKikgcHRyb3JpZzsKKyAgICBn
+cnViX2VmaV91aW50bl90IGVmaV9kZXNjX3NpemU7CisgICAgZ3J1Yl9lZmlfdWludDMyX3Qg
+ZWZpX2Rlc2NfdmVyc2lvbjsKKworICAgIHRhZy0+dHlwZSA9IE1VTFRJQk9PVF9UQUdfVFlQ
+RV9FRklfTU1BUDsKKyAgICB0YWctPnNpemUgPSBzaXplb2YgKCp0YWcpICsgZWZpX21tYXBf
+c2l6ZTsKKworICAgIGVyciA9IGdydWJfZWZpX2ZpbmlzaF9ib290X3NlcnZpY2VzICgmZWZp
+X21tYXBfc2l6ZSwgdGFnLT5lZmlfbW1hcCwgTlVMTCwKKwkJCQkJICZlZmlfZGVzY19zaXpl
+LCAmZWZpX2Rlc2NfdmVyc2lvbik7CisgICAgaWYgKGVycikKKyAgICAgIHJldHVybiBlcnI7
+CisgICAgdGFnLT5kZXNjcl9zaXplID0gZWZpX2Rlc2Nfc2l6ZTsKKyAgICB0YWctPmRlc2Ny
+X3ZlcnMgPSBlZmlfZGVzY192ZXJzaW9uOworICAgIHRhZy0+c2l6ZSA9IHNpemVvZiAoKnRh
+ZykgKyBlZmlfbW1hcF9zaXplOworCisgICAgcHRyb3JpZyArPSBBTElHTl9VUCAodGFnLT5z
+aXplLCBNVUxUSUJPT1RfVEFHX0FMSUdOKQorICAgICAgLyBzaXplb2YgKGdydWJfcHJvcGVy
+bHlfYWxpZ25lZF90KTsKKyAgfQorI2VuZGlmCisKICAgewogICAgIHN0cnVjdCBtdWx0aWJv
+b3RfdGFnICp0YWcgPSAoc3RydWN0IG11bHRpYm9vdF90YWcgKikgcHRyb3JpZzsKICAgICB0
+YWctPnR5cGUgPSBNVUxUSUJPT1RfVEFHX1RZUEVfRU5EOwoKPT09IG1vZGlmaWVkIGZpbGUg
+J2luY2x1ZGUvbXVsdGlib290Mi5oJwotLS0gaW5jbHVkZS9tdWx0aWJvb3QyLmgJMjAxMC0w
+OS0yMSAwMDowNjoxNCArMDAwMAorKysgaW5jbHVkZS9tdWx0aWJvb3QyLmgJMjAxMy0xMC0y
+MiAwNjozNzo1NSArMDAwMApAQCAtNTgsNiArNTgsNyBAQAogI2RlZmluZSBNVUxUSUJPT1Rf
+VEFHX1RZUEVfQUNQSV9PTEQgICAgICAgICAgMTQKICNkZWZpbmUgTVVMVElCT09UX1RBR19U
+WVBFX0FDUElfTkVXICAgICAgICAgIDE1CiAjZGVmaW5lIE1VTFRJQk9PVF9UQUdfVFlQRV9O
+RVRXT1JLICAgICAgICAgICAxNgorI2RlZmluZSBNVUxUSUJPT1RfVEFHX1RZUEVfRUZJX01N
+QVAgICAgICAgICAgMTcKIAogI2RlZmluZSBNVUxUSUJPT1RfSEVBREVSX1RBR19FTkQgIDAK
+ICNkZWZpbmUgTVVMVElCT09UX0hFQURFUl9UQUdfSU5GT1JNQVRJT05fUkVRVUVTVCAgMQpA
+QCAtMzYxLDYgKzM2MiwxNSBAQAogICBtdWx0aWJvb3RfdWludDhfdCBkaGNwYWNrWzBdOwog
+fTsKIAorc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXAKK3sKKyAgbXVsdGlib290X3Vp
+bnQzMl90IHR5cGU7CisgIG11bHRpYm9vdF91aW50MzJfdCBzaXplOworICBtdWx0aWJvb3Rf
+dWludDMyX3QgZGVzY3Jfc2l6ZTsKKyAgbXVsdGlib290X3VpbnQzMl90IGRlc2NyX3ZlcnM7
+CisgIG11bHRpYm9vdF91aW50OF90IGVmaV9tbWFwWzBdOworfTsgCisKICNlbmRpZiAvKiAh
+IEFTTV9GSUxFICovCiAKICNlbmRpZiAvKiAhIE1VTFRJQk9PVF9IRUFERVIgKi8KCg==
+--------------040608090004090503070807--
+
+------enig2GFBTKWQHECNEFBKKVJOI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iF4EAREKAAYFAlJmPVQACgkQNak7dOguQgnASQD/cbMW9XB8Z998Nzg0kDSTxysV
+vaZuaY3kyXH9NUVCglAA/2cXr48OrsHxuFdM1vuNm4ZLkoJ54BNG7265/gWE60AH
+=t18L
+-----END PGP SIGNATURE-----
+
+------enig2GFBTKWQHECNEFBKKVJOI--
