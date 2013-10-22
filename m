@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3JVO3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:29:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53876 "EHLO
+	id S1754299Ab3JVObL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:31:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53932 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3JVO2u (ORCPT
+	with ESMTP id S1753610Ab3JVO27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:28:50 -0400
+	Tue, 22 Oct 2013 10:28:59 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/26] perf evlist: Factor out duplicated mmap code
-Date: Tue, 22 Oct 2013 11:28:25 -0300
-Message-Id: <1382452114-1243-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 24/26] perf session: Separating data file properties from session
+Date: Tue, 22 Oct 2013 11:28:32 -0300
+Message-Id: <1382452114-1243-25-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -30,137 +30,406 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The same code is used in perf_evlist__mmap_per_cpu() and
-perf_evlist__mmap_per_thread().
+Removing 'fd, fd_pipe, filename, size' from struct perf_session and
+replacing them with struct perf_data_file object.
 
-Factor it out into a separate function perf_evlist__mmap_per_evsel().
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-17-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1381847254-28809-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 73 ++++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 37 deletions(-)
+ tools/perf/builtin-annotate.c     |  2 +-
+ tools/perf/builtin-buildid-list.c |  2 +-
+ tools/perf/builtin-record.c       |  1 -
+ tools/perf/builtin-report.c       |  8 +++++---
+ tools/perf/builtin-script.c       |  2 +-
+ tools/perf/util/data.h            | 15 +++++++++++++++
+ tools/perf/util/header.c          | 22 +++++++++++++---------
+ tools/perf/util/session.c         | 36 +++++++++++++++++++-----------------
+ tools/perf/util/session.h         |  5 +----
+ 9 files changed, 56 insertions(+), 37 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index acef94a5ff9e..85c4c80bcac8 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -608,9 +608,36 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 	return 0;
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 95df683d6074..03cfa592071f 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -259,7 +259,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	}
+ 
+ 	if (total_nr_samples == 0) {
+-		ui__error("The %s file has no samples!\n", session->filename);
++		ui__error("The %s file has no samples!\n", file.path);
+ 		goto out_delete;
+ 	}
+ 
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index 0164c1c3e834..ed3873b3e238 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -73,7 +73,7 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
+ 	 * in pipe-mode, the only way to get the buildids is to parse
+ 	 * the record stream. Buildids are stored as RECORD_HEADER_BUILD_ID
+ 	 */
+-	if (with_hits || session->fd_pipe)
++	if (with_hits || perf_data_file__is_pipe(&file))
+ 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+ 
+ 	perf_session__fprintf_dsos_buildid(session, stdout, dso__skip_buildid, with_hits);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 428e28f3e677..ab8d15e6e8cc 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -257,7 +257,6 @@ static int process_buildids(struct perf_record *rec)
+ 	if (size == 0)
+ 		return 0;
+ 
+-	session->fd = file->fd;
+ 	return __perf_session__process_events(session, rec->post_processing_offset,
+ 					      size - rec->post_processing_offset,
+ 					      size, &build_id__mark_dso_hit_ops);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 60d7f8ec8505..fa68a36bc461 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -368,8 +368,9 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ {
+ 	struct perf_session *self = rep->session;
+ 	u64 sample_type = perf_evlist__combined_sample_type(self->evlist);
++	bool is_pipe = perf_data_file__is_pipe(self->file);
+ 
+-	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++	if (!is_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+ 			ui__error("Selected --sort parent, but no "
+ 				    "callchain data. Did you call "
+@@ -392,7 +393,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
+ 	}
+ 
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+-		if (!self->fd_pipe &&
++		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+ 			ui__error("Selected -b but no branch data. "
+ 				  "Did you call perf record without -b?\n");
+@@ -488,6 +489,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	struct map *kernel_map;
+ 	struct kmap *kernel_kmap;
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
++	struct perf_data_file *file = session->file;
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+@@ -572,7 +574,7 @@ static int __cmd_report(struct perf_report *rep)
+ 		return 0;
+ 
+ 	if (nr_samples == 0) {
+-		ui__error("The %s file has no samples!\n", session->filename);
++		ui__error("The %s file has no samples!\n", file->path);
+ 		return 0;
+ 	}
+ 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index f0c77a199616..27de6068049d 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1525,7 +1525,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			return -1;
+ 		}
+ 
+-		input = open(session->filename, O_RDONLY);	/* input_name */
++		input = open(file.path, O_RDONLY);	/* input_name */
+ 		if (input < 0) {
+ 			perror("failed to open file");
+ 			return -1;
+diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
+index d6c262e42f47..8c2df80152a5 100644
+--- a/tools/perf/util/data.h
++++ b/tools/perf/util/data.h
+@@ -27,6 +27,21 @@ static inline bool perf_data_file__is_write(struct perf_data_file *file)
+ 	return file->mode == PERF_DATA_MODE_WRITE;
  }
  
--static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
-+				       int prot, int mask, int cpu, int thread,
-+				       int *output)
- {
- 	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		int fd = FD(evsel, cpu, thread);
-+
-+		if (*output == -1) {
-+			*output = fd;
-+			if (__perf_evlist__mmap(evlist, idx, prot, mask,
-+						*output) < 0)
-+				return -1;
-+		} else {
-+			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, *output) != 0)
-+				return -1;
-+		}
-+
-+		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-+		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
-+			return -1;
-+	}
-+
-+	return 0;
++static inline int perf_data_file__is_pipe(struct perf_data_file *file)
++{
++	return file->is_pipe;
 +}
 +
-+static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot,
-+				     int mask)
++static inline int perf_data_file__fd(struct perf_data_file *file)
 +{
- 	int cpu, thread;
- 	int nr_cpus = cpu_map__nr(evlist->cpus);
- 	int nr_threads = thread_map__nr(evlist->threads);
-@@ -620,23 +647,9 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 		int output = -1;
++	return file->fd;
++}
++
++static inline unsigned long perf_data_file__size(struct perf_data_file *file)
++{
++	return file->size;
++}
++
+ int perf_data_file__open(struct perf_data_file *file);
+ void perf_data_file__close(struct perf_data_file *file);
  
- 		for (thread = 0; thread < nr_threads; thread++) {
--			list_for_each_entry(evsel, &evlist->entries, node) {
--				int fd = FD(evsel, cpu, thread);
--
--				if (output == -1) {
--					output = fd;
--					if (__perf_evlist__mmap(evlist, cpu,
--								prot, mask, output) < 0)
--						goto out_unmap;
--				} else {
--					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
--						goto out_unmap;
--				}
--
--				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--				    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
--					goto out_unmap;
--			}
-+			if (perf_evlist__mmap_per_evsel(evlist, cpu, prot, mask,
-+							cpu, thread, &output))
-+				goto out_unmap;
- 		}
- 	}
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index c3e5a3b817ab..26d9520a0c1b 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -22,6 +22,7 @@
+ #include "vdso.h"
+ #include "strbuf.h"
+ #include "build-id.h"
++#include "data.h"
  
-@@ -648,9 +661,9 @@ out_unmap:
- 	return -1;
- }
+ static bool no_buildid_cache = false;
  
--static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot,
-+					int mask)
+@@ -2189,7 +2190,7 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
  {
--	struct perf_evsel *evsel;
- 	int thread;
- 	int nr_threads = thread_map__nr(evlist->threads);
+ 	struct header_print_data hd;
+ 	struct perf_header *header = &session->header;
+-	int fd = session->fd;
++	int fd = perf_data_file__fd(session->file);
+ 	hd.fp = fp;
+ 	hd.full = full;
  
-@@ -658,23 +671,9 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	for (thread = 0; thread < nr_threads; thread++) {
- 		int output = -1;
+@@ -2650,7 +2651,8 @@ static int perf_header__read_pipe(struct perf_session *session)
+ 	struct perf_header *header = &session->header;
+ 	struct perf_pipe_file_header f_header;
  
--		list_for_each_entry(evsel, &evlist->entries, node) {
--			int fd = FD(evsel, 0, thread);
--
--			if (output == -1) {
--				output = fd;
--				if (__perf_evlist__mmap(evlist, thread,
--							prot, mask, output) < 0)
--					goto out_unmap;
--			} else {
--				if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
--					goto out_unmap;
--			}
--
--			if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--			    perf_evlist__id_add_fd(evlist, evsel, 0, thread, fd) < 0)
--				goto out_unmap;
--		}
-+		if (perf_evlist__mmap_per_evsel(evlist, thread, prot, mask, 0,
-+						thread, &output))
-+			goto out_unmap;
+-	if (perf_file_header__read_pipe(&f_header, header, session->fd,
++	if (perf_file_header__read_pipe(&f_header, header,
++					perf_data_file__fd(session->file),
+ 					session->repipe) < 0) {
+ 		pr_debug("incompatible file format\n");
+ 		return -EINVAL;
+@@ -2751,18 +2753,19 @@ static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
+ 
+ int perf_session__read_header(struct perf_session *session)
+ {
++	struct perf_data_file *file = session->file;
+ 	struct perf_header *header = &session->header;
+ 	struct perf_file_header	f_header;
+ 	struct perf_file_attr	f_attr;
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
+-	int fd = session->fd;
++	int fd = perf_data_file__fd(file);
+ 
+ 	session->evlist = perf_evlist__new();
+ 	if (session->evlist == NULL)
+ 		return -ENOMEM;
+ 
+-	if (session->fd_pipe)
++	if (perf_data_file__is_pipe(file))
+ 		return perf_header__read_pipe(session);
+ 
+ 	if (perf_file_header__read(&f_header, header, fd) < 0)
+@@ -2777,7 +2780,7 @@ int perf_session__read_header(struct perf_session *session)
+ 	if (f_header.data.size == 0) {
+ 		pr_warning("WARNING: The %s file's data size field is 0 which is unexpected.\n"
+ 			   "Was the 'perf record' command properly terminated?\n",
+-			   session->filename);
++			   file->path);
  	}
  
- 	return 0;
+ 	nr_attrs = f_header.attrs.size / f_header.attr_size;
+@@ -2990,18 +2993,19 @@ int perf_event__process_tracing_data(struct perf_tool *tool __maybe_unused,
+ 				     struct perf_session *session)
+ {
+ 	ssize_t size_read, padding, size = event->tracing_data.size;
+-	off_t offset = lseek(session->fd, 0, SEEK_CUR);
++	int fd = perf_data_file__fd(session->file);
++	off_t offset = lseek(fd, 0, SEEK_CUR);
+ 	char buf[BUFSIZ];
+ 
+ 	/* setup for reading amidst mmap */
+-	lseek(session->fd, offset + sizeof(struct tracing_data_event),
++	lseek(fd, offset + sizeof(struct tracing_data_event),
+ 	      SEEK_SET);
+ 
+-	size_read = trace_report(session->fd, &session->pevent,
++	size_read = trace_report(fd, &session->pevent,
+ 				 session->repipe);
+ 	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
+ 
+-	if (readn(session->fd, buf, padding) < 0) {
++	if (readn(fd, buf, padding) < 0) {
+ 		pr_err("%s: reading input file", __func__);
+ 		return -1;
+ 	}
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d857c18d2eeb..19fc71678c8e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -18,17 +18,16 @@
+ 
+ static int perf_session__open(struct perf_session *self)
+ {
+-	if (self->fd_pipe) {
+-		if (perf_session__read_header(self) < 0)
+-			pr_err("incompatible file format (rerun with -v to learn more)");
+-		return 0;
+-	}
++	struct perf_data_file *file = self->file;
+ 
+ 	if (perf_session__read_header(self) < 0) {
+ 		pr_err("incompatible file format (rerun with -v to learn more)");
+ 		return -1;
+ 	}
+ 
++	if (perf_data_file__is_pipe(file))
++		return 0;
++
+ 	if (!perf_evlist__valid_sample_type(self->evlist)) {
+ 		pr_err("non matching sample_type");
+ 		return -1;
+@@ -87,10 +86,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		if (perf_data_file__open(file))
+ 			goto out_delete;
+ 
+-		self->fd       = file->fd;
+-		self->fd_pipe  = file->is_pipe;
+-		self->filename = file->path;
+-		self->size     = file->size;
++		self->file = file;
+ 
+ 		if (perf_data_file__is_read(file)) {
+ 			if (perf_session__open(self) < 0)
+@@ -158,7 +154,8 @@ void perf_session__delete(struct perf_session *self)
+ 	perf_session__delete_threads(self);
+ 	perf_session_env__delete(&self->header.env);
+ 	machines__exit(&self->machines);
+-	close(self->fd);
++	if (self->file)
++		perf_data_file__close(self->file);
+ 	free(self);
+ 	vdso__exit();
+ }
+@@ -1015,6 +1012,7 @@ static int perf_session_deliver_event(struct perf_session *session,
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	int err;
+ 
+ 	dump_event(session, event, file_offset, NULL);
+@@ -1028,7 +1026,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 		return err;
+ 	case PERF_RECORD_HEADER_TRACING_DATA:
+ 		/* setup for reading amidst mmap */
+-		lseek(session->fd, file_offset, SEEK_SET);
++		lseek(fd, file_offset, SEEK_SET);
+ 		return tool->tracing_data(tool, event, session);
+ 	case PERF_RECORD_HEADER_BUILD_ID:
+ 		return tool->build_id(tool, event, session);
+@@ -1154,6 +1152,7 @@ volatile int session_done;
+ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 					       struct perf_tool *tool)
+ {
++	int fd = perf_data_file__fd(self->file);
+ 	union perf_event *event;
+ 	uint32_t size, cur_size = 0;
+ 	void *buf = NULL;
+@@ -1172,7 +1171,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 		return -errno;
+ more:
+ 	event = buf;
+-	err = readn(self->fd, event, sizeof(struct perf_event_header));
++	err = readn(fd, event, sizeof(struct perf_event_header));
+ 	if (err <= 0) {
+ 		if (err == 0)
+ 			goto done;
+@@ -1204,7 +1203,7 @@ more:
+ 	p += sizeof(struct perf_event_header);
+ 
+ 	if (size - sizeof(struct perf_event_header)) {
+-		err = readn(self->fd, p, size - sizeof(struct perf_event_header));
++		err = readn(fd, p, size - sizeof(struct perf_event_header));
+ 		if (err <= 0) {
+ 			if (err == 0) {
+ 				pr_err("unexpected end of event stream\n");
+@@ -1285,6 +1284,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_tool *tool)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	u64 head, page_offset, file_offset, file_pos, progress_next;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+@@ -1317,7 +1317,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 		mmap_flags = MAP_PRIVATE;
+ 	}
+ remap:
+-	buf = mmap(NULL, mmap_size, mmap_prot, mmap_flags, session->fd,
++	buf = mmap(NULL, mmap_size, mmap_prot, mmap_flags, fd,
+ 		   file_offset);
+ 	if (buf == MAP_FAILED) {
+ 		pr_err("failed to mmap file\n");
+@@ -1382,16 +1382,17 @@ out_err:
+ int perf_session__process_events(struct perf_session *self,
+ 				 struct perf_tool *tool)
+ {
++	u64 size = perf_data_file__size(self->file);
+ 	int err;
+ 
+ 	if (perf_session__register_idle_thread(self) == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!self->fd_pipe)
++	if (!perf_data_file__is_pipe(self->file))
+ 		err = __perf_session__process_events(self,
+ 						     self->header.data_offset,
+ 						     self->header.data_size,
+-						     self->size, tool);
++						     size, tool);
+ 	else
+ 		err = __perf_session__process_pipe_events(self, tool);
+ 
+@@ -1615,13 +1616,14 @@ int perf_session__cpu_bitmap(struct perf_session *session,
+ void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
+ 				bool full)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	struct stat st;
+ 	int ret;
+ 
+ 	if (session == NULL || fp == NULL)
+ 		return;
+ 
+-	ret = fstat(session->fd, &st);
++	ret = fstat(fd, &st);
+ 	if (ret == -1)
+ 		return;
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index e1ca2d0ae541..27c74d38b868 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -30,16 +30,13 @@ struct ordered_samples {
+ 
+ struct perf_session {
+ 	struct perf_header	header;
+-	unsigned long		size;
+ 	struct machines		machines;
+ 	struct perf_evlist	*evlist;
+ 	struct pevent		*pevent;
+ 	struct events_stats	stats;
+-	int			fd;
+-	bool			fd_pipe;
+ 	bool			repipe;
+ 	struct ordered_samples	ordered_samples;
+-	const char		*filename;
++	struct perf_data_file	*file;
+ };
+ 
+ #define PRINT_IP_OPT_IP		(1<<0)
 -- 
 1.8.1.4
 
