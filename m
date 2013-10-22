@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab3JVWxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:53:51 -0400
-Received: from ring0.de ([91.143.88.219]:38615 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab3JVWuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:50:09 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 03/14] DTS: ARM: OMAP3-N900: Add UART support
-Date: Wed, 23 Oct 2013 00:49:32 +0200
-Message-Id: <1382482183-14426-4-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382482183-14426-1-git-send-email-sre@debian.org>
-References: <1382482183-14426-1-git-send-email-sre@debian.org>
+	id S1756110Ab3JVWyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:54:04 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:58522 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3JVWyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:54:01 -0400
+Date: Tue, 22 Oct 2013 15:53:57 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Majunath Goudar <csmanjuvijay@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, nataraja.km@lge.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SOUND/SPI: Fix "clk_round_rate" undefined reference
+ error.
+Message-ID: <20131022225357.GB19819@core.coreip.homeip.net>
+References: <1381228833-24082-1-git-send-email-csmanjuvijay@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381228833-24082-1-git-send-email-csmanjuvijay@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add UART support to Nokia N900.
+Hi Majunath,
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- arch/arm/boot/dts/omap3-n900.dts | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+On Tue, Oct 08, 2013 at 04:10:33PM +0530, Majunath Goudar wrote:
+> This patch adds a COMMON_CLK dependency to configure the
+> SND_AT73C213 for Atmel AT73C213 DAC driver. Without this patch,
+> build system can lead to build failure. This was observed during
+> randconfig testing, in which SND_AT73C213 was enabled w/o COMMON_CLK
+> being enabled. leading to the following error:
+> 
+> sound/built-in.o: In function `snd_at73c213_probe':
+> :(.text+0x328c4): undefined reference to `clk_round_rate'
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  sound/spi/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/spi/Kconfig b/sound/spi/Kconfig
+> index e6485be..798d1ee 100644
+> --- a/sound/spi/Kconfig
+> +++ b/sound/spi/Kconfig
+> @@ -11,7 +11,7 @@ if SND_SPI
+>  
+>  config SND_AT73C213
+>  	tristate "Atmel AT73C213 DAC driver"
+> -	depends on ATMEL_SSC
+> +	depends on ATMEL_SSC && COMMON_CLK
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 7dd6fb6..9226268 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -31,6 +31,20 @@
- &omap3_pmx_core {
- 	pinctrl-names = "default";
- 
-+	uart2_pins: pinmux_uart2_pins {
-+		pinctrl-single,pins = <
-+			0x14a (PIN_INPUT | MUX_MODE0)		/* uart2_rx */
-+			0x148 (PIN_OUTPUT | MUX_MODE0)		/* uart2_tx */
-+		>;
-+	};
-+
-+	uart3_pins: pinmux_uart3_pins {
-+		pinctrl-single,pins = <
-+			0x16e (PIN_INPUT | MUX_MODE0)		/* uart3_rx */
-+			0x170 (PIN_OUTPUT | MUX_MODE0)		/* uart3_tx */
-+		>;
-+	};
-+
- 	i2c1_pins: pinmux_i2c1_pins {
- 		pinctrl-single,pins = <
- 			0x18a (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl */
-@@ -127,3 +141,17 @@
- 	mode = <2>;
- 	power = <50>;
- };
-+
-+&uart1 {
-+	status = "disabled";
-+};
-+
-+&uart2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart2_pins>;
-+};
-+
-+&uart3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&uart3_pins>;
-+};
+I do not see clk_round_rate() being protected by CONFIG_COMMON_CLK so it
+looks to me that ATMEL_SSC is at fault here.
+
+Thanks.
+
 -- 
-1.8.4.rc3
-
+Dmitry
