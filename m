@@ -1,373 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab3JVLYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:24:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56678 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3JVLY2 (ORCPT
+	id S1753292Ab3JVLZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:25:28 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:52832 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab3JVLZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:24:28 -0400
-Date: Tue, 22 Oct 2013 12:25:52 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.67
-Message-ID: <20131022112552.GB5735@kroah.com>
-References: <20131022112543.GA5735@kroah.com>
+	Tue, 22 Oct 2013 07:25:25 -0400
+Date: Tue, 22 Oct 2013 07:25:20 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Matthijs Kooijman <matthijs@stdin.nl>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
+Message-ID: <20131022112520.GE29341@beef>
+References: <20131018141221.GH2721@beef>
+ <5264F37E.9060307@ti.com>
+ <20131022104829.GF15425@login.drsnuggles.stderr.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131022112543.GA5735@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131022104829.GF15425@login.drsnuggles.stderr.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index e9587ab..9f440dd 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 66
-+SUBLEVEL = 67
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
-index 45ba99f..71d7d72 100644
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -810,14 +810,14 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
- 	else {
- 
- 	    /*
--	     * The kernel should never fault on its own address space.
-+	     * The kernel should never fault on its own address space,
-+	     * unless pagefault_disable() was called before.
- 	     */
- 
--	    if (fault_space == 0) 
-+	    if (fault_space == 0 && !in_atomic())
- 	    {
- 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
- 		parisc_terminate("Kernel Fault", regs, code, fault_address);
--	
- 	    }
- 	}
- 
-diff --git a/arch/powerpc/kvm/book3s_hv_rmhandlers.S b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-index 24b23a4..126f38d 100644
---- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-+++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
-@@ -935,7 +935,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
- BEGIN_FTR_SECTION
- 	mfspr	r8, SPRN_DSCR
- 	ld	r7, HSTATE_DSCR(r13)
--	std	r8, VCPU_DSCR(r7)
-+	std	r8, VCPU_DSCR(r9)
- 	mtspr	SPRN_DSCR, r7
- END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
- 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index d98b2a6..817eeb6 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1435,12 +1435,11 @@ ctl_table random_table[] = {
- 
- static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
- 
--static int __init random_int_secret_init(void)
-+int random_int_secret_init(void)
- {
- 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
- 	return 0;
- }
--late_initcall(random_int_secret_init);
- 
- /*
-  * Get a random word for internal kernel use only. Similar to urandom but
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 15d1f08..ad72295 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1912,7 +1912,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 		rdev->config.evergreen.sx_max_export_size = 256;
- 		rdev->config.evergreen.sx_max_export_pos_size = 64;
- 		rdev->config.evergreen.sx_max_export_smx_size = 192;
--		rdev->config.evergreen.max_hw_contexts = 8;
-+		rdev->config.evergreen.max_hw_contexts = 4;
- 		rdev->config.evergreen.sq_num_cf_insts = 2;
- 
- 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
-diff --git a/drivers/watchdog/ts72xx_wdt.c b/drivers/watchdog/ts72xx_wdt.c
-index 8df050d..1c53745 100644
---- a/drivers/watchdog/ts72xx_wdt.c
-+++ b/drivers/watchdog/ts72xx_wdt.c
-@@ -310,7 +310,8 @@ static long ts72xx_wdt_ioctl(struct file *file, unsigned int cmd,
- 
- 	case WDIOC_GETSTATUS:
- 	case WDIOC_GETBOOTSTATUS:
--		return put_user(0, p);
-+		error = put_user(0, p);
-+		break;
- 
- 	case WDIOC_KEEPALIVE:
- 		ts72xx_wdt_kick(wdt);
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index e712a8c..b1aa7fd 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1268,6 +1268,8 @@ retry:
- 				    s_min_extra_isize) {
- 					tried_min_extra_isize++;
- 					new_extra_isize = s_min_extra_isize;
-+					kfree(is); is = NULL;
-+					kfree(bs); bs = NULL;
- 					goto retry;
- 				}
- 				error = -1;
-diff --git a/fs/statfs.c b/fs/statfs.c
-index 43e6b6f..d1812b2 100644
---- a/fs/statfs.c
-+++ b/fs/statfs.c
-@@ -87,7 +87,7 @@ int user_statfs(const char __user *pathname, struct kstatfs *st)
- 
- int fd_statfs(int fd, struct kstatfs *st)
- {
--	struct file *file = fget(fd);
-+	struct file *file = fget_raw(fd);
- 	int error = -EBADF;
- 	if (file) {
- 		error = vfs_statfs(&file->f_path, st);
-diff --git a/include/linux/random.h b/include/linux/random.h
-index ac621ce..7e58ad2 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -56,6 +56,7 @@ extern void add_interrupt_randomness(int irq, int irq_flags);
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
-+extern int random_int_secret_init(void);
- 
- #ifndef MODULE
- extern const struct file_operations random_fops, urandom_fops;
-diff --git a/init/main.c b/init/main.c
-index 02c1384..db8e381 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -68,6 +68,7 @@
- #include <linux/shmem_fs.h>
- #include <linux/slab.h>
- #include <linux/perf_event.h>
-+#include <linux/random.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -779,6 +780,7 @@ static void __init do_basic_setup(void)
- 	do_ctors();
- 	usermodehelper_enable();
- 	do_initcalls();
-+	random_int_secret_init();
- }
- 
- static void __init do_pre_smp_initcalls(void)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index ed884dd..69367e4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -6,6 +6,7 @@
-  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
-  */
- 
-+#include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/backing-dev.h>
- #include <linux/mm.h>
-@@ -392,6 +393,34 @@ find_vma_prepare(struct mm_struct *mm, unsigned long addr,
- 	return vma;
- }
- 
-+static unsigned long count_vma_pages_range(struct mm_struct *mm,
-+		unsigned long addr, unsigned long end)
-+{
-+	unsigned long nr_pages = 0;
-+	struct vm_area_struct *vma;
-+
-+	/* Find first overlaping mapping */
-+	vma = find_vma_intersection(mm, addr, end);
-+	if (!vma)
-+		return 0;
-+
-+	nr_pages = (min(end, vma->vm_end) -
-+		max(addr, vma->vm_start)) >> PAGE_SHIFT;
-+
-+	/* Iterate over the rest of the overlaps */
-+	for (vma = vma->vm_next; vma; vma = vma->vm_next) {
-+		unsigned long overlap_len;
-+
-+		if (vma->vm_start > end)
-+			break;
-+
-+		overlap_len = min(end, vma->vm_end) - vma->vm_start;
-+		nr_pages += overlap_len >> PAGE_SHIFT;
-+	}
-+
-+	return nr_pages;
-+}
-+
- void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct rb_node **rb_link, struct rb_node *rb_parent)
- {
-@@ -1245,6 +1274,23 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	unsigned long charged = 0;
- 	struct inode *inode =  file ? file->f_path.dentry->d_inode : NULL;
- 
-+	/* Check against address space limit. */
-+	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
-+		unsigned long nr_pages;
-+
-+		/*
-+		 * MAP_FIXED may remove pages of mappings that intersects with
-+		 * requested mapping. Account for the pages it would unmap.
-+		 */
-+		if (!(vm_flags & MAP_FIXED))
-+			return -ENOMEM;
-+
-+		nr_pages = count_vma_pages_range(mm, addr, addr + len);
-+
-+		if (!may_expand_vm(mm, (len >> PAGE_SHIFT) - nr_pages))
-+			return -ENOMEM;
-+	}
-+
- 	/* Clear old maps */
- 	error = -ENOMEM;
- munmap_back:
-@@ -1255,10 +1301,6 @@ munmap_back:
- 		goto munmap_back;
- 	}
- 
--	/* Check against address space limit. */
--	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
--		return -ENOMEM;
--
- 	/*
- 	 * Set 'VM_NORESERVE' if we should not account for the
- 	 * memory use of this mapping.
-@@ -1833,9 +1875,28 @@ int expand_downwards(struct vm_area_struct *vma,
- 	return error;
- }
- 
-+/*
-+ * Note how expand_stack() refuses to expand the stack all the way to
-+ * abut the next virtual mapping, *unless* that mapping itself is also
-+ * a stack mapping. We want to leave room for a guard page, after all
-+ * (the guard page itself is not added here, that is done by the
-+ * actual page faulting logic)
-+ *
-+ * This matches the behavior of the guard page logic (see mm/memory.c:
-+ * check_stack_guard_page()), which only allows the guard page to be
-+ * removed under these circumstances.
-+ */
- #ifdef CONFIG_STACK_GROWSUP
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
- {
-+	struct vm_area_struct *next;
-+
-+	address &= PAGE_MASK;
-+	next = vma->vm_next;
-+	if (next && next->vm_start == address + PAGE_SIZE) {
-+		if (!(next->vm_flags & VM_GROWSUP))
-+			return -ENOMEM;
-+	}
- 	return expand_upwards(vma, address);
- }
- 
-@@ -1858,6 +1919,14 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
- #else
- int expand_stack(struct vm_area_struct *vma, unsigned long address)
- {
-+	struct vm_area_struct *prev;
-+
-+	address &= PAGE_MASK;
-+	prev = vma->vm_prev;
-+	if (prev && prev->vm_end == address) {
-+		if (!(prev->vm_flags & VM_GROWSDOWN))
-+			return -ENOMEM;
-+	}
- 	return expand_downwards(vma, address);
- }
- 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 353b32a..33abb78 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6832,6 +6832,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
-+	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
- 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
- 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
-diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
-index 520ef96..711299c 100644
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -295,19 +295,6 @@ static void usX2Y_error_urb_status(struct usX2Ydev *usX2Y,
- 	usX2Y_clients_stop(usX2Y);
- }
- 
--static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
--				 struct snd_usX2Y_substream *subs, struct urb *urb)
--{
--	snd_printk(KERN_ERR
--"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
--"Most probably some urb of usb-frame %i is still missing.\n"
--"Cause could be too long delays in usb-hcd interrupt handling.\n",
--		   usb_get_current_frame_number(usX2Y->dev),
--		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
--		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
--	usX2Y_clients_stop(usX2Y);
--}
--
- static void i_usX2Y_urb_complete(struct urb *urb)
- {
- 	struct snd_usX2Y_substream *subs = urb->context;
-@@ -324,12 +311,9 @@ static void i_usX2Y_urb_complete(struct urb *urb)
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
-+
-+	subs->completed_urb = urb;
-+
- 	{
- 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
- 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
-diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
-index 8e40b6e..1da1eca 100644
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
- 
-+	subs->completed_urb = urb;
- 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
- 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
- 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
+> Hi Kishon,
+> 
+> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
+> > I think it makes sense to keep the data width property in the dwc2 node itself.
+> > I mean it describes how the dwc2 IP is configured in that particular SoC (given
+> > that it can be either <8> or <16>).
+> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
+> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
+> and 16 supported" would make sense as a property of dwc2 (though this
+> value should be autodetectable through GHWCFG4), while the actual 8 or
+> 16 supported by the PHY would make sense as property of a phy.
+
+There would be no value in adding a property for an already detectable
+value to dwc2's binding. To be honest, it's pretty much useless
+information due to the existence of the "8 and 16" option.
+
+> Note sure if this is really useful in practice as well, or if just
+> setting the actual width to use on dwc2 makes more sense...
+
+The GHWCFG4 information itself is not useful in practice, as described
+in the original thread: https://lkml.org/lkml/2013/10/10/477
+
+It's certainly useful in practice to have this width property in either
+the dwc2 or the phy binding. One can make a case for either. As I
+mentioned in the original post, if we put it in the phy binding we'll be
+updating the generic phy binding. We'll then need an api added into the
+generic phy framework to fetch the width of a phy.
+
+Both cases are doable and trivial, we just need the canonical decision
+from a DT maintainer as to where the property belongs. Given that they
+are in ARM ksummit, I'm not expecting to hear anything right this
+moment. :)
+
+-Matt
