@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3JVQjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:39:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51265 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab3JVQjL (ORCPT
+	id S1754548Ab3JVQkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:40:31 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:40508 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab3JVQk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:39:11 -0400
-Date: Tue, 22 Oct 2013 12:38:13 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        "Woodhouse, David" <david.woodhouse@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jan Beulich <JBeulich@suse.com>,
-        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "grub-devel@gnu.org" <grub-devel@gnu.org>,
-        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
-        Peter Jones <pjones@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keir@xen.org" <keir@xen.org>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131022163813.GE19189@phenom.dumpdata.com>
-References: <1382435127.1657.70.camel@hastur.hellion.org.uk>
- <526668A502000078000FCA7B@nat28.tlf.novell.com>
- <20131022134252.GA27302@phenom.dumpdata.com>
- <20131022144309.GA18547@phenom.dumpdata.com>
- <1382455537.8512.11.camel@shinybook.infradead.org>
- <20131022153258.GA12260@srcf.ucam.org>
- <1382456560.8512.24.camel@shinybook.infradead.org>
- <20131022160146.GH3626@debian70-amd64.local.net-space.pl>
- <1382458083.18283.34.camel@hastur.hellion.org.uk>
- <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
+	Tue, 22 Oct 2013 12:40:29 -0400
+Date: Tue, 22 Oct 2013 18:40:26 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andi Kleen <andi@firstfloor.org>, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Mario <jmario@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] kbuild: Increase kallsyms max symbol length
+Message-ID: <20131022164026.GE29695@two.firstfloor.org>
+References: <1382456783-22826-1-git-send-email-andi@firstfloor.org>
+ <1382456783-22826-2-git-send-email-andi@firstfloor.org>
+ <1382459764.2041.90.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1382459764.2041.90.camel@joe-AO722>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Are you (going to be) in Edinburgh? Matthew was just explaining a bunch
-> > of this stuff to me, it might be useful for you to get it from the
-> > horses mouth instead of laundered through my brain (which is a bit
-> > addled afterwards ;-)).
-> 
-> Sadly no. However, if it is possible/needed I could participate in conference call.
+> Doesn't doubling seems a tad excessive given the
+> silly length of that symbol above?
 
-+1 (the conference call)
+No, it doesn't.
 
-> 
-> Daniel
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
