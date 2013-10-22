@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3JVKTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 06:19:11 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:63107 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3JVKTJ (ORCPT
+	id S1752863Ab3JVKUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 06:20:25 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:45722 "EHLO
+	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751438Ab3JVKUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 06:19:09 -0400
-Message-ID: <5266510F.8000300@synopsys.com>
-Date: Tue, 22 Oct 2013 15:48:55 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 22 Oct 2013 06:20:23 -0400
+X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 06:20:23 EDT
+Message-ID: <52664FB6.4000004@atmel.com>
+Date: Tue, 22 Oct 2013 18:13:10 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 02/25] smp, alpha: kill SMP single function call
- interrupt
-References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-3-git-send-email-liuj97@gmail.com> <52664E7E.6090504@synopsys.com>
-In-Reply-To: <52664E7E.6090504@synopsys.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+CC: <plagnioj@jcrosoft.com>, <nicolas.ferre@atmel.com>,
+        <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH v5] PWM: atmel-pwm: add PWM controller driver
+References: <1380532240-18650-1-git-send-email-voice.shen@atmel.com> <20131008131727.GB12839@ulmo.nvidia.com>
+In-Reply-To: <20131008131727.GB12839@ulmo.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.243]
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+CC gmail address, as the othe rone bounced !
+Hi All,
 
-On 10/22/2013 03:37 PM, Vineet Gupta wrote:
-> Hi Jiang,
-> 
-> On 09/11/2013 09:37 PM, Jiang Liu wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
+On 10/8/2013 21:17, Thierry Reding wrote:
+> On Mon, Sep 30, 2013 at 05:10:40PM +0800, Bo Shen wrote:
+>> Add Atmel PWM controller driver based on PWM framework.
 >>
->> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
->> similar to smp_call_function_single()" has unified the way to handle
->> single and multiple cross-CPU function calls. Now only one interrupt
->> is needed for architecture specific code to support generic SMP function
->> call interfaces, so kill the redundant single function call interrupt.
+>> This is the basic function implementation of Atmel PWM controller.
+>> It can work with PWM based led and backlight.
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> 
-> What's the status of this series - seemed useful to me. Are you planning to get it
-> merged in 3.13
-> 
-> -Vineet
-> 
+>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>>
+>> ---
+>> Changes in v5:
+>>    - call clk_disable directly, if so, it won't cause more than one channel
+>>      enabled, the clock can not be disabled.
+>>
+>> Changes in v4:
+>>    - check the return value of clk_prepare()
+>>    - change channel register size as constant
+>>
+>> Changes in v3:
+>>    - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
+>>    - Add PWM led example in binding documentation
+>>    - Using micro replace hard code
+>>
+>> Changes in v2:
+>>    - Address the comments from Thierry Reding
+>>
+>>   .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 +++
+>>   drivers/pwm/Kconfig                                |    9 +
+>>   drivers/pwm/Makefile                               |    1 +
+>>   drivers/pwm/pwm-atmel.c                            |  344 ++++++++++++++++++++
+>>   4 files changed, 395 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>>   create mode 100644 drivers/pwm/pwm-atmel.c
+>
+> I haven't seen an Acked-by from the device tree bindings maintainers on
+> this. I've Cc'ed them, so hopefully one of them has time to review.
 
+Any comments?
+
+Best Regards,
+Bo Shen
