@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3JVX3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 19:29:54 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2672 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab3JVX3b convert rfc822-to-8bit (ORCPT
+	id S1754024Ab3JVXqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 19:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38554 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3JVXqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 19:29:31 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Sherman Yin" <syin@broadcom.com>
-To: "Sherman Yin" <syin@broadcom.com>,
-        "Linus Walleij" <linus.walleij@linaro.org>
-cc: "Mark Rutland" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Christian Daudt" <bcm@fixthebug.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "Rob Landley" <rob@landley.net>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-Thread-Topic: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl
- driver
-Thread-Index: AQHOwJjvlt3ZyknjmUucDC303MwucJnskuoAgAHzuwCAASFSgIAANMjQgBFlnYA=
-Date: Tue, 22 Oct 2013 23:29:14 +0000
-Message-ID: <051069C10411E24D9749790C498526FA1BE0841D@SJEXCHMB12.corp.ad.broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
- <1380846199-12829-4-git-send-email-syin@broadcom.com>
- <CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
- <051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
- <CACRpkdarPC+LxAAezT2LRiz=Y2RduUsb75YYHUgq7HqePzkD3Q@mail.gmail.com>
- <051069C10411E24D9749790C498526FA1BE03D43@SJEXCHMB12.corp.ad.broadcom.com>
-In-Reply-To: <051069C10411E24D9749790C498526FA1BE03D43@SJEXCHMB12.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	Tue, 22 Oct 2013 19:46:17 -0400
+Date: Wed, 23 Oct 2013 00:47:43 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bin Gao <bin.gao@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] drivers/misc: add rawio framework and drivers
+Message-ID: <20131022234743.GA12031@kroah.com>
+References: <5265C0C5.70905@linux.intel.com>
+ <20131022054406.GA14163@kroah.com>
+ <20131022181930.GA53231@bingao-desk1.fm.intel.com>
 MIME-Version: 1.0
-X-WSS-ID: 7E79D5C2150404465-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022181930.GA53231@bingao-desk1.fm.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> +static const struct capri_cfg_param capri_pinconf_params[] = {
->>>>> +       {"brcm,hysteresis",     CAPRI_PINCONF_PARAM_HYST},
->>>>> +       {"brcm,pull",           CAPRI_PINCONF_PARAM_PULL},
->>>>> +       {"brcm,slew",           CAPRI_PINCONF_PARAM_SLEW},
->>>>> +       {"brcm,input_dis",      CAPRI_PINCONF_PARAM_INPUT_DIS},
->>>>> +       {"brcm,drive_str",      CAPRI_PINCONF_PARAM_DRV_STR},
->>>>> +       {"brcm,pull_up_str",    CAPRI_PINCONF_PARAM_PULL_UP_STR},
->>>>> +       {"brcm,mode",           CAPRI_PINCONF_PARAM_MODE},
->>>>> +};
->>>>
->>>>As well as all this stuff...
->>>
->>> OK.  Will see if I can find something suitable for "input disable" and "mode"
->>
->>Let's discuss this. What exactly does "input disable" and "mode"
->>mean, in electrical terms?
->>
->>When you come down to what actually happens it may turn out that
->>"input disable" is PIN_CONFIG_OUTPUT, which implicitly turns
->>off input does it not?
->
->I'm going to verify the details with our hardware team first, and will let you
->know if we think we can use one of the existing generic parameters or if we
->need a new one.
+On Tue, Oct 22, 2013 at 11:19:30AM -0700, Bin Gao wrote:
+> On Tue, Oct 22, 2013 at 06:44:06AM +0100, Greg Kroah-Hartman wrote:
+> > So, just because userspace is "hard" you want to add stuff to the kernel
+> > instead.
+> > 
+> Well, there are other reasons - "hard" is just one of them.
+> For instance, on some platforms with runtime pm enabled, access to registers
+> of a device which is in low power state will cause problems(syste reboot, etc.).
+> You can only wake it up to running state by runtime API from kernel space.
 
-"input disable"
-This setting disconnects the input (DIN) to the internal logic from the pin pad.  
-However, the output (DOUT) can still drive the pad.  It seems to match 
-PIN_CONFIG_OUTPUT, but the current generic option is either "output-low" or
-"output-high" - are these referring to a static output of 0 and 1? 
- 
-"mode"
-This controls several aspect of the pin (slew rate, pull up strength, etc) to meet
-I2C specs for Standard/Fast mode vs High Speed mode.  I think the best
-way is to map this to slew rate, which would require some explanation because
-the meaning of slew rate differs depending on what pin function is selected:
-- When I2C (*_SCL or *_SDA) function is selected for the pin: 0: Standard (100kbps)
-  & Fast mode (400kbps), 1: High Speed mode (3.4Mbps)
-- When IC_DM or IC_DP function is selected, 0: normal slew rate, 1: fast slew rate
-- Else: 0: fast slew rate, 1: normal slew rate 
+Then write a UIO pci driver, that should work, right?
 
-Also, it seems like I have to add "slew-rate" to dt_params[] in pinconf-generic.c and
-pinctrl-bindings.txt.
+> > Sorry, but for over the past decade, we have been doing just the
+> > opposite, if things can be done in userspace, then they should be done
+> > there.  So for us to go in the opposite direction, like these patches
+> > show, would be a major change.
+> > 
+> Agree, but as mentioned above, for some situation we can't do it from
+> user space.
+> 
+> > You can already do this today for PCI with the UIO framework, right?
+> > Why duplicate that functionality here with another userapce API that we
+> > will then have to maintain for the next 40+ years?
+> > 
+> No, UIO is not appropriate for my requirement.
 
+I don't know what your "requirements" are.
 
+> The thing I need is to dump any registers just by 2 simple commands.
+
+I find it hard to believe that your "requirement" dictates the exact
+method of _how_ you get access to this hardware.
+
+> > Have you run these proposed changes by any of the Intel kernel
+> > developers?  What did they say to them?
+> > 
+> > If not, why haven't you, isn't that a resource you should be using for
+> > things like this?
+> > 
+> Why you had these strange questions?
+
+It's something I ask any Intel developer who sends odd patches that have
+obviously not been reviewed by Intel's kernel developers.  They are a
+resource you should be using to tell you these types of things, don't
+make me, a community member, tell you this.
+
+> Over years, we have been maintaining and using these drivers internally 
+> for various purpose across our group for SoC pre-silicon and post-silicon
+> degugging, e.g. IOAPIC RTE dumping, GPIO tunning, raw device degugging
+> without a driver(i2c, spi, uart), etc., etc., ...
+> Trying to push some existed codes upstream is not a bad thing.
+
+Trying to push code that is incorrect is a bad thing.  Just because it
+has been living in a private tree for X number of years is not an
+excuse, because you are now asking me and others to maintain this API
+you have created (which is undocumented) for the next 40+ years.
+
+Again, use the interfaces we already have, and if they are not
+sufficient for whatever reason, help make them better.  Don't create
+whole new ones just because someone 5+ years ago didn't know about them,
+or that they weren't even present at that time.  That's not the
+community's fault, it's yours.
+
+greg k-h
