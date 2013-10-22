@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab3JVIWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:22:10 -0400
-Received: from mail.us.es ([193.147.175.20]:54430 "EHLO mail.us.es"
+	id S1753650Ab3JVIX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:23:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58329 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab3JVIWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:22:05 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98/17990. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.8/7.5):. 
- Processed in 1.862043 secs); 22 Oct 2013 08:22:01 -0000
-X-Spam-ASN: AS12715 188.78.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Tue, 22 Oct 2013 10:21:59 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] netfilter: fix ordering of jumpstack allocation and
- table update
-Message-ID: <20131022082159.GA20713@localhost>
-References: <1382016273-21993-1-git-send-email-will.deacon@arm.com>
- <20131018111536.GA11132@localhost>
- <20131018165749.GI3296@mudshark.cambridge.arm.com>
- <1382116693.3284.21.camel@edumazet-glaptop.roam.corp.google.com>
- <20131021121452.GA29250@mudshark.cambridge.arm.com>
+	id S1753582Ab3JVIXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:23:55 -0400
+Date: Tue, 22 Oct 2013 10:23:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: Linux-Kernel mailing list <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Linux Torvalds <torvalds@osdl.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCHv2] x86: add kconfig options for newer 64-bit processors
+Message-ID: <20131022082355.GA10268@nazgul.tnic>
+References: <526325C9.7030705@gmail.com>
+ <20131020091813.GA4972@pd.tnic>
+ <52646E0E.6040204@gmail.com>
+ <20131021105401.GA5019@nazgul.tnic>
+ <526513B5.5050203@gmail.com>
+ <20131021135917.GA6117@nazgul.tnic>
+ <52653847.1050606@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131021121452.GA29250@mudshark.cambridge.arm.com>
+In-Reply-To: <52653847.1050606@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 01:14:53PM +0100, Will Deacon wrote:
-> On Fri, Oct 18, 2013 at 06:18:13PM +0100, Eric Dumazet wrote:
-> > On Fri, 2013-10-18 at 17:57 +0100, Will Deacon wrote:
-> > > Hi Pablo,
-> > > 
-> > 
-> > > > We also need fixes for net/ipv6/netfilter/ip6_tables.c and
-> > > > net/ipv4/netfilter/arp_tables.c as well. Could you extend this patch
-> > > > and resend?
-> > > 
-> > > Sure, I can try, but that's going to require a bit of time to sit down and
-> > > look at the shared data, access order, dependencies etc. I'm currently
-> > > preparing for Edinburgh, so it might be a while before I get a chance to
-> > > extend this.
-> > 
-> > That's basically same code copy/pasted, so it should be relatively easy.
-> 
-> Ok, I took a look and I think I see what you mean: there are just some
-> additional consumers of the tables, so there aren't any additional writers
-> afaict (at least, net/bridge/netfilter/ebtables.c uses rw locks so we don't
-> have an issue there).
-> 
-> Attempt at an updated patch below.
+On Mon, Oct 21, 2013 at 10:20:55AM -0400, Austin S Hemmelgarn wrote:
+> By this same logic though, none of the x86 processor tuning options
+> currently in the kernel should have been put in in the first place
+> (and, taking it to an extreme, should in fact be removed).
 
-Applied, thanks Will.
+Some of them make sense like MATOM as Atom supports a different subset
+of x86 insns, MOVBE being one example. And there's no need to touch them
+as unnecessary code churn is something we don't do.
