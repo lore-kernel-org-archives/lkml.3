@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab3JVVIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:08:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62717 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab3JVVIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755371Ab3JVVIL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Oct 2013 17:08:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21671 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755342Ab3JVVII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:08:08 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
-   d="scan'208";a="415395771"
-Subject: [PATCH v2 04/13] dmaengine: reference counted unmap data
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="423109125"
+Subject: [PATCH v2 03/13] dmaengine: prepare for generic 'unmap' data
 From: Dan Williams <dan.j.williams@intel.com>
 To: dmaengine@vger.kernel.org
-Cc: linux@arm.linux.org.uk, b.zolnierkie@samsung.com, vinod.koul@intel.com,
-        t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, dave.jiang@intel.com
-Date: Tue, 22 Oct 2013 14:08:10 -0700
-Message-ID: <20131022210809.31181.75168.stgit@viggo.jf.intel.com>
-In-Reply-To: <1382117733-16720-5-git-send-email-b.zolnierkie@samsung.com>
-References: <1382117733-16720-5-git-send-email-b.zolnierkie@samsung.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, dave.jiang@intel.com,
+        b.zolnierkie@samsung.com, vinod.koul@intel.com, t.figa@samsung.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Zhang Wei <zw@zh-kernel.org>, kyungmin.park@samsung.com,
+        Viresh Kumar <viresh.linux@gmail.com>, linux@arm.linux.org.uk,
+        Li Yang <leoli@freescale.com>
+Date: Tue, 22 Oct 2013 14:08:07 -0700
+Message-ID: <20131022210807.31158.44789.stgit@viggo.jf.intel.com>
+In-Reply-To: <1382117733-16720-4-git-send-email-b.zolnierkie@samsung.com>
+References: <1382117733-16720-4-git-send-email-b.zolnierkie@samsung.com>
 User-Agent: StGit/0.17-1-g7c57
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,21 +30,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hang a common 'unmap' object off of dma descriptors for the purpose of
-providing a unified unmapping interface.  The lifetime of a mapping may
-span multiple descriptors, so these unmap objects are reference counted
-by related descriptor.
+Add a hook for a common dma unmap implementation to enable removal of
+the per driver custom unmap code.  (A reworked version of Bartlomiej
+Zolnierkiewicz's patches to remove the custom callbacks and the size
+increase of dma_async_tx_descriptor for drivers that don't care about
+raid).
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
 Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Zhang Wei <zw@zh-kernel.org>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bzolnier: fix IS_ENABLED() check]
-[bzolnier: fix release ordering in dmaengine_destroy_unmap_pool()]
-[bzolnier: fix check for success in dmaengine_init_unmap_pool()]
-[bzolnier: use mempool_free() instead of kmem_cache_free()]
-[bzolnier: add missing unmap->len initializations]
-[bzolnier: add __init tag to dmaengine_init_unmap_pool()]
+[bzolnier: prepare pl330 driver for adding missing unmap while at it]
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
@@ -51,222 +55,241 @@ Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 	2/ cc maintainers of affected drivers
 	3/ fixup some mail addresses
 
- drivers/dma/dmaengine.c   |  156 ++++++++++++++++++++++++++++++++++++++++++---
- include/linux/dmaengine.h |    3 +
- 2 files changed, 150 insertions(+), 9 deletions(-)
+ drivers/dma/amba-pl08x.c  |    1 +
+ drivers/dma/at_hdmac.c    |    1 +
+ drivers/dma/dw/core.c     |    1 +
+ drivers/dma/ep93xx_dma.c  |    1 +
+ drivers/dma/fsldma.c      |    1 +
+ drivers/dma/ioat/dma.c    |    1 +
+ drivers/dma/ioat/dma_v2.c |    1 +
+ drivers/dma/ioat/dma_v3.c |    1 +
+ drivers/dma/iop-adma.c    |    1 +
+ drivers/dma/mv_xor.c      |    1 +
+ drivers/dma/pl330.c       |    2 ++
+ drivers/dma/ppc4xx/adma.c |    1 +
+ drivers/dma/timb_dma.c    |    1 +
+ drivers/dma/txx9dmac.c    |    1 +
+ include/linux/dmaengine.h |   26 ++++++++++++++++++++++++++
+ 15 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index bbc89df6bc56..e721a1caff7f 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -65,6 +65,7 @@
- #include <linux/acpi.h>
- #include <linux/acpi_dma.h>
- #include <linux/of_dma.h>
-+#include <linux/mempool.h>
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index fce46c5bf1c7..7f9846464b77 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1197,6 +1197,7 @@ static void pl08x_desc_free(struct virt_dma_desc *vd)
+ 	struct pl08x_txd *txd = to_pl08x_txd(&vd->tx);
+ 	struct pl08x_dma_chan *plchan = to_pl08x_chan(vd->tx.chan);
  
- static DEFINE_MUTEX(dma_list_mutex);
- static DEFINE_IDR(dma_idr);
-@@ -901,6 +902,129 @@ void dma_async_device_unregister(struct dma_device *device)
- }
- EXPORT_SYMBOL(dma_async_device_unregister);
++	dma_descriptor_unmap(txd);
+ 	if (!plchan->slave)
+ 		pl08x_unmap_buffers(txd);
  
-+struct dmaengine_unmap_pool {
-+	struct kmem_cache *cache;
-+	const char *name;
-+	mempool_t *pool;
-+	size_t size;
-+};
-+
-+#define __UNMAP_POOL(x) { .size = x, .name = "dmaengine-unmap-" __stringify(x) }
-+static struct dmaengine_unmap_pool unmap_pool[] = {
-+	__UNMAP_POOL(2),
-+	#if IS_ENABLED(CONFIG_ASYNC_TX_DMA)
-+	__UNMAP_POOL(16),
-+	__UNMAP_POOL(128),
-+	__UNMAP_POOL(256),
-+	#endif
-+};
-+
-+static struct dmaengine_unmap_pool *__get_unmap_pool(int nr)
-+{
-+	int order = get_count_order(nr);
-+
-+	switch (order) {
-+	case 0 ... 1:
-+		return &unmap_pool[0];
-+	case 2 ... 4:
-+		return &unmap_pool[1];
-+	case 5 ... 7:
-+		return &unmap_pool[2];
-+	case 8:
-+		return &unmap_pool[3];
-+	default:
-+		BUG();
-+		return NULL;
-+	}
-+}
-+
-+static void dmaengine_unmap(struct kref *kref)
-+{
-+	struct dmaengine_unmap_data *unmap = container_of(kref, typeof(*unmap), kref);
-+	struct device *dev = unmap->dev;
-+	int cnt, i;
-+
-+	cnt = unmap->to_cnt;
-+	for (i = 0; i < cnt; i++)
-+		dma_unmap_page(dev, unmap->addr[i], unmap->len,
-+			       DMA_TO_DEVICE);
-+	cnt += unmap->from_cnt;
-+	for (; i < cnt; i++)
-+		dma_unmap_page(dev, unmap->addr[i], unmap->len,
-+			       DMA_FROM_DEVICE);
-+	cnt += unmap->bidi_cnt;
-+	for (; i < cnt; i++)
-+		dma_unmap_page(dev, unmap->addr[i], unmap->len,
-+			       DMA_BIDIRECTIONAL);
-+	mempool_free(unmap, __get_unmap_pool(cnt)->pool);
-+}
-+
-+void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap)
-+{
-+	if (unmap)
-+		kref_put(&unmap->kref, dmaengine_unmap);
-+}
-+EXPORT_SYMBOL_GPL(dmaengine_unmap_put);
-+
-+static void dmaengine_destroy_unmap_pool(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(unmap_pool); i++) {
-+		struct dmaengine_unmap_pool *p = &unmap_pool[i];
-+
-+		if (p->pool)
-+			mempool_destroy(p->pool);
-+		p->pool = NULL;
-+		if (p->cache)
-+			kmem_cache_destroy(p->cache);
-+		p->cache = NULL;
-+	}
-+}
-+
-+static int __init dmaengine_init_unmap_pool(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(unmap_pool); i++) {
-+		struct dmaengine_unmap_pool *p = &unmap_pool[i];
-+		size_t size;
-+
-+		size = sizeof(struct dmaengine_unmap_data) +
-+		       sizeof(dma_addr_t) * p->size;
-+
-+		p->cache = kmem_cache_create(p->name, size, 0,
-+					     SLAB_HWCACHE_ALIGN, NULL);
-+		if (!p->cache)
-+			break;
-+		p->pool = mempool_create_slab_pool(1, p->cache);
-+		if (!p->pool)
-+			break;
-+	}
-+
-+	if (i == ARRAY_SIZE(unmap_pool))
-+		return 0;
-+
-+	dmaengine_destroy_unmap_pool();
-+	return -ENOMEM;
-+}
-+
-+static struct dmaengine_unmap_data *
-+dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
-+{
-+	struct dmaengine_unmap_data *unmap;
-+
-+	unmap = mempool_alloc(__get_unmap_pool(nr)->pool, flags);
-+	if (!unmap)
-+		return NULL;
-+
-+	memset(unmap, 0, sizeof(*unmap));
-+	kref_init(&unmap->kref);
-+	unmap->dev = dev;
-+
-+	return unmap;
-+}
-+
- /**
-  * dma_async_memcpy_pg_to_pg - offloaded copy from page to page
-  * @chan: DMA channel to offload copy to
-@@ -922,24 +1046,34 @@ dma_async_memcpy_pg_to_pg(struct dma_chan *chan, struct page *dest_pg,
- {
- 	struct dma_device *dev = chan->device;
- 	struct dma_async_tx_descriptor *tx;
--	dma_addr_t dma_dest, dma_src;
-+	struct dmaengine_unmap_data *unmap;
- 	dma_cookie_t cookie;
- 	unsigned long flags;
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index c787f38a186a..cc7098ddf9d4 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -345,6 +345,7 @@ atc_chain_complete(struct at_dma_chan *atchan, struct at_desc *desc)
+ 	list_move(&desc->desc_node, &atchan->free_list);
  
--	dma_src = dma_map_page(dev->dev, src_pg, src_off, len, DMA_TO_DEVICE);
--	dma_dest = dma_map_page(dev->dev, dest_pg, dest_off, len,
--				DMA_FROM_DEVICE);
--	flags = DMA_CTRL_ACK;
--	tx = dev->device_prep_dma_memcpy(chan, dma_dest, dma_src, len, flags);
-+	unmap = dmaengine_get_unmap_data(dev->dev, 2, GFP_NOIO);
-+	if (!unmap)
-+		return -ENOMEM;
+ 	/* unmap dma addresses (not on slave channels) */
++	dma_descriptor_unmap(txd);
+ 	if (!atchan->chan_common.private) {
+ 		struct device *parent = chan2parent(&atchan->chan_common);
+ 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 89eb89f22284..e3fe1b1a73b1 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -311,6 +311,7 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
+ 	list_splice_init(&desc->tx_list, &dwc->free_list);
+ 	list_move(&desc->desc_node, &dwc->free_list);
+ 
++	dma_descriptor_unmap(txd);
+ 	if (!is_slave_direction(dwc->direction)) {
+ 		struct device *parent = chan2parent(&dwc->chan);
+ 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index 591cd8c63abb..dcd6bf5d3091 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -791,6 +791,7 @@ static void ep93xx_dma_tasklet(unsigned long data)
+ 		 * For the memcpy channels the API requires us to unmap the
+ 		 * buffers unless requested otherwise.
+ 		 */
++		dma_descriptor_unmap(&desc->txd);
+ 		if (!edmac->chan.private)
+ 			ep93xx_dma_unmap_buffers(desc);
+ 
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index b3f3e90054f2..66c4052a1f34 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -868,6 +868,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
+ 	/* Run any dependencies */
+ 	dma_run_dependencies(txd);
+ 
++	dma_descriptor_unmap(txd);
+ 	/* Unmap the dst buffer, if requested */
+ 	if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+ 		if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 5ff6fc1819dc..26f8cfd6bc3f 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -602,6 +602,7 @@ static void __cleanup(struct ioat_dma_chan *ioat, dma_addr_t phys_complete)
+ 		dump_desc_dbg(ioat, desc);
+ 		if (tx->cookie) {
+ 			dma_cookie_complete(tx);
++			dma_descriptor_unmap(tx);
+ 			ioat_dma_unmap(chan, tx->flags, desc->len, desc->hw);
+ 			ioat->active -= desc->hw->tx_cnt;
+ 			if (tx->callback) {
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index b925e1b1d139..fc7b50a813cc 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -148,6 +148,7 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ 		tx = &desc->txd;
+ 		dump_desc_dbg(ioat, desc);
+ 		if (tx->cookie) {
++			dma_descriptor_unmap(tx);
+ 			ioat_dma_unmap(chan, tx->flags, desc->len, desc->hw);
+ 			dma_cookie_complete(tx);
+ 			if (tx->callback) {
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index d8ececaf1b57..57a2901b917a 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -577,6 +577,7 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
+ 		tx = &desc->txd;
+ 		if (tx->cookie) {
+ 			dma_cookie_complete(tx);
++			dma_descriptor_unmap(tx);
+ 			ioat3_dma_unmap(ioat, desc, idx + i);
+ 			if (tx->callback) {
+ 				tx->callback(tx->callback_param);
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index dd8b44a56e5d..8f6e426590eb 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -152,6 +152,7 @@ iop_adma_run_tx_complete_actions(struct iop_adma_desc_slot *desc,
+ 		if (tx->callback)
+ 			tx->callback(tx->callback_param);
+ 
++		dma_descriptor_unmap(tx);
+ 		/* unmap dma addresses
+ 		 * (unmap_single vs unmap_page?)
+ 		 */
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 536dcb8ba5fd..ed1ab1d0875e 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -278,6 +278,7 @@ mv_xor_run_tx_complete_actions(struct mv_xor_desc_slot *desc,
+ 			desc->async_tx.callback(
+ 				desc->async_tx.callback_param);
+ 
++		dma_descriptor_unmap(&desc->async_tx);
+ 		/* unmap dma addresses
+ 		 * (unmap_single vs unmap_page?)
+ 		 */
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index a562d24d20bf..ab25e52cd43b 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2268,6 +2268,8 @@ static void pl330_tasklet(unsigned long data)
+ 			list_move_tail(&desc->node, &pch->dmac->desc_pool);
+ 		}
+ 
++		dma_descriptor_unmap(&desc->txd);
 +
-+	unmap->to_cnt = 1;
-+	unmap->from_cnt = 1;
-+	unmap->addr[0] = dma_map_page(dev->dev, src_pg, src_off, len,
-+				      DMA_TO_DEVICE);
-+	unmap->addr[1] = dma_map_page(dev->dev, dest_pg, dest_off, len,
-+				      DMA_FROM_DEVICE);
-+	unmap->len = len;
-+	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_SRC_UNMAP |
-+		DMA_COMPL_SKIP_DEST_UNMAP;
-+	tx = dev->device_prep_dma_memcpy(chan, unmap->addr[1], unmap->addr[0],
-+					 len, flags);
+ 		if (callback) {
+ 			spin_unlock_irqrestore(&pch->lock, flags);
+ 			callback(callback_param);
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index 370ff8265630..442492da7415 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -1765,6 +1765,7 @@ static dma_cookie_t ppc440spe_adma_run_tx_complete_actions(
+ 			desc->async_tx.callback(
+ 				desc->async_tx.callback_param);
  
- 	if (!tx) {
--		dma_unmap_page(dev->dev, dma_src, len, DMA_TO_DEVICE);
--		dma_unmap_page(dev->dev, dma_dest, len, DMA_FROM_DEVICE);
-+		dmaengine_unmap_put(unmap);
- 		return -ENOMEM;
- 	}
++		dma_descriptor_unmap(&desc->async_tx);
+ 		/* unmap dma addresses
+ 		 * (unmap_single vs unmap_page?)
+ 		 *
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index 28af214fce04..1d0c98839087 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -293,6 +293,7 @@ static void __td_finish(struct timb_dma_chan *td_chan)
  
--	tx->callback = NULL;
-+	dma_set_unmap(tx, unmap);
- 	cookie = tx->tx_submit(tx);
-+	dmaengine_unmap_put(unmap);
+ 	list_move(&td_desc->desc_node, &td_chan->free_list);
  
- 	preempt_disable();
- 	__this_cpu_add(chan->local->bytes_transferred, len);
-@@ -1069,6 +1203,10 @@ EXPORT_SYMBOL_GPL(dma_run_dependencies);
++	dma_descriptor_unmap(txd);
+ 	if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP))
+ 		__td_unmap_descs(td_desc,
+ 			txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE);
+diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
+index 71e8e775189e..22a0b6c78c77 100644
+--- a/drivers/dma/txx9dmac.c
++++ b/drivers/dma/txx9dmac.c
+@@ -419,6 +419,7 @@ txx9dmac_descriptor_complete(struct txx9dmac_chan *dc,
+ 	list_splice_init(&desc->tx_list, &dc->free_list);
+ 	list_move(&desc->desc_node, &dc->free_list);
  
- static int __init dma_bus_init(void)
- {
-+	int err = dmaengine_init_unmap_pool();
-+
-+	if (err)
-+		return err;
- 	return class_register(&dma_devclass);
- }
- arch_initcall(dma_bus_init);
++	dma_descriptor_unmap(txd);
+ 	if (!ds) {
+ 		dma_addr_t dmaaddr;
+ 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
 diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 9070050fbcd8..2fe855a7cab1 100644
+index 0bc727534108..9070050fbcd8 100644
 --- a/include/linux/dmaengine.h
 +++ b/include/linux/dmaengine.h
-@@ -464,9 +464,12 @@ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
- 	tx->unmap = unmap;
- }
+@@ -413,6 +413,17 @@ void dma_chan_cleanup(struct kref *kref);
+ typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
  
-+void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap);
+ typedef void (*dma_async_tx_callback)(void *dma_async_param);
 +
- static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
++struct dmaengine_unmap_data {
++	u8 to_cnt;
++	u8 from_cnt;
++	u8 bidi_cnt;
++	struct device *dev;
++	struct kref kref;
++	size_t len;
++	dma_addr_t addr[0];
++};
++
+ /**
+  * struct dma_async_tx_descriptor - async transaction descriptor
+  * ---dma generic offload fields---
+@@ -438,6 +449,7 @@ struct dma_async_tx_descriptor {
+ 	dma_cookie_t (*tx_submit)(struct dma_async_tx_descriptor *tx);
+ 	dma_async_tx_callback callback;
+ 	void *callback_param;
++	struct dmaengine_unmap_data *unmap;
+ #ifdef CONFIG_ASYNC_TX_ENABLE_CHANNEL_SWITCH
+ 	struct dma_async_tx_descriptor *next;
+ 	struct dma_async_tx_descriptor *parent;
+@@ -445,6 +457,20 @@ struct dma_async_tx_descriptor {
+ #endif
+ };
+ 
++static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
++				 struct dmaengine_unmap_data *unmap)
++{
++	kref_get(&unmap->kref);
++	tx->unmap = unmap;
++}
++
++static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
++{
++	if (tx->unmap) {
++		tx->unmap = NULL;
++	}
++}
++
+ #ifndef CONFIG_ASYNC_TX_ENABLE_CHANNEL_SWITCH
+ static inline void txd_lock(struct dma_async_tx_descriptor *txd)
  {
- 	if (tx->unmap) {
-+		dmaengine_unmap_put(tx->unmap);
- 		tx->unmap = NULL;
- 	}
- }
 
