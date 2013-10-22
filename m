@@ -1,140 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3JVNON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 09:14:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26040 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab3JVNOL (ORCPT
+	id S1753548Ab3JVNPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 09:15:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53738 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab3JVNP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 09:14:11 -0400
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Shmulik Ladkani" <shmulik.ladkani@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 1/2] block: remove unrelated header files and export symbol
-Thread-Topic: [PATCH 1/2] block: remove unrelated header files and export
- symbol
-Thread-Index: AQHOzyhlGv+9SlYr/UGKp0tDdOhpoA==
-Date: Tue, 22 Oct 2013 13:12:44 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C084C73@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
- <20131020120603.GA18678@localhost>
-In-Reply-To: <20131020120603.GA18678@localhost>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.21]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 22 Oct 2013 09:15:28 -0400
+Message-ID: <52667A6C.6000301@linutronix.de>
+Date: Tue, 22 Oct 2013 15:15:24 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Lee Jones <lee.jones@linaro.org>
+CC: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
+References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com> <20130807084054.GA18668@lee--X1>
+In-Reply-To: <20130807084054.GA18668@lee--X1>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9MDEJW4006102
 
-From: CaiZhiyong <caizhiyong@huawei.com>
-Subject: block: remove unrelated header files and export symbol
+On 08/07/2013 10:40 AM, Lee Jones wrote:
+> On Mon, 05 Aug 2013, Zubair Lutfullah wrote:
+> 
+>> Reg_cache variable is used to lock step enable register
+>> from being accessed and written by both TSC and ADC
+>> at the same time.
+>> However, it isn't updated anywhere in the code at all.
+>>
+>> If both TSC and ADC are used, eventually 1FFFF is always
+>> written enabling all 16 steps uselessly causing a mess.
+>>
+>> Patch fixes it by correcting the locks and updates the
+>> variable by reading the step enable register
+>>
+>> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+>> ---
+>>  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> Better that it comes from somewhere.
 
-This patch fix up the following items:
- - remove unrelated header files.
- - export interface function.
- - modify function cmdline_parts_parse return value, this will make
-   it more friendly for the caller.
+I don't understand. All three functions are used before the patch has
+been applied:
 
-Signed-off-by: CaiZhiyong <caizhiyong@huawei.com>
----
- block/cmdline-parser.c         | 18 +++++++++++-------
- include/linux/cmdline-parser.h |  8 ++++----
- 2 files changed, 15 insertions(+), 11 deletions(-)
+$ git grep -l am335x_tsc_se_set
+drivers/iio/adc/ti_am335x_adc.c
+drivers/input/touchscreen/ti_am335x_tsc.c
+drivers/mfd/ti_am335x_tscadc.c
 
-diff --git a/block/cmdline-parser.c b/block/cmdline-parser.c
-index cc2637f..9dbc67e 100644
---- a/block/cmdline-parser.c
-+++ b/block/cmdline-parser.c
-@@ -4,8 +4,7 @@
-  * Written by Cai Zhiyong <caizhiyong@huawei.com>
-  *
-  */
--#include <linux/buffer_head.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/cmdline-parser.h>
- 
- static int parse_subpart(struct cmdline_subpart **subpart, char *partdef)
-@@ -159,6 +158,7 @@ void cmdline_parts_free(struct cmdline_parts **parts)
- 		*parts = next_parts;
- 	}
- }
-+EXPORT_SYMBOL(cmdline_parts_free);
- 
- int cmdline_parts_parse(struct cmdline_parts **parts, const char *cmdline)
- {
-@@ -206,6 +206,7 @@ fail:
- 	cmdline_parts_free(parts);
- 	goto done;
- }
-+EXPORT_SYMBOL(cmdline_parts_parse);
- 
- struct cmdline_parts *cmdline_parts_find(struct cmdline_parts *parts,
- 					 const char *bdev)
-@@ -214,17 +215,17 @@ struct cmdline_parts *cmdline_parts_find(struct cmdline_parts *parts,
- 		parts = parts->next_parts;
- 	return parts;
- }
-+EXPORT_SYMBOL(cmdline_parts_find);
- 
- /*
-  *  add_part()
-  *    0 success.
-  *    1 can not add so many partitions.
-  */
--void cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
--		       int slot,
--		       int (*add_part)(int, struct cmdline_subpart *, void *),
--		       void *param)
--
-+int cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
-+		      int slot,
-+		      int (*add_part)(int, struct cmdline_subpart *, void *),
-+		      void *param)
- {
- 	sector_t from = 0;
- 	struct cmdline_subpart *subpart;
-@@ -247,4 +248,7 @@ void cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
- 		if (add_part(slot, subpart, param))
- 			break;
- 	}
-+
-+	return slot;
- }
-+EXPORT_SYMBOL(cmdline_parts_set);
-diff --git a/include/linux/cmdline-parser.h b/include/linux/cmdline-parser.h
-index 98e892e..43b65a9 100644
---- a/include/linux/cmdline-parser.h
-+++ b/include/linux/cmdline-parser.h
-@@ -35,9 +35,9 @@ int cmdline_parts_parse(struct cmdline_parts **parts, const char *cmdline);
- struct cmdline_parts *cmdline_parts_find(struct cmdline_parts *parts,
- 					 const char *bdev);
- 
--void cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
--		       int slot,
--		       int (*add_part)(int, struct cmdline_subpart *, void *),
--		       void *param);
-+int cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
-+		      int slot,
-+		      int (*add_part)(int, struct cmdline_subpart *, void *),
-+		      void *param);
- 
- #endif /* CMDLINEPARSEH */
--- 
-1.8.1.5
+$ git grep -l am335x_tsc_se_clr
+drivers/iio/adc/ti_am335x_adc.c
+drivers/input/touchscreen/ti_am335x_tsc.c
+drivers/mfd/ti_am335x_tscadc.c
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+$ git grep -l am335x_tsc_se_update
+drivers/iio/adc/ti_am335x_adc.c
+drivers/input/touchscreen/ti_am335x_tsc.c
+drivers/mfd/ti_am335x_tscadc.c
+include/linux/mfd/ti_am335x_tscadc.h
+
+It has been initialized to 0 by time the mfd part was loaded and
+updated via â€¦_set() from both parts (TSC & ADC). The lock ensured that
+we never lose or add bits due to a race. So I don't understand why we
+end up with 0x1FFFF.
+Could some please explain to me how this can happen?
+
+I added reg_se_cache to cache the content of REG_SE once and
+synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
+after "work" has been done. So you need to know the old value or TSC may
+disable ADC and the other way around.
+
+In tree (staging-next) I see that reg_se_cache ended being pointless.
+am335x_tsc_se_update() is no longer used from TSC or ADC. Only the
+_set() and _clr() functions are used which (both) read back the content
+of the REG_SE register before calling am335x_tsc_se_update().
+
+That makes me think that we might cut of one part by accident. On the
+other hand Zubair said that he tested using ADC & TSC at the same time
+and it worked. So I have to double check if the HW really resets the
+content back to zero or not; maybe there is another explanation :)
+
+One thing that is an issue is that now the _set() function is using the
+lock without disabling interrupts and is called from non-IRQ
+(tiadc_read_raw()) and IRQ (titsc_irq()) context which might lead to
+deadlock. I'm going to send a patch for this.
+
+> Applied, thanks.
+
+Sebastian
