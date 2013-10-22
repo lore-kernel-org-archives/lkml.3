@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3JVPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:00:59 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63659 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab3JVPA6 convert rfc822-to-8bit (ORCPT
+	id S1753710Ab3JVPB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:01:29 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59885 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab3JVPB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:00:58 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 22 Oct 2013 11:01:28 -0400
+Subject: [PATCH v4 0/3] x86, apic,
+ kexec: Add disable_cpu_apic kernel parameter
+To: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
+Date: Wed, 23 Oct 2013 00:01:18 +0900
+Message-ID: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20131016155621.GC20211@ulmo.nvidia.com>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-References: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
- <20131016153550.GA22451@ulmo.nvidia.com>
- <20131016155336.GN5643@tbergstrom-lnx.Nvidia.com>
- <20131016155621.GC20211@ulmo.nvidia.com>
-Message-ID: <20131022150049.11662.14841@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: pull request for tegra clocks (resend with some CCs added this time)
-Date: Tue, 22 Oct 2013 08:00:49 -0700
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Thierry Reding (2013-10-16 08:56:21)
-> On Wed, Oct 16, 2013 at 06:53:36PM +0300, Peter De Schrijver wrote:
-> > On Wed, Oct 16, 2013 at 05:35:51PM +0200, Thierry Reding wrote:
-> > > * PGP Signed by an unknown key
-> > > 
-> > > On Tue, Oct 15, 2013 at 06:36:20PM +0300, Peter De Schrijver wrote:
-> > > > The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
-> > > > 
-> > > >   Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
-> > > > 
-> > > > are available in the git repository at:
-> > > >   git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
-> > > > 
-> > > > Andrew Chew (1):
-> > > >       clk: tegra: Set the clk parent of host1x to pll_p
-> > > > 
-> > > > Mark Zhang (3):
-> > > >       clk: tegra: Correct sbc mux width & parent
-> > > >       clk: tegra: Fix vde/2d/3d clock src offset
-> > > >       clk: tegra: Set the clock parent of gr2d/gr3d to pll_c2
-> > > > 
-> > > > Peter De Schrijver (3):
-> > > >       ARM: tegra114: add missing clocks to binding
-> > > >       clk: tegra: replace enum tegra114_clk by binding header
-> > > >       clk: tegra: PLLE spread spectrum control
-> > > > 
-> > > > Thierry Reding (1):
-> > > >       clk: tegra114: Rename gr_2d/gr_3d to gr2d/gr3d
-> > > 
-> > > I think this pull request is missing the initialization of the display
-> > > controller clocks (TEGRA114_CLK_DISP1 and TEGRA114_CLK_DISP2) from
-> > > Mikko's Dalmore HDMI series.
-> > 
-> > I don't think they were part of the original request to be included?
-> 
-> Not sure, I certainly sent it to Mike for inclusion at some point. I
-> guess I can respin it on top of this pull request. There is another
-> small patch required for gr3d on Tegra30 which I can rebase on top of
-> this as well.
-> 
-> Mike, do you want me to hold these back until you've merged Peter's
-> Tegra series or would you rather take them all in one go? Until when
-> will you be taking patches for 3.13?
+This patch set is to allow kdump 2nd kernel to wake up multiple CPUs
+even if 1st kernel crashs on some AP, a continueing work from:
 
-Can you send another pull request with these patches that is based on
-top of Peter's pull request? I've already pulled Peter's request in but
-have not published it to clk-next yet, so the best way to avoid merge
-issues is to just rebase those changes on top of his latest pull
-request.
+  [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
+  https://lkml.org/lkml/2013/10/16/300.
 
-Mike
+In this version, basic design has changed. Now users need to figure
+out initial APIC ID of BSP in the 1st kernel and configures kernel
+parameter for the 2nd kernel manually using disable_cpu_apic kernel
+parameter to be newly introduced in this patch set. This design is
+more flexible than the previous version in that we no longer have to
+rely on ACPI/MP table to get initial APIC ID of BSP.
 
-> 
-> Thierry
+Sorry, this patch set have not include in-source documentation
+requested by Borislav Petkov yet, but I'll post it later separately,
+which would be better to focus on documentation reviewing.
+
+ChangeLog
+
+v3 => v4)
+
+- Rebased on top of v3.12-rc6
+
+- Basic design has been changed. Now users need to figure out initial
+  APIC ID of BSP in the 1st kernel and configures kernel parameter for
+  the 2nd kernel manually using disable_cpu_apic kernel parameter to
+  be newly introduced in this patch set. This design is more flexible
+  than the previous version in that we no longer have to rely on
+  ACPI/MP table to get initial APIC ID of BSP.
+
+v2 => v3)
+
+- Change default value of boot_cpu_is_bsp to true.
+
+- Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
+  processor family is larger than or equal to 6 in order to avoid
+  invalid opcode exception on processors where MSR_IA32_APICBASE is
+  not supported.
+
+v1 => v2)
+
+- Rebased on top of v3.12-rc5.
+
+- Fix linking time error of boot_cpu_is_bsp_init() in case of
+  CONFIG_LOCAL_APIC disabled by adding empty static inline function
+  instead.
+
+- Fix missing feature check by means of cpu_has_apic macro in
+  boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
+
+  NOTE: I've checked local apic-present case only; I don't have any
+  x86 processor without local apic.
+
+- Add __init annotation to boot_cpu_is_bsp_init().
+
+Test
+
+- built with and without CONFIG_LOCAL_APIC
+- tested x86_64 in case of acpi and MP table
+
+---
+
+HATAYAMA Daisuke (3):
+      x86, apic: Don't count the CPU with BP flag from MP table as booting-up CPU
+      x86, apic: Add disable_cpu_apicid kernel parameter
+      Documentation, x86, apic, kexec: Add disable_cpu_apicid kernel parameter
+
+
+ Documentation/kernel-parameters.txt |    9 +++++++++
+ arch/x86/kernel/apic/apic.c         |   29 +++++++++++++++++++++++++++++
+ arch/x86/kernel/mpparse.c           |    1 -
+ 3 files changed, 38 insertions(+), 1 deletion(-)
+
+-- 
+
+Thanks.
+HATAYAMA, Daisuke
