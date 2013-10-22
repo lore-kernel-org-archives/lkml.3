@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab3JVO26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:28:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53880 "EHLO
+	id S1753910Ab3JVO24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:28:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53882 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab3JVO2u (ORCPT
+	with ESMTP id S1753648Ab3JVO2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Oct 2013 10:28:50 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/26] perf evlist: Fix 32-bit build error
-Date: Tue, 22 Oct 2013 11:28:21 -0300
-Message-Id: <1382452114-1243-14-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 02/26] perf trace: Split fd -> pathname array handling
+Date: Tue, 22 Oct 2013 11:28:10 -0300
+Message-Id: <1382452114-1243-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -30,41 +28,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-util/evlist.c: In function 'perf_evlist__mmap':
-util/evlist.c:772:2: error: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'size_t' [-Werror=format]
-cc1: all warnings being treated as errors
+So that the part that grows the array as needed is untied from the code
+that reads the /proc/pid/fd symlink and can be used for the vfs_getname
+hook that will set the fd -> path translation too, when available.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-11-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/n/tip-ydo5rumyv9hdc1vsfmqamugs@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-trace.c | 49 +++++++++++++++++++++++++---------------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 0b5425b4d8d6..07ba0a43afd2 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -769,7 +769,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index d0f91fe755a3..763bef45afad 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -975,30 +975,9 @@ struct trace {
+ 	double			runtime_ms;
+ };
  
- 	evlist->overwrite = overwrite;
- 	evlist->mmap_len = perf_evlist__mmap_size(pages);
--	pr_debug("mmap size %luB\n", evlist->mmap_len);
-+	pr_debug("mmap size %zuB\n", evlist->mmap_len);
- 	mask = evlist->mmap_len - page_size - 1;
+-static int thread__read_fd_path(struct thread *thread, int fd)
++static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
+ {
+ 	struct thread_trace *ttrace = thread->priv;
+-	char linkname[PATH_MAX], pathname[PATH_MAX];
+-	struct stat st;
+-	int ret;
+-
+-	if (thread->pid_ == thread->tid) {
+-		scnprintf(linkname, sizeof(linkname),
+-			  "/proc/%d/fd/%d", thread->pid_, fd);
+-	} else {
+-		scnprintf(linkname, sizeof(linkname),
+-			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
+-	}
+-
+-	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
+-		return -1;
+-
+-	ret = readlink(linkname, pathname, sizeof(pathname));
+-
+-	if (ret < 0 || ret > st.st_size)
+-		return -1;
+-
+-	pathname[ret] = '\0';
  
- 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 	if (fd > ttrace->paths.max) {
+ 		char **npath = realloc(ttrace->paths.table, (fd + 1) * sizeof(char *));
+@@ -1022,6 +1001,32 @@ static int thread__read_fd_path(struct thread *thread, int fd)
+ 	return ttrace->paths.table[fd] != NULL ? 0 : -1;
+ }
+ 
++static int thread__read_fd_path(struct thread *thread, int fd)
++{
++	char linkname[PATH_MAX], pathname[PATH_MAX];
++	struct stat st;
++	int ret;
++
++	if (thread->pid_ == thread->tid) {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/fd/%d", thread->pid_, fd);
++	} else {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
++	}
++
++	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
++		return -1;
++
++	ret = readlink(linkname, pathname, sizeof(pathname));
++
++	if (ret < 0 || ret > st.st_size)
++		return -1;
++
++	pathname[ret] = '\0';
++	return trace__set_fd_pathname(thread, fd, pathname);
++}
++
+ static const char *thread__fd_path(struct thread *thread, int fd, bool live)
+ {
+ 	struct thread_trace *ttrace = thread->priv;
 -- 
 1.8.1.4
 
