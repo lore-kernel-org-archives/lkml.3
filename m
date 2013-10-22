@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab3JVRJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:09:27 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:43915 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab3JVRJ0 (ORCPT
+	id S1753794Ab3JVRMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:12:32 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:46176 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3JVRMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:09:26 -0400
-Message-ID: <5266B143.9080708@gmail.com>
-Date: Tue, 22 Oct 2013 19:09:23 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        The development of GNU GRUB <grub-devel@gnu.org>,
-        "Woodhouse, David" <david.woodhouse@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, "keir@xen.org" <keir@xen.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>
+	Tue, 22 Oct 2013 13:12:30 -0400
+Date: Tue, 22 Oct 2013 21:12:27 +0400
+From: Andrey Borzenkov <arvidjaar@gmail.com>
+To: The development of GNU GRUB <grub-devel@gnu.org>
+Cc: phcoder@gmail.com, keir@xen.org, ian.campbell@citrix.com,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
+        ross.philipson@citrix.com, jbeulich@suse.com,
+        boris.ostrovsky@oracle.com, xen-devel@lists.xen.org,
+        richard.l.maliszewski@intel.com, david.woodhouse@intel.com
 Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <5266A6AD.90004@gmail.com> <CE8BF72A.243C%richard.l.maliszewski@intel.com> <20131022165140.GL3626@debian70-amd64.local.net-space.pl>
-In-Reply-To: <20131022165140.GL3626@debian70-amd64.local.net-space.pl>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2JEDDDMNQFGVOQCWCINWC"
+Message-ID: <20131022211227.367d3997@opensuse.site>
+In-Reply-To: <526599A8.9090501@gmail.com>
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+	<526599A8.9090501@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/bA_TVaiY6NygKBBuw1sdoQ2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2JEDDDMNQFGVOQCWCINWC
+--Sig_/bA_TVaiY6NygKBBuw1sdoQ2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On 22.10.2013 18:51, Daniel Kiper wrote:
-> On Tue, Oct 22, 2013 at 04:36:04PM +0000, Maliszewski, Richard L wrote:=
+=D0=92 Mon, 21 Oct 2013 23:16:24 +0200
+Vladimir '=CF=86-coder/phcoder' Serbinenko <phcoder@gmail.com> =D0=BF=D0=B8=
+=D1=88=D0=B5=D1=82:
 
->> I may be off-base, but when I was wading through the grub2 code earlie=
-r
->> this year, it looked to me like it was going to refuse to launch anyth=
-ing
->> via MB1 or MB2 if the current state was a secure boot launch.
+> GRUB has generic support for signing kernels/modules/whatsoever using
+> GnuPG signatures. You'd just have to ship xen.sig and kernel.sig. This
+> method doesn't have any controversy associated with EFI stuff but at
+> this particular case does exactly the same thing: verify signature.
+> multiboot2 is mainly memory structure specification so probably how the
+> files are checked is outside of its scope. But it's possible to add
+> specification on how to embed signatures in kernel.
 >=20
-> Are you talking about upstream GRUB2 or GRUB2 with tons of distros
-> patches including linuxefi one. If later one it could be the case.
->=20
-> Daniel
->=20
-secureboot patch in its current state has only one goal: make microsoft
-sign existing image and load linux. If we integrate it with GRUB
-signatures check (as far as GNU policy permits but rest would be tiny)
-then it will be a matter of choosing which way xen is going to be
-signed. I'd recommend GnuPG detached signature (xen and xen.sig) but
-don't insist on it.
 
+I'm a bit skeptical here. Given that
 
-------enig2JEDDDMNQFGVOQCWCINWC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+- EFI secure boot will still be needed to handle Windows
+- kernel can be launched directly as EFI application
+- there are other bootloaders with secure boot support
+
+distributions will likely need to carry on EFI secure boot support. At
+which point it is not clear what advantages second, parallel,
+infrastructure for the sake of single application will bring.
+
+The most compelling reason would be allowing module loading (which is
+currently disabled by secure boot patches).
+
+--Sig_/bA_TVaiY6NygKBBuw1sdoQ2
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iF4EAREKAAYFAlJmsUMACgkQNak7dOguQgk3ZQEAscA3BzU6BXsVciRL3IsopGJc
-bTG4ZtezVT8u6cbw8eMBAMJ+zRIqa9Wa1dBBpfdgUgVExl8y3iaEcZ1Kz//ZwOVJ
-=ywBL
+iEYEARECAAYFAlJmsfsACgkQR6LMutpd94xY7ACfenRofnQwW+3fSdx6k3OWsUPM
+G5IAnjj9Llm0MxKJg+82+cdoMHGZpamj
+=+ahS
 -----END PGP SIGNATURE-----
 
-------enig2JEDDDMNQFGVOQCWCINWC--
+--Sig_/bA_TVaiY6NygKBBuw1sdoQ2--
