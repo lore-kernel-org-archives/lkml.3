@@ -1,175 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab3JVIyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:54:53 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36519 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3JVIyv (ORCPT
+	id S1752363Ab3JVIzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:55:19 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56381 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab3JVIzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:54:51 -0400
-Message-ID: <52663D54.2020800@gmail.com>
-Date: Tue, 22 Oct 2013 10:54:44 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	Tue, 22 Oct 2013 04:55:17 -0400
+Message-ID: <52663D6D.5000806@gmail.com>
+Date: Tue, 22 Oct 2013 16:55:09 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: The development of GNU GRUB <grub-devel@gnu.org>
-CC: Daniel Kiper <daniel.kiper@oracle.com>, boris.ostrovsky@oracle.com,
-        david.woodhouse@intel.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        keir@xen.org, konrad.wilk@oracle.com, pjones@redhat.com,
-        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl> <526599A8.9090501@gmail.com>
-In-Reply-To: <526599A8.9090501@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2GFBTKWQHECNEFBKKVJOI"
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: rpurdie@rpsys.net, jg1.han@samsung.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
+References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com> <5260BD8C.7000200@gmail.com> <20131022072443.GB8681@ulmo.nvidia.com>
+In-Reply-To: <20131022072443.GB8681@ulmo.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2GFBTKWQHECNEFBKKVJOI
-Content-Type: multipart/mixed;
- boundary="------------040608090004090503070807"
-
-This is a multi-part message in MIME format.
---------------040608090004090503070807
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 21.10.2013 23:16, Vladimir '=CF=86-coder/phcoder' Serbinenko wrote:
-> Mail is big, I think I got your essential points but I didn't read it w=
-hole.
-> On 21.10.2013 14:57, Daniel Kiper wrote:
->> Hi,
+On 10/22/2013 03:24 PM, Thierry Reding wrote:
+> On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
+[...]
+>>>
 >>
->> During work on multiboot2 protocol support for Xen it was discovered
->> that memory map passed via relevant tag could not represent wide range=
+>> Okay, I just want to set the "notify" function pointer in "struct
+>> platform_pwm_backlight_data", because I want to tune the brightness
+>> value before the pwm-bl sets the brightness to hardware. I don't know
+>> how to do that, unless we define the platform data explicitly.
+> 
+> Okay, my question should have been what you need the functions for and
+> why you think you need them.
+> 
 
->> of memory types available on EFI platforms. Additionally, GRUB2
->> implementation calls ExitBootServices() on them just before jumping
->> into loaded image. In this situation loaded system could not clearly
->> identify reserved memory regions, EFI runtime services regions and oth=
-ers.
->>
-> Will a multiboot2 tag with whole EFI memory map solve your problem?
-I added such a tag in documentation and wrote a patch for it (attached).
-Awaiting for someone to test it to commit
+If I understanding you correctly, I suppose I've said that: "because I
+want to tune the brightness value before the pwm-bl sets the brightness
+to hardware".
 
-
---------------040608090004090503070807
-Content-Type: application/x-patch;
- name="efi.diff"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="efi.diff"
-
-PT09IG1vZGlmaWVkIGZpbGUgJ2dydWItY29yZS9sb2FkZXIvaTM4Ni9tdWx0aWJvb3RfbWJp
-LmMnCi0tLSBncnViLWNvcmUvbG9hZGVyL2kzODYvbXVsdGlib290X21iaS5jCTIwMTMtMTAt
-MTQgMTQ6MzM6NDQgKzAwMDAKKysrIGdydWItY29yZS9sb2FkZXIvaTM4Ni9tdWx0aWJvb3Rf
-bWJpLmMJMjAxMy0xMC0yMiAwNjo1Nzo0NSArMDAwMApAQCAtMzYsNiArMzYsMTAgQEAKICNp
-bmNsdWRlIDxncnViL25ldC5oPgogI2luY2x1ZGUgPGdydWIvaTE4bi5oPgogCisjaWZkZWYg
-R1JVQl9NQUNISU5FX0VGSQorI2luY2x1ZGUgPGdydWIvZWZpL2VmaS5oPgorI2VuZGlmCisK
-IC8qIFRoZSBiaXRzIGluIHRoZSByZXF1aXJlZCBwYXJ0IG9mIGZsYWdzIGZpZWxkIHdlIGRv
-bid0IHN1cHBvcnQuICAqLwogI2RlZmluZSBVTlNVUFBPUlRFRF9GTEFHUwkJCTB4MDAwMGZm
-ZjgKIApAQCAtNTc5LDYgKzU4MywxMiBAQAogICBwdHJkZXN0ICs9IHNpemVvZiAoc3RydWN0
-IGdydWJfdmJlX21vZGVfaW5mb19ibG9jayk7CiAjZW5kaWYKIAorI2lmZGVmIEdSVUJfTUFD
-SElORV9FRkkKKyAgZXJyID0gZ3J1Yl9lZmlfZmluaXNoX2Jvb3Rfc2VydmljZXMgKE5VTEws
-IE5VTEwsIE5VTEwsIE5VTEwsIE5VTEwpOworICBpZiAoZXJyKQorICAgIHJldHVybiBlcnI7
-CisjZW5kaWYKKwogICByZXR1cm4gR1JVQl9FUlJfTk9ORTsKIH0KIAoKPT09IG1vZGlmaWVk
-IGZpbGUgJ2dydWItY29yZS9sb2FkZXIvbXVsdGlib290LmMnCi0tLSBncnViLWNvcmUvbG9h
-ZGVyL211bHRpYm9vdC5jCTIwMTMtMDktMjMgMTE6MzU6MzMgKzAwMDAKKysrIGdydWItY29y
-ZS9sb2FkZXIvbXVsdGlib290LmMJMjAxMy0xMC0yMiAwNjo1MTozMCArMDAwMApAQCAtMTMx
-LDEyICsxMzEsNiBAQAogICBpZiAoZXJyKQogICAgIHJldHVybiBlcnI7CiAKLSNpZmRlZiBH
-UlVCX01BQ0hJTkVfRUZJCi0gIGVyciA9IGdydWJfZWZpX2ZpbmlzaF9ib290X3NlcnZpY2Vz
-IChOVUxMLCBOVUxMLCBOVUxMLCBOVUxMLCBOVUxMKTsKLSAgaWYgKGVycikKLSAgICByZXR1
-cm4gZXJyOwotI2VuZGlmCi0KICNpZiBkZWZpbmVkIChfX2kzODZfXykgfHwgZGVmaW5lZCAo
-X194ODZfNjRfXykKICAgZ3J1Yl9yZWxvY2F0b3IzMl9ib290IChncnViX211bHRpYm9vdF9y
-ZWxvY2F0b3IsIHN0YXRlLCAwKTsKICNlbHNlCgo9PT0gbW9kaWZpZWQgZmlsZSAnZ3J1Yi1j
-b3JlL2xvYWRlci9tdWx0aWJvb3RfbWJpMi5jJwotLS0gZ3J1Yi1jb3JlL2xvYWRlci9tdWx0
-aWJvb3RfbWJpMi5jCTIwMTMtMTAtMTQgMTQ6MzM6NDQgKzAwMDAKKysrIGdydWItY29yZS9s
-b2FkZXIvbXVsdGlib290X21iaTIuYwkyMDEzLTEwLTIyIDA2OjU3OjU4ICswMDAwCkBAIC0y
-OTUsOSArMjk1LDU1IEBACiAjZW5kaWYKIH0KIAorI2lmZGVmIEdSVUJfTUFDSElORV9FRkkK
-Kworc3RhdGljIGdydWJfZWZpX3VpbnRuX3QgZWZpX21tYXBfc2l6ZSA9IDA7CisKKy8qIEZp
-bmQgdGhlIG9wdGltYWwgbnVtYmVyIG9mIHBhZ2VzIGZvciB0aGUgbWVtb3J5IG1hcC4gSXMg
-aXQgYmV0dGVyIHRvCisgICBtb3ZlIHRoaXMgY29kZSB0byBlZmkvbW0uYz8gICovCitzdGF0
-aWMgdm9pZAorZmluZF9lZmlfbW1hcF9zaXplICh2b2lkKQoreworICBlZmlfbW1hcF9zaXpl
-ID0gKDEgPDwgMTIpOworICB3aGlsZSAoMSkKKyAgICB7CisgICAgICBpbnQgcmV0OworICAg
-ICAgZ3J1Yl9lZmlfbWVtb3J5X2Rlc2NyaXB0b3JfdCAqbW1hcDsKKyAgICAgIGdydWJfZWZp
-X3VpbnRuX3QgZGVzY19zaXplOworICAgICAgZ3J1Yl9lZmlfdWludG5fdCBjdXJfbW1hcF9z
-aXplID0gZWZpX21tYXBfc2l6ZTsKKworICAgICAgbW1hcCA9IGdydWJfbWFsbG9jIChjdXJf
-bW1hcF9zaXplKTsKKyAgICAgIGlmICghIG1tYXApCisJcmV0dXJuOworCisgICAgICByZXQg
-PSBncnViX2VmaV9nZXRfbWVtb3J5X21hcCAoJmN1cl9tbWFwX3NpemUsIG1tYXAsIDAsICZk
-ZXNjX3NpemUsIDApOworICAgICAgZ3J1Yl9mcmVlIChtbWFwKTsKKworICAgICAgaWYgKHJl
-dCA8IDApCisJcmV0dXJuOworICAgICAgZWxzZSBpZiAocmV0ID4gMCkKKwlicmVhazsKKwor
-ICAgICAgaWYgKGVmaV9tbWFwX3NpemUgPCBjdXJfbW1hcF9zaXplKQorCWVmaV9tbWFwX3Np
-emUgPSBjdXJfbW1hcF9zaXplOworICAgICAgZWZpX21tYXBfc2l6ZSArPSAoMSA8PCAxMik7
-CisgICAgfQorCisgIC8qIEluY3JlYXNlIHRoZSBzaXplIGEgYml0IGZvciBzYWZldHksIGJl
-Y2F1c2UgR1JVQiBhbGxvY2F0ZXMgbW9yZSBvbgorICAgICBsYXRlciwgYW5kIEVGSSBpdHNl
-bGYgbWF5IGFsbG9jYXRlIG1vcmUuICAqLworICBlZmlfbW1hcF9zaXplICs9ICgzIDw8IDEy
-KTsKKworICBlZmlfbW1hcF9zaXplID0gQUxJR05fVVAgKGVmaV9tbWFwX3NpemUsIDQwOTYp
-OworfQorI2VuZGlmCisKIHN0YXRpYyBncnViX3NpemVfdAogZ3J1Yl9tdWx0aWJvb3RfZ2V0
-X21iaV9zaXplICh2b2lkKQogeworI2lmZGVmIEdSVUJfTUFDSElORV9FRkkKKyAgaWYgKCFl
-ZmlfbW1hcF9zaXplKQorICAgIGZpbmRfZWZpX21tYXBfc2l6ZSAoKTsgICAgCisjZW5kaWYK
-ICAgcmV0dXJuIDIgKiBzaXplb2YgKGdydWJfdWludDMyX3QpICsgc2l6ZW9mIChzdHJ1Y3Qg
-bXVsdGlib290X3RhZykKICAgICArIChzaXplb2YgKHN0cnVjdCBtdWx0aWJvb3RfdGFnX3N0
-cmluZykKICAgICAgICArIEFMSUdOX1VQIChjbWRsaW5lX3NpemUsIE1VTFRJQk9PVF9UQUdf
-QUxJR04pKQpAQCAtMzE4LDYgKzM2NCwxMCBAQAogICAgICsgQUxJR05fVVAgKHNpemVvZiAo
-c3RydWN0IG11bHRpYm9vdF90YWdfb2xkX2FjcGkpCiAJCSsgc2l6ZW9mIChzdHJ1Y3QgZ3J1
-Yl9hY3BpX3JzZHBfdjEwKSwgTVVMVElCT09UX1RBR19BTElHTikKICAgICArIGFjcGl2Ml9z
-aXplICgpCisjaWZkZWYgR1JVQl9NQUNISU5FX0VGSQorICAgICsgQUxJR05fVVAgKHNpemVv
-ZiAoc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXApCisJCSsgZWZpX21tYXBfc2l6ZSwg
-TVVMVElCT09UX1RBR19BTElHTikKKyNlbmRpZgogICAgICsgc2l6ZW9mIChzdHJ1Y3QgbXVs
-dGlib290X3RhZ192YmUpICsgTVVMVElCT09UX1RBR19BTElHTiAtIDEKICAgICArIHNpemVv
-ZiAoc3RydWN0IG11bHRpYm9vdF90YWdfYXBtKSArIE1VTFRJQk9PVF9UQUdfQUxJR04gLSAx
-OwogfQpAQCAtNzYwLDYgKzgxMCwyOCBAQAogICB9CiAjZW5kaWYKIAorI2lmZGVmIEdSVUJf
-TUFDSElORV9FRkkKKyAgeworICAgIHN0cnVjdCBtdWx0aWJvb3RfdGFnX2VmaV9tbWFwICp0
-YWcgPSAoc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXAgKikgcHRyb3JpZzsKKyAgICBn
-cnViX2VmaV91aW50bl90IGVmaV9kZXNjX3NpemU7CisgICAgZ3J1Yl9lZmlfdWludDMyX3Qg
-ZWZpX2Rlc2NfdmVyc2lvbjsKKworICAgIHRhZy0+dHlwZSA9IE1VTFRJQk9PVF9UQUdfVFlQ
-RV9FRklfTU1BUDsKKyAgICB0YWctPnNpemUgPSBzaXplb2YgKCp0YWcpICsgZWZpX21tYXBf
-c2l6ZTsKKworICAgIGVyciA9IGdydWJfZWZpX2ZpbmlzaF9ib290X3NlcnZpY2VzICgmZWZp
-X21tYXBfc2l6ZSwgdGFnLT5lZmlfbW1hcCwgTlVMTCwKKwkJCQkJICZlZmlfZGVzY19zaXpl
-LCAmZWZpX2Rlc2NfdmVyc2lvbik7CisgICAgaWYgKGVycikKKyAgICAgIHJldHVybiBlcnI7
-CisgICAgdGFnLT5kZXNjcl9zaXplID0gZWZpX2Rlc2Nfc2l6ZTsKKyAgICB0YWctPmRlc2Ny
-X3ZlcnMgPSBlZmlfZGVzY192ZXJzaW9uOworICAgIHRhZy0+c2l6ZSA9IHNpemVvZiAoKnRh
-ZykgKyBlZmlfbW1hcF9zaXplOworCisgICAgcHRyb3JpZyArPSBBTElHTl9VUCAodGFnLT5z
-aXplLCBNVUxUSUJPT1RfVEFHX0FMSUdOKQorICAgICAgLyBzaXplb2YgKGdydWJfcHJvcGVy
-bHlfYWxpZ25lZF90KTsKKyAgfQorI2VuZGlmCisKICAgewogICAgIHN0cnVjdCBtdWx0aWJv
-b3RfdGFnICp0YWcgPSAoc3RydWN0IG11bHRpYm9vdF90YWcgKikgcHRyb3JpZzsKICAgICB0
-YWctPnR5cGUgPSBNVUxUSUJPT1RfVEFHX1RZUEVfRU5EOwoKPT09IG1vZGlmaWVkIGZpbGUg
-J2luY2x1ZGUvbXVsdGlib290Mi5oJwotLS0gaW5jbHVkZS9tdWx0aWJvb3QyLmgJMjAxMC0w
-OS0yMSAwMDowNjoxNCArMDAwMAorKysgaW5jbHVkZS9tdWx0aWJvb3QyLmgJMjAxMy0xMC0y
-MiAwNjozNzo1NSArMDAwMApAQCAtNTgsNiArNTgsNyBAQAogI2RlZmluZSBNVUxUSUJPT1Rf
-VEFHX1RZUEVfQUNQSV9PTEQgICAgICAgICAgMTQKICNkZWZpbmUgTVVMVElCT09UX1RBR19U
-WVBFX0FDUElfTkVXICAgICAgICAgIDE1CiAjZGVmaW5lIE1VTFRJQk9PVF9UQUdfVFlQRV9O
-RVRXT1JLICAgICAgICAgICAxNgorI2RlZmluZSBNVUxUSUJPT1RfVEFHX1RZUEVfRUZJX01N
-QVAgICAgICAgICAgMTcKIAogI2RlZmluZSBNVUxUSUJPT1RfSEVBREVSX1RBR19FTkQgIDAK
-ICNkZWZpbmUgTVVMVElCT09UX0hFQURFUl9UQUdfSU5GT1JNQVRJT05fUkVRVUVTVCAgMQpA
-QCAtMzYxLDYgKzM2MiwxNSBAQAogICBtdWx0aWJvb3RfdWludDhfdCBkaGNwYWNrWzBdOwog
-fTsKIAorc3RydWN0IG11bHRpYm9vdF90YWdfZWZpX21tYXAKK3sKKyAgbXVsdGlib290X3Vp
-bnQzMl90IHR5cGU7CisgIG11bHRpYm9vdF91aW50MzJfdCBzaXplOworICBtdWx0aWJvb3Rf
-dWludDMyX3QgZGVzY3Jfc2l6ZTsKKyAgbXVsdGlib290X3VpbnQzMl90IGRlc2NyX3ZlcnM7
-CisgIG11bHRpYm9vdF91aW50OF90IGVmaV9tbWFwWzBdOworfTsgCisKICNlbmRpZiAvKiAh
-IEFTTV9GSUxFICovCiAKICNlbmRpZiAvKiAhIE1VTFRJQk9PVF9IRUFERVIgKi8KCg==
---------------040608090004090503070807--
-
-------enig2GFBTKWQHECNEFBKKVJOI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iF4EAREKAAYFAlJmPVQACgkQNak7dOguQgnASQD/cbMW9XB8Z998Nzg0kDSTxysV
-vaZuaY3kyXH9NUVCglAA/2cXr48OrsHxuFdM1vuNm4ZLkoJ54BNG7265/gWE60AH
-=t18L
------END PGP SIGNATURE-----
-
-------enig2GFBTKWQHECNEFBKKVJOI--
+Mark
+> Thierry
+> 
