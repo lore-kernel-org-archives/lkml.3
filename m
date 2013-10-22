@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3JVSA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 14:00:59 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52856 "EHLO mout.gmx.net"
+	id S1755076Ab3JVSBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 14:01:11 -0400
+Received: from mout.gmx.net ([212.227.17.20]:55324 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab3JVSA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 14:00:58 -0400
+	id S1754643Ab3JVSBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 14:01:04 -0400
 From: Peter Huewe <peterhuewe@gmx.de>
 To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
         adlai@linux.vnet.ibm.com
 Cc: linux-kernel@vger.kernel.org,
         Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mathias Leblanc <mathias.leblanc@st.com>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 06/15] tpm: Remove redundant dev_set_drvdata
-Date: Tue, 22 Oct 2013 20:00:31 +0200
-Message-Id: <1382464840-7639-6-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 07/15] tpm: st33: Remove chip->data_buffer access from this driver
+Date: Tue, 22 Oct 2013 20:00:32 +0200
+Message-Id: <1382464840-7639-7-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.5.4
-X-Provags-ID: V03:K0:LNxCNKVrrxXRCwALW7BWMOOQTTr3qpnNRhmnhndVpFQejm8j54q
- dtjaI7cLtOsxnTWVGB65Qoum8lxsVvZYaIzVQjXC3fkg9blidwANkv0Vny3bV9uhz/Y5Hsj
- VtbpbJsk+KcQlEr4LiZ8RPXiilH1oSlSGQwUCTfOlDsZl0sngR8Z8F3z2oWTK1z1ew1d6Sw
- D6j1FE64CgObutwNzxlug==
+In-Reply-To: <1382464840-7639-6-git-send-email-peterhuewe@gmx.de>
+References: <1382464840-7639-6-git-send-email-peterhuewe@gmx.de>
+X-Provags-ID: V03:K0:0fTJcSKLodSm2g69kYyOWWhnaZ1704vldMmUapI7T0Y4IVd4llC
+ 9qB4sK4YG162POL1m2OV/S4BAJ8aqrEXu2TFXLOjhvhLbQhZoEb5Lr9BD2FKHa/4Fynuoi+
+ YtV4HFKLGHwXVJdQirT89T4pVRrHmbZFMfmpE5ve1ZCEmGi6q31b2U8wFP2nZLG8j1mN2In
+ RC41mm0hUEtK0ZMU9o2Xw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-TPM drivers should not call dev_set_drvdata (or aliases), only the core
-code is allowed to call dev_set_drvdata, and it does it during
-tpm_register_hardware.
+For some reason this driver thinks that chip->data_buffer needs
+to be set before it can call tpm_pm_*. This is not true. data_buffer
+is used only by /dev/tpmX, which is why it is managed exclusively
+by the fops functions.
 
-These extra sets are harmless, but are an anti-pattern that many drivers
-have copied.
-
+Cc: Mathias Leblanc <mathias.leblanc@st.com>
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
-Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
-Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/char/tpm/tpm_i2c_infineon.c |    2 --
- drivers/char/tpm/tpm_i2c_stm_st33.c |    2 --
- drivers/char/tpm/xen-tpmfront.c     |    2 --
- 3 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/char/tpm/tpm_i2c_stm_st33.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index b8735de..e33d8e5 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -685,7 +685,6 @@ out_vendor:
- 	chip->dev->release = NULL;
- 	chip->release = NULL;
- 	tpm_dev.client = NULL;
--	dev_set_drvdata(chip->dev, chip);
- out_err:
- 	return rc;
- }
-@@ -766,7 +765,6 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
- 	chip->dev->release = NULL;
- 	chip->release = NULL;
- 	tpm_dev.client = NULL;
--	dev_set_drvdata(chip->dev, chip);
- 
- 	return 0;
- }
 diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 5bb8e2d..1c68d93 100644
+index 1c68d93..b2390b6 100644
 --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
 +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -746,8 +746,6 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+@@ -805,24 +805,18 @@ static int tpm_st33_i2c_remove(struct i2c_client *client)
+ #ifdef CONFIG_PM_SLEEP
+ /*
+  * tpm_st33_i2c_pm_suspend suspend the TPM device
+- * Added: Work around when suspend and no tpm application is running, suspend
+- * may fail because chip->data_buffer is not set (only set in tpm_open in Linux
+- * TPM core)
+  * @param: client, the i2c_client drescription (TPM I2C description).
+  * @param: mesg, the power management message.
+  * @return: 0 in case of success.
+  */
+ static int tpm_st33_i2c_pm_suspend(struct device *dev)
+ {
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 	struct st33zp24_platform_data *pin_infos = dev->platform_data;
+ 	int ret = 0;
  
- 	tpm_get_timeouts(chip);
- 
--	i2c_set_clientdata(client, chip);
--
- 	dev_info(chip->dev, "TPM I2C Initialized\n");
- 	return 0;
- _irq_set:
-diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
-index 7a7929b..9b48370 100644
---- a/drivers/char/tpm/xen-tpmfront.c
-+++ b/drivers/char/tpm/xen-tpmfront.c
-@@ -386,8 +386,6 @@ static int tpmfront_probe(struct xenbus_device *dev,
- 
- 	tpm_get_timeouts(priv->chip);
- 
--	dev_set_drvdata(&dev->dev, priv->chip);
--
- 	return rv;
- }
- 
+ 	if (power_mgt) {
+ 		gpio_set_value(pin_infos->io_lpcpd, 0);
+ 	} else {
+-		if (chip->data_buffer == NULL)
+-			chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+ 		ret = tpm_pm_suspend(dev);
+ 	}
+ 	return ret;
+@@ -847,8 +841,6 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
+ 					  TPM_STS_VALID) == TPM_STS_VALID,
+ 					  chip->vendor.timeout_b);
+ 	} else {
+-		if (chip->data_buffer == NULL)
+-			chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+ 		ret = tpm_pm_resume(dev);
+ 		if (!ret)
+ 			tpm_do_selftest(chip);
 -- 
 1.7.5.4
 
