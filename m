@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3JVWaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:30:35 -0400
-Received: from smtprelay0035.hostedemail.com ([216.40.44.35]:49136 "EHLO
+	id S1755481Ab3JVWal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:30:41 -0400
+Received: from smtprelay0184.hostedemail.com ([216.40.44.184]:56400 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750861Ab3JVWac (ORCPT
+	by vger.kernel.org with ESMTP id S1750861Ab3JVWah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:30:32 -0400
+	Tue, 22 Oct 2013 18:30:37 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3354:3866:3868:3870:3871:4321:4605:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12294:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hand54_449f00b1e90c
-X-Filterd-Recvd-Size: 4324
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:196:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1622:1711:1730:1747:1777:1792:1801:2393:2559:2562:3138:3139:3140:3141:3142:3353:3868:3870:3871:3874:4605:5007:6261:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: paint74_524c2439cc30
+X-Filterd-Recvd-Size: 2474
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 03/24] s390: Convert use of typedef ctl_table to struct ctl_table
-Date: Tue, 22 Oct 2013 15:29:46 -0700
-Message-Id: <deafe94275c9ebec32ef09eb6f583b2c5a014dae.1382480758.git.joe@perches.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 05/24] cdrom: Convert use of typedef ctl_table to struct ctl_table
+Date: Tue, 22 Oct 2013 15:29:48 -0700
+Message-Id: <694a7bdcb2b5724332d0e47b43cec5aa3b06e119.1382480758.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1382480758.git.joe@perches.com>
 References: <cover.1382480758.git.joe@perches.com>
@@ -30,93 +28,58 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/s390/appldata/appldata_base.c | 10 +++++-----
- arch/s390/kernel/debug.c           |  2 +-
- arch/s390/mm/cmm.c                 |  8 ++++----
- 3 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/cdrom/cdrom.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/s390/appldata/appldata_base.c b/arch/s390/appldata/appldata_base.c
-index 87a2209..baff85e 100644
---- a/arch/s390/appldata/appldata_base.c
-+++ b/arch/s390/appldata/appldata_base.c
-@@ -48,9 +48,9 @@ static struct platform_device *appldata_pdev;
-  * /proc entries (sysctl)
-  */
- static const char appldata_proc_name[APPLDATA_PROC_NAME_LENGTH] = "appldata";
--static int appldata_timer_handler(ctl_table *ctl, int write,
-+static int appldata_timer_handler(struct ctl_table *ctl, int write,
- 				  void __user *buffer, size_t *lenp, loff_t *ppos);
--static int appldata_interval_handler(ctl_table *ctl, int write,
-+static int appldata_interval_handler(struct ctl_table *ctl, int write,
- 					 void __user *buffer,
- 					 size_t *lenp, loff_t *ppos);
- 
-@@ -201,7 +201,7 @@ static void __appldata_vtimer_setup(int cmd)
-  * Start/Stop timer, show status of timer (0 = not active, 1 = active)
-  */
- static int
--appldata_timer_handler(ctl_table *ctl, int write,
-+appldata_timer_handler(struct ctl_table *ctl, int write,
- 			   void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	int len;
-@@ -243,7 +243,7 @@ out:
-  * current timer interval.
-  */
- static int
--appldata_interval_handler(ctl_table *ctl, int write,
-+appldata_interval_handler(struct ctl_table *ctl, int write,
- 			   void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	int len, interval;
-@@ -286,7 +286,7 @@ out:
-  * monitoring (0 = not in process, 1 = in process)
-  */
- static int
--appldata_generic_handler(ctl_table *ctl, int write,
-+appldata_generic_handler(struct ctl_table *ctl, int write,
- 			   void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	struct appldata_ops *ops = NULL, *tmp_ops;
-diff --git a/arch/s390/kernel/debug.c b/arch/s390/kernel/debug.c
-index f1279dc..d98b888 100644
---- a/arch/s390/kernel/debug.c
-+++ b/arch/s390/kernel/debug.c
-@@ -889,7 +889,7 @@ static int debug_active=1;
-  * if debug_active is already off
-  */
- static int
--s390dbf_procactive(ctl_table *table, int write,
-+s390dbf_procactive(struct ctl_table *table, int write,
-                      void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	if (!write || debug_stoppable || !debug_active)
-diff --git a/arch/s390/mm/cmm.c b/arch/s390/mm/cmm.c
-index 9d84a1f..61172c4 100644
---- a/arch/s390/mm/cmm.c
-+++ b/arch/s390/mm/cmm.c
-@@ -253,8 +253,8 @@ static int cmm_skip_blanks(char *cp, char **endp)
- 
- static struct ctl_table cmm_table[];
- 
--static int cmm_pages_handler(ctl_table *ctl, int write, void __user *buffer,
--			     size_t *lenp, loff_t *ppos)
-+static int cmm_pages_handler(struct ctl_table *ctl, int write,
-+			     void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	char buf[16], *p;
- 	long nr;
-@@ -293,8 +293,8 @@ static int cmm_pages_handler(ctl_table *ctl, int write, void __user *buffer,
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index 8a3aff7..d49a76f 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -3465,7 +3465,7 @@ static int cdrom_print_info(const char *header, int val, char *info,
  	return 0;
  }
  
--static int cmm_timeout_handler(ctl_table *ctl, int write,  void __user *buffer,
--			       size_t *lenp, loff_t *ppos)
-+static int cmm_timeout_handler(struct ctl_table *ctl, int write,
-+			       void __user *buffer, size_t *lenp, loff_t *ppos)
+-static int cdrom_sysctl_info(ctl_table *ctl, int write,
++static int cdrom_sysctl_info(struct ctl_table *ctl, int write,
+                            void __user *buffer, size_t *lenp, loff_t *ppos)
  {
- 	char buf[64], *p;
- 	long nr, seconds;
+ 	int pos;
+@@ -3578,7 +3578,7 @@ static void cdrom_update_settings(void)
+ 	mutex_unlock(&cdrom_mutex);
+ }
+ 
+-static int cdrom_sysctl_handler(ctl_table *ctl, int write,
++static int cdrom_sysctl_handler(struct ctl_table *ctl, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	int ret;
+@@ -3604,7 +3604,7 @@ static int cdrom_sysctl_handler(ctl_table *ctl, int write,
+ }
+ 
+ /* Place files in /proc/sys/dev/cdrom */
+-static ctl_table cdrom_table[] = {
++static struct ctl_table cdrom_table[] = {
+ 	{
+ 		.procname	= "info",
+ 		.data		= &cdrom_sysctl_settings.info, 
+@@ -3650,7 +3650,7 @@ static ctl_table cdrom_table[] = {
+ 	{ }
+ };
+ 
+-static ctl_table cdrom_cdrom_table[] = {
++static struct ctl_table cdrom_cdrom_table[] = {
+ 	{
+ 		.procname	= "cdrom",
+ 		.maxlen		= 0,
+@@ -3661,7 +3661,7 @@ static ctl_table cdrom_cdrom_table[] = {
+ };
+ 
+ /* Make sure that /proc/sys/dev is there */
+-static ctl_table cdrom_root_table[] = {
++static struct ctl_table cdrom_root_table[] = {
+ 	{
+ 		.procname	= "dev",
+ 		.maxlen		= 0,
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
