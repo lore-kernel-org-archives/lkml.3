@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab3JVRAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:00:53 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:46890 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab3JVRAw (ORCPT
+	id S1754098Ab3JVREO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:04:14 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:60750 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3JVREN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:00:52 -0400
-Date: Tue, 22 Oct 2013 18:00:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/3 v2] regulator: core: Add ability to create a lookup
- alias for supply
-Message-ID: <20131022170047.GA2620@lee--X1>
-References: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1381864462-26167-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131017235940.GB2443@sirena.org.uk>
- <20131018065345.GR19112@lee--X1>
- <20131018130643.GN2443@sirena.org.uk>
+	Tue, 22 Oct 2013 13:04:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131018130643.GN2443@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	<20131022154802.GA25490@localhost>
+	<CA+55aFzwRoM4w8mGqSeeVuDGhQgnnomu=vxoWC6dbHD9w-9A+Q@mail.gmail.com>
+Date: Tue, 22 Oct 2013 10:04:12 -0700
+Message-ID: <CANN689EyWqCsr2rDBtHohMYwXG81dny+iQBKSt4AWqjEWnUkow@mail.gmail.com>
+Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Oct 2013, Mark Brown wrote:
+On Tue, Oct 22, 2013 at 9:20 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Oct 22, 2013 at 4:48 PM,  <walken@google.com> wrote:
+>> Generally the problems I see with mmap_sem are related to long latency
+>> operations. Specifically, the mmap_sem write side is currently held
+>> during the entire munmap operation, which iterates over user pages to
+>> free them, and can take hundreds of milliseconds for large VMAs.
+>
+> So this would be the *perfect* place to just downgrade the semaphore
+> from a write to a read.
 
-> On Fri, Oct 18, 2013 at 07:53:45AM +0100, Lee Jones wrote:
-> 
-> > If you're happy with the other two patches, I am. Would you mind
-> > reviewing and providing your Ack? Once I have it, I'll setup a branch
-> > you can pull from in my MFD tree.
-> 
-> Acked-by: Mark Brown <broonie@linaro.org>
-> 
-> but those patches will fail to build without the preceeding regulator
-> patch (which is in my tree, there's a signed commit supply-alias but it
-> pulls along an awfully large diffstat sadly).
+It's not as simple as that, because we currently rely on mmap_sem
+write side being held during page table teardown in order to exclude
+things like follow_page() which may otherwise access page tables while
+we are potentially freeing them.
 
-Okay, fair enough.
-
-In which case, just take the patches and apply my Ack.
+I do think it's solvable, but it gets complicated fast. Hugh & I have
+been talking about it; the approach I'm looking at would involve
+unwiring the page tables first (under protection of the mmap_sem write
+lock) and then iterating on the unwired page tables to free the data
+pages, issue TLB shootdowns and free the actual page tables (we
+probably don't need even the mmap_sem read side at that point). But,
+that's nowhere like a 10 line change anymore at that point...
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
