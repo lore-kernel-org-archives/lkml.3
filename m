@@ -1,118 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3JVL2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:28:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
+	id S1753234Ab3JVL3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:29:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab3JVL2v (ORCPT
+	with ESMTP id S1752978Ab3JVL3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:28:51 -0400
-Date: Tue, 22 Oct 2013 12:30:16 +0100
+	Tue, 22 Oct 2013 07:29:04 -0400
+Date: Tue, 22 Oct 2013 12:30:29 +0100
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.101
-Message-ID: <20131022113016.GA5911@kroah.com>
+Subject: Re: Linux 3.0.101
+Message-ID: <20131022113029.GB5911@kroah.com>
+References: <20131022113016.GA5911@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131022113016.GA5911@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.0.101 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-This is the LAST 3.0.x longterm kernel release.
-
-It is now end-of-life.
-
-I will NOT be doing any more 3.0.x kernel releases.  If you rely on the
-3.0.x kernel series, you should now move to the 3.10.x kernel series,
-or, at the worse case, 3.4.x.  Note, 3.4.x will only be maintained for
-one more year, so your time is limited on that as well.
-
-For more information about the longterm kernel releases, and what their
-lifetime is, please see:
-	https://www.kernel.org/category/releases.html
-
-The updated 3.0.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                           |    4 ++--
- arch/parisc/kernel/traps.c         |    6 +++---
- drivers/char/random.c              |    3 +--
- drivers/gpu/drm/radeon/evergreen.c |    2 +-
- drivers/watchdog/ts72xx_wdt.c      |    3 ++-
- fs/ext4/xattr.c                    |    2 ++
- fs/statfs.c                        |    2 +-
- include/linux/random.h             |    1 +
- init/main.c                        |    2 ++
- net/ipv6/inet6_connection_sock.c   |    2 +-
- 10 files changed, 16 insertions(+), 11 deletions(-)
-
-Dan Carpenter (1):
-      watchdog: ts72xx_wdt: locking bug in ioctl
-
-Dave Jones (1):
-      ext4: fix memory leak in xattr
-
-Eric Dumazet (1):
-      ipv6: tcp: fix panic in SYN processing
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.101
-
-Helge Deller (1):
-      parisc: fix interruption handler to respect pagefault_disable()
-
-Linus Torvalds (1):
-      vfs: allow O_PATH file descriptors for fstatfs()
-
-Theodore Ts'o (1):
-      random: run random_int_secret_init() run after all late_initcalls
-
-wojciech kapuscinski (1):
-      drm/radeon: fix hw contexts for SUMO2 asics
-
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZmHIAAoJEDjbvchgkmk+mMUP/1OiKeOggXoi8BfidUi3/gpg
-YDrOgBUcxhuDlHk8sck2erUH1AE6gVOOjVw45iy4/K6mu4GmBZuX56XEbLgcgMdt
-yTdXFrXt3nypWHRsWj1B69F250xU34ghnaflZTSN7zy3lS9anKtD7xQonrwbRJm5
-JF6jFj/k5scxYtYuZERQzurbvM9Mpwdd9AvqOHfN/itQgj4GOTGlyFqUhcKB427T
-csGDDIlWGydBw9CzAhY3DO77UixvGndbfKUFV0t7vjdb01BnoyzyoCibi4fyxa/4
-aweGfSbDpCSf0UGnY+OInDlcs9lLqkVVVyVOh27w2uaXPaKcCqNhwPxFrKYJ0i3h
-btZTmmUbekIInrBWY0o6HzlpzVuRYtAgf6F3x1HvL7eXxbh+t9OhjlqmVikUBX+i
-hN15ZvU/SZzoqCiFdeUg4Af091hhzIh4/iu2hXYuEs73QrV5W3qPdVIR56ZBRm+j
-YOuqRt0oROaTe/hr/z5SObU8U7xZm83z/3UdVgrMxaWMbAsGHWq31TnCzW1hRfop
-uc4TMQq1FiTOBIxI1yTbSfnVzdSTNsLQpDAmCQYmBNissmLnmHoKrNkcwGJH8gLj
-0jnxQlnXLTa62vTAhM/yevfleIbhpfiGhbDy3jb/6v8gAeOKRk1vc5IFj/Xyf58o
-yLWHoANnv0KQIfCWrMI1
-=kGMG
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
+diff --git a/Makefile b/Makefile
+index a6ddb9d..34880be 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,8 +1,8 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 100
++SUBLEVEL = 101
+ EXTRAVERSION =
+-NAME = Sneaky Weasel
++NAME = Sodden Ben Lomond
+ 
+ # *DOCUMENTATION*
+ # To see a list of typical targets execute "make help"
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 8b58bf0..0acc27b 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -811,14 +811,14 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
+ 	else {
+ 
+ 	    /*
+-	     * The kernel should never fault on its own address space.
++	     * The kernel should never fault on its own address space,
++	     * unless pagefault_disable() was called before.
+ 	     */
+ 
+-	    if (fault_space == 0) 
++	    if (fault_space == 0 && !in_atomic())
+ 	    {
+ 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
+ 		parisc_terminate("Kernel Fault", regs, code, fault_address);
+-	
+ 	    }
+ 	}
+ 
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index fceac95..e7e479c 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1435,12 +1435,11 @@ ctl_table random_table[] = {
+ 
+ static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
+ 
+-static int __init random_int_secret_init(void)
++int random_int_secret_init(void)
+ {
+ 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
+ 	return 0;
+ }
+-late_initcall(random_int_secret_init);
+ 
+ /*
+  * Get a random word for internal kernel use only. Similar to urandom but
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index eecd3dc..87ff586 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1749,7 +1749,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
+ 		rdev->config.evergreen.sx_max_export_size = 256;
+ 		rdev->config.evergreen.sx_max_export_pos_size = 64;
+ 		rdev->config.evergreen.sx_max_export_smx_size = 192;
+-		rdev->config.evergreen.max_hw_contexts = 8;
++		rdev->config.evergreen.max_hw_contexts = 4;
+ 		rdev->config.evergreen.sq_num_cf_insts = 2;
+ 
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
+diff --git a/drivers/watchdog/ts72xx_wdt.c b/drivers/watchdog/ts72xx_wdt.c
+index 5a90a4a..87c0924 100644
+--- a/drivers/watchdog/ts72xx_wdt.c
++++ b/drivers/watchdog/ts72xx_wdt.c
+@@ -310,7 +310,8 @@ static long ts72xx_wdt_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	case WDIOC_GETSTATUS:
+ 	case WDIOC_GETBOOTSTATUS:
+-		return put_user(0, p);
++		error = put_user(0, p);
++		break;
+ 
+ 	case WDIOC_KEEPALIVE:
+ 		ts72xx_wdt_kick(wdt);
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index c2865cc..8f797ae 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1271,6 +1271,8 @@ retry:
+ 				    s_min_extra_isize) {
+ 					tried_min_extra_isize++;
+ 					new_extra_isize = s_min_extra_isize;
++					kfree(is); is = NULL;
++					kfree(bs); bs = NULL;
+ 					goto retry;
+ 				}
+ 				error = -1;
+diff --git a/fs/statfs.c b/fs/statfs.c
+index 9cf04a1..a133c3e 100644
+--- a/fs/statfs.c
++++ b/fs/statfs.c
+@@ -86,7 +86,7 @@ int user_statfs(const char __user *pathname, struct kstatfs *st)
+ 
+ int fd_statfs(int fd, struct kstatfs *st)
+ {
+-	struct file *file = fget(fd);
++	struct file *file = fget_raw(fd);
+ 	int error = -EBADF;
+ 	if (file) {
+ 		error = vfs_statfs(&file->f_path, st);
+diff --git a/include/linux/random.h b/include/linux/random.h
+index ac621ce..7e58ad2 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -56,6 +56,7 @@ extern void add_interrupt_randomness(int irq, int irq_flags);
+ extern void get_random_bytes(void *buf, int nbytes);
+ extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
++extern int random_int_secret_init(void);
+ 
+ #ifndef MODULE
+ extern const struct file_operations random_fops, urandom_fops;
+diff --git a/init/main.c b/init/main.c
+index 841e344..cc545df 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -68,6 +68,7 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/slab.h>
+ #include <linux/perf_event.h>
++#include <linux/random.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -717,6 +718,7 @@ static void __init do_basic_setup(void)
+ 	init_irq_proc();
+ 	do_ctors();
+ 	do_initcalls();
++	random_int_secret_init();
+ }
+ 
+ static void __init do_pre_smp_initcalls(void)
+diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
+index 8a58e8c..aea323c 100644
+--- a/net/ipv6/inet6_connection_sock.c
++++ b/net/ipv6/inet6_connection_sock.c
+@@ -85,7 +85,7 @@ struct dst_entry *inet6_csk_route_req(struct sock *sk,
+  * request_sock (formerly open request) hash tables.
+  */
+ static u32 inet6_synq_hash(const struct in6_addr *raddr, const __be16 rport,
+-			   const u32 rnd, const u16 synq_hsize)
++			   const u32 rnd, const u32 synq_hsize)
+ {
+ 	u32 c;
+ 
