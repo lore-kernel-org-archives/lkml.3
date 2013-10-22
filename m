@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab3JVQPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:15:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36777 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab3JVQPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:15:16 -0400
-Date: Tue, 22 Oct 2013 18:14:44 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "grub-devel@gnu.org" <grub-devel@gnu.org>,
-        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
-        Peter Jones <pjones@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keir@xen.org" <keir@xen.org>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
-References: <5266620602000078000FCA48@nat28.tlf.novell.com>
- <1382435127.1657.70.camel@hastur.hellion.org.uk>
- <526668A502000078000FCA7B@nat28.tlf.novell.com>
- <20131022134252.GA27302@phenom.dumpdata.com>
- <20131022144309.GA18547@phenom.dumpdata.com>
- <1382455537.8512.11.camel@shinybook.infradead.org>
- <20131022153258.GA12260@srcf.ucam.org>
- <1382456560.8512.24.camel@shinybook.infradead.org>
- <20131022160146.GH3626@debian70-amd64.local.net-space.pl>
- <1382458083.18283.34.camel@hastur.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382458083.18283.34.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754854Ab3JVQPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:15:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5678 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034Ab3JVQMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 12:12:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="311163023"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        peterz@infradead.org, mingo@kernel.org
+Subject: [PATCH 05/11] asmlinkage: Make lockdep_sys_exit asmlinkage
+Date: Tue, 22 Oct 2013 09:12:20 -0700
+Message-Id: <1382458346-24811-6-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
+References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 05:08:03PM +0100, Ian Campbell wrote:
-> On Tue, 2013-10-22 at 18:01 +0200, Daniel Kiper wrote:
-> > On Tue, Oct 22, 2013 at 03:42:42PM +0000, Woodhouse, David wrote:
-> > > On Tue, 2013-10-22 at 16:32 +0100, Matthew Garrett wrote:
-> > > >
-> > > > There are two problems with this:
-> > > >
-> > > > 1) The kernel will only boot if it's signed with a key in db, not a key
-> > > > in MOK.
-> > > > 2) grub will read the kernel, but the kernel will have to read the
-> > > > initramfs using EFI calls. That means your initramfs must be on a FAT
-> > > > partition.
-> > > >
-> > > > If you're happy with those limitations then just use the chainloader
-> > > > command. If you're not, use the linuxefi command.
-> > >
-> > > Well, we're talking about booting the Xen hypervisor aren't we?
-> > >
-> > > So yes, there are reasons the Linux kernel uses the 'boot stub' the way
-> > > it does, but I'm not sure we advocate that Xen should emulate that in
-> > > all its 'glory'?
-> >
-> > Right, I think that sensible mixture of multiboot2 protocol (it is needed
-> > to pass at least modules list to Xen; IIRC, linuxefi uses Linux Boot protocol
-> > for it) with extension proposed by Vladimir and something similar to linuxefi
-> > command will solve our problem (I proposed it in my first email). Users which
-> > do not need SB may use upstream GRUB2 and others could use
-> > 'multiboot2efi extension'.
->
-> Are you (going to be) in Edinburgh? Matthew was just explaining a bunch
-> of this stuff to me, it might be useful for you to get it from the
-> horses mouth instead of laundered through my brain (which is a bit
-> addled afterwards ;-)).
+From: Andi Kleen <ak@linux.intel.com>
 
-Sadly no. However, if it is possible/needed I could participate in conference call.
+lockdep_sys_exit can be called from assembler code, so make it
+asmlinkage
 
-Daniel
+Cc: peterz@infradead.org
+Cc: mingo@kernel.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/lockdep.h | 2 +-
+ kernel/lockdep.c        | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index cfc2f11..18e19e4 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -265,7 +265,7 @@ extern void lockdep_info(void);
+ extern void lockdep_reset(void);
+ extern void lockdep_reset_lock(struct lockdep_map *lock);
+ extern void lockdep_free_key_range(void *start, unsigned long size);
+-extern void lockdep_sys_exit(void);
++extern asmlinkage void lockdep_sys_exit(void);
+ 
+ extern void lockdep_off(void);
+ extern void lockdep_on(void);
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index e16c45b..d3749fe 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -4187,7 +4187,7 @@ void debug_show_held_locks(struct task_struct *task)
+ }
+ EXPORT_SYMBOL_GPL(debug_show_held_locks);
+ 
+-void lockdep_sys_exit(void)
++asmlinkage void lockdep_sys_exit(void)
+ {
+ 	struct task_struct *curr = current;
+ 
+-- 
+1.8.3.1
+
