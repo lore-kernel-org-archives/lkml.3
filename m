@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3JVHf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 03:35:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58293 "EHLO mga03.intel.com"
+	id S1754041Ab3JVHfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 03:35:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12361 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936Ab3JVHf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 03:35:56 -0400
+	id S1753936Ab3JVHfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 03:35:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="310958576"
+   d="scan'208";a="310958511"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 13/14] perf tools: Do not accept parse_tag_value() overflow
-Date: Tue, 22 Oct 2013 10:34:17 +0300
-Message-Id: <1382427258-17495-14-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 10/14] perf tools: Allow non-matching sample types
+Date: Tue, 22 Oct 2013 10:34:14 +0300
+Message-Id: <1382427258-17495-11-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com>
 References: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com>
@@ -28,29 +28,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parse_tag_value() accepts an "unsigned long" and
-multiplies it according to a tag character.  Do
-not accept the value if the multiplication
-overflows.
+For kernels that do not support PERF_SAMPLE_IDENTIFIER,
+sample types need not be identical to determine
+the sample id from the event.  Only the position
+of the sample id needs to be the same.
+
+Compatible sample types are ones in which the bits
+defined by PERF_COMPAT_MASK are the same.
+'perf_evlist__config()' forces sample types to be
+compatible on that basis.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/util.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/builtin-trace.c |  1 +
+ tools/perf/perf.h          |  1 +
+ tools/perf/util/event.h    | 16 ++++++++++++++++
+ tools/perf/util/evlist.c   | 25 +++++++++++++++++++++++++
+ tools/perf/util/evlist.h   |  1 +
+ tools/perf/util/record.c   |  5 ++++-
+ 6 files changed, 48 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index c25e57b..28a0a89 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -386,6 +386,8 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
- 			if (s != endptr)
- 				break;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index fa620bc..5da3920 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2060,6 +2060,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.user_interval = ULLONG_MAX,
+ 			.no_delay      = true,
+ 			.mmap_pages    = 1024,
++			.incompatible_sample_types = true,
+ 		},
+ 		.output = stdout,
+ 		.show_comm = true,
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index f61c230..aeecdf7 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -233,6 +233,7 @@ struct perf_record_opts {
+ 	u64	     user_interval;
+ 	u16	     stack_dump_size;
+ 	bool	     sample_transaction;
++	bool         incompatible_sample_types;
+ };
  
-+			if (value > ULONG_MAX / i->mult)
-+				break;
- 			value *= i->mult;
- 			return value;
- 		}
+ #endif
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 752709c..ca0689c 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -78,6 +78,22 @@ struct throttle_event {
+ /* perf sample has 16 bits size limit */
+ #define PERF_SAMPLE_MAX_SIZE (1 << 16)
+ 
++/*
++ * Events have compatible sample types if the following bits all have the same
++ * value.  This is because the order of sample members is fixed.  For sample
++ * events the order is: PERF_SAMPLE_IP, PERF_SAMPLE_TID, PERF_SAMPLE_TIME,
++ * PERF_SAMPLE_ADDR, PERF_SAMPLE_ID.  For non-sample events the sample members
++ * are accessed in reverse order.  The order is: PERF_SAMPLE_ID,
++ * PERF_SAMPLE_STREAM_ID, PERF_SAMPLE_CPU.  PERF_SAMPLE_IDENTIFIER is added for
++ * completeness but it should not be used with PERF_SAMPLE_ID.  Sample types
++ * that include PERF_SAMPLE_IDENTIFIER are always compatible.
++ */
++#define PERF_COMPAT_MASK				\
++	(PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |	\
++	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |	\
++	 PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |	\
++	 PERF_SAMPLE_CPU  | PERF_SAMPLE_IDENTIFIER)
++
+ struct sample_event {
+ 	struct perf_event_header        header;
+ 	u64 array[];
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 9e2b98c..9d17998 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -87,6 +87,31 @@ static void perf_evlist__update_id_pos(struct perf_evlist *evlist)
+ 	perf_evlist__set_id_pos(evlist);
+ }
+ 
++/**
++ * perf_evlist__make_sample_types_compatible - make sample types compatible.
++ * @evlist: selected event list
++ *
++ * Events with compatible sample types all have the same id_pos and is_pos.
++ * This can be achieved by matching the bits of PERF_COMPAT_MASK.
++ */
++void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++	u64 compat = 0;
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		compat |= evsel->attr.sample_type & PERF_COMPAT_MASK;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		evsel->attr.sample_type |= compat;
++		evsel->sample_size =
++			__perf_evsel__sample_size(evsel->attr.sample_type);
++		perf_evsel__calc_id_pos(evsel);
++	}
++
++	perf_evlist__set_id_pos(evlist);
++}
++
+ static void perf_evlist__purge(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos, *n;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 7f8f1ae..8c5cdb9 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -94,6 +94,7 @@ int perf_evlist__open(struct perf_evlist *evlist);
+ void perf_evlist__close(struct perf_evlist *evlist);
+ 
+ void perf_evlist__set_id_pos(struct perf_evlist *evlist);
++void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist);
+ bool perf_can_sample_identifier(void);
+ void perf_evlist__config(struct perf_evlist *evlist,
+ 			 struct perf_record_opts *opts);
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index 18d73aa..1eb1290 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -104,5 +104,8 @@ void perf_evlist__config(struct perf_evlist *evlist,
+ 			perf_evsel__set_sample_id(evsel, use_sample_identifier);
+ 	}
+ 
+-	perf_evlist__set_id_pos(evlist);
++	if (use_sample_identifier || opts->incompatible_sample_types)
++		perf_evlist__set_id_pos(evlist);
++	else
++		perf_evlist__make_sample_types_compatible(evlist);
+ }
 -- 
 1.7.11.7
 
