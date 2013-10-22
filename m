@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3JVPji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:39:38 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:51071 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3JVPjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:39:37 -0400
-Message-ID: <52669C2C.90509@gmail.com>
-Date: Tue, 22 Oct 2013 17:39:24 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: The development of GNU GRUB <grub-devel@gnu.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <ian.campbell@citrix.com>, keir@xen.org,
-        david.woodhouse@intel.com, stefano.stabellini@eu.citrix.com,
-        Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, Jan Beulich <JBeulich@suse.com>,
-        ross.philipson@citrix.com, boris.ostrovsky@oracle.com,
-        richard.l.maliszewski@intel.com
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <20131021135437.GD1283@fenchurch.internal.datastacks.com> <20131021185758.GD3626@debian70-amd64.local.net-space.pl> <1382433990.1657.66.camel@hastur.hellion.org.uk> <5266620602000078000FCA48@nat28.tlf.novell.com> <1382435127.1657.70.camel@hastur.hellion.org.uk> <526668A502000078000FCA7B@nat28.tlf.novell.com> <20131022134252.GA27302@phenom.dumpdata.com> <1382449985.18283.12.camel@hastur.hellion.org.uk> <20131022140947.GA17829@phenom.dumpdata.com> <1382451868.18283.21.camel@hastur.hellion.org.uk> <20131022145140.GA18679@phenom.dumpdata.com>
-In-Reply-To: <20131022145140.GA18679@phenom.dumpdata.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2BWVKSVXKTGGIWNNLLBCG"
+	id S1753972Ab3JVPkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:40:49 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:55239 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753661Ab3JVPkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 11:40:46 -0400
+Message-ID: <1382456363.2837.10.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v6 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DW PHY's
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "idos@codeaurora.org" <idos@codeaurora.org>,
+        "mgautam@codeaurora.org" <mgautam@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Tue, 22 Oct 2013 18:39:23 +0300
+In-Reply-To: <20131022143242.GA4691@kartoffel>
+References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+	 <1381131897-13910-3-git-send-email-iivanov@mm-sol.com>
+	 <52527D38.1070505@mm-sol.com>
+	 <1381246952.24031.83.camel@iivanov-dev.int.mm-sol.com>
+	 <20131022143242.GA4691@kartoffel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2BWVKSVXKTGGIWNNLLBCG
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 22.10.2013 16:51, Konrad Rzeszutek Wilk wrote:
-> If you use 'linux' module, it will call ExitBootService.
-> If you use 'multiboot' module, it will call ExitBootService too.
->=20
-> So if you don't want to the module to call 'grub_efi_finish_boot_servic=
-es'
-> you need to use 'linuxefi' :-)
-That's a very limited logic. Commands can be modified and protocols can
-be extended.
-There was only one e-mail explaining the needs and I answered with
-proposing possible solutions yet the 2 e-mails in question were
-completely ignored.
-What's the need behind not calling ExitBootService? This is a point
-which was never really explained to me. EFI specification specifically
-tells to call ExitBootService.
+Hi, 
+
+On Tue, 2013-10-22 at 15:32 +0100, Mark Rutland wrote: 
+> [...]
+> 
+> > > > +   phy->sleep_a_clk = devm_clk_get(phy->dev, "sleep_a");
+> > >
+> > > What means the "_a" in clock name?
+> > 
+> > They are 2 PHY's on 8074 chip. This drivers is supposed to
+> > operate on PHY 0, thus sleep_a. PHY 1 is using sleep_b. Take a look
+> > here http://www.spinics.net/lists/arm-kernel/msg276945.html
+> 
+> When you say two PHYs, do you mean the HS PHY and the SS PHY?
+> 
+> Or are there two HS PHYs? If so, would the other HS PHY have a sleep_b clock?
+
+I think that this is the case.
+
+> 
+> The clock-names property should describe the clocks from the view of the device
+> itself. As we're describing the PHY in isolation, rather than a big block that
+> contains the PHY, the presesnce or absence of other PHYs should not affect the
+> name. If the "_a" suffix is only to differentiate the instance of PHY, it
+> should be dropped.
 
 
-------enig2BWVKSVXKTGGIWNNLLBCG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Ok. This was left from earlier platform code. I will change it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Thanks,
+Ivan
 
-iF4EAREKAAYFAlJmnCwACgkQNak7dOguQglZDwD/ZQBV6YYlR6r4FAavYI0rXlp5
-f+yAvxeS4C2vr+blOEgA/0tbcECFzgDeusAE68qEJ4kvnNxf+wLAsiDiMrD3la6Z
-=gysx
------END PGP SIGNATURE-----
+> 
+> Thanks,
+> Mark.
+> --
 
-------enig2BWVKSVXKTGGIWNNLLBCG--
+
