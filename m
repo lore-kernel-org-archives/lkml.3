@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3JVWbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:31:33 -0400
-Received: from smtprelay0243.hostedemail.com ([216.40.44.243]:42933 "EHLO
+	id S1755956Ab3JVWbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:31:46 -0400
+Received: from smtprelay0191.hostedemail.com ([216.40.44.191]:58376 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755835Ab3JVWba (ORCPT
+	by vger.kernel.org with ESMTP id S1754793Ab3JVWbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:31:30 -0400
+	Tue, 22 Oct 2013 18:31:43 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:3872:3874:4321:4385:5007:6261:8660:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13148:13230,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glue14_cce5a763af06
-X-Filterd-Recvd-Size: 4028
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3868:3871:4321:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coast51_882be23be339
+X-Filterd-Recvd-Size: 1841
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
-Subject: [PATCH 23/24] mm: Convert use of typedef ctl_table to struct ctl_table
-Date: Tue, 22 Oct 2013 15:30:06 -0700
-Message-Id: <4dd4d6fc0ddffaaa0bbffb484d7ce39c41416cee.1382480758.git.joe@perches.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH 13/24] lockd: Convert use of typedef ctl_table to struct ctl_table
+Date: Tue, 22 Oct 2013 15:29:56 -0700
+Message-Id: <7dc73d7664e7f1d1cff10102bbcee82d06c6aac5.1382480758.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1382480758.git.joe@perches.com>
 References: <cover.1382480758.git.joe@perches.com>
@@ -28,81 +29,40 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- mm/page-writeback.c |  2 +-
- mm/page_alloc.c     | 12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ fs/lockd/svc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index f5236f8..bd0a03f 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1687,7 +1687,7 @@ void throttle_vm_writeout(gfp_t gfp_mask)
- /*
-  * sysctl handler for /proc/sys/vm/dirty_writeback_centisecs
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 10d6c41..140cc67 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -435,7 +435,7 @@ EXPORT_SYMBOL_GPL(lockd_down);
+  * Sysctl parameters (same as module parameters, different interface).
   */
--int dirty_writeback_centisecs_handler(ctl_table *table, int write,
-+int dirty_writeback_centisecs_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c1cf5f8..5a9a0d5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3314,7 +3314,7 @@ early_param("numa_zonelist_order", setup_numa_zonelist_order);
- /*
-  * sysctl handler for numa_zonelist_order
-  */
--int numa_zonelist_order_handler(ctl_table *table, int write,
-+int numa_zonelist_order_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *length,
- 		loff_t *ppos)
- {
-@@ -5698,7 +5698,7 @@ module_init(init_per_zone_wmark_min)
-  *	that we can call two helper functions whenever min_free_kbytes
-  *	changes.
-  */
--int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
-+int min_free_kbytes_sysctl_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
-@@ -5710,7 +5710,7 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- }
  
- #ifdef CONFIG_NUMA
--int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
-+int sysctl_min_unmapped_ratio_sysctl_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	struct zone *zone;
-@@ -5726,7 +5726,7 @@ int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
- 	return 0;
- }
+-static ctl_table nlm_sysctls[] = {
++static struct ctl_table nlm_sysctls[] = {
+ 	{
+ 		.procname	= "nlm_grace_period",
+ 		.data		= &nlm_grace_period,
+@@ -489,7 +489,7 @@ static ctl_table nlm_sysctls[] = {
+ 	{ }
+ };
  
--int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
-+int sysctl_min_slab_ratio_sysctl_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	struct zone *zone;
-@@ -5752,7 +5752,7 @@ int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
-  * minimum watermarks. The lowmem reserve ratio can only make sense
-  * if in function of the boot time zone sizes.
-  */
--int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
-+int lowmem_reserve_ratio_sysctl_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	proc_dointvec_minmax(table, write, buffer, length, ppos);
-@@ -5765,7 +5765,7 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
-  * cpu.  It is the fraction of total pages in each zone that a hot per cpu
-  * pagelist can have before it gets flushed back to buddy allocator.
-  */
--int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
-+int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	struct zone *zone;
+-static ctl_table nlm_sysctl_dir[] = {
++static struct ctl_table nlm_sysctl_dir[] = {
+ 	{
+ 		.procname	= "nfs",
+ 		.mode		= 0555,
+@@ -498,7 +498,7 @@ static ctl_table nlm_sysctl_dir[] = {
+ 	{ }
+ };
+ 
+-static ctl_table nlm_sysctl_root[] = {
++static struct ctl_table nlm_sysctl_root[] = {
+ 	{
+ 		.procname	= "fs",
+ 		.mode		= 0555,
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
