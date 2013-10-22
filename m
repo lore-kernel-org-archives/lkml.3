@@ -1,91 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3JVR4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:56:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53437 "EHLO mga09.intel.com"
+	id S1754482Ab3JVR7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763Ab3JVR4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:56:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,549,1378882800"; 
-   d="scan'208";a="415303688"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [GIT PULL] For x86/mce ... enhanced error logs
-Date: Tue, 22 Oct 2013 10:56:36 -0700
-Message-Id: <5266bc543597964da@agluck-desk.sc.intel.com>
+	id S1753861Ab3JVR7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 13:59:11 -0400
+Date: Tue, 22 Oct 2013 13:59:01 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Subject: allow unlimited audit_backlog_limit [was: Re: [PATCH] audit: don't
+ create audit log when audit_backlog_limit is zero]
+Message-ID: <20131022175901.GA5059@madcap2.tricolour.ca>
+References: <1382342500-12693-1-git-send-email-gaofeng@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382342500-12693-1-git-send-email-gaofeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Mon, Oct 21, 2013 at 04:01:40PM +0800, Gao feng wrote:
+> As the man page of auditctl said:
+> "
+> -b backlog
+>               Set max number of outstanding audit buffers allowed (Kernel Default=64)
+> 	      If all buffers are full, the failure flag is consulted by the kernel
+>               for action.
+> "
+> 
+> So if audit_backlog_limit is zero, it means no audit buffer
+> should be allocated.
 
-Ultimate plan is to use these enhanced error logs to feed a
-perf/trace event ... but we are still discussing the exact
-format of that, and also how it should interact/complement/replace
-the existing EDAC trace event.  Meanwhile all this precursor work
-has been reviewed and agreed on by Mauro, Boris & others ... so
-it can be queued for the next merge window while we continue work
-on the trace event.
+Which sounds the same as audit=0 on the kernel boot line or "auditctl -e 0"
+to disable it.  This is redundant.  I would suggest instead that it
+would be more useful to have backlog set to zero mean unlimited (well,
+limited by system RAM).  This can be dangerous, but that can be
+warned in the manpage.  So, to accomplish that, a minor change is
+needed in the audit_hold_skb() funciton:
 
--Tony
+diff --git a/kernel/audit.c b/kernel/audit.c
+@@ -355,7 +355,8 @@ static int audit_set_failure(int state)
+ static void audit_hold_skb(struct sk_buff *skb)
+ {
+ 	if (audit_default &&
+-	    skb_queue_len(&audit_skb_hold_queue) < audit_backlog_limit)
++	    (!audit_backlog_limit ||
++	     skb_queue_len(&audit_skb_hold_queue) < audit_backlog_limit))
+ 		skb_queue_tail(&audit_skb_hold_queue, skb);
+ 	else
+ 		kfree_skb(skb);
 
-The following changes since commit 31d141e3a666269a3b6fcccddb0351caf7454240:
+And here is what I would propose for the corresponding userspace mod:
 
-  Linux 3.12-rc6 (2013-10-19 12:28:15 -0700)
+diff --git a/trunk/docs/auditctl.8 b/trunk/docs/auditctl.8
+@@ -8,7 +8,7 @@ The \fBauditctl\fP program is used to control the behavior, get status, and add
+ .SH OPTIONS
+ .TP
+ .BI \-b\  backlog
+-Set max number of outstanding audit buffers allowed (Kernel Default=64) If all buffers are full, the failure flag is consulted by the kernel for action.
++Set max number of outstanding audit buffers allowed (Kernel Default=64) If all buffers are full, the failure flag is consulted by the kernel for action.  Setting this to "0" (which is dangerous) implies an unlimited queue, limited only by system resources.
+ .TP
+ \fB\-e\fP [\fB0\fP..\fB2\fP]
+ Set enabled flag. When \fB0\fP is passed, this can be used to temporarily disable auditing. When \fB1\fP is passed as an argument, it will enable auditing. To lock the audit configuration so that it can't be changed, pass a \fB2\fP as the argument. Locking the configuration is intended to be the last command in audit.rules for anyone wishing this feature to be active. Any attempt to change the configuration in this mode will be audited and denied. The configuration can only be changed by rebooting the machine.
+diff --git a/trunk/src/auditctl.c b/trunk/src/auditctl.c
+@@ -107,7 +107,7 @@ static void usage(void)
+      "    -a <l,a>            Append rule to end of <l>ist with <a>ction\n"
+      "    -A <l,a>            Add rule at beginning of <l>ist with <a>ction\n"
+      "    -b <backlog>        Set max number of outstanding audit buffers\n"
+-     "                        allowed Default=64\n"
++     "                        allowed. Default=64 Unlimited=0(dangerous)\n"
+      "    -c                  Continue through errors in rules\n"
+      "    -C f=f              Compare collected fields if available:\n"
+      "                        Field name, operator(=,!=), field name\n"
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-eMCA
+Does this sound like a reasonable change?
 
-for you to fetch changes up to 7dcb5248a2593539d40b1bcd8da0158e7c3967b5:
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+>  kernel/audit.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 7b0e23a..bbb4000 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1104,14 +1104,16 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+>  	if (unlikely(audit_filter_type(type)))
+>  		return NULL;
+>  
+> +	if (!audit_backlog_limit)
+> +		return NULL;
+> +
+>  	if (gfp_mask & __GFP_WAIT)
+>  		reserve = 0;
+>  	else
+>  		reserve = 5; /* Allow atomic callers to go up to five
+>  				entries over the normal backlog limit */
+>  
+> -	while (audit_backlog_limit
+> -	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+> +	while (skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+>  		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
+>  			unsigned long sleep_time;
+>  
 
-  EDAC, GHES: Update ghes error record info (2013-10-21 15:12:02 -0700)
+- RGB
 
-----------------------------------------------------------------
-There is a enhanced error logging mechanism for Xeon processors.
-Full description is here:
-http://www.intel.com/content/www/us/en/architecture-and-technology/enhanced-mca-logging-xeon-paper.html
-This patch series provides a module (and support code) to
-check for an extended error log and print extra details about
-the error on the console.
-
-----------------------------------------------------------------
-Chen, Gong (9):
-      ACPI, APEI, CPER: Fix status check during error printing
-      ACPI, CPER: Update cper info
-      bitops: Introduce a more generic BITMASK macro
-      ACPI, x86: Extended error log driver for x86 platform
-      DMI: Parse memory device (type 17) in SMBIOS
-      ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
-      ACPI, APEI, CPER: Enhance memory reporting capability
-      ACPI, APEI, CPER: Cleanup CPER memory error output format
-      EDAC, GHES: Update ghes error record info
-
- arch/ia64/kernel/setup.c              |   1 +
- arch/x86/include/asm/mce.h            |   1 +
- arch/x86/kernel/cpu/mcheck/mce-apei.c |   3 +-
- arch/x86/kernel/setup.c               |   1 +
- drivers/acpi/Kconfig                  |  19 ++
- drivers/acpi/Makefile                 |   2 +
- drivers/acpi/acpi_extlog.c            | 326 ++++++++++++++++++++++++++++++++++
- drivers/acpi/apei/apei-internal.h     |  12 +-
- drivers/acpi/apei/cper.c              | 132 +++++++-------
- drivers/acpi/apei/ghes.c              |  58 +++---
- drivers/acpi/bus.c                    |   3 +-
- drivers/edac/amd64_edac.c             |  46 ++---
- drivers/edac/amd64_edac.h             |   8 -
- drivers/edac/ghes_edac.c              |  16 +-
- drivers/edac/sb_edac.c                |   2 +-
- drivers/firmware/dmi_scan.c           |  60 +++++++
- drivers/video/sis/init.c              |   5 +-
- include/acpi/actbl1.h                 |  14 +-
- include/acpi/ghes.h                   |   2 +-
- include/linux/acpi.h                  |   1 +
- include/linux/bitops.h                |   8 +
- include/linux/cper.h                  |  13 +-
- include/linux/dmi.h                   |   5 +
- include/linux/edac.h                  |   2 +-
- 24 files changed, 591 insertions(+), 149 deletions(-)
- create mode 100644 drivers/acpi/acpi_extlog.c
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
