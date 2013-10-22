@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3JVPsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:48:11 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:56093 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3JVPsJ (ORCPT
+	id S1754294Ab3JVPsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:48:52 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:41515 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860Ab3JVPsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:48:09 -0400
-Date: Tue, 22 Oct 2013 08:48:02 -0700
-From: walken@google.com
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-Message-ID: <20131022154802.GA25490@localhost>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	Tue, 22 Oct 2013 11:48:51 -0400
+Date: Tue, 22 Oct 2013 16:48:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
+Message-ID: <20131022154846.GA24024@lee--X1>
+References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
+ <20130807084054.GA18668@lee--X1>
+ <52667A6C.6000301@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52667A6C.6000301@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 05:50:35PM -0700, Davidlohr Bueso wrote:
-> Linus recently pointed out[1] some of the amount of unnecessary work 
-> being done with the mmap_sem held. This patchset is a very initial 
-> approach on reducing some of the contention on this lock, and moving
-> work outside of the critical region.
+On Tue, 22 Oct 2013, Sebastian Andrzej Siewior wrote:
+
+> On 08/07/2013 10:40 AM, Lee Jones wrote:
+> > On Mon, 05 Aug 2013, Zubair Lutfullah wrote:
+> > 
+> >> Reg_cache variable is used to lock step enable register
+> >> from being accessed and written by both TSC and ADC
+> >> at the same time.
+> >> However, it isn't updated anywhere in the code at all.
+> >>
+> >> If both TSC and ADC are used, eventually 1FFFF is always
+> >> written enabling all 16 steps uselessly causing a mess.
+> >>
+> >> Patch fixes it by correcting the locks and updates the
+> >> variable by reading the step enable register
+> >>
+> >> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> >> ---
+> >>  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
+> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > Better that it comes from somewhere.
 > 
-> Patch 1 adds a simple helper function.
+> I don't understand. All three functions are used before the patch has
+> been applied:
 > 
-> Patch 2 moves out some trivial setup logic in mlock related calls.
+> $ git grep -l am335x_tsc_se_set
+> drivers/iio/adc/ti_am335x_adc.c
+> drivers/input/touchscreen/ti_am335x_tsc.c
+> drivers/mfd/ti_am335x_tscadc.c
 > 
-> Patch 3 allows managing new vmas without requiring the mmap_sem for
-> vdsos. While it's true that there are many other scenarios where
-> this can be done, few are actually as straightforward as this in the
-> sense that we *always* end up allocating memory anyways, so there's really
-> no tradeoffs. For this reason I wanted to get this patch out in the open.
+> $ git grep -l am335x_tsc_se_clr
+> drivers/iio/adc/ti_am335x_adc.c
+> drivers/input/touchscreen/ti_am335x_tsc.c
+> drivers/mfd/ti_am335x_tscadc.c
 > 
-> There are a few points to consider when preallocating vmas at the start
-> of system calls, such as how many new vmas (ie: callers of split_vma can
-> end up calling twice, depending on the mm state at that point) or the probability
-> that we end up merging the vma instead of having to create a new one, like the 
-> case of brk or copy_vma. In both cases the overhead of creating and freeing
-> memory at every syscall's invocation might outweigh what we gain in not holding
-> the sem.
+> $ git grep -l am335x_tsc_se_update
+> drivers/iio/adc/ti_am335x_adc.c
+> drivers/input/touchscreen/ti_am335x_tsc.c
+> drivers/mfd/ti_am335x_tscadc.c
+> include/linux/mfd/ti_am335x_tscadc.h
 
-Hi Davidlohr,
+Okay. So what does this mean?
 
-I had a quick look at the patches and I don't see anything wrong with them.
-However, I must also say that I have 99 problems with mmap_sem and the one
-you're solving doesn't seem to be one of them, so I would be interested to
-see performance numbers showing how much difference these changes make.
+> It has been initialized to 0 by time the mfd part was loaded and
+> updated via …_set() from both parts (TSC & ADC). 
+> The lock ensured that
+> we never lose or add bits due to a race. So I don't understand why we
+> end up with 0x1FFFF.
+> Could some please explain to me how this can happen?
 
-Generally the problems I see with mmap_sem are related to long latency
-operations. Specifically, the mmap_sem write side is currently held
-during the entire munmap operation, which iterates over user pages to
-free them, and can take hundreds of milliseconds for large VMAs. Also,
-the mmap_sem read side is held during user page fauls - well, the
-VM_FAULT_RETRY mechanism allows us to drop mmap_sem during major page
-faults, but it is still held while allocating user pages or page tables,
-and while going through FS code for asynchronous readahead, which turns
-out not to be as asynchronous as you'd think as it can still block for
-reading extends etc... So, generally the main issues I am seeing with
-mmap_sem are latency related, while your changes only help for throughput
-for workloads that don't hit the above latency issues. I think that's a
-valid thing to do but I'm not sure if common workloads hit these throughput
-issues today ?
+I don't have any h/w to actually test this, so you two are going to
+have to fudge this out by yourselves.
 
-> [1] https://lkml.org/lkml/2013/10/9/665 
+> I added reg_se_cache to cache the content of REG_SE once and
+> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
+> after "work" has been done. So you need to know the old value or TSC may
+> disable ADC and the other way around.
+> 
+> In tree (staging-next) I see that reg_se_cache ended being pointless.
+> am335x_tsc_se_update() is no longer used from TSC or ADC. Only the
+> _set() and _clr() functions are used which (both) read back the content
+> of the REG_SE register before calling am335x_tsc_se_update().
 
-Eh, that post really makes it look easy doesn't it :)
+Not sure I get this point.
 
-There are a few complications with mmap_sem as it turns out to protect
-more than just the VMA structures. For example, mmap_sem plays a role
-in preventing page tables from being unmapped while follow_page_mask()
-reads through them (there are other arch specific ways to do that,
-like disabling local interrupts on x86 to prevent TLB shootdown, but
-none that are currently available in generic code). This isn't an
-issue with your current proposed patches but is something you need to
-be aware of if you're going to do more work around the mmap_sem issues
-(which I would encourage you to BTW - there are a lot of issues around
-mmap_sem, so it definitely helps to have more people looking at this :)
+> That makes me think that we might cut of one part by accident. On the
+> other hand Zubair said that he tested using ADC & TSC at the same time
+> and it worked. So I have to double check if the HW really resets the
+> content back to zero or not; maybe there is another explanation :)
+> 
+> One thing that is an issue is that now the _set() function is using the
+> lock without disabling interrupts and is called from non-IRQ
+> (tiadc_read_raw()) and IRQ (titsc_irq()) context which might lead to
+> deadlock. I'm going to send a patch for this.
+
+I see the patch, but let's sort this out first, before I apply it.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
