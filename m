@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab3JVIZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:25:55 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:56816 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab3JVIZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:25:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
-References: <CAGbDTvqC0e0wZpEYHL2kg2wGYFfZt9gx7bQQ8cmbySWHqquWqw@mail.gmail.com>
-Date: Tue, 22 Oct 2013 10:25:53 +0200
-X-Google-Sender-Auth: Z6DQMkA5mLfTgaWJBuQyw0jvKZ4
-Message-ID: <CAMuHMdWwWPST8AHUiThuFge9bVjuwVMEjb2yXbivMAE==W4NmQ@mail.gmail.com>
-Subject: Re: Looking for configuration-dependent bugs in Linux
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Iago Abal <mail@iagoabal.eu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Iago Abal <iari@itu.dk>
-Content-Type: text/plain; charset=UTF-8
+	id S1753669Ab3JVI20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:28:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23986 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752164Ab3JVI2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:28:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,546,1378882800"; 
+   d="scan'208";a="415004975"
+From: Vinod Koul <vinod.koul@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH] MAINTAINERS: add the new dmaengine mailing list
+Date: Tue, 22 Oct 2013 13:04:12 +0530
+Message-Id: <1382427252-26470-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 12:49 PM, Iago Abal <mail@iagoabal.eu> wrote:
-> We are currently looking for already-fixed configuration-dependent
-> bugs in Linux ---the bugfix helps us to understand the underlying
-> cause. A good example is [2], which fixes a bug that only shows up in
-> PA-RISC architectures when DISCONTIGMEM is enabled. Any bug appearing
-> in some configurations but not in others is interesting for us (e.g. a
-> bug affecting PowerPC only), even though the more complex the
-> interaction between configuration options the more interesting is the
-> bug for our purpose.
->
-> As a Linux kernel developer, could you:
->
-> * remember any configuration-dependent bug?
-> * identify any subset of configuration options that tend to interact badly?
-> * spot any part of the kernel more prone to configuration-dependent bugs?
+We have a new mailing list hosted by vger for dmaengine
 
->From the top of my head and a little bit of git log:
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-  * Missing includes, due to indirect inclusion on some platforms.
-    Typically one of:
-        <linux/slab.h>
-        <linux/prefetch.h>
-        <linux/of.h>
-        <linux/irqreturn.h>
-        <linux/uaccess.h>
-        <linux/err.h>
-  * Missing/broken code/dependencies on platforms where some popular
-    config options are not set.
-    Typically one of:
-        CONFIG_SMP
-        CONFIG_PM
-        CONFIG_PCI
-        CONFIG_HAS_DMA
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8a0cbf3..3ebb49b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2718,6 +2718,7 @@ T:	git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+ DMA GENERIC OFFLOAD ENGINE SUBSYSTEM
+ M:	Vinod Koul <vinod.koul@intel.com>
+ M:	Dan Williams <dan.j.williams@intel.com>
++L:	dmaengine@vger.kernel.org
+ S:	Supported
+ F:	drivers/dma/
+ F:	include/linux/dma*
+-- 
+1.7.0.4
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
