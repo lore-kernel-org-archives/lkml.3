@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3JVMri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:47:38 -0400
-Received: from ring0.de ([91.143.88.219]:35980 "EHLO smtp.ring0.de"
+	id S1753271Ab3JVMrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:47:36 -0400
+Received: from ring0.de ([91.143.88.219]:35970 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab3JVMrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:47:32 -0400
+	id S1752635Ab3JVMrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 08:47:31 -0400
 X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
 From: Sebastian Reichel <sre@debian.org>
@@ -22,91 +22,39 @@ Cc: =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 3/3] ARM: dts: N900: TWL4030 Keypad Matrix definition
-Date: Tue, 22 Oct 2013 14:47:22 +0200
-Message-Id: <1382446042-27099-4-git-send-email-sre@debian.org>
+Subject: [PATCHv2 0/3] Add Nokia N900 DT support
+Date: Tue, 22 Oct 2013 14:47:19 +0200
+Message-Id: <1382446042-27099-1-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382446042-27099-1-git-send-email-sre@debian.org>
-References: <1382446042-27099-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Keyboard Matrix information to N900's DTS file.
-This patch maps the keys exactly as the original
-board code.
+Add device tree support for the Nokia N900 keyboard.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- arch/arm/boot/dts/omap3-n900.dts | 55 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+Changes since v1:
+ * create "DTS: ARM: TWL4030: Add keypad node" patch, which
+   was part of "Input: twl4030-keypad - add device tree support"
+   before.
+ * use "IS_ENABLED(CONFIG_OF)" to check if DT is enabled
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index c2b92e8..30ac779 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -109,6 +109,61 @@
- #include "twl4030.dtsi"
- #include "twl4030_omap3.dtsi"
- 
-+&twl_keypad {
-+	linux,keymap = < 0x00000010 /* KEY_Q */
-+			 0x00010018 /* KEY_O */
-+			 0x00020019 /* KEY_P */
-+			 0x00030033 /* KEY_COMMA */
-+			 0x0004000e /* KEY_BACKSPACE */
-+			 0x0006001e /* KEY_A */
-+			 0x0007001f /* KEY_S */
-+
-+			 0x01000011 /* KEY_W */
-+			 0x01010020 /* KEY_D */
-+			 0x01020021 /* KEY_F */
-+			 0x01030022 /* KEY_G */
-+			 0x01040023 /* KEY_H */
-+			 0x01050024 /* KEY_J */
-+			 0x01060025 /* KEY_K */
-+			 0x01070026 /* KEY_L */
-+
-+			 0x02000012 /* KEY_E */
-+			 0x02010034 /* KEY_DOT */
-+			 0x02020067 /* KEY_UP */
-+			 0x0203001c /* KEY_ENTER */
-+			 0x0205002c /* KEY_Z */
-+			 0x0206002d /* KEY_X */
-+			 0x0207002e /* KEY_C */
-+			 0x02080043 /* KEY_F9 */
-+
-+			 0x03000013 /* KEY_R */
-+			 0x0301002f /* KEY_V */
-+			 0x03020030 /* KEY_B */
-+			 0x03030031 /* KEY_N */
-+			 0x03040032 /* KEY_M */
-+			 0x03050039 /* KEY_SPACE */
-+			 0x03060039 /* KEY_SPACE */
-+			 0x03070069 /* KEY_LEFT */
-+
-+			 0x04000014 /* KEY_T */
-+			 0x0401006c /* KEY_DOWN */
-+			 0x0402006a /* KEY_RIGHT */
-+			 0x0404001d /* KEY_LEFTCTRL */
-+			 0x04050064 /* KEY_RIGHTALT */
-+			 0x0406002a /* KEY_LEFTSHIFT */
-+			 0x04080044 /* KEY_F10 */
-+
-+			 0x05000015 /* KEY_Y */
-+			 0x05080057 /* KEY_F11 */
-+
-+			 0x06000016 /* KEY_U */
-+
-+			 0x07000017 /* KEY_I */
-+			 0x07010041 /* KEY_F7 */
-+			 0x07020042 /* KEY_F8 */
-+			 >;
-+};
-+
- &twl_gpio {
- 	ti,pullups	= <0x0>;
- 	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+Currently non-DT boot crashes for me very early, so I was not able
+to check this patch using non-DT boot.
+
+-- Sebastian
+
+Sebastian Reichel (3):
+  Input: twl4030-keypad - add device tree support
+  DTS: ARM: TWL4030: Add keypad node
+  ARM: dts: N900: TWL4030 Keypad Matrix definition
+
+ .../devicetree/bindings/input/twl4030-keypad.txt   | 31 ++++++++
+ arch/arm/boot/dts/omap3-n900.dts                   | 55 +++++++++++++
+ arch/arm/boot/dts/twl4030.dtsi                     |  7 ++
+ drivers/input/keyboard/twl4030_keypad.c            | 91 ++++++++++++++++++----
+ 4 files changed, 167 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/twl4030-keypad.txt
+
 -- 
 1.8.4.rc3
 
