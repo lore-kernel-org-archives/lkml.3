@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3JVHmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 03:42:12 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:42219 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab3JVHmK (ORCPT
+	id S1753956Ab3JVHnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 03:43:25 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:24545
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753508Ab3JVHnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 03:42:10 -0400
-Date: Tue, 22 Oct 2013 09:39:40 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drivers/pwm: don't use
- devm_pinctrl_get_select_default() in probe
-Message-ID: <20131022073939.GD8681@ulmo.nvidia.com>
-References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de>
- <1381681071-6021-4-git-send-email-wsa@the-dreams.de>
+	Tue, 22 Oct 2013 03:43:24 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Peter Chen <peter.chen@freescale.com>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <b29396@freescale.com>, <shawn.guo@linaro.org>, <peter.chen@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 1/1] mfd: syscon: return -ENXIO if CONFIG_MFD_SYSCON is not enabled
+Date: Tue, 22 Oct 2013 15:27:37 +0800
+Message-ID: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AbQceqfdZEv+FvjW"
-Content-Disposition: inline
-In-Reply-To: <1381681071-6021-4-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some platforms may not define CONFIG_MFD_SYSCON (or haven't syscon),
+it can fix build error for those platforms.
 
---AbQceqfdZEv+FvjW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+---
+ include/linux/mfd/syscon.h |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-On Sun, Oct 13, 2013 at 06:17:49PM +0200, Wolfram Sang wrote:
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device c=
-ore),
-> we can rely on device core for setting the default pins. Compile tested o=
-nly.
->=20
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/pwm/pwm-tiecap.c   | 6 ------
->  drivers/pwm/pwm-tiehrpwm.c | 6 ------
->  2 files changed, 12 deletions(-)
+diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+index b473577..60bf0fb 100644
+--- a/include/linux/mfd/syscon.h
++++ b/include/linux/mfd/syscon.h
+@@ -17,10 +17,34 @@
+ 
+ struct device_node;
+ 
++#if IS_ENABLED(CONFIG_MFD_SYSCON)
+ extern struct regmap *syscon_node_to_regmap(struct device_node *np);
+ extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+ extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+ extern struct regmap *syscon_regmap_lookup_by_phandle(
+ 					struct device_node *np,
+ 					const char *property);
++#else
++static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
++{
++	return ERR_PTR(-ENXIO);
++}
++
++static inline struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
++{
++	return ERR_PTR(-ENXIO);
++}
++
++static inline struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
++{
++	return ERR_PTR(-ENXIO);
++}
++static inline struct regmap *syscon_regmap_lookup_by_phandle(
++					struct device_node *np,
++					const char *property)
++{
++	return ERR_PTR(-ENXIO);
++}
++#endif
++
+ #endif /* __LINUX_MFD_SYSCON_H__ */
+-- 
+1.7.1
 
-Applied, thanks.
 
-Thierry
-
---AbQceqfdZEv+FvjW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZiu7AAoJEN0jrNd/PrOhsBgP/Rg3KNu1HfZV1gD2bgLN/XdY
-DCvAbqfkG+bNFNGuf+Hq5VCxwqfYJlfRvnB91r3lSZAkWs93u4kxqmtY3eYrYkYn
-esifJ+Ac5ydklG/spD6Xtggj09GpWwcYo5xe7AqzJmT+a5lPSN3rRzcJRo5PnnL7
-giKtOIGFV8bfM+fHEY16Ir1xtOh+60NmyXa24i4bCFXu/kyHtxm3fqSPq8cX3EAG
-nyksq6126rISMvLP1oEb5PEpaVr4fZx+sje3vuVITpPXC8sjsD0PyGnRyaGnKYND
-/Rv4Q4w2me7EHv4abG0YShtlZiaXa7RYUKPTCOTlR5oya7ru6tGw/VaWPEokoffC
-YgWviEUwuuYJqmq0yiCnkXwm3gGNx4rWjkpg8NmpExAMn4lNo9MGpd6PoiuyL9QH
-oDpVdVjqf3n2nHUZQpIeXEJuS/WokINsXF3MGkPddFkTQ4OAxDGvQWS3VJGadGRY
-T6M4c/jKSP8tB7UMaJ2u/7ep/5ZAURNGO08xcvyGNoUM1BITbzWIqMEGNzO5e4zn
-d83ONnZ9vWjsjMf5D2zxJZNhwIzdDKfp5b41NKJ8Yn6jrh6dIFrBLLATpCl2PTLV
-WJuqqa+xeTryOP19BQwqdHqBkF7cpEfH2T3rxE0P3S3ie07kMkzylIdSDG6yU+7R
-BcvWY3YG4rMvzpTsVKXH
-=9NwG
------END PGP SIGNATURE-----
-
---AbQceqfdZEv+FvjW--
