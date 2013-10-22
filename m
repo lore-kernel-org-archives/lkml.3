@@ -1,141 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3JVIJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:09:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36860 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab3JVIJt (ORCPT
+	id S1753599Ab3JVIMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:12:54 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:63111 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab3JVIMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:09:49 -0400
-Message-ID: <5265037D.2080908@pengutronix.de>
-Date: Mon, 21 Oct 2013 12:35:41 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	Tue, 22 Oct 2013 04:12:50 -0400
+Date: Tue, 22 Oct 2013 10:10:20 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: linux-next: Tree for Oct 21 (panel-simple.c)
+Message-ID: <20131022081019.GA15640@ulmo.nvidia.com>
+References: <1382369814-7582-1-git-send-email-treding@nvidia.com>
+ <5265B6A2.4090404@infradead.org>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org,
-        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-Subject: Re: [PATCH 3.2 094/149] can: flexcan: fix flexcan_chip_start() on
- imx6
-References: <lsq.1382345188.205668698@decadent.org.uk>
-In-Reply-To: <lsq.1382345188.205668698@decadent.org.uk>
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="U1cJU6tttdKKGTStTd5n79hGMO3CeSupE"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Disposition: inline
+In-Reply-To: <5265B6A2.4090404@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---U1cJU6tttdKKGTStTd5n79hGMO3CeSupE
-Content-Type: text/plain; charset=UTF-8
+
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 10/21/2013 10:46 AM, Ben Hutchings wrote:
-> 3.2.52-rc1 review patch.  If anyone has any objections, please let me k=
-now.
-
-Please postpone until:
-
-d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB
-        for TX and abort pending TX
-
-hits mainline as this patch (fix flexcan_chip_start() on imx6) causes
-another problem.
-
-As soon as both are mainline, please apply them:
-
-d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB
-        for TX and abort pending TX
-0d1862e can: flexcan: fix flexcan_chip_start() on imx6
-
-Marc
-
+On Mon, Oct 21, 2013 at 04:20:02PM -0700, Randy Dunlap wrote:
+> On 10/21/13 08:36, Thierry Reding wrote:
+> > Hi all,
+> >=20
+> > I've uploaded today's linux-next tree to the master branch of the
+> > repository below:
+> >=20
+> >         git://gitorious.org/thierryreding/linux-next.git
+> >=20
+> > A next-20131021 tag is also provided for convenience.
+> >=20
+> > Gained a couple new conflicts, loads of build failures. I've tried to
+> > fix the most obvious ones, but as a downside haven't gotten around to
+> > write up the specifics about the conflicts. I might still do that
+> > tomorrow, but I figured most people wouldn't have time to look into
+> > those anyway given that they'll be busy with the conferences.
 >=20
-> ------------------
+> on i386:
 >=20
-> From: Marc Kleine-Budde <mkl@pengutronix.de>
->=20
-> commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
->=20
-> In the flexcan_chip_start() function first the flexcan core is going th=
-rough
-> the soft reset sequence, then the RX FIFO is enabled.
->=20
-> With the hardware is put into FIFO mode, message buffers 1...7 are rese=
-rved by
-> the FIFO engine. The remaining message buffers are in reset default val=
-ues.
-> This patch removes the bogus initialization of the message buffers, as =
-it
-> causes an imprecise external abort on imx6.
->=20
-> Reported-by: Lothar Wa=C3=9Fmann <LW@KARO-electronics.de>
-> Tested-by: Lothar Wa=C3=9Fmann <LW@KARO-electronics.de>
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  drivers/net/can/flexcan.c | 12 ------------
->  1 file changed, 12 deletions(-)
->=20
-> --- a/drivers/net/can/flexcan.c
-> +++ b/drivers/net/can/flexcan.c
-> @@ -666,7 +666,6 @@ static int flexcan_chip_start(struct net
->  {
->  	struct flexcan_priv *priv =3D netdev_priv(dev);
->  	struct flexcan_regs __iomem *regs =3D priv->base;
-> -	unsigned int i;
->  	int err;
->  	u32 reg_mcr, reg_ctrl;
-> =20
-> @@ -732,17 +731,6 @@ static int flexcan_chip_start(struct net
->  	dev_dbg(dev->dev.parent, "%s: writing ctrl=3D0x%08x", __func__, reg_c=
-trl);
->  	flexcan_write(reg_ctrl, &regs->ctrl);
-> =20
-> -	for (i =3D 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
-> -		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
-> -		flexcan_write(0, &regs->cantxfg[i].can_id);
-> -		flexcan_write(0, &regs->cantxfg[i].data[0]);
-> -		flexcan_write(0, &regs->cantxfg[i].data[1]);
-> -
-> -		/* put MB into rx queue */
-> -		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
-> -			&regs->cantxfg[i].can_ctrl);
-> -	}
-> -
->  	/* acceptance mask/acceptance code (accept everything) */
->  	flexcan_write(0x0, &regs->rxgmask);
->  	flexcan_write(0x0, &regs->rx14mask);
->=20
->=20
+> drivers/built-in.o: In function `panel_simple_probe':
+> panel-simple.c:(.text+0x3c7ca): undefined reference to `of_find_backlight=
+_by_node'
 
+Hi Randy,
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Thanks for running this. I'll come up with a patch to fix this, since I
+originally wrote of_find_backlight_by_node().
 
+Running the randconfig that you provided yielded some other interesting
+warnings, though. There are a few occurrences where gcc compiles about
+functions not returning a value, which is caused by people assuming that
+BUG() never returns. But it happens that your randconfig also unsets
+CONFIG_BUG, which turns BUG into a no-op and therefore causing gcc to
+rightfully complain.
 
---U1cJU6tttdKKGTStTd5n79hGMO3CeSupE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Before attempting to fix these, I was wondering whether that would be
+considered useful. I personally think that we should eliminate warnings
+as much as possible because it helps filtering out genuine problems. But
+the BUG Kconfig option also depends on EXPERT, so I guess it's usually
+not even visible and possibly not worth bothering about.
+
+Thierry
+
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iEYEARECAAYFAlJlA4AACgkQjTAFq1RaXHNARACgltJsFtDYbz522OawGQC09XSk
-GZEAnAxONI5dmKqEHFLfyluq0mk6itqU
-=EtVY
+iQIcBAEBAgAGBQJSZjLrAAoJEN0jrNd/PrOhxo8P/j5nnW9B1jemQVFH1511Afhh
+MJ/w5wEfOyu8XyVKaesQhrLP3qtYqamRTRd5ATCMDTlMBDfgO7O+79ynZyRBUR0x
+6RYeS4mx3W2yd04NRKJe628TA/2+PYG+Kd9/8zYeeYwBhhcsDTY/PXuXqhRXBy2r
+11lfsYG7pYJH1QDVAwWM0c9Hlj6h7xyYh0+yC4tBYJR00hSRBcyPNNMzDD3so8pT
+Q7E6ojOzBbW6mn/Smo53mfViz/dAfL+hndRXflYKi0DKP3WM2SuhvM847QXg2qUv
+3Qm1tuPf/7K2M/hIXeCnOe9aeKGKDXoV+q6kSPnBNUXgMXtP+MljLpdpjlBS4hex
+LRpg4cP7OGHvEoNJBKz5u2GbouowUeEwb3tkXK3TCGzojYD+AJhJ8UiK2E1vgPX6
+3Ys+HtzC7hZJ9hs/rUeNc34gYxXWVg8sqZZjOUlVF9EffAPahP6oYfNRilRyWEhj
+kRUOdGLdxhBP2OJtELahBgLfHXTiascyBQG6VzIcCV42gdbo2pPay+14LXGP7lr2
+TBc95CaAtMxVBZCR9Yry/dkno1oTmZARWBQt/AWrTH6PYI9/MtwB3C69+WKNqN9M
+newpo+Nnl84GmXGGRYclAwKCZCUyJi3K3vdhXuAiWyFm6nqFLCjcmtv4JvdmS53Y
+QfG87rZMHaEJ3Uq6szkU
+=CzMp
 -----END PGP SIGNATURE-----
 
---U1cJU6tttdKKGTStTd5n79hGMO3CeSupE--
+--uAKRQypu60I7Lcqm--
