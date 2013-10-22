@@ -1,194 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3JVG6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 02:58:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:43141 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab3JVG6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 02:58:18 -0400
-X-IronPort-AV: E=Sophos;i="4.93,546,1378828800"; 
-   d="scan'208";a="8824931"
-Message-ID: <526620AA.60007@cn.fujitsu.com>
-Date: Tue, 22 Oct 2013 14:52:26 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753286Ab3JVHBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 03:01:50 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58140 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092Ab3JVHBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 03:01:49 -0400
+Date: Tue, 22 Oct 2013 08:01:47 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1310220800120.19505@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>
-Subject: [PATCH V2] f2fs: introduce f2fs_kmem_cache_alloc to hide the unfailed,
- kmem cache allocation
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/22 14:55:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/22 14:55:43,
-	Serialize complete at 2013/10/22 14:55:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1346208047-1382425307=:19505"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the unfailed version of kmem_cache_alloc named f2fs_kmem_cache_alloc
-to hide the retry routine and make the code a bit cleaner.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-v2:
-   Fix the wrong use of 'retry' tag pointed out by Gao feng.
-   Use more neat code to remove redundant tag suggested by Haicheng Li.
+--29444707-1346208047-1382425307=:19505
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/checkpoint.c |   26 +++++++-------------------
- fs/f2fs/f2fs.h       |   15 +++++++++++++++
- fs/f2fs/gc.c         |    8 ++------
- fs/f2fs/node.c       |   27 +++++++++++----------------
- 4 files changed, 35 insertions(+), 41 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 8d16071..6fb484c 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -226,12 +226,8 @@ void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
- 			break;
- 		orphan = NULL;
- 	}
--retry:
--	new = kmem_cache_alloc(orphan_entry_slab, GFP_ATOMIC);
--	if (!new) {
--		cond_resched();
--		goto retry;
--	}
-+
-+	new = f2fs_kmem_cache_alloc(orphan_entry_slab, GFP_ATOMIC);
- 	new->ino = ino;
- 
- 	/* add new_oentry into list which is sorted by inode number */
-@@ -484,12 +480,8 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
- 
- 	if (!S_ISDIR(inode->i_mode))
- 		return;
--retry:
--	new = kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
--	if (!new) {
--		cond_resched();
--		goto retry;
--	}
-+
-+	new = f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
- 	new->inode = inode;
- 	INIT_LIST_HEAD(&new->list);
- 
-@@ -506,13 +498,9 @@ retry:
- void add_dirty_dir_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	struct dir_inode_entry *new;
--retry:
--	new = kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
--	if (!new) {
--		cond_resched();
--		goto retry;
--	}
-+	struct dir_inode_entry *new =
-+			f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-+
- 	new->inode = inode;
- 	INIT_LIST_HEAD(&new->list);
- 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 171c52f..2949275 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -18,6 +18,7 @@
- #include <linux/crc32.h>
- #include <linux/magic.h>
- #include <linux/kobject.h>
-+#include <linux/sched.h>
- 
- /*
-  * For mount options
-@@ -787,6 +788,20 @@ static inline struct kmem_cache *f2fs_kmem_cache_create(const char *name,
- 	return kmem_cache_create(name, size, 0, SLAB_RECLAIM_ACCOUNT, ctor);
- }
- 
-+static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
-+						gfp_t flags)
-+{
-+	void *entry;
-+retry:
-+	entry = kmem_cache_alloc(cachep, flags);
-+	if (!entry) {
-+		cond_resched();
-+		goto retry;
-+	}
-+
-+	return entry;
-+}
-+
- #define RAW_IS_INODE(p)	((p)->footer.nid == (p)->footer.ino)
- 
- static inline bool IS_INODE(struct page *page)
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index fbad968..7914b92 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -361,12 +361,8 @@ static void add_gc_inode(struct inode *inode, struct list_head *ilist)
- 		iput(inode);
- 		return;
- 	}
--repeat:
--	new_ie = kmem_cache_alloc(winode_slab, GFP_NOFS);
--	if (!new_ie) {
--		cond_resched();
--		goto repeat;
--	}
-+
-+	new_ie = f2fs_kmem_cache_alloc(winode_slab, GFP_NOFS);
- 	new_ie->inode = inode;
- 	list_add_tail(&new_ie->list, ilist);
- }
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index ef80f79..4fa3fd5 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1296,23 +1296,18 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
- 	if (nid == 0)
- 		return 0;
- 
--	if (!build)
--		goto retry;
--
--	/* do not add allocated nids */
--	read_lock(&nm_i->nat_tree_lock);
--	ne = __lookup_nat_cache(nm_i, nid);
--	if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
--		allocated = true;
--	read_unlock(&nm_i->nat_tree_lock);
--	if (allocated)
--		return 0;
--retry:
--	i = kmem_cache_alloc(free_nid_slab, GFP_NOFS);
--	if (!i) {
--		cond_resched();
--		goto retry;
-+	if (build) {
-+		/* do not add allocated nids */
-+		read_lock(&nm_i->nat_tree_lock);
-+		ne = __lookup_nat_cache(nm_i, nid);
-+		if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
-+			allocated = true;
-+		read_unlock(&nm_i->nat_tree_lock);
-+		if (allocated)
-+			return 0;
- 	}
-+
-+	i = f2fs_kmem_cache_alloc(free_nid_slab, GFP_NOFS);
- 	i->nid = nid;
- 	i->state = NID_NEW;
- 
--- 
-1.7.7
+Hi Linus,
 
+travelling slowed down getting these out,
+2 vmwgfx fixes, radeon revert to avoid a regression, i915 fixes, and some 
+ioctl sizing issues fixed with 32 on 64.
+
+Dave.
+
+The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
+
+  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 579123fdfc23ad2147f041dfec305c2308f068ba:
+
+  Merge branch 'drm-fixes-3.12' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2013-10-22 07:35:17 +0100)
+
+----------------------------------------------------------------
+
+Alex Deucher (6):
+      drm/radeon/atom: workaround vbios bug in transmitter table on rs780
+      drm/radeon: make missing smc ucode non-fatal (r7xx-SI)
+      drm/radeon: make missing smc ucode non-fatal (CI)
+      drm/radeon/audio: don't set speaker allocation on DCE3.2
+      drm/radeon: rework audio option
+      drm/radeon/audio: don't set speaker allocation on DCE4+
+
+Ben Widawsky (2):
+      drm/i915: Make PTE valid encoding optional
+      drm/i915: Disable GGTT PTEs on GEN6+ suspend
+
+Chris Wilson (2):
+      drm: Prevent overwriting from userspace underallocating core ioctl structs
+      drm: Pad drm_mode_get_connector to 64-bit boundary
+
+Christian König (2):
+      drm/radeon: stop the leaks in cik_ib_test
+      drm/radeon/uvd: revert lower msg&fb buffer requirements on UVD3
+
+Dave Airlie (2):
+      Merge tag 'drm-intel-fixes-2013-10-21' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-fixes-3.12' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+
+Jesse Barnes (1):
+      drm/i915: disable LVDS clock gating on CPT v2
+
+Thomas Hellstrom (2):
+      drm/vmwgfx: Don't put resources with invalid id's on lru list
+      drm/vmwgfx: Don't kill clients on VT switch
+
+ drivers/gpu/drm/drm_drv.c                  |   9 ++-
+ drivers/gpu/drm/i915/i915_drv.c            |   5 +-
+ drivers/gpu/drm/i915/i915_drv.h            |   8 ++-
+ drivers/gpu/drm/i915/i915_gem_gtt.c        | 109 ++++++++++++++++++++++-------
+ drivers/gpu/drm/i915/i915_reg.h            |   6 ++
+ drivers/gpu/drm/i915/intel_pm.c            |   4 +-
+ drivers/gpu/drm/radeon/atombios_encoders.c |  54 +++++++++-----
+ drivers/gpu/drm/radeon/cik.c               |   4 ++
+ drivers/gpu/drm/radeon/dce6_afmt.c         |   3 +
+ drivers/gpu/drm/radeon/evergreen_hdmi.c    |   3 +
+ drivers/gpu/drm/radeon/ni.c                |   1 +
+ drivers/gpu/drm/radeon/r600.c              |   1 +
+ drivers/gpu/drm/radeon/r600_hdmi.c         |   3 +
+ drivers/gpu/drm/radeon/radeon_connectors.c |  33 +++++----
+ drivers/gpu/drm/radeon/radeon_cs.c         |   3 +-
+ drivers/gpu/drm/radeon/radeon_drv.c        |   4 +-
+ drivers/gpu/drm/radeon/radeon_uvd.c        |   3 +-
+ drivers/gpu/drm/radeon/si.c                |   1 +
+ drivers/gpu/drm/radeon/uvd_v1_0.c          |   4 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c        |  17 +++--
+ drivers/gpu/drm/vmwgfx/vmwgfx_resource.c   |   2 +-
+ include/uapi/drm/drm_mode.h                |   2 +
+ 22 files changed, 207 insertions(+), 72 deletions(-)
+--29444707-1346208047-1382425307=:19505--
