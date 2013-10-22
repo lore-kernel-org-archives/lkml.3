@@ -1,484 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3JVACW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 20:02:22 -0400
+	id S1753261Ab3JVACV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 20:02:21 -0400
 Received: from mga09.intel.com ([134.134.136.24]:64284 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab3JVACT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752764Ab3JVACT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Oct 2013 20:02:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="422609981"
-Message-ID: <5265C0F6.5080807@linux.intel.com>
-Date: Mon, 21 Oct 2013 17:04:06 -0700
+   d="scan'208";a="422609992"
+Message-ID: <5265C0FA.5060006@linux.intel.com>
+Date: Mon, 21 Oct 2013 17:04:10 -0700
 From: Bin Gao <bin.gao@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] drivers/misc: add rawio iomem driver
+Subject: [PATCH 4/4] drivers/misc: add rawio i2c driver
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With iomem rawio driver, you can read/write memory mapped registers
-from any I/O device via debug fs interface.
+With i2c rawio driver, you can read/write registers from any i2c
+client(slave) device via debug fs interface.
 This driver is based on the rawio framework.
 
 Signed-off-by: Bin Gao <bin.gao@intel.com>
 ---
- drivers/misc/rawio/Kconfig       |  12 ++
- drivers/misc/rawio/Makefile      |   1 +
- drivers/misc/rawio/rawio_iomem.c | 401
-+++++++++++++++++++++++++++++++++++++++
- 3 files changed, 414 insertions(+)
- create mode 100644 drivers/misc/rawio/rawio_iomem.c
+ drivers/misc/rawio/Kconfig     |  11 ++
+ drivers/misc/rawio/Makefile    |   1 +
+ drivers/misc/rawio/rawio_i2c.c | 224
++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 236 insertions(+)
+ create mode 100644 drivers/misc/rawio/rawio_i2c.c
 
 diff --git a/drivers/misc/rawio/Kconfig b/drivers/misc/rawio/Kconfig
-index 47be40a..38e8a52 100644
+index 38e8a52..9ffbc5d 100644
 --- a/drivers/misc/rawio/Kconfig
 +++ b/drivers/misc/rawio/Kconfig
-@@ -33,4 +33,16 @@ config RAWIO_PCI
+@@ -45,4 +45,15 @@ config RAWIO_IOMEM
  	  To compile this driver as a module, choose M: the module will
- 	  be called rawio_pci.
+ 	  be called rawio_iomem.
 
-+config RAWIO_IOMEM
-+	tristate "rawio I/O memory driver"
-+	depends on RAWIO
++config RAWIO_I2C
++	tristate "rawio I2C driver"
++	depends on RAWIO && I2C
 +	default no
 +	help
-+	  This option enables the rawio I/O memory driver.
-+	  With this driver, you can read or write registers of a memory
-+	  mapped I/O devices.
-+
++	  This option enables the rawio I2C driver.
++	  With this driver, you can read or write any I2C device's
++	  register debugfs interface.
 +	  To compile this driver as a module, choose M: the module will
-+	  be called rawio_iomem.
++	  be called rawio_i2c.
 +
  endif # RAWIO
 diff --git a/drivers/misc/rawio/Makefile b/drivers/misc/rawio/Makefile
-index 0933ca6..5f86257 100644
+index 5f86257..9e33aec 100644
 --- a/drivers/misc/rawio/Makefile
 +++ b/drivers/misc/rawio/Makefile
-@@ -1,2 +1,3 @@
+@@ -1,3 +1,4 @@
  obj-$(CONFIG_RAWIO)		+= rawio.o
  obj-$(CONFIG_RAWIO_PCI)		+= rawio_pci.o
-+obj-$(CONFIG_RAWIO_IOMEM)	+= rawio_iomem.o
-diff --git a/drivers/misc/rawio/rawio_iomem.c
-b/drivers/misc/rawio/rawio_iomem.c
+ obj-$(CONFIG_RAWIO_IOMEM)	+= rawio_iomem.o
++obj-$(CONFIG_RAWIO_I2C)		+= rawio_i2c.o
+diff --git a/drivers/misc/rawio/rawio_i2c.c b/drivers/misc/rawio/rawio_i2c.c
 new file mode 100644
-index 0000000..eaae773
+index 0000000..f872602
 --- /dev/null
-+++ b/drivers/misc/rawio/rawio_iomem.c
-@@ -0,0 +1,401 @@
++++ b/drivers/misc/rawio/rawio_i2c.c
+@@ -0,0 +1,224 @@
 +/*
-+ * rawio_iomem.c - a driver to read or write a device's I/O memory,
-based on
-+ *                 the rawio debugfs framework.
++ * rawio_i2c.c - rawio I2C driver.
++ * Read or write a I2C device's register, based on the rawio framework.
 + *
 + * Copyright (c) 2013 Bin Gao <bin.gao@intel.com>
 + *
 + * This file is released under the GPLv2
 + *
 + *
-+ * 1: byte, 2: word, 4: dword
-+ *
-+ * I/O mem read:
-+ * echo "r[1|2|4] iomem <physical_addr> [<len>]" >
-/sys/kernel/debug/rawio_cmd
++ * read i2c registers:
++ * echo "r i2c <bus_num> <slace_addr> <reg> [<len>]" >
++ *			/sys/kernel/debug/rawio_cmd
 + * cat /sys/kernel/debug/rawio_output
-+ * e.g. echo "r iomem 0xff003040 20" > /sys/kernel/debug/rawio_cmd
++ * e.g. echo "r i2c 3 0x6b 0x84 5" > /sys/kernel/debug/rawio_cmd
 + *      cat /sys/kernel/debug/rawio_output
 + *
-+ * I/O mem write:
-+ * echo "w[1|2|4] iomem <physical_addr> <val>" >
-/sys/kernel/debug/rawio_cmd
++ * write a i2c register:
++ * echo "w i2c <bus_num> <slace_addr> <reg> <val>" >
++ *			/sys/kernel/debug/rawio_cmd
 + * cat /sys/kernel/debug/rawio_output
-+ * e.g. echo "w2 iomem 0xff003042 0xb03f" > /sys/kernel/debug/rawio_cmd
++ * e.g. echo "w i2c 4 0x70 0x4 0xfa" > /sys/kernel/debug/rawio_cmd
 + *      cat /sys/kernel/debug/rawio_output
++ *
 + */
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
 +#include <linux/types.h>
-+#include <linux/list.h>
 +#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
 +#include <linux/pm_runtime.h>
-+#include <linux/pci.h>
-+#include <linux/pnp.h>
-+#include <linux/platform_device.h>
-+#include <linux/acpi.h>
++#include <linux/i2c.h>
 +#include <linux/rawio.h>
 +
-+/*
-+ * On some platforms, a read or write to a device which is in a low power
-+ * state will cause a system error, or even cause a system reboot.
-+ * To address this, we use runtime PM APIs to bring up the device to
-+ * runnint state before use and put back to original state after use.
-+ *
-+ * We could use lookup_resource() to map an physical address to a device,
-+ * but there are some problems:
-+ * 1) lookup_resource() is not exported, so a kernel module can't use it;
-+ * 2) To use the 'name' field of 'struct resource' to match a device is
-+ *    not reliable;
-+ * So we rather walk known device types than look up the resrouce list
-+ * to map a physical address(I/O memory address) to a device.
-+ */
-+
-+/* return true if range(start: m2, size: n2) is in range(start: m1,
-size: n1) */
-+#define IN_RANGE(m1, n1, m2, n2) \
-+	(((m2 >= m1) && (m2 < (m1 + n1))) && \
-+	(((m2 + n2) >= m1) && ((m2 + n2) < (m1 + n1))))
-+
-+struct dev_walker {
-+	resource_size_t addr;
-+	resource_size_t size;
-+	struct device *dev;
-+	int error;
-+};
-+
-+#ifdef CONFIG_PCI
-+int walk_pci_devices(struct device *dev, void *data)
++static int i2c_prepare(u8 i2c_bus, u16 i2c_addr, u16 i2c_reg, u16 len,
++			int ten_bit_addr, struct i2c_adapter **ppadap)
 +{
-+	int i;
-+	resource_size_t start, len;
-+	struct pci_dev *pdev = (struct pci_dev *) to_pci_dev(dev);
-+	struct dev_walker *walker = (struct dev_walker *) data;
++	struct i2c_adapter *adap;
 +
-+	if (!pdev)
++	adap = i2c_get_adapter((int)i2c_bus);
++	if (!adap) {
++		rawio_err("can't find bus adapter for i2c bus %d\n",
++			i2c_bus);
 +		return -ENODEV;
-+
-+	walker->dev = NULL;
-+	for (i = 0; i < 6; i++) {
-+		start = pci_resource_start(pdev, i);
-+		len = pci_resource_len(pdev, i);
-+		if (IN_RANGE(start, len, walker->addr, walker->size)) {
-+			walker->dev = dev;
-+			return 1;
-+		}
 +	}
 +
-+	return 0;
-+}
-+#endif
-+
-+int walk_platform_devices(struct device *dev, void *data)
-+{
-+	int i;
-+	struct resource *r;
-+	resource_size_t start, len;
-+	struct platform_device *plat_dev = to_platform_device(dev);
-+	struct dev_walker *walker = (struct dev_walker *) data;
-+
-+	walker->dev = NULL;
-+	for (i = 0; i < plat_dev->num_resources; i++) {
-+		r = platform_get_resource(plat_dev, IORESOURCE_MEM, i);
-+		if (!r)
-+			continue;
-+		start = r->start;
-+		len = r->end - r->start + 1;
-+		if (IN_RANGE(start, len, walker->addr, walker->size)) {
-+			walker->dev = dev;
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+#if defined(CONFIG_PNP) && !defined(MODULE)
-+int walk_pnp_devices(struct device *dev, void *data)
-+{
-+	int i;
-+	struct resource *r;
-+	resource_size_t start, len;
-+	struct pnp_dev *pnp_dev = (struct pnp_dev *) to_pnp_dev(dev);
-+	struct dev_walker *walker = (struct dev_walker *) data;
-+
-+	walker->dev = NULL;
-+	for (i = 0; (r = pnp_get_resource(pnp_dev, IORESOURCE_MEM, i)); i++) {
-+		if (!pnp_resource_valid(r))
-+			continue;
-+
-+		start = r->start;
-+		len = r->end - r->start + 1;
-+		if (IN_RANGE(start, len, walker->addr, walker->size)) {
-+			walker->dev = dev;
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+#ifdef CONFIG_ACPI
-+static acpi_status do_walk_acpi_device(acpi_handle handle, u32
-nesting_level,
-+				void *context, void **ret)
-+{
-+	struct dev_walker *walker = (struct dev_walker *) context;
-+	struct acpi_device *adev = NULL;
-+	resource_size_t start, len;
-+	struct resource_list_entry *rentry;
-+	struct list_head resource_list;
-+	struct resource *resources;
-+	int i, count;
-+
-+	acpi_bus_get_device(handle, &adev);
-+	if (!adev)
-+		return AE_CTRL_DEPTH;
-+
-+	/*
-+	 * Simply skip this acpi device if it's already attached to
-+	 * other bus types(e.g. platform dev or a pnp dev).
-+	 */
-+	if (adev->physical_node_count)
-+		return 0;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
-+	if (count <= 0)
-+		return AE_CTRL_DEPTH;
-+
-+	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
-+	if (!resources) {
-+		pr_err("rawio: No memory for resources\n");
-+		acpi_dev_free_resource_list(&resource_list);
-+		walker->error = -ENOMEM;
-+		return AE_CTRL_TERMINATE;
-+	}
-+
-+	count = 0;
-+	list_for_each_entry(rentry, &resource_list, node)
-+		resources[count++] = rentry->res;
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	for (i = 0; i < count; i++) {
-+		start = resources[i].start;
-+		len = resources[i].end - resources[i].start + 1;
-+		if (IN_RANGE(start, len, walker->addr, walker->size)) {
-+			walker->dev = &adev->dev;
-+			kfree(resources);
-+			return AE_CTRL_TERMINATE;
-+		}
-+	}
-+
-+	kfree(resources);
-+	return AE_CTRL_DEPTH;
-+}
-+#endif
-+
-+static struct device *walk_devices(resource_size_t addr,
-resource_size_t size)
-+{
-+	int ret;
-+	struct dev_walker walker;
-+
-+	walker.addr = addr;
-+	walker.size = size;
-+	walker.dev = NULL;
-+	walker.error = 0;
-+
-+#ifdef CONFIG_PCI
-+	ret = bus_for_each_dev(&pci_bus_type, NULL, (void *)&walker,
-+						walk_pci_devices);
-+	if (ret == 1)
-+		return  walker.dev;
-+#endif
-+
-+	ret = bus_for_each_dev(&platform_bus_type, NULL, (void *)&walker,
-+						walk_platform_devices);
-+	if (ret == 1)
-+		return walker.dev;
-+
-+#if defined(CONFIG_PNP) && !defined(MODULE)
-+	ret = bus_for_each_dev(&pnp_bus_type, NULL, (void *)&walker,
-+						walk_pnp_devices);
-+	if (ret == 1)
-+		return walker.dev;
-+#endif
-+
-+#ifdef CONFIG_ACPI
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
-+			NULL, do_walk_acpi_device, &walker, NULL);
-+
-+	if (walker.error)
-+		return NULL;
-+
-+	if (walker.dev)
-+		return walker.dev;
-+#endif
-+
-+	return NULL;
-+}
-+
-+
-+static int rawio_iomem_read(struct rawio_driver *driver, int width,
-+			u64 *input, u8 *postfix, int input_num,
-+			void **output, int *output_num)
-+{
-+	int i, size, count;
-+	phys_addr_t addr;
-+	void *buf;
-+	void __iomem *va;
-+	struct device *dev = NULL;
-+
-+	addr = (phys_addr_t)input[0];
-+	count = 1;
-+	if (input_num == 2)
-+		count = (int)input[1];
-+	size = width * count;
-+
-+	if (((width == WIDTH_2) && (addr & 0x1)) ||
-+		((width == WIDTH_4) && (addr & 0x3)) ||
-+		((width == WIDTH_8) && (addr & 0x7))) {
-+		rawio_err("address requires 2 bytes aligned for 16 bit access, 4
-bytes aligned for 32 bit access and 8 bytes aligned for 64 bit access\n");
++	if ((!ten_bit_addr && (i2c_addr > 128)) || (i2c_addr > 1024)) {
++		rawio_err("register address is out of range, forgot 't' for 10bit
+addr?\n");
 +		return -EINVAL;
 +	}
 +
-+	va = ioremap_nocache(addr, size);
-+	if (!va) {
-+		rawio_err("can't map physical address %llx\n", addr);
-+		return -EIO;
++	if ((!ten_bit_addr && ((i2c_addr + len) > 128)) ||
++			((i2c_addr + len) > 1024)) {
++		rawio_err("register address is out of range, forgot 't' for 10bit
+addr?\n");
++		return -EINVAL;
 +	}
 +
-+	buf = kzalloc(size, GFP_KERNEL);
++	*ppadap = adap;
++	return 0;
++}
++
++static int rawio_i2c_read(struct rawio_driver *driver, int width, u64
+*input,
++	u8 *postfix, int input_num, void **output, int *output_num)
++{
++	int ret, len;
++	struct i2c_adapter *adap;
++	u16 i2c_addr, i2c_reg;
++	struct i2c_msg msg[2];
++	u8 i2c_bus, buf[2], *out_buf, ten_bit_addr, sixteen_bit_reg;
++
++	i2c_bus = (u8)input[0];
++	i2c_addr = (u16)input[1];
++	i2c_reg = (u16)input[2];
++
++	len = 1;
++	if (input_num == 4)
++		len = (u16)input[3];
++
++	ten_bit_addr = postfix[1];
++	sixteen_bit_reg = postfix[2];
++
++	ret = i2c_prepare(i2c_bus, i2c_addr, i2c_reg, len, ten_bit_addr, &adap);
++	if (ret)
++		return ret;
++
++	out_buf = kzalloc(sizeof(u8) * len, GFP_KERNEL);
 +	if (buf == NULL) {
 +		rawio_err("can't alloc memory\n");
-+		iounmap(va);
 +		return -ENOMEM;
 +	}
++	buf[0] = i2c_reg & 0xff;
++	buf[1] = (i2c_reg >> 8) & 0xff;
 +
-+	dev = walk_devices(addr, size);
-+	if (dev)
-+		pm_runtime_get_sync(dev);
++	/* write i2c reg address */
++	msg[0].addr = i2c_addr;
++	msg[0].flags = ten_bit_addr ? I2C_M_TEN : 0;
++	msg[0].len = sixteen_bit_reg ? 2 : 1;
++	msg[0].buf = buf;
 +
-+	for (i = 0; i < count; i++) {
-+		switch (width) {
-+		case WIDTH_1:
-+			*((u8 *)buf + i) = ioread8(va + i);
-+			break;
-+		case WIDTH_2:
-+			*((u16 *)buf + i) = ioread16(va + i * 2);
-+			break;
-+		case WIDTH_4:
-+			*((u32 *)buf + i) = ioread32(va + i * 4);
-+			break;
-+		default:
-+			break;
-+		}
-+	}
++	/* read i2c reg */
++	msg[1].addr = i2c_addr;
++	msg[1].flags = I2C_M_RD | (ten_bit_addr ? I2C_M_TEN : 0);
++	msg[1].len = len;
++	msg[1].buf = out_buf;
 +
-+	if (dev)
-+		pm_runtime_put_sync(dev);
-+	iounmap(va);
-+	*output = buf;
-+	*output_num = count;
-+	return 0;
-+}
-+
-+static int rawio_iomem_write(struct rawio_driver *driver, int width,
-+			u64 *input, u8 *postfix, int input_num)
-+{
-+	unsigned long val;
-+	phys_addr_t addr;
-+	void __iomem *va;
-+	struct device *dev;
-+
-+	addr = (phys_addr_t)input[0];
-+	val = (u64)input[1];
-+
-+	if (((width == WIDTH_2) && (addr & 0x1)) ||
-+		((width == WIDTH_4) && (addr & 0x3)) ||
-+		((width == WIDTH_8) && (addr & 0x7))) {
-+		rawio_err("address requires 2 bytes aligned for 16 bit access, 4
-bytes aligned for 32 bit access and 8 bytes aligned for 64 bit access\n");
-+		return -EINVAL;
-+	}
-+
-+	va = ioremap_nocache(addr, width);
-+	if (!va) {
-+		rawio_err("can't map physical address %llx\n", addr);
++	ret = i2c_transfer(adap, msg, 2);
++	if (ret != 2) {
++		rawio_err("i2c_transfer() failed, ret = %d\n", ret);
++		kfree(out_buf);
 +		return -EIO;
 +	}
 +
-+	dev = walk_devices(addr, 0);
-+	if (dev)
-+		pm_runtime_get_sync(dev);
-+
-+	switch (width) {
-+	case WIDTH_1:
-+		 *(u8 *)va = (u8)val;
-+		break;
-+	case WIDTH_2:
-+		 *(u16 *)va = (u16)val;
-+		break;
-+	case WIDTH_4:
-+		 *(u32 *)va = (u32)val;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	if (dev)
-+		pm_runtime_put_sync(dev);
-+	iounmap(va);
++	*output = out_buf;
++	*output_num = len;
 +	return 0;
 +}
 +
-+static struct rawio_ops rawio_iomem_ops = {
-+	rawio_iomem_read,
++static int rawio_i2c_write(struct rawio_driver *driver, int width, u64
+*input,
++			u8 *postfix, int input_num)
++{
++	int ret;
++	struct i2c_adapter *adap;
++	u16 i2c_addr, i2c_reg;
++	struct i2c_msg msg;
++	u8 value, i2c_bus, buf[2], buf16[3], ten_bit_addr, sixteen_bit_reg;
++
++	i2c_bus = (u8)input[0];
++	i2c_addr = (u8)input[1];
++	i2c_reg = (u16)input[2];
++	value = (u8)input[3];
++
++	ten_bit_addr = postfix[1];
++	sixteen_bit_reg = postfix[2];
++
++	ret = i2c_prepare(i2c_bus, i2c_addr, i2c_reg, 0, ten_bit_addr, &adap);
++	if (ret)
++		return ret;
++
++	if (sixteen_bit_reg) {
++		buf16[0] = (i2c_reg >> 8) & 0xff; /* high 8 bit reg addr */
++		buf16[1] = i2c_reg & 0xff; /* low 8 bit reg addr */
++		buf16[2] = value;
++		msg.len = 3;
++		msg.buf = buf16;
++	} else {
++		buf[0] = i2c_reg & 0xff; /* low 8 bit reg addr */
++		buf[1] = value;
++		msg.len = 2;
++		msg.buf = buf;
++	}
++
++	msg.addr = i2c_addr;
++	msg.flags = ten_bit_addr ? I2C_M_TEN : 0;
++
++	ret = i2c_transfer(adap, &msg, 1);
++	if (ret != 1) {
++		rawio_err("i2c_transfer() failed, ret = %d\n", ret);
++		return -EIO;
++	}
++
++	return 0;
++}
++
++static struct rawio_ops rawio_i2c_ops = {
++	rawio_i2c_read,
 +	NULL,
-+	rawio_iomem_write,
++	rawio_i2c_write,
 +};
 +
-+static struct rawio_driver rawio_iomem = {
-+	{NULL, NULL},
-+	"iomem",
++static struct rawio_driver rawio_i2c = {
++	{NULL, NULL}, /* list node */
++	"i2c", /* driver name */
 +
 +	/* read */
-+	2, /* max args */
-+	{TYPE_U64, TYPE_S16}, /* args type */
-+	1, /* min args */
-+	{ 0, 0, }, /* args postfix */
++	4, /* max args */
++	{TYPE_U8, TYPE_U16, TYPE_U16, TYPE_U8}, /* type of read args */
++	3, /* min args */
++	{ 0, 't', 's', 0 }, /* args postfix */
 +
 +	/* write */
-+	2, /* max args */
-+	{TYPE_U64, TYPE_U64},
-+	2, /* min args */
-+	{ 0, 0, },
++	4, /* max args */
++	{TYPE_U8, TYPE_U16, TYPE_U16, TYPE_U8}, /* type of write args */
++	4, /* min args */
++	{ 0, 't', 's', 0 }, /* args postfix */
 +
-+	0, /* index to address arg */
++	2, /* index of arg that specifies the register or memory address */
 +
-+	WIDTH_1 | WIDTH_2 | WIDTH_4, /* supported access width*/
-+	WIDTH_4, /* default access width */
-+	"r[1|2|4] iomem <addr> [<len>]\nw[1|2|4] iomem <addr> <val>\n",
-+	&rawio_iomem_ops,
++	WIDTH_1, /* supported width */
++	WIDTH_1, /* default width */
++
++	/*
++	 * Slave address with postfix 't' indicates 10 bit slave address,
++	 * otherwise it's 7 bit address by default.
++	 * Register offset with postfix 's' indicates register offset is
++	 * 16 bit, otherwise it's 8 bit offset by default.
++	 * For example "r i2c 5 0x108t 0x0394s 2" means 10 bit slave address
++	 * and 16 bit register offset, and "r i2c 5 0x28 0x74" means 7 bit
++	 * slave address and 8 bit register offset.
++	 */
++	"r i2c <bus> <addr>[t] <reg>[s] [<len>]\n"
++	"w i2c <bus> <addr>[t] <reg>[s] <val>\n",
++	&rawio_i2c_ops,
 +	NULL
 +};
 +
-+static int __init rawio_iomem_init(void)
++static int __init rawio_i2c_init(void)
 +{
-+	return rawio_register_driver(&rawio_iomem);
-+}
-+module_init(rawio_iomem_init);
++	if (rawio_register_driver(&rawio_i2c))
++		return -ENODEV;
 +
-+static void __exit rawio_iomem_exit(void)
++	return 0;
++}
++module_init(rawio_i2c_init);
++
++static void __exit rawio_i2c_exit(void)
 +{
-+	rawio_unregister_driver(&rawio_iomem);
++	rawio_unregister_driver(&rawio_i2c);
 +}
-+module_exit(rawio_iomem_exit);
++module_exit(rawio_i2c_exit);
 +
-+MODULE_DESCRIPTION("Rawio I/O memory driver");
++MODULE_DESCRIPTION("Rawio I2C driver");
 +MODULE_VERSION("1.0");
 +MODULE_AUTHOR("Bin Gao <bin.gao@intel.com>");
 +MODULE_LICENSE("GPL v2");
