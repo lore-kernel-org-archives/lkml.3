@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3JVJgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 05:36:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59845 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab3JVJgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 05:36:01 -0400
-Date: Tue, 22 Oct 2013 05:35:12 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
-Message-ID: <20131022093512.GC707@cmpxchg.org>
-References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
- <5264F353.1080603@suse.cz>
+	id S1752448Ab3JVJjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 05:39:11 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:37683 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751372Ab3JVJjJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 05:39:09 -0400
+From: Kosta Zertsekel <konszert@marvell.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Lior Amsalem <alior@marvell.com>
+Date: Tue, 22 Oct 2013 12:39:03 +0200
+Subject: Enabling CONFIG_HOTPLUG_CPU for CPU that does not have hardware
+ support hot-plug
+Thread-Topic: Enabling CONFIG_HOTPLUG_CPU for CPU that does not have
+ hardware support hot-plug
+Thread-Index: Ac7PCfTh3YdqcBJgQJ+PoDBwOJE2Fg==
+Message-ID: <BC373419EB4337418B2B595BAEDC155F01605CDD46A1@IL-MB01.marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5264F353.1080603@suse.cz>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-22_03:2013-10-22,2013-10-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310220015
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 11:26:43AM +0200, Vlastimil Babka wrote:
-> On 10/10/2013 11:46 PM, Johannes Weiner wrote:
-> > Hi everyone,
-> > 
-> > here is an update to the cache sizing patches for 3.13.
-> > 
-> > 	Changes in this revision
-> > 
-> > o Drop frequency synchronization between refaulted and demoted pages
-> >   and just straight up activate refaulting pages whose access
-> >   frequency indicates they could stay in memory.  This was suggested
-> >   by Rik van Riel a looong time ago but misinterpretation of test
-> >   results during early stages of development took me a while to
-> >   overcome.  It's still the same overall concept, but a little simpler
-> >   and with even faster cache adaptation.  Yay!
-> 
-> Oh, I liked the previous approach with direct competition between the
-> refaulted and demoted page :) Doesn't the new approach favor the
-> refaulted page too much? No wonder it leads to faster cache adaptation,
-> but could it also cause degradations for workloads that don't benefit
-> from it? Were there any tests for performance regressions on workloads
-> that were not the target of the patchset?
+Hi guys,	
 
-If anything, it's unfair to refaulting pages because it requires 3
-references before they are activated instead of the regular 2.
+The question
+------------------
+What are the possible drawbacks of enabling CONFIG_HOTPLUG_CPU for CPU
+that does not have hardware support for hot-plug?
 
-We don't do the direct competition for regular in-core activation,
-either, which has the same theoretical problem but was never an issue
-in the real world.  Not that I know of anyway.
+The question I'd like to ask is architecture agnostic, but the described behavior
+is observed on MPCore Cortex-A9 CPU with Linux 3.4.59.
 
-I ran a standard battery of mmtests (kernbench, dbench, postmark,
-micro, fsmark, what have you) and did not notice any regressions.
+The issue
+-------------
+When Linux Kernel compiled in SMP mode, and CONFIG_HOTPLUG_CPU is not set,
+and booted on single core CPU, then warning messages 
+"... task blocked for more than 120 seconds ..." starts popping up in dmesg log.
+
+For example:
+INFO: task ksoftirqd/1:9 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+
+To make the message disappear, CONFIG_HOTPLUG_CPU should be enabled.
+
+Following the example of "ksoftirqd", the root cause of the issue is that
+there are as many "ksoftirqd" threads created as CONFIG_NR_CPU
+(see cpu_present_mask in kernel/cpu.c file). See below some details on
+how "ksoftirqd" task is created and why it is not killed.
+
+Now, the "ksoftirqd" task is *not* killed and just stays around in task queue
+till the scheduler shouts "... task blocked ...".
+
+	Details:
+	----------
+	The first "ksoftirqd" task (for CPU[0]) is created as part of executing
+	the registered early_initcall function spawn_ksoftirqd() in the below
+	flow:
+
+	start_kernel() ---> rest_init() ---> kernel_init() --->
+	do_pre_smp_initcalls() ---> spawd_ksoftirqd() --->
+	cpu_callback(... CPU_ONLINE ...)
+
+	The "ksoftirqd" tasks for CPU[1 .. N-1] are created in the different flow.
+	First of all, cpu_callback() from kernel/softirq.c ("ksoftirqd" task is
+	created in this callback) is registered through CPU notifier in
+	spawn_ksoftirqd(). Then this callback is called in the below flow:
+
+	start_kernel() ---> rest_init() ---> kernel_init() --->
+	smp_init() ---> for_each_present_cpu(cpu) { cpu_up(cpu) --->
+	_cpu_up() ---> __cpu_nofity(CPU_UP_PREPARE) (here "ksoftirqd" task
+	is created).
+
+	Right after that, CPU[x] is attempted to be enabled (using __cpu_up) and,
+	if __cpu_up(cpu) fails, then "ksoftirqd" task is killed using
+	__cpu_notify(CPU_UP_CANCELLED) some lines below.
+
+	Now, the code that actually kills the task (using kthread_stop) is wrapped up
+	with #ifdef CONFIG_HOTPLUG_CPU (see kernel/softirq.c, function cpu_callback).
+
+The solution
+-----------------
+The easy solution is to enable CONFIG_HOTPLUG_CPU which enables
+the compilation of the code that kills "ksoftirqd" task.
+What is the possible drawback of enabling CONFIG_HOTPLUG_CPU for CPU
+that does not have hardware support hot-plug?
+
+Thanks,
+--- KostaZ
