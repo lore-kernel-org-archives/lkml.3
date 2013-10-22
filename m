@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3JVVDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:03:44 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:63114 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3JVVDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:03:42 -0400
-Date: Tue, 22 Oct 2013 14:03:38 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 2/4] power: isp1704_charger: Fix driver to work with
- changes introduced in v3.5
-Message-ID: <20131022210337.GA6148@teo>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <1378630239-10006-3-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1378630239-10006-3-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755240Ab3JVVE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 17:04:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20276 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753748Ab3JVVEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:04:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="396955986"
+From: Andrew Boie <andrew.p.boie@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: hpa@zytor.com, tglx@linutronix.de, mmarek@suse.cz,
+        Andrew Boie <andrew.p.boie@intel.com>
+Subject: [PATCH 0/1] compress kernels with minigzip
+Date: Tue, 22 Oct 2013 14:07:20 -0700
+Message-Id: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 10:50:37AM +0200, Pali Rohár wrote:
-> * omap musb driver does not report USB_EVENT_ENUMERATED event anymore
-> * omap musb driver reporting USB_EVENT_VBUS when charger is connected
-> * read last event from phy->last_event (instead from ulpi register)
-> * do not call wall charger detection more times
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+This patch is for building kernels on x86-based Android devices.
+The binary patches created by its OTA system work much better if
+the deflate() algorithm inside zlib is used, rather than the
+older version inside gzip.
 
-Applied, thanks a lot!
+This patch was committed against the master branch of Linus'
+tree.
 
-(Per others' review comments I am assuming that the second isp1704 patch
-will be reworked to support device-tree, so I am not applying it.)
+Andrew Boie (1):
+  x86: boot: support minigzip bzImage compression
 
-Thanks,
+ arch/x86/Kconfig                  |  1 +
+ arch/x86/boot/compressed/Makefile |  3 +++
+ arch/x86/boot/compressed/misc.c   |  2 +-
+ init/Kconfig                      | 18 +++++++++++++++++-
+ scripts/Makefile.lib              |  7 +++++++
+ 5 files changed, 29 insertions(+), 2 deletions(-)
 
-Anton
+-- 
+1.8.3.2
+
