@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3JVO3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:29:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53870 "EHLO
+	id S1754018Ab3JVO3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:29:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53873 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3JVO2t (ORCPT
+	with ESMTP id S1753589Ab3JVO2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:28:49 -0400
+	Tue, 22 Oct 2013 10:28:50 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/26] perf tools: Fix bench/numa.c for 32-bit build
-Date: Tue, 22 Oct 2013 11:28:23 -0300
-Message-Id: <1382452114-1243-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/26] perf session: Add missing sample flush for piped events
+Date: Tue, 22 Oct 2013 11:28:19 -0300
+Message-Id: <1382452114-1243-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
 References: <1382452114-1243-1-git-send-email-acme@infradead.org>
@@ -32,12 +32,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-bench/numa.c: In function 'worker_thread':
-bench/numa.c:1123:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-bench/numa.c:1171:6: error: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'u64' [-Werror=format]
-cc1: all warnings being treated as errors
+Piped events can be sorted so a final flush is needed.
+
+Add that and remove a redundant 'err = 0'.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -47,34 +47,43 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-13-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1382099356-4918-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/numa.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/session.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
-index 64fa01cfc34d..d4c83c60b9b2 100644
---- a/tools/perf/bench/numa.c
-+++ b/tools/perf/bench/numa.c
-@@ -1120,7 +1120,7 @@ static void *worker_thread(void *__tdata)
- 		/* Check whether our max runtime timed out: */
- 		if (g->p.nr_secs) {
- 			timersub(&stop, &start0, &diff);
--			if (diff.tv_sec >= g->p.nr_secs) {
-+			if ((u32)diff.tv_sec >= g->p.nr_secs) {
- 				g->stop_work = true;
- 				break;
- 			}
-@@ -1167,7 +1167,7 @@ static void *worker_thread(void *__tdata)
- 			runtime_ns_max += diff.tv_usec * 1000;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d1e449534b33..d51e62db96a7 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1263,7 +1263,9 @@ more:
+ 	if (!session_done())
+ 		goto more;
+ done:
+-	err = 0;
++	/* do the final flush for ordered samples */
++	self->ordered_samples.next_flush = ULLONG_MAX;
++	err = flush_sample_queue(self, tool);
+ out_err:
+ 	free(buf);
+ 	perf_session__warn_about_errors(self, tool);
+@@ -1392,13 +1394,13 @@ more:
+ 				    "Processing events...");
+ 	}
  
- 			if (details >= 0) {
--				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
-+				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIx64"]\n",
- 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
- 			}
- 			fflush(stdout);
+-	err = 0;
+ 	if (session_done())
+-		goto out_err;
++		goto out;
+ 
+ 	if (file_pos < file_size)
+ 		goto more;
+ 
++out:
+ 	/* do the final flush for ordered samples */
+ 	session->ordered_samples.next_flush = ULLONG_MAX;
+ 	err = flush_sample_queue(session, tool);
 -- 
 1.8.1.4
 
