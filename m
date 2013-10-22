@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab3JVPsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:48:52 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:41515 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab3JVPsv (ORCPT
+	id S1754339Ab3JVPtQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:49:16 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:33503 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3JVPtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:48:51 -0400
-Date: Tue, 22 Oct 2013 16:48:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
-Message-ID: <20131022154846.GA24024@lee--X1>
-References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
- <20130807084054.GA18668@lee--X1>
- <52667A6C.6000301@linutronix.de>
+	Tue, 22 Oct 2013 11:49:14 -0400
+Message-ID: <52669E76.2010702@baylibre.com>
+Date: Tue, 22 Oct 2013 17:49:10 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V7 0/8] ARM: OMAP3+: support cpufreq-cpu0 for device tree
+ boot
+References: <1381937948-27057-1-git-send-email-nm@ti.com>
+In-Reply-To: <1381937948-27057-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <52667A6C.6000301@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Oct 2013, Sebastian Andrzej Siewior wrote:
+Hi Nishanth,
 
-> On 08/07/2013 10:40 AM, Lee Jones wrote:
-> > On Mon, 05 Aug 2013, Zubair Lutfullah wrote:
-> > 
-> >> Reg_cache variable is used to lock step enable register
-> >> from being accessed and written by both TSC and ADC
-> >> at the same time.
-> >> However, it isn't updated anywhere in the code at all.
-> >>
-> >> If both TSC and ADC are used, eventually 1FFFF is always
-> >> written enabling all 16 steps uselessly causing a mess.
-> >>
-> >> Patch fixes it by correcting the locks and updates the
-> >> variable by reading the step enable register
-> >>
-> >> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> >> ---
-> >>  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > Better that it comes from somewhere.
-> 
-> I don't understand. All three functions are used before the patch has
-> been applied:
-> 
-> $ git grep -l am335x_tsc_se_set
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> 
-> $ git grep -l am335x_tsc_se_clr
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> 
-> $ git grep -l am335x_tsc_se_update
-> drivers/iio/adc/ti_am335x_adc.c
-> drivers/input/touchscreen/ti_am335x_tsc.c
-> drivers/mfd/ti_am335x_tscadc.c
-> include/linux/mfd/ti_am335x_tscadc.h
+On 16/10/2013 17:39, Nishanth Menon wrote:
+> Hi,
+>
+> This series enables the use of cpufreq-cpu0 generic driver for all
+> OMAP and related derivatives. Only patch#8 in the series, which
+> introduces CPU clock nodes, depends on Tero's V8 patch series for clock
+> nodes[1]
+>
+> I will stop copy pasting the series complete history and point at [2].
+>
+> Main changes since V6[3]:
+> - squashed patches for a minimal set
+> - i have organized the series such that 1 to 7 can immediately be merged
+>    if desired:
+> 	- patches 1,2,3 can go to Tony's omap-for-v3.13/quirk [4]
+> 	- patches 4-7 can go to Benoit's for_3.13/dts [5]
 
-Okay. So what does this mean?
+I've just applied them in my DTS tree.
 
-> It has been initialized to 0 by time the mfd part was loaded and
-> updated via …_set() from both parts (TSC & ADC). 
-> The lock ensured that
-> we never lose or add bits due to a race. So I don't understand why we
-> end up with 0x1FFFF.
-> Could some please explain to me how this can happen?
+Thanks,
+Benoit
 
-I don't have any h/w to actually test this, so you two are going to
-have to fudge this out by yourselves.
+> 	- patch 8 needs to depend on [1] and should eventually go to [5]
+>
+> NOTES: obviously without clock nodes cpufreq will not function.
+>
+> Test Script: http://pastebin.com/VvJPjsne
+>
+> Test-log:
+> BeagleBoard-XM (OMAP36xx): http://pastebin.com/XZDNaHPf
+> PandaBoard-ES (OMAP4460): http://pastebin.com/qQCmA2ng
+> BeagleBone-Black(AM335x): http://pastebin.com/98FX4uYW
+> OMAP5uEVM (OMAP5432): http://pastebin.com/NXj3L636
+> DRA7-EVM (DRA7xx): http://pastebin.com/0kKT3TXy
+>
+> J Keerthy (3):
+>    ARM: dts: dra7-evm: add smps123 supply for CPU
+>    ARM: dts: OMAP5: Add CPU OPP table
+>    ARM: dts: DRA7: Add CPU OPP table
+>
+> Nishanth Menon (5):
+>    ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
+>    ARM: OMAP2+: add missing lateinit hook for calling pm late init
+>    ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
+>    ARM: dts: omap5-uevm: add smps123 supply for CPU
+>    ARM: dts: OMAP3: add clock nodes for CPU
+>
+> [1] http://marc.info/?t=138133284200006&r=1&w=2
+> [2] http://marc.info/?l=linux-arm-kernel&m=136804009618594&w=2
+> [3] http://marc.info/?l=devicetree&m=138135419203492&w=2
+> [4] https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.13/quirk
+>
+>   arch/arm/boot/dts/am33xx.dtsi       |    4 ++++
+>   arch/arm/boot/dts/dra7-evm.dts      |    4 ++++
+>   arch/arm/boot/dts/dra7.dtsi         |   13 ++++++++++++-
+>   arch/arm/boot/dts/omap3.dtsi        |    5 +++++
+>   arch/arm/boot/dts/omap4.dtsi        |    5 +++++
+>   arch/arm/boot/dts/omap5-uevm.dts    |    4 ++++
+>   arch/arm/boot/dts/omap5.dtsi        |   15 ++++++++++++++-
+>   arch/arm/mach-omap2/board-generic.c |    4 ++++
+>   arch/arm/mach-omap2/common.h        |    4 ++++
+>   arch/arm/mach-omap2/io.c            |   20 ++++++++++++++++++++
+>   arch/arm/mach-omap2/opp.c           |    4 ++++
+>   arch/arm/mach-omap2/pm.c            |   12 +++++++++---
+>   12 files changed, 89 insertions(+), 5 deletions(-)
+>
+> Regards,
+> Nishanth Menon
+>
 
-> I added reg_se_cache to cache the content of REG_SE once and
-> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
-> after "work" has been done. So you need to know the old value or TSC may
-> disable ADC and the other way around.
-> 
-> In tree (staging-next) I see that reg_se_cache ended being pointless.
-> am335x_tsc_se_update() is no longer used from TSC or ADC. Only the
-> _set() and _clr() functions are used which (both) read back the content
-> of the REG_SE register before calling am335x_tsc_se_update().
-
-Not sure I get this point.
-
-> That makes me think that we might cut of one part by accident. On the
-> other hand Zubair said that he tested using ADC & TSC at the same time
-> and it worked. So I have to double check if the HW really resets the
-> content back to zero or not; maybe there is another explanation :)
-> 
-> One thing that is an issue is that now the _set() function is using the
-> lock without disabling interrupts and is called from non-IRQ
-> (tiadc_read_raw()) and IRQ (titsc_irq()) context which might lead to
-> deadlock. I'm going to send a patch for this.
-
-I see the patch, but let's sort this out first, before I apply it.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Beno�t Cousson
+BayLibre
+Embedded Linux Technology Lab
+www.baylibre.com
