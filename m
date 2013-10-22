@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab3JVIhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 04:37:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46739 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab3JVIhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 04:37:02 -0400
-Date: Tue, 22 Oct 2013 10:37:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86
- platform
-Message-ID: <20131022083702.GB10268@nazgul.tnic>
-References: <20131019095753.GA26338@pd.tnic>
- <52657a78162905670f@agluck-desk.sc.intel.com>
- <CA+8MBbLnxAiV-ccpn_HUiiP9Fp7qXWqy_i+RPu6mUTAxzV4uHA@mail.gmail.com>
+	id S1752399Ab3JVIik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 04:38:40 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:51380 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab3JVIii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 04:38:38 -0400
+Date: Tue, 22 Oct 2013 09:38:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: sameo@linux.intel.com, b29396@freescale.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/1] mfd: syscon: return -ENXIO if CONFIG_MFD_SYSCON is
+ not enabled
+Message-ID: <20131022083833.GC19112@lee--X1>
+References: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+8MBbLnxAiV-ccpn_HUiiP9Fp7qXWqy_i+RPu6mUTAxzV4uHA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382426857-31975-1-git-send-email-peter.chen@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 03:39:20PM -0700, Tony Luck wrote:
-> I folded that back into the series. Also switched out the test on
-> whether to print the "No further action is required" message to only
-> do so for corrected errors. Cleaned up some of the commit messages,
->
-> The result is sitting at:
-> git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git eMCA
->
-> Anything we missed?
+> Some platforms may not define CONFIG_MFD_SYSCON (or haven't syscon),
+> it can fix build error for those platforms.
+> 
+> Signed-off-by: Peter Chen <peter.chen@freescale.com>
+> ---
+>  include/linux/mfd/syscon.h |   24 ++++++++++++++++++++++++
+>  1 files changed, 24 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+> index b473577..60bf0fb 100644
+> --- a/include/linux/mfd/syscon.h
+> +++ b/include/linux/mfd/syscon.h
+> @@ -17,10 +17,34 @@
+>  
+>  struct device_node;
+>  
+> +#if IS_ENABLED(CONFIG_MFD_SYSCON)
 
-Doesn't look so, at a first glance. But I agree with you - this stuff
-will be subject to change as we go along and we make up our mind about
-what exactly is sufficient and necessary to do proper decoding.
+I'd prefer #ifdef.
 
-I like the idea of keeping an open mind about it. :-)
+>  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
+>  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+>  extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+>  extern struct regmap *syscon_regmap_lookup_by_phandle(
+>  					struct device_node *np,
+>  					const char *property);
+> +#else
+> +static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
+> +{
+> +	return ERR_PTR(-ENXIO);
 
-Thanks.
+ENOSYS?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
