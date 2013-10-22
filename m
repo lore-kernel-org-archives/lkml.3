@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3JVCfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 22:35:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51257 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab3JVCfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 22:35:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="378037251"
-Date: Mon, 21 Oct 2013 19:35:39 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NTB: remove duplicate defines
-Message-ID: <20131022023539.GD29998@jonmason-lab>
-References: <1382332782-5686-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S1753048Ab3JVClv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 22:41:51 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:58672 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab3JVClu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 22:41:50 -0400
+Message-ID: <5265E5E6.30908@gmail.com>
+Date: Tue, 22 Oct 2013 10:41:42 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382332782-5686-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: rpurdie@rpsys.net, jg1.han@samsung.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
+References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com> <5260BD8C.7000200@gmail.com>
+In-Reply-To: <5260BD8C.7000200@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 07:19:42AM +0200, Michael Opdenacker wrote:
-> Remove duplicate defines in drivers/ntb/ntb_regs.h
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Ping Thierry...
 
-Applied to my next tree, which should go into 3.13.
-
-Thanks,
-Jon
-
-> ---
->  drivers/ntb/ntb_regs.h | 3 ---
->  1 file changed, 3 deletions(-)
+Mark
+On 10/18/2013 12:48 PM, Mark Zhang wrote:
+> On 10/17/2013 03:14 PM, Thierry Reding wrote:
+>> On Thu, Oct 17, 2013 at 02:49:57PM +0800, Mark Zhang wrote:
+>>> Hi,
+>>>
+>>> This is the first time I send mail to linux-pwm, I didn't read through
+>>> the mails in this list, so if somebody already asked this question, I'm
+>>> sorry about that.
+>>>
+>>> I wanna set some fops in "struct platform_pwm_backlight_data". But the
+>>> currrent probe function in pwm_bl.c says:
+>>>
+>>> -------
+>>> if (!data) {
+>>> 	ret = pwm_backlight_parse_dt(&pdev->dev, &defdata);
+>>> 	if (ret < 0) {
+>>> 		dev_err(&pdev->dev, "failed to find platform data\n");
+>>> 		return ret;
+>>> 	}
+>>>
+>>> 	data = &defdata;
+>>> }
+>>> -------
+>>>
+>>> This looks like if we set the platform data for pwm backlight device,
+>>> "pwm_backlight_parse_dt" will never have a chance to be called, which
+>>> means the stuffs I defined in backlight DT node will be ignored.
+>>>
+>>> If I don't set the platform data for pwm backlight device, according to
+>>> the pwm_backlight_probe, I will never have a chance to set some fops
+>>> which I need(like "notify", "check_fb"...).
+>>>
+>>> So, what I suppose to do now? Maybe there is a way to set function
+>>> pointers in DT?
+>>
+>> Perhaps you could describe in more detail what you need the functions
+>> for.
+>>
 > 
-> diff --git a/drivers/ntb/ntb_regs.h b/drivers/ntb/ntb_regs.h
-> index aa4bdd3..caa5975 100644
-> --- a/drivers/ntb/ntb_regs.h
-> +++ b/drivers/ntb/ntb_regs.h
-> @@ -75,9 +75,6 @@
->  #define SNB_SBAR2XLAT_OFFSET	0x0030
->  #define SNB_SBAR4XLAT_OFFSET	0x0038
->  #define SNB_SBAR0BASE_OFFSET	0x0040
-> -#define SNB_SBAR0BASE_OFFSET	0x0040
-> -#define SNB_SBAR2BASE_OFFSET	0x0048
-> -#define SNB_SBAR4BASE_OFFSET	0x0050
->  #define SNB_SBAR2BASE_OFFSET	0x0048
->  #define SNB_SBAR4BASE_OFFSET	0x0050
->  #define SNB_NTBCNTL_OFFSET	0x0058
-> -- 
-> 1.8.1.2
+> Okay, I just want to set the "notify" function pointer in "struct
+> platform_pwm_backlight_data", because I want to tune the brightness
+> value before the pwm-bl sets the brightness to hardware. I don't know
+> how to do that, unless we define the platform data explicitly.
 > 
+> Mark
+>> Generally you're not supposed to mix DT and platform data. Without more
+>> info that's about all I can say.
+>>
+>> Thierry
+>>
