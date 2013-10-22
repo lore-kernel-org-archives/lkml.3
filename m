@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab3JVRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:23:27 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:50897 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3JVRXY (ORCPT
+	id S1754799Ab3JVR1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:27:25 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:52618 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768Ab3JVR1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:23:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131022170604.GP15154@atomide.com>
-References: <1382446896-28436-1-git-send-email-sre@debian.org>
- <1382446896-28436-2-git-send-email-sre@debian.org> <20131022170604.GP15154@atomide.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 22 Oct 2013 10:22:59 -0700
-Message-ID: <CAK5ve-KWdJFuJsvQ+JS2y7bpa9j4hGdU=ceb4nAz8BKQ1M9_XA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] leds: lp55xx: handle enable pin in driver
-To: Tony Lindgren <tony@atomide.com>
-Cc: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Milo Kim <milo.kim@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Oct 2013 13:27:15 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 7/9] backlight: atmel-pwm-bl: use gpio_is_valid
+Date: Tue, 22 Oct 2013 19:26:57 +0200
+Message-Id: <1382462819-28576-8-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382462819-28576-1-git-send-email-jhovold@gmail.com>
+References: <1382462819-28576-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 10:06 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Sebastian Reichel <sre@debian.org> [131022 06:02]:
->> This patch moves the handling of the chip's enable pin from the board
->> code into the driver. It also updates all board-code files using the
->> driver to incorporate this change.
->>
->> This is needed for device tree support of the enable pin.
->
-> This seems safe to merge along with the other LED patches, the
-> changes to arch/arm/mach-omap2 should not conflict with anything.
->
-> So for the arch/arm/mach-omap2 changes:
->
-> Acked-by: Tony Lindgren <tony@atomide.com>
+Use gpio_is_valid rather than open coding the more restrictive != -1
+test.
 
-I'm OK for LED parts, will this patch go through omap tree? If so,
-please add my ack.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Acked-by: Bryan Wu <cooloney@gmail.com>
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index db68cab..ffc30d2 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -48,7 +48,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ 		pwm_duty = pwmbl->pdata->pwm_duty_min;
+ 
+ 	if (!intensity) {
+-		if (pwmbl->gpio_on != -1) {
++		if (gpio_is_valid(pwmbl->gpio_on)) {
+ 			gpio_set_value(pwmbl->gpio_on,
+ 					0 ^ pwmbl->pdata->on_active_low);
+ 		}
+@@ -57,7 +57,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ 	} else {
+ 		pwm_channel_enable(&pwmbl->pwmc);
+ 		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
+-		if (pwmbl->gpio_on != -1) {
++		if (gpio_is_valid(pwmbl->gpio_on)) {
+ 			gpio_set_value(pwmbl->gpio_on,
+ 					1 ^ pwmbl->pdata->on_active_low);
+ 		}
+@@ -146,7 +146,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ 	if (retval)
+ 		return retval;
+ 
+-	if (pwmbl->gpio_on != -1) {
++	if (gpio_is_valid(pwmbl->gpio_on)) {
+ 		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
+ 					"gpio_atmel_pwm_bl");
+ 		if (retval)
+@@ -196,7 +196,7 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
+ {
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+ 
+-	if (pwmbl->gpio_on != -1) {
++	if (gpio_is_valid(pwmbl->gpio_on)) {
+ 		gpio_set_value(pwmbl->gpio_on,
+ 					0 ^ pwmbl->pdata->on_active_low);
+ 	}
+-- 
+1.8.4
 
-Thanks,
--Bryan
