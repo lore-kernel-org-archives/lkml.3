@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3JVOYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:24:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:41410 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688Ab3JVOYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:24:32 -0400
-X-IronPort-AV: E=Sophos;i="4.93,548,1378857600"; 
-   d="scan'208";a="66043285"
-Message-ID: <1382451868.18283.21.camel@hastur.hellion.org.uk>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>, <ross.philipson@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <grub-devel@gnu.org>,
-        <david.woodhouse@intel.com>, <richard.l.maliszewski@intel.com>,
-        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        Peter Jones <pjones@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <keir@xen.org>
-Date: Tue, 22 Oct 2013 15:24:28 +0100
-In-Reply-To: <20131022140947.GA17829@phenom.dumpdata.com>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-	 <20131021135437.GD1283@fenchurch.internal.datastacks.com>
-	 <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
-	 <1382433990.1657.66.camel@hastur.hellion.org.uk>
-	 <5266620602000078000FCA48@nat28.tlf.novell.com>
-	 <1382435127.1657.70.camel@hastur.hellion.org.uk>
-	 <526668A502000078000FCA7B@nat28.tlf.novell.com>
-	 <20131022134252.GA27302@phenom.dumpdata.com>
-	 <1382449985.18283.12.camel@hastur.hellion.org.uk>
-	 <20131022140947.GA17829@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	id S1753379Ab3JVO2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:28:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53804 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3JVO2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 10:28:44 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 19/26] perf list: Show error if tracepoints not available
+Date: Tue, 22 Oct 2013 11:28:27 -0300
+Message-Id: <1382452114-1243-20-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
+References: <1382452114-1243-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 10:09 -0400, Konrad Rzeszutek Wilk wrote:
+From: Pekka Enberg <penberg@kernel.org>
 
-> So it can be booted the same way as xen.efi. But my understanding is
-> that folks prefer a bootloader instead of loading the bzImage in an
-> NVRAM of a platform with pre-set parameters. Hence that mechanism
-> is not used by the majority of users.
+Tracepoints are not visible in "perf list" on Fedora 19 because regular
+users have no permission to /sys/kernel/debug by default. Show an error
+message so that the user knows about it instead of assuming that
+tracepoints are not supported on the system.
 
-My understanding is that they prefer a bootloader which can launch Linux
-as a PE/COFF image, i.e. the linuxefi thing.
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1381867647-8594-1-git-send-email-penberg@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> Instead the majority of users would like to use a bootloader, like
-> GRUB2. And there are certain restrictions - if you launch from it
-> an PE/COFF application GRUB2 will call ExitBootServices. But if
-> you launch the Linux image (so using the linuxefi), it WILL NOT
-> call ExitBootServices.
-
-"linuxefi" won't call ExitBootServices but it will launch as a PE/COFF
-application not as a "Linux image", that's right isn't it? I think that
-is the whole point of it.
-
-The "launch as a Linux image" grub command is called just "linux" (and
-"kernel" may be a synonym).
-
-> But I say that (about ExitBootServices) - and I can't find it in
-> the GRUB2 code, so perhaps I am mistaken.
-
-linuxefi isn't in the upstream grub2 tree -- all the distros are
-carrying it as a patch. So if you are grepping upstream you won't find
-it.
-
-Ian.
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 98125319b158..c90e55cf7e82 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -998,8 +998,10 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 	char evt_path[MAXPATHLEN];
+ 	char dir_path[MAXPATHLEN];
+ 
+-	if (debugfs_valid_mountpoint(tracing_events_path))
++	if (debugfs_valid_mountpoint(tracing_events_path)) {
++		printf("  [ Tracepoints not available: %s ]\n", strerror(errno));
+ 		return;
++	}
+ 
+ 	sys_dir = opendir(tracing_events_path);
+ 	if (!sys_dir)
+-- 
+1.8.1.4
 
