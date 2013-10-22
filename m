@@ -1,231 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3JVMam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:30:42 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:40026 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3JVMak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:30:40 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7f836d000001b39-f1-52666feeb0ad
-Content-transfer-encoding: 8BIT
-Message-id: <1382445005.992.70.camel@kjgkr>
-Subject: Re: [PATCH V2] f2fs: introduce f2fs_kmem_cache_alloc to hide the
- unfailed, kmem cache allocation
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>
-Date: Tue, 22 Oct 2013 21:30:05 +0900
-In-reply-to: <526620AA.60007@cn.fujitsu.com>
-References: <526620AA.60007@cn.fujitsu.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t8zA913+WlBBlfmmVu8PKRpsWjTdiaL
-	5+0HmC3OPOtgtLi0yN1iz96TLBaXd81hc2D3+H9wErPHvJOBHrsXfGby6NuyitHj8ya5ANYo
-	LpuU1JzMstQifbsEroyPM14yFzxSqXj5ei1rA+MLmS5GTg4JAROJKdePsEDYYhIX7q1n62Lk
-	4hASWMYosa5xAhtM0YwHrcwQiemMEreufmIFSfAKCEr8mHwPqJuDg1lAXuLIpWyQMLOAusSk
-	eYug6l8xSrQc2MsGUa8tsfvCfjaQemGBbIlfB7lATDag8Ob9BiAVQgKKEm/33wWbLiKgJvHs
-	3SUmkDHMArcZJZY9XATUys7BIqAqcUodpIRTQEfizLFrjBCt2hJrD7Yzgdj8AqIShxduZ4a4
-	Xklid3snO8gYCYG37BLt+y6C/csiICDxbfIhsOslBGQlNh2AqpeUOLjiBssERolZSH6chfDj
-	LCQ/LmBkXsUomlqQXFCclF5krFecmFtcmpeul5yfu4kREpn9OxjvHrA+xJgMtHEis5Rocj4w
-	svNK4g2NzYwsTE1MjY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+OU
-	ummmtcW/RXlbt9x+6xP8RyznzL4Lpa+TOPwZ2jNiVYS93r+bNVM9o37G8p+/Y6M4Aq2/ftti
-	vetV7bWdy4I++BR/SttdoXaK2dp/cqzwv39vTvwLN7q87ED2s/d3Q56HnTwglXjo3czwl6X/
-	XU9PPcg/TdjofbzRk8Mrnpzr9DdNPq7dtsNViaU4I9FQi7moOBEA0qbuo+ICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQd13+WlBBqv/GFq8PKRpsWjTdiaL
-	5+0HmC3OPOtgtLi0yN1iz96TLBaXd81hc2D3+H9wErPHvJOBHrsXfGby6NuyitHj8ya5ANao
-	BkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKAjlBTK
-	EnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZH2e8ZC54pFLx8vVa1gbGFzJd
-	jJwcEgImEjMetDJD2GISF+6tZ+ti5OIQEpjOKHHr6idWkASvgKDEj8n3WLoYOTiYBeQljlzK
-	BgkzC6hLTJq3iBmi/hWjRMuBvWwQ9doSuy/sZwOpFxbIlvh1kAvEZAMKb95vAFIhJKAo8Xb/
-	XbDpIgJqEs/eXWICGcMscJtRYtnDRUCt7BwsAqoSp9RBSjgFdCTOHLvGCNGqLbH2YDsTiM0v
-	ICpxeOF2qOuVJHa3d7JPYBSaheTmWQg3z0Jy8wJG5lWMoqkFyQXFSem5hnrFibnFpXnpesn5
-	uZsYwXH/TGoH48oGi0OMAhyMSjy8GVapQUKsiWXFlbmHGCU4mJVEeJt904KEeFMSK6tSi/Lj
-	i0pzUosPMSYDnT2RWUo0OR+YkvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpa
-	kFoEs4WJg1OqgVFwqUzjOu4FlzRZm/b+flyv9f15VsTq3ZGii38+vzAv13HLLLlKtivV9isf
-	94Qamypqbv+jWSktzqxy7WOt3o/fdrsPtk3f7aBbduT+ffajB4LO6ev99Ba/tlTrxNo/m28V
-	GXWIdJzj9Q39ccD0+HzzqR3NW4w1uebc+hAoavFlQ7p4gY2oUKgSS3FGoqEWc1FxIgBhGoeV
-	PwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753367Ab3JVMri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:47:38 -0400
+Received: from ring0.de ([91.143.88.219]:35980 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752659Ab3JVMrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 08:47:32 -0400
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, linux-input@vger.kernel.org
+Cc: =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv2 3/3] ARM: dts: N900: TWL4030 Keypad Matrix definition
+Date: Tue, 22 Oct 2013 14:47:22 +0200
+Message-Id: <1382446042-27099-4-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382446042-27099-1-git-send-email-sre@debian.org>
+References: <1382446042-27099-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add Keyboard Matrix information to N900's DTS file.
+This patch maps the keys exactly as the original
+board code.
 
-Looks good to me.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ arch/arm/boot/dts/omap3-n900.dts | 55 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-Thanks,
-
-2013-10-22 (화), 14:52 +0800, Gu Zheng:
-> Introduce the unfailed version of kmem_cache_alloc named f2fs_kmem_cache_alloc
-> to hide the retry routine and make the code a bit cleaner.
-> 
-> v2:
->    Fix the wrong use of 'retry' tag pointed out by Gao feng.
->    Use more neat code to remove redundant tag suggested by Haicheng Li.
-> 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/f2fs/checkpoint.c |   26 +++++++-------------------
->  fs/f2fs/f2fs.h       |   15 +++++++++++++++
->  fs/f2fs/gc.c         |    8 ++------
->  fs/f2fs/node.c       |   27 +++++++++++----------------
->  4 files changed, 35 insertions(+), 41 deletions(-)
-> 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index 8d16071..6fb484c 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -226,12 +226,8 @@ void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
->  			break;
->  		orphan = NULL;
->  	}
-> -retry:
-> -	new = kmem_cache_alloc(orphan_entry_slab, GFP_ATOMIC);
-> -	if (!new) {
-> -		cond_resched();
-> -		goto retry;
-> -	}
-> +
-> +	new = f2fs_kmem_cache_alloc(orphan_entry_slab, GFP_ATOMIC);
->  	new->ino = ino;
->  
->  	/* add new_oentry into list which is sorted by inode number */
-> @@ -484,12 +480,8 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
->  
->  	if (!S_ISDIR(inode->i_mode))
->  		return;
-> -retry:
-> -	new = kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-> -	if (!new) {
-> -		cond_resched();
-> -		goto retry;
-> -	}
-> +
-> +	new = f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
->  	new->inode = inode;
->  	INIT_LIST_HEAD(&new->list);
->  
-> @@ -506,13 +498,9 @@ retry:
->  void add_dirty_dir_inode(struct inode *inode)
->  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> -	struct dir_inode_entry *new;
-> -retry:
-> -	new = kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-> -	if (!new) {
-> -		cond_resched();
-> -		goto retry;
-> -	}
-> +	struct dir_inode_entry *new =
-> +			f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-> +
->  	new->inode = inode;
->  	INIT_LIST_HEAD(&new->list);
->  
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 171c52f..2949275 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -18,6 +18,7 @@
->  #include <linux/crc32.h>
->  #include <linux/magic.h>
->  #include <linux/kobject.h>
-> +#include <linux/sched.h>
->  
->  /*
->   * For mount options
-> @@ -787,6 +788,20 @@ static inline struct kmem_cache *f2fs_kmem_cache_create(const char *name,
->  	return kmem_cache_create(name, size, 0, SLAB_RECLAIM_ACCOUNT, ctor);
->  }
->  
-> +static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
-> +						gfp_t flags)
-> +{
-> +	void *entry;
-> +retry:
-> +	entry = kmem_cache_alloc(cachep, flags);
-> +	if (!entry) {
-> +		cond_resched();
-> +		goto retry;
-> +	}
-> +
-> +	return entry;
-> +}
-> +
->  #define RAW_IS_INODE(p)	((p)->footer.nid == (p)->footer.ino)
->  
->  static inline bool IS_INODE(struct page *page)
-> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-> index fbad968..7914b92 100644
-> --- a/fs/f2fs/gc.c
-> +++ b/fs/f2fs/gc.c
-> @@ -361,12 +361,8 @@ static void add_gc_inode(struct inode *inode, struct list_head *ilist)
->  		iput(inode);
->  		return;
->  	}
-> -repeat:
-> -	new_ie = kmem_cache_alloc(winode_slab, GFP_NOFS);
-> -	if (!new_ie) {
-> -		cond_resched();
-> -		goto repeat;
-> -	}
-> +
-> +	new_ie = f2fs_kmem_cache_alloc(winode_slab, GFP_NOFS);
->  	new_ie->inode = inode;
->  	list_add_tail(&new_ie->list, ilist);
->  }
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index ef80f79..4fa3fd5 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1296,23 +1296,18 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
->  	if (nid == 0)
->  		return 0;
->  
-> -	if (!build)
-> -		goto retry;
-> -
-> -	/* do not add allocated nids */
-> -	read_lock(&nm_i->nat_tree_lock);
-> -	ne = __lookup_nat_cache(nm_i, nid);
-> -	if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
-> -		allocated = true;
-> -	read_unlock(&nm_i->nat_tree_lock);
-> -	if (allocated)
-> -		return 0;
-> -retry:
-> -	i = kmem_cache_alloc(free_nid_slab, GFP_NOFS);
-> -	if (!i) {
-> -		cond_resched();
-> -		goto retry;
-> +	if (build) {
-> +		/* do not add allocated nids */
-> +		read_lock(&nm_i->nat_tree_lock);
-> +		ne = __lookup_nat_cache(nm_i, nid);
-> +		if (ne && nat_get_blkaddr(ne) != NULL_ADDR)
-> +			allocated = true;
-> +		read_unlock(&nm_i->nat_tree_lock);
-> +		if (allocated)
-> +			return 0;
->  	}
-> +
-> +	i = f2fs_kmem_cache_alloc(free_nid_slab, GFP_NOFS);
->  	i->nid = nid;
->  	i->state = NID_NEW;
->  
-
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index c2b92e8..30ac779 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -109,6 +109,61 @@
+ #include "twl4030.dtsi"
+ #include "twl4030_omap3.dtsi"
+ 
++&twl_keypad {
++	linux,keymap = < 0x00000010 /* KEY_Q */
++			 0x00010018 /* KEY_O */
++			 0x00020019 /* KEY_P */
++			 0x00030033 /* KEY_COMMA */
++			 0x0004000e /* KEY_BACKSPACE */
++			 0x0006001e /* KEY_A */
++			 0x0007001f /* KEY_S */
++
++			 0x01000011 /* KEY_W */
++			 0x01010020 /* KEY_D */
++			 0x01020021 /* KEY_F */
++			 0x01030022 /* KEY_G */
++			 0x01040023 /* KEY_H */
++			 0x01050024 /* KEY_J */
++			 0x01060025 /* KEY_K */
++			 0x01070026 /* KEY_L */
++
++			 0x02000012 /* KEY_E */
++			 0x02010034 /* KEY_DOT */
++			 0x02020067 /* KEY_UP */
++			 0x0203001c /* KEY_ENTER */
++			 0x0205002c /* KEY_Z */
++			 0x0206002d /* KEY_X */
++			 0x0207002e /* KEY_C */
++			 0x02080043 /* KEY_F9 */
++
++			 0x03000013 /* KEY_R */
++			 0x0301002f /* KEY_V */
++			 0x03020030 /* KEY_B */
++			 0x03030031 /* KEY_N */
++			 0x03040032 /* KEY_M */
++			 0x03050039 /* KEY_SPACE */
++			 0x03060039 /* KEY_SPACE */
++			 0x03070069 /* KEY_LEFT */
++
++			 0x04000014 /* KEY_T */
++			 0x0401006c /* KEY_DOWN */
++			 0x0402006a /* KEY_RIGHT */
++			 0x0404001d /* KEY_LEFTCTRL */
++			 0x04050064 /* KEY_RIGHTALT */
++			 0x0406002a /* KEY_LEFTSHIFT */
++			 0x04080044 /* KEY_F10 */
++
++			 0x05000015 /* KEY_Y */
++			 0x05080057 /* KEY_F11 */
++
++			 0x06000016 /* KEY_U */
++
++			 0x07000017 /* KEY_I */
++			 0x07010041 /* KEY_F7 */
++			 0x07020042 /* KEY_F8 */
++			 >;
++};
++
+ &twl_gpio {
+ 	ti,pullups	= <0x0>;
+ 	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
 -- 
-Jaegeuk Kim
-Samsung
+1.8.4.rc3
 
