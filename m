@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3JVQio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:38:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54744 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab3JVQin (ORCPT
+	id S1754892Ab3JVQjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:39:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51265 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab3JVQjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:38:43 -0400
-Message-ID: <5266AA0F.1030603@linutronix.de>
-Date: Tue, 22 Oct 2013 18:38:39 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	Tue, 22 Oct 2013 12:39:11 -0400
+Date: Tue, 22 Oct 2013 12:38:13 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jan Beulich <JBeulich@suse.com>,
+        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "grub-devel@gnu.org" <grub-devel@gnu.org>,
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        Peter Jones <pjones@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+Message-ID: <20131022163813.GE19189@phenom.dumpdata.com>
+References: <1382435127.1657.70.camel@hastur.hellion.org.uk>
+ <526668A502000078000FCA7B@nat28.tlf.novell.com>
+ <20131022134252.GA27302@phenom.dumpdata.com>
+ <20131022144309.GA18547@phenom.dumpdata.com>
+ <1382455537.8512.11.camel@shinybook.infradead.org>
+ <20131022153258.GA12260@srcf.ucam.org>
+ <1382456560.8512.24.camel@shinybook.infradead.org>
+ <20131022160146.GH3626@debian70-amd64.local.net-space.pl>
+ <1382458083.18283.34.camel@hastur.hellion.org.uk>
+ <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
-References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com> <20130807084054.GA18668@lee--X1> <52667A6C.6000301@linutronix.de> <20131022160523.GB24024@lee--X1>
-In-Reply-To: <20131022160523.GB24024@lee--X1>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022161444.GJ3626@debian70-amd64.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 06:05 PM, Lee Jones wrote:
->> I added reg_se_cache to cache the content of REG_SE once and
->> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
->> after "work" has been done. So you need to know the old value or TSC may
->> disable ADC and the other way around.
+> > Are you (going to be) in Edinburgh? Matthew was just explaining a bunch
+> > of this stuff to me, it might be useful for you to get it from the
+> > horses mouth instead of laundered through my brain (which is a bit
+> > addled afterwards ;-)).
 > 
-> Yep, it's initialised as '0'.
+> Sadly no. However, if it is possible/needed I could participate in conference call.
+
++1 (the conference call)
+
 > 
-> 12.5.1.15 STEPENABLE Register (offset = 54h) [reset = 0h]
-
-Ehm yes but!. After init it is set to 0, correct. The value was never
-read from the HW. It was always set via  am335x_tsc_se_set() to "cache
-| argument" and written to HW from both sides (TSC, ADC). This
-initialization is done at ->probe() time in both drivers.
-
-The value remains (remained) constant over the whole time
-so both drivers only called am335x_tsc_se_update() to set the value
-(the enabled steps of both sides) back to the register (because after
-the conversation the value was 0 according to my memory) and since
-32bit reads are atomic I didn't use a lock here.
-
-Sebastian
+> Daniel
