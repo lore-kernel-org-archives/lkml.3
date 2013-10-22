@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab3JWADw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 20:03:52 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47023 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab3JWADv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 20:03:51 -0400
-Message-ID: <52671265.2020107@linaro.org>
-Date: Tue, 22 Oct 2013 20:03:49 -0400
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755149Ab3JWAFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 20:05:01 -0400
+Received: from mail.cs.umn.edu ([128.101.32.201]:34140 "EHLO mail.cs.umn.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab3JWAE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 20:04:59 -0400
+X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 20:04:59 EDT
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 03/13] uprobes: allow arch access to xol slot
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com>
-In-Reply-To: <20131019163627.GA7837@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Alireza Haghdoost <alireza@cs.umn.edu>
+Date: Tue, 22 Oct 2013 18:54:25 -0500
+Message-ID: <CAB-428koa_AtGr_sTW0xWZAqNgqmxKkeB5wGBB6QwxKx=qu3uA@mail.gmail.com>
+Subject: [PATCH] block/aio: Enable sysfs nomerge control for I/O requests in
+ the plug list
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Jerry Fredin <jerry.fredin@netapp.com>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-UMN-CS-MailScanner-Information: Please contact operator@cs.umn.edu for more information
+X-UMN-CS-MailScanner-ID: 06C2C29CA1C.A0072
+X-UMN-CS-MailScanner: Found to be clean
+X-UMN-CS-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-5,
+	required 6, autolearn=not spam, ALL_TRUSTED -1.00, BAYES_00 -4.00)
+X-UMN-CS-MailScanner-From: alireza@cs.umn.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/13 12:36, Oleg Nesterov wrote:
-> On 10/15, David Long wrote:
->>
->> Allow arches to customize how the instruction is filled into the xol
->> slot.  ARM will use this to insert an undefined instruction after the
->> real instruction in order to simulate a single step of the instruction
->> without hardware support.
->
-> OK, but
->
->> +void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
->> +{
->> +	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
->> +}
->> +
->>   /*
->>    * xol_get_insn_slot - allocate a slot for xol.
->>    * Returns the allocated slot address or 0.
->> @@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
->>   {
->>   	struct xol_area *area;
->>   	unsigned long xol_vaddr;
->> +	void *kaddr;
->>
->>   	area = get_xol_area();
->>   	if (!area)
->> @@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
->>   		return 0;
->>
->>   	/* Initialize the slot */
->> -	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
->> +	kaddr = kmap_atomic(area->page);
->> +	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
->> +	kunmap_atomic(kaddr);
->
-> This looks a bit strange and defeats the purpose of generic helper...
->
-> How about
->
-> 	void __weak arch_uprobe_xol_copy(...)
-> 	{
-> 		copy_to_page(...);
-> 	}
->
-> then just
->
-> 	- copy_to_page(...);
-> 	+ arch_uprobe_xol_copy(...);
->
-> ?
->
+This patch enables the sysfs to control I/O request merge
+functionality in the plug list. While this control has been
+implemented for the request queue, it was dismissed in the plug list.
+Therefore, block layer merges requests together (or attempt to merge)
+even if the merge capability was disable using sysfs nomerge parameter
+value 2.
 
-I was trying to avoid duplicating the VM calls in the 
-architecture-specific implementations, but maybe that is the cleaner way 
-to do it after all.  I've made changes as suggested above.
+This limitation is directly affects functionality of io_submit()
+system call. The system call enables user to submit a bunch of IO
+requests from user space using struct iocb **ios input argument.
+However, the unconditioned merging functionality in the plug list
+potentially merges these requests together down the road. Therefore,
+there is no way to distinguish between an application sending bunch of
+sequential IOs and an application sending one big IO. Ultimately, all
+requests generated by the former app merge within the plug list
+together and looks similar to the second app.
 
-> Or, I am just curious, can't we have an empty "__weak arch_uprobe_xol_copy" if
-> we call it right after copy_to_page() ?
->
+While the merging functionality is a desirable feature to improve the
+performance of IO subsystem for some applications, it is not useful
+for other application like ours at all.
 
-Then there would potentially be effectively two copy calls.  That 
-doesn't feel at all the right thing to do.
 
--dl
 
+Signed-off-by: Alireza Haghdoost <alireza@cs.umn.edu>
+
+--- block/blk-core.c.orig 2013-10-22 15:26:59.484961156 -0500
++++ block/blk-core.c 2013-10-21 23:24:21.437887017 -0500
+@@ -1420,7 +1420,7 @@
+  bool ret = false;
+
+  plug = current->plug;
+- if (!plug)
++ if (!plug || blk_queue_nomerges(q) )
+  goto out;
+  *request_count = 0;
