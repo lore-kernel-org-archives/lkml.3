@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab3JVPMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:12:37 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:45526 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753861Ab3JVPMg (ORCPT
+	id S1754003Ab3JVPNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:13:22 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:47927 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab3JVPNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:12:36 -0400
-Date: Tue, 22 Oct 2013 15:12:35 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Sander Eikelenboom <linux@eikelenboom.it>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: kernel BUG at mm/slub.c:3338!  RIP  [<ffffffff8117912c>]
- kfree+0x20c/0x210
-In-Reply-To: <13810431525.20131020200555@eikelenboom.it>
-Message-ID: <00000141e0b97e8b-1c313e97-5b79-4a5f-a013-0bbb5bd1f7e5-000000@email.amazonses.com>
-References: <13810431525.20131020200555@eikelenboom.it>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Tue, 22 Oct 2013 11:13:19 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Eric Dumazet <edumazet@google.com>, Helge Deller <deller@gmx.de>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the net-next tree
+Date: Tue, 22 Oct 2013 17:10:45 +0200
+Message-Id: <1382454649-16442-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382369814-7582-1-git-send-email-treding@nvidia.com>
+References: <1382369814-7582-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Oct 2013, Sander Eikelenboom wrote:
+Today's linux-next merge of the net-next tree got a conflict in
 
-> With i 3.12.0-rc6 kernel i encounterd this splat:
+	arch/parisc/include/uapi/asm/socket.h
 
-Likely some slab object got corrupted.
+caused by commits 62748f3 (net: introduce SO_MAX_PACING_RATE) and 1a0e62d
+(parisc: break out SOCK_NONBLOCK define to own asm header file).
 
-Please enable debugging by either specifying slub_debug on the kernel
-command line or enabling CONFIG_SLUB_DEBUG_ON
+I fixed it up (see below). Please verify that the resolution looks good.
 
+Thanks,
+Thierry
+---
+diff --cc arch/parisc/include/uapi/asm/socket.h
+index 9f2174f,7c614d0..f33113a
+--- a/arch/parisc/include/uapi/asm/socket.h
++++ b/arch/parisc/include/uapi/asm/socket.h
+@@@ -75,4 -75,11 +75,6 @@@
+  
+  #define SO_BUSY_POLL		0x4027
+  
++ #define SO_MAX_PACING_RATE	0x4048
++ 
+ -/* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
+ - * have to define SOCK_NONBLOCK to a different value here.
+ - */
+ -#define SOCK_NONBLOCK   0x40000000
+ -
+ -#endif /* _ASM_SOCKET_H */
+ +#endif /* _UAPI_ASM_SOCKET_H */
