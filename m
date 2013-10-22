@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3JVPMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:12:08 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:34777 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714Ab3JVPLJ (ORCPT
+	id S1753918Ab3JVPMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:12:37 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:45526 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753861Ab3JVPMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:11:09 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King <rmk@arm.linux.org.uk>, Merav Sicron <meravs@broadcom.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the arm tree
-Date: Tue, 22 Oct 2013 17:08:35 +0200
-Message-Id: <1382454517-4074-2-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382454517-4074-1-git-send-email-treding@nvidia.com>
-References: <1382454517-4074-1-git-send-email-treding@nvidia.com>
+	Tue, 22 Oct 2013 11:12:36 -0400
+Date: Tue, 22 Oct 2013 15:12:35 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Sander Eikelenboom <linux@eikelenboom.it>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at mm/slub.c:3338!  RIP  [<ffffffff8117912c>]
+ kfree+0x20c/0x210
+In-Reply-To: <13810431525.20131020200555@eikelenboom.it>
+Message-ID: <00000141e0b97e8b-1c313e97-5b79-4a5f-a013-0bbb5bd1f7e5-000000@email.amazonses.com>
+References: <13810431525.20131020200555@eikelenboom.it>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the arm tree got a conflict in
+On Sun, 20 Oct 2013, Sander Eikelenboom wrote:
 
-	drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+> With i 3.12.0-rc6 kernel i encounterd this splat:
 
-caused by commits 1bfa2c4 (DMA-API: net: broadcom/bnx2x: replace
-dma_set_mask()+dma_set_coherent_mask() with new helper) and edd3147
-(bnx2x: Set NETIF_F_HIGHDMA unconditionally).
+Likely some slab object got corrupted.
 
-I fixed it up (see below). Please verify that the resolution looks good.
+Please enable debugging by either specifying slub_debug on the kernel
+command line or enabling CONFIG_SLUB_DEBUG_ON
 
-Thanks,
-Thierry
----
-diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index b42f89c,38bf998..767aafb
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@@ -12117,12 -12079,9 +12117,8 @@@ static int bnx2x_set_coherency_mask(str
-  {
-  	struct device *dev = &bp->pdev->dev;
-  
-- 	if (dma_set_mask(dev, DMA_BIT_MASK(64)) == 0) {
-- 		if (dma_set_coherent_mask(dev, DMA_BIT_MASK(64)) != 0) {
-- 			dev_err(dev, "dma_set_coherent_mask failed, aborting\n");
-- 			return -EIO;
-- 		}
-- 	} else if (dma_set_mask(dev, DMA_BIT_MASK(32)) != 0) {
- -	if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64)) == 0) {
- -		bp->flags |= USING_DAC_FLAG;
- -	} else if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32)) != 0) {
-++	if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64)) != 0 &&
-++	    dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32)) != 0) {
-  		dev_err(dev, "System does not support DMA, aborting\n");
-  		return -EIO;
-  	}
