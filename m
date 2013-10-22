@@ -1,134 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3JVWIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:08:21 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:9349 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab3JVWIU (ORCPT
+	id S1755360Ab3JVWMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:12:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34060 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748Ab3JVWMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:08:20 -0400
-Date: Tue, 22 Oct 2013 16:08:03 -0600
-From: jerry.hoemann@hp.com
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-Message-ID: <20131022220803.GA32387@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
+	Tue, 22 Oct 2013 18:12:00 -0400
+Date: Wed, 23 Oct 2013 00:11:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
+ of the parent domain's group
+Message-ID: <20131022221138.GJ2490@laptop.programming.kicks-ass.net>
+References: <20131021114002.13291.31478.stgit@drishya>
+ <20131021114442.13291.99344.stgit@drishya>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131021114442.13291.99344.stgit@drishya>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 12:01:18AM +0900, HATAYAMA Daisuke wrote:
-> This patch set is to allow kdump 2nd kernel to wake up multiple CPUs
-> even if 1st kernel crashs on some AP, a continueing work from:
+On Mon, Oct 21, 2013 at 05:14:42PM +0530, Vaidyanathan Srinivasan wrote:
+>  kernel/sched/fair.c |   19 +++++++++++++------
+>  1 file changed, 13 insertions(+), 6 deletions(-)
 > 
->   [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
->   https://lkml.org/lkml/2013/10/16/300.
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7c70201..12f0eab 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5807,12 +5807,19 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>  
+>  	rcu_read_lock();
+>  	for_each_domain(cpu, sd) {
+> +		struct sched_domain *sd_parent = sd->parent;
+> +		struct sched_group *sg;
+> +		struct sched_group_power *sgp;
+> +		int nr_busy;
+> +
+> +		if (sd_parent) {
+> +			sg = sd_parent->groups;
+> +			sgp = sg->sgp;
+> +			nr_busy = atomic_read(&sgp->nr_busy_cpus);
+> +
+> +			if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+> +				goto need_kick_unlock;
+> +		}
+>  
+>  		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+>  		    && (cpumask_first_and(nohz.idle_cpus_mask,
 > 
-> In this version, basic design has changed. Now users need to figure
-> out initial APIC ID of BSP in the 1st kernel and configures kernel
-> parameter for the 2nd kernel manually using disable_cpu_apic kernel
-> parameter to be newly introduced in this patch set. This design is
-> more flexible than the previous version in that we no longer have to
-> rely on ACPI/MP table to get initial APIC ID of BSP.
-> 
-> Sorry, this patch set have not include in-source documentation
-> requested by Borislav Petkov yet, but I'll post it later separately,
-> which would be better to focus on documentation reviewing.
-> 
-> ChangeLog
-> 
-> v3 => v4)
-> 
-> - Rebased on top of v3.12-rc6
-> 
-> - Basic design has been changed. Now users need to figure out initial
->   APIC ID of BSP in the 1st kernel and configures kernel parameter for
->   the 2nd kernel manually using disable_cpu_apic kernel parameter to
->   be newly introduced in this patch set. This design is more flexible
->   than the previous version in that we no longer have to rely on
->   ACPI/MP table to get initial APIC ID of BSP.
+
+Almost I'd say; what happens on !sd_parent && SD_ASYM_PACKING ?
+
+Also, this made me look at the nr_busy stuff again, and somehow that
+entire thing makes me a little sad.
+
+Can't we do something like the below and cut that nr_busy sd iteration
+short?
+
+This nohz stuff really needs to be re-thought and made more scalable --
+its a royal pain :/
 
 
-Do you literally mean a human at each boot will have to configure
-the kdump configuration files for passing disable_cpu_apic?
-Or do you envision the setting of disable_cpu_apic being put into
-the kdump initialization scripts?
+ kernel/sched/core.c  |  4 ++++
+ kernel/sched/fair.c  | 21 +++++++++++++++------
+ kernel/sched/sched.h |  5 ++---
+ 3 files changed, 21 insertions(+), 9 deletions(-)
 
-thanks
-
-Jerry
-
-> 
-> v2 => v3)
-> 
-> - Change default value of boot_cpu_is_bsp to true.
-> 
-> - Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
->   processor family is larger than or equal to 6 in order to avoid
->   invalid opcode exception on processors where MSR_IA32_APICBASE is
->   not supported.
-> 
-> v1 => v2)
-> 
-> - Rebased on top of v3.12-rc5.
-> 
-> - Fix linking time error of boot_cpu_is_bsp_init() in case of
->   CONFIG_LOCAL_APIC disabled by adding empty static inline function
->   instead.
-> 
-> - Fix missing feature check by means of cpu_has_apic macro in
->   boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
-> 
->   NOTE: I've checked local apic-present case only; I don't have any
->   x86 processor without local apic.
-> 
-> - Add __init annotation to boot_cpu_is_bsp_init().
-> 
-> Test
-> 
-> - built with and without CONFIG_LOCAL_APIC
-> - tested x86_64 in case of acpi and MP table
-> 
-> ---
-> 
-> HATAYAMA Daisuke (3):
->       x86, apic: Don't count the CPU with BP flag from MP table as booting-up CPU
->       x86, apic: Add disable_cpu_apicid kernel parameter
->       Documentation, x86, apic, kexec: Add disable_cpu_apicid kernel parameter
-> 
-> 
->  Documentation/kernel-parameters.txt |    9 +++++++++
->  arch/x86/kernel/apic/apic.c         |   29 +++++++++++++++++++++++++++++
->  arch/x86/kernel/mpparse.c           |    1 -
->  3 files changed, 38 insertions(+), 1 deletion(-)
-> 
-> -- 
-> 
-> Thanks.
-> HATAYAMA, Daisuke
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c06b8d3..89db8dc 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5271,6 +5271,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
+ DEFINE_PER_CPU(int, sd_llc_size);
+ DEFINE_PER_CPU(int, sd_llc_id);
+ DEFINE_PER_CPU(struct sched_domain *, sd_numa);
++DEFINE_PER_CPU(struct sched_domain *, sd_busy);
+ 
+ static void update_top_cache_domain(int cpu)
+ {
+@@ -5290,6 +5291,9 @@ static void update_top_cache_domain(int cpu)
+ 
+ 	sd = lowest_flag_domain(cpu, SD_NUMA);
+ 	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
++
++	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING);
++	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
+ }
+ 
+ /*
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 813dd61..3d5141e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6512,19 +6512,23 @@ static inline void nohz_balance_exit_idle(int cpu)
+ 	}
+ }
+ 
+-static inline void set_cpu_sd_state_busy(void)
++static inline void set_cpu_sd_state_busy(int cpu)
+ {
+ 	struct sched_domain *sd;
++	struct rq *rq = cpu_rq(cpu);
+ 
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = rcu_dereference_check_sched_domain(rq->sd);
+ 
+ 	if (!sd || !sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 0;
+ 
+-	for (; sd; sd = sd->parent)
++	for (; sd; sd = sd->parent) {
+ 		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++		if (sd == per_cpu(sd_busy, cpu))
++			break;
++	}
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6532,16 +6536,21 @@ static inline void set_cpu_sd_state_busy(void)
+ void set_cpu_sd_state_idle(void)
+ {
+ 	struct sched_domain *sd;
++	int cpu = smp_processor_id();
++	struct rq *rq = cpu_rq(cpu);
+ 
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = rcu_dereference_check_sched_domain(rq->sd);
+ 
+ 	if (!sd || sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 1;
+ 
+-	for (; sd; sd = sd->parent)
++	for (; sd; sd = sd->parent) {
+ 		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++		if (sd == per_cpu(sd_busy, cpu))
++			break;
++	}
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6756,7 +6765,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 	* We may be recently in ticked or tickless idle mode. At the first
+ 	* busy tick after returning from idle, we will update the busy stats.
+ 	*/
+-	set_cpu_sd_state_busy();
++	set_cpu_sd_state_busy(cpu);
+ 	nohz_balance_exit_idle(cpu);
+ 
+ 	/*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ffc7087..80c5fd2 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -599,9 +599,8 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
+ 	struct sched_domain *sd, *hsd = NULL;
+ 
+ 	for_each_domain(cpu, sd) {
+-		if (!(sd->flags & flag))
+-			break;
+-		hsd = sd;
++		if (sd->flags & flag)
++			hsd = sd;
+ 	}
+ 
+ 	return hsd;
 
