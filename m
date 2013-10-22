@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3JVOM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 10:12:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54018 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3JVOM4 (ORCPT
+	id S1753271Ab3JVOTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:19:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64453 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752319Ab3JVOTj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 10:12:56 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, kishon@ti.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH] mfd: ti_am335x_tscadc: avoid possible deadlock of reg_lock
-Date: Tue, 22 Oct 2013 16:12:39 +0200
-Message-Id: <1382451159-25183-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 22 Oct 2013 10:19:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="396766084"
+From: "Woodhouse, David" <david.woodhouse@intel.com>
+To: Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jan Beulich <JBeulich@suse.com>,
+        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "grub-devel@gnu.org" <grub-devel@gnu.org>,
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        "Peter Jones" <pjones@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+Thread-Topic: EFI and multiboot2 devlopment work for Xen
+Thread-Index: AQHOzl025cADmYb3WkedBDuSo7z4BJn/HKwAgABUwACAAPKqAIAAAVcAgAAD9ICAAAPxgIAAPmUAgAAC24CAABf4ug==
+Date: Tue, 22 Oct 2013 14:18:52 +0000
+Message-ID: <7gf8ufyngxh0extp8a0ifnrp.1382451526144@email.android.com>
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+	 <20131021135437.GD1283@fenchurch.internal.datastacks.com>
+	 <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
+	 <1382433990.1657.66.camel@hastur.hellion.org.uk>
+	 <5266620602000078000FCA48@nat28.tlf.novell.com>
+	 <1382435127.1657.70.camel@hastur.hellion.org.uk>
+	 <526668A502000078000FCA7B@nat28.tlf.novell.com>
+	 <20131022134252.GA27302@phenom.dumpdata.com>,<1382449985.18283.12.camel@hastur.hellion.org.uk>
+In-Reply-To: <1382449985.18283.12.camel@hastur.hellion.org.uk>
+Reply-To: "Woodhouse, David" <david.woodhouse@intel.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the addition of continuous sampling mode and shared irq support,
-the reg_lock lock can be taken with and without interrupts. This patch
-uses the *_irq* variant which should be used in order to avaoid a deadlock.
 
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/mfd/ti_am335x_tscadc.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+> I wonder why Linux can't make the EFI calls to fetch them itself?
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index baaf5a8..912a41f 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -56,21 +56,25 @@ EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
- 
- void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
- {
--	spin_lock(&tsadc->reg_lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tsadc->reg_lock, flags);
- 	tsadc->reg_se_cache = tscadc_readl(tsadc, REG_SE);
- 	tsadc->reg_se_cache |= val;
- 	am335x_tsc_se_update(tsadc);
--	spin_unlock(&tsadc->reg_lock);
-+	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
- }
- EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
- 
- void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val)
- {
--	spin_lock(&tsadc->reg_lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tsadc->reg_lock, flags);
- 	tsadc->reg_se_cache = tscadc_readl(tsadc, REG_SE);
- 	tsadc->reg_se_cache &= ~val;
- 	am335x_tsc_se_update(tsadc);
--	spin_unlock(&tsadc->reg_lock);
-+	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
- }
- EXPORT_SYMBOL_GPL(am335x_tsc_se_clr);
- 
--- 
-1.8.4.rc3
+It can. It does. It prefers to. This is what the "EFI boot stub" is all about. But grub2 is crack-inspired and likes to do all kinds of crap that it shouldn't. It is an exercise in complexity for complexity's sake. The 'linuxefi' method is actually not really Linux-specific; it just boots an EFI executable (which the bzImage *is* when compiled that way).
+
+Seriously, forget bootloaders (especially grub2) and make it a COFF/PE executable.  Then everything should just work, including Secure Boot etc.
+
+And bootloaders can still load that, of course.
+
+--
+dwmw2
+(Apologies for HTML and top-posting; Android mailer is broken.)
+
+
+
+-------- Original message --------
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: 22/10/2013 2:53 PM (GMT+00:00)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jan Beulich <JBeulich@suse.com>,ross.philipson@citrix.com,stefano.stabellini@eu.citrix.com,grub-devel@gnu.org,"Woodhouse, David" <david.woodhouse@intel.com>,"Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,xen-devel@lists.xen.org,boris.ostrovsky@oracle.com,Daniel Kiper <daniel.kiper@oracle.com>,Peter Jones <pjones@redhat.com>,linux-kernel@vger.kernel.org,keir@xen.org
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+
+
+On Tue, 2013-10-22 at 09:42 -0400, Konrad Rzeszutek Wilk wrote:
+
+> Looking at the Fedora GRUB2 source, the 'struct linux_kernel_header' is defined
+> in the linux/Documentation/x86/boot.txt and hpa is pretty strict
+> about making it backwards compatible. It also seems to support Xen!
+>
+> (Interestingly enough we do have this structure in the code: see
+> setup_header in arch/x86/bzimage.c)
+
+There will be another usage in tools/libxc/...bzimage too
+
+FWIW I think we only use this stuff for the magic number/version and the
+payload_offset/length fields, which we do in order to extract the
+payload (ELF file) for booting dom0 and domU. It's not AFAIK used for
+booting Xen itself or lets say, that's not why I added it ;-)).
+
+> Which in the GRUB2 is being constructed by parsing the EFI
+> data structures. But Linux concentrates on the EFI parts and mostly
+> ignores the rest. So this is more about passing those EFI values
+> downstream.
+
+I wonder why Linux can't make the EFI calls to fetch them itself?
+
+Ian.
 
