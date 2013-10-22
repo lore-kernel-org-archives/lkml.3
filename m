@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3JVNvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 09:51:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57854 "EHLO comal.ext.ti.com"
+	id S1753395Ab3JVNwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 09:52:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38809 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab3JVNvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 09:51:09 -0400
-Date: Tue, 22 Oct 2013 08:50:40 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Reichel <sre@debian.org>
-CC: Sebastian Reichel <sre@ring0.de>, <linux-input@vger.kernel.org>,
-        "=?iso-8859-1?Q?'Beno=EEt?= Cousson'" <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Input: twl4030-pwrbutton - add device tree support
-Message-ID: <20131022135040.GN9340@gimli>
-Reply-To: <balbi@ti.com>
-References: <1382446504-27837-1-git-send-email-sre@debian.org>
- <1382446504-27837-2-git-send-email-sre@debian.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XFI+TFG+M3u0jUjZ"
-Content-Disposition: inline
-In-Reply-To: <1382446504-27837-2-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752351Ab3JVNwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 09:52:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="422919780"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH] x86, mm: get ASLR work for hugetlb mappings
+Date: Tue, 22 Oct 2013 16:52:20 +0300
+Message-Id: <1382449940-24357-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XFI+TFG+M3u0jUjZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.
+The reason is genereic hugetlb_get_unmapped_area() which is used on
+x86-64. It doesn't support randomization and use bottom-up unmapped area
+lookup, instead of usual top-down on x86-64.
 
-Hi,
+x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+x86-32.
 
-On Tue, Oct 22, 2013 at 02:55:01PM +0200, Sebastian Reichel wrote:
-> Add device tree support for twl4030 power button driver.
->=20
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  drivers/input/misc/twl4030-pwrbutton.c | 19 +++++++++++++++----
->  1 file changed, 15 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/=
-twl4030-pwrbutton.c
-> index b9a05fd..e450947 100644
-> --- a/drivers/input/misc/twl4030-pwrbutton.c
-> +++ b/drivers/input/misc/twl4030-pwrbutton.c
-> @@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
->  	return IRQ_HANDLED;
->  }
-> =20
-> -static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
-> +static int twl4030_pwrbutton_probe(struct platform_device *pdev)
->  {
->  	struct input_dev *pwr;
->  	int irq =3D platform_get_irq(pdev, 0);
-> @@ -106,16 +106,27 @@ static int __exit twl4030_pwrbutton_remove(struct p=
-latform_device *pdev)
->  	return 0;
->  }
-> =20
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] =3D {
-> +       { .compatible =3D "ti,twl4030-pwrbutton" },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
-> +#define twl4030_pwrbutton_dt_match of_match_ptr(twl4030_pwrbutton_dt_mat=
-ch_table)
-> +#else
-> +#define twl4030_pwrbutton_dt_match NULL
-> +#endif
+Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.
+It fixes the issue and make hugetlb use top-down unmapped area lookup.
 
-you don't ned this trickery.. just always device the match table.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+---
+ arch/x86/include/asm/page.h    | 1 +
+ arch/x86/include/asm/page_32.h | 4 ----
+ arch/x86/mm/hugetlbpage.c      | 9 +++------
+ 3 files changed, 4 insertions(+), 10 deletions(-)
 
---=20
-balbi
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index c87892442e..775873d3be 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -71,6 +71,7 @@ extern bool __virt_addr_valid(unsigned long kaddr);
+ #include <asm-generic/getorder.h>
+ 
+ #define __HAVE_ARCH_GATE_AREA 1
++#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
+ 
+ #endif	/* __KERNEL__ */
+ #endif /* _ASM_X86_PAGE_H */
+diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
+index 4d550d04b6..904f528cc8 100644
+--- a/arch/x86/include/asm/page_32.h
++++ b/arch/x86/include/asm/page_32.h
+@@ -5,10 +5,6 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
+-#ifdef CONFIG_HUGETLB_PAGE
+-#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
+-#endif
+-
+ #define __phys_addr_nodebug(x)	((x) - PAGE_OFFSET)
+ #ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 9d980d88b7..8c9f647ff9 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -87,9 +87,7 @@ int pmd_huge_support(void)
+ }
+ #endif
+ 
+-/* x86_64 also uses this file */
+-
+-#ifdef HAVE_ARCH_HUGETLB_UNMAPPED_AREA
++#ifdef CONFIG_HUGETLB_PAGE
+ static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
+ 		unsigned long addr, unsigned long len,
+ 		unsigned long pgoff, unsigned long flags)
+@@ -99,7 +97,7 @@ static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
+ 
+ 	info.flags = 0;
+ 	info.length = len;
+-	info.low_limit = TASK_UNMAPPED_BASE;
++	info.low_limit = current->mm->mmap_legacy_base;
+ 	info.high_limit = TASK_SIZE;
+ 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
+ 	info.align_offset = 0;
+@@ -172,8 +170,7 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
+ 		return hugetlb_get_unmapped_area_topdown(file, addr, len,
+ 				pgoff, flags);
+ }
+-
+-#endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/
++#endif /* CONFIG_HUGETLB_PAGE */
+ 
+ #ifdef CONFIG_X86_64
+ static __init int setup_hugepagesz(char *opt)
+-- 
+1.8.4.rc3
 
---XFI+TFG+M3u0jUjZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZoKvAAoJEIaOsuA1yqREH5EP/RS0Nl8ppNk75V08SuxgTsWZ
-rCJvBEVX8CQEz2Qc2uEswR1N5YxR47BCjyY4yY2Rx2joUGY+t8jXtiuH+4c/luc5
-HOnOS2JbO8AYlRAjqFaLi/vTdfCVw8O7hsL5yGdHYQoHDdZCf2ts0FR4aenryVZG
-LRZwXnRIR8KVIsk+yuIMA71ngvpsdBUa5j05RZuNzxyfTqU84ENawBZs31kRVbTQ
-v49BJiWHbUtFVpVUgukMTw/WC6Dqzi1x3A4FcbgEFrDhpd+TOQYCencLJPdsIfiE
-J7WUmfVA2X5A86Kl9u6TFAgS5p+yo4kOtgnTG9k1QO1LqAGJQu4to1fHd93P99mH
-lLEqkLEcjYyxUdOYVLynJT3wRrkkt+8rpCa21mk5ie30Rv7EmHp8arQBcq2Ls39d
-j/4QZ4zCeq+m/VNSfKaQeA/aJ7PrD9pOPWlolzxwBAPl2fapxIIRsy8LCvQuM+A8
-jXe2iht2ZKUQKHrQJASNcuaboAo/Xe0k9GrYMYTO9mcVEpa6gaqEctPZ9lxlY/3M
-PMNQVqeLCG5DoFv+LCLB68CXYnse8H85ZN2GZEJ/jC8Tuc+u6HVn4UeCqq/6gaoG
-TR8NnvkAWKqFuSaJkZMkmb6VlZ5V+mOreLm4M5x5ADWE2IXpS2NScm0wuACJSZiC
-tPSwYj0hmOYAyZ6b+5kK
-=Uejm
------END PGP SIGNATURE-----
-
---XFI+TFG+M3u0jUjZ--
