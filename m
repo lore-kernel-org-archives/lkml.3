@@ -1,347 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3JVP2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 11:28:45 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:37732 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab3JVP2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 11:28:43 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH RESEND v5 5/5] ARM: rockchip: add smp bringup code
-Date: Tue, 22 Oct 2013 17:28:29 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Ulrich Prinz <ulrich.prinz@googlemail.com>,
-        Matt Sealey <neko@bakuhatsu.net>, Fabio Estevam <festevam@gmail.com>
-References: <201310221724.21550.heiko@sntech.de>
-In-Reply-To: <201310221724.21550.heiko@sntech.de>
+	id S1754263Ab3JVP3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 11:29:13 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:43835 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3JVP3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 11:29:11 -0400
+Date: Tue, 22 Oct 2013 17:29:05 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1248998992.20131022172905@eikelenboom.it>
+To: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at mm/slub.c:3338!  RIP  [<ffffffff8117912c>] kfree+0x20c/0x210
+In-Reply-To: <00000141e0b97e8b-1c313e97-5b79-4a5f-a013-0bbb5bd1f7e5-000000@email.amazonses.com>
+References: <13810431525.20131020200555@eikelenboom.it> <00000141e0b97e8b-1c313e97-5b79-4a5f-a013-0bbb5bd1f7e5-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201310221728.29854.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the necessary smp-operations and startup code to use
-additional cores on Rockchip SoCs.
 
-We currently hog the power management unit in the smp code, as it is
-necessary to control the power to the cpu core and nothing else is
-currently using it, so a generic implementation can be done later.
+Tuesday, October 22, 2013, 5:12:35 PM, you wrote:
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
----
- arch/arm/mach-rockchip/Makefile   |    1 +
- arch/arm/mach-rockchip/core.h     |   22 +++++
- arch/arm/mach-rockchip/headsmp.S  |   30 ++++++
- arch/arm/mach-rockchip/platsmp.c  |  195 +++++++++++++++++++++++++++++++++++++
- arch/arm/mach-rockchip/rockchip.c |    2 +
- 5 files changed, 252 insertions(+)
- create mode 100644 arch/arm/mach-rockchip/core.h
- create mode 100644 arch/arm/mach-rockchip/headsmp.S
- create mode 100644 arch/arm/mach-rockchip/platsmp.c
+> On Sun, 20 Oct 2013, Sander Eikelenboom wrote:
 
-diff --git a/arch/arm/mach-rockchip/Makefile b/arch/arm/mach-rockchip/Makefile
-index 1547d4f..4377a14 100644
---- a/arch/arm/mach-rockchip/Makefile
-+++ b/arch/arm/mach-rockchip/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_ARCH_ROCKCHIP) += rockchip.o
-+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
-new file mode 100644
-index 0000000..e2e7c9d
---- /dev/null
-+++ b/arch/arm/mach-rockchip/core.h
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+extern char rockchip_secondary_trampoline;
-+extern char rockchip_secondary_trampoline_end;
-+
-+extern unsigned long rockchip_boot_fn;
-+extern void rockchip_secondary_startup(void);
-+
-+extern struct smp_operations rockchip_smp_ops;
-diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
-new file mode 100644
-index 0000000..3dd72f7
---- /dev/null
-+++ b/arch/arm/mach-rockchip/headsmp.S
-@@ -0,0 +1,30 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+
-+ENTRY(rockchip_secondary_startup)
-+	bl	v7_invalidate_l1
-+	b	secondary_startup
-+ENDPROC(rockchip_secondary_startup)
-+
-+ENTRY(rockchip_secondary_trampoline)
-+	ldr	pc, 1f
-+ENDPROC(rockchip_secondary_trampoline)
-+	.globl	rockchip_boot_fn
-+rockchip_boot_fn:
-+1:	.space	4
-+
-+ENTRY(rockchip_secondary_trampoline_end)
-diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
-new file mode 100644
-index 0000000..5b3f69c
---- /dev/null
-+++ b/arch/arm/mach-rockchip/platsmp.c
-@@ -0,0 +1,195 @@
-+/*
-+ * Copyright (c) 2013 MundoReader S.L.
-+ * Author: Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/smp.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/smp_scu.h>
-+#include <asm/smp_plat.h>
-+#include <asm/mach/map.h>
-+
-+#include "core.h"
-+
-+static void __iomem *scu_base_addr;
-+static void __iomem *sram_base_addr;
-+static int ncores;
-+
-+/*
-+ * temporary PMU handling
-+ */
-+
-+#define PMU_PWRDN_CON		0x08
-+#define PMU_PWRDN_ST		0x0c
-+
-+static void __iomem *pmu_base_addr;
-+
-+static inline bool pmu_power_domain_is_on(int pd)
-+{
-+	return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
-+}
-+
-+static void pmu_set_power_domain(int pd, bool on)
-+{
-+	u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
-+	if (on)
-+		val &= ~BIT(pd);
-+	else
-+		val |=  BIT(pd);
-+	writel(val, pmu_base_addr + PMU_PWRDN_CON);
-+
-+	while (pmu_power_domain_is_on(pd) != on) { }
-+}
-+
-+/*
-+ * Handling of CPU cores
-+ */
-+
-+static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
-+					     struct task_struct *idle)
-+{
-+	if (!sram_base_addr || !pmu_base_addr) {
-+		pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
-+		return -ENXIO;
-+	}
-+
-+	if (cpu >= ncores) {
-+		pr_err("%s: cpu %d outside maximum number of cpus %d\n",
-+							__func__, cpu, ncores);
-+		return -ENXIO;
-+	}
-+
-+	/* start the core */
-+	pmu_set_power_domain(0 + cpu, true);
-+
-+	return 0;
-+}
-+
-+/**
-+ * rockchip_smp_prepare_sram - populate necessary sram block
-+ * Starting cores execute the code residing at the start of the on-chip sram
-+ * after power-on. Therefore make sure, this sram region is reserved and
-+ * big enough. After this check, copy the trampoline code that directs the
-+ * core to the real startup code in ram into the sram-region.
-+ * @node: mmio-sram device node
-+ */
-+static int __init rockchip_smp_prepare_sram(struct device_node *node)
-+{
-+	unsigned int trampoline_sz = &rockchip_secondary_trampoline_end -
-+					    &rockchip_secondary_trampoline;
-+	const __be32 *avail_list = NULL;
-+	int avail_size;
-+	int astart = -1;
-+	unsigned int asize;
-+	unsigned int i;
-+
-+	avail_list = of_get_property(node, "available",
-+					&avail_size);
-+	if (!avail_list) {
-+		pr_err("%s: available property for sram missing\n",
-+		       __func__);
-+		return -ENOENT;
-+	}
-+
-+	avail_size /= sizeof(*avail_list);
-+	if (!avail_size || avail_size % 2) {
-+		pr_err("%s: wrong number of arguments for available chunks\n",
-+		       __func__);
-+		return -EINVAL;
-+	}
-+
-+	/* Check that the area for the trampoline is not generally available */
-+	for (i = 0; i < avail_size; i += 2) {
-+		/* get the next reserved block */
-+		astart = be32_to_cpu(*avail_list++);
-+		asize = be32_to_cpu(*avail_list++);
-+
-+		if (astart + asize < trampoline_sz) {
-+			pr_err("%s: trampoline area in sram is not reserved\n",
-+			       __func__);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	sram_base_addr = of_iomap(node, 0);
-+
-+	/* set the boot function for the sram code */
-+	rockchip_boot_fn = virt_to_phys(rockchip_secondary_startup);
-+
-+	/* copy the trampoline to sram, that runs during startup of the core */
-+	memcpy(sram_base_addr, &rockchip_secondary_trampoline, trampoline_sz);
-+	flush_cache_all();
-+	outer_clean_range(0, trampoline_sz);
-+
-+	dsb_sev();
-+
-+	return 0;
-+}
-+
-+static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	struct device_node *node;
-+	unsigned int i;
-+
-+	node = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
-+	if (!node) {
-+		pr_err("%s: missing scu\n", __func__);
-+		return;
-+	}
-+
-+	scu_base_addr = of_iomap(node, 0);
-+	if (!scu_base_addr) {
-+		pr_err("%s: could not map scu registers\n", __func__);
-+		return;
-+	}
-+
-+	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-sram");
-+	if (!node) {
-+		pr_err("%s: could not find sram dt node\n", __func__);
-+		return;
-+	}
-+
-+	if (rockchip_smp_prepare_sram(node))
-+		return;
-+
-+	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
-+	if (!node) {
-+		pr_err("%s: could not find sram dt node\n", __func__);
-+		return;
-+	}
-+
-+	pmu_base_addr = of_iomap(node, 0);
-+
-+	/*
-+	 * While the number of cpus is gathered from dt, also get the number
-+	 * of cores from the scu to verify this value when booting the cores.
-+	 */
-+	ncores = scu_get_core_count(scu_base_addr);
-+
-+	scu_enable(scu_base_addr);
-+
-+	/* Make sure that all cores except the first are really off */
-+	for (i = 1; i < ncores; i++)
-+		pmu_set_power_domain(0 + i, false);
-+}
-+
-+struct smp_operations rockchip_smp_ops __initdata = {
-+	.smp_prepare_cpus	= rockchip_smp_prepare_cpus,
-+	.smp_boot_secondary	= rockchip_boot_secondary,
-+};
-diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
-index 724d2d8..a0c1f19 100644
---- a/arch/arm/mach-rockchip/rockchip.c
-+++ b/arch/arm/mach-rockchip/rockchip.c
-@@ -24,6 +24,7 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include "core.h"
- 
- static void __init rockchip_timer_init(void)
- {
-@@ -46,6 +47,7 @@ static const char * const rockchip_board_dt_compat[] = {
- };
- 
- DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
-+	.smp		= smp_ops(rockchip_smp_ops),
- 	.init_machine	= rockchip_dt_init,
- 	.init_time	= rockchip_timer_init,
- 	.dt_compat	= rockchip_board_dt_compat,
--- 
-1.7.10.4
+>> With i 3.12.0-rc6 kernel i encounterd this splat:
+
+> Likely some slab object got corrupted.
+
+> Please enable debugging by either specifying slub_debug on the kernel
+> command line or enabling CONFIG_SLUB_DEBUG_ON
+
+
+Well since it seems a "one timer" so i'm not very sure if and when i would encounter it again.
+It seems "slub_debug" on the commandline would do the same, so i will run my VM with that for some time, see if triggers again.
+
+--
+Sander
 
