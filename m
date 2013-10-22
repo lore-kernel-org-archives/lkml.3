@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3JVWcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:32:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34339 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab3JVWbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:31:20 -0400
-Message-ID: <5266FCB5.8080904@infradead.org>
-Date: Tue, 22 Oct 2013 15:31:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756002Ab3JVWdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:33:21 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:34501 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755982Ab3JVWdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:33:17 -0400
+Date: Tue, 22 Oct 2013 17:33:14 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Dave Chinner <david@fromorbit.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: Alex Elder <elder@kernel.org>, open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+Message-ID: <20131022223314.GQ10553@sgi.com>
+References: <20131021231849.GL10553@sgi.com>
+ <20131021235601.GG4446@dastard>
+ <5265C03B.50701@sandeen.net>
+ <20131022001732.GI4446@dastard>
+ <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
+ <20131022203946.GB2797@dastard>
+ <5266E4BD.8030601@sandeen.net>
+ <20131022210300.GC2797@dastard>
+ <5266EBF0.901@sandeen.net>
+ <20131022220254.GD2797@dastard>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH resend] platform/x86: fix asus-wmi build error
-References: <523749AB.7010805@infradead.org>
-In-Reply-To: <523749AB.7010805@infradead.org>
-X-Forwarded-Message-Id: <523749AB.7010805@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131022220254.GD2797@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Gents,
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Wed, Oct 23, 2013 at 09:02:54AM +1100, Dave Chinner wrote:
+> On Tue, Oct 22, 2013 at 04:19:44PM -0500, Eric Sandeen wrote:
+> > On 10/22/13 4:03 PM, Dave Chinner wrote:
+> > > On Tue, Oct 22, 2013 at 03:49:01PM -0500, Eric Sandeen wrote:
+> > >> On 10/22/13 3:39 PM, Dave Chinner wrote:
+> > >>> On Tue, Oct 22, 2013 at 08:12:51AM -0200, Geyslan Gregório Bem wrote:
+> > >>>> 2013/10/21 Dave Chinner <david@fromorbit.com>:
+> > >>>>> On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
+> > >>>>>> On 10/21/13 6:56 PM, Dave Chinner wrote:
+> > >>>>>>> On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
+> > >>>>>
+> > >>>>> Yes, but to continue the Devil's Advocate argument, the purpose of
+> > >>>>> debug code isn't to enlightent the casual reader or drive-by
+> > >>>>> patchers - it's to make life easier for people who actually spend
+> > >>>>> time debugging the code. And the people who need the debug code
+> > >>>>> are expected to understand why an ASSERT is not necessary. :)
+> > >>>>>
+> > >>>> Dave, Eric and Ben,
+> > >>>>
+> > >>>> This was catched by coverity (CID 102348).
+> > >>>
+> > >>> You should have put that in the patch description.
+> > >>>
+> > >>> Now I understand why there's been a sudden surge of irrelevant one
+> > >>> line changes from random people that have never touched XFS before.
+> > >>>
+> > >>> <sigh>
+> > >>>
+> > >>> Ok, lets churn the code just to shut the stupid checker up. This
+> > >>> doesn't fix a bug, it doesn't change behaviour, it just makes
+> > >>> coverity happy. Convert it to the for loop plus ASSERT I mentioned
+> > >>> in a previous message.
+> > >>
+> > >> You know, I respectfully disagree, but we might just have to agree
+> > >> to disagree.  The code, as it stands, tests for a null ptr
+> > >> and then dereferences it.  That's always going to raise some
+> > >> eyebrows, coverity or not, debug code or not, drive by or not.
+> > > 
+> > >> So even for future developers, making the code more self-
+> > >> documenting about this behavior would be a plus, whether it's by
+> > >> comment, by explicit ASSERT(), or whatever.  (I don't think
+> > >> that xfs_emerg() has quite enough context to make it obvious.)
+> > > 
+> > > Sure, but if weren't for the fact that Coverity warned about it,
+> > > nobody other that us people who work on the XFS code day in, day out
+> > > would have even cared about it.
+> > > 
+> > > That's kind of my point - again, as the Devil's Advocate - that
+> > > coverity is encouraging drive-by "fixes" by people who don't
+> > > actually understand any of the context, history and/or culture
+> > > surrounding the code being modified.
+> > 
+> > They shouldn't have to, the code (or comments therein) should
+> > make it obvious.  ;)  (in a perfect world...)
+> 
+> Obvious to whom, exactly?
+> 
+> That's the point I'm trying to make - "#ifdef DEBUG", two
+> comments indicating that it's validating the list and printing a
+> message just before it goes boom. That's pretty obvious code to
+> anyone who is used to tracking down corrupted list problems...
+> 
+> > > I have no problems with real bugs being fixed, but if we are
+> > > modifying code for no gain other than closing "coverity doesn't like
+> > > it" bugs, then we *should* be questioning whether the change is
+> > > really necessary.
+> > 
+> > But let's give Geyslan the benefit of the doubt, and realize that
+> > Coverity does find real things, and even if it originated w/ a
+> > Coverity CID, when one sees:
+> > 
+> > 	if (!a)
+> > 		printk("a thing\n")
+> > 
+> > 	a = a->b = . . . 
+> > 
+> > it looks suspicious to pretty much anyone.  I don't think Geyslan
+> > sent it to shut Coverity up, he sent it because it looked like
+> > a bug worth fixing (after Coverity spotted it).
+> > 
+> > Let's not be too hard on him for trying; I appreciate it more
+> > than spelling fixes and whitespace cleanups.  ;)
+> 
+> True, point taken. 
 
-Fix build error in asus_wmi.c when ASUS_WMI=y and ACPI_VIDEO=m
-by preventing that combination.
+So, uh, lets go with the ASSERT approach then?  It seems to be a reasonable
+middle ground.  ;)
 
-drivers/built-in.o: In function `asus_wmi_probe':
-asus-wmi.c:(.text+0x65ddb4): undefined reference to `acpi_video_unregister'
-
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
-Found in linux-next but applies to mainline.
-
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20130916.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20130916/drivers/platform/x86/Kconfig
-@@ -504,6 +504,7 @@ config ASUS_WMI
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL || RFKILL = n
- 	depends on HOTPLUG_PCI
-+	depends on ACPI_VIDEO || ACPI_VIDEO = n
- 	select INPUT_SPARSEKMAP
- 	select LEDS_CLASS
- 	select NEW_LEDS
-
-
-
+Regards,
+	Ben
