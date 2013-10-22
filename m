@@ -1,121 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab3JVTiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:38:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60553 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753645Ab3JVTiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:38:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="396924877"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz, ning.li@intel.com,
-        ivan.gorinov@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        "Chen, Jie" <jie.d.chen@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 1/2] mrst_max3110: fix unbalanced IRQ issue during resume
-Date: Tue, 22 Oct 2013 12:42:09 -0700
-Message-Id: <1382470930-13807-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1755020Ab3JVTnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:43:07 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:56677 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645Ab3JVTnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 15:43:04 -0400
+Message-ID: <1382470976.3742.7.camel@buffalo>
+Subject: Re: Aw: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as
+ tpm maintainer
+From: Ashley D Lai <adlai@linux.vnet.ibm.com>
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Joel Schopp <jschopp@linux.vnet.ibm.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Date: Tue, 22 Oct 2013 14:42:56 -0500
+In-Reply-To: <trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
+References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
+	, <5266BC18.1080308@linux.vnet.ibm.com>
+	 <trinity-356b2e84-e82e-4025-ab01-6317202d5ba9-1382470388730@3capp-gmx-bs60>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102219-7164-0000-0000-000002AA08BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Chen, Jie" <jie.d.chen@intel.com>
+On Tue, 2013-10-22 at 21:33 +0200, Peter Huewe wrote:
+> Hi Joel,
+> 
+> > Gesendet: Dienstag, 22. Oktober 2013 um 19:55 Uhr
+> > Von: "Joel Schopp" <jschopp@linux.vnet.ibm.com>
+> 
+> > I have no objection to you adding yourself here. I do think we should
+> > probably also cut the list down at the same time as I don't think all
+> > the listed maintainers are active anymore. Also, the list is getting a
+> > bit unwieldy. If everyone maintains it nobody maintains it.
+> 
+> I agree with you here, this was also the reason I took it over when Kent stepped down and noone else stepped in of the current maintainers, leaving the subsystem more or less unmaintained.
+> 
+> About the removing the other maintainers: 
+> I already thought about that too and contacted the "maintainers" - 
+> I got a response back from Ashley (as its part of her job to look after the subsystem) and Marcel, stating that they are atleast looking at the patches.
+> No response from Rajiv, Leonidas or Sirrix :(
+> 
+> 
+> Thanks,
+> Peter
+> 
 
-During resume, a startup will request_irq again, meantime resume function's
-enable_irq will cause unbalanced IRQ issue.
-Fix this issue by moving request_irq to probe function.
+Rajiv has moved on to a different company.  Haven't heard from him for a
+while.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Chen, Jie <jie.d.chen@intel.com>
----
- drivers/tty/serial/mrst_max3110.c | 35 +++++++++++++++++------------------
- 1 file changed, 17 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/tty/serial/mrst_max3110.c b/drivers/tty/serial/mrst_max3110.c
-index a67e708..6f618dd 100644
---- a/drivers/tty/serial/mrst_max3110.c
-+++ b/drivers/tty/serial/mrst_max3110.c
-@@ -43,6 +43,7 @@
- 
- #include <linux/kthread.h>
- #include <linux/spi/spi.h>
-+#include <linux/pm.h>
- 
- #include "mrst_max3110.h"
- 
-@@ -491,19 +492,9 @@ static int serial_m3110_startup(struct uart_port *port)
- 	port->state->port.low_latency = 1;
- 
- 	if (max->irq) {
--		max->read_thread = NULL;
--		ret = request_irq(max->irq, serial_m3110_irq,
--				IRQ_TYPE_EDGE_FALLING, "max3110", max);
--		if (ret) {
--			max->irq = 0;
--			pr_err(PR_FMT "unable to allocate IRQ, polling\n");
--		}  else {
--			/* Enable RX IRQ only */
--			config |= WC_RXA_IRQ_ENABLE;
--		}
--	}
--
--	if (max->irq == 0) {
-+		/* Enable RX IRQ only */
-+		config |= WC_RXA_IRQ_ENABLE;
-+	} else {
- 		/* If IRQ is disabled, start a read thread for input data */
- 		max->read_thread =
- 			kthread_run(max3110_read_thread, max, "max3110_read");
-@@ -517,8 +508,6 @@ static int serial_m3110_startup(struct uart_port *port)
- 
- 	ret = max3110_out(max, config);
- 	if (ret) {
--		if (max->irq)
--			free_irq(max->irq, max);
- 		if (max->read_thread)
- 			kthread_stop(max->read_thread);
- 		max->read_thread = NULL;
-@@ -540,9 +529,6 @@ static void serial_m3110_shutdown(struct uart_port *port)
- 		max->read_thread = NULL;
- 	}
- 
--	if (max->irq)
--		free_irq(max->irq, max);
--
- 	/* Disable interrupts from this port */
- 	config = WC_TAG | WC_SW_SHDI;
- 	max3110_out(max, config);
-@@ -840,6 +826,16 @@ static int serial_m3110_probe(struct spi_device *spi)
- 		goto err_kthread;
- 	}
- 
-+	if (max->irq) {
-+		ret = request_irq(max->irq, serial_m3110_irq,
-+				IRQ_TYPE_EDGE_FALLING, "max3110", max);
-+		if (ret) {
-+			max->irq = 0;
-+			dev_warn(&spi->dev,
-+			"unable to allocate IRQ, will use polling method\n");
-+		}
-+	}
-+
- 	spi_set_drvdata(spi, max);
- 	pmax = max;
- 
-@@ -867,6 +863,9 @@ static int serial_m3110_remove(struct spi_device *dev)
- 
- 	free_page((unsigned long)max->con_xmit.buf);
- 
-+	if (max->irq)
-+		free_irq(max->irq, max);
-+
- 	if (max->main_thread)
- 		kthread_stop(max->main_thread);
- 
--- 
-1.8.4.rc3
+--Ashley Lai
 
