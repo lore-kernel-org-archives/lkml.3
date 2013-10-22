@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3JVNxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 09:53:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:12950 "EHLO SMTP.CITRIX.COM"
+	id S1753023Ab3JVOAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 10:00:22 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:36037 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752399Ab3JVNxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 09:53:11 -0400
-X-IronPort-AV: E=Sophos;i="4.93,548,1378857600"; 
-   d="scan'208";a="66024250"
-Message-ID: <1382449985.18283.12.camel@hastur.hellion.org.uk>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>, <ross.philipson@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <grub-devel@gnu.org>,
-        <david.woodhouse@intel.com>, <richard.l.maliszewski@intel.com>,
-        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        Peter Jones <pjones@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <keir@xen.org>
-Date: Tue, 22 Oct 2013 14:53:05 +0100
-In-Reply-To: <20131022134252.GA27302@phenom.dumpdata.com>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-	 <20131021135437.GD1283@fenchurch.internal.datastacks.com>
-	 <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
-	 <1382433990.1657.66.camel@hastur.hellion.org.uk>
-	 <5266620602000078000FCA48@nat28.tlf.novell.com>
-	 <1382435127.1657.70.camel@hastur.hellion.org.uk>
-	 <526668A502000078000FCA7B@nat28.tlf.novell.com>
-	 <20131022134252.GA27302@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
+	id S1751446Ab3JVOAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 10:00:20 -0400
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v5 0/5] ARM: rockchip: add smp functionality
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>,
+        Matt Sealey <neko@bakuhatsu.net>, Fabio Estevam <festevam@gmail.com>
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+Date: Tue, 22 Oct 2013 16:00:13 +0200
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Message-Id: <201310221600.13562.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 09:42 -0400, Konrad Rzeszutek Wilk wrote:
+This series enables the use of the additional cores on Rockchip
+Cortex-A9 SoCs.
 
-> Looking at the Fedora GRUB2 source, the 'struct linux_kernel_header' is defined
-> in the linux/Documentation/x86/boot.txt and hpa is pretty strict
-> about making it backwards compatible. It also seems to support Xen!
-> 
-> (Interestingly enough we do have this structure in the code: see
-> setup_header in arch/x86/bzimage.c)
+To achieve this, add the scu, the needed sram and power-management-unit.
 
-There will be another usage in tools/libxc/...bzimage too
+Tested on both a BQ Curie2 (rk3066a / dual core) and
+on a Radxa Rock (rk3188 / quad core).
 
-FWIW I think we only use this stuff for the magic number/version and the
-payload_offset/length fields, which we do in order to extract the
-payload (ELF file) for booting dom0 and domU. It's not AFAIK used for
-booting Xen itself or lets say, that's not why I added it ;-)).
+changes since v4:
+- rebase on top of the recent rk3188 board support
+- implement suggestion from Matt Sealey in moving the sram-limit from
+  marking reserved regions to marking available regions - hopefully
+  I got the usage right :-)
+- remove __CPUINIT as suggested by Fabio Estevam
 
-> Which in the GRUB2 is being constructed by parsing the EFI
-> data structures. But Linux concentrates on the EFI parts and mostly
-> ignores the rest. So this is more about passing those EFI values
-> downstream.
+changes since v3:
+- address comments from Rob Herring:
+  - split the gathering of the reserve-data into a separate loop
+  - spelling and style fixes
+- first patch only included for reference, already part of the
+  char-misc git tree
 
-I wonder why Linux can't make the EFI calls to fetch them itself?
+changes since v2:
+- rework the sram allocation following the suggestion from Philipp Zabel
 
-Ian.
+changes since v1:
+- add reserved block feature for mmio-sram, to not use two logical
+  sram nodes
+- the sram content is kept intact while the device is running, so
+  copying the trampoline is only needed once
+
+Heiko Stuebner (5):
+  misc: sram: add ability to limit used sram areas
+  ARM: rockchip: add snoop-control-unit
+  ARM: rockchip: add sram dt nodes and documentation
+  ARM: rockchip: add power-management-unit dt node
+  ARM: rockchip: add smp bringup code
+
+ .../devicetree/bindings/arm/rockchip/pmu.txt       |   16 ++
+ .../devicetree/bindings/arm/rockchip/smp-sram.txt  |   24 +++
+ Documentation/devicetree/bindings/misc/sram.txt    |    8 +
+ arch/arm/boot/dts/rk3066a.dtsi                     |    6 +
+ arch/arm/boot/dts/rk3188.dtsi                      |    6 +
+ arch/arm/boot/dts/rk3xxx.dtsi                      |   10 +
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/core.h                      |   22 +++
+ arch/arm/mach-rockchip/headsmp.S                   |   30 ++++
+ arch/arm/mach-rockchip/platsmp.c                   |  195 ++++++++++++++++++++
+ arch/arm/mach-rockchip/rockchip.c                  |    2 +
+ drivers/misc/sram.c                                |   51 ++++-
+ 13 files changed, 368 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
+ create mode 100644 arch/arm/mach-rockchip/core.h
+ create mode 100644 arch/arm/mach-rockchip/headsmp.S
+ create mode 100644 arch/arm/mach-rockchip/platsmp.c
+
+-- 
+1.7.10.4
 
