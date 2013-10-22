@@ -1,51 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3JVWA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:00:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60012 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab3JVWA0 (ORCPT
+	id S1755275Ab3JVWDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:03:30 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:9300 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754117Ab3JVWD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:00:26 -0400
-Date: Tue, 22 Oct 2013 18:00:23 -0400 (EDT)
-Message-Id: <20131022.180023.1141845387743361648.davem@davemloft.net>
-To: fengguang.wu@intel.com
-Cc: ebiederm@xmission.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: -27% netperf TCP_STREAM regression by "tcp_memcontrol: Kill
- struct tcp_memcontrol"
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131022214129.GB2715@localhost>
-References: <20131022214129.GB2715@localhost>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 15:00:26 -0700 (PDT)
+	Tue, 22 Oct 2013 18:03:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqkGALH1ZlJ5LAy1/2dsb2JhbABZgweDTrZJhT+BKxd0giUBAQQBJwsBIxYKAxAIAxgJJQ8FJQMhExUEh2cFuy0WjgeBMQeDH4EKA5gIkgiDOCiBLiQ
+Date: Wed, 23 Oct 2013 09:02:54 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Eric Sandeen <sandeen@sandeen.net>
+Cc: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+Message-ID: <20131022220254.GD2797@dastard>
+References: <5265B4D2.3000907@sandeen.net>
+ <20131021231849.GL10553@sgi.com>
+ <20131021235601.GG4446@dastard>
+ <5265C03B.50701@sandeen.net>
+ <20131022001732.GI4446@dastard>
+ <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
+ <20131022203946.GB2797@dastard>
+ <5266E4BD.8030601@sandeen.net>
+ <20131022210300.GC2797@dastard>
+ <5266EBF0.901@sandeen.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5266EBF0.901@sandeen.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: fengguang.wu@intel.com
-Date: Tue, 22 Oct 2013 22:41:29 +0100
+On Tue, Oct 22, 2013 at 04:19:44PM -0500, Eric Sandeen wrote:
+> On 10/22/13 4:03 PM, Dave Chinner wrote:
+> > On Tue, Oct 22, 2013 at 03:49:01PM -0500, Eric Sandeen wrote:
+> >> On 10/22/13 3:39 PM, Dave Chinner wrote:
+> >>> On Tue, Oct 22, 2013 at 08:12:51AM -0200, Geyslan Gregório Bem wrote:
+> >>>> 2013/10/21 Dave Chinner <david@fromorbit.com>:
+> >>>>> On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
+> >>>>>> On 10/21/13 6:56 PM, Dave Chinner wrote:
+> >>>>>>> On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
+> >>>>>
+> >>>>> Yes, but to continue the Devil's Advocate argument, the purpose of
+> >>>>> debug code isn't to enlightent the casual reader or drive-by
+> >>>>> patchers - it's to make life easier for people who actually spend
+> >>>>> time debugging the code. And the people who need the debug code
+> >>>>> are expected to understand why an ASSERT is not necessary. :)
+> >>>>>
+> >>>> Dave, Eric and Ben,
+> >>>>
+> >>>> This was catched by coverity (CID 102348).
+> >>>
+> >>> You should have put that in the patch description.
+> >>>
+> >>> Now I understand why there's been a sudden surge of irrelevant one
+> >>> line changes from random people that have never touched XFS before.
+> >>>
+> >>> <sigh>
+> >>>
+> >>> Ok, lets churn the code just to shut the stupid checker up. This
+> >>> doesn't fix a bug, it doesn't change behaviour, it just makes
+> >>> coverity happy. Convert it to the for loop plus ASSERT I mentioned
+> >>> in a previous message.
+> >>
+> >> You know, I respectfully disagree, but we might just have to agree
+> >> to disagree.  The code, as it stands, tests for a null ptr
+> >> and then dereferences it.  That's always going to raise some
+> >> eyebrows, coverity or not, debug code or not, drive by or not.
+> > 
+> >> So even for future developers, making the code more self-
+> >> documenting about this behavior would be a plus, whether it's by
+> >> comment, by explicit ASSERT(), or whatever.  (I don't think
+> >> that xfs_emerg() has quite enough context to make it obvious.)
+> > 
+> > Sure, but if weren't for the fact that Coverity warned about it,
+> > nobody other that us people who work on the XFS code day in, day out
+> > would have even cared about it.
+> > 
+> > That's kind of my point - again, as the Devil's Advocate - that
+> > coverity is encouraging drive-by "fixes" by people who don't
+> > actually understand any of the context, history and/or culture
+> > surrounding the code being modified.
+> 
+> They shouldn't have to, the code (or comments therein) should
+> make it obvious.  ;)  (in a perfect world...)
 
-> We noticed big netperf throughput regressions
-> 
->     a4fe34bf902b8f709c63      2e685cad57906e19add7  
-> ------------------------  ------------------------  
->                   707.40       -40.7%       419.60  lkp-nex04/micro/netperf/120s-200%-TCP_STREAM
->                  2775.60       -23.7%      2116.40  lkp-sb03/micro/netperf/120s-200%-TCP_STREAM
->                  3483.00       -27.2%      2536.00  TOTAL netperf.Throughput_Mbps
-> 
-> and bisected it to
-> 
-> commit 2e685cad57906e19add7189b5ff49dfb6aaa21d3
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sat Oct 19 16:26:19 2013 -0700
-> 
->     tcp_memcontrol: Kill struct tcp_memcontrol
+Obvious to whom, exactly?
 
-Eric please look into this, I'd rather have a fix to apply than revert your
-work.
+That's the point I'm trying to make - "#ifdef DEBUG", two
+comments indicating that it's validating the list and printing a
+message just before it goes boom. That's pretty obvious code to
+anyone who is used to tracking down corrupted list problems...
 
-Thanks.
+> > I have no problems with real bugs being fixed, but if we are
+> > modifying code for no gain other than closing "coverity doesn't like
+> > it" bugs, then we *should* be questioning whether the change is
+> > really necessary.
+> 
+> But let's give Geyslan the benefit of the doubt, and realize that
+> Coverity does find real things, and even if it originated w/ a
+> Coverity CID, when one sees:
+> 
+> 	if (!a)
+> 		printk("a thing\n")
+> 
+> 	a = a->b = . . . 
+> 
+> it looks suspicious to pretty much anyone.  I don't think Geyslan
+> sent it to shut Coverity up, he sent it because it looked like
+> a bug worth fixing (after Coverity spotted it).
+> 
+> Let's not be too hard on him for trying; I appreciate it more
+> than spelling fixes and whitespace cleanups.  ;)
+
+True, point taken. 
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
