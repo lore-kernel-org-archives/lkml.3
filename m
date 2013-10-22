@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab3JVDp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 23:45:58 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:50839 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab3JVDp5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 23:45:57 -0400
-Message-ID: <5265F4EB.2060803@linaro.org>
-Date: Mon, 21 Oct 2013 23:45:47 -0400
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753340Ab3JVDsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 23:48:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10233 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab3JVDsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Oct 2013 23:48:54 -0400
+X-IronPort-AV: E=Sophos;i="4.93,545,1378828800"; 
+   d="scan'208";a="8822783"
+Message-ID: <5265F5E6.3000604@cn.fujitsu.com>
+Date: Tue, 22 Oct 2013 11:49:58 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/13] uprobes: allow ignoring of probe hits
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-3-git-send-email-dave.long@linaro.org> <20131019170214.GA8324@redhat.com>
-In-Reply-To: <20131019170214.GA8324@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: Kim <jaegeuk.kim@samsung.com>,
+        f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] f2fs: introduce f2fs_kmem_cache_alloc to hide the unfailed
+ kmem cache allocation
+References: <5264D6C7.9000202@cn.fujitsu.com>
+In-Reply-To: <5264D6C7.9000202@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/22 11:46:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/22 11:46:23,
+	Serialize complete at 2013/10/22 11:46:23
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/13 13:02, Oleg Nesterov wrote:
-> On 10/15, David Long wrote:
->>
->> @@ -1732,9 +1732,6 @@ static void handle_swbp(struct pt_regs *regs)
->>   		return;
->>   	}
->>
->> -	/* change it in advance for ->handler() and restart */
->> -	instruction_pointer_set(regs, bp_vaddr);
->> -
->
-> Well, this looks obviously wrong. This SET_IP() has the comment ;)
->
-> Note also that with this breaks __skip_sstep() on x86.
->
-> Oleg.
->
+On 10/21/2013 03:24 PM, Gu Zheng wrote:
+> +static inline void *f2fs_kmem_cache_alloc(struct kmem_cache *cachep,
+> +						gfp_t flags)
+> +{
+> +	void *entry = kmem_cache_alloc(cachep, flags);
+> +retry:
 
-Yes, and there's a missing weak stub function in there too.  It was a 
-surprise to me that declaring an external as weak means that it quietly 
-ignores the fact there is no definition for it at link time, and makes 
-it zero.  I think there may be some similar land mines elsewhere in the 
-kernel, unrelated to these changes or uprobes in general.
+retry after kmem_cache_alloc?
 
-I have an updated version to go out with the v3 patches.  It is working 
-with v3.12-rc6 on x86 and ARM, to the extent I'm able to test it.
-
--dl
+> +	if (!entry) {
+> +		cond_resched();
+> +		goto retry;
+> +	}
+> +
+> +	return entry;
+> +}
 
