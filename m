@@ -1,63 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab3JVTYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:24:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52949 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab3JVTYL (ORCPT
+	id S1754965Ab3JVT1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:27:50 -0400
+Received: from www84.your-server.de ([213.133.104.84]:43836 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab3JVT1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:24:11 -0400
-Date: Tue, 22 Oct 2013 12:24:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: linux-next: Tree for Oct 22
-Message-ID: <20131022192403.GB28630@roeck-us.net>
-References: <1382454517-4074-1-git-send-email-treding@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382454517-4074-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Oct 2013 15:27:48 -0400
+From: Stefani Seibold <stefani@seibold.net>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, mingo@redhat.com,
+        peterz@infradead.org
+Cc: stefani@seibold.net
+Subject: [PATCH] add new prctl for a per process wide close on exec
+Date: Tue, 22 Oct 2013 21:27:18 +0200
+Message-Id: <1382470038-1220-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.4
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 05:08:34PM +0200, Thierry Reding wrote:
-> Hi all,
-> 
-> I've uploaded today's linux-next tree to the master branch of the
-> repository below:
-> 
->         git://gitorious.org/thierryreding/linux-next.git
-> 
-> A next-20131022 tag is also provided for convenience.
-> 
-> Gained a couple new conflicts, fixed more build failures. ARM seems to
-> be in pretty good shape, as is the 64-bit x86 allmodconfig.
-> 
+This small patch adds a runtime prctl config option for a per process wide
+"close on exec" without breaking existing code.
 
-x86_64:defconfig, i386:allyesconfig and i386:allmodconfig fail to build.
+With this feature a developer can decide if the application will pass all non
+"close on exec" file descriptors to a new process or not.
 
-lib/built-in.o: In function `trace_swiotlb_bounced':
-include/trace/events/swiotlb.h:9: undefined reference to `__tracepoint_swiotlb_bounced'
+The mode of the process wide "close on exec" can be set with PR_SET_CLOEXEC and
+PR_GET_CLOEXEC returns the current mode. Mode is one of the following:
 
-and
+- PR_CLOEXEC_DEFAULT closes only the fd's marked as "close on exec" in
+   the child process, this is the linux default behaviour.
 
-lib/built-in.o: In function `swiotlb_map_page':
-(.text+0x10c94): undefined reference to `__tracepoint_swiotlb_bounced'
+- PR_CLOEXEC_ONCE closes all fd's expect 0, 1 and 2 which are regular
+   handled as in PR_CLOEXEC_DEFAULT and reset the mode of the child to
+   PR_CLOEXEC_DEFAULT.
 
-arm:allmodconfig fails as well, currently with
+- PR_CLOEXEC_INHERIT is like PR_CLOEXEC_ONCE, but the mode will stay in the
+   child
 
-arch/arm/common/bL_switcher.c: In function 'bL_switcher_enable':
-arch/arm/common/bL_switcher.c:580:2: error: implicit declaration of function
-'cpu_hotplug_driver_lock' [-Werror=implicit-function-declaration]
-arch/arm/common/bL_switcher.c:582:3: error: implicit declaration of function
-'cpu_hotplug_driver_unlock' [-Werror=implicit-function-declaration]
+STDIO file descriptors will be passed to the child process depending on the
+..._CLOEXEC flag. So the new modes should be compatible to regular code.
 
-Overall, failures are up to
-	total: 110 pass: 88 skipped: 4 fail: 18
-from 14 failures yesterday.
+This patch will increase security since no developers can review all libraries
+which there are using. Also in a team of developers it is not always possible
+to have a full survey over the code which is produced. Or the output of a code
+generators and so one. This patch allows a kind of preventive measures.
 
-Guenter
+It can also prevent resource occupation. Imagine a long running process (a
+daemon) is execute from the application after open some file desciptors. For
+example libpcsclite.so will not open the socket with SOCK_CLOEXEC. Or a device
+driver which alows only a single open. In both cases the resource cannot
+reopened after a close. Sigh!
+
+What do you think?
+
+ChangeLog:
+
+2013-10-21	First release to the mailing list
+2013-10-22	Fix fork for non main threads
+
+The patch is against 3.12.0-rc6
+
+Greetings,
+Stefani
+
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ fs/exec.c                  |  2 ++
+ fs/file.c                  | 12 +++++++++++-
+ include/linux/sched.h      |  6 ++++++
+ include/uapi/linux/prctl.h | 18 ++++++++++++++++++
+ kernel/fork.c              |  3 +++
+ kernel/sys.c               | 32 ++++++++++++++++++++++++++++++++
+ 6 files changed, 72 insertions(+), 1 deletion(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 8875dd1..c8af524 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1546,6 +1546,8 @@ static int do_execve_common(const char *filename,
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
++	if (!current->cloexec_inherit)
++		current->cloexec = 0;
+ 	acct_update_integrals(current);
+ 	free_bprm(bprm);
+ 	if (displaced)
+diff --git a/fs/file.c b/fs/file.c
+index 4a78f98..7372252 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -622,7 +622,17 @@ void do_close_on_exec(struct files_struct *files)
+ 		fdt = files_fdtable(files);
+ 		if (fd >= fdt->max_fds)
+ 			break;
+-		set = fdt->close_on_exec[i];
++		if (!current->cloexec)
++			set = fdt->close_on_exec[i];
++		else {
++			set = fdt->open_fds[i];
++
++			/* special handling for stdio */
++			if (!i) {
++				set &= ~7;
++				set |= fdt->close_on_exec[i] & 7;
++			}
++		}
+ 		if (!set)
+ 			continue;
+ 		fdt->close_on_exec[i] = 0;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e27baee..469e6f8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1112,6 +1112,12 @@ struct task_struct {
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
+ 
++	/* close non stdio on exec */
++	unsigned cloexec:1;
++
++	/* inherit cloexec flag on exec */
++	unsigned cloexec_inherit:1;
++
+ 	pid_t pid;
+ 	pid_t tgid;
+ 
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 289760f..e1c2d66 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -149,4 +149,22 @@
+ 
+ #define PR_GET_TID_ADDRESS	40
+ 
++/*
++ * PR_CLOEXEC allows to configure the inheritance of the non stdio file
++ * handles to a child process:
++ *
++ * - PR_CLOEXEC_DEFAULT: close only the fd's marked with as close on exec
++ *    in the child process
++ * - PR_CLOEXEC_ONCE: close all fd's expect 0, 1 and 2 which are regular
++ *    handled as in PR_CLOEXEC_DEFAULT and reset the mode of the child to
++ *    PR_CLOEXEC_DEFAULT
++ * - PR_CLOEXEC_INHERIT: like PR_CLOEXEC_ONCE, but the mode will stay in the
++ *    child process
++ */
++#define PR_SET_CLOEXEC		41
++#define PR_GET_CLOEXEC		42
++# define PR_CLOEXEC_DEFAULT		1
++# define PR_CLOEXEC_ONCE		2
++# define PR_CLOEXEC_INHERIT		3
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 086fe73..1aacf2e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1190,6 +1190,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	if (!p)
+ 		goto fork_out;
+ 
++	p->cloexec = current->group_leader->cloexec;
++	p->cloexec_inherit = current->group_leader->cloexec_inherit;
++
+ 	ftrace_graph_init_task(p);
+ 	get_seccomp_filter(p);
+ 
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c18ecca..7e53e14 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1999,6 +1999,38 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		if (arg2 || arg3 || arg4 || arg5)
+ 			return -EINVAL;
+ 		return current->no_new_privs ? 1 : 0;
++	case PR_SET_CLOEXEC:
++		if (arg3 || arg4 || arg5)
++			return -EINVAL;
++		switch(arg2) {
++		case PR_CLOEXEC_DEFAULT:
++			current->group_leader->cloexec = 0;
++			current->group_leader->cloexec_inherit = 0;
++			break;
++		case PR_CLOEXEC_ONCE:
++			current->group_leader->cloexec = 1;
++			current->group_leader->cloexec_inherit = 0;
++			break;
++		case PR_CLOEXEC_INHERIT:
++			current->group_leader->cloexec = 1;
++			current->group_leader->cloexec_inherit = 1;
++			break;
++		default:
++			return -EINVAL;
++		}
++		break;
++	case PR_GET_CLOEXEC:
++		if (arg2 || arg3 || arg4 || arg5)
++			return -EINVAL;
++		if (!current->group_leader->cloexec)
++			error = PR_CLOEXEC_DEFAULT;
++		else {
++			if (!current->group_leader->cloexec_inherit)
++				error = PR_CLOEXEC_ONCE;
++			else
++				error = PR_CLOEXEC_INHERIT;
++		}
++		break;
+ 	default:
+ 		error = -EINVAL;
+ 		break;
+-- 
+1.8.4
+
