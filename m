@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3JVLoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:44:11 -0400
-Received: from ring0.de ([91.143.88.219]:35786 "EHLO smtp.ring0.de"
+	id S1752787Ab3JVLyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:54:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59544 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab3JVLoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:44:10 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH] DTS: ARM: OMAP3-N900: Add support for SD cards
-Date: Tue, 22 Oct 2013 13:43:58 +0200
-Message-Id: <1382442238-24637-1-git-send-email-sre@debian.org>
+	id S1752174Ab3JVLyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 07:54:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="396687849"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] mm: create a separate slab for page->ptl allocation
+Date: Tue, 22 Oct 2013 14:53:59 +0300
+Message-Id: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for external SD card slot.
+If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
+is 72 bytes. For page->ptl they will be allocated from kmalloc-96 slab,
+so we loose 24 on each. An average system can easily allocate few tens
+thousands of page->ptl and overhead is significant.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
+Let's create a separate slab for page->ptl allocation to solve this.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/arm/boot/dts/omap3-n900.dts | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ include/linux/mm.h |  8 ++++++++
+ init/main.c        |  2 +-
+ mm/memory.c        | 12 ++++++++++--
+ 3 files changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 99d0668..ab62afa 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -65,6 +65,17 @@
- 			0x194 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c3_sda */
- 		>;
- 	};
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 9a4a873b2f..2de5da0a41 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1233,6 +1233,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
+ #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+ 
+ #if USE_SPLIT_PTE_PTLOCKS
++void __init ptlock_cache_init(void);
+ bool __ptlock_alloc(struct page *page);
+ void __ptlock_free(struct page *page);
+ static inline bool ptlock_alloc(struct page *page)
+@@ -1285,6 +1286,7 @@ static inline void pte_lock_deinit(struct page *page)
+ }
+ 
+ #else	/* !USE_SPLIT_PTE_PTLOCKS */
++static inline void ptlock_cache_init(void) {}
+ /*
+  * We use mm->page_table_lock to guard all pagetable pages of the mm.
+  */
+@@ -1296,6 +1298,12 @@ static inline bool ptlock_init(struct page *page) { return true; }
+ static inline void pte_lock_deinit(struct page *page) {}
+ #endif /* USE_SPLIT_PTE_PTLOCKS */
+ 
++static inline void pgtable_init(void)
++{
++	ptlock_cache_init();
++	pgtable_cache_init();
++}
 +
-+	mmc1_pins: pinmux_mmc1_pins {
-+		pinctrl-single,pins = <
-+			0x114 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc1_clk */
-+			0x116 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc1_cmd */
-+			0x118 (PIN_INPUT_PULLUP | MUX_MODE0) 	/* sdmmc1_dat0 */
-+			0x11a (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc1_dat1 */
-+			0x11c (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc1_dat2 */
-+			0x11e (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc1_dat3 */
-+		>;
-+	};
- };
+ static inline bool pgtable_page_ctor(struct page *page)
+ {
+ 	inc_zone_page_state(page, NR_PAGETABLE);
+diff --git a/init/main.c b/init/main.c
+index af310afbef..c71b505392 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -466,7 +466,7 @@ static void __init mm_init(void)
+ 	mem_init();
+ 	kmem_cache_init();
+ 	percpu_init_late();
+-	pgtable_cache_init();
++	pgtable_init();
+ 	vmalloc_init();
+ }
  
- &i2c1 {
-@@ -103,7 +114,11 @@
- };
+diff --git a/mm/memory.c b/mm/memory.c
+index 7e11f745bc..d7e583e270 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4332,11 +4332,19 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
  
- &mmc1 {
--	status = "disabled";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mmc1_pins>;
-+	vmmc-supply = <&vmmc1>;
-+	bus-width = <4>;
-+	cd-gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>; /* 160 */
- };
+ #if USE_SPLIT_PTE_PTLOCKS
++struct kmem_cache *page_ptl_cachep;
++void __init ptlock_cache_init(void)
++{
++	if (sizeof(spinlock_t) > sizeof(long))
++		page_ptl_cachep = kmem_cache_create("page->ptl",
++				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
++}
++
+ bool __ptlock_alloc(struct page *page)
+ {
+ 	spinlock_t *ptl;
  
- &mmc2 {
+-	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
++	ptl = kmem_cache_alloc(page_ptl_cachep, GFP_KERNEL);
+ 	if (!ptl)
+ 		return false;
+ 	page->ptl = (unsigned long)ptl;
+@@ -4346,6 +4354,6 @@ bool __ptlock_alloc(struct page *page)
+ void __ptlock_free(struct page *page)
+ {
+ 	if (sizeof(spinlock_t) > sizeof(page->ptl))
+-		kfree((spinlock_t *)page->ptl);
++		kmem_cache_free(page_ptl_cachep, (spinlock_t *)page->ptl);
+ }
+ #endif
 -- 
 1.8.4.rc3
 
