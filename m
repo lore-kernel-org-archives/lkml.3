@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3JVRyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:54:37 -0400
-Received: from mout.gmx.net ([212.227.17.22]:59132 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754953Ab3JVRyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:54:36 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
-        adlai@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 05/15] tpm: Use container_of to locate the tpm_chip in tpm_open
-Date: Tue, 22 Oct 2013 19:53:50 +0200
-Message-Id: <1382464440-7579-5-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
-References: <1382464440-7579-1-git-send-email-peterhuewe@gmx.de>
-X-Provags-ID: V03:K0:x1tejRjRlQDe+L/5L4kGxntR+YIZEnMFQoj5jfcvgQPTJ6T9JNu
- eRvnJQrQQAw7QqP/7rjfurymyKOxLkTZAUteNUlqnsCKNVZ/5BRgw+uI1Orr3/3QNlkRP+d
- L8kXf0wpg525rabT/v8OEaX4i630Zbx6F0fyGQ2meNZ28XUzhiuAitAmDyGJM1PwJoMsKQi
- MbODC1uRoEVJGCYtcRqtg==
+	id S1755041Ab3JVRyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:54:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58420 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab3JVRyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 13:54:47 -0400
+Date: Tue, 22 Oct 2013 13:54:42 -0400 (EDT)
+Message-Id: <20131022.135442.1072093301788210177.davem@davemloft.net>
+To: aaro.koskinen@iki.fi
+Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
+References: <20130617055839.GB3073@blackmetal.musicnaut.iki.fi>
+	<20130803.134042.2228681844349448961.davem@davemloft.net>
+	<20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 10:54:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Tue, 22 Oct 2013 20:46:12 +0300
 
-misc_open sets the file->private_date to the misc_dev when calling
-open. We can use container_of to go from the misc_dev back to the
-tpm_chip.
+> Hi,
+> 
+> On Sat, Aug 03, 2013 at 01:40:42PM -0700, David Miller wrote:
+>> > On Mon, Jun 17, 2013 at 08:32:25AM +0300, Aaro Koskinen wrote:
+>> >> On Mon, Jun 17, 2013 at 12:06:00AM +0300, Meelis Roos wrote:
+>> >> > Got this in 3.10-rc6 whil testing debian unstable upgrade with aptitude. 
+>> >> > 3.10-rc5 did not exhibit this (nor any other kernel recently tried, 
+>> >> > including most -rc's). Does not seem to be reproducible.
+>> >> 
+>> >> I get this regularly on Ultrasparc during long compilations. It's been
+>> >> there with all recent kernels (probably at least since 3.8). Latest I
+>> >> saw with 3.10-rc5.
+>> > 
+>> > Two examples:
+>> 
+>> Thanks for the reports, I'm actively looking into this.
+> 
+> Got this again with 3.12-rc5 while doing GCC 4.8.2 bootstrap (during
+> make check phase):
+ ...
+> The box didn't die yet... Let's hope it will let GCC testsuite to finish.
 
-Future clean ups will move tpm_open into a new file and this change
-means we do not have to export the tpm_chip list.
-
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
-Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
-Acked-by: Ashley Lai <adlai@linux.vnet.ibm.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm.c |   21 ++++-----------------
- 1 files changed, 4 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 71eb8c7..c3ab508 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1170,38 +1170,25 @@ EXPORT_SYMBOL_GPL(wait_for_tpm_stat);
-  */
- int tpm_open(struct inode *inode, struct file *file)
- {
--	int minor = iminor(inode);
--	struct tpm_chip *chip = NULL, *pos;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(pos, &tpm_chip_list, list) {
--		if (pos->vendor.miscdev.minor == minor) {
--			chip = pos;
--			get_device(chip->dev);
--			break;
--		}
--	}
--	rcu_read_unlock();
--
--	if (!chip)
--		return -ENODEV;
-+	struct miscdevice *misc = file->private_data;
-+	struct tpm_chip *chip = container_of(misc, struct tpm_chip,
-+					     vendor.miscdev);
- 
- 	if (test_and_set_bit(0, &chip->is_open)) {
- 		dev_dbg(chip->dev, "Another process owns this TPM\n");
--		put_device(chip->dev);
- 		return -EBUSY;
- 	}
- 
- 	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
- 	if (chip->data_buffer == NULL) {
- 		clear_bit(0, &chip->is_open);
--		put_device(chip->dev);
- 		return -ENOMEM;
- 	}
- 
- 	atomic_set(&chip->data_pending, 0);
- 
- 	file->private_data = chip;
-+	get_device(chip->dev);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(tpm_open);
--- 
-1.7.5.4
-
+Thanks for reporting this again, it's in my long TODO list to look into
+still.
