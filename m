@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab3JVKv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 06:51:56 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33180 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab3JVKvw (ORCPT
+	id S1752751Ab3JVK5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 06:57:15 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:36053 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751684Ab3JVK5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 06:51:52 -0400
-Message-ID: <52664621.8070307@linux.vnet.ibm.com>
-Date: Tue, 22 Oct 2013 15:02:17 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>
-CC: "Chen, Gong" <gong.chen@linux.intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86 platform
-References: <52657a78162905670f@agluck-desk.sc.intel.com>
-In-Reply-To: <52657a78162905670f@agluck-desk.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102210-9574-0000-0000-00000A320CB8
+	Tue, 22 Oct 2013 06:57:13 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] perf timechart: always try to print at least 15 tasks
+Date: Tue, 22 Oct 2013 14:56:47 +0400
+Message-Id: <1382439412-23713-2-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 12:33 AM, Luck, Tony wrote:
->> But yes, this is possible and it would make it all even cleaner
->> and simpler by simply not needing the reg/dereg interfaces for
->> mce_ext_err_print but adding it to the chain.
->
-> So this is on top of the 9 patch series (using the V4 that Chen Gong
-> posted for part 4/9 and V3 for all the others).  Obviously it should
-> be folded back into the series if we go this way.
->
-> It's a bit simplistic right now - the registered function just returns
-> NOTIFY_DONE in all cases so it will not disturb processing by any other
-> registered functions - we can make it smarter later.
+Always try to print at least 15 tasks no matter how long they run.
+Add -n option to specify desired number of tasks to print.
 
-Looks good. We obviously need to ensure this gets called before EDAC, if 
-at all. The other question is w.r.t conflicts with EDAC, which we can 
-re-visit as part of the discussions around a new trace event.
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/builtin-timechart.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-Thanks,
-Naveen
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index c2e02319347a..d965f26308ed 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -40,6 +40,8 @@
+ #define SUPPORT_OLD_POWER_EVENTS 1
+ #define PWR_EVENT_EXIT -1
+ 
++static int proc_num = 15;
++
+ 
+ static unsigned int	numcpus;
+ static u64		min_freq;	/* Lowest CPU frequency seen */
+@@ -944,15 +946,17 @@ static void write_svg_file(const char *filename)
+ {
+ 	u64 i;
+ 	int count;
++	int thresh = TIME_THRESH;
+ 
+ 	numcpus++;
+ 
+ 
+-	count = determine_display_tasks(TIME_THRESH);
+-
+-	/* We'd like to show at least 15 tasks; be less picky if we have fewer */
+-	if (count < 15)
+-		count = determine_display_tasks(TIME_THRESH / 10);
++	/* We'd like to show at least proc_num tasks;
++	 * be less picky if we have fewer */
++	do {
++		count = determine_display_tasks(thresh);
++		thresh /= 10;
++	} while (thresh && count < proc_num);
+ 
+ 	open_svg(filename, numcpus, count, first_time, last_time);
+ 
+@@ -963,9 +967,11 @@ static void write_svg_file(const char *filename)
+ 		svg_cpu_box(i, max_freq, turbo_frequency);
+ 
+ 	draw_cpu_usage();
+-	draw_process_bars();
++	if (proc_num)
++		draw_process_bars();
+ 	draw_c_p_states();
+-	draw_wakeups();
++	if (proc_num)
++		draw_wakeups();
+ 
+ 	svg_close();
+ }
+@@ -1094,6 +1100,8 @@ int cmd_timechart(int argc, const char **argv,
+ 		       parse_process),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
++	OPT_INTEGER('n', "number", &proc_num,
++		    "min. number of tasks to print"),
+ 	OPT_END()
+ 	};
+ 	const char * const timechart_usage[] = {
+-- 
+1.8.1.2
 
