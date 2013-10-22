@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3JVV4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:56:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53142 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753370Ab3JVV4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:56:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: acpi: Add comment under ACPI_ADR_SPACE_SYSTEM_IO case
-Date: Wed, 23 Oct 2013 00:08:06 +0200
-Message-ID: <7442253.8xUmVU5UE1@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohponpp_RRdpHTdmZYXbmMGSaWsb-AsnedGiBHFKSMJPkHHA@mail.gmail.com>
-References: <6334c0aed4840857944d1b267871ada4d7014d57.1381541632.git.viresh.kumar@linaro.org> <4207904.oBhTxYOkzS@vostro.rjw.lan> <CAKohponpp_RRdpHTdmZYXbmMGSaWsb-AsnedGiBHFKSMJPkHHA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755150Ab3JVWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:00:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60012 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab3JVWA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:00:26 -0400
+Date: Tue, 22 Oct 2013 18:00:23 -0400 (EDT)
+Message-Id: <20131022.180023.1141845387743361648.davem@davemloft.net>
+To: fengguang.wu@intel.com
+Cc: ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: -27% netperf TCP_STREAM regression by "tcp_memcontrol: Kill
+ struct tcp_memcontrol"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131022214129.GB2715@localhost>
+References: <20131022214129.GB2715@localhost>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 22 Oct 2013 15:00:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 22, 2013 06:12:08 AM Viresh Kumar wrote:
-> On 22 October 2013 04:09, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > I don't think I've missed it.  It should be commit 1bab64d in my tree.
+From: fengguang.wu@intel.com
+Date: Tue, 22 Oct 2013 22:41:29 +0100
+
+> We noticed big netperf throughput regressions
 > 
-> I fetched your tree yesterday and this wasn't there in linux-next or
-> bleeding-edge branch.. When I fetched it now again, it is there..
+>     a4fe34bf902b8f709c63      2e685cad57906e19add7  
+> ------------------------  ------------------------  
+>                   707.40       -40.7%       419.60  lkp-nex04/micro/netperf/120s-200%-TCP_STREAM
+>                  2775.60       -23.7%      2116.40  lkp-sb03/micro/netperf/120s-200%-TCP_STREAM
+>                  3483.00       -27.2%      2536.00  TOTAL netperf.Throughput_Mbps
+> 
+> and bisected it to
+> 
+> commit 2e685cad57906e19add7189b5ff49dfb6aaa21d3
+> Author: Eric W. Biederman <ebiederm@xmission.com>
+> Date:   Sat Oct 19 16:26:19 2013 -0700
+> 
+>     tcp_memcontrol: Kill struct tcp_memcontrol
 
-That's because I pushed an old branch by mistake on Sunday.  Sorry about
-that.
+Eric please look into this, I'd rather have a fix to apply than revert your
+work.
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks.
