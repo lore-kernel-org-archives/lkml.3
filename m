@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab3JVToh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 15:44:37 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:42963 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab3JVToe (ORCPT
+	id S1755123Ab3JVTsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 15:48:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49684 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645Ab3JVTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 15:44:34 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Guillaume Gaudonville <guillaume.gaudonville@6wind.com>
-Cc: linux-kernel@vger.kernel.org, serge.hallyn@canonical.com,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        davem@davemloft.net, cmetcalf@tilera.com, paulmck@linux.vnet.ibm.com
-References: <8738o1ovdi.fsf@xmission.com>
-	<1382107599-1028-1-git-send-email-guillaume.gaudonville@6wind.com>
-	<87y55qqkck.fsf@xmission.com> <52669F51.8030003@6wind.com>
-	<20131022165331.GA4118@linux.vnet.ibm.com>
-	<8761spw3an.fsf@xmission.com>
-Date: Tue, 22 Oct 2013 12:44:20 -0700
-In-Reply-To: <8761spw3an.fsf@xmission.com> (Eric W. Biederman's message of
-	"Tue, 22 Oct 2013 11:47:44 -0700")
-Message-ID: <87iowprsyz.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 22 Oct 2013 15:48:39 -0400
+Date: Tue, 22 Oct 2013 20:48:37 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, peterz@infradead.org
+Subject: Re: [PATCH] add new prctl for a per process wide close on exec
+Message-ID: <20131022194836.GZ13318@ZenIV.linux.org.uk>
+References: <1382470038-1220-1-git-send-email-stefani@seibold.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19RxL+Hzz7T6ylhKCvohunQ+/ddbVMZGmU=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0989]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Guillaume Gaudonville <guillaume.gaudonville@6wind.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH linux-next v2] ns: do not allocate a new nsproxy at each call
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382470038-1220-1-git-send-email-stefani@seibold.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 22, 2013 at 09:27:18PM +0200, Stefani Seibold wrote:
 
-To be succint.
+> This patch will increase security since no developers can review all libraries
+> which there are using. Also in a team of developers it is not always possible
+> to have a full survey over the code which is produced. Or the output of a code
+> generators and so one. This patch allows a kind of preventive measures.
+> 
+> It can also prevent resource occupation. Imagine a long running process (a
+> daemon) is execute from the application after open some file desciptors. For
+> example libpcsclite.so will not open the socket with SOCK_CLOEXEC. Or a device
+> driver which alows only a single open. In both cases the resource cannot
+> reopened after a close. Sigh!
+> 
+> What do you think?
 
-Mutation of nsproxy in place was a distraction.
+That it's a bad idea.  Not to mention anything else, the same unreviewed
+libraries can get buggered if the program sets that "global close-on-exec"
+and it's not at all obvious whether the breakage from that change will be less
+or more dangerous than leaking opened files to children.
 
-What is crucial to the current operation of the code is
-
-synchronize_rcu();
-put_pid_ns();
-put_net_ns();
-...
-
-To remove the syncrhonize_rcu we would have to either user call_rcu or
-make certain all of the namespaces have some kind of rcu liveness
-guarantee (which many of them do) and use something like maybe_get_net.
-
-If you are going to pursue this the maybe_get_net direction is my
-preference as that is what we would need if we did not have nsproxy
-and so will be simpler overall.
-
-Hmm.  On the side of simple it may be appropriate to revisit the patch
-that started using rcu protection for nsproxy.   I doesn't look like
-the original reasons for nsproxy being rcu protected exist any more,
-so reverting to task_lock protect may be enough..
-
-And it would result in faster/simpler code that only slows down when we
-perform a remote access, which should be far from common.
-
-commit cf7b708c8d1d7a27736771bcf4c457b332b0f818
-Author: Pavel Emelyanov <xemul@openvz.org>
-Date:   Thu Oct 18 23:39:54 2007 -0700
-
-    Make access to task's nsproxy lighter
-    
-    When someone wants to deal with some other taks's namespaces it has to lock
-    the task and then to get the desired namespace if the one exists.  This is
-    slow on read-only paths and may be impossible in some cases.
-    
-    E.g.  Oleg recently noticed a race between unshare() and the (sent for
-    review in cgroups) pid namespaces - when the task notifies the parent it
-    has to know the parent's namespace, but taking the task_lock() is
-    impossible there - the code is under write locked tasklist lock.
-    
-    On the other hand switching the namespace on task (daemonize) and releasing
-    the namespace (after the last task exit) is rather rare operation and we
-    can sacrifice its speed to solve the issues above.
-    
-    The access to other task namespaces is proposed to be performed
-    like this:
-    
-         rcu_read_lock();
-         nsproxy = task_nsproxy(tsk);
-         if (nsproxy != NULL) {
-                 / *
-                   * work with the namespaces here
-                   * e.g. get the reference on one of them
-                   * /
-         } / *
-             * NULL task_nsproxy() means that this task is
-             * almost dead (zombie)
-             * /
-         rcu_read_unlock();
-    
-    This patch has passed the review by Eric and Oleg :) and,
-    of course, tested.
-
-
-Eric
+Al, fully expecting the Linux S-M crowd to jump on that one and come up with
+yet another one-shot LSM... ;-/
