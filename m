@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3JVUqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 16:46:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60908 "EHLO
+	id S1754234Ab3JVUrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:47:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60922 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab3JVUqg (ORCPT
+	with ESMTP id S1754729Ab3JVUrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 16:46:36 -0400
-Date: Tue, 22 Oct 2013 22:46:32 +0200
+	Tue, 22 Oct 2013 16:47:04 -0400
+Date: Tue, 22 Oct 2013 22:46:59 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
 Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84
  put_online_cpus()
-Message-ID: <20131022204632.GD2490@laptop.programming.kicks-ass.net>
+Message-ID: <20131022204659.GE2490@laptop.programming.kicks-ass.net>
 References: <20131019005129.GA5979@localhost>
+ <52649F5E.2080303@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131019005129.GA5979@localhost>
+In-Reply-To: <52649F5E.2080303@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 19, 2013 at 08:51:29AM +0800, Fengguang Wu wrote:
-> Greetings,
-> [   58.695502] ------------[ cut here ]------------
-> [   58.697835] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus+0x43/0x70()
-> [   58.702423] Modules linked in:
-> [   58.704404] CPU: 0 PID: 3166 Comm: trinity-child0 Not tainted 3.12.0-rc5-01882-gf3db366 #1172
-> [   58.708530] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [   58.710992]  0000000000000000 ffff88000acfbe50 ffffffff81a24643 0000000000000000
-> [   58.715410]  ffff88000acfbe88 ffffffff810c3e6b ffffffff810c3fef 0000000000000000
-> [   58.719826]  0000000000000000 0000000000006ee0 0000000000000ffc ffff88000acfbe98
-> [   58.724348] Call Trace:
-> [   58.726190]  [<ffffffff81a24643>] dump_stack+0x4d/0x66
-> [   58.728531]  [<ffffffff810c3e6b>] warn_slowpath_common+0x7f/0x98
-> [   58.731069]  [<ffffffff810c3fef>] ? put_online_cpus+0x43/0x70
-> [   58.733664]  [<ffffffff810c3f32>] warn_slowpath_null+0x1a/0x1c
-> [   58.736258]  [<ffffffff810c3fef>] put_online_cpus+0x43/0x70
-> [   58.738686]  [<ffffffff810efd59>] sched_setaffinity+0x7d/0x1f9
-> [   58.741210]  [<ffffffff810efce1>] ? sched_setaffinity+0x5/0x1f9
-> [   58.743775]  [<ffffffff81a2f724>] ? _raw_spin_unlock_irq+0x2c/0x3e
-> [   58.746417]  [<ffffffff810c7012>] ? do_setitimer+0x194/0x1f5
-> [   58.748899]  [<ffffffff810eff37>] SyS_sched_setaffinity+0x62/0x71
-> [   58.751481]  [<ffffffff81a373a9>] system_call_fastpath+0x16/0x1b
-> [   58.754070] ---[ end trace 034818a1f6f06868 ]---
-> [   58.757521] ------------[ cut here ]------------
+On Mon, Oct 21, 2013 at 11:28:30AM +0800, Michael wang wrote:
+> Hi, Fengguang
+> 
+> On 10/19/2013 08:51 AM, Fengguang Wu wrote:
+> > Greetings,
+> 
+> Will this do any helps?
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index c06b8d3..7c61f31 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct
+> cpumask *in_mask)
+>         p = find_process_by_pid(pid);
+>         if (!p) {
+>                 rcu_read_unlock();
+> -               put_online_cpus();
+>                 return -ESRCH;
+>         }
 
-Duh.. must've been blind or so..
-
-Does this make it go away
-
----
- kernel/sched/core.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c06b8d3..7c61f31 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
- 	p = find_process_by_pid(pid);
- 	if (!p) {
- 		rcu_read_unlock();
--		put_online_cpus();
- 		return -ESRCH;
- 	}
- 
+Just so..
