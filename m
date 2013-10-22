@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3JVUL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 16:11:59 -0400
-Received: from packetmixer.de ([83.151.30.3]:38338 "EHLO m25s01.vlinux.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754467Ab3JVUL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 16:11:58 -0400
-X-Greylist: delayed 655 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 16:11:58 EDT
-From: Simon Wunderlich <sw@simonwunderlich.de>
-To: Dirk Gouders <dirk@gouders.net>
-Subject: Re: [BUG bisected] WARNING: CPU: 0 PID: 1550 at net/wireless/chan.c:373 cfg80211_chandef_usable+0x30/0x15f()
-Date: Tue, 22 Oct 2013 22:00:55 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-References: <gifvruyge3.fsf@karga.hank.lab> <20131022132303.GA14762@pandem0nium> <ghzjq1pcc3.fsf@lena.gouders.net>
-In-Reply-To: <ghzjq1pcc3.fsf@lena.gouders.net>
+	id S1754797Ab3JVUTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 16:19:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60510 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab3JVUTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 16:19:03 -0400
+Date: Tue, 22 Oct 2013 22:18:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, mingo@kernel.org
+Subject: Re: [PATCH 06/11] asmlinkage: Make trace_hardirq visible
+Message-ID: <20131022201848.GC2490@laptop.programming.kicks-ass.net>
+References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
+ <1382458346-24811-7-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310222200.55773.sw@simonwunderlich.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382458346-24811-7-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Dirk,
+On Tue, Oct 22, 2013 at 09:12:21AM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Can be called from assembler code.
+> 
+> Cc: peterz@infradead.org
+> Cc: mingo@kernel.org
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  kernel/lockdep.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index d3749fe..d1a047d 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2555,7 +2555,7 @@ static void __trace_hardirqs_on_caller(unsigned long ip)
+>  	debug_atomic_inc(hardirqs_on_events);
+>  }
+>  
+> -void trace_hardirqs_on_caller(unsigned long ip)
+> +__visible void trace_hardirqs_on_caller(unsigned long ip)
+>  {
+>  	time_hardirqs_on(CALLER_ADDR0, ip);
+>  
 
-> No need for censorship, I did some quick tests and stripped down my
-> wpa_supplicant.conf to a single entry.  With this configuration I get a
-> lot of traces:
-> 
-> ctrl_interface=/var/run/wpa_supplicant
-> eapol_version=1
-> ap_scan=1
-> fast_reauth=1
-> 
-> network={
-> 	frequency=2412
-> 	group=TKIP
-> 	key_mgmt=NONE
-> 	mode=1
-> 	pairwise=NONE
-> 	ssid="Nokia_n9"
-> }
-> 
-> I will also attach a dmesg output of my tests.
-> 
-> >  * your wpa_supplicant command line parameters when running
-> 
-> It is running with a wpa_cli like this:
-> 
-> /usr/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf \
->     -W -B -i wlp4s0 -P /var/run/wpa_supplicant-wlp4s0.pid
-> /usr/bin/wpa_cli -a /etc/wpa_supplicant/wpa_cli.sh \
->     -p /var/run/wpa_supplicant -i wlp4s0 -P /var/run/wpa_cli-wlp4s0.pid -B
-> 
-
-Thanks a lot for this, I could reproduce the issue and fix it, will send the fix 
-in a minute - please try and report back. 
-
-Just two notes on your setup in case you are interested:
-
- * Your wpa-supplicant setup looks a little like an old WPA-NONE setup, but 
-this is not supported anymore and will not encrypt your messages. Please have 
-a look at IBSS/RSN if you want encryption.
- * Your wpa_supplicant uses the old wext interface to the kernel. This is 
-deprecated, it would better to use the (not so) new nl80211 interface instead. 
-You will also get goodies such as 802.11n rates in ad-hoc mode if your 
-hardware supports it. :)
-
-Thanks again for reporting,
-   Simon
+$sub talks about asmlinkage, yet here you insert __visible; 'sup?
