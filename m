@@ -1,128 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab3JVWdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 18:33:21 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:34501 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab3JVWdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 18:33:17 -0400
-Date: Tue, 22 Oct 2013 17:33:14 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Dave Chinner <david@fromorbit.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: Alex Elder <elder@kernel.org>, open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-Message-ID: <20131022223314.GQ10553@sgi.com>
-References: <20131021231849.GL10553@sgi.com>
- <20131021235601.GG4446@dastard>
- <5265C03B.50701@sandeen.net>
- <20131022001732.GI4446@dastard>
- <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
- <20131022203946.GB2797@dastard>
- <5266E4BD.8030601@sandeen.net>
- <20131022210300.GC2797@dastard>
- <5266EBF0.901@sandeen.net>
- <20131022220254.GD2797@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131022220254.GD2797@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756090Ab3JVWeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 18:34:16 -0400
+Received: from smtprelay0175.hostedemail.com ([216.40.44.175]:42907 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755712Ab3JVWbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 18:31:07 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1539:1567:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3868:3871:4321:5007:6261:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bait58_977dade71f59
+X-Filterd-Recvd-Size: 1470
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>
+Subject: [PATCH 15/24] inotify: Convert use of typedef ctl_table to struct ctl_table
+Date: Tue, 22 Oct 2013 15:29:58 -0700
+Message-Id: <a12dc1468dd9d2b6adf540eee6189c30f2c208b4.1382480758.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1382480758.git.joe@perches.com>
+References: <cover.1382480758.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Gents,
+This typedef is unnecessary and should just be removed.
 
-On Wed, Oct 23, 2013 at 09:02:54AM +1100, Dave Chinner wrote:
-> On Tue, Oct 22, 2013 at 04:19:44PM -0500, Eric Sandeen wrote:
-> > On 10/22/13 4:03 PM, Dave Chinner wrote:
-> > > On Tue, Oct 22, 2013 at 03:49:01PM -0500, Eric Sandeen wrote:
-> > >> On 10/22/13 3:39 PM, Dave Chinner wrote:
-> > >>> On Tue, Oct 22, 2013 at 08:12:51AM -0200, Geyslan Gregório Bem wrote:
-> > >>>> 2013/10/21 Dave Chinner <david@fromorbit.com>:
-> > >>>>> On Mon, Oct 21, 2013 at 07:00:59PM -0500, Eric Sandeen wrote:
-> > >>>>>> On 10/21/13 6:56 PM, Dave Chinner wrote:
-> > >>>>>>> On Mon, Oct 21, 2013 at 06:18:49PM -0500, Ben Myers wrote:
-> > >>>>>
-> > >>>>> Yes, but to continue the Devil's Advocate argument, the purpose of
-> > >>>>> debug code isn't to enlightent the casual reader or drive-by
-> > >>>>> patchers - it's to make life easier for people who actually spend
-> > >>>>> time debugging the code. And the people who need the debug code
-> > >>>>> are expected to understand why an ASSERT is not necessary. :)
-> > >>>>>
-> > >>>> Dave, Eric and Ben,
-> > >>>>
-> > >>>> This was catched by coverity (CID 102348).
-> > >>>
-> > >>> You should have put that in the patch description.
-> > >>>
-> > >>> Now I understand why there's been a sudden surge of irrelevant one
-> > >>> line changes from random people that have never touched XFS before.
-> > >>>
-> > >>> <sigh>
-> > >>>
-> > >>> Ok, lets churn the code just to shut the stupid checker up. This
-> > >>> doesn't fix a bug, it doesn't change behaviour, it just makes
-> > >>> coverity happy. Convert it to the for loop plus ASSERT I mentioned
-> > >>> in a previous message.
-> > >>
-> > >> You know, I respectfully disagree, but we might just have to agree
-> > >> to disagree.  The code, as it stands, tests for a null ptr
-> > >> and then dereferences it.  That's always going to raise some
-> > >> eyebrows, coverity or not, debug code or not, drive by or not.
-> > > 
-> > >> So even for future developers, making the code more self-
-> > >> documenting about this behavior would be a plus, whether it's by
-> > >> comment, by explicit ASSERT(), or whatever.  (I don't think
-> > >> that xfs_emerg() has quite enough context to make it obvious.)
-> > > 
-> > > Sure, but if weren't for the fact that Coverity warned about it,
-> > > nobody other that us people who work on the XFS code day in, day out
-> > > would have even cared about it.
-> > > 
-> > > That's kind of my point - again, as the Devil's Advocate - that
-> > > coverity is encouraging drive-by "fixes" by people who don't
-> > > actually understand any of the context, history and/or culture
-> > > surrounding the code being modified.
-> > 
-> > They shouldn't have to, the code (or comments therein) should
-> > make it obvious.  ;)  (in a perfect world...)
-> 
-> Obvious to whom, exactly?
-> 
-> That's the point I'm trying to make - "#ifdef DEBUG", two
-> comments indicating that it's validating the list and printing a
-> message just before it goes boom. That's pretty obvious code to
-> anyone who is used to tracking down corrupted list problems...
-> 
-> > > I have no problems with real bugs being fixed, but if we are
-> > > modifying code for no gain other than closing "coverity doesn't like
-> > > it" bugs, then we *should* be questioning whether the change is
-> > > really necessary.
-> > 
-> > But let's give Geyslan the benefit of the doubt, and realize that
-> > Coverity does find real things, and even if it originated w/ a
-> > Coverity CID, when one sees:
-> > 
-> > 	if (!a)
-> > 		printk("a thing\n")
-> > 
-> > 	a = a->b = . . . 
-> > 
-> > it looks suspicious to pretty much anyone.  I don't think Geyslan
-> > sent it to shut Coverity up, he sent it because it looked like
-> > a bug worth fixing (after Coverity spotted it).
-> > 
-> > Let's not be too hard on him for trying; I appreciate it more
-> > than spelling fixes and whitespace cleanups.  ;)
-> 
-> True, point taken. 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/notify/inotify/inotify_user.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-So, uh, lets go with the ASSERT approach then?  It seems to be a reasonable
-middle ground.  ;)
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 60f954a..cf4d837 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -58,7 +58,7 @@ struct kmem_cache *event_priv_cachep __read_mostly;
+ 
+ static int zero;
+ 
+-ctl_table inotify_table[] = {
++struct ctl_table inotify_table[] = {
+ 	{
+ 		.procname	= "max_user_instances",
+ 		.data		= &inotify_max_user_instances,
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-Regards,
-	Ben
