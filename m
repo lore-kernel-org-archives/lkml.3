@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3JVQgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 12:36:12 -0400
-Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:39160 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754307Ab3JVQgK (ORCPT
+	id S1754786Ab3JVQgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 12:36:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9078 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754307Ab3JVQgO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 12:36:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:334:355:368:369:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4250:4321:5007:7576:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: deer79_6f7e50d1d9501
-X-Filterd-Recvd-Size: 1961
-Message-ID: <1382459764.2041.90.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] kbuild: Increase kallsyms max symbol length
-From: Joe Perches <joe@perches.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Mario <jmario@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 22 Oct 2013 09:36:04 -0700
-In-Reply-To: <1382456783-22826-2-git-send-email-andi@firstfloor.org>
-References: <1382456783-22826-1-git-send-email-andi@firstfloor.org>
-	 <1382456783-22826-2-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Oct 2013 12:36:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,549,1378882800"; 
+   d="scan'208";a="415262807"
+From: "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>
+To: =?iso-2022-jp?B?VmxhZGltaXIgJxskQiZVGyhCLWNvZGVyL3BoY29kZXInIFNlcmJpbmVu?=
+	 =?iso-2022-jp?B?a28=?= <phcoder@gmail.com>,
+        The development of GNU GRUB <grub-devel@gnu.org>
+CC: Daniel Kiper <daniel.kiper@oracle.com>,
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, "keir@xen.org" <keir@xen.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+Thread-Topic: EFI and multiboot2 devlopment work for Xen
+Thread-Index: AQHOzl01U2QqStCwI06ZIUY46NKV8Zn/osgAgABUwACAAPKqAIAAAVgAgAAD9ICAAAPwgIAAPmUAgAAQ2ICAAAvggIAAAgsAgAACuACAAAVUAIAABkaA//+N9YA=
+Date: Tue, 22 Oct 2013 16:36:04 +0000
+Message-ID: <CE8BF72A.243C%richard.l.maliszewski@intel.com>
+In-Reply-To: <5266A6AD.90004@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.8.130913
+x-originating-ip: [10.252.138.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <D1E71335C480864DB53ED9A8023C7183@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 08:46 -0700, Andi Kleen wrote:
-> From: Joe Mario <jmario@redhat.com>
-> 
-> [AK: This seems like a ticking time bomb even without LTO,
-> so should be merged now. It causes very weird problems.
-> Thanks to Joe for tracking them down.]
-> 
-> With the added postfixes that LTO adds for local
-> symbols, the longest name in the kernel overflows
-> the namebuf[KSYM_NAME_LEN] array by two bytes.  That name is:
-> __pci_fixup_resumePCI_VENDOR_ID_SERVERWORKSPCI_DEVICE_ID_SERVERWORKS_HT1000SBquirk_disable_broadcom_boot_interrupt.1488004.672802
-> 
-> Double the max symbol name length.
-[]
-> diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-> index 6883e19..711a50f 100644
-> --- a/include/linux/kallsyms.h
-> +++ b/include/linux/kallsyms.h
-> @@ -9,7 +9,7 @@
->  #include <linux/kernel.h>
->  #include <linux/stddef.h>
->  
-> -#define KSYM_NAME_LEN 128
-> +#define KSYM_NAME_LEN 256
+I may be off-base, but when I was wading through the grub2 code earlier
+this year, it looked to me like it was going to refuse to launch anything
+via MB1 or MB2 if the current state was a secure boot launch.
 
-Doesn't doubling seems a tad excessive given the
-silly length of that symbol above?
+--Richard
 
+On 10/22/13 9:24 AM, "Vladimir 'φ-coder/phcoder' Serbinenko"
+<phcoder@gmail.com> wrote:
+
+>On 22.10.2013 18:01, Daniel Kiper wrote:
+>> On Tue, Oct 22, 2013 at 03:42:42PM +0000, Woodhouse, David wrote:
+>>> On Tue, 2013-10-22 at 16:32 +0100, Matthew Garrett wrote:
+>>>>
+>>>> There are two problems with this:
+>>>>
+>>>> 1) The kernel will only boot if it's signed with a key in db, not a
+>>>>key
+>>>> in MOK.
+>>>> 2) grub will read the kernel, but the kernel will have to read the
+>>>> initramfs using EFI calls. That means your initramfs must be on a FAT
+>>>> partition.
+>>>>
+>>>> If you're happy with those limitations then just use the chainloader
+>>>> command. If you're not, use the linuxefi command.
+>>>
+>>> Well, we're talking about booting the Xen hypervisor aren't we?
+>>>
+>>> So yes, there are reasons the Linux kernel uses the 'boot stub' the way
+>>> it does, but I'm not sure we advocate that Xen should emulate that in
+>>> all its 'glory'?
+>> 
+>> Right, I think that sensible mixture of multiboot2 protocol (it is
+>>needed
+>> to pass at least modules list to Xen; IIRC, linuxefi uses Linux Boot
+>>protocol
+>> for it) with extension proposed by Vladimir and something similar to
+>>linuxefi
+>> command will solve our problem (I proposed it in my first email). Users
+>>which
+>> do not need SB may use upstream GRUB2 and others could use
+>> 'multiboot2efi extension'.
+>I think it's possible to handle secureboot with same multiboot2 base.
+>Correct me if I'm wrong but secureboot doesn't specify format of
+>signaatures, only that they should be present and checked.
+>So why not to make that the only difference between secureboot-enabled
+>and not-secureboot-enabled versions is that former enforces signatures
+>even against user will. This will reduce the policy-charger patch to
+>about 100 lines.
+>The signature format to use can be discussed as well. My main problem
+>with pe signatures as used for EFI is their apparent complexity but I
+>haven't looked in them yet.
+>> 
+>> Daniel
+>> 
+>> _______________________________________________
+>> Grub-devel mailing list
+>> Grub-devel@gnu.org
+>> https://lists.gnu.org/mailman/listinfo/grub-devel
+>> 
+>
+>
 
