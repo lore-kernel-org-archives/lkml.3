@@ -1,81 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3JVVjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 17:39:00 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39884 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab3JVVi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 17:38:58 -0400
-Message-ID: <5266F06C.2080701@gmail.com>
-Date: Tue, 22 Oct 2013 16:38:52 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755246Ab3JVVlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 17:41:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23416 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753379Ab3JVVls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 17:41:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,550,1378882800"; 
+   d="scan'208";a="415409853"
+Date: Tue, 22 Oct 2013 22:41:29 +0100
+From: fengguang.wu@intel.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: -27% netperf TCP_STREAM regression by "tcp_memcontrol: Kill struct
+ tcp_memcontrol"
+Message-ID: <20131022214129.GB2715@localhost>
 MIME-Version: 1.0
-To: Matt Porter <matt.porter@linaro.org>,
-        Matthijs Kooijman <matthijs@stdin.nl>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
-References: <20131018141221.GH2721@beef> <5264F37E.9060307@ti.com> <20131022104829.GF15425@login.drsnuggles.stderr.nl> <20131022112520.GE29341@beef>
-In-Reply-To: <20131022112520.GE29341@beef>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 06:25 AM, Matt Porter wrote:
-> On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
->> Hi Kishon,
->>
->> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
->>> I think it makes sense to keep the data width property in the dwc2 node itself.
->>> I mean it describes how the dwc2 IP is configured in that particular SoC (given
->>> that it can be either <8> or <16>).
->> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
->> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
->> and 16 supported" would make sense as a property of dwc2 (though this
->> value should be autodetectable through GHWCFG4), while the actual 8 or
->> 16 supported by the PHY would make sense as property of a phy.
-> 
-> There would be no value in adding a property for an already detectable
-> value to dwc2's binding. To be honest, it's pretty much useless
-> information due to the existence of the "8 and 16" option.
-> 
->> Note sure if this is really useful in practice as well, or if just
->> setting the actual width to use on dwc2 makes more sense...
-> 
-> The GHWCFG4 information itself is not useful in practice, as described
-> in the original thread: https://lkml.org/lkml/2013/10/10/477
-> 
-> It's certainly useful in practice to have this width property in either
-> the dwc2 or the phy binding. One can make a case for either. As I
-> mentioned in the original post, if we put it in the phy binding we'll be
-> updating the generic phy binding. We'll then need an api added into the
-> generic phy framework to fetch the width of a phy.
-> 
-> Both cases are doable and trivial, we just need the canonical decision
-> from a DT maintainer as to where the property belongs. Given that they
-> are in ARM ksummit, I'm not expecting to hear anything right this
-> moment. :)
+Hi Eric,
 
-The host can support both, so it is not a property of the host and is a
-property of the phy. It is no different than what mode a SPI slave
-requires or whether an i2c slave supports 8 or 10-bit addressing. Those
-examples are all 1 to many rather than 1 to 1 where it doesn't really
-matter, but the same logic applies.
+We noticed big netperf throughput regressions
 
-Rob
+    a4fe34bf902b8f709c63      2e685cad57906e19add7  
+------------------------  ------------------------  
+                  707.40       -40.7%       419.60  lkp-nex04/micro/netperf/120s-200%-TCP_STREAM
+                 2775.60       -23.7%      2116.40  lkp-sb03/micro/netperf/120s-200%-TCP_STREAM
+                 3483.00       -27.2%      2536.00  TOTAL netperf.Throughput_Mbps
 
+and bisected it to
+
+commit 2e685cad57906e19add7189b5ff49dfb6aaa21d3
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Sat Oct 19 16:26:19 2013 -0700
+
+    tcp_memcontrol: Kill struct tcp_memcontrol
+    
+    Replace the pointers in struct cg_proto with actual data fields and kill
+    struct tcp_memcontrol as it is not fully redundant.
+    
+    This removes a confusing, unnecessary layer of abstraction.
+    
+    Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+:040000 040000 a1896af98145c8ae2765a787845c43c9700c7dc0 02c93b50f66f1d1b34983bf3cc7e9a0dcc7105dc M	include
+:040000 040000 ebe5d0619b54ddf730224f6581f595491eb36989 cd560b4a6e56cecac931814ba16420e167eb68f6 M	mm
+:040000 040000 5df01f70484e07fbf98a7d5b8e0a53270777ac3d 1f8d1b340d8810a79691777f4e3ee529027b3c9b M	net
+bisect run success
+
+# bad: [aec2994e1799312822a30fefc27205e7360fe5af] Merge 'pwm/for-next' into devel-hourly-2013102222
+# good: [31d141e3a666269a3b6fcccddb0351caf7454240] Linux 3.12-rc6
+git bisect start 'aec2994e1799312822a30fefc27205e7360fe5af' '31d141e3a666269a3b6fcccddb0351caf7454240' '--'
+# good: [ef26157747d42254453f6b3ac2bd8bd3c53339c3] batman-adv: tvlv - basic infrastructure
+git bisect good ef26157747d42254453f6b3ac2bd8bd3c53339c3
+# bad: [cc6a88faebab06b0323818cd102a6aae443cf34a] Merge 'netdev-next/master' into devel-hourly-2013102222
+git bisect bad cc6a88faebab06b0323818cd102a6aae443cf34a
+# good: [5cda73b68ebf7e08586d61e6777e64e12df23f07] Merge branch 'for-davem' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next
+git bisect good 5cda73b68ebf7e08586d61e6777e64e12df23f07
+# good: [a8fab0744585c1ab61009bfc1a1958f28e1c864f] x86/jump_label: expect default_nop if static_key gets enabled on boot-up
+git bisect good a8fab0744585c1ab61009bfc1a1958f28e1c864f
+# good: [21d35d212469c3138f8916f7e47b779313d79751] net: sky2: remove unnecessary pci_set_drvdata()
+git bisect good 21d35d212469c3138f8916f7e47b779313d79751
+# bad: [61c1db7fae21ed33c614356a43bf6580c5e53118] ipv6: sit: add GSO/TSO support
+git bisect bad 61c1db7fae21ed33c614356a43bf6580c5e53118
+# good: [a4fe34bf902b8f709c635ab37f1f39de0b86cff2] tcp_memcontrol: Remove the per netns control.
+git bisect good a4fe34bf902b8f709c635ab37f1f39de0b86cff2
+# bad: [1b66917d6b76db0abe1a1bbf86b2517ba8b91d98] cgxb4: remove duplicate include in cxgb4.h
+git bisect bad 1b66917d6b76db0abe1a1bbf86b2517ba8b91d98
+# bad: [0a6fa23dcb10eeb21adfd9955f7030f952a8122d] ipv4: Use math to point per net sysctls into the appropriate struct net.
+git bisect bad 0a6fa23dcb10eeb21adfd9955f7030f952a8122d
+# bad: [2e685cad57906e19add7189b5ff49dfb6aaa21d3] tcp_memcontrol: Kill struct tcp_memcontrol
+git bisect bad 2e685cad57906e19add7189b5ff49dfb6aaa21d3
+# first bad commit: [2e685cad57906e19add7189b5ff49dfb6aaa21d3] tcp_memcontrol: Kill struct tcp_memcontrol
+
+
+                              netperf.Throughput_Mbps
+
+   750 ++-------------------------------------------------------------------+
+       *...*...                             .*...                         ..*
+   700 ++      *...*..*...*...*...*...*...*.     *...*...*...*...*..*...*.  |
+       |                                                                    |
+   650 ++                                                                   |
+       |                                                                    |
+   600 ++                                                                   |
+       |                                                                    |
+   550 ++                                                                   |
+       |                                                                    |
+   500 ++                                                                   |
+       |                                                                    |
+   450 ++                                                                   |
+       O   O       O  O   O       O       O  O   O   O   O   O              |
+   400 ++------O--------------O-------O-------------------------------------+
+
+
+                                  vmstat.system.in
+
+   17200 ++-----------------------------------------------------------------+
+   17100 ++               ..*..*.      *...*..                              |
+         |          *...*.       ..  ..       *                        .*...|
+   17000 ++       ..                .          +                     *.     *
+   16900 ++..*.. .                 *            +                  ..       |
+   16800 *+     *                                +       *        .         |
+   16700 ++                                       *..   + +      *          |
+         |                                           . +   +   ..           |
+   16600 ++                                           *     + .             |
+   16500 ++                                                  *              |
+   16400 ++                                                                 |
+   16300 ++                                                                 |
+         O          O   O      O       O              O                     |
+   16200 ++  O  O           O      O       O  O   O      O   O              |
+   16100 ++-----------------------------------------------------------------+
+
+
+                                   vmstat.system.cs
+
+   550000 ++----------------------------------------------------------------+
+   500000 *+..*..*..        *...*..    *...  ..*..*..    .*..*...*..    *...*
+          |         .     ..       . ..    *.        . ..           . ..    |
+   450000 ++         *...*          *                 *              *      |
+   400000 ++                                                                |
+   350000 ++                                                                |
+   300000 ++                                                                |
+          |                                                                 |
+   250000 ++                                                                |
+   200000 ++                                                                |
+   150000 ++                                                                |
+   100000 ++                                                                |
+          |                                                                 |
+    50000 O+  O  O   O   O  O   O   O  O   O   O  O   O   O  O              |
+        0 ++----------------------------------------------------------------+
+
+
+                          lock_stat.slock-AF_INET.contentions
+
+   150000 ++----------------------------------------------------------------+
+          |                 *...         ..*...                             |
+   140000 ++               +    *      *.      *                            |
+   130000 ++              +      :    :         :                           |
+          |            ..*        :   :         :                       *...*
+   120000 ++ .*..  ..*.           :  :         O :                    ..    |
+   110000 ++.    *.                : :           :                  .*      |
+          *                         *             :       *       ..        |
+   100000 ++                                      *.     + :     *          |
+    90000 ++                                        ..  +   :  ..           |
+          |                                            +    : .             |
+    80000 ++                           O              *      *              |
+    70000 O+         O   O      O                     O                     |
+          |   O             O       O             O          O              |
+    60000 ++-----O-------------------------O--------------O-----------------+
+
+
+                 lock_stat.slock-AF_INET.contentions.lock_sock_nested
+
+   130000 ++----------------------------------------------------------------+
+          |                                                                 |
+   120000 ++                *...         ..*...*                            |
+   110000 ++               +    *      *.       :                           |
+          |               +      +    :        O:                       *...*
+   100000 ++ .*..   .*...*        +   :          :                    ..    |
+          |..     ..               + :           :                  .*      |
+    90000 *+     *                  *             :       *       ..        |
+          |                                       *.     + :     *          |
+    80000 ++                                        ..  +   :  ..           |
+    70000 ++                                           +    : .             |
+          |              O      O      O              *      *              |
+    60000 O+         O                            O   O                     |
+          |   O  O          O       O      O              O  O              |
+    50000 ++----------------------------------------------------------------+
+
+
+                    lock_stat.slock-AF_INET.contentions.tcp_v4_rcv
+
+   150000 ++----------------------------------------------------------------+
+          |                 *...                                            |
+   140000 ++               +    *      *...*...*                            |
+   130000 ++              +      :    :         :                           |
+          |            ..*        :   :         :                       *...*
+   120000 ++ .*..  ..*.           :  :         O :                    ..    |
+   110000 ++.    *.                : :           :                  .*      |
+          *                         *             :               ..        |
+   100000 ++                                      *.      *      *          |
+    90000 ++                                        ..  .. +   ..           |
+          |                                            .    + .             |
+    80000 ++                           O              *      *              |
+    70000 ++         O   O      O                     O                     |
+          O   O             O       O             O          O              |
+    60000 ++-----O-------------------------O--------------O-----------------+
+
+
+                        lock_stat.slock-AF_INET/1.contentions
+
+   50000 ++-----------------------------------------------------------------+
+         |                  *..                                           ..*
+   45000 ++                +           *...*..                          *.  |
+   40000 ++               +    *.     +       *..                     ..    |
+         |  .*..         +       ..  +           .                 ..*      |
+   35000 ++.    *...  ..*           +             *      *.      *.         |
+         *          *.             *               :    :  ..  ..           |
+   30000 ++                                         :   :     .             |
+         |                                          :  :     *              |
+   25000 ++                                          : :                    |
+   20000 ++                                           *                     |
+         |                                    O                             |
+   15000 ++                            O              O                     |
+         O   O  O   O   O   O  O   O       O      O      O   O              |
+   10000 ++-----------------------------------------------------------------+
+
+
+                  lock_stat.slock-AF_INET/1.contentions.tcp_v4_rcv
+
+   50000 ++-----------------------------------------------------------------+
+         |                  *..                                           ..*
+   45000 ++                +           *...*..                          *.  |
+   40000 ++               +    *.     +       *..                     ..    |
+         |  .*..         +       ..  +           .                 ..*      |
+   35000 ++.    *...  ..*           +             *      *.      *.         |
+         *          *.             *               :    :  ..  ..           |
+   30000 ++                                         :   :     .             |
+         |                                          :  :     *              |
+   25000 ++                                          : :                    |
+   20000 ++                                           *                     |
+         |                                    O                             |
+   15000 ++                            O              O                     |
+         O   O  O   O   O   O  O   O       O      O      O   O              |
+   10000 ++-----------------------------------------------------------------+
+
+
+                 lock_stat.slock-AF_INET/1.contentions.release_sock
+
+   35000 ++-----------------------------------------------------------------*
+         |                  *..                                         *.  |
+   30000 ++                +           *...*..*.                      ..    |
+         |                +    *..   ..         ..                 ..*      |
+         |  .*..         +        . .                    *.      *.         |
+   25000 ++.    *...*...*          *              *     :  ..  ..           |
+         *                                         +    :     .             |
+   20000 ++                                         +  :     *              |
+         |                                           + :                    |
+   15000 ++                                           *                     |
+         |                                                                  |
+         |                                    O                             |
+   10000 O+         O   O      O       O          O   O                     |
+         |   O  O           O      O       O             O   O              |
+    5000 ++-----------------------------------------------------------------+
+
+
+                           lock_stat.&rq->lock.contentions
+
+   45000 ++-----------------------------------------------------------------+
+         |                 .*..        *...                                 |
+   40000 ++              ..    *..   ..    *..                              |
+   35000 ++ .*..      ..*         . .         *.                       .*...*
+         |..    *...*.             *            ..                  .*.     |
+   30000 *+                                                       ..        |
+   25000 ++                                       *..    *...  ..*          |
+         |                                           . ..    *.             |
+   20000 ++                                           *                     |
+   15000 ++                                                                 |
+         |                                                                  |
+   10000 ++                                                                 |
+    5000 O+  O  O   O   O   O  O   O   O   O  O   O   O      O              |
+         |                                               O                  |
+       0 ++-----------------------------------------------------------------+
+
+
+                   lock_stat.&rq->lock.contentions.try_to_wake_up
+
+   35000 ++-----------------------------------------------------------------+
+         |                                                                  |
+   30000 ++                .*..            *..                              |
+         |   *           ..    *..        :                                 |
+   25000 ++.. :         *         .       :   *.                        *   |
+         |.   :        :           *.    :      ..                      ::  |
+   20000 *+    :       :             .. :                       .*     :  : |
+         |     :      :                 :         *...        ..  +    :  : |
+   15000 ++     :    :                 *              *      *     +  :    :|
+         |      *... :                                 +   ..       + :     *
+   10000 ++         *                                   + .          *      |
+         |                                               *                  |
+    5000 ++                                   O                             |
+         O   O  O   O   O   O  O       O   O          O  O   O              |
+       0 ++------------------------O--------------O-------------------------+
+
+
+                     lock_stat.&rq->lock.contentions.__schedule
+
+   35000 ++-----------------------------------------------------------------+
+         |                                                                  |
+   30000 ++                 *..                                             |
+         |                ..              .*..                              |
+   25000 ++ .*           .     *...     ..                              *.  |
+         |..  +        .*          *...*      *                        :  ..|
+   20000 *+    +     ..                        +                       :    |
+         |      *...*                           +              ..*... :     *
+   15000 ++                                      +         ..*.      *      |
+         |                                        *...*..*.                 |
+   10000 ++                                                                 |
+         |                                                                  |
+    5000 ++                    O                                            |
+         O   O  O   O   O   O      O   O   O  O   O   O  O   O              |
+       0 ++-----------------------------------------------------------------+
+
+
+             lock_stat.&(&base->lock)->rlock.contentions.lock_timer_base
+
+   18000 ++----------------------------*------------------------------------+
+         |                ..*..       +    *..                         .*...*
+   16000 ++           ..*.     *..   +        *...                  .*.     |
+   14000 ++ .*..*...*.            . +             *      *.       ..        |
+         |..                       *               +    :  ..   .*          |
+   12000 *+                                         +   :     ..            |
+   10000 ++                                          + :     *              |
+         |                                            *                     |
+    8000 ++                                                                 |
+    6000 ++                                                                 |
+         |                                                                  |
+    4000 ++                                                                 |
+    2000 ++                    O                                            |
+         O   O  O   O   O   O      O   O   O  O   O   O  O   O              |
+       0 ++-----------------------------------------------------------------+
+
+
+                     lock_stat.&(&n->list_lock)->rlock.contentions
+
+   140000 ++----------------------------------------------------------------+
+          |                                       O                         |
+   120000 O+  O  O   O   O  O   O                     O                     |
+          |                         O  O   O   O          O  O              |
+   100000 ++                                                                |
+          |                                                                 |
+    80000 ++                                                                |
+          |                                                                 |
+    60000 ++                                                                |
+          |                                                                 |
+    40000 ++                                                                |
+          |                                                                 |
+    20000 ++                                                                |
+          |                                                                 |
+        0 *+--*--*---*---*--*---*---*--*---*---*--*---*---*--*---*---*--*---*
+
+
+            lock_stat.&(&n->list_lock)->rlock.contentions.get_partial_node
+
+   250000 ++----------------------------------------------------------------+
+          |                                                                 |
+          O                                       O                         |
+   200000 ++  O  O   O   O  O   O   O  O   O   O      O      O              |
+          |                                               O                 |
+          |                                                                 |
+   150000 ++                                                                |
+          |                                                                 |
+   100000 ++                                                                |
+          |                                                                 |
+          |                                                                 |
+    50000 ++                                                                |
+          |                                                                 |
+          |                                                                 |
+        0 *+--*--*---*---*--*---*---*--*---*---*--*---*---*--*---*---*--*---*
+
+
+           lock_stat.&(&n->list_lock)->rlock.contentions.unfreeze_partials
+
+   45000 ++-----------------------------------------------------------------+
+         O                                        O                         |
+   40000 ++         O   O   O                         O                     |
+   35000 ++  O  O              O   O       O  O          O   O              |
+         |                             O                                    |
+   30000 ++                                                                 |
+   25000 ++                                                                 |
+         |                                                                  |
+   20000 ++                                                                 |
+   15000 ++                                                                 |
+         |                                                                  |
+   10000 ++                                                                 |
+    5000 ++                                                                 |
+         |                                                                  |
+       0 *+--*--*---*---*---*--*---*---*---*--*---*---*--*---*---*---*--*---*
+
+
+                                  iostat.cpu.user
+
+   1.8 ++-------------------------------------------------------------------+
+       *...*...*.         *...*.      *...*..                               |
+   1.6 ++        ..     ..      ..  ..       *...*..    .*...*...*      *...*
+       |               .           .                . ..          +   ..    |
+       |           *..*           *                  *             + .      |
+   1.4 ++                                                           *       |
+       |                                                                    |
+   1.2 ++                                                                   |
+       |                                                                    |
+     1 ++                                                                   |
+       |                                                                    |
+       |                                                                    |
+   0.8 ++                         O       O      O   O                      |
+       O   O   O   O  O   O   O       O      O           O   O              |
+   0.6 ++-------------------------------------------------------------------+
+
+
+                                  iostat.cpu.system
+
+   96.6 ++------------------------------------------------------------------+
+        |   O          O              O   O       O  O   O                  |
+   96.4 O+      O  O       O   O  O                          O              |
+        |                                                                   |
+        |                                                                   |
+   96.2 ++                                                                  |
+        |                                                                   |
+     96 ++                                                                  |
+        |                                                                   |
+   95.8 ++                                    O                             |
+        |            ..*.         *.                 *..            *..     |
+        |          *.    ..      +  ..             ..   .         ..   .  ..*
+   95.6 ++       ..             +           ..*...*      *...  ..*      *.  |
+        |     ..*          *...*      *...*.                 *.             |
+   95.4 *+--*---------------------------------------------------------------+
 
