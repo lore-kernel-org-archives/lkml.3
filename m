@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab3JVMvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 08:51:42 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:61748 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab3JVMvk (ORCPT
+	id S1753757Ab3JVMwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 08:52:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9921 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3JVMwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 08:51:40 -0400
-Date: Tue, 22 Oct 2013 14:49:06 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Zhang <nvmarkzhang@gmail.com>
-Cc: rpurdie@rpsys.net, jg1.han@samsung.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
-Message-ID: <20131022124905.GA24255@ulmo.nvidia.com>
-References: <525F8895.5010806@gmail.com>
- <20131017071445.GA2502@ulmo.nvidia.com>
- <5260BD8C.7000200@gmail.com>
- <20131022072443.GB8681@ulmo.nvidia.com>
- <52663D6D.5000806@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-In-Reply-To: <52663D6D.5000806@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Oct 2013 08:52:03 -0400
+X-AuditID: cbfee68e-b7f416d0000020d6-a7-526674f16311
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: anton@enomsg.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        cw00.choi@samsung.com
+Subject: [PATCH 0/4] charger-manager: Support Devicetree and use IIO susbystem
+Date: Tue, 22 Oct 2013 21:51:53 +0900
+Message-id: <1382446317-32613-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsWyRsSkRPdjSVqQwfzF5hYHt2paXP/ynNVi
+	/pFzrBYTV05mtjjwZwejxdmmN+wWl3fNYbO43biCzeLwigNMDpweCz5fYfeY0P+J0WPzCi2P
+	O9f2sHn0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxrJjW9kK1rFX7D4xm6mB8RFrFyMnh4SA
+	icTby1OYIWwxiQv31rN1MXJxCAksZZRYvWIbG0zRr5unwIqEBBYxSpw9VwFR1MgkMfv1BSaQ
+	BJuAlsT+FzfAGkQE/CSuv93GBFLELDCdUWLlwj6wdcJAiYYHDUCTODhYBFQlmrflgoR5BVwl
+	Plw/CLVMTuLDnkfsIL0SAtPZJc5/vQOWYBEQkPg2+RALSK+EgKzEpgNQV0tKHFxxg2UCo+AC
+	RoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIEBffrfs74djDcPWB9iTAYaN5FZSjQ5HxgR
+	eSXxhsZmRhamJqbGRuaWZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBsaNp
+	UrrYNY/Npkc/9NhbPZ27O3BiZveKqYsk9x1bZ+szX0bhZbjfk0VLpQ4El1oFfzxxdWHAy6Vz
+	l+dU2D8+pnZpwxafCbPTZ3Xv5+N6kq3Ks9tnuaVqrfPBou747xHT+Xn1We2v3mHsfnBB8Plv
+	Rb+Ztadz5gS/2sqQefppuNKpj5O1o180+yuxFGckGmoxFxUnAgCQI9HOfgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t9jAd2PJWlBBgseGFgc3Kppcf3Lc1aL
+	+UfOsVpMXDmZ2eLAnx2MFmeb3rBbXN41h83iduMKNovDKw4wOXB6LPh8hd1jQv8nRo/NK7Q8
+	7lzbw+bRt2UVo8fnTXIBbFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5
+	ibmptkouPgG6bpk5QEcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDOW
+	HdvKVrCOvWL3idlMDYyPWLsYOTkkBEwkft08xQxhi0lcuLeeDcQWEljEKHH2XEUXIxeQ3cgk
+	Mfv1BSaQBJuAlsT+FzfAikQE/CSuv93GBFLELDCdUWLlwj6wqcJAiYYHDUBTOThYBFQlmrfl
+	goR5BVwlPlw/yAaxTE7iw55H7BMYuRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6X
+	Z1I7GFc2WBxiFOBgVOLhzbBKDRJiTSwrrsw9xCjBwawkwtvsmxYkxJuSWFmVWpQfX1Sak1p8
+	iDEZaPlEZinR5HxgLOeVxBsam5gZWRqZG1oYGZuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsT
+	B6dUA+Ma9ZNaHFtaPt0Qn8N7ytrrTkg6O8e2VW++cFo+eX/48udMq5ykRsdPoQKXeVcedrtQ
+	6cEi7rs/TqvnWdDJ45MuuNdOiXnWp37KXebeib52XlbFjg99v6ITil/PcG263c77a4lPYMSX
+	4NKrH67ovVZuODPNM7X5sT5X76VvXnK23/9tj46490GJpTgj0VCLuag4EQCOdiX+2wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset support DT(Device Tree) to get platform data for charger desc
+structure from dts file and use IIO(Industrial I/O) subsystem to read ADC
+value of battery temperature instead of using legacy method.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chanwoo Choi (4):
+  charger-manager: Support DT to get platform data for charger_desc
+  charger-manager: Use IIO subsystem to read battery temperature instead of legacy method
+  charger-manager: Add device tree binding for charger-manager
+  charger-manager: Remove build warning fo unused variable
 
-On Tue, Oct 22, 2013 at 04:55:09PM +0800, Mark Zhang wrote:
-> On 10/22/2013 03:24 PM, Thierry Reding wrote:
-> > On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
-> [...]
-> >>>
-> >>
-> >> Okay, I just want to set the "notify" function pointer in "struct
-> >> platform_pwm_backlight_data", because I want to tune the brightness
-> >> value before the pwm-bl sets the brightness to hardware. I don't know
-> >> how to do that, unless we define the platform data explicitly.
-> >=20
-> > Okay, my question should have been what you need the functions for and
-> > why you think you need them.
-> >=20
->=20
-> If I understanding you correctly, I suppose I've said that: "because I
-> want to tune the brightness value before the pwm-bl sets the brightness
-> to hardware".
+ .../devicetree/bindings/power/charger-manager.txt  | 106 ++++++
+ drivers/power/Kconfig                              |   1 +
+ drivers/power/charger-manager.c                    | 379 ++++++++++++++++++++-
+ include/linux/power/charger-manager.h              |  25 +-
+ 4 files changed, 493 insertions(+), 18 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/charger-manager.txt
 
-Why do you want to tune the brightness value? What are you trying to
-achieve?
+-- 
+1.8.0
 
-Thierry
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZnRBAAoJEN0jrNd/PrOhMn8P/0rPr2bbg6VRri7K1nW0p4DR
-0BoIiodZcUekOCznhN/P2R53Jwmdyc/F/52qC6djOOZY+AacanqkokGXw5cqcmHm
-qCIQTX2wBiRBqQbVqyUiIejihaDwfZqSCh4QdGruJ+Gtv1oEGfaTX+jBCIcWMzgi
-K024jvhVGJFHfrAW3v1IFmSELljt2j84fw+ZCZ+xmnLnFysOuxgGGl1pwz+sEsm5
-71vjHbtuad2uUED+X4mgalmhEPH7vxiiv32RvlP+BHOFxrcqe2Z6PvW1jticqJQ4
-z0lyfHOxkHDRASLGcQ1gJl5aSUCSGrnczLCWCl8wMDMkNyhEsU8GSNE1zGAo65Dw
-HyvVNkMswQeS9QfIcdvOVYSiO62UtXr09jiuqe1Wy7zX9NbYjjgbkkNLjbbNM6BP
-BZbMIqxm01MVKsRtXEOI9vcuM5uxiEucatNJV8mMwVkpSR34dmyKoCZlWR2q7P7e
-oLnK+nRC6UocW1N27q2vwA7Hw7wiQTNeAkDv669BD/6715kTLoiSYRds/xqGe22d
-O0ju9vVx6sD4Fez5JyM3sUxh/s5zf8BqqJdwFSY1Vu2wdaty7cwz1NT4FzKCYnej
-FiRdEbsHSX8sMhy5wyjUgCrT7sSBRRDGzZawa8kYqeW+p3AX3v8GaqolmpVF8CUn
-rVDkah6V8Dsv9u/Qx0GS
-=71Hm
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
