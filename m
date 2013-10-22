@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3JVRG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 13:06:27 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:40774 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3JVRGZ (ORCPT
+	id S1754338Ab3JVRG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 13:06:29 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:37099 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab3JVRG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 13:06:25 -0400
-Date: Tue, 22 Oct 2013 18:06:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
-Message-ID: <20131022170621.GB2620@lee--X1>
-References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
- <20130807084054.GA18668@lee--X1>
- <52667A6C.6000301@linutronix.de>
- <20131022160523.GB24024@lee--X1>
- <5266AA0F.1030603@linutronix.de>
+	Tue, 22 Oct 2013 13:06:27 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+/POpc6YInl1izN/ix+qfX
+Date: Tue, 22 Oct 2013 10:06:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Milo Kim <milo.kim@ti.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] leds: lp55xx: handle enable pin in driver
+Message-ID: <20131022170604.GP15154@atomide.com>
+References: <1382446896-28436-1-git-send-email-sre@debian.org>
+ <1382446896-28436-2-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5266AA0F.1030603@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382446896-28436-2-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Oct 2013, Sebastian Andrzej Siewior wrote:
-
-> On 10/22/2013 06:05 PM, Lee Jones wrote:
-> >> I added reg_se_cache to cache the content of REG_SE once and
-> >> synchronize it among TSC & ADC access. REG_SE is set to 0 by the HW
-> >> after "work" has been done. So you need to know the old value or TSC may
-> >> disable ADC and the other way around.
-> > 
-> > Yep, it's initialised as '0'.
-> > 
-> > 12.5.1.15 STEPENABLE Register (offset = 54h) [reset = 0h]
+* Sebastian Reichel <sre@debian.org> [131022 06:02]:
+> This patch moves the handling of the chip's enable pin from the board
+> code into the driver. It also updates all board-code files using the
+> driver to incorporate this change.
 > 
-> Ehm yes but!. After init it is set to 0, correct. The value was never
-> read from the HW. It was always set via  am335x_tsc_se_set() to "cache
-> | argument" and written to HW from both sides (TSC, ADC). This
-> initialization is done at ->probe() time in both drivers.
-> 
-> The value remains (remained) constant over the whole time
-> so both drivers only called am335x_tsc_se_update() to set the value
-> (the enabled steps of both sides) back to the register (because after
-> the conversation the value was 0 according to my memory) and since
-> 32bit reads are atomic I didn't use a lock here.
+> This is needed for device tree support of the enable pin.
 
-Hmm.. I'm starting to see what you mean.
+This seems safe to merge along with the other LED patches, the
+changes to arch/arm/mach-omap2 should not conflict with anything.
 
-So what's the point of the read before write then?
+So for the arch/arm/mach-omap2 changes:
 
-Why don't you use the cache all of the time?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Tony Lindgren <tony@atomide.com>
