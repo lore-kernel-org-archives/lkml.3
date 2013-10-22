@@ -1,60 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab3JVLDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 07:03:09 -0400
-Received: from ring0.de ([91.143.88.219]:35574 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976Ab3JVLDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 07:03:07 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCH] DTS: ARM: OMAP3-N900: Fix i2c bus speed
-Date: Tue, 22 Oct 2013 13:02:54 +0200
-Message-Id: <1382439774-16265-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1753188Ab3JVLD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 07:03:28 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:39500 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753036Ab3JVLD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 07:03:26 -0400
+X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 07:03:26 EDT
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] perf timechart: group figures and add title with details
+Date: Tue, 22 Oct 2013 14:56:50 +0400
+Message-Id: <1382439412-23713-5-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the bus speed of i2c bus 2 and 3.
+Add titles to figures so we can run SVG interactively in Firefox
+and check event details in the tooltips.
+This also aids exploring SVG with Inkscape because when user clicks on
+one part of logical figure, all parts are selected.
+It's also possible to read titles with Inkscape in the object details.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- arch/arm/boot/dts/omap3-n900.dts | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-timechart.c |  4 ++--
+ tools/perf/util/svghelper.c    | 54 +++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/svghelper.h    |  3 ++-
+ 3 files changed, 57 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 57f5a2a..2374b9a 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -78,14 +78,14 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c2_pins>;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index c7b30a8c7f3b..4d2ac96b75b1 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -798,9 +798,9 @@ static void draw_process_bars(void)
+ 				if (sample->type == TYPE_RUNNING)
+ 					svg_sample(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_BLOCKED)
+-					svg_box(Y, sample->start_time, sample->end_time, "blocked");
++					svg_blocked(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_WAITING)
+-					svg_waiting(Y, sample->start_time, sample->end_time);
++					svg_waiting(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				sample = sample->next;
+ 			}
  
--	clock-frequency = <400000>;
-+	clock-frequency = <100000>;
- };
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 96c866045d60..c41be3c5722b 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -95,6 +95,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
  
- &i2c3 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c3_pins>;
+ 	total_height = (1 + rows + cpu2slot(cpus)) * SLOT_MULT;
+ 	fprintf(svgfile, "<?xml version=\"1.0\" standalone=\"no\"?> \n");
++	fprintf(svgfile, "<!DOCTYPE svg SYSTEM \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+ 	fprintf(svgfile, "<svg width=\"%i\" height=\"%" PRIu64 "\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n", svg_page_width, total_height);
  
--	clock-frequency = <100000>;
-+	clock-frequency = <400000>;
- };
+ 	fprintf(svgfile, "<defs>\n  <style type=\"text/css\">\n    <![CDATA[\n");
+@@ -128,12 +129,29 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT, type);
+ }
  
- &mmc1 {
++static char *time_to_string(u64 duration);
++void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
++{
++	if (!svgfile)
++		return;
++
++	fprintf(svgfile, "<g>\n");
++	fprintf(svgfile, "<title>#%d blocked %s</title>\n", cpu,
++		time_to_string(end - start));
++	svg_box(Yslot, start, end, "blocked");
++	fprintf(svgfile, "</g>\n");
++}
++
+ void svg_sample(int Yslot, int cpu, u64 start, u64 end)
+ {
+ 	double text_size;
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>#%d running %s</title>\n",
++		cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
+ 
+@@ -148,6 +166,7 @@ void svg_sample(int Yslot, int cpu, u64 start, u64 end)
+ 		fprintf(svgfile, "<text x=\"%1.8f\" y=\"%1.8f\" font-size=\"%1.8fpt\">%i</text>\n",
+ 			time2pixels(start), Yslot *  SLOT_MULT + SLOT_HEIGHT - 1, text_size,  cpu + 1);
+ 
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ static char *time_to_string(u64 duration)
+@@ -168,7 +187,7 @@ static char *time_to_string(u64 duration)
+ 	return text;
+ }
+ 
+-void svg_waiting(int Yslot, u64 start, u64 end)
++void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
+ {
+ 	char *text;
+ 	const char *style;
+@@ -192,6 +211,7 @@ void svg_waiting(int Yslot, u64 start, u64 end)
+ 	font_size = round_text_size(font_size);
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
++	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
+ 	if (font_size > MIN_TEXT_SIZE)
+@@ -242,6 +262,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	max_freq = __max_freq;
+ 	turbo_frequency = __turbo_freq;
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"cpu\"/>\n",
+ 		time2pixels(first_time),
+ 		time2pixels(last_time)-time2pixels(first_time),
+@@ -253,6 +275,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 
+ 	fprintf(svgfile, "<text transform=\"translate(%4.8f,%4.8f)\" font-size=\"1.25pt\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - 4, cpu_model());
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
+@@ -264,6 +288,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
+ 
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
++	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+@@ -288,6 +313,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (type > 6)
+ 		type = 6;
+ 	sprintf(style, "c%i", type);
+@@ -306,6 +333,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 	if (width > MIN_TEXT_SIZE)
+ 		fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"%3.8fpt\">C%i</text>\n",
+ 			time2pixels(start), cpu2y(cpu)+width, width, type);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ static char *HzToHuman(unsigned long hz)
+@@ -339,6 +368,8 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (max_freq)
+ 		height = freq * 1.0 / max_freq * (SLOT_HEIGHT + SLOT_MULT);
+ 	height = 1 + cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - height;
+@@ -347,6 +378,7 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"0.25pt\">%s</text>\n",
+ 		time2pixels(start), height+0.9, HzToHuman(freq));
+ 
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ 
+@@ -358,6 +390,12 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>%s wakes up %s</title>\n",
++		desc1 ? desc1 : "?",
++		desc2 ? desc2 : "?");
++
+ 	if (row1 < row2) {
+ 		if (row1) {
+ 			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+@@ -395,6 +433,8 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 	if (row1)
+ 		fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_wakeline(u64 start, int row1, int row2)
+@@ -405,6 +445,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (row1 < row2)
+ 		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
+@@ -417,6 +459,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		height += SLOT_HEIGHT;
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_interrupt(u64 start, int row)
+@@ -424,10 +468,16 @@ void svg_interrupt(u64 start, int row)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>Wakeup from interrupt</title>\n");
++
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT);
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT + SLOT_HEIGHT);
++
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_text(int Yslot, u64 start, const char *text)
+@@ -455,6 +505,7 @@ void svg_legenda(void)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
+ 	svg_legenda_box(0,	"Running", "sample");
+ 	svg_legenda_box(100,	"Idle","c1");
+ 	svg_legenda_box(200,	"Deeper Idle", "c3");
+@@ -462,6 +513,7 @@ void svg_legenda(void)
+ 	svg_legenda_box(550,	"Sleeping", "process2");
+ 	svg_legenda_box(650,	"Waiting for cpu", "waiting");
+ 	svg_legenda_box(800,	"Blocked on IO", "blocked");
++	fprintf(svgfile, "</g>\n");
+ }
+ 
+ void svg_time_grid(void)
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index e0781989cc31..630114b847d0 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -5,8 +5,9 @@
+ 
+ extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
+ extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
++extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end);
+ extern void svg_sample(int Yslot, int cpu, u64 start, u64 end);
+-extern void svg_waiting(int Yslot, u64 start, u64 end);
++extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end);
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
 -- 
-1.8.4.rc3
+1.8.1.2
 
