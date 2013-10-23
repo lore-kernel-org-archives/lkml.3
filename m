@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3JWJ4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:56:08 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40823 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab3JWJ4A (ORCPT
+	id S1753337Ab3JWJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:56:47 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:41025 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab3JWJ4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:56:00 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 7/9] backlight: atmel-pwm-bl: use gpio_is_valid
-Date: Wed, 23 Oct 2013 11:55:41 +0200
-Message-Id: <1382522143-32072-8-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+	Wed, 23 Oct 2013 05:56:44 -0400
+X-Spam-Score: -100.8
+Message-ID: <52679D19.903@asianux.com>
+Date: Wed, 23 Oct 2013 17:55:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: [PATCH] include/linux/usb/usb_phy_gen_xceiv.h: check built-in or
+ module for swithing usb_nop_xceiv_register() implementation
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use gpio_is_valid rather than open coding the more restrictive != -1
-test.
+When CONFIG_NOP_USB_XCEIV is as 'm', usb_nop_xceiv_register() will be
+exported when the related module is loaded. So for built-in source
+code, still need use the empty one.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Or it will can not pass compiling, the related error (for arm, with 
+allmodconfig):
+
+  arch/arm/mach-omap2/built-in.o: In function `omap3_evm_init':
+  arch/arm/mach-omap2/board-omap3evm.c:703: undefined reference to `usb_nop_xceiv_register'
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/linux/usb/usb_phy_gen_xceiv.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index db68cab..ffc30d2 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -48,7 +48,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- 		pwm_duty = pwmbl->pdata->pwm_duty_min;
+diff --git a/include/linux/usb/usb_phy_gen_xceiv.h b/include/linux/usb/usb_phy_gen_xceiv.h
+index f9a7e7b..8515958 100644
+--- a/include/linux/usb/usb_phy_gen_xceiv.h
++++ b/include/linux/usb/usb_phy_gen_xceiv.h
+@@ -12,7 +12,8 @@ struct usb_phy_gen_xceiv_platform_data {
+ 	unsigned int needs_reset:1;
+ };
  
- 	if (!intensity) {
--		if (pwmbl->gpio_on != -1) {
-+		if (gpio_is_valid(pwmbl->gpio_on)) {
- 			gpio_set_value(pwmbl->gpio_on,
- 					0 ^ pwmbl->pdata->on_active_low);
- 		}
-@@ -57,7 +57,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- 	} else {
- 		pwm_channel_enable(&pwmbl->pwmc);
- 		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
--		if (pwmbl->gpio_on != -1) {
-+		if (gpio_is_valid(pwmbl->gpio_on)) {
- 			gpio_set_value(pwmbl->gpio_on,
- 					1 ^ pwmbl->pdata->on_active_low);
- 		}
-@@ -146,7 +146,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
- 	if (retval)
- 		return retval;
- 
--	if (pwmbl->gpio_on != -1) {
-+	if (gpio_is_valid(pwmbl->gpio_on)) {
- 		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
- 					"gpio_atmel_pwm_bl");
- 		if (retval)
-@@ -196,7 +196,7 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
- {
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
- 
--	if (pwmbl->gpio_on != -1) {
-+	if (gpio_is_valid(pwmbl->gpio_on)) {
- 		gpio_set_value(pwmbl->gpio_on,
- 					0 ^ pwmbl->pdata->on_active_low);
- 	}
+-#if IS_ENABLED(CONFIG_NOP_USB_XCEIV)
++#if IS_BUILTIN(CONFIG_NOP_USB_XCEIV) || \
++	(IS_MODULE(CONFIG_NOP_USB_XCEIV) && defined(MODULE))
+ /* sometimes transceivers are accessed only through e.g. ULPI */
+ extern void usb_nop_xceiv_register(void);
+ extern void usb_nop_xceiv_unregister(void);
 -- 
-1.8.4
-
+1.7.7.6
