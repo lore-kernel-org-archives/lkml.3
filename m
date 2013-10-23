@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab3JWBst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 21:48:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:32076 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab3JWBsr (ORCPT
+	id S1755379Ab3JWBuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 21:50:19 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:61706 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab3JWBuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 21:48:47 -0400
-X-AuditID: cbfee691-b7f866d000001b8c-59-52672afd6889
+	Tue, 22 Oct 2013 21:50:16 -0400
+X-AuditID: cbfee68d-b7fa16d0000029b0-2a-52672b5724eb
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Johan Hovold'" <jhovold@gmail.com>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
@@ -15,42 +15,42 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <1382462819-28576-1-git-send-email-jhovold@gmail.com>
- <1382462819-28576-4-git-send-email-jhovold@gmail.com>
-In-reply-to: <1382462819-28576-4-git-send-email-jhovold@gmail.com>
-Subject: Re: [PATCH 3/9] backlight: atmel-pwm-bl: fix module autoload
-Date: Wed, 23 Oct 2013 10:48:45 +0900
-Message-id: <001b01cecf92$028357a0$078a06e0$%han@samsung.com>
+ <1382462819-28576-5-git-send-email-jhovold@gmail.com>
+In-reply-to: <1382462819-28576-5-git-send-email-jhovold@gmail.com>
+Subject: Re: [PATCH 4/9] backlight: atmel-pwm-bl: clean up probe error handling
+Date: Wed, 23 Oct 2013 10:50:14 +0900
+Message-id: <001c01cecf92$37eb85c0$a7c29140$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7PS/Rj/aLk0YxaSdKjhZiQjtXH+wARfVaw
+Thread-index: Ac7PS/T8Kp166tehRPC4J0DCD7MjYAARidGg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zY92/WulBBk13DS1eHtK0uLzwEqvF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t8zfd1w7fQggy9nxS1eHtK0uLzwEqvF
 	3lXSFif6PrBaXN41h83i2+Vmdovdu56yOrB7LPi1lcVj56y77B575v9g9ejbsorR4/MmuQDW
-	KC6blNSczLLUIn27BK6MqYucCl4wVRx9v4C1gXEeUxcjJ4eEgInEo+nfWCFsMYkL99azdTFy
-	cQgJLGOUWPP+ICtM0a31X5ggEtMZJb5v6mWFcH4xSiz4sp0NpIpNQE3iy5fD7CC2CJD9pPcI
-	O0gRs8A2RokTy/cxgySEBCol7n2ZD9bAKeAk8ezxCUYQW1jAVeLMg36wZhYBVYnXZ56wgNi8
-	ArYST7Y/Y4ewBSV+TL4HFmcW0JJYv/M4E4QtL7F5zVug+RxAp6pLPPqrC3GDkUTD1R+sECUi
-	EvtevGMEuUdC4CW7xJ0lb1kgdglIfJt8iAWiV1Zi0wFmiI8lJQ6uuMEygVFiFpLNs5BsnoVk
-	8ywkKxYwsqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECIndiTsY7x+wPsSYDLR+IrOUaHI+
-	MPbzSuINjc2MLExNTI2NzC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGx
-	MuCA7eH6BHuerzkiSxxEzZRfnqoq/3XuTr/ahMJncYldy4/dL5110XHF1cdvKjYKazPuf7L1
-	DQuLefeW9N4/nBuurGBn2J7AJ6E0af6Mmqq7XsFiEXsfLD0j+nzLiuvxykZGR3zL32U+VQ+d
-	7VzTm31W88LWT/FXDI+2Kn/2O5kU3XP/jt0rJZbijERDLeai4kQA8PKw0fMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jQd2/WulBBmvPa1q8PKRpcXnhJVaL
-	vaukLU70fWC1uLxrDpvFt8vN7Ba7dz1ldWD3WPBrK4vHzll32T32zP/B6tG3ZRWjx+dNcgGs
-	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
-	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM6Yucip4wVRx9P0C1gbGeUxd
-	jJwcEgImErfWf4GyxSQu3FvP1sXIxSEkMJ1R4vumXlYI5xejxIIv29lAqtgE1CS+fDnMDmKL
-	ANlPeo+wgxQxC2xjlDixfB8zSEJIoFLi3pf5YA2cAk4Szx6fYASxhQVcJc486AdrZhFQlXh9
-	5gkLiM0rYCvxZPszdghbUOLH5HtgcWYBLYn1O48zQdjyEpvXvAWazwF0qrrEo7+6EDcYSTRc
-	/cEKUSIise/FO8YJjEKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/
-	dxMjODE8k9rBuLLB4hCjAAejEg+vRXtakBBrYllxZe4hRgkOZiUR3mZfoBBvSmJlVWpRfnxR
-	aU5q8SHGZKBHJzJLiSbnA5NWXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtS
-	i2C2MHFwSjUwtu355Nnu28fGLfr7v2RE/IqQaOnyiYl2zguqJi9SZZqpXTr36+PdMxZ0qT+b
-	ePT9fPGVVzeVf5Vb++Hl02xOoxUXGa/X968OlLvVJfaH39Kx0/g16/uHd16emHvNWfn+v9mx
-	yeoxtoFGP1vqfdf+2VF46MsmzfpC1SleFxfIWNV+lshQr25yUWIpzkg01GIuKk4EAF8XMu1Q	AwAA
+	KC6blNSczLLUIn27BK6MxeczC1pZKh7samBsYFzB3MXIySEhYCJx5/wZNghbTOLCvfVgtpDA
+	MkaJt98SYWq277kNFOcCik9nlGh6e5MJwvnFKDHl7w+wSWwCahJfvhxmB7FFgOwnvUfYQYqY
+	BbYxSpxYvo8ZYmylxPuzZ8CKOAWcJJ6+u8AEYgsL+Esc3v2fFcRmEVCVOPjqIlg9r4CtxJnv
+	fxkhbEGJH5PvsYDYzAJaEut3HmeCsOUlNq95C1TPAXSqusSjv7oQNxhJ3Hg8ixmiRERi34t3
+	jCD3SAi8ZJeYv7YLapeAxLfJh1ggemUlNh2AhoqkxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJG
+	llWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYIZHbu4Px9gHrQ4zJQOsnMkuJJucDIz+vJN7Q
+	2MzIwtTE1NjI3NKMNGElcd6kh0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhi1r3c6LvJ+
+	d5JRfzebKYvH588+IpmPO9IEQm6ZTWtblS2QbRguukhyWpy0/rc9cRedHa5LTls0VWAd6967
+	LepP/tolqat0zy1ccWXZ663nVp+d+GDz9Jcrp8ydqaTvrCrVlp+9YPYlqWdVL+/qqqXyiy6+
+	e011hfeko4/+P9T52nWZd+I1ZVMVJZbijERDLeai4kQAUv6HXPICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jQd1w7fQgg3v/hCxeHtK0uLzwEqvF
+	3lXSFif6PrBaXN41h83i2+Vmdovdu56yOrB7LPi1lcVj56y77B575v9g9ejbsorR4/MmuQDW
+	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
+	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGYvPZxa0slQ82NXA2MC4grmL
+	kZNDQsBEYvue22wQtpjEhXvrgWwuDiGB6YwSTW9vMkE4vxglpvz9AdbBJqAm8eXLYXYQWwTI
+	ftJ7hB2kiFlgG6PEieX7wIqEBCol3p89A1bEKeAk8fTdBSYQW1jAX+Lw7v+sIDaLgKrEwVcX
+	wep5BWwlznz/ywhhC0r8mHyPBcRmFtCSWL/zOBOELS+xec1boHoOoFPVJR791YW4wUjixuNZ
+	zBAlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3
+	MYITwzPpHYyrGiwOMQpwMCrx8Fq2pwUJsSaWFVfmHmKU4GBWEuFt9gUK8aYkVlalFuXHF5Xm
+	pBYfYkwGenQis5Rocj4waeWVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUI
+	ZgsTB6dUA+M0u12bn7MIpmWd4275cE+2xmRhj8lH9aBLsmvu3t4zdbPaHTPRS9Z1zy7Mrjve
+	I3x36eSbNytP1yT0ae14srsptG7qN/eOqUebb2x0LrkWN3lDRuM8iZtV7cVcyt2GFrbray8p
+	G0U9Efye93X9atPb943qE4Kk5R88Ud8g8EJYZGuGwxPJVelKLMUZiYZazEXFiQCtxmu8UAMA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,7 +60,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wednesday, October 23, 2013 2:27 AM, Johan Hovold wrote:
 > 
-> Add missing module alias which is needed for module autoloading.
+> Clean up probe error handling by checking parameters before any
+> allocations and removing an obsolete error label. Also remove
+> unnecessary reset of private gpio number.
 > 
 > Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
@@ -70,7 +72,6 @@ Best regards,
 Jingoo Han
 
 > ---
->  drivers/video/backlight/atmel-pwm-bl.c | 1 +
->  1 file changed, 1 insertion(+)
-
+>  drivers/video/backlight/atmel-pwm-bl.c | 31 ++++++++++++-------------------
+>  1 file changed, 12 insertions(+), 19 deletions(-)
 
