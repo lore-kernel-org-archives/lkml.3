@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3JWJeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:34:00 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:36726 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3JWJd5 (ORCPT
+	id S1752987Ab3JWJe1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:34:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:64115 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab3JWJbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:33:57 -0400
-Date: Wed, 23 Oct 2013 02:33:52 -0700
-From: walken@google.com
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH 2/3] mm/mlock: prepare params outside critical region
-Message-ID: <20131023093352.GB2862@localhost>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
- <1382057438-3306-3-git-send-email-davidlohr@hp.com>
+	Wed, 23 Oct 2013 05:31:36 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <scottwood@freescale.com>
+CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [v6][PATCH 1/5] powerpc/book3e: initialize crit/mc/dbg kernel stack pointers
+Date: Wed, 23 Oct 2013 17:31:21 +0800
+Message-ID: <1382520685-11609-2-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1382520685-11609-1-git-send-email-tiejun.chen@windriver.com>
+References: <1382520685-11609-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382057438-3306-3-git-send-email-davidlohr@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 05:50:37PM -0700, Davidlohr Bueso wrote:
-> All mlock related syscalls prepare lock limits, lengths and
-> start parameters with the mmap_sem held. Move this logic
-> outside of the critical region. For the case of mlock, continue
-> incrementing the amount already locked by mm->locked_vm with
-> the rwsem taken.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Vlastimil Babka <vbabka@suse.cz>
+We already allocated critical/machine/debug check exceptions, but
+we also should initialize those associated kernel stack pointers
+for use by special exceptions in the PACA.
 
-Reviewed-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ arch/powerpc/kernel/setup_64.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
+diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
+index 278ca93..5c96d92 100644
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -526,14 +526,20 @@ static void __init exc_lvl_early_init(void)
+ 	extern unsigned int exc_debug_debug_book3e;
+ 
+ 	unsigned int i;
++	unsigned long sp;
+ 
+ 	for_each_possible_cpu(i) {
+-		critirq_ctx[i] = (struct thread_info *)
+-			__va(memblock_alloc(THREAD_SIZE, THREAD_SIZE));
+-		dbgirq_ctx[i] = (struct thread_info *)
+-			__va(memblock_alloc(THREAD_SIZE, THREAD_SIZE));
+-		mcheckirq_ctx[i] = (struct thread_info *)
+-			__va(memblock_alloc(THREAD_SIZE, THREAD_SIZE));
++		sp = memblock_alloc(THREAD_SIZE, THREAD_SIZE);
++		critirq_ctx[i] = (struct thread_info *)__va(sp);
++		paca[i].crit_kstack = __va(sp + THREAD_SIZE);
++
++		sp = memblock_alloc(THREAD_SIZE, THREAD_SIZE);
++		dbgirq_ctx[i] = (struct thread_info *)__va(sp);
++		paca[i].dbg_kstack = __va(sp + THREAD_SIZE);
++
++		sp = memblock_alloc(THREAD_SIZE, THREAD_SIZE);
++		mcheckirq_ctx[i] = (struct thread_info *)__va(sp);
++		paca[i].mc_kstack = __va(sp + THREAD_SIZE);
+ 	}
+ 
+ 	if (cpu_has_feature(CPU_FTR_DEBUG_LVL_EXC))
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.9.5
+
