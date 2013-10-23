@@ -1,131 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3JWTUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:20:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49474 "EHLO mx1.redhat.com"
+	id S1752525Ab3JWTb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:31:28 -0400
+Received: from ring0.de ([91.143.88.219]:43035 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab3JWTUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:20:15 -0400
-Date: Wed, 23 Oct 2013 15:20:01 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] audit: change pid to portid for audit_reply
-Message-ID: <20131023192001.GB5059@madcap2.tricolour.ca>
-References: <1382527523-22505-1-git-send-email-gaofeng@cn.fujitsu.com>
+	id S1751719Ab3JWTbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 15:31:25 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Wed, 23 Oct 2013 21:31:12 +0200
+From: Sebastian Reichel <sre@debian.org>
+To: Joe Perches <joe@perches.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] Input: twl4030-pwrbutton: use dev_err for errors
+Message-ID: <20131023193112.GB30437@earth.universe>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Peter Ujfalusi <peter.ujfalusi@ti.com>,
+	Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+References: <1382550852-11508-1-git-send-email-sre@debian.org>
+ <1382550852-11508-3-git-send-email-sre@debian.org>
+ <1382552266.22433.36.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="kXdP64Ggrk/fb43R"
 Content-Disposition: inline
-In-Reply-To: <1382527523-22505-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1382552266.22433.36.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 07:25:23PM +0800, Gao feng wrote:
-> The "pid" is not a suitable name for netlink port,
-> change it to "portid".
 
-That is already in the works:
-	https://www.redhat.com/archives/linux-audit/2013-August/msg00023.html
-	https://lkml.org/lkml/2013/8/20/630
+--kXdP64Ggrk/fb43R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-May I add your Signed-off-by: to that previous patch?
+On Wed, Oct 23, 2013 at 11:17:46AM -0700, Joe Perches wrote:
+> On Wed, 2013-10-23 at 19:54 +0200, Sebastian Reichel wrote:
+> > Use dev_err() to output errors instead of dev_dbg().
+> []
+> > diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/mis=
+c/twl4030-pwrbutton.c
+> []
+> > @@ -60,7 +60,7 @@ static int twl4030_pwrbutton_probe(struct platform_de=
+vice *pdev)
+> > =20
+> >  	pwr =3D input_allocate_device();
+> >  	if (!pwr) {
+> > -		dev_dbg(&pdev->dev, "Can't allocate power button\n");
+> > +		dev_err(&pdev->dev, "Can't allocate power button\n");
+> >  		return -ENOMEM;
+> >  	}
+>=20
+> input_allocate_device uses kzalloc and it will emit a
+> standardized OOM message along with a dump_stack()
+> so this dev_err/dev_dbg is redundant and not necessary.
 
-> more information, please see commit
-> 15e473046cb6e5d18a4d0057e61d76315230382b
-> 
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> ---
->  kernel/audit.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 7b0e23a..50fdcba 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -165,7 +165,7 @@ struct audit_buffer {
->  };
->  
->  struct audit_reply {
-> -	int pid;
-> +	int portid;
->  	struct sk_buff *skb;
->  };
->  
-> @@ -487,7 +487,7 @@ int audit_send_list(void *_dest)
->  	return 0;
->  }
->  
-> -struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
-> +struct sk_buff *audit_make_reply(int portid, int seq, int type, int done,
->  				 int multi, const void *payload, int size)
->  {
->  	struct sk_buff	*skb;
-> @@ -500,7 +500,7 @@ struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
->  	if (!skb)
->  		return NULL;
->  
-> -	nlh	= nlmsg_put(skb, pid, seq, t, size, flags);
-> +	nlh	= nlmsg_put(skb, portid, seq, t, size, flags);
->  	if (!nlh)
->  		goto out_kfree_skb;
->  	data = nlmsg_data(nlh);
-> @@ -521,13 +521,13 @@ static int audit_send_reply_thread(void *arg)
->  
->  	/* Ignore failure. It'll only happen if the sender goes away,
->  	   because our timeout is set to infinite. */
-> -	netlink_unicast(audit_sock, reply->skb, reply->pid, 0);
-> +	netlink_unicast(audit_sock, reply->skb, reply->portid, 0);
->  	kfree(reply);
->  	return 0;
->  }
->  /**
->   * audit_send_reply - send an audit reply message via netlink
-> - * @pid: process id to send reply to
-> + * @portid: the portid of netlink socket
->   * @seq: sequence number
->   * @type: audit message type
->   * @done: done (last) flag
-> @@ -538,7 +538,7 @@ static int audit_send_reply_thread(void *arg)
->   * Allocates an skb, builds the netlink message, and sends it to the pid.
->   * No failure notifications.
->   */
-> -static void audit_send_reply(int pid, int seq, int type, int done, int multi,
-> +static void audit_send_reply(int portid, int seq, int type, int done, int multi,
->  			     const void *payload, int size)
->  {
->  	struct sk_buff *skb;
-> @@ -549,11 +549,11 @@ static void audit_send_reply(int pid, int seq, int type, int done, int multi,
->  	if (!reply)
->  		return;
->  
-> -	skb = audit_make_reply(pid, seq, type, done, multi, payload, size);
-> +	skb = audit_make_reply(portid, seq, type, done, multi, payload, size);
->  	if (!skb)
->  		goto out;
->  
-> -	reply->pid = pid;
-> +	reply->portid = portid;
->  	reply->skb = skb;
->  
->  	tsk = kthread_run(audit_send_reply_thread, reply, "audit_send_reply");
-> -- 
-> 1.8.3.1
-> 
-> --
-> Linux-audit mailing list
-> Linux-audit@redhat.com
-> https://www.redhat.com/mailman/listinfo/linux-audit
+I saw you sent a big patchset changing this for all drivers.
+Should I drop this patch?
 
-- RGB
+-- Sebastian
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+--kXdP64Ggrk/fb43R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSaCQAAAoJENju1/PIO/qa6m8P/3pSlYlEIrdc/ZCFHkRKfOIP
+Z1TsVJLGNnXJ3uY/PEU2/fFzWBilSgrH8eK0Iuv0SFig69hJnGYw+/BWr102ACQ/
+GIPJOrFM9zlCN2qgpN0rZ4i7/yaK+JKd4WlyiroRnrcC9sWPmL+b2uw0hRaDi5IV
+n0Ib9C4Oi7V0J76HGz1Tzp0lT/+Z2DBfK6Y7bRqo7vLreLn1khTfjXHIGbR3e9th
+wLdw3Pj2xHHfMj96xdkzNsZLvKUleKN3D7tZHh2PLaEKNZTn3eZZblScFsculkPz
+Dopuc7Kjy1SQGMPy7ZY/JPCY9ZeA7HDH3zE/90kcBJF+xUROUCALq/jxovw9i3NM
+Ppp0tm0+oGxOcjTSwKZTKx0CiRJ+e4TZZcMDwIJw3o3iOSLY7+JatD6hSAoDnPcw
+nEMgYQJgP4+ZxlCG/2Da+ZV5u0GR7sTUaf998oBFJ8IwtLRdxkUsiaElfu4KLtk8
+z6OWr1/aZ5w3rMTkVI7yriwyZjKJfi3jYFOzaQnZsJdPZ23N7U1nezXUgGWEfgZU
+4MbNIreE8f8MnEUALe1DGnyE2cGSe1bdYd0D8mEVRry3VAAyJLmYWkQ9EWyNlsmN
+LLDGymdDyBfJcMbytXWyXiA9ob7iMUgorGkgXzS8d6m8nYqNd+GdLliyx8Tl7Pft
+v9y91ej4ZRreyun7EQwB
+=+Y67
+-----END PGP SIGNATURE-----
+
+--kXdP64Ggrk/fb43R--
