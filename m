@@ -1,180 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3JWCx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:53:27 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54980 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab3JWCx0 (ORCPT
+	id S1755475Ab3JWC4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:56:22 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:59931 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab3JWC4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:53:26 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52673A1E.60005@roeck-us.net>
-Date: Tue, 22 Oct 2013 19:53:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 22 Oct 2013 22:56:20 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Andrew Boie <andrew.p.boie@intel.com>,
-        linux-kernel@vger.kernel.org
-CC: tglx@linutronix.de, mmarek@suse.cz
-Subject: Re: [PATCH 1/1] x86: boot: support minigzip bzImage compression
-References: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com> <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com> <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>
-In-Reply-To: <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131003213625.GH5729@outflux.net>
+References: <20130920203556.GA8726@www.outflux.net> <alpine.LRH.2.02.1309241124420.3782@tundra.namei.org>
+ <alpine.LRH.2.02.1309241128430.3782@tundra.namei.org> <CAGXu5jJ9t7tet4Bx=VUaVmjp1C18iK-nLpQBgmXqgukoAmmd4A@mail.gmail.com>
+ <20131003205515.GF5729@outflux.net> <201310040631.IIF39022.OVFOFQOtJSFHLM@I-love.SAKURA.ne.jp>
+ <20131003213625.GH5729@outflux.net>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Wed, 23 Oct 2013 00:55:59 -0200
+Message-ID: <CAKi4VAJTEu=k760=Z0GWCwGGr4USnXbMSrwnEV99sQg8LFhpxg@mail.gmail.com>
+Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
+To: Kees Cook <kees@outflux.net>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>, jmorris@namei.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2013 05:26 PM, H. Peter Anvin wrote:
-> Wouldn't it be better to fix gzip than hacking around this in the kernel?
+Hi Kees,
+
+On Thu, Oct 3, 2013 at 6:36 PM, Kees Cook <kees@outflux.net> wrote:
+> On Fri, Oct 04, 2013 at 06:31:42AM +0900, Tetsuo Handa wrote:
+>> Kees Cook wrote:
+>> > +static int modpin_load_module(struct file *file)
+>> > +{
+>> > +   struct dentry *module_root;
+>> > +
+>> > +   if (!file) {
+>> > +           if (!modpin_enforced) {
+>> > +                   report_load_module(NULL, "old-api-pinning-ignored");
+>> > +                   return 0;
+>> > +           }
+>> > +
+>> > +           report_load_module(NULL, "old-api-denied");
+>> > +           return -EPERM;
+>> > +   }
+>> > +
+>> > +   module_root = file->f_path.mnt->mnt_root;
+>> > +
+>> > +   /* First loaded module defines the root for all others. */
+>> > +   spin_lock(&pinned_root_spinlock);
+>> > +   if (!pinned_root) {
+>> > +           pinned_root = dget(module_root);
+>> > +           /*
+>> > +            * Unlock now since it's only pinned_root we care about.
+>> > +            * In the worst case, we will (correctly) report pinning
+>> > +            * failures before we have announced that pinning is
+>> > +            * enabled. This would be purely cosmetic.
+>> > +            */
+>> > +           spin_unlock(&pinned_root_spinlock);
+>> > +           check_pinning_enforcement();
+>> > +           report_load_module(&file->f_path, "pinned");
+>> > +           return 0;
+>> > +   }
+>> > +   spin_unlock(&pinned_root_spinlock);
+>>
+>> Firstly loaded module is usually in initramfs whereas subsequently loaded
+>> modules are usually on a hard disk partition.
+>>
+>> This module is not meant for PC servers, is it?
 >
-Or just change the build system to have /bin/gzip point to minigzip if so
-desired. I have done the same to replace it with pigz.
-Debian/Ubuntu provides the update-alternatives command for that
-purpose. If that is not available, just hard-link it.
-
-In general, I don't think it would be a good idea to add tool variant
-dependencies like this one to the kernel configuration.
-
-Guenter
-
-> Andrew Boie <andrew.p.boie@intel.com> wrote:
->> Android OTA system computes very efficient diffs of compressed files
->> if the deflate() algorithm it has access to is the same version as
->> used to create the original file. Here we add support for compressing
->> the kernel with 'minigzip' which uses the deflate() inside zlib.
->> This is much better than using 'gzip' as that tool has a very old
->> version of deflate() inside the gzip codebase instead of linking
->> against
->> zlib.
->>
->> Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
->> ---
->> arch/x86/Kconfig                  |  1 +
->> arch/x86/boot/compressed/Makefile |  3 +++
->> arch/x86/boot/compressed/misc.c   |  2 +-
->> init/Kconfig                      | 18 +++++++++++++++++-
->> scripts/Makefile.lib              |  7 +++++++
->> 5 files changed, 29 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> index f67e839..aa91cef 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -62,6 +62,7 @@ config X86
->> 	select HAVE_REGS_AND_STACK_ACCESS_API
->> 	select HAVE_DMA_API_DEBUG
->> 	select HAVE_KERNEL_GZIP
->> +	select HAVE_KERNEL_MINIGZIP
->> 	select HAVE_KERNEL_BZIP2
->> 	select HAVE_KERNEL_LZMA
->> 	select HAVE_KERNEL_XZ
->> diff --git a/arch/x86/boot/compressed/Makefile
->> b/arch/x86/boot/compressed/Makefile
->> index dcd90df..f000791 100644
->> --- a/arch/x86/boot/compressed/Makefile
->> +++ b/arch/x86/boot/compressed/Makefile
->> @@ -56,6 +56,8 @@ vmlinux.bin.all-$(CONFIG_X86_NEED_RELOCS) +=
->> $(obj)/vmlinux.relocs
->>
->> $(obj)/vmlinux.bin.gz: $(vmlinux.bin.all-y) FORCE
->> 	$(call if_changed,gzip)
->> +$(obj)/vmlinux.bin.mgz: $(vmlinux.bin.all-y) FORCE
->> +	$(call if_changed,minigzip)
->> $(obj)/vmlinux.bin.bz2: $(vmlinux.bin.all-y) FORCE
->> 	$(call if_changed,bzip2)
->> $(obj)/vmlinux.bin.lzma: $(vmlinux.bin.all-y) FORCE
->> @@ -68,6 +70,7 @@ $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
->> 	$(call if_changed,lz4)
->>
->> suffix-$(CONFIG_KERNEL_GZIP)	:= gz
->> +suffix-$(CONFIG_KERNEL_MINIGZIP):= mgz
->> suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
->> suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
->> suffix-$(CONFIG_KERNEL_XZ)	:= xz
->> diff --git a/arch/x86/boot/compressed/misc.c
->> b/arch/x86/boot/compressed/misc.c
->> index 434f077..4e55d32 100644
->> --- a/arch/x86/boot/compressed/misc.c
->> +++ b/arch/x86/boot/compressed/misc.c
->> @@ -125,7 +125,7 @@ static char *vidmem;
->> static int vidport;
->> static int lines, cols;
->>
->> -#ifdef CONFIG_KERNEL_GZIP
->> +#if defined(CONFIG_KERNEL_GZIP) || defined(CONFIG_KERNEL_MINIGZIP)
->> #include "../../../../lib/decompress_inflate.c"
->> #endif
->>
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 3ecd8a1..818f225 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -100,6 +100,9 @@ config LOCALVERSION_AUTO
->> config HAVE_KERNEL_GZIP
->> 	bool
->>
->> +config HAVE_KERNEL_MINIGZIP
->> +	bool
->> +
->> config HAVE_KERNEL_BZIP2
->> 	bool
->>
->> @@ -118,7 +121,7 @@ config HAVE_KERNEL_LZ4
->> choice
->> 	prompt "Kernel compression mode"
->> 	default KERNEL_GZIP
->> -	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA
->> || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
->> +	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_MINIGZIP ||
->> HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ ||
->> HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
->> 	help
->> 	  The linux kernel is a kind of self-extracting executable.
->> 	  Several compression algorithms are available, which differ
->> @@ -144,6 +147,19 @@ config KERNEL_GZIP
->> 	  The old and tried gzip compression. It provides a good balance
->> 	  between compression ratio and decompression speed.
->>
->> +config KERNEL_MINIGZIP
->> +	bool "Minigzip"
->> +	depends on HAVE_KERNEL_MINIGZIP
->> +	help
->> +	  Use minigzip to compress the bzImage. This is very similar to gzip
->> +	  but uses the zlib library to compress, rather than the very old
->> version
->> +	  of zlib inside the gzip codebase. This is used for Android kernels
->> +	  so that the same version of the deflate() algorithm is used when
->> +	  building the kernel and constructing diffs with OTA applypatch,
->> which
->> +	  uncompresses sections of files that it detects are gzipped before
->> computing
->> +	  the diffs. If the versions of deflate() are out of alignment the
->> binary
->> +	  diffs tend to be very large.
->> +
->> config KERNEL_BZIP2
->> 	bool "Bzip2"
->> 	depends on HAVE_KERNEL_BZIP2
->> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
->> index 49392ec..deb1bb8 100644
->> --- a/scripts/Makefile.lib
->> +++ b/scripts/Makefile.lib
->> @@ -240,6 +240,13 @@ quiet_cmd_gzip = GZIP    $@
->> cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
->> 	(rm -f $@ ; false)
->>
->> +# Minigzip
->> +#
->> ---------------------------------------------------------------------------
->> +
->> +quiet_cmd_minigzip = MINGZIP $@
->> +cmd_minigzip = (cat $(filter-out FORCE,$^) | minigzip -c -9 > $@) || \
->> +	(rm -f $@ ; false)
->> +
->> # DTC
->> #
->> ---------------------------------------------------------------------------
->>
+> This LSM is what Chrome OS uses for the module pinning logic. We do not use
+> an initramfs. This LSM could also be used for devices booting entirely from
+> CDROM or other R/O media.
 >
+> I'm open to improvements, obviously. I imagine things like delayed
+> activation, where the initramfs triggers pinning in some way once it is
+> done loading modules from its filesystem, etc. But since I don't have any
+> real life examples of this, I'm writing the LSM as it currently is, used
+> without an initramfs. :)
 
+The way you put now as well as the code are at least different from
+what it's written in the commit message.  I was expecting that this
+modpin would allow module loading only from a trusted partition.
+Instead we are allowing to load modules from the same partition of the
+first module that has been loaded, if the root is trusted. Why? What's
+the relation with the root partition being trusted and the partition
+where the modules reside?  What's the guarantee that the first module
+to load is any more trustable than the others?
+
+Lucas De Marchi
