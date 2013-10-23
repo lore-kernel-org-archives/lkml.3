@@ -1,145 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3JWHo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:44:56 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:57513 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab3JWHoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:44:54 -0400
-Date: Wed, 23 Oct 2013 16:44:47 +0900
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-To: linux-mm@kvack.org
-Subject: [PATCH v2] mm: Ensure get_unmapped_area() returns higher address than mmap_min_addr
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
-References: <20131023145303.B205.38390934@jp.panasonic.com> <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20131023164447.B20D.38390934@jp.panasonic.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752042Ab3JWHpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:45:05 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52512 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751546Ab3JWHo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 03:44:59 -0400
+Message-ID: <1382514295.2081.32.camel@dabdike.quadriga.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: dgilbert@interlog.com
+Cc: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Vaughan Cao <vaughan.cao@oracle.com>
+Date: Wed, 23 Oct 2013 08:44:55 +0100
+In-Reply-To: <52671B3E.6070804@interlog.com>
+References: <20131022205608.GA6616@hostway.ca>
+	 <52671B3E.6070804@interlog.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the problem that get_unmapped_area() can return illegal
-address and result in failing mmap(2) etc.
+On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
+> On 13-10-22 04:56 PM, Simon Kirby wrote:
+> > Hello!
+> >
+> > While trying to figure out why the request queue to sda (ext4) was
+> > clogging up on one of our btrfs backup boxes, I noticed a megarc process
+> > in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+> >
+> > [  205.372823] ================================================
+> > [  205.372901] [ BUG: lock held when returning to user space! ]
+> > [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+> > [  205.373055] ------------------------------------------------
+> > [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+> > [  205.373212] 1 lock held by megarc.bin/5283:
+> > [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+> >
+> > Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+> > tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+> > though I haven't tried with lockdep.
+> >
+> > This is caused by some of our internal RAID monitoring scripts that run
+> > "megarc.bin -dispCfg -a0" (even though that controller isn't present on
+> > this server -- a PowerEdge 2950 w/Perc 5).
+> >
+> > strace output of the program execution that causes the above message is
+> > here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
+> 
+> This has been reported. That patch will be reverted or,
+> if there is enough time, a fix will (or at least should)
+> go in before the release of lk 3.12 .
 
-In case that the address higher than PAGE_SIZE is set to
-/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
-returned by get_unmapped_area(), even if you do not pass any virtual address
-hint (i.e. the second argument).
+I think you've got about a week to prove you can fix it (before 3.12
+goes final).  I'll send my current set of fixes to Linus without doing
+anything about sg.
 
-This is because the current get_unmapped_area() code does not take into
-account mmap_min_addr.
+James
 
-This leads to two actual problems as follows:
-
-1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
-   although any illegal parameter is not passed.
-
-2. The bottom-up search path after the top-down search might not work in
-   arch_get_unmapped_area_topdown().
-
-Note: The first and third chunk of my patch, which changes "len" check,
-are for more precise check using mmap_min_addr, and not for solving the
-above problem.
-
-[How to reproduce]
-
-	--- test.c -------------------------------------------------
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/errno.h>
-
-	int main(int argc, char *argv[])
-	{
-		void *ret = NULL, *last_map;
-		size_t pagesize = sysconf(_SC_PAGESIZE);
-
-		do {
-			last_map = ret;
-			ret = mmap(0, pagesize, PROT_NONE,
-				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	//		printf("ret=%p\n", ret);
-		} while (ret != MAP_FAILED);
-
-		if (errno != ENOMEM) {
-			printf("ERR: unexpected errno: %d (last map=%p)\n",
-			errno, last_map);
-		}
-
-		return 0;
-	}
-	---------------------------------------------------------------
-
-	$ gcc -m32 -o test test.c
-	$ sudo sysctl -w vm.mmap_min_addr=65536
-	vm.mmap_min_addr = 65536
-	$ ./test  (run as non-priviledge user)
-	ERR: unexpected errno: 1 (last map=0x10000)
-
-Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/mmap.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 9d54851..362e5f1 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	struct vm_area_struct *vma;
- 	struct vm_unmapped_area_info info;
- 
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 		    (!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
-@@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	struct vm_unmapped_area_info info;
- 
- 	/* requested length too big for entire address space */
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 				(!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
- 
- 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
- 	info.length = len;
--	info.low_limit = PAGE_SIZE;
-+	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
- 	info.high_limit = mm->mmap_base;
- 	info.align_mask = 0;
- 	addr = vm_unmapped_area(&info);
--- 
-1.7.0.4
-
-
--- 
-Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
