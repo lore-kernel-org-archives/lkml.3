@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3JWJ4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:56:10 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59336 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3JWJ4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:56:00 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 1/9] backlight: atmel-pwm-bl: fix reported brightness
-Date: Wed, 23 Oct 2013 11:55:35 +0200
-Message-Id: <1382522143-32072-2-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+	id S1753313Ab3JWJ4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:56:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58554 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab3JWJ4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 05:56:19 -0400
+Message-ID: <52679D3F.10805@suse.cz>
+Date: Wed, 23 Oct 2013 11:56:15 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Boie <andrew.p.boie@intel.com>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 1/1] x86: boot: support minigzip bzImage compression
+References: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com> <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com> <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com> <52673A1E.60005@roeck-us.net>
+In-Reply-To: <52673A1E.60005@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver supports 16-bit brightness values, but the value returned
-from get_brightness was truncated to eight bits.
+On 23.10.2013 04:53, Guenter Roeck wrote:
+> On 10/22/2013 05:26 PM, H. Peter Anvin wrote:
+>> Wouldn't it be better to fix gzip than hacking around this in the kernel?
+>>
+> Or just change the build system to have /bin/gzip point to minigzip if so
+> desired. I have done the same to replace it with pigz.
 
-Cc: stable@vger.kernel.org
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/video/backlight/atmel-pwm-bl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yes. And if the Makefiles must be patched, then I'd suggest adding a
+$(GZIP) variable to the main Makefile and using that:
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 66885fb..8aac273 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -70,7 +70,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
- {
- 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
--	u8 intensity;
-+	u32 intensity;
- 
- 	if (pwmbl->pdata->pwm_active_low) {
- 		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
-@@ -80,7 +80,7 @@ static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
- 			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
- 	}
- 
--	return intensity;
-+	return (u16)intensity;
- }
- 
- static int atmel_pwm_bl_init_pwm(struct atmel_pwm_bl *pwmbl)
--- 
-1.8.4
+make GZIP=pigz bzImage
+make GZIP=minigzip bzImage
 
+Michal
