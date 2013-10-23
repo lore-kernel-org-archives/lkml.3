@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab3JWVm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 17:42:58 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:57440 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3JWVm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 17:42:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANN689GGTnkG1+=aH1PDxkEyN3VdCfHLjDfA3VErpOpT84rZTg@mail.gmail.com>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
- <20131022154802.GA25490@localhost> <5266BBC7.9030207@mit.edu> <CANN689GGTnkG1+=aH1PDxkEyN3VdCfHLjDfA3VErpOpT84rZTg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 23 Oct 2013 14:42:34 -0700
-Message-ID: <CALCETrVemOctXwA8Waa1bOWew7eW5fU_gAcBUvmuyL7-qK-uRg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-To: Michel Lespinasse <walken@google.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752924Ab3JWVvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 17:51:23 -0400
+Received: from ring0.de ([91.143.88.219]:43557 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751852Ab3JWVvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 17:51:21 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, linux-iio@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Sebastian Reichel <sre@debian.org>, Peter Meerwald <pmeerw@pmeerw.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] iio:light:tsl2563: Add DT support
+Date: Wed, 23 Oct 2013 23:51:03 +0200
+Message-Id: <1382565063-17083-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 3:13 AM, Michel Lespinasse <walken@google.com> wrote:
-> On Tue, Oct 22, 2013 at 10:54 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On 10/22/2013 08:48 AM, walken@google.com wrote:
->>> Generally the problems I see with mmap_sem are related to long latency
->>> operations. Specifically, the mmap_sem write side is currently held
->>> during the entire munmap operation, which iterates over user pages to
->>> free them, and can take hundreds of milliseconds for large VMAs.
->>
->> This is the leading cause of my "egads, something that should have been
->> fast got delayed for several ms" detector firing.
->
-> Yes, I'm seeing such issues relatively frequently as well.
->
->>  I've been wondering:
->>
->> Could we replace mmap_sem with some kind of efficient range lock?  The
->> operations would be:
->>
->>  - mm_lock_all_write (drop-in replacement for down_write(&...->mmap_sem))
->>  - mm_lock_all_read (same for down_read)
->>  - mm_lock_write_range(mm, start, end)
->>  - mm_lock_read_range(mm, start_end)
->>
->> and corresponding unlock functions (that maybe take a cookie that the
->> lock functions return or that take a pointer to some small on-stack data
->> structure).
->
-> That seems doable, however I believe we can get rid of the latencies
-> in the first place which seems to be a better direction. As I briefly
-> mentioned, I would like to tackle the munmap problem sometime; Jan
-> Kara also has a project to remove places where blocking FS functions
-> are called with mmap_sem held (he's doing it for lock ordering
-> purposes, so that FS can call in to MM functions that take mmap_sem,
-> but there are latency benefits as well if we can avoid blocking in FS
-> with mmap_sem held).
+Add Device Tree support for the TSL2563 driver
+and document the binding.
 
-There will still be scalability issues if there are enough threads,
-but maybe this isn't so bad.  (My workload may also have priority
-inversion problems -- there's a thread that runs on its own core and
-needs the mmap_sem read lock and a thread that runs on a highly
-contended core that needs the write lock.)
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ .../devicetree/bindings/iio/light/tsl2563.txt         | 19 +++++++++++++++++++
+ drivers/iio/light/tsl2563.c                           |  4 ++++
+ 2 files changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/light/tsl2563.txt
 
->
->> The easiest way to implement this that I can think of is a doubly-linked
->> list or even just an array, which should be fine for a handful of
->> threads.  Beyond that, I don't really know.  Creating a whole trie for
->> these things would be expensive, and fine-grained locking on rbtree-like
->> things isn't so easy.
->
-> Jan also had an implementation of range locks using interval trees. To
-> take a range lock, you'd add the range you want to the interval tree,
-> count the conflicting range lock requests that were there before you,
-> and (if nonzero) block until that count goes to 0. When releasing the
-> range lock, you look for any conflicting requests in the interval tree
-> and decrement their conflict count, waking them up if the count goes
-> to 0.
-
-Yuck.  Now we're taking a per-mm lock on the rbtree, doing some
-cacheline-bouncing rbtree operations, and dropping the lock to
-serialize access to something that probably only has a small handful
-of accessors at a time.  I bet that an O(num locks) array or linked
-list will end up being faster in practice.
-
-I think the idea solution would be to shove these things into the page
-tables somehow, but that seems impossibly complicated.
-
---Andy
-
->
-> But as I said earlier, I would prefer if we could avoid holding
-> mmap_sem during long-latency operations rather than working around
-> this issue with range locks.
->
-> --
-> Michel "Walken" Lespinasse
-> A program is never fully debugged until the last user dies.
-
-
-
+diff --git a/Documentation/devicetree/bindings/iio/light/tsl2563.txt b/Documentation/devicetree/bindings/iio/light/tsl2563.txt
+new file mode 100644
+index 0000000..b52cf4b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/light/tsl2563.txt
+@@ -0,0 +1,19 @@
++* TAOS TSL2563 ambient light sensor
++
++Required properties:
++
++  - compatible : should be "taos,tsl2563"
++  - reg : the I2C address of the sensor
++
++Optional properties:
++
++  - cover-comp-gain : integer used as multiplier for gain
++                      compensation (default = 1)
++
++Example:
++
++tsl2563@29 {
++	compatible = "taos,tsl2563";
++	reg = <0x29>;
++	cover-comp-gain = <16>;
++};
+diff --git a/drivers/iio/light/tsl2563.c b/drivers/iio/light/tsl2563.c
+index ebb962c..bd30b1d 100644
+--- a/drivers/iio/light/tsl2563.c
++++ b/drivers/iio/light/tsl2563.c
+@@ -699,6 +699,7 @@ static int tsl2563_probe(struct i2c_client *client,
+ 	struct iio_dev *indio_dev;
+ 	struct tsl2563_chip *chip;
+ 	struct tsl2563_platform_data *pdata = client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
+ 	int err = 0;
+ 	u8 id = 0;
+ 
+@@ -735,6 +736,9 @@ static int tsl2563_probe(struct i2c_client *client,
+ 
+ 	if (pdata)
+ 		chip->cover_comp_gain = pdata->cover_comp_gain;
++	else if (np)
++		of_property_read_u32_index(np, "cover-comp-gain", 0,
++							&chip->cover_comp_gain);
+ 	else
+ 		chip->cover_comp_gain = 1;
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.4.rc3
+
