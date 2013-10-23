@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3JWLK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 07:10:56 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:6055 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3JWLKz (ORCPT
+	id S1753086Ab3JWLLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 07:11:53 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:58038 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3JWLLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 07:10:55 -0400
-X-Spam-Score: -100.8
-Message-ID: <5267AE7D.4080600@asianux.com>
-Date: Wed, 23 Oct 2013 19:09:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 23 Oct 2013 07:11:52 -0400
+Date: Wed, 23 Oct 2013 12:11:49 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, khilman@linaro.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: context_tracking: use extern function instead of
+ static inline function for user_enter/exit()
+Message-ID: <20131023111147.GB2502@localhost.localdomain>
+References: <5267A72B.7060808@asianux.com>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        sachin.kamat@linaro.org, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        James Hogan <james.hogan@imgtec.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: kernel: add default extern variable 'screen_info' in
- "setup.c"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5267A72B.7060808@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add default 'screen_info' just like some of other architectures (e.g.
-cris, score, sh, tile), or can not pass compiling.
+On Wed, Oct 23, 2013 at 06:38:35PM +0800, Chen Gang wrote:
+> The related assemble code can not find the static inline function. The
+> related commit "ad65782 context_tracking: Optimize main APIs off case
+> with static key" causes this issue.
+> 
+> The related error (for arm, with allmodconfig):
+> 
+>     LD      init/built-in.o
+>   arch/arm/kernel/built-in.o: In function `ret_fast_syscall':
+>   arch/arm/kernel/entry-common.S:42: undefined reference to `user_enter'
+>   arch/arm/kernel/built-in.o: In function `no_work_pending':
+>   arch/arm/kernel/entry-common.S:77: undefined reference to `user_enter'
+>   arch/arm/kernel/built-in.o: In function `vector_swi':
+>   arch/arm/kernel/entry-common.S:376: undefined reference to `user_exit'
+>   arch/arm/kernel/built-in.o: In function `__dabt_usr':
+>   arch/arm/kernel/entry-armv.S:365: undefined reference to `user_exit'
+>   arch/arm/kernel/built-in.o: In function `__irq_usr':
+>   arch/arm/kernel/entry-armv.S:375: undefined reference to `user_exit'
+>   arch/arm/kernel/built-in.o: In function `__und_usr':
+>   arch/arm/kernel/entry-armv.S:388: undefined reference to `user_exit'
+>   arch/arm/kernel/built-in.o: In function `__pabt_usr':
+>   arch/arm/kernel/entry-armv.S:662: undefined reference to `user_exit'
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-The related error (with allmodconfig):
+Doesn't 0c06a5d4b13cd66c833805a0d1db76b977944aac
+("arm: Fix build error with context tracking calls") fix the issue for you?
+Or may be it's another problem I missed?
 
-  drivers/built-in.o: In function `vgacon_save_screen':
-  drivers/video/console/vgacon.c:1347: undefined reference to `screen_info'
-  drivers/video/console/vgacon.c:1348: undefined reference to `screen_info'
-  drivers/built-in.o: In function `vgacon_resize':
-  drivers/video/console/vgacon.c:1314: undefined reference to `screen_info'
-  drivers/video/console/vgacon.c:1315: undefined reference to `screen_info'
-  drivers/built-in.o: In function `vgacon_switch':
-  drivers/video/console/vgacon.c:820: undefined reference to `screen_info'
-  drivers/built-in.o:drivers/video/console/vgacon.c:840: more undefined references to `screen_info' follow
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/kernel/setup.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index 2c68bc7e..07130f3 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -15,6 +15,7 @@
- #include <linux/cpu.h>
- #include <linux/of_fdt.h>
- #include <linux/cache.h>
-+#include <linux/screen_info.h>
- #include <asm/sections.h>
- #include <asm/arcregs.h>
- #include <asm/tlb.h>
-@@ -37,6 +38,8 @@ struct task_struct *_current_task[NR_CPUS];	/* For stack switching */
- 
- struct cpuinfo_arc cpuinfo_arc700[NR_CPUS];
- 
-+struct screen_info screen_info;
-+
- 
- void read_arc_build_cfg_regs(void)
- {
--- 
-1.7.7.6
+Thanks.
