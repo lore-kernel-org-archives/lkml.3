@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3JWJ3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:29:19 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:45264 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab3JWJ2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:28:46 -0400
-Message-ID: <52679681.4050803@mm-sol.com>
-Date: Wed, 23 Oct 2013 12:27:29 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1753178Ab3JWJaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:30:52 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:52674 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3JWJav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 05:30:51 -0400
+Date: Wed, 23 Oct 2013 02:30:45 -0700
+From: walken@google.com
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm: add mlock_future_check helper
+Message-ID: <20131023093045.GA2862@localhost>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+ <1382057438-3306-2-git-send-email-davidlohr@hp.com>
 MIME-Version: 1.0
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] ARM: DT: msm: Add Qualcomm's PRNG driver binding
- document
-References: <1381846278-9529-1-git-send-email-svarbanov@mm-sol.com> <1381846278-9529-2-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1381846278-9529-2-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382057438-3306-2-git-send-email-davidlohr@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 05:11 PM, Stanimir Varbanov wrote:
-> This adds Qualcomm PRNG driver device tree binding documentation
-> to use as an example in dts trees.
+On Thu, Oct 17, 2013 at 05:50:36PM -0700, Davidlohr Bueso wrote:
+> Both do_brk and do_mmap_pgoff verify that we actually
+> capable of locking future pages if the corresponding
+> VM_LOCKED flags are used. Encapsulate this logic into
+> a single mlock_future_check() helper function.
 > 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Michel Lespinasse <walken@google.com>
 
-Dear DT binding maintainers,
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
-I'd like to receive some comments or maybe an Ack to this patch. Or if
-you think it needs another re-spin please let me know.
-
-Thanks in advance for your time!
-
-regards,
-Stan
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
