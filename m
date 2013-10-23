@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3JWNtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:49:40 -0400
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:38090 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab3JWNtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:49:39 -0400
-X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 09:49:38 EDT
-From: Konstantin Tokarev <annulen@yandex.ru>
-To: Brent Taylor <motobud@gmail.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-In-Reply-To: <CAP+RiCBSPAHc2aM9byRjhFVePRU-1ODL9aJvN2Y65S4Ddj4sDA@mail.gmail.com>
-References: <55541379679397@web20h.yandex.ru>
-	<CAP+RiCAVuUEfyjg02+ZjeFXgUuaRW+fuMB490Ce2Hq_4qHBL=A@mail.gmail.com>
-	<183031382371160@web6m.yandex.ru>
-	<CAP+RiCDKgRqi8_Y4OMqyJyCUpKJW5BVE=hNwp3WzQ7PuOMWGMw@mail.gmail.com>
-	<139841382436609@web24g.yandex.ru>
-	<CAP+RiCDVTMb6RE5kGCYSyMCF9JMpSUAM5jS4YPObkbBu=zD59g@mail.gmail.com>
-	<300471382514034@web11h.yandex.ru> <CAP+RiCBSPAHc2aM9byRjhFVePRU-1ODL9aJvN2Y65S4Ddj4sDA@mail.gmail.com>
-Subject: Re: lz4hc compression in UBIFS?
+	id S1751476Ab3JWOCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:02:22 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:43408 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab3JWOCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:02:21 -0400
+Date: Wed, 23 Oct 2013 15:57:47 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, jhovold@gmail.com
+Subject: Re: [PATCH] tty: Add C_MSPAR(tty)
+Message-ID: <20131023135747.GD31126@lunn.ch>
+References: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
+ <5267D386.4050206@hurleysoftware.com>
 MIME-Version: 1.0
-Message-Id: <133391382535580@web11h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 23 Oct 2013 17:39:40 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5267D386.4050206@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 23, 2013 at 09:47:50AM -0400, Peter Hurley wrote:
+> On 10/23/2013 07:18 AM, Andrew Lunn wrote:
+> >Add the missing C_MSPAR(tty) macro.
+> >
+> >Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+> >---
+> >  include/linux/tty.h | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/include/linux/tty.h b/include/linux/tty.h
+> >index 64f8646..630678d 100644
+> >--- a/include/linux/tty.h
+> >+++ b/include/linux/tty.h
+> >@@ -137,6 +137,7 @@ struct tty_bufhead {
+> >  #define C_CLOCAL(tty)	_C_FLAG((tty), CLOCAL)
+> >  #define C_CIBAUD(tty)	_C_FLAG((tty), CIBAUD)
+> >  #define C_CRTSCTS(tty)	_C_FLAG((tty), CRTSCTS)
+> >+#define C_MSPAR(tty)	_C_FLAG((tty), CMSPAR)
+> >
+> >  #define L_ISIG(tty)	_L_FLAG((tty), ISIG)
+> >  #define L_ICANON(tty)	_L_FLAG((tty), ICANON)
+> 
+> Is this to support an out-of-tree driver?
 
+Hi Peter
 
-23.10.2013, 16:49, "Brent Taylor" <motobud@gmail.com>:
-> On Wed, Oct 23, 2013 at 2:40 AM, Konstantin Tokarev <annulen@yandex.ru> wrote:
->
->> š23.10.2013, 09:26, "Brent Taylor" <motobud@gmail.com>:
->>> šKonstantin,
->>> ššššI did my testing with data from /dev/urandom (which I now realize
->>> šwasn't the best choice of data source), but if I use /dev/zero (which
->>> šactually causes data compression to occur), the decompressor fails. šI
->>> šdon't know the internal workings of the lz4hc compressor or the lz4
->>> šdecompressor. šI couldn't find any examples of any code in the kernel
->>> šactually using the compressor. šI've cc'ed the maintainers of the
->>> šlz4hc_compress.c to see if they my have some more insight to the
->>> šissue.
->> šDoes decompressor fail for you with the same error messages?
->>
->> šHave you tried to copy my file to the volume? It looks like minimal test case
->> šfor my board, if I remove any line decompressor works fine.
->>
->> š--
->> šRegards,
->> šKonstantin
->
-> Yes, I get the same error, here's a dump from UBIFS when I cat a file
-> filled with data from /dev/zero:
->
-> UBIFS error (pid 4288): ubifs_decompress: cannot decompress 12 bytes,
-> compressor lz4hc, error -22
-> UBIFS error (pid 4288): read_block: bad data node (block 0, inode 71)
-> ššššššššmagic ššššššššš0x6101831
-> ššššššššcrc ššššššššššš0xff61a078
-> ššššššššnode_type ššššš1 (data node)
-> ššššššššgroup_type šššš0 (no node group)
-> ššššššššsqnum ššššššššš2700
-> ššššššššlen ššššššššššš60
-> šššššššškey ššššššššššš(71, data, 0)
-> ššššššššsize šššššššššš512
-> ššššššššcompr_typ ššššš3
-> ššššššššdata size ššššš12
-> ššššššššdata:
-> šššššššš00000000: 1f 00 01 00 ff e8 50 00 00 00 00 00
-> UBIFS error (pid 4288): do_readpage: cannot read page 0 of inode 71, error -22
-> cat: /opt/data/zero.bin: Input/output error
->
-> Steps to reproduce are:
-> 1. šCreate a file with all zeros: dd if=/dev/zero bs=512 count=1
-> of=/opt/data/zero.bin
-> 2. šUnmount ubifs and detach ubi partition
-> 3. šattach ubi partition and mount ubifs
-> 4. cat /opt/data/zero.bin
+It is to support a driver i'm trying to get accepted. It is a USB
+serial driver which was posted for the forth time today to the USB
+list:
 
-Reproduced here.
+http://article.gmane.org/gmane.linux.usb.general/96740
 
--- 
-Regards,
-Konstantin
+   Andrew
