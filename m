@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab3JWNfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:35:17 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:34212 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3JWN3z (ORCPT
+	id S1754149Ab3JWNfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:35:14 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56077 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3JWN3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 09:29:55 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
@@ -12,148 +12,59 @@ To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v3 02/15] KVM: MMU: lazily drop large spte
-Date: Wed, 23 Oct 2013 21:29:20 +0800
-Message-Id: <1382534973-13197-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 03/15] KVM: MMU: flush tlb if the spte can be locklessly modified
+Date: Wed, 23 Oct 2013 21:29:21 +0800
+Message-Id: <1382534973-13197-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102313-4790-0000-0000-00000AFB4E9F
+x-cbid: 13102313-3864-0000-0000-00000AB58517
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kvm zaps the large spte if write-protected is needed, the later
-read can fault on that spte. Actually, we can make the large spte readonly
-instead of making them un-present, the page fault caused by read access can
-be avoided
+Relax the tlb flush condition since we will write-protect the spte out of mmu
+lock. Note lockless write-protection only marks the writable spte to readonly
+and the spte can be writable only if both SPTE_HOST_WRITEABLE and
+SPTE_MMU_WRITEABLE are set (that are tested by spte_is_locklessly_modifiable)
 
-The idea is from Avi:
-| As I mentioned before, write-protecting a large spte is a good idea,
-| since it moves some work from protect-time to fault-time, so it reduces
-| jitter.  This removes the need for the return value.
+This patch is used to avoid this kind of race:
 
-This version has fixed the issue reported in 6b73a9606, the reason of that
-issue is that fast_page_fault() directly sets the readonly large spte to
-writable but only dirty the first page into the dirty-bitmap that means
-other pages are missed. Fixed it by only the normal sptes (on the
-PT_PAGE_TABLE_LEVEL level) can be fast fixed
+      VCPU 0                         VCPU 1
+lockless wirte protection:
+      set spte.w = 0
+                                 lock mmu-lock
+
+                                 write protection the spte to sync shadow page,
+                                 see spte.w = 0, then without flush tlb
+
+				 unlock mmu-lock
+
+                                 !!! At this point, the shadow page can still be
+                                     writable due to the corrupt tlb entry
+     Flush all TLB
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 36 ++++++++++++++++++++----------------
- arch/x86/kvm/x86.c |  8 ++++++--
- 2 files changed, 26 insertions(+), 18 deletions(-)
+ arch/x86/kvm/mmu.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index d2aacc2..8739208 100644
+index 8739208..62f18ec 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1176,8 +1176,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
- 
- /*
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-- * spte writ-protection is caused by protecting shadow page table.
-- * @flush indicates whether tlb need be flushed.
-+ * spte write-protection is caused by protecting shadow page table.
-  *
-  * Note: write protection is difference between drity logging and spte
-  * protection:
-@@ -1186,10 +1185,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  * - for spte protection, the spte can be writable only after unsync-ing
-  *   shadow page.
-  *
-- * Return true if the spte is dropped.
-+ * Return true if tlb need be flushed.
-  */
--static bool
--spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
- {
- 	u64 spte = *sptep;
- 
-@@ -1199,17 +1197,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
- 
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
- 
--	if (__drop_large_spte(kvm, sptep)) {
--		*flush |= true;
--		return true;
--	}
--
- 	if (pt_protect)
- 		spte &= ~SPTE_MMU_WRITEABLE;
- 	spte = spte & ~PT_WRITABLE_MASK;
- 
--	*flush |= mmu_spte_update(sptep, spte);
--	return false;
-+	return mmu_spte_update(sptep, spte);
- }
- 
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-@@ -1221,11 +1213,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
- 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
- 
-+		flush |= spte_write_protect(kvm, sptep, pt_protect);
- 		sptep = rmap_get_next(&iter);
- 	}
- 
-@@ -2669,6 +2658,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			break;
- 		}
- 
-+		drop_large_spte(vcpu, iterator.sptep);
-+
- 		if (!is_shadow_present_pte(*iterator.sptep)) {
- 			u64 base_addr = iterator.addr;
- 
-@@ -2870,6 +2861,19 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
- 		goto exit;
- 
- 	/*
-+	 * Do not fix write-permission on the large spte since we only dirty
-+	 * the first page into the dirty-bitmap in fast_pf_fix_direct_spte()
-+	 * that means other pages are missed if its slot is dirty-logged.
-+	 *
-+	 * Instead, we let the slow page fault path create a normal spte to
-+	 * fix the access.
-+	 *
-+	 * See the comments in kvm_arch_commit_memory_region().
-+	 */
-+	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
-+		goto exit;
-+
-+	/*
- 	 * Currently, fast page fault only works for direct mapping since
- 	 * the gfn is not stable for indirect shadow page.
- 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index edf2a07..b3aa650 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7223,8 +7223,12 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
- 	/*
- 	 * Write protect all pages for dirty logging.
--	 * Existing largepage mappings are destroyed here and new ones will
--	 * not be created until the end of the logging.
-+	 *
-+	 * All the sptes including the large sptes which point to this
-+	 * slot are set to readonly. We can not create any new large
-+	 * spte on this slot until the end of the logging.
-+	 *
-+	 * See the comments in fast_page_fault().
+@@ -595,7 +595,8 @@ static bool mmu_spte_update(u64 *sptep, u64 new_spte)
+ 	 * we always atomicly update it, see the comments in
+ 	 * spte_has_volatile_bits().
  	 */
- 	if ((change != KVM_MR_DELETE) && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
- 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
+-	if (is_writable_pte(old_spte) && !is_writable_pte(new_spte))
++	if (spte_is_locklessly_modifiable(old_spte) &&
++	      !is_writable_pte(new_spte))
+ 		ret = true;
+ 
+ 	if (!shadow_accessed_mask)
 -- 
 1.8.1.4
 
