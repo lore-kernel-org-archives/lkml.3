@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab3JWNns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:43:48 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42565 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751275Ab3JWNnr (ORCPT
+	id S1752121Ab3JWNpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:45:18 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:35111 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab3JWNpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:43:47 -0400
-Message-ID: <5267D28B.5020805@hurleysoftware.com>
-Date: Wed, 23 Oct 2013 09:43:39 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 23 Oct 2013 09:45:16 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@karo-electronics.de>,
+        Ming Lei <ming.lei@canonical.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH next] sysfs: fix sysfs_write_file for bin file
+Date: Wed, 23 Oct 2013 21:44:53 +0800
+Message-Id: <1382535893-20543-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Wong <normalperson@yhbt.net>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: epoll oops.
-References: <20131014154627.GA9525@redhat.com>	<CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com> <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 04:57 PM, Linus Torvalds wrote:
-> [ Adding Pekka to verify the SLAB_DESTROY_BY_RCU semantics, and Peter
-> Hurley due to the possible tty association ]
+Before patch(sysfs: prepare path write for unified regular / bin
+file handling), when size of bin file is zero, writting still can
+continue, but this patch changes the behaviour.
 
-> And I see a few worrisome cases. For example, look at "tty_poll()". It
-> ends up doing something very similar, except it uses the tty instead
-> of sighand. And exactly like the sighand struct, the tty allocation
-> lifespan can - thanks to hangup() - be shorter than the file
-> allocation lifespan.
->
-> Peter? Does a tty hangup end up actually possibly freeing the tty
-> struct? Looking at it, I'm starting to think that it only affects
-> f_op, and the "struct tty" stays around, in which case this is all
-> fine.
+The worse thing is that firmware loader is broken by this patch,
+and user space application can't write to firmware bin file any more
+because both firmware loader and drivers can't know at advance how
+large the firmware file is and have to set its initialized size as
+zero.
 
-The tty_struct is only freed at the completion of the tty's
-file_operations .release method (tty_release()). Further, it should
-not be possible to advance past the tty_ldisc_release() call in
-tty_release() while file operations such as tty_poll() -> poll_wait()
-or a tty hangup are in-progress.
+This patch fixes the problem and keeps behaviour of writting to bin
+as before.
 
-[Notwithstanding the above, if some kernel driver failed to acquire
-a tty reference, either directly or via tty_port_tty_hangup(), before
-hanging up, then the hangup could be racing with the .release(). But
-I don't think that's what's happening here.]
+Reported-and-tested-by: Lothar Waßmann <LW@karo-electronics.de>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ fs/sysfs/file.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-
-On 10/15/2013 11:48 AM, Oleg Nesterov wrote:>> Hmm? There might be other cases..
- >
- > Yes.
- >
- > Dave, perhaps you have vmcore? I have no idea if this is possible or
- > not, but perhaps you can look at eventpoll_release_file's frame and
- > print file->f_op ?
-
-I think Oleg's suggestion is the next diagnostic step.
-
-Regards,
-Peter Hurley
-
-
-
-
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 5d818df..c379597 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -275,11 +275,10 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+ 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
++	loff_t size = file_inode(file)->i_size;
+ 	char *buf;
+ 
+-	if (sysfs_is_bin(of->sd)) {
+-		loff_t size = file_inode(file)->i_size;
+-
++	if (sysfs_is_bin(of->sd) && size) {
+ 		if (size <= *ppos)
+ 			return 0;
+ 		len = min_t(ssize_t, len, size - *ppos);
+-- 
+1.7.9.5
 
