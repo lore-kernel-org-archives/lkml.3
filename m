@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab3JWJKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:10:01 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48160 "EHLO
+	id S1752889Ab3JWJKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:10:00 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48161 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab3JWJJU (ORCPT
+	with ESMTP id S1752595Ab3JWJJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 05:09:20 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: [PATCH 3/5] drbd: Fix adding of new minors with freshly created meta data
-Date: Wed, 23 Oct 2013 10:59:17 +0200
-Message-Id: <1382518759-5467-4-git-send-email-philipp.reisner@linbit.com>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: [PATCH 4/5] drbd: fix decoding of bitmap vli rle for device sizes > 64 TB
+Date: Wed, 23 Oct 2013 10:59:18 +0200
+Message-Id: <1382518759-5467-5-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1382518759-5467-1-git-send-email-philipp.reisner@linbit.com>
 References: <1382518759-5467-1-git-send-email-philipp.reisner@linbit.com>
@@ -21,51 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Online adding of new minors with freshly created meta data
-to an resource with an established connection failed, with a
-wrong state transition on one side on one side of the new minor.
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Freshly created meta-data has a la_size (last agreed size) of 0.
-When we online add such devices, the code wrongly got into
-the code path for resyncing new storage that was added while
-the disk was detached.
+Symptoms: disconnect after bitmap exchange due to
+bitmap overflow (e:49731075554) while decoding bm RLE packet
 
-Fixed that by making the GREW from ZERO a special case.
+In the decoding step of the variable length integer run length encoding
+there was potentially an uncatched bitshift by wordsize (variable >> 64).
+
+The result of which is "undefined" :(
+(only "sometimes" the result is the desired 0)
+
+Fix: don't do any bit shift magic for shift == 64, just assign.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h |    3 ++-
- drivers/block/drbd/drbd_nl.c  |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 2d7f608..0e06f0c 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1474,7 +1474,8 @@ enum determine_dev_size {
- 	DS_ERROR = -1,
- 	DS_UNCHANGED = 0,
- 	DS_SHRUNK = 1,
--	DS_GREW = 2
-+	DS_GREW = 2,
-+	DS_GREW_FROM_ZERO = 3,
- };
- extern enum determine_dev_size
- drbd_determine_dev_size(struct drbd_conf *, enum dds_flags, struct resize_parms *) __must_hold(local);
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 8cc1e64..37dad18 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -955,7 +955,7 @@ drbd_determine_dev_size(struct drbd_conf *mdev, enum dds_flags flags, struct res
- 	}
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 12c59eb..6fa6673 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -4125,7 +4125,11 @@ recv_bm_rle_bits(struct drbd_conf *mdev,
+ 				(unsigned int)bs.buf_len);
+ 			return -EIO;
+ 		}
+-		look_ahead >>= bits;
++		/* if we consumed all 64 bits, assign 0; >> 64 is "undefined"; */
++		if (likely(bits < 64))
++			look_ahead >>= bits;
++		else
++			look_ahead = 0;
+ 		have -= bits;
  
- 	if (size > la_size_sect)
--		rv = DS_GREW;
-+		rv = la_size_sect ? DS_GREW : DS_GREW_FROM_ZERO;
- 	if (size < la_size_sect)
- 		rv = DS_SHRUNK;
- 
+ 		bits = bitstream_get_bits(&bs, &tmp, 64 - have);
 -- 
 1.7.9.5
 
