@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab3JWCQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:16:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42575 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab3JWCQi (ORCPT
+	id S1755657Ab3JWCRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:17:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19936 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab3JWCRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:16:38 -0400
+	Tue, 22 Oct 2013 22:17:41 -0400
+X-Spam-Score: -100.8
+Message-ID: <52673186.4050806@asianux.com>
+Date: Wed, 23 Oct 2013 10:16:38 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20131023020955.GF29695@two.firstfloor.org>
-References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
- <1382458346-24811-12-git-send-email-andi@firstfloor.org> <20131022.135928.2040131908206663695.davem@davemloft.net>
- <20131023020955.GF29695@two.firstfloor.org>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 22 Oct 2013 19:15:57 -0700
-Message-ID: <CAGVrzcZ6xgp4TMgwDFJwz45m8narx0sHYAyM67HsD069tFg3BA@mail.gmail.com>
-Subject: Re: [PATCH 11/11] asmlinkage, wan/sbni: Make inline assembler symbols
- visible and assembler global
-To: Andi Kleen <andi@firstfloor.org>
-Cc: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ak@linux.intel.com, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        noamc@ezchip.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arc: kernel: remove '__init' for first_lines_of_secondary()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/22 Andi Kleen <andi@firstfloor.org>:
-> On Tue, Oct 22, 2013 at 01:59:28PM -0400, David Miller wrote:
->> From: Andi Kleen <andi@firstfloor.org>
->> Date: Tue, 22 Oct 2013 09:12:26 -0700
->>
->> > From: Andi Kleen <ak@linux.intel.com>
->> >
->> > - Inline assembler defining C callable code has to be global
->> > - The function has to be visible
->> >
->> > Do this in wan/sbni
->> >
->> > Cc: netdev@vger.kernel.org
->> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
->>
->> Is it really impossible to use the generic crc32 support instead of this
->> unsightly custom inline assembler?
->
-> Yes it's impossible.
->
-> There's no way for me to test it, and this would be a far too big change
-> to submit untested.
->
-> Also my only interest here is this thing not breaking my LTO
-> allyesconfig build. I'm not even sure what it does.
->
-> Just because some legacy driver breaks my build you cannot make me
-> accountable for maintaining it now.
->
-> If it's not possible to get this trivial change in I would need
-> to mark it "depends on !LTO" in Kconfig.
+first_lines_of_secondary() is a '__init' function, but it may be called
+by __cpu_up() by _cpu_up() by cpu_up() which is a normal export symbol
+function. So recommend to remove '__init'.
 
-How about scheduling the WAN drivers for removal? Does anybody
-actually use them nowadays?
---
-Florian
+The related warning (with allmodconfig):
+
+    MODPOST vmlinux.o
+  WARNING: vmlinux.o(.text+0x315c): Section mismatch in reference from the function __cpu_up() to the function .init.text:first_lines_of_secondary()
+  The function __cpu_up() references
+  the function __init first_lines_of_secondary().
+  This is often because __cpu_up lacks a __init
+  annotation or the annotation of first_lines_of_secondary is wrong.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arc/include/asm/smp.h |    2 +-
+ arch/arc/kernel/head.S     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
+index c4fb211..eefc29f 100644
+--- a/arch/arc/include/asm/smp.h
++++ b/arch/arc/include/asm/smp.h
+@@ -30,7 +30,7 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+  * APIs provided by arch SMP code to rest of arch code
+  */
+ extern void __init smp_init_cpus(void);
+-extern void __init first_lines_of_secondary(void);
++extern void first_lines_of_secondary(void);
+ extern const char *arc_platform_smp_cpuinfo(void);
+ 
+ /*
+diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
+index 0f944f0..2c878e9 100644
+--- a/arch/arc/kernel/head.S
++++ b/arch/arc/kernel/head.S
+@@ -95,7 +95,7 @@ stext:
+ ;----------------------------------------------------------------
+ ;     First lines of code run by secondary before jumping to 'C'
+ ;----------------------------------------------------------------
+-	.section .init.text, "ax",@progbits
++	.section .text, "ax",@progbits
+ 	.type first_lines_of_secondary, @function
+ 	.globl first_lines_of_secondary
+ 
+-- 
+1.7.7.6
