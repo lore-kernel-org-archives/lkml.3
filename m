@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab3JWHxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:53:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55791 "EHLO
+	id S1752122Ab3JWHxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:53:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55812 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab3JWHxN (ORCPT
+	with ESMTP id S1751378Ab3JWHxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:53:13 -0400
-Date: Wed, 23 Oct 2013 00:52:08 -0700
+	Wed, 23 Oct 2013 03:53:20 -0400
+Date: Wed, 23 Oct 2013 00:52:44 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-ydo5rumyv9hdc1vsfmqamugs@git.kernel.org>
+Message-ID: <tip-669q04c5tou5pnt8jtiz6y2r@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Split fd -> pathname array handling
-Git-Commit-ID: 97119f37bbebbab852899bd37ed52b80396728f9
+Subject: [tip:perf/core] perf tools: Introduce filename__read_int helper
+Git-Commit-ID: 97a07f10c38064dea492794c99445f6260afcdc1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,23 +29,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  97119f37bbebbab852899bd37ed52b80396728f9
-Gitweb:     http://git.kernel.org/tip/97119f37bbebbab852899bd37ed52b80396728f9
+Commit-ID:  97a07f10c38064dea492794c99445f6260afcdc1
+Gitweb:     http://git.kernel.org/tip/97a07f10c38064dea492794c99445f6260afcdc1
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 27 Sep 2013 17:34:10 -0300
+AuthorDate: Thu, 17 Oct 2013 16:33:43 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 16 Oct 2013 11:05:01 -0300
+CommitDate: Thu, 17 Oct 2013 16:33:43 -0300
 
-perf trace: Split fd -> pathname array handling
+perf tools: Introduce filename__read_int helper
 
-So that the part that grows the array as needed is untied from the code
-that reads the /proc/pid/fd symlink and can be used for the vfs_getname
-hook that will set the fd -> path translation too, when available.
+Just opens a file and calls atoi() in at most its first 64 bytes.
+
+To read things like /proc/sys/kernel/perf_event_paranoid.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -55,78 +55,46 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ydo5rumyv9hdc1vsfmqamugs@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-669q04c5tou5pnt8jtiz6y2r@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 49 +++++++++++++++++++++++++---------------------
- 1 file changed, 27 insertions(+), 22 deletions(-)
+ tools/perf/util/util.c | 17 +++++++++++++++++
+ tools/perf/util/util.h |  2 ++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index d0f91fe..763bef4 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -975,30 +975,9 @@ struct trace {
- 	double			runtime_ms;
- };
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 8dc8cf3..c25e57b 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -394,3 +394,20 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
  
--static int thread__read_fd_path(struct thread *thread, int fd)
-+static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
- {
- 	struct thread_trace *ttrace = thread->priv;
--	char linkname[PATH_MAX], pathname[PATH_MAX];
--	struct stat st;
--	int ret;
--
--	if (thread->pid_ == thread->tid) {
--		scnprintf(linkname, sizeof(linkname),
--			  "/proc/%d/fd/%d", thread->pid_, fd);
--	} else {
--		scnprintf(linkname, sizeof(linkname),
--			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
--	}
--
--	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
--		return -1;
--
--	ret = readlink(linkname, pathname, sizeof(pathname));
--
--	if (ret < 0 || ret > st.st_size)
--		return -1;
--
--	pathname[ret] = '\0';
- 
- 	if (fd > ttrace->paths.max) {
- 		char **npath = realloc(ttrace->paths.table, (fd + 1) * sizeof(char *));
-@@ -1022,6 +1001,32 @@ static int thread__read_fd_path(struct thread *thread, int fd)
- 	return ttrace->paths.table[fd] != NULL ? 0 : -1;
+ 	return (unsigned long) -1;
  }
- 
-+static int thread__read_fd_path(struct thread *thread, int fd)
-+{
-+	char linkname[PATH_MAX], pathname[PATH_MAX];
-+	struct stat st;
-+	int ret;
 +
-+	if (thread->pid_ == thread->tid) {
-+		scnprintf(linkname, sizeof(linkname),
-+			  "/proc/%d/fd/%d", thread->pid_, fd);
-+	} else {
-+		scnprintf(linkname, sizeof(linkname),
-+			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
++int filename__read_int(const char *filename, int *value)
++{
++	char line[64];
++	int fd = open(filename, O_RDONLY), err = -1;
++
++	if (fd < 0)
++		return -1;
++
++	if (read(fd, line, sizeof(line)) > 0) {
++		*value = atoi(line);
++		err = 0;
 +	}
 +
-+	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
-+		return -1;
-+
-+	ret = readlink(linkname, pathname, sizeof(pathname));
-+
-+	if (ret < 0 || ret > st.st_size)
-+		return -1;
-+
-+	pathname[ret] = '\0';
-+	return trace__set_fd_pathname(thread, fd, pathname);
++	close(fd);
++	return err;
 +}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 42dfba7..c8f362d 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -305,4 +305,6 @@ struct dso;
+ 
+ char *get_srcline(struct dso *dso, unsigned long addr);
+ void free_srcline(char *srcline);
 +
- static const char *thread__fd_path(struct thread *thread, int fd, bool live)
- {
- 	struct thread_trace *ttrace = thread->priv;
++int filename__read_int(const char *filename, int *value);
+ #endif /* GIT_COMPAT_UTIL_H */
