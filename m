@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab3JWHxR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:53:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55790 "EHLO
+	id S1752951Ab3JWIAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 04:00:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55796 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab3JWHxN (ORCPT
+	with ESMTP id S1751478Ab3JWHxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:53:13 -0400
-Date: Wed, 23 Oct 2013 00:52:35 -0700
+	Wed, 23 Oct 2013 03:53:15 -0400
+Date: Wed, 23 Oct 2013 00:52:17 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-lyvtxhchz4ga8fwht15x8wou@git.kernel.org>
+Message-ID: <tip-ujg8se8glq5izmu8cdkq15po@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, artagnon@gmail.com,
+        efault@gmx.de, jolsa@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
         peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
-        artagnon@gmail.com
+        masami.hiramatsu.pt@hitachi.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist:
-  Introduce perf_evlist__strerror_tp method
-Git-Commit-ID: 6ef068cb8e77784431b6c80adc49d0b0a6a5df66
+Subject: [tip:perf/core] perf trace: Use vfs_getname hook if available
+Git-Commit-ID: c522739d72a341a3e74a369ce6298b9412813d3f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,122 +31,261 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:41 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6ef068cb8e77784431b6c80adc49d0b0a6a5df66
-Gitweb:     http://git.kernel.org/tip/6ef068cb8e77784431b6c80adc49d0b0a6a5df66
+Commit-ID:  c522739d72a341a3e74a369ce6298b9412813d3f
+Gitweb:     http://git.kernel.org/tip/c522739d72a341a3e74a369ce6298b9412813d3f
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 17 Oct 2013 12:07:58 -0300
+AuthorDate: Fri, 27 Sep 2013 18:06:19 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Oct 2013 14:35:20 -0300
+CommitDate: Wed, 16 Oct 2013 11:18:24 -0300
 
-perf evlist: Introduce perf_evlist__strerror_tp method
+perf trace: Use vfs_getname hook if available
 
-Out of 'perf trace', should be used by other tools that uses
-tracepoints.
+Initially it tries to find a probe:vfs_getname that should be setup
+with:
+
+ perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+
+or with slight changes to cope with code flux in the getname_flags code.
+
+In the future, if a "vfs:getname" tracepoint becomes available, then it
+will be preferred.
+
+This is not strictly required and more expensive method of reading the
+/proc/pid/fd/ symlink will be used when the fd->path array entry is not
+populated by a previous vfs_getname + open syscall ret sequence.
+
+As with any other 'perf probe' probe the setup must be done just once
+and the probe will be left inactive, waiting for users, be it 'perf
+trace' of any other tool.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-lyvtxhchz4ga8fwht15x8wou@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ujg8se8glq5izmu8cdkq15po@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 26 +++++---------------------
- tools/perf/util/evlist.c   | 27 +++++++++++++++++++++++++++
- tools/perf/util/evlist.h   |  2 ++
- 3 files changed, 34 insertions(+), 21 deletions(-)
+ tools/perf/Documentation/perf-trace.txt |  4 ++
+ tools/perf/builtin-trace.c              | 83 ++++++++++++++++++++++++++++-----
+ 2 files changed, 75 insertions(+), 12 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 54139c6..7b0497f 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -97,6 +97,10 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
+ 	Show a summary of syscalls by thread with min, max, and average times (in
+     msec) and relative stddev.
+ 
++--tool_stats::
++	Show tool stats such as number of times fd->pathname was discovered thru
++	hooking the open syscall return + vfs_getname or via reading /proc/pid/fd, etc.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-script[1]
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index ec82895..78b0d6a 100644
+index 763bef4..86d2b1f 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -1814,27 +1814,11 @@ out:
- 	trace->live = false;
- 	return err;
- out_error_tp:
--	switch(errno) {
--	case ENOENT:
--		fputs("Error:\tUnable to find debugfs\n"
--		      "Hint:\tWas your kernel was compiled with debugfs support?\n"
--		      "Hint:\tIs the debugfs filesystem mounted?\n"
--		      "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'\n",
--		      trace->output);
--		break;
--	case EACCES:
--		fprintf(trace->output,
--			"Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
--			"Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
--			debugfs_mountpoint, debugfs_mountpoint);
--		break;
--	default: {
--		char bf[256];
--		fprintf(trace->output, "Can't trace: %s\n",
--			strerror_r(errno, bf, sizeof(bf)));
--	}
--		break;
--	}
-+{
-+	char errbuf[BUFSIZ];
-+	perf_evlist__strerror_tp(evlist, errno, errbuf, sizeof(errbuf));
-+	fprintf(trace->output, "%s\n", errbuf);
-+}
- 	goto out_delete_evlist;
+@@ -951,7 +951,10 @@ fail:
+ 
+ struct trace {
+ 	struct perf_tool	tool;
+-	int			audit_machine;
++	struct {
++		int		machine;
++		int		open_id;
++	}			audit;
+ 	struct {
+ 		int		max;
+ 		struct syscall  *table;
+@@ -965,14 +968,19 @@ struct trace {
+ 	struct strlist		*ev_qualifier;
+ 	bool			not_ev_qualifier;
+ 	bool			live;
++	const char 		*last_vfs_getname;
+ 	struct intlist		*tid_list;
+ 	struct intlist		*pid_list;
+ 	bool			sched;
+ 	bool			multiple_threads;
+ 	bool			summary;
+ 	bool			show_comm;
++	bool			show_tool_stats;
+ 	double			duration_filter;
+ 	double			runtime_ms;
++	struct {
++		u64		vfs_getname, proc_getname;
++	} stats;
+ };
+ 
+ static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
+@@ -1027,7 +1035,8 @@ static int thread__read_fd_path(struct thread *thread, int fd)
+ 	return trace__set_fd_pathname(thread, fd, pathname);
  }
  
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index cb9523f..6737420 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1126,3 +1126,30 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
+-static const char *thread__fd_path(struct thread *thread, int fd, bool live)
++static const char *thread__fd_path(struct thread *thread, int fd,
++				   struct trace *trace)
+ {
+ 	struct thread_trace *ttrace = thread->priv;
  
- 	return printed + fprintf(fp, "\n");;
+@@ -1037,9 +1046,13 @@ static const char *thread__fd_path(struct thread *thread, int fd, bool live)
+ 	if (fd < 0)
+ 		return NULL;
+ 
+-	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL) &&
+-	    (!live || thread__read_fd_path(thread, fd)))
+-		return NULL;
++	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL))
++		if (!trace->live)
++			return NULL;
++		++trace->stats.proc_getname;
++		if (thread__read_fd_path(thread, fd)) {
++			return NULL;
++	}
+ 
+ 	return ttrace->paths.table[fd];
  }
-+
-+int perf_evlist__strerror_tp(struct perf_evlist *evlist __maybe_unused,
-+			     int err, char *buf, size_t size)
-+{
-+	char sbuf[128];
-+
-+	switch (err) {
-+	case ENOENT:
-+		scnprintf(buf, size, "%s",
-+			  "Error:\tUnable to find debugfs\n"
-+			  "Hint:\tWas your kernel was compiled with debugfs support?\n"
-+			  "Hint:\tIs the debugfs filesystem mounted?\n"
-+			  "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'");
-+		break;
-+	case EACCES:
-+		scnprintf(buf, size,
-+			  "Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
-+			  "Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
-+			  debugfs_mountpoint, debugfs_mountpoint);
-+		break;
-+	default:
-+		scnprintf(buf, size, "%s", strerror_r(err, sbuf, sizeof(sbuf)));
-+		break;
+@@ -1049,7 +1062,7 @@ static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
+ {
+ 	int fd = arg->val;
+ 	size_t printed = scnprintf(bf, size, "%d", fd);
+-	const char *path = thread__fd_path(arg->thread, fd, arg->trace->live);
++	const char *path = thread__fd_path(arg->thread, fd, arg->trace);
+ 
+ 	if (path)
+ 		printed += scnprintf(bf + printed, size - printed, "<%s>", path);
+@@ -1186,7 +1199,7 @@ static int trace__read_syscall_info(struct trace *trace, int id)
+ {
+ 	char tp_name[128];
+ 	struct syscall *sc;
+-	const char *name = audit_syscall_to_name(id, trace->audit_machine);
++	const char *name = audit_syscall_to_name(id, trace->audit.machine);
+ 
+ 	if (name == NULL)
+ 		return -1;
+@@ -1450,6 +1463,12 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 
+ 	ret = perf_evsel__intval(evsel, sample, "ret");
+ 
++	if (id == trace->audit.open_id && ret >= 0 && trace->last_vfs_getname) {
++		trace__set_fd_pathname(thread, ret, trace->last_vfs_getname);
++		trace->last_vfs_getname = NULL;
++		++trace->stats.vfs_getname;
 +	}
 +
+ 	ttrace = thread->priv;
+ 
+ 	ttrace->exit_time = sample->time;
+@@ -1494,6 +1513,13 @@ out:
+ 	return 0;
+ }
+ 
++static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
++			      struct perf_sample *sample)
++{
++	trace->last_vfs_getname = perf_evsel__rawptr(evsel, sample, "pathname");
 +	return 0;
 +}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 722618f..386de10 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -168,6 +168,8 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
- 
- size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
- 
-+int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
 +
- static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evsel,
+ 				     struct perf_sample *sample)
  {
- 	struct perf_event_mmap_page *pc = mm->base;
+@@ -1616,6 +1642,22 @@ static int trace__record(int argc, const char **argv)
+ 
+ static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp);
+ 
++static void perf_evlist__add_vfs_getname(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evsel__newtp("probe", "vfs_getname",
++						     evlist->nr_entries);
++	if (evsel == NULL)
++		return;
++
++	if (perf_evsel__field(evsel, "pathname") == NULL) {
++		perf_evsel__delete(evsel);
++		return;
++	}
++
++	evsel->handler.func = trace__vfs_getname;
++	perf_evlist__add(evlist, evsel);
++}
++
+ static int trace__run(struct trace *trace, int argc, const char **argv)
+ {
+ 	struct perf_evlist *evlist = perf_evlist__new();
+@@ -1635,6 +1677,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
+ 		goto out_error_tp;
+ 
++	perf_evlist__add_vfs_getname(evlist);
++
+ 	if (trace->sched &&
+ 		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
+ 				trace__sched_stat_runtime))
+@@ -1741,12 +1785,22 @@ again:
+ 
+ 	if (done)
+ 		perf_evlist__disable(evlist);
+-
+-	goto again;
++	else
++		goto again;
+ 
+ out_unmap_evlist:
+-	if (!err && trace->summary)
+-		trace__fprintf_thread_summary(trace, trace->output);
++	if (!err) {
++		if (trace->summary)
++			trace__fprintf_thread_summary(trace, trace->output);
++
++		if (trace->show_tool_stats) {
++			fprintf(trace->output, "Stats:\n "
++					       " vfs_getname : %" PRIu64 "\n"
++					       " proc_getname: %" PRIu64 "\n",
++				trace->stats.vfs_getname,
++				trace->stats.proc_getname);
++		}
++	}
+ 
+ 	perf_evlist__munmap(evlist);
+ out_close_evlist:
+@@ -1788,6 +1842,7 @@ static int trace__replay(struct trace *trace)
+ 	const struct perf_evsel_str_handler handlers[] = {
+ 		{ "raw_syscalls:sys_enter",  trace__sys_enter, },
+ 		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
++		{ "probe:vfs_getname",	     trace__vfs_getname, },
+ 	};
+ 
+ 	struct perf_session *session;
+@@ -1997,7 +2052,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		NULL
+ 	};
+ 	struct trace trace = {
+-		.audit_machine = audit_detect_machine(),
++		.audit = {
++			.machine = audit_detect_machine(),
++			.open_id = audit_name_to_syscall("open", trace.audit.machine),
++		},
+ 		.syscalls = {
+ 			. max = -1,
+ 		},
+@@ -2019,6 +2077,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	const struct option trace_options[] = {
+ 	OPT_BOOLEAN(0, "comm", &trace.show_comm,
+ 		    "show the thread COMM next to its id"),
++	OPT_BOOLEAN(0, "tool_stats", &trace.show_tool_stats, "show tool stats"),
+ 	OPT_STRING('e', "expr", &ev_qualifier_str, "expr",
+ 		    "list of events to trace"),
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
