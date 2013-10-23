@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3JWO4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:56:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42793 "EHLO mx2.suse.de"
+	id S1752559Ab3JWPBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 11:01:40 -0400
+Received: from ring0.de ([91.143.88.219]:42026 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab3JWO4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:56:41 -0400
-Message-ID: <5267E3A4.40705@suse.cz>
-Date: Wed, 23 Oct 2013 16:56:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>, Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr
-Subject: Re: [PATCH] scripts/coccinelle/api: remove devm_request_and_ioremap.cocci
-References: <1376562633-16204-1-git-send-email-wsa@the-dreams.de> <20131006134921.GA4173@katana> <alpine.DEB.2.02.1310061552541.2037@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1310061552541.2037@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751349Ab3JWPBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 11:01:36 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCHv2 1/3] Input: twl4030-pwrbutton - add device tree support
+Date: Wed, 23 Oct 2013 17:01:20 +0200
+Message-Id: <1382540482-12261-2-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382540482-12261-1-git-send-email-sre@debian.org>
+References: <1382540482-12261-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.10.2013 15:53, Julia Lawall wrote:
-> On Sun, 6 Oct 2013, Wolfram Sang wrote:
-> 
->> On Thu, Aug 15, 2013 at 12:30:25PM +0200, Wolfram Sang wrote:
->>> Use of this function is discouraged in favour of
->>> devm_ioremap_resource(). Don't advertise it.
->>>
->>> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> 
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Add device tree support for twl4030 power button driver.
 
-Applied to kbuild.git#misc now. For some reason, I overlooked the patch
-before.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ drivers/input/misc/twl4030-pwrbutton.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-Michal
+diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
+index b9a05fd..a3a0fe3 100644
+--- a/drivers/input/misc/twl4030-pwrbutton.c
++++ b/drivers/input/misc/twl4030-pwrbutton.c
+@@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
++static int twl4030_pwrbutton_probe(struct platform_device *pdev)
+ {
+ 	struct input_dev *pwr;
+ 	int irq = platform_get_irq(pdev, 0);
+@@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
++       { .compatible = "ti,twl4030-pwrbutton" },
++       {},
++};
++MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
++#endif
++
+ static struct platform_driver twl4030_pwrbutton_driver = {
++	.probe		= twl4030_pwrbutton_probe,
+ 	.remove		= __exit_p(twl4030_pwrbutton_remove),
+ 	.driver		= {
+ 		.name	= "twl4030_pwrbutton",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
+ 	},
+ };
+-
+-module_platform_driver_probe(twl4030_pwrbutton_driver,
+-			twl4030_pwrbutton_probe);
++module_platform_driver(twl4030_pwrbutton_driver);
+ 
+ MODULE_ALIAS("platform:twl4030_pwrbutton");
+ MODULE_DESCRIPTION("Triton2 Power Button");
+-- 
+1.8.4.rc3
+
