@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3JWNQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:16:42 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45525 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753752Ab3JWNQl (ORCPT
+	id S1754171Ab3JWNQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:16:56 -0400
+Received: from mail-gg0-f172.google.com ([209.85.161.172]:61085 "EHLO
+	mail-gg0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab3JWNQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:16:41 -0400
-Message-ID: <5267CC34.1020700@hurleysoftware.com>
-Date: Wed, 23 Oct 2013 09:16:36 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 23 Oct 2013 09:16:53 -0400
+Date: Wed, 23 Oct 2013 10:16:46 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 11/14] perf sched: Make struct perf_sched sched a
+ local variable
+Message-ID: <20131023131646.GA14490@ghostprotocols.net>
+References: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com>
+ <1382427258-17495-12-git-send-email-adrian.hunter@intel.com>
+ <5267702B.6080104@gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [GIT PATCH] TTY/Serial fixes for 3.12-rc4
-References: <20131005173403.GA4811@kroah.com> <CA+55aFzEtnOOB4yPbWg4tmvWTPjQL1_YsZks6wgpGimaQdOEtA@mail.gmail.com> <5250A74E.4070805@hurleysoftware.com> <5250C6CD.1040803@hurleysoftware.com> <20131017211236.GA6155@kroah.com>
-In-Reply-To: <20131017211236.GA6155@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5267702B.6080104@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2013 05:12 PM, Greg KH wrote:
-> On Sat, Oct 05, 2013 at 10:11:25PM -0400, Peter Hurley wrote:
->> On 10/05/2013 07:57 PM, Peter Hurley wrote:
->>
->> However, the atomic_read_lock exclusion needs to cover the
->> unconditional n_tty_set_room() when leaving n_tty_read() and
->> it doesn't. Thus, the departing reader fails to ensure the subsequent
->> reader has a running flush_to_ldisc() worker.
->>
->> Patch forthcoming.
->
-> Did I miss this patch, or did it not come forth?
+Em Wed, Oct 23, 2013 at 07:43:55AM +0100, David Ahern escreveu:
+> On 10/22/13 8:34 AM, Adrian Hunter wrote:
+> >Change "struct perf_sched sched" from being global to being local.
 
-Sorry to go off-grid like that;  interrupt(life) happened.
+> Acked-by: David Ahern <dsahern@gmail.com>
 
-I'm testing that patch now.
+Hey guys, this is essentially a revert of:
 
-Regards,
-Peter Hurley
+commit f36f83f947ede547833e462696893f866df77324
+Author: Namhyung Kim <namhyung.kim@lge.com>
+Date:   Tue Jun 4 14:46:19 2013 +0900
+
+    perf sched: Move struct perf_sched definition out of cmd_sched()
+    
+    For some reason it consumed quite amount of compile time when declared
+    as local variable, and it disappeared when moved out of the function.
+    Moving other variables/tables didn't help.
+    
+    On my system this single-file-change build time reduced from 11s to 3s.
+-----
+
+- Arnaldo
