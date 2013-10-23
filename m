@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab3JWNlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:41:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47068 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3JWNlo (ORCPT
+	id S1752052Ab3JWNns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:43:48 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42565 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751275Ab3JWNnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:41:44 -0400
-Date: Wed, 23 Oct 2013 09:41:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Jim Davis <jim.epost@gmail.com>, Zoltan Kiss <zoltan.kiss@citrix.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing/events: Fix swiotlb tracepoint creation
-Message-ID: <20131023134138.GA27771@phenom.dumpdata.com>
-References: <20131022180625.GD20496@phenom.dumpdata.com>
- <1382527924-12892-1-git-send-email-treding@nvidia.com>
+	Wed, 23 Oct 2013 09:43:47 -0400
+Message-ID: <5267D28B.5020805@hurleysoftware.com>
+Date: Wed, 23 Oct 2013 09:43:39 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382527924-12892-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Wong <normalperson@yhbt.net>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: epoll oops.
+References: <20131014154627.GA9525@redhat.com>	<CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com> <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 01:32:04PM +0200, Thierry Reding wrote:
-> Tracepoints are only created when Xen support is enabled, but they are
-> also referenced within lib/swiotlb.c. So unless Xen support is enabled
-> the tracepoints will be missing, therefore causing builds to fail. Fix
-> this by moving the tracepoint creation to lib/swiotlb.c, which works
-> nicely because the Xen swiotlb support selects the generic swiotlb
-> support.
+On 10/14/2013 04:57 PM, Linus Torvalds wrote:
+> [ Adding Pekka to verify the SLAB_DESTROY_BY_RCU semantics, and Peter
+> Hurley due to the possible tty association ]
 
-Sweet. Thanks!
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/xen/swiotlb-xen.c | 1 -
->  lib/swiotlb.c             | 1 +
->  2 files changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index b310810..44af9d8 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -43,7 +43,6 @@
->  #include <xen/xen-ops.h>
->  #include <xen/hvc-console.h>
->  
-> -#define CREATE_TRACE_POINTS
->  #include <trace/events/swiotlb.h>
->  /*
->   * Used to do a quick range check in swiotlb_tbl_unmap_single and
-> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> index f0d8419..5558706 100644
-> --- a/lib/swiotlb.c
-> +++ b/lib/swiotlb.c
-> @@ -38,6 +38,7 @@
->  #include <linux/bootmem.h>
->  #include <linux/iommu-helper.h>
->  
-> +#define CREATE_TRACE_POINTS
->  #include <trace/events/swiotlb.h>
->  
->  #define OFFSET(val,align) ((unsigned long)	\
-> -- 
-> 1.8.4
-> 
+> And I see a few worrisome cases. For example, look at "tty_poll()". It
+> ends up doing something very similar, except it uses the tty instead
+> of sighand. And exactly like the sighand struct, the tty allocation
+> lifespan can - thanks to hangup() - be shorter than the file
+> allocation lifespan.
+>
+> Peter? Does a tty hangup end up actually possibly freeing the tty
+> struct? Looking at it, I'm starting to think that it only affects
+> f_op, and the "struct tty" stays around, in which case this is all
+> fine.
+
+The tty_struct is only freed at the completion of the tty's
+file_operations .release method (tty_release()). Further, it should
+not be possible to advance past the tty_ldisc_release() call in
+tty_release() while file operations such as tty_poll() -> poll_wait()
+or a tty hangup are in-progress.
+
+[Notwithstanding the above, if some kernel driver failed to acquire
+a tty reference, either directly or via tty_port_tty_hangup(), before
+hanging up, then the hangup could be racing with the .release(). But
+I don't think that's what's happening here.]
+
+
+On 10/15/2013 11:48 AM, Oleg Nesterov wrote:>> Hmm? There might be other cases..
+ >
+ > Yes.
+ >
+ > Dave, perhaps you have vmcore? I have no idea if this is possible or
+ > not, but perhaps you can look at eventpoll_release_file's frame and
+ > print file->f_op ?
+
+I think Oleg's suggestion is the next diagnostic step.
+
+Regards,
+Peter Hurley
+
+
+
+
+
