@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab3JWUek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:34:40 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:47744 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751709Ab3JWUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:34:39 -0400
-Date: Wed, 23 Oct 2013 15:34:35 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: Eric Sandeen <sandeen@sandeen.net>, Alex Elder <elder@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        XFS FILESYSTEM <xfs@oss.sgi.com>
-Subject: Re: [PATCH] xfs: fix possible NULL dereference
-Message-ID: <20131023203435.GR1935@sgi.com>
-References: <20131021231849.GL10553@sgi.com>
- <20131021235601.GG4446@dastard>
- <5265C03B.50701@sandeen.net>
- <20131022001732.GI4446@dastard>
- <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
- <20131022203946.GB2797@dastard>
- <5266E4BD.8030601@sandeen.net>
- <20131022210300.GC2797@dastard>
- <5266EBF0.901@sandeen.net>
- <CAGG-pUTtYomspBXn=RE7YFU=vu6rWZ1fU7CBO45Mmodj8DZFiQ@mail.gmail.com>
+	id S1753095Ab3JWUsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 16:48:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55201 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3JWUsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 16:48:50 -0400
+Date: Wed, 23 Oct 2013 22:48:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        dave.hansen@linux.intel.com, Stephane Eranian <eranian@google.com>,
+        jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131023204838.GB19466@laptop.lan>
+References: <20131016230712.GC26785@twins.programming.kicks-ass.net>
+ <20131017094145.GE3364@laptop.programming.kicks-ass.net>
+ <20131017160034.GO227855@redhat.com>
+ <20131017160439.GP227855@redhat.com>
+ <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGG-pUTtYomspBXn=RE7YFU=vu6rWZ1fU7CBO45Mmodj8DZFiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Geyslan,
-
-On Wed, Oct 23, 2013 at 08:58:51AM -0200, Geyslan Gregório Bem wrote:
-> - Regarding the "possible new patch" subject, I humbly pass the ball to you.
+On Wed, Oct 23, 2013 at 08:09:53AM +0100, Linus Torvalds wrote:
+> On Tue, Oct 22, 2013 at 10:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >>
+> >> Careful! There is one magic piece of state that you need to
+> >> save-and-restore if you do this, namely %cr2. Taking a page fault
+> >> always writes to %cr2, and we must *not* corrupt it in the NMI
+> >> handler.
+> >
+> > It looks like this is already dealt with (a similar thing is done for
+> > i386).
 > 
-> Thank you for the attention.
+> Oh, ok then, we should be good to go. I wonder why we needed that
+> special "_nmi()" version, then..
 
-Thank you for the patch.  I would really prefer to commit this showing
-authorship from you, rather than a Reported-by.  Can I mark you down?
+Ah, the whole fault from nmi trickery from Steve is from after we did
+the copy_from_user_nmi() thing. We're only just catching up :-)
 
-Regards,
-	Ben
+> Please do check that NMI increment the irq-counts etc.. Otherwise
+> you'll need to add the explicit "pagefault_disable/enable()" pair
+> around the __copy_from_user_inatomic()..
 
----
+Yeah, we add NMI_OFFSET to preempt_count on nmi_enter.
 
-xfs: fix possible NULL dereference in xlog_verify_iclog
+I'll also make sure to test we actually hit the fault path
+by concurrently running something like:
 
-In xlog_verify_iclog a debug check of the incore log buffers prints an
-error if icptr is null and then goes on to dereference the pointer
-regardless.  Convert this to an assert so that the intention is clear.
-This was reported by Coverty.
+ while :; echo 1 > /proc/sys/vm/drop_caches ; done
 
-Reported-by: Geyslan G. Bem <geyslan@gmail.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
----
- fs/xfs/xfs_log.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-Index: b/fs/xfs/xfs_log.c
-===================================================================
---- a/fs/xfs/xfs_log.c	2013-10-23 14:52:47.875216875 -0500
-+++ b/fs/xfs/xfs_log.c	2013-10-23 14:53:53.775245830 -0500
-@@ -3714,11 +3714,9 @@ xlog_verify_iclog(
- 	/* check validity of iclog pointers */
- 	spin_lock(&log->l_icloglock);
- 	icptr = log->l_iclog;
--	for (i=0; i < log->l_iclog_bufs; i++) {
--		if (icptr == NULL)
--			xfs_emerg(log->l_mp, "%s: invalid ptr", __func__);
--		icptr = icptr->ic_next;
--	}
-+	for (i=0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
-+      		ASSERT(icptr);
-+
- 	if (icptr != log->l_iclog)
- 		xfs_emerg(log->l_mp, "%s: corrupt iclog ring", __func__);
- 	spin_unlock(&log->l_icloglock);
-
+while doing perf top or so.. 
