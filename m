@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3JWVAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 17:00:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55424 "EHLO
+	id S1753910Ab3JWVBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 17:01:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55414 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab3JWU6a (ORCPT
+	with ESMTP id S1752326Ab3JWU6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 16:58:30 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/16] perf ui: Rename ui_progress to ui_progress_ops
-Date: Wed, 23 Oct 2013 17:58:13 -0300
-Message-Id: <1382561895-8237-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/16] perf ui progress: Per progress bar state
+Date: Wed, 23 Oct 2013 17:58:14 -0300
+Message-Id: <1382561895-8237-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
 References: <1382561895-8237-1-git-send-email-acme@infradead.org>
@@ -30,9 +30,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Reserving 'struct ui_progress' to the per progress instances, not to the
-particular set of operations used to implmenet a progress bar in the
-current UI (GTK, TUI, etc).
+That will ease using a progress bar across multiple functions, like in
+the upcoming patches that will present a progress bar when collapsing
+histograms.
+
+Based on a previous patch by Namhyung Kim.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -42,221 +44,226 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-zjqbfp9gx3yo45s0rp9uv42n@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cr7lq7ud9fj21bg7wvq27w1u@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf     |  1 +
- tools/perf/ui/gtk/gtk.h      |  2 +-
- tools/perf/ui/gtk/progress.c | 14 +++++++-------
- tools/perf/ui/gtk/setup.c    |  2 +-
- tools/perf/ui/progress.c     | 18 +++++++++---------
- tools/perf/ui/progress.h     |  6 ++----
- tools/perf/ui/tui/progress.c |  7 ++++---
- tools/perf/ui/tui/setup.c    |  3 ++-
- tools/perf/ui/tui/tui.h      |  6 ++++++
- 9 files changed, 33 insertions(+), 26 deletions(-)
- create mode 100644 tools/perf/ui/tui/tui.h
+ tools/perf/ui/gtk/progress.c |  8 ++++----
+ tools/perf/ui/progress.c     | 22 +++++++++++++++++-----
+ tools/perf/ui/progress.h     | 15 +++++++++++----
+ tools/perf/ui/tui/progress.c |  8 ++++----
+ tools/perf/util/session.c    | 24 +++++++++++-------------
+ 5 files changed, 47 insertions(+), 30 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 326a26e5fc1c..8a9ca3836043 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -487,6 +487,7 @@ ifndef NO_SLANG
-   LIB_OBJS += $(OUTPUT)ui/tui/util.o
-   LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
-   LIB_OBJS += $(OUTPUT)ui/tui/progress.o
-+  LIB_H += ui/tui/tui.h
-   LIB_H += ui/browser.h
-   LIB_H += ui/browsers/map.h
-   LIB_H += ui/keysyms.h
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 8576cf194872..0a9173ff9a61 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -34,7 +34,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
- int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
- 
- void perf_gtk__init_helpline(void);
--void perf_gtk__init_progress(void);
-+void gtk_ui_progress__init(void);
- void perf_gtk__init_hpp(void);
- 
- void perf_gtk__signal(int sig);
 diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
-index 482bcf3df9b7..195c7f94f98e 100644
+index 195c7f94f98e..b656655fbc39 100644
 --- a/tools/perf/ui/gtk/progress.c
 +++ b/tools/perf/ui/gtk/progress.c
-@@ -7,7 +7,7 @@
+@@ -7,14 +7,14 @@
  static GtkWidget *dialog;
  static GtkWidget *progress;
  
--static void gtk_progress_update(u64 curr, u64 total, const char *title)
-+static void gtk_ui_progress__update(u64 curr, u64 total, const char *title)
+-static void gtk_ui_progress__update(u64 curr, u64 total, const char *title)
++static void gtk_ui_progress__update(struct ui_progress *p)
  {
- 	double fraction = total ? 1.0 * curr / total : 0.0;
+-	double fraction = total ? 1.0 * curr / total : 0.0;
++	double fraction = p->total ? 1.0 * p->curr / p->total : 0.0;
  	char buf[1024];
-@@ -40,7 +40,7 @@ static void gtk_progress_update(u64 curr, u64 total, const char *title)
- 		gtk_main_iteration();
- }
  
--static void gtk_progress_finish(void)
-+static void gtk_ui_progress__finish(void)
- {
- 	/* this will also destroy all of its children */
- 	gtk_widget_destroy(dialog);
-@@ -48,12 +48,12 @@ static void gtk_progress_finish(void)
- 	dialog = NULL;
- }
+ 	if (dialog == NULL) {
+ 		GtkWidget *vbox = gtk_vbox_new(TRUE, 5);
+-		GtkWidget *label = gtk_label_new(title);
++		GtkWidget *label = gtk_label_new(p->title);
  
--static struct ui_progress gtk_progress_fns = {
--	.update		= gtk_progress_update,
--	.finish		= gtk_progress_finish,
-+static struct ui_progress_ops gtk_ui_progress__ops = {
-+	.update		= gtk_ui_progress__update,
-+	.finish		= gtk_ui_progress__finish,
- };
+ 		dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+ 		progress = gtk_progress_bar_new();
+@@ -32,7 +32,7 @@ static void gtk_ui_progress__update(u64 curr, u64 total, const char *title)
+ 	}
  
--void perf_gtk__init_progress(void)
-+void gtk_ui_progress__init(void)
- {
--	progress_fns = &gtk_progress_fns;
-+	ui_progress__ops = &gtk_ui_progress__ops;
- }
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 6c2dd2e423f3..1d57676f8212 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -8,7 +8,7 @@ int perf_gtk__init(void)
- {
- 	perf_error__register(&perf_gtk_eops);
- 	perf_gtk__init_helpline();
--	perf_gtk__init_progress();
-+	gtk_ui_progress__init();
- 	perf_gtk__init_hpp();
+ 	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress), fraction);
+-	snprintf(buf, sizeof(buf), "%"PRIu64" / %"PRIu64, curr, total);
++	snprintf(buf, sizeof(buf), "%"PRIu64" / %"PRIu64, p->curr, p->total);
+ 	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress), buf);
  
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
+ 	/* we didn't call gtk_main yet, so do it manually */
 diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
-index 3ec695607a4d..d753821b6e0b 100644
+index d753821b6e0b..a0f24c7115c5 100644
 --- a/tools/perf/ui/progress.c
 +++ b/tools/perf/ui/progress.c
-@@ -1,26 +1,26 @@
+@@ -1,9 +1,7 @@
  #include "../cache.h"
  #include "progress.h"
  
--static void nop_progress_update(u64 curr __maybe_unused,
--				u64 total __maybe_unused,
--				const char *title __maybe_unused)
-+static void null_progress__update(u64 curr __maybe_unused,
-+				  u64 total __maybe_unused,
-+				  const char *title __maybe_unused)
+-static void null_progress__update(u64 curr __maybe_unused,
+-				  u64 total __maybe_unused,
+-				  const char *title __maybe_unused)
++static void null_progress__update(struct ui_progress *p __maybe_unused)
  {
  }
  
--static struct ui_progress default_progress_fns =
-+static struct ui_progress_ops null_progress__ops =
- {
--	.update		= nop_progress_update,
-+	.update = null_progress__update,
- };
+@@ -14,9 +12,23 @@ static struct ui_progress_ops null_progress__ops =
  
--struct ui_progress *progress_fns = &default_progress_fns;
-+struct ui_progress_ops *ui_progress__ops = &null_progress__ops;
+ struct ui_progress_ops *ui_progress__ops = &null_progress__ops;
  
- void ui_progress__update(u64 curr, u64 total, const char *title)
+-void ui_progress__update(u64 curr, u64 total, const char *title)
++void ui_progress__update(struct ui_progress *p, u64 adv)
  {
--	return progress_fns->update(curr, total, title);
-+	return ui_progress__ops->update(curr, total, title);
+-	return ui_progress__ops->update(curr, total, title);
++	p->curr += adv;
++
++	if (p->curr >= p->next) {
++		p->next += p->step;
++		ui_progress__ops->update(p);
++	}
++}
++
++void ui_progress__init(struct ui_progress *p, u64 total, const char *title)
++{
++	p->curr = 0;
++	p->next = p->step = total / 16;
++	p->total = total;
++	p->title = title;
++
  }
  
  void ui_progress__finish(void)
- {
--	if (progress_fns->finish)
--		progress_fns->finish();
-+	if (ui_progress__ops->finish)
-+		ui_progress__ops->finish();
- }
 diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-index 257cc224f9cf..d41bde5908a6 100644
+index d41bde5908a6..29ec8efffefb 100644
 --- a/tools/perf/ui/progress.h
 +++ b/tools/perf/ui/progress.h
-@@ -3,14 +3,12 @@
+@@ -3,14 +3,21 @@
  
  #include <../types.h>
  
--struct ui_progress {
-+struct ui_progress_ops {
- 	void (*update)(u64, u64, const char *);
++void ui_progress__finish(void);
++ 
++struct ui_progress {
++	const char *title;
++	u64 curr, next, step, total;
++};
++ 
++void ui_progress__init(struct ui_progress *p, u64 total, const char *title);
++void ui_progress__update(struct ui_progress *p, u64 adv);
++
+ struct ui_progress_ops {
+-	void (*update)(u64, u64, const char *);
++	void (*update)(struct ui_progress *p);
  	void (*finish)(void);
  };
  
--extern struct ui_progress *progress_fns;
--
--void ui_progress__init(void);
-+extern struct ui_progress_ops *ui_progress__ops;
+ extern struct ui_progress_ops *ui_progress__ops;
  
- void ui_progress__update(u64 curr, u64 total, const char *title);
- void ui_progress__finish(void);
+-void ui_progress__update(u64 curr, u64 total, const char *title);
+-void ui_progress__finish(void);
+-
+ #endif
 diff --git a/tools/perf/ui/tui/progress.c b/tools/perf/ui/tui/progress.c
-index 6c2184d53cbf..0fcc5a1f525a 100644
+index 0fcc5a1f525a..3e2d936d7443 100644
 --- a/tools/perf/ui/tui/progress.c
 +++ b/tools/perf/ui/tui/progress.c
-@@ -2,6 +2,7 @@
- #include "../progress.h"
- #include "../libslang.h"
- #include "../ui.h"
-+#include "tui.h"
+@@ -5,7 +5,7 @@
+ #include "tui.h"
  #include "../browser.h"
  
- static void tui_progress__update(u64 curr, u64 total, const char *title)
-@@ -31,12 +32,12 @@ static void tui_progress__update(u64 curr, u64 total, const char *title)
+-static void tui_progress__update(u64 curr, u64 total, const char *title)
++static void tui_progress__update(struct ui_progress *p)
+ {
+ 	int bar, y;
+ 	/*
+@@ -15,7 +15,7 @@ static void tui_progress__update(u64 curr, u64 total, const char *title)
+ 	if (use_browser <= 0)
+ 		return;
+ 
+-	if (total == 0)
++	if (p->total == 0)
+ 		return;
+ 
+ 	ui__refresh_dimensions(true);
+@@ -24,9 +24,9 @@ static void tui_progress__update(u64 curr, u64 total, const char *title)
+ 	SLsmg_set_color(0);
+ 	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
+ 	SLsmg_gotorc(y++, 1);
+-	SLsmg_write_string((char *)title);
++	SLsmg_write_string((char *)p->title);
+ 	SLsmg_set_color(HE_COLORSET_SELECTED);
+-	bar = ((SLtt_Screen_Cols - 2) * curr) / total;
++	bar = ((SLtt_Screen_Cols - 2) * p->curr) / p->total;
+ 	SLsmg_fill_region(y, 1, 1, bar, ' ');
+ 	SLsmg_refresh();
  	pthread_mutex_unlock(&ui__lock);
- }
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 854c5aa4db0d..4ba7b548e055 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -503,13 +503,16 @@ static int flush_sample_queue(struct perf_session *s,
+ 	struct perf_sample sample;
+ 	u64 limit = os->next_flush;
+ 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
+-	unsigned idx = 0, progress_next = os->nr_samples / 16;
+ 	bool show_progress = limit == ULLONG_MAX;
++	struct ui_progress prog;
+ 	int ret;
  
--static struct ui_progress tui_progress_fns =
-+static struct ui_progress_ops tui_progress__ops =
- {
- 	.update		= tui_progress__update,
- };
+ 	if (!tool->ordered_samples || !limit)
+ 		return 0;
  
--void ui_progress__init(void)
-+void tui_progress__init(void)
- {
--	progress_fns = &tui_progress_fns;
-+	ui_progress__ops = &tui_progress__ops;
- }
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index b9401482d110..2f612562978c 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -9,6 +9,7 @@
- #include "../util.h"
- #include "../libslang.h"
- #include "../keysyms.h"
-+#include "tui.h"
- 
- static volatile int ui__need_resize;
- 
-@@ -119,7 +120,7 @@ int ui__init(void)
- 
- 	ui_helpline__init();
- 	ui_browser__init();
--	ui_progress__init();
-+	tui_progress__init();
- 
- 	signal(SIGSEGV, ui__signal);
- 	signal(SIGFPE, ui__signal);
-diff --git a/tools/perf/ui/tui/tui.h b/tools/perf/ui/tui/tui.h
-new file mode 100644
-index 000000000000..18961c7b6ec5
---- /dev/null
-+++ b/tools/perf/ui/tui/tui.h
-@@ -0,0 +1,6 @@
-+#ifndef _PERF_TUI_H_
-+#define _PERF_TUI_H_ 1
++	if (show_progress)
++		ui_progress__init(&prog, os->nr_samples, "Processing time ordered events...");
 +
-+void tui_progress__init(void);
+ 	list_for_each_entry_safe(iter, tmp, head, list) {
+ 		if (session_done())
+ 			return 0;
+@@ -530,11 +533,9 @@ static int flush_sample_queue(struct perf_session *s,
+ 		os->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+ 		list_add(&iter->list, &os->sample_cache);
+-		if (show_progress && (++idx >= progress_next)) {
+-			progress_next += os->nr_samples / 16;
+-			ui_progress__update(idx, os->nr_samples,
+-					    "Processing time ordered events...");
+-		}
 +
-+#endif /* _PERF_TUI_H_ */
++		if (show_progress)
++			ui_progress__update(&prog, 1);
+ 	}
+ 
+ 	if (list_empty(head)) {
+@@ -1285,12 +1286,13 @@ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 file_size, struct perf_tool *tool)
+ {
+ 	int fd = perf_data_file__fd(session->file);
+-	u64 head, page_offset, file_offset, file_pos, progress_next;
++	u64 head, page_offset, file_offset, file_pos;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+ 	char *buf, *mmaps[NUM_MMAPS];
+ 	union perf_event *event;
+ 	uint32_t size;
++	struct ui_progress prog;
+ 
+ 	perf_tool__fill_defaults(tool);
+ 
+@@ -1301,7 +1303,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 	if (data_size && (data_offset + data_size < file_size))
+ 		file_size = data_offset + data_size;
+ 
+-	progress_next = file_size / 16;
++	ui_progress__init(&prog, file_size, "Processing events...");
+ 
+ 	mmap_size = MMAP_SIZE;
+ 	if (mmap_size > file_size)
+@@ -1356,11 +1358,7 @@ more:
+ 	head += size;
+ 	file_pos += size;
+ 
+-	if (file_pos >= progress_next) {
+-		progress_next += file_size / 16;
+-		ui_progress__update(file_pos, file_size,
+-				    "Processing events...");
+-	}
++	ui_progress__update(&prog, size);
+ 
+ 	if (session_done())
+ 		goto out;
 -- 
 1.8.1.4
 
