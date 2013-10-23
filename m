@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3JWG5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 02:57:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21233 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789Ab3JWG5E (ORCPT
+	id S1751684Ab3JWHDH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:03:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41353 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3JWHDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 02:57:04 -0400
-Date: Wed, 23 Oct 2013 08:56:40 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Ian Campbell <ian.campbell@citrix.com>,
-        ross.philipson@citrix.com, stefano.stabellini@eu.citrix.com,
-        grub-devel@gnu.org, david.woodhouse@intel.com,
-        richard.l.maliszewski@intel.com, xen-devel@lists.xen.org,
-        boris.ostrovsky@oracle.com, Peter Jones <pjones@redhat.com>,
-        linux-kernel@vger.kernel.org, keir@xen.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131023065640.GP3626@debian70-amd64.local.net-space.pl>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
- <20131021135437.GD1283@fenchurch.internal.datastacks.com>
- <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
- <1382433990.1657.66.camel@hastur.hellion.org.uk>
- <5266620602000078000FCA48@nat28.tlf.novell.com>
- <1382435127.1657.70.camel@hastur.hellion.org.uk>
- <526668A502000078000FCA7B@nat28.tlf.novell.com>
- <20131022134252.GA27302@phenom.dumpdata.com>
+	Wed, 23 Oct 2013 03:03:05 -0400
+Date: Wed, 23 Oct 2013 08:04:32 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: linux-next: Tree for Oct 22 (xilinx_uartps)
+Message-ID: <20131023070432.GB31203@kroah.com>
+References: <1382454517-4074-1-git-send-email-treding@nvidia.com>
+ <5266F658.5030904@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131022134252.GA27302@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <5266F658.5030904@infradead.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 09:42:52AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Tue, Oct 22, 2013 at 10:59:33AM +0100, Jan Beulich wrote:
-> > >>> On 22.10.13 at 11:45, Ian Campbell <ian.campbell@citrix.com> wrote:
-> > > On Tue, 2013-10-22 at 10:31 +0100, Jan Beulich wrote:
-> > >> >>> On 22.10.13 at 11:26, Ian Campbell <ian.campbell@citrix.com> wrote:
-> > >> > AIUI "efilinux" is somewhat badly named and does not use the Linux Boot
-> > >> > Protocol (i.e. the (b)zImage stuff with real mode entry point) either.
-> > >> > It actually loads and executes the kernel binary as a PE/COFF executable
-> > >> > (the native UEFI binary executable format). xen.efi is a PE/COFF binary
-> > >> > too and could equally well be launched by linuxefi in this way.
-> > >>
-> > >> Except that unless I'm mistaken "linuxefi" still expects to find certain
-> > >> Linux-specific internal data structures inside the PE image, which I
-> > >> don't see us wanting to be emulating. That's the main difference to
-> > >> "chainloader" afaict.
-> > >
-> > > Ah, I'd been led to believe it was just the lack of a call to
-> > > ExitBootServices, but I didn't check. What you say sounds completely
-> > > plausible.
-> > >
-> > > Do you know what sort of Linux specific data structures are we talking
-> > > about?
-> >
-> > The setup header I would assume (i.e. the bits surrounding the
-> > "HdrS" signature). But I'm only guessing anyway.
->
-> This is a bit lengthy email, so please get your coffee/tea ready.
+On Tue, Oct 22, 2013 at 03:04:08PM -0700, Randy Dunlap wrote:
+> On 10/22/13 08:08, Thierry Reding wrote:
+> > Hi all,
+> > 
+> > I've uploaded today's linux-next tree to the master branch of the
+> > repository below:
+> > 
+> >         git://gitorious.org/thierryreding/linux-next.git
+> > 
+> > A next-20131022 tag is also provided for convenience.
+> > 
+> > Gained a couple new conflicts, fixed more build failures. ARM seems to
+> > be in pretty good shape, as is the 64-bit x86 allmodconfig.
+> 
+> 
+> on i386:
+> 
+>   CC [M]  drivers/tty/serial/xilinx_uartps.o
+> drivers/tty/serial/xilinx_uartps.c: In function 'xuartps_suspend':
+> drivers/tty/serial/xilinx_uartps.c:1227:21: error: 'xuartps_uart_driver' undeclared (first use in this function)
+> drivers/tty/serial/xilinx_uartps.c:1227:21: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/tty/serial/xilinx_uartps.c: In function 'xuartps_resume':
+> drivers/tty/serial/xilinx_uartps.c:1308:27: error: 'xuartps_uart_driver' undeclared (first use in this function)
+> drivers/tty/serial/xilinx_uartps.c:1309:1: warning: control reaches end of non-void function [-Wreturn-type]
 
-[...]
+There are some patches sent that should resolve this issue now, I'll try
+to apply them later today.
 
-> We can also support all three: PE/COFF by itself launched from GRUB2
-> (ExitBootServices called, not too good), multiboot2 support, and
-> linuxefi, I think?
->
-> The disadvantage of multiboot2 is that it is not upstream. But the patches
-> do exist and it looks like they could be put in GRUB2 upstream. The neat
-> about them is that it also supports Solaris and can support any other
-> multboot payload type kernels (ie, non-Linux centric).
->
-> The advantage of linuxefi is that it is supported by all Linux distros right
-> now - so we would fit right away. We still have to fiddle with the
-> linux_kernel_parameters to get everything we want from it - which
-> is probably just the EFI stuff and we can ditch the rest.
+thanks,
 
-Usage of Linux Boot protocol is quiet complicated in our case. It pases
-one pointer to all initrd images loaded one by one into memory. So if
-we would like to use it we will be forced to parse this blob to find
-separate images. Not good. multiboot2 protocol passes list of pointers
-to all loaded modules.
-
-Daniel
+greg k-h
