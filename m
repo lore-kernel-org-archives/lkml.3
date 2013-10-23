@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab3JWJyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:54:19 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52843 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751883Ab3JWJyS (ORCPT
+	id S1753127Ab3JWJ4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:56:04 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:61610 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3JWJz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:54:18 -0400
-Message-ID: <1382522054.2081.39.camel@dabdike.quadriga.com>
-Subject: Re: [Ksummit-2013-discuss] Linux Foundation Technical Advisory
- Board Elections and Nomination process
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
-Cc: ksummit-2013-discuss@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Oct 2013 10:54:14 +0100
-In-Reply-To: <1382514052.2081.30.camel@dabdike.quadriga.com>
-References: <1382514052.2081.30.camel@dabdike.quadriga.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Oct 2013 05:55:59 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 5/9] backlight: atmel-pwm-bl: clean up get_intensity
+Date: Wed, 23 Oct 2013 11:55:39 +0200
+Message-Id: <1382522143-32072-6-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 08:40 +0100, James Bottomley wrote:
-> Since we now have an election, it will be held in the event at the
-> National Museum tonight (Wednesday 23 October), probably around 21:30
-> (Kernel Summit attendees have a separate dinner, so we all need time to
-> get over to the Museum).  Each candidate will give a short nomination
-> pitch and then all those present will get to vote by a show of hands for
-> their preferred set.
+Clean up get_intensity to increase readability.
 
-Correction to the time.  Apparently the Bagpipes are starting at the
-National Museum at 21:30 so We'll try to have the election as close to
-21:00 as we can manage.  We're hoping the promise of whisky tastings
-will get the KS people out of dinner in time.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-For those people who nominated but won't be present, we'll get a
-trustworthy person to read out your nomination email in lieu of you
-actually giving your pitch.
-
-James
-
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index 52a8134..504061c 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -70,15 +70,14 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+ {
+ 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
++	u32 cdty;
+ 	u32 intensity;
+ 
+-	if (pwmbl->pdata->pwm_active_low) {
+-		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
+-			pwmbl->pdata->pwm_duty_min;
+-	} else {
+-		intensity = pwmbl->pdata->pwm_duty_max -
+-			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+-	}
++	cdty = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
++	if (pwmbl->pdata->pwm_active_low)
++		intensity = cdty - pwmbl->pdata->pwm_duty_min;
++	else
++		intensity = pwmbl->pdata->pwm_duty_max - cdty;
+ 
+ 	return (u16)intensity;
+ }
+-- 
+1.8.4
 
