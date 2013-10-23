@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3JWJ70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:59:26 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:37644 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3JWJ4A (ORCPT
+	id S1752650Ab3JWKDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 06:03:09 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47409 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3JWKDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:56:00 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3/9] backlight: atmel-pwm-bl: fix module autoload
-Date: Wed, 23 Oct 2013 11:55:37 +0200
-Message-Id: <1382522143-32072-4-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+	Wed, 23 Oct 2013 06:03:08 -0400
+Date: Wed, 23 Oct 2013 03:03:03 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, kirill@shutemov.name
+Subject: Re: [PATCH, RFC] what's the point of mtd_inodefs?
+Message-ID: <20131023100303.GA20373@infradead.org>
+References: <20131022153313.GA11923@infradead.org>
+ <CAFLxGvwk0gbejxk6hmnu+Cw=TgXGh0=MKgSyKtm7nTVJiBBgeg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvwk0gbejxk6hmnu+Cw=TgXGh0=MKgSyKtm7nTVJiBBgeg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing module alias which is needed for module autoloading.
+On Wed, Oct 23, 2013 at 07:50:17AM +0200, Richard Weinberger wrote:
+> On Tue, Oct 22, 2013 at 5:33 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> > I've been looking at mtdchar as part of a bigger series touching all
+> > kidns of places and really wonder what the point of mtd_inodefs is.
+> 
+> As far I can tell it was introduced because of that issue:
+> http://lists.infradead.org/pipermail/linux-mtd/2010-April/029593.html
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/video/backlight/atmel-pwm-bl.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 3cb0094..cc5a5ed 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -229,3 +229,4 @@ module_platform_driver(atmel_pwm_bl_driver);
- MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
- MODULE_DESCRIPTION("Atmel PWM backlight driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:atmel-pwm-bl");
--- 
-1.8.4
+Not sure how that issue came up as writeback only ever uses
+mapping->backing_dev_info for block devices, else it only uses s_bdi to
+avoid this issue.  As pointed out somewhere in that thread the mem
+driver uses a similar scheme.
 
