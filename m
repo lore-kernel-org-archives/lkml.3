@@ -1,205 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab3JWJrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:47:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52232 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3JWJrE (ORCPT
+	id S1752265Ab3JWJxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:53:22 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57550 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3JWJxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:47:04 -0400
-X-AuditID: cbfee68f-b7f836d000001b39-9d-52679b1511b9
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: clean up several status-related operations
-Date: Wed, 23 Oct 2013 18:46:25 +0900
-Message-id: <1382521585-27450-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zI13R2elBBj1btCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyji9u7xgqVpF07/1
-	LA2MX+W7GDk5JARMJI69fMwIYYtJXLi3nq2LkYtDSGAZo8Sc7omsMEW3Pj2BSixilHj7sx/K
-	aWaSeLN1FZDDwcEmoC2xeb8BSIOIALPEgqnnGUFqmAUmMEr8X/SeBSQhLOAocWD+DbB1LAKq
-	Emf2vWYHsXkF3CXuPJ3ODrFNW2Lb84lgzRIC99kkDm+fyQbRICDxbfIhFpBlEgKyEpsOMEPU
-	S0ocXHGDZQKj4AJGhlWMoqkFyQXFSelFxnrFibnFpXnpesn5uZsYISHYv4Px7gHrQ4zJQOMm
-	MkuJJucDQzivJN7Q2MzIwtTE1NjI3NKMNGElcd77D5OChATSE0tSs1NTC1KL4otKc1KLDzEy
-	cXBKNTBOn9WtulJ1XbEzh1r+6l/rnllHXJIL9jIOOHbsst/rLesPTNj1QvzZVqvHlx6/uae+
-	vMJiuaPEJV1bRonpf/TjJgguy1BcePRkRLbVp9DZOifvGCdcX7rcOzh54+YZse6HalkOi5zR
-	zv3htSZll/0317l3r/1N2NDq7HzJyELjD+e0ZT/y6k4IKbEUZyQaajEXFScCAGjjGa5XAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAV3R2elBBq1XVC2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8w4vbu8YKlaRdO/9SwNjF/luxg5OSQETCRufXrCBmGLSVy4tx7I5uIQEljE
-	KPH2Zz+U08wk8WbrKiCHg4NNQFti834DkAYRAWaJBVPPM4LUMAtMYJT4v+g9C0hCWMBR4sD8
-	G4wgNouAqsSZfa/ZQWxeAXeJO0+ns0Ns05bY9nwi4wRG7gWMDKsYRVMLkguKk9JzjfSKE3OL
-	S/PS9ZLzczcxggP8mfQOxlUNFocYBTgYlXh4LdvTgoRYE8uKK3MPMUpwMCuJ8KpPSA8S4k1J
-	rKxKLcqPLyrNSS0+xJgMtH0is5Rocj4w+vJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCe
-	WJKanZpakFoEs4WJg1OqgTFr/Uut5dczeBdqOV7XSTW9ef1IyDaViOqMliQNhntaOhVCpmeN
-	XGL+fznwS+TBpyMXlyjE+Ow+2icx93bvPo9794wNrqy3Y1y7Ks6k7N+vG6H/GNbH/JrwOy/+
-	W0P3pKIPKU+leeSXL5w6c81cOYPdCoeWyT3/pThpUsmVaS9F1iZwsv5Py8pTYinOSDTUYi4q
-	TgQANE+SwLQCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 23 Oct 2013 05:53:21 -0400
+Message-ID: <52679BD6.6090507@linux.vnet.ibm.com>
+Date: Wed, 23 Oct 2013 15:20:14 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
+ of the parent domain's group
+References: <20131021114002.13291.31478.stgit@drishya> <20131021114442.13291.99344.stgit@drishya> <20131022221138.GJ2490@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131022221138.GJ2490@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102309-5490-0000-0000-0000045F4592
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up improper definitions that update some status information.
+Hi Peter
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+On 10/23/2013 03:41 AM, Peter Zijlstra wrote:
+> This nohz stuff really needs to be re-thought and made more scalable --
+> its a royal pain :/
+
+Why  not do something like the below instead? It does the following.
+
+This patch introduces sd_busy just like your suggested patch, except that
+it points to the parent of the highest level sched domain which has the
+SD_SHARE_PKG_RESOURCES set and initializes it in update_top_cache_domain(). 
+This is the sched domain that is relevant in nohz_kick_needed().
+
+sd_set_sd_state_busy(), sd_set_sd_state_idle() and nohz_kick_needed() query
+and update *only* this sched domain(sd_busy) for nr_busy_cpus. They are the
+only users of this parameter. While we are at it, we might as well change
+the nohz_idle parameter to be updated at the sd_busy domain level alone and
+not the base domain level of a CPU. This will unify the concept of busy cpus
+at just one level of sched domain.
+
+There is no need to iterate through all levels of sched domains of a cpu to
+update nr_busy_cpus since it is irrelevant at all other sched domains except
+at sd_busy level.
+
+De-couple asymmetric load balancing from the nr_busy parameter which the
+PATCH 2/3 anyway does. sd_busy therefore is irrelevant for asymmetric load
+balancing.
+
+Regards
+Preeti U Murthy
+--------------------START_PATCH-------------------------------
+
+sched: Fix nohz_kick_needed()
+
 ---
- fs/f2fs/checkpoint.c |  8 ++------
- fs/f2fs/data.c       | 12 +++---------
- fs/f2fs/f2fs.h       | 14 +++++++++++++-
- fs/f2fs/gc.c         |  4 +---
- fs/f2fs/segment.c    | 10 ++++------
- 5 files changed, 23 insertions(+), 25 deletions(-)
+ kernel/sched/core.c  |    4 ++++
+ kernel/sched/fair.c  |   40 ++++++++++++++++++++++------------------
+ kernel/sched/sched.h |    1 +
+ 3 files changed, 27 insertions(+), 18 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 6fb484c..b4a59cf 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -467,9 +467,7 @@ static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
- 			return -EEXIST;
- 	}
- 	list_add_tail(&new->list, head);
--#ifdef CONFIG_F2FS_STAT_FS
--	sbi->n_dirty_dirs++;
--#endif
-+	stat_inc_dirty_dir(sbi);
- 	return 0;
- }
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c06b8d3..c1dd11c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5271,6 +5271,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
+ DEFINE_PER_CPU(int, sd_llc_size);
+ DEFINE_PER_CPU(int, sd_llc_id);
+ DEFINE_PER_CPU(struct sched_domain *, sd_numa);
++DEFINE_PER_CPU(struct sched_domain *, sd_busy);
  
-@@ -531,9 +529,7 @@ void remove_dirty_dir_inode(struct inode *inode)
- 		if (entry->inode == inode) {
- 			list_del(&entry->list);
- 			kmem_cache_free(inode_entry_slab, entry);
--#ifdef CONFIG_F2FS_STAT_FS
--			sbi->n_dirty_dirs--;
--#endif
-+			stat_dec_dirty_dir(sbi);
- 			break;
- 		}
- 	}
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 2535d3b..4d4718f 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -68,9 +68,6 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
- 					struct buffer_head *bh_result)
+ static void update_top_cache_domain(int cpu)
  {
- 	struct f2fs_inode_info *fi = F2FS_I(inode);
--#ifdef CONFIG_F2FS_STAT_FS
--	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--#endif
- 	pgoff_t start_fofs, end_fofs;
- 	block_t start_blkaddr;
+@@ -5290,6 +5291,9 @@ static void update_top_cache_domain(int cpu)
  
-@@ -80,9 +77,8 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 	sd = lowest_flag_domain(cpu, SD_NUMA);
+ 	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
++
++	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES)->parent;
++	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
+ }
+ 
+ /*
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 813dd61..71e6f14 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6515,16 +6515,16 @@ static inline void nohz_balance_exit_idle(int cpu)
+ static inline void set_cpu_sd_state_busy(void)
+ {
+ 	struct sched_domain *sd;
++	int cpu = smp_processor_id();
+ 
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = per_cpu(sd_busy, cpu);
+ 
+ 	if (!sd || !sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 0;
+ 
+-	for (; sd; sd = sd->parent)
+-		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++	atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6532,16 +6532,16 @@ unlock:
+ void set_cpu_sd_state_idle(void)
+ {
+ 	struct sched_domain *sd;
++	int cpu = smp_processor_id();
+ 
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = per_cpu(sd_busy, cpu);
+ 
+ 	if (!sd || sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 1;
+ 
+-	for (; sd; sd = sd->parent)
+-		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++	atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6748,6 +6748,9 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ {
+ 	unsigned long now = jiffies;
+ 	struct sched_domain *sd;
++	struct sched_group *sg;
++	struct sched_group_power *sgp;
++	int nr_busy;
+ 
+ 	if (unlikely(idle_cpu(cpu)))
  		return 0;
+@@ -6773,22 +6776,23 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 		goto need_kick;
+ 
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd) {
+-		struct sched_group *sg = sd->groups;
+-		struct sched_group_power *sgp = sg->sgp;
+-		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
++	sd = per_cpu(sd_busy, cpu);
+ 
+-		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+-			goto need_kick_unlock;
++	if (sd) {
++		sg = sd->groups;
++		sgp = sg->sgp;
++		nr_busy = atomic_read(&sgp->nr_busy_cpus);
+ 
+-		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
+-		    && (cpumask_first_and(nohz.idle_cpus_mask,
+-					  sched_domain_span(sd)) < cpu))
++		if (nr_busy > 1)
+ 			goto need_kick_unlock;
+-
+-		if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
+-			break;
  	}
- 
--#ifdef CONFIG_F2FS_STAT_FS
--	sbi->total_hit_ext++;
--#endif
-+	stat_inc_hit_ext(inode->i_sb);
 +
- 	start_fofs = fi->ext.fofs;
- 	end_fofs = fi->ext.fofs + fi->ext.len - 1;
- 	start_blkaddr = fi->ext.blk_addr;
-@@ -100,9 +96,7 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
- 		else
- 			bh_result->b_size = UINT_MAX;
- 
--#ifdef CONFIG_F2FS_STAT_FS
--		sbi->read_hit_ext++;
--#endif
-+		stat_inc_hit_ext(inode->i_sb);
- 		read_unlock(&fi->ext.ext_lock);
- 		return 1;
- 	}
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 2949275..d1fc93c 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1155,7 +1155,13 @@ static inline struct f2fs_stat_info *F2FS_STAT(struct f2fs_sb_info *sbi)
- 	return (struct f2fs_stat_info*)sbi->stat_info;
- }
- 
--#define stat_inc_call_count(si)	((si)->call_count++)
-+#define stat_inc_call_count(si)		((si)->call_count++)
-+#define stat_inc_bggc_count(sbi)	((sbi)->bg_gc++)
-+#define stat_inc_dirty_dir(sbi)		((sbi)->n_dirty_dirs++)
-+#define stat_dec_dirty_dir(sbi)		((sbi)->n_dirty_dirs--)
-+#define stat_inc_hit_ext(sb)		((F2FS_SB(sb))->total_hit_ext++)
-+#define stat_inc_alloc_type(sbi, curseg)				\
-+		((sbi)->segment_count[(curseg)->alloc_type]++)
- 
- #define stat_inc_seg_count(sbi, type)					\
- 	do {								\
-@@ -1184,12 +1190,18 @@ static inline struct f2fs_stat_info *F2FS_STAT(struct f2fs_sb_info *sbi)
- 		si->node_blks += (blks);				\
- 	} while (0)
- 
++	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
 +
- int f2fs_build_stats(struct f2fs_sb_info *);
- void f2fs_destroy_stats(struct f2fs_sb_info *);
- void __init f2fs_create_root_stats(void);
- void f2fs_destroy_root_stats(void);
- #else
- #define stat_inc_call_count(si)
-+#define stat_inc_bggc_count(si)
-+#define stat_inc_dirty_dir(sbi)
-+#define stat_dec_dirty_dir(sbi)
-+#define stat_inc_hit_ext(sb)
-+#define stat_inc_alloc_type(sbi, curseg)
- #define stat_inc_seg_count(si, type)
- #define stat_inc_tot_blk_count(si, blks)
- #define stat_inc_data_blk_count(si, blks)
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 7914b92..cb286d7 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -77,9 +77,7 @@ static int gc_thread_func(void *data)
- 		else
- 			wait_ms = increase_sleep_time(gc_th, wait_ms);
- 
--#ifdef CONFIG_F2FS_STAT_FS
--		sbi->bg_gc++;
--#endif
-+		stat_inc_bggc_count(sbi);
- 
- 		/* if return value is not zero, no victim was selected */
- 		if (f2fs_gc(sbi))
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 8ac1619..c9c276e 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -554,9 +554,8 @@ static void allocate_segment_by_default(struct f2fs_sb_info *sbi,
- 		change_curseg(sbi, type, true);
- 	else
- 		new_curseg(sbi, type, false);
--#ifdef CONFIG_F2FS_STAT_FS
--	sbi->segment_count[curseg->alloc_type]++;
--#endif
++	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
++				  sched_domain_span(sd)) < cpu))
++		goto need_kick_unlock;
 +
-+	stat_inc_alloc_type(sbi, curseg);
- }
+ 	rcu_read_unlock();
+ 	return 0;
  
- void allocate_new_segments(struct f2fs_sb_info *sbi)
-@@ -811,9 +810,8 @@ static void do_write_page(struct f2fs_sb_info *sbi, struct page *page,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ffc7087..0f1253f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -623,6 +623,7 @@ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
+ DECLARE_PER_CPU(int, sd_llc_size);
+ DECLARE_PER_CPU(int, sd_llc_id);
+ DECLARE_PER_CPU(struct sched_domain *, sd_numa);
++DECLARE_PER_CPU(struct sched_domain *, sd_busy);
  
- 	mutex_lock(&sit_i->sentry_lock);
- 	__refresh_next_blkoff(sbi, curseg);
--#ifdef CONFIG_F2FS_STAT_FS
--	sbi->block_count[curseg->alloc_type]++;
--#endif
-+
-+	stat_inc_alloc_type(sbi, curseg);
- 
- 	/*
- 	 * SIT information should be updated before segment allocation,
--- 
-1.8.4.474.g128a96c
+ struct sched_group_power {
+ 	atomic_t ref;
 
