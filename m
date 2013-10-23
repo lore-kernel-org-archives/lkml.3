@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3JWNVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:21:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38472 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab3JWNVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:21:06 -0400
-Message-ID: <5267CD3C.2020004@suse.cz>
-Date: Wed, 23 Oct 2013 15:21:00 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753927Ab3JWNVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:21:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48864 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3JWNVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 09:21:36 -0400
 MIME-Version: 1.0
-To: Afzal Mohammed <afzal.mohd.ma@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christophe Leroy <christophe.leroy@c-s.fr>,
-        Christian Kujau <lists@nerdbynature.de>
-Subject: Re: [PATCH RFC] kbuild: prevent git private tag altering kernelrelease
-References: <1379109004-2411-1-git-send-email-afzal.mohd.ma@gmail.com>
-In-Reply-To: <1379109004-2411-1-git-send-email-afzal.mohd.ma@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5267BAE7.2090300@redhat.com>
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com>
+	<1382304926-1641-2-git-send-email-prarit@redhat.com>
+	<CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com>
+	<5265A9A4.2000100@redhat.com>
+	<CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>
+	<526706FC.2070105@redhat.com>
+	<CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com>
+	<5267A6CA.1000505@redhat.com>
+	<5267BAE7.2090300@redhat.com>
+Date: Wed, 23 Oct 2013 21:21:33 +0800
+Message-ID: <CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
+ no uevent
+From: Ming Lei <ming.lei@canonical.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        tigran@aivazian.fsnet.co.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+On Wed, Oct 23, 2013 at 8:02 PM, Prarit Bhargava <prarit@redhat.com> wrote:
 
-sorry for the late feedback.
+>
+> After all this I completely forgot the problem I'm trying to solve here.  The
+> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
+> is not found (that is the file is not found on disk), then EACH cpu waits 1
+> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
+>
+> Which is terrible... so HOTPLUG doesn't work here.
+>
+> Let me back up Ming and see if you have a better solution for me.  I have a
+> system that does not have the x86 microcode loaded on disk.  I use the microcode
+> module which calls request_firmware_nowait() to load the microcode image and I
+> want it done as fast as possible.  The microcode loader does not have a uevent
+> so I'm not waiting on userspace for completion.
+>
+> How do I avoid the 60 second delay/cpu introduced in the microcode path?  I
+> don't see one.  If I use HOTPLUG I'm waiting 60 seconds.  If I use NOHOTPLUG
+> AFAICT the loading function never will return.  AFAICT the same issue arises
+> with the dell_rbu code -- it appears to never load the dell_rbu firmware.
 
-On 13.9.2013 23:49, Afzal Mohammed wrote:
-> If a private tag is created after the most recent kernelversion tag, a
-> commit after this private tag would feed kernelrelease with commits
-> after private tag and kernelversion tag. This may confuse user relying
-> on kernelrelease (mostly a developer while debugging), mainly if HEAD
-> has a private tag and otherwise w.r.t git distance from kernelversion
-> tag.
+As I said, the 60 second delay is from udev, so that is the root cause.
 
-The solution is simple: Do not use private annotated tags. Or rather, if
-you are creating an annotated tag, modify EXTRAVERSION accordingly. Any
-automagic based on the tag name is going to fail in some way.
+There are some workarounds for your reference:
 
+- fix udev
 
-> Instead if such a tag is created at say HEAD~, kernelrelease would be
-> v3.11.0-rc1-00001-gdeadbeef, misleading the observer w.r.t git distance
-> from nearest kernelversion tag.
-> 
-> Here an attempt is made to prevent private tag from altering
-> kernelrelease.
-> 
-> Signed-off-by: Afzal Mohammed <afzal.mohd.ma@gmail.com>
-> ---
-> 
-> Hi,
-> 
-> This seems to work on different scenarios that could be readily thought
-> of. I am shaky about this change, but acheives the purpose.
+- disable CONFIG_FW_LOADER_USER_HELPER if you are sure
+the microcode image is under the default firmware search paths, which
+are defined in drivers/base/firmware_class.c
 
-With your change, the script considers e.g. the next-YYYYMMDD tags
-"private."
+- fake a empty latest microcode image under your firmware path
+
+- use request_firmware_nowait(HOTPLUG) to request firmware from
+user space, and apply the microcode at a appropriate time after the
+request is completed, and the approach is what we are discussing.
 
 
->  define filechk_kernel.release
-> -	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
-> +	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree) $(KERNELVERSION))" > $@
->  endef
-
-The >$@ should not be there.
-
-Michal
+Thanks,
+--
+Ming Lei
