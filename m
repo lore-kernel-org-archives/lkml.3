@@ -1,245 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3JWLUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 07:20:30 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43819 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab3JWLU2 (ORCPT
+	id S1753425Ab3JWLUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 07:20:49 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:27569 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab3JWLUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 07:20:28 -0400
+	Wed, 23 Oct 2013 07:20:47 -0400
+X-Spam-Score: -100.8
+Message-ID: <5267B0C9.3000402@asianux.com>
+Date: Wed, 23 Oct 2013 19:19:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20131011051451.GA12193@localhost>
-References: <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
-	<20131007083505.GA22585@localhost>
-	<CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
-	<CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
-	<20131008020918.GA1220@localhost>
-	<20131008021452.GA6456@localhost>
-	<20131008080625.GA25034@n2100.arm.linux.org.uk>
-	<alpine.DEB.2.00.1310100322040.14436@skynet.skynet.ie>
-	<20131010091920.GO25034@n2100.arm.linux.org.uk>
-	<20131010105324.GA5105@n2100.arm.linux.org.uk>
-	<20131011051451.GA12193@localhost>
-Date: Wed, 23 Oct 2013 19:20:24 +0800
-Message-ID: <CADJHv_t0PzoxUmfrrss9_korx+Pruig2Xgv8MDbegdviEdx4gA@mail.gmail.com>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Paul McKenney <paulmck@linux.vnet.ibm.com>, khilman@linaro.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: context_tracking: use extern function instead
+ of static inline function for user_enter/exit()
+References: <5267A72B.7060808@asianux.com> <20131023111147.GB2502@localhost.localdomain>
+In-Reply-To: <20131023111147.GB2502@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How is this going?
-
-
-regards,
-
-
-2013/10/11 Fengguang Wu <fengguang.wu@intel.com>:
->> I think something like the below may address the issue - I've only build
->> tested this so far.
+On 10/23/2013 07:11 PM, Frederic Weisbecker wrote:
+> On Wed, Oct 23, 2013 at 06:38:35PM +0800, Chen Gang wrote:
+>> The related assemble code can not find the static inline function. The
+>> related commit "ad65782 context_tracking: Optimize main APIs off case
+>> with static key" causes this issue.
 >>
->> We have another case where DRM does the wrong thing here too - a similar
->> thing goes on with connectors as well.  I've not yet looked into this,
->> but I'll take a look later today.
+>> The related error (for arm, with allmodconfig):
 >>
->> Fengguang - could you give this some runs through your marvellous test
->> system and see whether it fixes the problem you're seeing please?
->
-> Russell, I applied the patch (as commit 17e57131d4c2) on top of
-> v3.12-rc4 and here are the test results for the kernels with
->
->         CONFIG_DRM=y
->         CONFIG_DEBUG_KOBJECT_RELEASE=y
->
-> As you may see, it's pure improvements. :)
->
-> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
->
->
-> i386-randconfig-c3-1009
->
-> +---------------------------------------------------------------+-----------+--------------+
-> |                                                               | v3.12-rc4 | 17e57131d4c2 |
-> +---------------------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                                      | 63        |              |
-> | BUG:kernel_early_hang_without_any_printk_output               | 7         |              |
-> | WARNING:CPU:PID:at_fs/sysfs/dir.c:sysfs_add_one()             | 56        |              |
-> | WARNING:CPU:PID:at_lib/kobject.c:kobject_add_internal()       | 56        |              |
-> | WARNING:CPU:PID:at_drivers/base/driver.c:driver_unregister()  | 56        |              |
-> | WARNING:CPU:PID:at_lib/debugobjects.c:debug_print_object()    | 56        |              |
-> | INFO:trying_to_register_non-static_key                        | 56        |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference_at(null) | 56        |              |
-> | Oops:PREEMPT_SMP                                              | 56        |              |
-> | Kernel_panic-not_syncing:Fatal_exception_in_interrupt         | 56        |              |
-> | BUG:kernel_boot_oops                                          | 56        |              |
-> | good_boots                                                    | 0         | 9            |
-> +---------------------------------------------------------------+-----------+--------------+
->
-> x86_64-randconfig-j5-1009
->
-> +------------+-----------+--------------+
-> |            | v3.12-rc4 | 17e57131d4c2 |
-> +------------+-----------+--------------+
-> | good_boots | 30        | 9            |
-> +------------+-----------+--------------+
->
-> x86_64-randconfig-j3-1009
->
-> +---------------------------------------------------------------+-----------+--------------+
-> |                                                               | v3.12-rc4 | 17e57131d4c2 |
-> +---------------------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                                      | 60        |              |
-> | WARNING:CPU:PID:at_fs/sysfs/dir.c:sysfs_add_one()             | 60        |              |
-> | WARNING:CPU:PID:at_lib/kobject.c:kobject_add_internal()       | 60        |              |
-> | WARNING:CPU:PID:at_drivers/base/driver.c:driver_unregister()  | 60        |              |
-> | WARNING:CPU:PID:at_lib/debugobjects.c:debug_print_object()    | 60        |              |
-> | WARNING:CPU:PID:at_arch/x86/kernel/irq_64.c:handle_irq()      | 3         |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference_at       | 59        |              |
-> | Oops:DEBUG_PAGEALLOC                                          | 28        |              |
-> | WARNING:CPU:PID:at_lib/list_debug.c:__list_del_entry()        | 28        |              |
-> | BUG:scheduling_while_atomic                                   | 30        |              |
-> | INFO:lockdep_is_turned_off                                    | 30        |              |
-> | BUG:unable_to_handle_kernel_paging_request_at                 | 55        |              |
-> | kernel_BUG_at_kernel/smpboot.c                                | 13        |              |
-> | invalid_opcode:DEBUG_PAGEALLOC                                | 13        |              |
-> | general_protection_fault:DEBUG_PAGEALLOC                      | 2         |              |
-> | Kernel_panic-not_syncing:Fatal_exception_in_interrupt         | 4         |              |
-> | BUG:kernel_boot_oops                                          | 60        |              |
-> | WARNING:CPU:PID:at_kernel/workqueue.c:work_fixup_activate()   | 24        |              |
-> | WARNING:CPU:PID:at_kernel/workqueue.c:__queue_work()          | 10        |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference_at(null) | 2         |              |
-> | BUG:unable_to_handle_kernel                                   | 1         |              |
-> | BUG:unable_to_handle_kernel_NULL_point                        | 1         |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference          | 4         |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_derefe               | 1         |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_de                   | 1         |              |
-> | BUG:un                                                        | 1         |              |
-> | good_boots                                                    | 0         | 9            |
-> +---------------------------------------------------------------+-----------+--------------+
->
-> x86_64-randconfig-j1-1009
->
-> +-------------------------------------------------+-----------+--------------+
-> |                                                 | v3.12-rc4 | 17e57131d4c2 |
-> +-------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                        | 60        | 9            |
-> | BUG:kernel_early_hang_without_any_printk_output | 60        | 9            |
-> +-------------------------------------------------+-----------+--------------+
->
-> x86_64-randconfig-j0-1009
->
-> +--------------------------+-----------+--------------+
-> |                          | v3.12-rc4 | 17e57131d4c2 |
-> +--------------------------+-----------+--------------+
-> | good_boots               | 56        | 9            |
-> | has_kernel_error_warning | 4         |              |
-> | BUG:kernel_test_crashed  | 4         |              |
-> +--------------------------+-----------+--------------+
->
-> x86_64-randconfig-a2-1009
->
-> +------------+-----------+--------------+
-> |            | v3.12-rc4 | 17e57131d4c2 |
-> +------------+-----------+--------------+
-> | good_boots | 3         | 9            |
-> +------------+-----------+--------------+
->
-> x86_64-randconfig-c9-1009
->
-> +------------+-----------+--------------+
-> |            | v3.12-rc4 | 17e57131d4c2 |
-> +------------+-----------+--------------+
-> | good_boots | 33        | 9            |
-> +------------+-----------+--------------+
->
-> x86_64-randconfig-c3-1009
->
-> +-------------------------------------------------+-----------+--------------+
-> |                                                 | v3.12-rc4 | 17e57131d4c2 |
-> +-------------------------------------------------+-----------+--------------+
-> | good_boots                                      | 58        | 8            |
-> | has_kernel_error_warning                        | 5         | 1            |
-> | BUG:kernel_early_hang_without_any_printk_output | 5         | 1            |
-> +-------------------------------------------------+-----------+--------------+
->
-> i386-randconfig-r4-1009
->
-> +--------------------------------------------------------------+-----------+--------------+
-> |                                                              | v3.12-rc4 | 17e57131d4c2 |
-> +--------------------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                                     | 63        |              |
-> | WARNING:CPU:PID:at_fs/sysfs/dir.c:sysfs_add_one()            | 63        |              |
-> | WARNING:CPU:PID:at_lib/kobject.c:kobject_add_internal()      | 63        |              |
-> | WARNING:CPU:PID:at_drivers/base/driver.c:driver_unregister() | 63        |              |
-> | WARNING:CPU:PID:at_lib/debugobjects.c:debug_print_object()   | 63        |              |
-> | INFO:trying_to_register_non-static_key                       | 63        |              |
-> | kernel_BUG_at_kernel/timer.c                                 | 63        |              |
-> | invalid_opcode:SMP                                           | 63        |              |
-> | Kernel_panic-not_syncing:Fatal_exception_in_interrupt        | 63        |              |
-> | BUG:kernel_boot_oops                                         | 63        |              |
-> | good_boots                                                   | 0         | 9            |
-> +--------------------------------------------------------------+-----------+--------------+
->
-> i386-randconfig-r3-1009
->
-> +------------+-----------+--------------+
-> |            | v3.12-rc4 | 17e57131d4c2 |
-> +------------+-----------+--------------+
-> | good_boots | 3         | 9            |
-> +------------+-----------+--------------+
->
-> i386-randconfig-r1-1009
->
-> +-------------------------------------------------+-----------+--------------+
-> |                                                 | v3.12-rc4 | 17e57131d4c2 |
-> +-------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                        | 63        | 9            |
-> | BUG:kernel_early_hang_without_any_printk_output | 63        | 9            |
-> +-------------------------------------------------+-----------+--------------+
->
-> i386-randconfig-x2-1009
->
-> +------------+-----------+--------------+
-> |            | v3.12-rc4 | 17e57131d4c2 |
-> +------------+-----------+--------------+
-> | good_boots | 3         | 9            |
-> +------------+-----------+--------------+
->
-> i386-randconfig-i008-1008
->
-> +-------------------------------------------------+-----------+--------------+
-> |                                                 | v3.12-rc4 | 17e57131d4c2 |
-> +-------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                        | 60        | 9            |
-> | BUG:kernel_early_hang_without_any_printk_output | 60        | 9            |
-> +-------------------------------------------------+-----------+--------------+
->
-> x86_64-randconfig-x1-1009
->
-> +---------------------------------------------------------------+-----------+--------------+
-> |                                                               | v3.12-rc4 | 17e57131d4c2 |
-> +---------------------------------------------------------------+-----------+--------------+
-> | has_kernel_error_warning                                      | 63        |              |
-> | WARNING:CPU:PID:at_fs/sysfs/dir.c:sysfs_add_one()             | 63        |              |
-> | WARNING:CPU:PID:at_lib/kobject.c:kobject_add_internal()       | 63        |              |
-> | WARNING:CPU:PID:at_drivers/base/driver.c:driver_unregister()  | 63        |              |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference_at(null) | 63        |              |
-> | Oops                                                          | 63        |              |
-> | Kernel_panic-not_syncing:Fatal_exception_in_interrupt         | 63        |              |
-> | BUG:kernel_boot_oops                                          | 63        |              |
-> | INFO:trying_to_register_non-static_key                        | 2         |              |
-> | good_boots                                                    | 0         | 9            |
-> +---------------------------------------------------------------+-----------+--------------+
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>>     LD      init/built-in.o
+>>   arch/arm/kernel/built-in.o: In function `ret_fast_syscall':
+>>   arch/arm/kernel/entry-common.S:42: undefined reference to `user_enter'
+>>   arch/arm/kernel/built-in.o: In function `no_work_pending':
+>>   arch/arm/kernel/entry-common.S:77: undefined reference to `user_enter'
+>>   arch/arm/kernel/built-in.o: In function `vector_swi':
+>>   arch/arm/kernel/entry-common.S:376: undefined reference to `user_exit'
+>>   arch/arm/kernel/built-in.o: In function `__dabt_usr':
+>>   arch/arm/kernel/entry-armv.S:365: undefined reference to `user_exit'
+>>   arch/arm/kernel/built-in.o: In function `__irq_usr':
+>>   arch/arm/kernel/entry-armv.S:375: undefined reference to `user_exit'
+>>   arch/arm/kernel/built-in.o: In function `__und_usr':
+>>   arch/arm/kernel/entry-armv.S:388: undefined reference to `user_exit'
+>>   arch/arm/kernel/built-in.o: In function `__pabt_usr':
+>>   arch/arm/kernel/entry-armv.S:662: undefined reference to `user_exit'
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> 
+> Doesn't 0c06a5d4b13cd66c833805a0d1db76b977944aac
+> ("arm: Fix build error with context tracking calls") fix the issue for you?
+> Or may be it's another problem I missed?
+> 
+
+Oh, yes it is, it is my fault, I still use original next-20130927 tree
+(I really need reference another next tree or torvalds tree).  :-)
+
+Next, I will/should reference another next tree, at least.
+
+Thanks again.
+
+> Thanks.
+> 
+> 
+
+-- 
+Chen Gang
