@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3JWLPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 07:15:17 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48386 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752248Ab3JWLPP (ORCPT
+	id S1753286Ab3JWLPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 07:15:39 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:38579 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3JWLPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 07:15:15 -0400
-Message-ID: <1382526910.5283.5.camel@pippen.local.home>
-Subject: Re: [PATCH] kernel: context_tracking: use extern function instead
- of static inline function for user_enter/exit()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, khilman@linaro.org,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Oct 2013 07:15:10 -0400
-In-Reply-To: <5267AC7C.2040803@asianux.com>
-References: <5267A72B.7060808@asianux.com>
-	 <1382525244.5283.3.camel@pippen.local.home> <5267AC7C.2040803@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
+	Wed, 23 Oct 2013 07:15:37 -0400
+X-Spam-Score: -100.8
+Message-ID: <5267AF98.1010800@asianux.com>
+Date: Wed, 23 Oct 2013 19:14:32 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Joern Rennecke <joern.rennecke@embecosm.com>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
+ which is not in gcc main source code.
+References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com>
+In-Reply-To: <52673E41.6040606@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 19:01 +0800, Chen Gang wrote:
+On 10/23/2013 11:10 AM, Chen Gang wrote:
+> On 10/23/2013 10:48 AM, Joern Rennecke wrote:
+>>
+>> That just means that the image is too large to allow conditional
+>> pc-relative calls (tail/sibcalls) or otherwise.
+>>
+>> You can avoid generating them for functions with out a relevant
+>> attribute with -mmedium-calls .
+>>
 
-> > void arch_user_enter(void)
-> > {
-> > 	user_enter();
-> > }
-> > 
+After try, it is OK (pass compiling), and I will continue the arc kernel
+and try to finish allmodconfig cross compiling.
+
+Thanks again.
+
+> OK, thanks, I will/should try (it should be OK).
 > 
-> OK, thanks. That sounds reasonable to me. I will send related patch to
-> arm guys. :-)
+> BTW: after pass this, kernel may pass the whole cross compiling with
+> allmodconfig (the other 2 gcc issues, can reconstruct source code to
+> bypass).
+> 
 
-If you do so, don't call it "arch_user_enter()", maybe call it
-"asm_user_enter()", as "arch_*" is something used to be called by the
-generic code.  My mistake in using that as an example.
-
--- Steve
-
-
+-- 
+Chen Gang
