@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab3JWQMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 12:12:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab3JWQL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 12:11:57 -0400
-References: <87r4bcdok1.fsf@redhat.com> <CAFLxGvxT1S3km=LordqFGbAb_pWc0cf3oE2ciS9uY4BBJJ231A@mail.gmail.com>
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Madper Xie <cxie@redhat.com>, "Luck\, Tony" <tony.luck@intel.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        =?utf-8?B?5oiQ6aqPIOiwog==?= <bbboson@gmail.com>
-Subject: Re: [PATCH] pstore: avoid incorrectly mark entry as duplicate
-In-reply-to: <CAFLxGvxT1S3km=LordqFGbAb_pWc0cf3oE2ciS9uY4BBJJ231A@mail.gmail.com>
-Date: Thu, 24 Oct 2013 00:11:22 +0800
-Message-ID: <87ob6g55n9.fsf@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753174Ab3JWQOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 12:14:23 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51837 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab3JWQOV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Wed, 23 Oct 2013 12:14:21 -0400
+Message-Id: <526803E902000078000A56D3@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 23 Oct 2013 17:14:17 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <ian.campbell@citrix.com>, <konrad.wilk@oracle.com>
+Cc: <ross.philipson@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        <grub-devel@gnu.org>, <david.woodhouse@intel.com>,
+        <richard.l.maliszewski@intel.com>, <xen-devel@lists.xen.org>,
+        <boris.ostrovsky@oracle.com>, <daniel.kiper@oracle.com>,
+        <pjones@redhat.com>, <mjg59@srcf.ucam.org>,
+        <linux-kernel@vger.kernel.org>, <keir@xen.org>
+Subject: Re: [Xen-devel] EFI and multiboot2 devlopment work for Xen
+References: <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
+ <1382433990.1657.66.camel@hastur.hellion.org.uk>
+ <5266620602000078000FCA48@nat28.tlf.novell.com>
+ <1382435127.1657.70.camel@hastur.hellion.org.uk>
+ <526668A502000078000FCA7B@nat28.tlf.novell.com>
+ <20131022134252.GA27302@phenom.dumpdata.com>
+ <1382449985.18283.12.camel@hastur.hellion.org.uk>
+ <20131022140947.GA17829@phenom.dumpdata.com>
+ <1382451868.18283.21.camel@hastur.hellion.org.uk>
+ <1382455358.18283.31.camel@hastur.hellion.org.uk>
+ <20131022162632.GB19189@phenom.dumpdata.com>
+ <1382517150.22417.21.camel@hastur.hellion.org.uk>
+In-Reply-To: <1382517150.22417.21.camel@hastur.hellion.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> Ian Campbell <ian.campbell@citrix.com> 10/23/13 10:32 AM >>>
+>The second (standard PE/COFF entry point) can be launched using the UEFI
+>chainloader call. AIUI this should work with xen.efi today. There are
+>some limitations however, firstly there is no way to pass additional
+>blobs and so the launched image must load e.g. dom0 and initrd itself,
+>which Linux does by processing the initrd= option in the command line
+>and using UEFI functionality to load the blobs from disk. Xen does by
+>reading its own config file and loading dom0 + initrd based on that. I
+>assume this means that chainload doesn't call ExitBootServices (anyone
+>can confirm?). Another limitation of this is that the UEFI functionality
+>to load stuff from disk can only read from FAT partitions.
 
-richard.weinberger@gmail.com writes:
+Again that's only a pseudo limitation: Rather than implementing support
+for other file systems in GrUB, it should be implemented as EFI module.
+Then any subsequent EFI binary would benefit from this. (Obviously, as
+a half hearted intermediate solution, GrUB - which iiuc stays in memory
+after transferring control - could export its file system support to its
+descendants).
 
-> On Wed, Oct 23, 2013 at 4:55 PM, Madper Xie <cxie@redhat.com> wrote:
->> pstore try to find duplicate entries by check both ID, type and psi.
->> They are not really enough for efi backend. dumped vars always have
->> the same type, psi and ID. like follows:
->> dump-type0-9-1-1382511508-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->> dump-type0-9-1-1382515661-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->>
->> The "duplicate" entries won't appear in pstorefs. And a complain will be
->> print -- pstore: failed to load 76 record(s) from 'efi'
->> So I add one more check: timespec.
->>
->> Signed-off-by: Madper Xie <cxie@redhat.com>
->> ---
->>  fs/pstore/inode.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
->> index 1282384..f70f1e5 100644
->> --- a/fs/pstore/inode.c
->> +++ b/fs/pstore/inode.c
->> @@ -47,6 +47,7 @@ static LIST_HEAD(allpstore);
->>  struct pstore_private {
->>         struct list_head list;
->>         struct pstore_info *psi;
->> +       struct timespec time;
->>         enum pstore_type_id type;
->>         u64     id;
->>         int     count;
->> @@ -290,7 +291,8 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->>         list_for_each_entry(pos, &allpstore, list) {
->>                 if (pos->type == type &&
->>                     pos->id == id &&
->> -                   pos->psi == psi) {
->> +                   pos->psi == psi &&
->> +                   !timespec_compare(&pos->time, &time)) {
->>                         rc = -EEXIST;
->>                         break;
->>                 }
->> @@ -312,6 +314,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->>         private->id = id;
->>         private->count = count;
->>         private->psi = psi;
->> +       memcpy(&private->time, &time, sizeof(struct timespec));
->>
->>         switch (type) {
->>         case PSTORE_TYPE_DMESG:
->
->
-> As discussed on IRC, why don't you compare the variable names?
-Howdy Richard,
-  Let's analyze the name of "duplicate" entries:
->> dump-type0-9-1-1382511508-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->> dump-type0-9-1-1382515661-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-  The have the same name except timestamp. In this case, there is no
-  difference between compare names and compare timestamps.
-  ( Yeah, I'm pretty sure the guid will be the same one --
-  LINUX_EFI_CRASH_GUID )
-  But efi is only one backend. For other backends, we don't sure if they
-  will add timestamp to name. So...
-  
--- 
-Best,
-Madper Xie.
+> It's not
+>clear to me if this mechanism limits only the loading of additional
+>blobs from FAT or if that applies to the kernel image itself.
+
+Only the additional blobs would be affected.
+
+> The
+>kernel is PIC on entry so no relocations are actually needed. In theory
+>the Linux EFI stub could instead have included a NULL relocation table
+>but doesn't. (I expect Xen is in the same boat WRT relocations).
+
+No, Xen definitely needs its relocations processed.
+
+Jan
+
