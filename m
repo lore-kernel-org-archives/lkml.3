@@ -1,75 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3JWDD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 23:03:57 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:39103 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab3JWDD4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 23:03:56 -0400
-X-Spam-Score: -100.8
-Message-ID: <52673C5B.4090703@asianux.com>
-Date: Wed, 23 Oct 2013 11:02:51 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755486Ab3JWDH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 23:07:28 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:35998 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab3JWDH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 23:07:27 -0400
+X-Greylist: delayed 1227 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Oct 2013 23:07:27 EDT
+Date: Wed, 23 Oct 2013 11:46:53 +0900
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+To: linux-mm@kvack.org
+Subject: [PATCH] mm: Ensure get_unmapped_area() returns higher address than mmap_min_addr
+Cc: linux-kernel@vger.kernel.org
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20131023114642.B201.38390934@jp.panasonic.com>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        pierrick.hascoet@abilis.com, christian.ruppert@abilis.com,
-        noamc@ezchip.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: kernel: remove '__init' for get_hw_config_num_irq()
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_hw_config_num_irq() may be called by normal iss_model_init_smp()
-which is a function pointer for 'init_smp' which may be called by
-first_lines_of_secondary() which also need be normal too.
+This patch fixes the problem that get_unmapped_area() can return illegal
+address and result in failing mmap(2) etc.
 
-The related warning (with allmodconfig):
+In case that the address higher than PAGE_SIZE is set to
+/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+returned by get_unmapped_area(), even if you do not pass any virtual
+address hint (i.e. the second argument).
 
-    MODPOST vmlinux.o
-  WARNING: vmlinux.o(.text+0x5814): Section mismatch in reference from the function iss_model_init_smp() to the function .init.text:get_hw_config_num_irq()
-  The function iss_model_init_smp() references
-  the function __init get_hw_config_num_irq().
-  This is often because iss_model_init_smp lacks a __init
-  annotation or the annotation of get_hw_config_num_irq is wrong.
+This is because the current get_unmapped_area() code does not take into
+account mmap_min_addr.
 
+This leads to two actual problems as follows:
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+   although any illegal parameter is not passed.
+
+2. The bottom-up search path after the top-down search might not work in
+   arch_get_unmapped_area_topdown().
+
+[How to reproduce]
+
+	--- test.c -------------------------------------------------
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/errno.h>
+
+	int main(int argc, char *argv[])
+	{
+		void *ret = NULL, *last_map;
+		size_t pagesize = sysconf(_SC_PAGESIZE);
+
+		do {
+			last_map = ret;
+			ret = mmap(0, pagesize, PROT_NONE,
+				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	//		printf("ret=%p\n", ret);
+		} while (ret != MAP_FAILED);
+
+		if (errno != ENOMEM) {
+			printf("ERR: unexpected errno: %d (last map=%p)\n",
+			errno, last_map);
+		}
+
+		return 0;
+	}
+	---------------------------------------------------------------
+
+	$ gcc -m32 -o test test.c
+	$ sudo sysctl -w vm.mmap_min_addr=65536
+	vm.mmap_min_addr = 65536
+	$ ./test  (run as non-priviledge user)
+	ERR: unexpected errno: 1 (last map=0x10000)
+
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 ---
- arch/arc/include/asm/irq.h |    2 +-
- arch/arc/kernel/irq.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ mm/mmap.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
-index 548207f..291a70d 100644
---- a/arch/arc/include/asm/irq.h
-+++ b/arch/arc/include/asm/irq.h
-@@ -19,7 +19,7 @@
- #include <asm-generic/irq.h>
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 9d54851..362e5f1 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	struct vm_area_struct *vma;
+ 	struct vm_unmapped_area_info info;
  
- extern void arc_init_IRQ(void);
--extern int __init get_hw_config_num_irq(void);
-+extern int get_hw_config_num_irq(void);
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
  
- void arc_local_timer_setup(unsigned int cpu);
+ 	if (flags & MAP_FIXED)
+@@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 		    (!vma || addr + len <= vma->vm_start))
+ 			return addr;
+ 	}
+@@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	struct vm_unmapped_area_info info;
  
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index 5fc9245..e2bdfe5 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -146,7 +146,7 @@ void arch_do_IRQ(unsigned int irq, struct pt_regs *regs)
- 	set_irq_regs(old_regs);
- }
+ 	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
  
--int __init get_hw_config_num_irq(void)
-+int get_hw_config_num_irq(void)
- {
- 	uint32_t val = read_aux_reg(ARC_REG_VECBASE_BCR);
+ 	if (flags & MAP_FIXED)
+@@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 				(!vma || addr + len <= vma->vm_start))
+ 			return addr;
+ 	}
  
+ 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
+ 	info.length = len;
+-	info.low_limit = PAGE_SIZE;
++	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
+ 	info.high_limit = mm->mmap_base;
+ 	info.align_mask = 0;
+ 	addr = vm_unmapped_area(&info);
 -- 
-1.7.7.6
+1.7.0.4
+
+
+-- 
+Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+
