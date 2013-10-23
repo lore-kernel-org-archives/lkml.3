@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab3JWJ2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:28:51 -0400
-Received: from ascc0.artsci.wustl.edu ([128.252.93.10]:52903 "EHLO
-	ascc0.artsci.wustl.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab3JWJ2s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:28:48 -0400
-X-Greylist: delayed 13837 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 05:28:48 EDT
-Message-Id: <201310230533.r9N5U6Ud028555@ascc0.artsci.wustl.edu>
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753123Ab3JWJ3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:29:19 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:45264 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab3JWJ2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 05:28:46 -0400
+Message-ID: <52679681.4050803@mm-sol.com>
+Date: Wed, 23 Oct 2013 12:27:29 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Charity Donation
-To: Recipients <blessedfamily@yahoo.co.uk>
-From: "Gillian and Adrian Bayford" <blessedfamily@yahoo.co.uk>
-Date: Wed, 23 Oct 2013 01:20:08 -0400
-Reply-To: gillian.adrianbayford01@rogers.com
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+CC: Stanimir Varbanov <svarbanov@mm-sol.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] ARM: DT: msm: Add Qualcomm's PRNG driver binding
+ document
+References: <1381846278-9529-1-git-send-email-svarbanov@mm-sol.com> <1381846278-9529-2-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1381846278-9529-2-git-send-email-svarbanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My wife and i won £148.6 Million Pounds last year, and we have done lot of charity donation, so we decide to give 1.5 Million Pounds each to 5 lucky people, lucky for you, your email, was given to us by Google management as one of our lucky precipitants.
+On 10/15/2013 05:11 PM, Stanimir Varbanov wrote:
+> This adds Qualcomm PRNG driver device tree binding documentation
+> to use as an example in dts trees.
+> 
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
 
-For verification process see below Please read the article - http://www.bbc.co.uk/news/uk-england-19254228
+Dear DT binding maintainers,
 
-Send Name, Country, Age, Occupation and Phone Number for details
+I'd like to receive some comments or maybe an Ack to this patch. Or if
+you think it needs another re-spin please let me know.
 
-Congratulations & Happy Celebrations in Advance,
+Thanks in advance for your time!
 
-Gillian and Adrian Bayford
-Email: gillian.adrianbayford01@rogers.com
+regards,
+Stan
+
