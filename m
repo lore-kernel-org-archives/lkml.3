@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3JWWus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 18:50:48 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:61885 "EHLO
+	id S1753472Ab3JWWuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 18:50:46 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:54146 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3JWWuM (ORCPT
+	with ESMTP id S1751972Ab3JWWuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 18:50:12 -0400
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
@@ -13,9 +13,9 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         Mark Jackson <mpfj-list@newflow.co.uk>, linux-kernel@vger.kernel.org,
         kernel@savoirfairelinux.com
-Subject: [PATCH 2/2] serial: omap: fix a few checkpatch warnings
-Date: Wed, 23 Oct 2013 18:49:59 -0400
-Message-Id: <ce53cd6c6bc139399b711228ff16c1072190d4d2.1382567103.git.philippe.proulx@savoirfairelinux.com>
+Subject: [PATCH 1/2] serial: omap: improve RS-485 performance
+Date: Wed, 23 Oct 2013 18:49:58 -0400
+Message-Id: <7467fa806d1c3f5e9e7e849d67df79f4b56895ab.1382567103.git.philippe.proulx@savoirfairelinux.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
 References: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
@@ -25,70 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If RS-485 is enabled, make the OMAP UART fire THR interrupts when both
+TX FIFO and TX shift register are empty instead of polling the
+equivalent status bit. This removes the burst of interrupt requests
+seen at every end of transmission.
+
+Also: the comment said that the TX FIFO trigger level was set at 16
+characters when it's 32 in reality.
+
 Signed-off-by: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
 ---
- drivers/tty/serial/omap-serial.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/tty/serial/omap-serial.c | 50 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 38 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 02cb61e..bf00477 100644
+index c715778..02cb61e 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -175,7 +175,7 @@ struct uart_omap_port {
- 	bool			is_suspending;
- };
+@@ -283,21 +283,22 @@ static void serial_omap_enable_ms(struct uart_port *port)
+ static void serial_omap_stop_tx(struct uart_port *port)
+ {
+ 	struct uart_omap_port *up = to_uart_omap_port(port);
+-	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int res;
  
--#define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
-+#define to_uart_omap_port(p) ((container_of((p), struct uart_omap_port, port)))
+ 	pm_runtime_get_sync(up->dev);
  
- static struct uart_omap_port *ui[OMAP_MAX_HSUART_PORTS];
- 
-@@ -242,9 +242,9 @@ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- 	unsigned int n16 = port->uartclk / (16 * baud);
- 	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
- 	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
--	if(baudAbsDiff13 < 0)
-+	if (baudAbsDiff13 < 0)
- 		baudAbsDiff13 = -baudAbsDiff13;
--	if(baudAbsDiff16 < 0)
-+	if (baudAbsDiff16 < 0)
- 		baudAbsDiff16 = -baudAbsDiff16;
- 
- 	return (baudAbsDiff13 >= baudAbsDiff16);
-@@ -301,9 +301,8 @@ static void serial_omap_stop_tx(struct uart_port *port)
- 			serial_out(up, UART_OMAP_SCR, up->scr);
+-	/* handle rs485 */
++	/* Handle RS-485 */
+ 	if (up->rs485.flags & SER_RS485_ENABLED) {
+-		/* do nothing if current tx not yet completed */
+-		res = serial_in(up, UART_LSR) & UART_LSR_TEMT;
+-		if (!res)
+-			return;
+-
+-		/* if there's no more data to send, turn off rts */
+-		if (uart_circ_empty(xmit)) {
+-			/* if rts not already disabled */
++		if (up->scr & OMAP_UART_SCR_TX_EMPTY) {
++			/* THR interrupt is fired when both TX FIFO and TX
++			 * shift register are empty. This means there's nothing
++			 * left to transmit now, so make sure the THR interrupt
++			 * is fired when TX FIFO is below the trigger level,
++			 * disable THR interrupts and toggle the RS-485 GPIO
++			 * data direction pin if needed.
++			 */
++			up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
++			serial_out(up, UART_OMAP_SCR, up->scr);
  			res = (up->rs485.flags & SER_RS485_RTS_AFTER_SEND) ? 1 : 0;
  			if (gpio_get_value(up->rts_gpio) != res) {
--				if (up->rs485.delay_rts_after_send > 0) {
-+				if (up->rs485.delay_rts_after_send > 0)
- 					mdelay(up->rs485.delay_rts_after_send);
--				}
+ 				if (up->rs485.delay_rts_after_send > 0) {
+@@ -305,6 +306,18 @@ static void serial_omap_stop_tx(struct uart_port *port)
+ 				}
  				gpio_set_value(up->rts_gpio, res);
  			}
- 		} else {
-@@ -407,9 +406,8 @@ static void serial_omap_start_tx(struct uart_port *port)
- 		res = (up->rs485.flags & SER_RS485_RTS_ON_SEND) ? 1 : 0;
- 		if (gpio_get_value(up->rts_gpio) != res) {
- 			gpio_set_value(up->rts_gpio, res);
--			if (up->rs485.delay_rts_before_send > 0) {
-+			if (up->rs485.delay_rts_before_send > 0)
- 				mdelay(up->rs485.delay_rts_before_send);
--			}
++		} else {
++			/* We're asked to stop, but there's still stuff in the
++			 * UART FIFO, so make sure the THR interrupt is fired
++			 * when both TX FIFO and TX shift register are empty.
++			 * The next THR interrupt (if no transmission is started
++			 * in the meantime) will indicate the end of a
++			 * transmission. Therefore we _don't_ disable THR
++			 * interrupts in this situation.
++			 */
++			up->scr |= OMAP_UART_SCR_TX_EMPTY;
++			serial_out(up, UART_OMAP_SCR, up->scr);
++			return;
  		}
  	}
  
-@@ -1686,8 +1684,9 @@ static int serial_omap_probe(struct platform_device *pdev)
- 	up->port.uartclk = omap_up_info->uartclk;
- 	if (!up->port.uartclk) {
- 		up->port.uartclk = DEFAULT_CLK_SPEED;
--		dev_warn(&pdev->dev, "No clock speed specified: using default:"
--						"%d\n", DEFAULT_CLK_SPEED);
-+		dev_warn(&pdev->dev,
-+			 "No clock speed specified: using default: %d\n"
-+			 DEFAULT_CLK_SPEED);
- 	}
+@@ -384,8 +397,12 @@ static void serial_omap_start_tx(struct uart_port *port)
  
- 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+ 	pm_runtime_get_sync(up->dev);
+ 
+-	/* handle rs485 */
++	/* Handle RS-485 */
+ 	if (up->rs485.flags & SER_RS485_ENABLED) {
++		/* Fire THR interrupts when FIFO is below trigger level */
++		up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
++		serial_out(up, UART_OMAP_SCR, up->scr);
++
+ 		/* if rts not already enabled */
+ 		res = (up->rs485.flags & SER_RS485_RTS_ON_SEND) ? 1 : 0;
+ 		if (gpio_get_value(up->rts_gpio) != res) {
+@@ -938,7 +955,7 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	 */
+ 
+ 	/* Set receive FIFO threshold to 16 characters and
+-	 * transmit FIFO threshold to 16 spaces
++	 * transmit FIFO threshold to 32 spaces
+ 	 */
+ 	up->fcr &= ~OMAP_UART_FCR_RX_FIFO_TRIG_MASK;
+ 	up->fcr &= ~OMAP_UART_FCR_TX_FIFO_TRIG_MASK;
+@@ -1344,6 +1361,15 @@ serial_omap_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+ 	up->ier = mode;
+ 	serial_out(up, UART_IER, up->ier);
+ 
++	/* If RS-485 is disabled, make sure the THR interrupt is fired when
++	 * TX FIFO is below the trigger level.
++	 */
++	if (!(up->rs485.flags & SER_RS485_ENABLED) &&
++	    (up->scr & OMAP_UART_SCR_TX_EMPTY)) {
++		up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
++		serial_out(up, UART_OMAP_SCR, up->scr);
++	}
++
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
 -- 
 1.8.4.1
 
