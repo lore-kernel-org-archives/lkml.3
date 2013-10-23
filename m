@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab3JWV5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 17:57:08 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:38816 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3JWV5G (ORCPT
+	id S1753254Ab3JWV7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 17:59:30 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:46793 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3JWV73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 17:57:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <87r4bcdok1.fsf@redhat.com>
-References: <87r4bcdok1.fsf@redhat.com>
-Date: Wed, 23 Oct 2013 14:57:02 -0700
-Message-ID: <CA+8MBb+0wruR-T8Rkk_WQ6Try4ct2ZCm8o=js4eO8s7cogcs+g@mail.gmail.com>
-Subject: Re: [PATCH] pstore: avoid incorrectly mark entry as duplicate
-From: Tony Luck <tony.luck@gmail.com>
-To: Madper Xie <cxie@redhat.com>
-Cc: Anton Vorontsov <anton@enomsg.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        =?UTF-8?B?5oiQ6aqPIOiwog==?= <bbboson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Oct 2013 17:59:29 -0400
+From: Patrick Palka <patrick@parcs.ath.cx>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] perf/ui/tui: don't force a refresh during progress update
+Date: Wed, 23 Oct 2013 17:59:22 -0400
+Message-Id: <1382565562-15108-1-git-send-email-patrick@parcs.ath.cx>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 7:55 AM, Madper Xie <cxie@redhat.com> wrote:
-> The "duplicate" entries won't appear in pstorefs. And a complain will be
-> print -- pstore: failed to load 76 record(s) from 'efi'
+Each call to tui_progress__update() would forcibly refresh the entire
+screen.  This is somewhat inefficient and causes noticable flickering
+during the startup of perf-report, especially on large/slow terminals.
 
-Maybe I don't quite get this - but it sounds like you have a whole lot
-of entries using up space in efivars that have similar names - differing
-just in the timestamp - that won't show up in the pstore filesystem - because
-we'd try to name them all the same thing.
+It looks like the force-refresh in tui_progress__update() serves no
+purpose other than to clear the screen so that the progress bar of a
+previous operation does not subsume with that of a subsequent operation.
+But we can do just that in a much more efficient manner by clearing only
+the region that a previous progress bar may have occupied before
+repainting the new progress bar.  Then the force-refresh could be
+removed with no change in visuals.
 
-How did all those things end up in efivars?
+This patch disables the slow force-refresh in tui_progress__update() and
+instead calls SLsmg_fill_region() on the entire area that the progress
+bar may occupy before repainting it.  This change makes the startup of
+perf-report much faster and appear much "smoother".
 
-Wouldn't the right fix be to make pstore allow them all to appear (using the
-timestamp to differentiate names?) so that we could see them, log them,
-and then remove them from pstore (in turn freeing up efivars space - which
-people keep telling me is in short supply).
+It turns out that this was a big bottleneck in the startup speed of
+perf-report -- with this patch, perf-report starts up ~1.6x faster (0.8s
+vs 0.5s) on my machines.  (These numbers were measured by running "time
+perf report" on an 8MB perf.data and pressing 'q' immediately.)
 
--Tony
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+---
+ tools/perf/ui/tui/progress.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/ui/tui/progress.c b/tools/perf/ui/tui/progress.c
+index 6c2184d..641049a 100644
+--- a/tools/perf/ui/tui/progress.c
++++ b/tools/perf/ui/tui/progress.c
+@@ -17,13 +17,14 @@ static void tui_progress__update(u64 curr, u64 total, const char *title)
+ 	if (total == 0)
+ 		return;
+ 
+-	ui__refresh_dimensions(true);
++	ui__refresh_dimensions(false);
+ 	pthread_mutex_lock(&ui__lock);
+ 	y = SLtt_Screen_Rows / 2 - 2;
+ 	SLsmg_set_color(0);
+ 	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
+ 	SLsmg_gotorc(y++, 1);
+ 	SLsmg_write_string((char *)title);
++	SLsmg_fill_region(y, 1, 1, SLtt_Screen_Cols - 2, ' ');
+ 	SLsmg_set_color(HE_COLORSET_SELECTED);
+ 	bar = ((SLtt_Screen_Cols - 2) * curr) / total;
+ 	SLsmg_fill_region(y, 1, 1, bar, ' ');
+-- 
+1.8.4.rc3
+
