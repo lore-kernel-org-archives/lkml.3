@@ -1,111 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3JWCrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:47:42 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43539 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab3JWCrl (ORCPT
+	id S1755517Ab3JWCsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:48:05 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:42683 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab3JWCsD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:47:41 -0400
-Message-ID: <526738C4.1080508@linux.vnet.ibm.com>
-Date: Wed, 23 Oct 2013 10:47:32 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 22 Oct 2013 22:48:03 -0400
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus()
-References: <20131019005129.GA5979@localhost> <20131022204632.GD2490@laptop.programming.kicks-ass.net> <20131022212447.GA1373@localhost>
-In-Reply-To: <20131022212447.GA1373@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102302-8878-0000-0000-0000096313F6
+In-Reply-To: <52672DAC.1030307@asianux.com>
+References: <523FD9E7.3050303@asianux.com>
+	<523FDBD7.4040602@asianux.com>
+	<C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
+	<523FE578.5060801@asianux.com>
+	<52672DAC.1030307@asianux.com>
+Date: Wed, 23 Oct 2013 03:48:01 +0100
+Message-ID: <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com>
+Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
+ which is not in gcc main source code.
+From: Joern Rennecke <joern.rennecke@embecosm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 05:24 AM, Fengguang Wu wrote:
-[snip]
-> 
->> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
->>  	p = find_process_by_pid(pid);
->>  	if (!p) {
->>  		rcu_read_unlock();
->> -		put_online_cpus();
->>  		return -ESRCH;
-> 
-> Yes, it fixed the WARNING.
-> 
-> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+On 23 October 2013 03:00, Chen Gang <gang.chen@asianux.com> wrote:
 
-Thanks for the testing :)
+> Binutils (1 issue, ld and as information):
+>
+>   when calling panic(), printk(), or memset() with R_ARC_S21W_PCREL, it may be overflow (I guess it need be R_ARC_S25W_PCREL).
+>
+>   /usr/local/bin/arc-elf32-ld --build-id -X -o .tmp_vmlinux1 -T /android/public-kernel/linux-next/arch/arc/kernel/vmlinux.lds arch/arc/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arc/built-in.o arch/arc/boot/dts/built-in.o arch/arc/plat-arcfpga/built-in.o arch/arc/plat-tb10x/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o lib/lib.a arch/arc/lib/lib.a /usr/local/lib/gcc/arc-elf32/4.8.0/libgcc.a lib/built-in.o arch/arc/lib/built-in.o /usr/local/lib/gcc/arc-elf32/4.8.0/libgcc.a drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+>   /usr/local/bin/arc-elf32-ld: Error: Overflow detected in relocation value;
+>   /usr/local/bin/arc-elf32-ld: Relocation value should be between 1048575 and -1048576 whereas it  2404264
+>   /usr/local/bin/arc-elf32-ld: Global symbol: "panic".
+>   /usr/local/bin/arc-elf32-ld:
+>   Relocation type is:R_ARC_S21W_PCREL
+>   FileName:arch/arc/built-in.o
+>   Section Name:.text
+>   Offset in Section:1716
+>   /usr/local/bin/arc-elf32-ld: final link failed: Bad value
+>   make: *** [vmlinux] Error 1
 
-> 
-> // The tests was queued for Michael Wang and have just finished.
-> 
-> There seems show up a new unreliable error "BUG:kernel_test_crashed".
-> I'll increase test runs to confirm whether it's a new bug.
+That just means that the image is too large to allow conditional
+pc-relative calls (tail/sibcalls) or otherwise.
 
-I guess it will be a new thread when get confirmed, let's fix this easy
-one firstly, will send a formal patch later.
+You can avoid generating them for functions with out a relevant
+attribute with -mmedium-calls .
 
-Regards,
-Michael Wang
 
-> 
-> /kernel/x86_64-lkp/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e                                  
-> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
-> |                                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
-> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
-> | good_boots                                                                       | 539       | 0            | 16           |
-> | has_kernel_error_warning                                                         | 24        | 20           | 1            |
-> | INFO:task_blocked_for_more_than_seconds                                          | 14        |              |              |
-> | WARNING:CPU:PID:at_arch/x86/kernel/cpu/perf_event_intel.c:intel_pmu_handle_irq() | 1         |              |              |
-> | INFO:NMI_handler(perf_event_nmi_handler)took_too_long_to_run:msecs               | 1         |              |              |
-> | XFS(vde):xlog_verify_grant_tail:space_BBTOB(tail_blocks)                         | 5         |              |              |
-> | Corruption_detected.Unmount_and_run_xfs_repair                                   | 5         |              |              |
-> | metadata_I/O_error:block(xfs_trans_read_buf_map)error_numblks                    | 5         |              |              |
-> | BUG:kernel_test_hang                                                             | 3         |              |              |
-> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                | 0         | 20           |              |
-> | BUG:kernel_test_crashed                                                          | 0         | 0            | 1            |
-> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
-> 
-> /kernel/x86_64-lkp-CONFIG_SCHED_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
->                                   
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> |                                                                                    | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> | good_boots                                                                         | 39        | 0            | 16           |
-> | has_kernel_error_warning                                                           | 0         | 20           |              |
-> | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 1            |              |
-> | INFO:task_blocked_for_more_than_seconds                                            | 0         | 6            |              |
-> | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 3            |              |
-> | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 3            |              |
-> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                  | 0         | 12           |              |
-> | BUG:kernel_test_crashed                                                            | 0         | 1            |              |
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> 
-> /kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
-> 
-> +------------------------------------------------------------------+-----------+--------------+--------------+
-> |                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
-> +------------------------------------------------------------------+-----------+--------------+--------------+
-> | good_boots                                                       | 38        | 1            | 17           |
-> | has_kernel_error_warning                                         | 1         | 20           | 1            |
-> | Out_of_memory:Kill_process                                       | 1         |              |              |
-> | Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes | 1         |              |              |
-> | BUG:kernel_test_oops                                             | 1         |              |              |
-> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                | 0         | 20           |              |
-> | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)      | 0         | 0            | 1            |
-> +------------------------------------------------------------------+-----------+--------------+--------------+
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
+> GCC (2 issues, and gcc information):
+>
+>     CC      drivers/rtc/systohc.o
+>   drivers/rtc/systohc.c: In function 'rtc_set_ntp_time':
+>   drivers/rtc/systohc.c:44:1: internal compiler error: in arc_ifcvt, at config/arc/arc.c:8315
+>    }
+>    ^
+>   0x939c94 arc_ifcvt
+>         ../../gcc/gcc/config/arc/arc.c:8315
+>   0x93a394 arc_reorg
+>         ../../gcc/gcc/config/arc/arc.c:5985
+>   0x7517d9 rest_of_handle_machine_reorg
+>         ../../gcc/gcc/reorg.c:3927
+>   Please submit a full bug report,
+>   with preprocessed source if appropriate.
+>   Please include the complete backtrace with any bug report.
+>   See <http://gcc.gnu.org/bugs.html> for instructions.
+>   make[2]: *** [drivers/rtc/systohc.o] Error 1
+>   make[1]: *** [drivers/rtc] Error 2
+>   make: *** [drivers] Error 2
+>
+>
+>     CC [M]  drivers/target/target_core_pr.o
+>   drivers/target/target_core_pr.c: In function 'target_scsi3_emulate_pr_in':
+>   drivers/target/target_core_pr.c:4033:1: error: unrecognizable insn:
+>    }
+>    ^
+>   (insn 846 194 196 12 (set (reg:QI 1 r1)
+>           (subreg:QI (mem/j/c:DI (plus:SI (reg/v/f:SI 2 r2 [orig:199 pr_reg ] [199])
+>                       (const_int 576 [0x240])) [0 pr_reg_50->pr_res_key+0 S8 A32]) 7)) drivers/target/target_core_pr.c:3677 -1
+>        (nil))
+>   drivers/target/target_core_pr.c:4033:1: internal compiler error: in extract_insn, at recog.c:2151
+>   0x758fb5 _fatal_insn(char const*, rtx_def const*, char const*, int, char const*)
+>         ../../gcc/gcc/rtl-error.c:109
+>   0x758fe9 _fatal_insn_not_found(rtx_def const*, char const*, int, char const*)
+>         ../../gcc/gcc/rtl-error.c:117
+>   0x726e83 extract_insn(rtx_def*)
+>         ../../gcc/gcc/recog.c:2151
+>   0x726ef4 extract_insn_cached(rtx_def*)
+>         ../../gcc/gcc/recog.c:2054
+>   0x5fe026 cleanup_subreg_operands(rtx_def*)
+>         ../../gcc/gcc/final.c:3305
+>   0x750c2e reload(rtx_def*, int)
+>         ../../gcc/gcc/reload1.c:1240
+>   0x68e703 do_reload
+>         ../../gcc/gcc/ira.c:4631
+>   0x68e703 rest_of_handle_reload
+>         ../../gcc/gcc/ira.c:4731
+>   Please submit a full bug report,
+>   with preprocessed source if appropriate.
+>   Please include the complete backtrace with any bug report.
+>   See <http://gcc.gnu.org/bugs.html> for instructions.
+>   make[2]: *** [drivers/target/target_core_pr.o] Error 1
+>   make[1]: *** [drivers/target] Error 2
+>   make: *** [drivers] Error 2
+
+Can these issues be reproduced with the lastest gcc version?  If so,
+can you provide preprocessed source of the testcases and the compiler
+flags to trigger the ICEs?
