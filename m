@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab3JWNfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:35:14 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56077 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3JWN3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:29:55 -0400
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-To: gleb@redhat.com
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v3 03/15] KVM: MMU: flush tlb if the spte can be locklessly modified
-Date: Wed, 23 Oct 2013 21:29:21 +0800
-Message-Id: <1382534973-13197-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102313-3864-0000-0000-00000AB58517
+	id S1751631Ab3JWNlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:41:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39598 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751469Ab3JWNlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 09:41:02 -0400
+Date: Wed, 23 Oct 2013 15:40:59 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: Frank Haverkamp <haver@vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver
+Message-ID: <20131023134059.GB21936@sepie.suse.cz>
+References: <1374740897-20304-1-git-send-email-haver@vnet.ibm.com>
+ <1374740897-20304-2-git-send-email-haver@vnet.ibm.com>
+ <51F12668.8000400@suse.cz>
+ <1382534154.2791.8.camel@oc7383187364.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382534154.2791.8.camel@oc7383187364.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relax the tlb flush condition since we will write-protect the spte out of mmu
-lock. Note lockless write-protection only marks the writable spte to readonly
-and the spte can be writable only if both SPTE_HOST_WRITEABLE and
-SPTE_MMU_WRITEABLE are set (that are tested by spte_is_locklessly_modifiable)
+On Wed, Oct 23, 2013 at 03:15:54PM +0200, Frank Haverkamp wrote:
+> Hi Marek,
+> 
+> it took a little while, but here are the requested changes to our
+> driver:
+> 
+> Rework comments:
+>  o Removed __DATE__ macros as suggested by Michal Marek
 
-This patch is used to avoid this kind of race:
+Hi Frank,
 
-      VCPU 0                         VCPU 1
-lockless wirte protection:
-      set spte.w = 0
-                                 lock mmu-lock
+did you send an old version of the patch? There are still two ocurences
+of __DATE__:
 
-                                 write protection the spte to sync shadow page,
-                                 see spte.w = 0, then without flush tlb
 
-				 unlock mmu-lock
+> +static int genwqe_probe(struct pci_dev *pci_dev,
+> +			const struct pci_device_id *id)
+> +{
+[...]
+> +	dev_info(&pci_dev->dev, "GenWQE driver version: %s (build %s) %s%u\n",
+> +		 DRV_VERS_STRING, __DATE__, GENWQE_DEVNAME, cd->card_idx);
 
-                                 !!! At this point, the shadow page can still be
-                                     writable due to the corrupt tlb entry
-     Flush all TLB
+and
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> +static ssize_t show_card_info(struct device *dev,
+> +			      struct device_attribute *attr, char *buf)
+> +{
+[...]
+> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
+> +			 "GenWQE driver version: %s (build %s)\n"
+> +			 "    Device Name/Type: %s %s CardIdx: %d\n"
+> +			 "    SLU/APP Config  : 0x%016llx/0x%016llx\n"
+> +			 "    Build Date/Type : %u/%x/%u %s\n"
+> +			 "    Base Clock      : %u MHz\n"
+> +			 "    Arch/SVN Release: %u/%llx\n"
+> +			 "    Bitstream       : %llx\n",
+> +			 DRV_VERS_STRING, __DATE__, dev_name(&pci_dev->dev),
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 8739208..62f18ec 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -595,7 +595,8 @@ static bool mmu_spte_update(u64 *sptep, u64 new_spte)
- 	 * we always atomicly update it, see the comments in
- 	 * spte_has_volatile_bits().
- 	 */
--	if (is_writable_pte(old_spte) && !is_writable_pte(new_spte))
-+	if (spte_is_locklessly_modifiable(old_spte) &&
-+	      !is_writable_pte(new_spte))
- 		ret = true;
- 
- 	if (!shadow_accessed_mask)
--- 
-1.8.1.4
 
+Thanks,
+Michal
