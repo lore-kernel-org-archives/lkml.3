@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3JWJ7D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:59:03 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:44666 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab3JWJ4B (ORCPT
+	id S1753594Ab3JWJ70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:59:26 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:37644 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab3JWJ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:56:01 -0400
+	Wed, 23 Oct 2013 05:56:00 -0400
 From: Johan Hovold <jhovold@gmail.com>
 To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 2/9] backlight: atmel-pwm-bl: fix gpio polarity in remove
-Date: Wed, 23 Oct 2013 11:55:36 +0200
-Message-Id: <1382522143-32072-3-git-send-email-jhovold@gmail.com>
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3/9] backlight: atmel-pwm-bl: fix module autoload
+Date: Wed, 23 Oct 2013 11:55:37 +0200
+Message-Id: <1382522143-32072-4-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
 References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
@@ -25,33 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure to honour gpio polarity also at remove so that the backlight
-is actually disabled on boards with active-low enable pin.
+Add missing module alias which is needed for module autoloading.
 
-Cc: stable@vger.kernel.org
 Acked-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/video/backlight/atmel-pwm-bl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 8aac273..3cb0094 100644
+index 3cb0094..cc5a5ed 100644
 --- a/drivers/video/backlight/atmel-pwm-bl.c
 +++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -205,8 +205,10 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
- {
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
- 
--	if (pwmbl->gpio_on != -1)
--		gpio_set_value(pwmbl->gpio_on, 0);
-+	if (pwmbl->gpio_on != -1) {
-+		gpio_set_value(pwmbl->gpio_on,
-+					0 ^ pwmbl->pdata->on_active_low);
-+	}
- 	pwm_channel_disable(&pwmbl->pwmc);
- 	pwm_channel_free(&pwmbl->pwmc);
- 
+@@ -229,3 +229,4 @@ module_platform_driver(atmel_pwm_bl_driver);
+ MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
+ MODULE_DESCRIPTION("Atmel PWM backlight driver");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:atmel-pwm-bl");
 -- 
 1.8.4
 
