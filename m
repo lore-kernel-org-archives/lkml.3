@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3JWBsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 21:48:03 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47038 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3JWBsA (ORCPT
+	id S1755217Ab3JWBst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 21:48:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:32076 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab3JWBsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 21:48:00 -0400
-X-AuditID: cbfee691-b7f866d000001b8c-f9-52672acee5a6
+	Tue, 22 Oct 2013 21:48:47 -0400
+X-AuditID: cbfee691-b7f866d000001b8c-59-52672afd6889
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Johan Hovold'" <jhovold@gmail.com>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>
 References: <1382462819-28576-1-git-send-email-jhovold@gmail.com>
- <1382462819-28576-3-git-send-email-jhovold@gmail.com>
-In-reply-to: <1382462819-28576-3-git-send-email-jhovold@gmail.com>
-Subject: Re: [PATCH 2/9] backlight: atmel-pwm-bl: fix gpio polarity in remove
-Date: Wed, 23 Oct 2013 10:47:58 +0900
-Message-id: <001a01cecf91$e67fb620$b37f2260$%han@samsung.com>
+ <1382462819-28576-4-git-send-email-jhovold@gmail.com>
+In-reply-to: <1382462819-28576-4-git-send-email-jhovold@gmail.com>
+Subject: Re: [PATCH 3/9] backlight: atmel-pwm-bl: fix module autoload
+Date: Wed, 23 Oct 2013 10:48:45 +0900
+Message-id: <001b01cecf92$028357a0$078a06e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7PS/WUgNmKml7oTTu1vQ1Ao3Gc7QARa/jw
+Thread-index: Ac7PS/Rj/aLk0YxaSdKjhZiQjtXH+wARfVaw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zY91zWulBBq2nrSxeHtK0uLzwEqvF
-	3lXSFif6PrBaXN41h83i2+Vmdovdu56yWizY+IjRgcNjwa+tLB47Z91l99gz/werR9+WVYwe
-	nzfJBbBGcdmkpOZklqUW6dslcGV0fFrMXPCAuWJ36yGWBsYm5i5GTg4JAROJRTOms0PYYhIX
-	7q1n62Lk4hASWMYo8fnMT1aYovu9c6AS0xklHn24yAKSEBL4xSjx/QIbiM0moCbx5cthsEki
-	QPaT3iPsIA3MAhcYJY6/fMII0VApMevibbCpnAJOEi8PrgGLCwv4Siy/8wYsziKgKrH05kog
-	m4ODV8BW4tEqJ5Awr4CgxI/J98D2MgtoSazfeZwJwpaX2LzmLTNIuYSAusSjv7oQJxhJdN5r
-	Y4UoEZHY9+IdI8g5EgIf2SXaHy1hhlglIPFt8iEWiF5ZiU0HoIEiKXFwxQ2WCYwSs5BsnoVk
-	8ywkm2chWbGAkWUVo2hqQXJBcVJ6kalecWJucWleul5yfu4mRkgMT9zBeP+A9SHGZKD1E5ml
-	RJPzgSkgryTe0NjMyMLUxNTYyNzSjDRhJXHe9EdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
-	pRoYq36zx/hP4FmQ8zaBa8kNsYD0v8nzJxj+Ks5OCIy6e1Z7ken1J2I68tKvj8yx+3a/W++P
-	wRn1nDeTdV6E321+OPHP3S2V8Tv8epW1rmdPrNTLeTBXXJVZer+jx8fJPy3q3NN+Mgh8KH7G
-	W/qte5OJmtrk/mPfr+ySmriLgTum77HdvtC/m3IDlFiKMxINtZiLihMBnOQV7/cCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIKsWRmVeSWpSXmKPExsVy+t9jQd1zWulBBu3PTC1eHtK0uLzwEqvF
-	3lXSFif6PrBaXN41h83i2+Vmdovdu56yWizY+IjRgcNjwa+tLB47Z91l99gz/werR9+WVYwe
-	nzfJBbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl
-	5gCdoqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM6Pi0mLngAXPF7tZD
-	LA2MTcxdjJwcEgImEvd757BB2GISF+6tB7K5OIQEpjNKPPpwkQUkISTwi1Hi+wWwIjYBNYkv
-	Xw6zg9giQPaT3iPsIA3MAhcYJY6/fMII0VApMevibVYQm1PASeLlwTVgcWEBX4nld96AxVkE
-	VCWW3lwJZHNw8ArYSjxa5QQS5hUQlPgx+R7YXmYBLYn1O48zQdjyEpvXvGUGKZcQUJd49FcX
-	4gQjic57bawQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL
-	89L1kvNzNzGCE8Qz6R2MqxosDjEKcDAq8fBatqcFCbEmlhVX5h5ilOBgVhLhbfYFCvGmJFZW
-	pRblxxeV5qQWH2JMBvpzIrOUaHI+MHnllcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEk
-	NTs1tSC1CGYLEwenVAMj31Rfn3SjQDuJDfydIcE+LSsOTmetX7ird+ujA5JxJ2IPexfHHnn9
-	W+XwqxprD5GTTm6Pr08QeJCw/n5bacQT9b+Ot5ZvScn3nrRimtF8G98Zqnf8T8+xKeUos/GU
-	mPvLxbd8/dU4za7AS5u3Ssot/3RmWpDZU4/93xpjb+5/PtH3YM9x57LZSizFGYmGWsxFxYkA
-	evM/0VQDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zY92/WulBBk13DS1eHtK0uLzwEqvF
+	3lXSFif6PrBaXN41h83i2+Vmdovdu56yOrB7LPi1lcVj56y77B575v9g9ejbsorR4/MmuQDW
+	KC6blNSczLLUIn27BK6MqYucCl4wVRx9v4C1gXEeUxcjJ4eEgInEo+nfWCFsMYkL99azdTFy
+	cQgJLGOUWPP+ICtM0a31X5ggEtMZJb5v6mWFcH4xSiz4sp0NpIpNQE3iy5fD7CC2CJD9pPcI
+	O0gRs8A2RokTy/cxgySEBCol7n2ZD9bAKeAk8ezxCUYQW1jAVeLMg36wZhYBVYnXZ56wgNi8
+	ArYST7Y/Y4ewBSV+TL4HFmcW0JJYv/M4E4QtL7F5zVug+RxAp6pLPPqrC3GDkUTD1R+sECUi
+	EvtevGMEuUdC4CW7xJ0lb1kgdglIfJt8iAWiV1Zi0wFmiI8lJQ6uuMEygVFiFpLNs5BsnoVk
+	8ywkKxYwsqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECIndiTsY7x+wPsSYDLR+IrOUaHI+
+	MPbzSuINjc2MLExNTI2NzC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGx
+	MuCA7eH6BHuerzkiSxxEzZRfnqoq/3XuTr/ahMJncYldy4/dL5110XHF1cdvKjYKazPuf7L1
+	DQuLefeW9N4/nBuurGBn2J7AJ6E0af6Mmqq7XsFiEXsfLD0j+nzLiuvxykZGR3zL32U+VQ+d
+	7VzTm31W88LWT/FXDI+2Kn/2O5kU3XP/jt0rJZbijERDLeai4kQA8PKw0fMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jQd2/WulBBmvPa1q8PKRpcXnhJVaL
+	vaukLU70fWC1uLxrDpvFt8vN7Ba7dz1ldWD3WPBrK4vHzll32T32zP/B6tG3ZRWjx+dNcgGs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM6Yucip4wVRx9P0C1gbGeUxd
+	jJwcEgImErfWf4GyxSQu3FvP1sXIxSEkMJ1R4vumXlYI5xejxIIv29lAqtgE1CS+fDnMDmKL
+	ANlPeo+wgxQxC2xjlDixfB8zSEJIoFLi3pf5YA2cAk4Szx6fYASxhQVcJc486AdrZhFQlXh9
+	5gkLiM0rYCvxZPszdghbUOLH5HtgcWYBLYn1O48zQdjyEpvXvAWazwF0qrrEo7+6EDcYSTRc
+	/cEKUSIise/FO8YJjEKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/
+	dxMjODE8k9rBuLLB4hCjAAejEg+vRXtakBBrYllxZe4hRgkOZiUR3mZfoBBvSmJlVWpRfnxR
+	aU5q8SHGZKBHJzJLiSbnA5NWXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtS
+	i2C2MHFwSjUwtu355Nnu28fGLfr7v2RE/IqQaOnyiYl2zguqJi9SZZqpXTr36+PdMxZ0qT+b
+	ePT9fPGVVzeVf5Vb++Hl02xOoxUXGa/X968OlLvVJfaH39Kx0/g16/uHd16emHvNWfn+v9mx
+	yeoxtoFGP1vqfdf+2VF46MsmzfpC1SleFxfIWNV+lshQr25yUWIpzkg01GIuKk4EAF8XMu1Q	AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,10 +60,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wednesday, October 23, 2013 2:27 AM, Johan Hovold wrote:
 > 
-> Make sure to honour gpio polarity also at remove so that the backlight
-> is actually disabled on boards with active-low enable pin.
+> Add missing module alias which is needed for module autoloading.
 > 
-> Cc: stable@vger.kernel.org
 > Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
 Acked-by: Jingoo Han <jg1.han@samsung.com>
@@ -73,7 +70,7 @@ Best regards,
 Jingoo Han
 
 > ---
->  drivers/video/backlight/atmel-pwm-bl.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+>  drivers/video/backlight/atmel-pwm-bl.c | 1 +
+>  1 file changed, 1 insertion(+)
 
 
