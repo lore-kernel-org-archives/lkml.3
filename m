@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3JWJJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:09:23 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48163 "EHLO
+	id S1752757Ab3JWJJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:09:22 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48158 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab3JWJJV (ORCPT
+	with ESMTP id S1752585Ab3JWJJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:09:21 -0400
+	Wed, 23 Oct 2013 05:09:20 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: Lars Ellenberg <lars.ellenberg@linbit.com>,
         Philipp Reisner <philipp.reisner@linbit.com>
-Subject: [PATCH 5/5] drbd: avoid to shrink max_bio_size due to peer re-configuration
-Date: Wed, 23 Oct 2013 10:59:19 +0200
-Message-Id: <1382518759-5467-6-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 1/5] drbd: fix NULL pointer deref in module init error path
+Date: Wed, 23 Oct 2013 10:59:15 +0200
+Message-Id: <1382518759-5467-2-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1382518759-5467-1-git-send-email-philipp.reisner@linbit.com>
 References: <1382518759-5467-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,71 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-For a long time, the receiving side has spread "too large" incoming
-requests over multiple bios.  No need to shrink our max_bio_size
-(max_hw_sectors) if the peer is reconfigured to use a different storage.
-
-The problem manifests itself if we are not the top of the device stack
-(DRBD is used a LVM PV).
-
-A hardware reconfiguration on the peer may cause the supported
-max_bio_size to shrink, and the connection handshake would now
-unnecessarily shrink the max_bio_size on the active node.
-
-There is no way to notify upper layers that they have to "re-stack"
-their limits. So they won't notice at all, and may keep submitting bios
-that are suddenly considered "too large for device".
-
-We already check for compatibility and ignore changes on the peer,
-the code only was masked out unless we have a fully established connection.
-We just need to allow it a bit earlier during the handshake.
-
-Also consider max_hw_sectors in our merge bvec function, just in case.
+If we want to iterate over the (as of yet still empty) list in the
+cleanup path, we need to initialize the list before the first goto fail.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_nl.c  |    4 ++--
- drivers/block/drbd/drbd_req.c |    3 +++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_main.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 37dad18..c706d50 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1132,9 +1132,9 @@ void drbd_reconsider_max_bio_size(struct drbd_conf *mdev)
- 	/* We may ignore peer limits if the peer is modern enough.
- 	   Because new from 8.3.8 onwards the peer can use multiple
- 	   BIOs for a single peer_request */
--	if (mdev->state.conn >= C_CONNECTED) {
-+	if (mdev->state.conn >= C_WF_REPORT_PARAMS) {
- 		if (mdev->tconn->agreed_pro_version < 94)
--			peer = min( mdev->peer_max_bio_size, DRBD_MAX_SIZE_H80_PACKET);
-+			peer = min(mdev->peer_max_bio_size, DRBD_MAX_SIZE_H80_PACKET);
- 			/* Correct old drbd (up to 8.3.7) if it believes it can do more than 32KiB */
- 		else if (mdev->tconn->agreed_pro_version == 94)
- 			peer = DRBD_MAX_SIZE_H80_PACKET;
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index c24379f..fec7bef 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1306,6 +1306,7 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
- 	int backing_limit;
- 
- 	if (bio_size && get_ldev(mdev)) {
-+		unsigned int max_hw_sectors = queue_max_hw_sectors(q);
- 		struct request_queue * const b =
- 			mdev->ldev->backing_bdev->bd_disk->queue;
- 		if (b->merge_bvec_fn) {
-@@ -1313,6 +1314,8 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
- 			limit = min(limit, backing_limit);
- 		}
- 		put_ldev(mdev);
-+		if ((limit >> 9) > max_hw_sectors)
-+			limit = max_hw_sectors << 9;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 55635ed..9e3818b 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2750,13 +2750,6 @@ int __init drbd_init(void)
+ 		return err;
  	}
- 	return limit;
- }
+ 
+-	err = drbd_genl_register();
+-	if (err) {
+-		printk(KERN_ERR "drbd: unable to register generic netlink family\n");
+-		goto fail;
+-	}
+-
+-
+ 	register_reboot_notifier(&drbd_notifier);
+ 
+ 	/*
+@@ -2767,6 +2760,15 @@ int __init drbd_init(void)
+ 	drbd_proc = NULL; /* play safe for drbd_cleanup */
+ 	idr_init(&minors);
+ 
++	rwlock_init(&global_state_lock);
++	INIT_LIST_HEAD(&drbd_tconns);
++
++	err = drbd_genl_register();
++	if (err) {
++		printk(KERN_ERR "drbd: unable to register generic netlink family\n");
++		goto fail;
++	}
++
+ 	err = drbd_create_mempools();
+ 	if (err)
+ 		goto fail;
+@@ -2778,9 +2780,6 @@ int __init drbd_init(void)
+ 		goto fail;
+ 	}
+ 
+-	rwlock_init(&global_state_lock);
+-	INIT_LIST_HEAD(&drbd_tconns);
+-
+ 	retry.wq = create_singlethread_workqueue("drbd-reissue");
+ 	if (!retry.wq) {
+ 		printk(KERN_ERR "drbd: unable to create retry workqueue\n");
 -- 
 1.7.9.5
 
