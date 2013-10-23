@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3JWU6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:58:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55432 "EHLO
+	id S1753547Ab3JWU6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 16:58:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55438 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3JWU6b (ORCPT
+	with ESMTP id S1753148Ab3JWU6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:58:31 -0400
+	Wed, 23 Oct 2013 16:58:32 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/16] perf script: Make perf_script a local variable
-Date: Wed, 23 Oct 2013 17:58:08 -0300
-Message-Id: <1382561895-8237-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/16] perf inject: Do not repipe attributes to a perf.data file
+Date: Wed, 23 Oct 2013 17:58:09 -0300
+Message-Id: <1382561895-8237-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
 References: <1382561895-8237-1-git-send-email-acme@infradead.org>
@@ -32,10 +32,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Change perf_script from being global to being local.
+perf.data files contain the attributes separately, do not put them in
+the event stream as well.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -45,100 +45,34 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382427258-17495-4-git-send-email-adrian.hunter@intel.com
-[ Made the minor consistency changes suggested by David Ahern ]
+Link: http://lkml.kernel.org/r/1382427258-17495-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c | 40 ++++++++++++++++++++++++----------------
- 1 file changed, 24 insertions(+), 16 deletions(-)
+ tools/perf/builtin-inject.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 27de6068049d..0ae88c2538a1 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -542,18 +542,9 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 	return 0;
- }
- 
--static struct perf_tool perf_script = {
--	.sample		 = process_sample_event,
--	.mmap		 = perf_event__process_mmap,
--	.mmap2		 = perf_event__process_mmap2,
--	.comm		 = perf_event__process_comm,
--	.exit		 = perf_event__process_exit,
--	.fork		 = perf_event__process_fork,
--	.attr		 = perf_event__process_attr,
--	.tracing_data	 = perf_event__process_tracing_data,
--	.build_id	 = perf_event__process_build_id,
--	.ordered_samples = true,
--	.ordering_requires_timestamps = true,
-+struct perf_script {
-+	struct perf_tool	tool;
-+	struct perf_session	*session;
- };
- 
- static void sig_handler(int sig __maybe_unused)
-@@ -561,13 +552,13 @@ static void sig_handler(int sig __maybe_unused)
- 	session_done = 1;
- }
- 
--static int __cmd_script(struct perf_session *session)
-+static int __cmd_script(struct perf_script *script)
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index eb1a5941912b..409ceaf3b9b9 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -72,12 +72,17 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
+ 				   union perf_event *event,
+ 				   struct perf_evlist **pevlist)
  {
++	struct perf_inject *inject = container_of(tool, struct perf_inject,
++						  tool);
  	int ret;
  
- 	signal(SIGINT, sig_handler);
+ 	ret = perf_event__process_attr(tool, event, pevlist);
+ 	if (ret)
+ 		return ret;
  
--	ret = perf_session__process_events(session, &perf_script);
-+	ret = perf_session__process_events(script->session, &script->tool);
- 
- 	if (debug_mode)
- 		pr_err("Misordered timestamps: %" PRIu64 "\n", nr_unordered);
-@@ -1273,6 +1264,21 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	char *script_path = NULL;
- 	const char **__argv;
- 	int i, j, err;
-+	struct perf_script script = {
-+		.tool = {
-+			.sample		 = process_sample_event,
-+			.mmap		 = perf_event__process_mmap,
-+			.mmap2		 = perf_event__process_mmap2,
-+			.comm		 = perf_event__process_comm,
-+			.exit		 = perf_event__process_exit,
-+			.fork		 = perf_event__process_fork,
-+			.attr		 = perf_event__process_attr,
-+			.tracing_data	 = perf_event__process_tracing_data,
-+			.build_id	 = perf_event__process_build_id,
-+			.ordered_samples = true,
-+			.ordering_requires_timestamps = true,
-+		},
-+	};
- 	const struct option options[] = {
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
-@@ -1498,10 +1504,12 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!script_name)
- 		setup_pager();
- 
--	session = perf_session__new(&file, false, &perf_script);
-+	session = perf_session__new(&file, false, &script.tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	script.session = session;
++	if (!inject->pipe_output)
++		return 0;
 +
- 	if (cpu_list) {
- 		if (perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap))
- 			return -1;
-@@ -1565,7 +1573,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (err < 0)
- 		goto out;
+ 	return perf_event__repipe_synth(tool, event);
+ }
  
--	err = __cmd_script(session);
-+	err = __cmd_script(&script);
- 
- 	perf_session__delete(session);
- 	cleanup_scripting();
 -- 
 1.8.1.4
 
