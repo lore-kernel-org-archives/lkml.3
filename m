@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3JWDC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 23:02:56 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:35973 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab3JWDCz (ORCPT
+	id S1755445Ab3JWDD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 23:03:57 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:39103 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab3JWDD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 23:02:55 -0400
-Message-ID: <52673C57.1050607@linux.vnet.ibm.com>
-Date: Wed, 23 Oct 2013 11:02:47 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 22 Oct 2013 23:03:56 -0400
+X-Spam-Score: -100.8
+Message-ID: <52673C5B.4090703@asianux.com>
+Date: Wed, 23 Oct 2013 11:02:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: remove extra put_online_cpus() inside sched_setaffinity()
+To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        pierrick.hascoet@abilis.com, christian.ruppert@abilis.com,
+        noamc@ezchip.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arc: kernel: remove '__init' for get_hw_config_num_irq()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102303-3864-0000-0000-00000AB2C295
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6acce3ef84520537f8a09a12c9ddbe814a584dd2
-        sched: Remove get_online_cpus() usage
+get_hw_config_num_irq() may be called by normal iss_model_init_smp()
+which is a function pointer for 'init_smp' which may be called by
+first_lines_of_secondary() which also need be normal too.
 
-has left one extra put_online_cpus() inside sched_setaffinity(), remove it
-to fix the WARN:
+The related warning (with allmodconfig):
 
-[3165] Watchdog is alive
-[3159] Started watchdog thread 3165
-[   58.695502] ------------[ cut here ]------------
-[   58.697835] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus+0x43/0x70()
-[   58.702423] Modules linked in:
-[   58.704404] CPU: 0 PID: 3166 Comm: trinity-child0 Not tainted 3.12.0-rc5-01882-gf3db366 #1172
-[   58.708530] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   58.710992]  0000000000000000 ffff88000acfbe50 ffffffff81a24643 0000000000000000
-[   58.715410]  ffff88000acfbe88 ffffffff810c3e6b ffffffff810c3fef 0000000000000000
-[   58.719826]  0000000000000000 0000000000006ee0 0000000000000ffc ffff88000acfbe98
-[   58.724348] Call Trace:
-[   58.726190]  [<ffffffff81a24643>] dump_stack+0x4d/0x66
-[   58.728531]  [<ffffffff810c3e6b>] warn_slowpath_common+0x7f/0x98
-[   58.731069]  [<ffffffff810c3fef>] ? put_online_cpus+0x43/0x70
-[   58.733664]  [<ffffffff810c3f32>] warn_slowpath_null+0x1a/0x1c
-[   58.736258]  [<ffffffff810c3fef>] put_online_cpus+0x43/0x70
-[   58.738686]  [<ffffffff810efd59>] sched_setaffinity+0x7d/0x1f9
-[   58.741210]  [<ffffffff810efce1>] ? sched_setaffinity+0x5/0x1f9
-[   58.743775]  [<ffffffff81a2f724>] ? _raw_spin_unlock_irq+0x2c/0x3e
-[   58.746417]  [<ffffffff810c7012>] ? do_setitimer+0x194/0x1f5
-[   58.748899]  [<ffffffff810eff37>] SyS_sched_setaffinity+0x62/0x71
-[   58.751481]  [<ffffffff81a373a9>] system_call_fastpath+0x16/0x1b
-[   58.754070] ---[ end trace 034818a1f6f06868 ]---
-[   58.757521] ------------[ cut here ]------------
+    MODPOST vmlinux.o
+  WARNING: vmlinux.o(.text+0x5814): Section mismatch in reference from the function iss_model_init_smp() to the function .init.text:get_hw_config_num_irq()
+  The function iss_model_init_smp() references
+  the function __init get_hw_config_num_irq().
+  This is often because iss_model_init_smp lacks a __init
+  annotation or the annotation of get_hw_config_num_irq is wrong.
 
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/sched/core.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arc/include/asm/irq.h |    2 +-
+ arch/arc/kernel/irq.c      |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c06b8d3..7c61f31 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
-        p = find_process_by_pid(pid);
-        if (!p) {
-                rcu_read_unlock();
--               put_online_cpus();
-                return -ESRCH;
-        }
-
+diff --git a/arch/arc/include/asm/irq.h b/arch/arc/include/asm/irq.h
+index 548207f..291a70d 100644
+--- a/arch/arc/include/asm/irq.h
++++ b/arch/arc/include/asm/irq.h
+@@ -19,7 +19,7 @@
+ #include <asm-generic/irq.h>
+ 
+ extern void arc_init_IRQ(void);
+-extern int __init get_hw_config_num_irq(void);
++extern int get_hw_config_num_irq(void);
+ 
+ void arc_local_timer_setup(unsigned int cpu);
+ 
+diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
+index 5fc9245..e2bdfe5 100644
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -146,7 +146,7 @@ void arch_do_IRQ(unsigned int irq, struct pt_regs *regs)
+ 	set_irq_regs(old_regs);
+ }
+ 
+-int __init get_hw_config_num_irq(void)
++int get_hw_config_num_irq(void)
+ {
+ 	uint32_t val = read_aux_reg(ARC_REG_VECBASE_BCR);
+ 
 -- 
-1.7.9.5
-
+1.7.7.6
