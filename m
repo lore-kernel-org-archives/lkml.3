@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab3JWGvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 02:51:14 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60482 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3JWGvL (ORCPT
+	id S1752508Ab3JWG5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 02:57:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21233 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789Ab3JWG5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 02:51:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOx4COX4M0nk5RPO6EHoot7VzUcuK8MLo4dSb2Ld3mdKTv5qzQ@mail.gmail.com>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
-	<20131021135437.GD1283@fenchurch.internal.datastacks.com>
-	<20131021185758.GD3626@debian70-amd64.local.net-space.pl>
-	<1382433990.1657.66.camel@hastur.hellion.org.uk>
-	<5266620602000078000FCA48@nat28.tlf.novell.com>
-	<1382435127.1657.70.camel@hastur.hellion.org.uk>
-	<526668A502000078000FCA7B@nat28.tlf.novell.com>
-	<20131022134252.GA27302@phenom.dumpdata.com>
-	<20131022144309.GA18547@phenom.dumpdata.com>
-	<1382455537.8512.11.camel@shinybook.infradead.org>
-	<20131022163502.GD19189@phenom.dumpdata.com>
-	<CAOx4COX4M0nk5RPO6EHoot7VzUcuK8MLo4dSb2Ld3mdKTv5qzQ@mail.gmail.com>
-Date: Wed, 23 Oct 2013 14:51:10 +0800
-X-Google-Sender-Auth: 7B7go2LxVVC27VMBMmK6Kiab4oE
-Message-ID: <CAOx4COWkJzQNhUZCT2QxKEVUxNw8BwjqBJRd8_7T+6V3ukTiUg@mail.gmail.com>
+	Wed, 23 Oct 2013 02:57:04 -0400
+Date: Wed, 23 Oct 2013 08:56:40 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Ian Campbell <ian.campbell@citrix.com>,
+        ross.philipson@citrix.com, stefano.stabellini@eu.citrix.com,
+        grub-devel@gnu.org, david.woodhouse@intel.com,
+        richard.l.maliszewski@intel.com, xen-devel@lists.xen.org,
+        boris.ostrovsky@oracle.com, Peter Jones <pjones@redhat.com>,
+        linux-kernel@vger.kernel.org, keir@xen.org
 Subject: Re: EFI and multiboot2 devlopment work for Xen
-From: Michael Chang <mchang@suse.com>
-To: The development of GNU GRUB <grub-devel@gnu.org>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        "keir@xen.org" <keir@xen.org>, Ian Campbell <ian.campbell@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20131023065640.GP3626@debian70-amd64.local.net-space.pl>
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+ <20131021135437.GD1283@fenchurch.internal.datastacks.com>
+ <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
+ <1382433990.1657.66.camel@hastur.hellion.org.uk>
+ <5266620602000078000FCA48@nat28.tlf.novell.com>
+ <1382435127.1657.70.camel@hastur.hellion.org.uk>
+ <526668A502000078000FCA7B@nat28.tlf.novell.com>
+ <20131022134252.GA27302@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022134252.GA27302@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/23 Michael Chang <mchang@suse.com>:
-> 2013/10/23 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
->> On Tue, Oct 22, 2013 at 03:25:39PM +0000, Woodhouse, David wrote:
->>> On Tue, 2013-10-22 at 10:43 -0400, Konrad Rzeszutek Wilk wrote:
->>> >
->>> > And looking at bit deeper in the x86/linux boot spec:
->>> >
->>> > **** EFI HANDOVER PROTOCOL
->>> >
->>> > This protocol allows boot loaders to defer initialisation to the EFI
->>> > boot stub. The boot loader is required to load the kernel/initrd(s)
->>> > from the boot media and jump to the EFI handover protocol entry point
->>> > which is hdr->handover_offset bytes from the beginning of
->>> > startup_{32,64}.
->>>
->>> Oh, ignore that. You want the *actual* PE executable entry point, as it
->>> would get invoked by a real UEFI firmware.
->>
->> Right. The Xen hypervisor can be built in two images: a standard PE/COFF
->> that can be executed from the EFI shell, and an multiboot blob that can
->> be loaded by multiboot compatible boot loaders (like GRUB).
->>
->>>
->>> I thought that's what Grub invoked, for 'linuxefi'. Perhaps I mean a
->>> chainloader method of some kind instead. Either way, make Grub (or
->>> whatever bootloader you choose) load it as an EFI executable.
->>
->> Looks like chainloader was it from Peter's answer. But then you can't
->> do SecureBoot <sigh>.
+On Tue, Oct 22, 2013 at 09:42:52AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Oct 22, 2013 at 10:59:33AM +0100, Jan Beulich wrote:
+> > >>> On 22.10.13 at 11:45, Ian Campbell <ian.campbell@citrix.com> wrote:
+> > > On Tue, 2013-10-22 at 10:31 +0100, Jan Beulich wrote:
+> > >> >>> On 22.10.13 at 11:26, Ian Campbell <ian.campbell@citrix.com> wrote:
+> > >> > AIUI "efilinux" is somewhat badly named and does not use the Linux Boot
+> > >> > Protocol (i.e. the (b)zImage stuff with real mode entry point) either.
+> > >> > It actually loads and executes the kernel binary as a PE/COFF executable
+> > >> > (the native UEFI binary executable format). xen.efi is a PE/COFF binary
+> > >> > too and could equally well be launched by linuxefi in this way.
+> > >>
+> > >> Except that unless I'm mistaken "linuxefi" still expects to find certain
+> > >> Linux-specific internal data structures inside the PE image, which I
+> > >> don't see us wanting to be emulating. That's the main difference to
+> > >> "chainloader" afaict.
+> > >
+> > > Ah, I'd been led to believe it was just the lack of a call to
+> > > ExitBootServices, but I didn't check. What you say sounds completely
+> > > plausible.
+> > >
+> > > Do you know what sort of Linux specific data structures are we talking
+> > > about?
+> >
+> > The setup header I would assume (i.e. the bits surrounding the
+> > "HdrS" signature). But I'm only guessing anyway.
 >
-> In SUSE/openSUSE we had a patch[1] in chainloader for supporting
-> shim's protocol to verify loaded EFI images. The efi image can be
-> loaded and verified by db or MOK keyrings.
->
-> [1] https://build.opensuse.org/package/view_file/openSUSE:Factory/grub2/grub2-secureboot-chainloader.patch?expand=1
->
-> With the linux foundation's PreLoader, that patch can be eliminated
-> totally as the verification is done via installed hook, where
-> verification result from MOK keyring is added, to authenticate file
-> protocol. The verification is thus transparent to UEFI applications so
-> any other loader, like shim, can be benefited from it.
+> This is a bit lengthy email, so please get your coffee/tea ready.
 
-Sorry, other loaders should be gummiboot, refind and so on ..
+[...]
 
+> We can also support all three: PE/COFF by itself launched from GRUB2
+> (ExitBootServices called, not too good), multiboot2 support, and
+> linuxefi, I think?
 >
-> The PreLoader has it's own controversy as that protocol is not part of
-> UEFI spec, instead it's part of PI spec for UEFI firmware
-> implementation thus shouldn't be used by an application (loader). It
-> could have compatibility problem ...
+> The disadvantage of multiboot2 is that it is not upstream. But the patches
+> do exist and it looks like they could be put in GRUB2 upstream. The neat
+> about them is that it also supports Solaris and can support any other
+> multboot payload type kernels (ie, non-Linux centric).
 >
-> Regards,
-> Michael
->>
->>>
->>> Seriously, forget Grub for now. Grub is mostly just an exercise in
->>> gratuitously doing things the difficult way and wondering why it's
->>> fragile.
->>>
->>> Make your code work as an EFI executable when loaded directly from the
->>> UEFI firmware. Worry about the insanity of grub later.
->>
->> That has been done by Jan. Now we are at the 'have a shim that launches
->> GRUB2, now what?'
->>
->>>
->>>
->>> --
->>>                    Sent with MeeGo's ActiveSync support.
->>>
->>> David Woodhouse                            Open Source Technology Centre
->>> David.Woodhouse@intel.com                              Intel Corporation
->>>
->>>
->>>
->>
->>
->>
->> _______________________________________________
->> Grub-devel mailing list
->> Grub-devel@gnu.org
->> https://lists.gnu.org/mailman/listinfo/grub-devel
->>
+> The advantage of linuxefi is that it is supported by all Linux distros right
+> now - so we would fit right away. We still have to fiddle with the
+> linux_kernel_parameters to get everything we want from it - which
+> is probably just the EFI stuff and we can ditch the rest.
+
+Usage of Linux Boot protocol is quiet complicated in our case. It pases
+one pointer to all initrd images loaded one by one into memory. So if
+we would like to use it we will be forced to parse this blob to find
+separate images. Not good. multiboot2 protocol passes list of pointers
+to all loaded modules.
+
+Daniel
