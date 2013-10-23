@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3JWU1E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:27:04 -0400
-Received: from ring0.de ([91.143.88.219]:43238 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab3JWU1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:27:00 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCHv5 1/3] Input: twl4030-pwrbutton - add device tree support
-Date: Wed, 23 Oct 2013 22:26:40 +0200
-Message-Id: <1382560002-6299-2-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382560002-6299-1-git-send-email-sre@debian.org>
-References: <1382560002-6299-1-git-send-email-sre@debian.org>
+	id S1753351Ab3JWUek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 16:34:40 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:47744 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751709Ab3JWUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 16:34:39 -0400
+Date: Wed, 23 Oct 2013 15:34:35 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: Eric Sandeen <sandeen@sandeen.net>, Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+Message-ID: <20131023203435.GR1935@sgi.com>
+References: <20131021231849.GL10553@sgi.com>
+ <20131021235601.GG4446@dastard>
+ <5265C03B.50701@sandeen.net>
+ <20131022001732.GI4446@dastard>
+ <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
+ <20131022203946.GB2797@dastard>
+ <5266E4BD.8030601@sandeen.net>
+ <20131022210300.GC2797@dastard>
+ <5266EBF0.901@sandeen.net>
+ <CAGG-pUTtYomspBXn=RE7YFU=vu6rWZ1fU7CBO45Mmodj8DZFiQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGG-pUTtYomspBXn=RE7YFU=vu6rWZ1fU7CBO45Mmodj8DZFiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for twl4030 power button driver.
+Hey Geyslan,
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
+On Wed, Oct 23, 2013 at 08:58:51AM -0200, Geyslan Gregório Bem wrote:
+> - Regarding the "possible new patch" subject, I humbly pass the ball to you.
+> 
+> Thank you for the attention.
+
+Thank you for the patch.  I would really prefer to commit this showing
+authorship from you, rather than a Reported-by.  Can I mark you down?
+
+Regards,
+	Ben
+
 ---
- .../devicetree/bindings/input/twl4030-pwrbutton.txt      | 13 +++++++++++++
- drivers/input/misc/twl4030-pwrbutton.c                   | 16 ++++++++++++----
- 2 files changed, 25 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
 
-diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-new file mode 100644
-index 0000000..945ec74
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-@@ -0,0 +1,13 @@
-+* TWL4030's pwrbutton device tree bindings
+xfs: fix possible NULL dereference in xlog_verify_iclog
+
+In xlog_verify_iclog a debug check of the incore log buffers prints an
+error if icptr is null and then goes on to dereference the pointer
+regardless.  Convert this to an assert so that the intention is clear.
+This was reported by Coverty.
+
+Reported-by: Geyslan G. Bem <geyslan@gmail.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+---
+ fs/xfs/xfs_log.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+Index: b/fs/xfs/xfs_log.c
+===================================================================
+--- a/fs/xfs/xfs_log.c	2013-10-23 14:52:47.875216875 -0500
++++ b/fs/xfs/xfs_log.c	2013-10-23 14:53:53.775245830 -0500
+@@ -3714,11 +3714,9 @@ xlog_verify_iclog(
+ 	/* check validity of iclog pointers */
+ 	spin_lock(&log->l_icloglock);
+ 	icptr = log->l_iclog;
+-	for (i=0; i < log->l_iclog_bufs; i++) {
+-		if (icptr == NULL)
+-			xfs_emerg(log->l_mp, "%s: invalid ptr", __func__);
+-		icptr = icptr->ic_next;
+-	}
++	for (i=0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
++      		ASSERT(icptr);
 +
-+Required SoC Specific Properties:
-+- compatible: should be one of the following
-+   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
-+- interrupt: should be one of the following
-+   - <8>: For controllers compatible with twl4030
-+
-+Example:
-+	twl_pwrbutton: pwrbutton {
-+		compatible = "ti,twl4030-pwrbutton";
-+		interrupts = <8>;
-+	};
-diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index b9a05fd..a3a0fe3 100644
---- a/drivers/input/misc/twl4030-pwrbutton.c
-+++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
- 	return IRQ_HANDLED;
- }
- 
--static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
-+static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- {
- 	struct input_dev *pwr;
- 	int irq = platform_get_irq(pdev, 0);
-@@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#if IS_ENABLED(CONFIG_OF)
-+static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
-+       { .compatible = "ti,twl4030-pwrbutton" },
-+       {},
-+};
-+MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
-+#endif
-+
- static struct platform_driver twl4030_pwrbutton_driver = {
-+	.probe		= twl4030_pwrbutton_probe,
- 	.remove		= __exit_p(twl4030_pwrbutton_remove),
- 	.driver		= {
- 		.name	= "twl4030_pwrbutton",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
- 	},
- };
--
--module_platform_driver_probe(twl4030_pwrbutton_driver,
--			twl4030_pwrbutton_probe);
-+module_platform_driver(twl4030_pwrbutton_driver);
- 
- MODULE_ALIAS("platform:twl4030_pwrbutton");
- MODULE_DESCRIPTION("Triton2 Power Button");
--- 
-1.8.4.rc3
+ 	if (icptr != log->l_iclog)
+ 		xfs_emerg(log->l_mp, "%s: corrupt iclog ring", __func__);
+ 	spin_unlock(&log->l_icloglock);
 
