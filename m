@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab3JWJ63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:58:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58649 "EHLO mx2.suse.de"
+	id S1753535Ab3JWJ6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:58:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60088 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839Ab3JWJ6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:58:25 -0400
-Date: Wed, 23 Oct 2013 11:50:40 +0200
-From: Jan Kara <jack@suse.cz>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: viro@zeniv.linux.org.uk, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffm@suse.com,
-        marco.stornelli@gmail.com, jack@suse.cz
-Subject: Re: [PATCH] reiserfs: remove duplicate define
-Message-ID: <20131023095040.GD1275@quack.suse.cz>
-References: <1382342097-2991-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S1751839Ab3JWJ6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 05:58:33 -0400
+Date: Wed, 23 Oct 2013 10:54:42 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, dave@sr71.net,
+        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
+        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
+        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 01/40] mm: Introduce memory regions data-structure
+ to capture region boundaries within nodes
+Message-ID: <20131023095442.GA2043@cmpxchg.org>
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
+ <20130925231346.26184.65521.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382342097-2991-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130925231346.26184.65521.stgit@srivatsabhat.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 21-10-13 09:54:57, Michael Opdenacker wrote:
-> This patch removes a duplicate define in fs/reiserfs/reiserfs.h
-  Hum, so the duplicate define certainly isn't nice but it's really a
-result of a namespace collision between return codes of two different (sets
-of) functions. So deleting the duplicate isn't really solving the problem,
-just hiding it. So I'd prefer more one of the following two solutions:
-1) Just ignore the problem. Reiserfs is mostly dead and this isn't likely to
-cause any subtle issues.
-2) Prefix the return codes somehow so that those two error namespaces don't
-clash. As a bonus you can convert defines to enums but I'm not sure that's
-worth the bother (prefixing is a simple search & replace so that should be
-trivial, well except for the CARRY_ON case).
-
-								Honza
+On Thu, Sep 26, 2013 at 04:43:48AM +0530, Srivatsa S. Bhat wrote:
+> The memory within a node can be divided into regions of memory that can be
+> independently power-managed. That is, chunks of memory can be transitioned
+> (manually or automatically) to low-power states based on the frequency of
+> references to that region. For example, if a memory chunk is not referenced
+> for a given threshold amount of time, the hardware (memory controller) can
+> decide to put that piece of memory into a content-preserving low-power state.
+> And of course, on the next reference to that chunk of memory, it will be
+> transitioned back to full-power for read/write operations.
 > 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> So, the Linux MM can take advantage of this feature by managing the available
+> memory with an eye towards power-savings - ie., by keeping the memory
+> allocations/references consolidated to a minimum no. of such power-manageable
+> memory regions. In order to do so, the first step is to teach the MM about
+> the boundaries of these regions - and to capture that info, we introduce a new
+> data-structure called "Memory Regions".
+> 
+> [Also, the concept of memory regions could potentially be extended to work
+> with different classes of memory like PCM (Phase Change Memory) etc and
+> hence, it is not limited to just power management alone].
+> 
+> We already sub-divide a node's memory into zones, based on some well-known
+> constraints. So the question is, where do we fit in memory regions in this
+> hierarchy. Instead of artificially trying to fit it into the hierarchy one
+> way or the other, we choose to simply capture the region boundaries in a
+> parallel data-structure, since most likely the region boundaries won't
+> naturally fit inside the zone boundaries or vice-versa.
+> 
+> But of course, memory regions are sub-divisions *within* a node, so it makes
+> sense to keep the data-structures in the node's struct pglist_data. (Thus
+> this placement makes memory regions parallel to zones in that node).
+> 
+> Once we capture the region boundaries in the memory regions data-structure,
+> we can influence MM decisions at various places, such as page allocation,
+> reclamation etc, in order to perform power-aware memory management.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > ---
->  fs/reiserfs/reiserfs.h | 1 -
->  1 file changed, 1 deletion(-)
 > 
-> diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
-> index f8adaee..a27d69b 100644
-> --- a/fs/reiserfs/reiserfs.h
-> +++ b/fs/reiserfs/reiserfs.h
-> @@ -597,7 +597,6 @@ void reiserfs_file_buffer(struct buffer_head *bh, int list);
->  extern struct file_system_type reiserfs_fs_type;
->  int reiserfs_resize(struct super_block *, unsigned long);
->  
-> -#define CARRY_ON                0
->  #define SCHEDULE_OCCURRED       1
->  
->  #define SB_BUFFER_WITH_SB(s) (REISERFS_SB(s)->s_sbh)
-> -- 
-> 1.8.1.2
+>  include/linux/mmzone.h |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index bd791e4..d3288b0 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -35,6 +35,8 @@
+>   */
+>  #define PAGE_ALLOC_COSTLY_ORDER 3
+>  
+> +#define MAX_NR_NODE_REGIONS	512
+> +
+>  enum {
+>  	MIGRATE_UNMOVABLE,
+>  	MIGRATE_RECLAIMABLE,
+> @@ -708,6 +710,14 @@ struct node_active_region {
+>  extern struct page *mem_map;
+>  #endif
+>  
+> +struct node_mem_region {
+> +	unsigned long start_pfn;
+> +	unsigned long end_pfn;
+> +	unsigned long present_pages;
+> +	unsigned long spanned_pages;
+> +	struct pglist_data *pgdat;
+> +};
+> +
+>  /*
+>   * The pg_data_t structure is used in machines with CONFIG_DISCONTIGMEM
+>   * (mostly NUMA machines?) to denote a higher-level memory zone than the
+> @@ -724,6 +734,8 @@ typedef struct pglist_data {
+>  	struct zone node_zones[MAX_NR_ZONES];
+>  	struct zonelist node_zonelists[MAX_ZONELISTS];
+>  	int nr_zones;
+> +	struct node_mem_region node_regions[MAX_NR_NODE_REGIONS];
+> +	int nr_node_regions;
+>  #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
+>  	struct page *node_mem_map;
+>  #ifdef CONFIG_MEMCG
+
+Please don't write patches that add data structures but do not use
+them.
+
+This is a pattern throughout the whole series.  You add a data
+structure in one patch, individual helper functions in followup
+patches, optimizations and statistics in yet more patches, even
+unrelated cleanups and documentation like the fls() vs __fls() stuff,
+until finally you add the actual algorithm, also bit by bit.  I find
+it really hard to review when I have to jump back and forth between
+several different emails to piece things together.
+
+Prepare the code base as necessary (the fls stuff, instrumentation for
+existing code, cleanups), then add the most basic data structure and
+code in one patch, then follow up with new statistics, optimizations
+etc. (unless the optimizations can be reasonably folded into the
+initial implementation in the first place).  This might not always be
+possible of course, but please strive for it.
