@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab3JWMpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 08:45:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386Ab3JWMps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 08:45:48 -0400
-Date: Wed, 23 Oct 2013 10:45:22 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf callchain: Convert children list to rbtree
-Message-ID: <20131023124521.GB3824@infradead.org>
-References: <1381468543-25334-2-git-send-email-namhyung@kernel.org>
- <tip-e369517ce5f796945c6af047b4e8b1d650e03458@git.kernel.org>
- <20131023110723.GA2502@localhost.localdomain>
+	id S1753640Ab3JWMtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 08:49:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58624 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3JWMtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 08:49:13 -0400
+Date: Wed, 23 Oct 2013 05:48:31 -0700
+From: tip-bot for Thierry Reding <tipbot@zytor.com>
+Message-ID: <tip-92ec11809565cf6429c75204e99e0f583b5c9d7c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, treding@nvidia.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, thierry.reding@gmail.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, treding@nvidia.com,
+        tglx@linutronix.de
+In-Reply-To: <1382528455-29911-1-git-send-email-treding@nvidia.com>
+References: <1382528455-29911-1-git-send-email-treding@nvidia.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/wait: Fix build breakage
+Git-Commit-ID: 92ec11809565cf6429c75204e99e0f583b5c9d7c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131023110723.GA2502@localhost.localdomain>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 05:48:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 23, 2013 at 12:07:26PM +0100, Frederic Weisbecker escreveu:
-> On Wed, Oct 23, 2013 at 12:54:48AM -0700, tip-bot for Namhyung Kim wrote:
-> > -#define chain_for_each_child(child, parent)	\
-> > -	list_for_each_entry(child, &parent->children, siblings)
-> > -
-> > -#define chain_for_each_child_safe(child, next, parent)	\
-> > -	list_for_each_entry_safe(child, next, &parent->children, siblings)
-> 
-> We can probably keep these APIs using the rb root iteration code.
-> 
-> There should be an rb_node_for_each() anyway, and rb_node_for_each_entry(). People
-> refused to have to have such an API because they feared it would encourage blind use
-> of this O(n log n) iteration. There is plenty of such usecase in practice though, especially
-> in perf. So I think we can now start to think about it for real.
+Commit-ID:  92ec11809565cf6429c75204e99e0f583b5c9d7c
+Gitweb:     http://git.kernel.org/tip/92ec11809565cf6429c75204e99e0f583b5c9d7c
+Author:     Thierry Reding <thierry.reding@gmail.com>
+AuthorDate: Wed, 23 Oct 2013 13:40:55 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 23 Oct 2013 14:44:10 +0200
 
-I tried introducing one, PeterZ objected, on the grounds you mentioned,
-and I still think they are needed, agree with you. Just put a:
+sched/wait: Fix build breakage
 
-/*
-   DANGER WILL ROBINSON DANGER
+The wait_event_interruptible_lock_irq() macro is missing a
+semi-colon which causes a build failure in the i915 DRM driver.
 
-   You should know what you're doing, PeterZ is watching you!
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1382528455-29911-1-git-send-email-treding@nvidia.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/wait.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-   I CAN NOT ACCEPT THAT PERSON ACTION
-*/
-
-or something like that above such helpers ;-)
-
-- Arnaldo
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index ec099b0..3b23afa 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -732,7 +732,7 @@ do {									\
+ 	int __ret = 0;							\
+ 	if (!(condition))						\
+ 		__ret = __wait_event_interruptible_lock_irq(wq,		\
+-						condition, lock,)	\
++						condition, lock,);	\
+ 	__ret;								\
+ })
+ 
