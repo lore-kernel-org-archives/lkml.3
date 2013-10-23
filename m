@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3JWQKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 12:10:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63493 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab3JWQKf (ORCPT
+	id S1752770Ab3JWQKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 12:10:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50244 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab3JWQKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 12:10:35 -0400
-Date: Wed, 23 Oct 2013 17:09:36 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 1/3] Input: twl4030-pwrbutton - add device tree support
-Message-ID: <20131023160934.GA6042@kartoffel>
-References: <1382540482-12261-1-git-send-email-sre@debian.org>
- <1382540482-12261-2-git-send-email-sre@debian.org>
+	Wed, 23 Oct 2013 12:10:50 -0400
+Date: Wed, 23 Oct 2013 17:10:38 +0100
+From: Jens Axboe <axboe@kernel.dk>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Alireza Haghdoost <alireza@cs.umn.edu>, linux-kernel@vger.kernel.org,
+        Jerry Fredin <jerry.fredin@netapp.com>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] block/aio: Enable sysfs nomerge control for I/O requests
+ in the plug list
+Message-ID: <20131023161038.GI14598@kernel.dk>
+References: <CAB-428koa_AtGr_sTW0xWZAqNgqmxKkeB5wGBB6QwxKx=qu3uA@mail.gmail.com>
+ <x49txg8x9ro.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382540482-12261-2-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <x49txg8x9ro.fsf@segfault.boston.devel.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 04:01:20PM +0100, Sebastian Reichel wrote:
-> Add device tree support for twl4030 power button driver.
-
-This requires a binding document. As it is it's not possible to review.
-
-Mark.
-
+On Wed, Oct 23 2013, Jeff Moyer wrote:
+> Alireza Haghdoost <alireza@cs.umn.edu> writes:
 > 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  drivers/input/misc/twl4030-pwrbutton.c | 16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
+> > This patch enables the sysfs to control I/O request merge
+> > functionality in the plug list. While this control has been
+> > implemented for the request queue, it was dismissed in the plug list.
+> > Therefore, block layer merges requests together (or attempt to merge)
+> > even if the merge capability was disable using sysfs nomerge parameter
+> > value 2.
 > 
-> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-> index b9a05fd..a3a0fe3 100644
-> --- a/drivers/input/misc/twl4030-pwrbutton.c
-> +++ b/drivers/input/misc/twl4030-pwrbutton.c
-> @@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
-> +static int twl4030_pwrbutton_probe(struct platform_device *pdev)
->  {
->  	struct input_dev *pwr;
->  	int irq = platform_get_irq(pdev, 0);
-> @@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
-> +       { .compatible = "ti,twl4030-pwrbutton" },
+> Yeah, this looks like an oversight.  Your mailer really munged up the
+> patch, though.  You should fix that and resend (unless Jens just fixes
+> it up manually).  Also, please specify the -p option to diff or just use
+> git diff.
 
-There's no need to shorten this, "ti,twl4030-power-button" would be far easier
-to understand. Unless the datasheet refers to it as pwrbutton?
+I fixed it up, changed the style slightly as well (no point in reading
+and checking the plug first). This is what I queued up:
 
-Thanks,
-Mark.
+http://git.kernel.dk/?p=linux-block.git;a=commit;h=dfc302d833c46f40b5f775099da00bb0cf0e81ad
+
+-- 
+Jens Axboe
+
