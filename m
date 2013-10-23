@@ -1,188 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3JWXUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 19:20:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28122 "EHLO mga14.intel.com"
+	id S1753567Ab3JWXV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 19:21:57 -0400
+Received: from carrot.rf.net.nz ([103.11.126.193]:51175 "EHLO carrot.rf.net.nz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3JWXUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 19:20:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,557,1378882800"; 
-   d="scan'208";a="416050342"
-Date: Thu, 24 Oct 2013 00:20:33 +0100
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [virtio-net] BUG: sleeping function called from invalid context
- at kernel/mutex.c:616
-Message-ID: <20131023232033.GA7404@localhost>
-References: <20131020023418.GA6737@localhost>
- <526638D4.1030403@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526638D4.1030403@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752673Ab3JWXV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 19:21:56 -0400
+X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 19:21:55 EDT
+From: Jasper Bryant-Greene <jbg@rf.net.nz>
+Content-Type: multipart/signed; boundary="Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0"; protocol="application/pkcs7-signature"; micalg=sha1
+Subject: EFI boot problem in 3.11
+Message-Id: <32EA1272-FF5B-4FAA-B136-1447BF6F9876@rf.net.nz>
+Date: Thu, 24 Oct 2013 12:14:26 +1300
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1812\))
+X-Mailer: Apple Mail (2.1812)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
 
-On Tue, Oct 22, 2013 at 04:35:32PM +0800, Jason Wang wrote:
-> On 10/20/2013 10:34 AM, Fengguang Wu wrote:
-> > Greetings,
-> >
-> > I got the below dmesg and the first bad commit is
-> >
-> > commit 3ab098df35f8b98b6553edc2e40234af512ba877
-> > Author: Jason Wang <jasowang@redhat.com>
-> > Date:   Tue Oct 15 11:18:58 2013 +0800
-> >
-> >     virtio-net: don't respond to cpu hotplug notifier if we're not ready
-> >     
-> >     We're trying to re-configure the affinity unconditionally in cpu hotplug
-> >     callback. This may lead the issue during resuming from s3/s4 since
-> >     
-> >     - virt queues haven't been allocated at that time.
-> >     - it's unnecessary since thaw method will re-configure the affinity.
-> >     
-> >     Fix this issue by checking the config_enable and do nothing is we're not ready.
-> >     
-> >     The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-> >     (virtio-net: reset virtqueue affinity when doing cpu hotplug).
-> >     
-> >     Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >     Cc: Michael S. Tsirkin <mst@redhat.com>
-> >     Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> >     Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> >     Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> >     Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >     Signed-off-by: David S. Miller <davem@davemloft.net>
-> >
-> > [  622.944441] CPU0 attaching NULL sched-domain.
-> > [  622.944446] CPU1 attaching NULL sched-domain.
-> > [  622.944485] CPU0 attaching NULL sched-domain.
-> > [  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
-> > [  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
-> > [  622.950796] no locks held by migration/1/10.
-> > [  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
-> > [  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
-> > [  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
-> > [  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
-> > [  622.950805] Call Trace:
-> > [  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
-> > [  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
-> > [  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
-> > [  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
-> > [  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
-> > [  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
-> > [  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
-> > [  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
-> > [  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
-> > [  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
-> > [  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
-> > [  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
-> > [  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
-> > [  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
-> > [  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
-> > [  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
-> > [  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
-> > [  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
-> > [  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
-> > [  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
-> > [  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
-> > [  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> > [  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
-> > [  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> > [  622.950876] smpboot: CPU 1 is now offline
-> > [  623.194556] SMP alternatives: lockdep: fixing up alternatives
-> > [  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
->  
-> Thanks for the testing Fengguang, could you please try the attached
-> patch to see if it works?
+--Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=windows-1252
 
-Yes it reduces the sleeping function bug:
+I have a box here which is set up for EFI boot with no boot loader.
 
-/kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/7c4ed2767afb813493b0a8fb18d666cd44550963
+The kernel is compiled with a built-in initrd and command line.
 
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
-|                                                                                    | v3.12-rc3 | 3ab098df35f8 | 7c4ed2767afb |
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
-| good_boots                                                                         | 30        | 0            | 93           |
-| has_kernel_error_warning                                                           | 0         | 20           | 7            |
-| BUG:sleeping_function_called_from_invalid_context_at_kernel/mutex.c                | 0         | 20           |              |
-| INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 0            | 1            |
-| INFO:task_blocked_for_more_than_seconds                                            | 0         | 0            | 2            |
-| INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 0            | 1            |
-| Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 0            | 1            |
-| BUG:kernel_test_crashed                                                            | 0         | 0            | 3            |
-| BUG:kernel_test_hang                                                               | 0         | 0            | 1            |
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
+In 3.10 this was all working well. However, after updating to 3.11.5 a =
+reboot leads to the EFI firmware boot screen appearing followed by the =
+middle section of it going black (just leaving two vertical stripes of =
+the EFI firmware boot screen on either side of the screen) and the =
+system locking up (numlock etc do not work).
 
-However I'll need to increase tests on v3.12-rc3 to make sure it's not
-the patch that added the other error messages.
+However, if I hit =91delete=92 quickly when powering on, and enter the =
+firmware setup screen, I can then =91exit without saving=92 and the =
+system will boot successfully =97 =91save and exit=92 does not work as =
+that performs a full reboot while =91exit without saving=92 seems to =
+continue the boot where it left off.
 
-Thanks,
-Fengguang
+Due to the aforementioned graphics corruption, I am wondering whether it =
+is somehow related to the frame buffer? As this is a production system I =
+unfortunately do not have flexibility to try a number of kernel versions =
+in-between to locate where the issue was introduced.
 
-> >From 01e6c3f71c202aa02e4feda169e7cc9fb24193f5 Mon Sep 17 00:00:00 2001
-> From: Jason Wang <jasowang@redhat.com>
-> Date: Mon, 21 Oct 2013 20:39:09 +0800
-> Subject: [PATCH] virtio-net: fix
-> 
-> ---
->  drivers/net/virtio_net.c | 13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 9fbdfcd..bbc9cb8 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  {
->  	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
->  
-> -	mutex_lock(&vi->config_lock);
-> -
-> -	if (!vi->config_enable)
-> -		goto done;
-> -
->  	switch(action & ~CPU_TASKS_FROZEN) {
->  	case CPU_ONLINE:
->  	case CPU_DOWN_FAILED:
-> @@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  		break;
->  	}
->  
-> -done:
-> -	mutex_unlock(&vi->config_lock);
->  	return NOTIFY_OK;
->  }
->  
-> @@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
->  	struct virtnet_info *vi = vdev->priv;
->  	int i;
->  
-> +	unregister_hotcpu_notifier(&vi->nb);
-> +
->  	/* Prevent config work handler from accessing the device */
->  	mutex_lock(&vi->config_lock);
->  	vi->config_enable = false;
-> @@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
->  	virtnet_set_queues(vi, vi->curr_queue_pairs);
->  	rtnl_unlock();
->  
-> +	err = register_hotcpu_notifier(&vi->nb);
-> +	if (err)
-> +		return err;
-> +
->  	return 0;
->  }
->  #endif
-> -- 
-> 1.8.1.2
-> 
+All enabled .config options in the graphics section are: FB, FB_EFI, =
+VGA_ARB, LOGO, LOGO_LINUX_CLUT224, VGA_CONSOLE, FRAMEBUFFER_CONSOLE
 
+Please Cc me in replies.
+
+Best,
+Jasper Bryant-Greene
+
+
+--Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0
+Content-Disposition: attachment;
+	filename=smime.p7s
+Content-Type: application/pkcs7-signature;
+	name=smime.p7s
+Content-Transfer-Encoding: base64
+
+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
+rAAAAAAAAA==
+
+--Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0--
