@@ -1,66 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3JWJTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:19:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37290 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3JWJTM (ORCPT
+	id S1752053Ab3JWJYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:24:37 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62779 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab3JWJYf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:19:12 -0400
-Date: Wed, 23 Oct 2013 10:18:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yi Zhang <yizhang@marvell.com>
-Cc: yizhang.mrvl@gmail.com, zhouqiao@marvell.com, zhangwm@marvell.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131023091817.GI9388@sirena.org.uk>
-References: <1382438672-19392-1-git-send-email-yizhang@marvell.com>
+	Wed, 23 Oct 2013 05:24:35 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Encpt1P6Mxii2VuT"
-Content-Disposition: inline
-In-Reply-To: <1382438672-19392-1-git-send-email-yizhang@marvell.com>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 77.221.165.98
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] regmap: irq: clear status when disable irq
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+To: Luca Coelho <luca@coelho.fi>, balbi@ti.com
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1381919067.11885.19.camel@porter.coelho.fi>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>
+References: <1372971912-10877-1-git-send-email-coelho@ti.com>
+ <20130704222538.10823.2559@quantum>
+ <1372977465.21065.136.camel@cumari.coelho.fi>
+ <20130704231953.10823.94331@quantum>
+ <1373010853.21065.159.camel@cumari.coelho.fi>
+ <1375105842.20048.18.camel@cumari.coelho.fi>
+ <20131007074424.7445.52119@quantum> <20131008152743.GB13128@radagast>
+ <1381919067.11885.19.camel@porter.coelho.fi>
+Message-ID: <20131023092427.11662.41825@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [RFC] clk: add flags to distinguish xtal clocks
+Date: Wed, 23 Oct 2013 02:24:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Luca Coelho (2013-10-16 03:24:27)
+> Hi,
+> 
+> Sorry for the delayed response.
+> 
+> On Tue, 2013-10-08 at 10:27 -0500, Felipe Balbi wrote:
+> > Fixing Luca's address since he left TI
+> 
+> Thanks, Felipe! I wouldn't have seen this otherwise.
+> 
+> 
+> > On Mon, Oct 07, 2013 at 12:44:24AM -0700, Mike Turquette wrote:
+> > > Quoting Luciano Coelho (2013-07-29 06:50:42)
+> > > > Hi Mike,
+> > > > 
+> > > > On Fri, 2013-07-05 at 10:54 +0300, Luciano Coelho wrote:
+> > > > > On Thu, 2013-07-04 at 16:19 -0700, Mike Turquette wrote:
+> > > > > > Quoting Luciano Coelho (2013-07-04 15:37:45)
+> > > > > > > On Thu, 2013-07-04 at 15:25 -0700, Mike Turquette wrote:
+> > > > > > > > Or is it the same clock input and basically the problem is that you need
+> > > > > > > > to know what kind of waveform to expect (e.g. square versus sine)?
+> > > > > > > 
+> > > > > > > It's the same clock input in the chip's perspective.  One clock input
+> > > > > > > that can be any of the combinations I mentioned above.  Again, I'm not
+> > > > > > > familiar with clocks, so I guess the square vs. sine explanation is
+> > > > > > > plausible.  What I could see in the firmware is that it handles the
+> > > > > > > clocks differently if they're xtal or not.
+> > > > > > 
+> > > > > > OMAP has a similar thing where sys_clkin (the fast reference clock for
+> > > > > > the chip) can be 19.2, 26, 38.4, etc. This is easy to handle since only
+> > > > > > the rates matter.
+> > > > > 
+> > > > > Right, this part is easy and I already have the code for that.  What I'm
+> > > > > missing is a way to pass this XTAL flag to the chip.
+> > > > > 
+> > > > > 
+> > > > > > In your case you need some extra metadata to know what to do. I'm really
+> > > > > > not sure if CLK_IS_TYPE_XTAL is the most useful form this metadata can
+> > > > > > take. It would be best to know if the waveform is what you really need
+> > > > > > to know, or perhaps something else. For instance you might be affected
+> > > > > > by some clock signal stabilization time. Can you talk to your hardware
+> > > > > > guys and figure it out? I'd rather model the actual needs instead of
+> > > > > > just tossing a flag in there.
+> > > > > 
+> > > > > I get your point.  I have tried to investigate how this flag is used by
+> > > > > the firmware and I could see that it is used to set different "buffer
+> > > > > gains" and "delays" when waking up (I guess this means when the clock is
+> > > > > starting, so probably related to stabilization time).  They specify two
+> > > > > "modes", "boost" and "normal" and use different delay values for each.
+> > > > 
+> > > > I tried but I couldn't find any more information on how exactly this
+> > > > works.  But since this change is really simple and there seems to be
+> > > > other people who need the same information, couldn't we add it as is and
+> > > > try to figure out more specific information about the clocks later on?
+> > > > 
+> > > > Even if XTAL is not that useful if we know the other details, at least
+> > > > it wouldn't hurt to have the flag there anyway.
+> > > 
+> > > Luca,
+> > > 
+> > > By any chance did you come to a different solution for this problem? I
+> > > can take the patch, but I do not feel like we're solving the right
+> > > problem the right way.
+> 
+> Unfortunately I didn't find any better solution for this.  From the
+> WiLink firmware's point of view, there was not much information about
+> the details of stabilization time requirements and such.
+> 
+>  
+> > > If not I will take it for 3.13.
+> 
+> That would be great! As I mentioned above, the XTAL/non-XTAL flag
+> wouldn't hurt, even if in most cases it may not provide the necessary
+> details for the clock code.  But at least for the WiLink hardware it is
+> very useful. ;)
 
---Encpt1P6Mxii2VuT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Why is the CLK_IS_TYPE_DEFINED necessary?
 
-On Tue, Oct 22, 2013 at 06:44:32PM +0800, Yi Zhang wrote:
-> clear the status bit if the mask register doesn't prevent
-> the chip level irq from being asserted
+Also we're adding a property to the fixed-rate binding so
+Documentation/devicetree/bindings/clock/fixed-clock.txt needs to be
+updated.
 
-Applied, thanks.
+Regards,
+Mike
 
---Encpt1P6Mxii2VuT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZ5RWAAoJELSic+t+oim9520P/3AJCsTclIYimrglFCY3MniW
-3cDea5Pq5FXT4ak+5/myxT/nLpM73Di9GDq+TfDmtA7bTPgoewRz2dOE6NJjPBm/
-xgzudHx1MdzRA5iTjBTxugskrGR9cm1HQsYCuTfrSxesNXA2Ygmy3vG4r+XlIoAj
-2Ry5qI11Vg7hs9avPqxLZU4TfLEfk7+LqfdjNfPI5vMCLXaDcApZyOdx+xWSZdkO
-KX/obh/PydkI+qj5fymZbFCJJtC0mLQrPsBdmrTp4aczm6B9EX3Ipfsd7a1P54G2
-X/s9YmcMn8/jxodCLGVlMsbftidwVKerYuPtyb6bizFQOQTdMx6WTZOkc6DENUNB
-1b0+J0LNAeDHFcMdrA85jU7WjiAl9aL+NTq6bexJkkAgCPV0pk+zekB7pqxOs2BB
-XcW4lFpMI/4RQTIgsBCBjp8Ix2pBDagxlL+wzmCp124L77WheSpbTIQ6jepPw0K9
-SEELPzE9moy6JpmlMIhcMYSPfu4YM2Hw4uU0Seto3H9lueRcBKheDIGc70zWFloG
-ndZ9ilCo+WzLrG6DynqBMcDRchLA6vm831aCJZoJJrzkw3+0GKciX4gJT070miJN
-/2D0MU7THJ4iOOV52ZX7/9OoI4arGABR9O2e+iGi/l65P+peyMm6xR0NgcmATNYE
-g7Q7SG2W55rkERMS2q38
-=DieG
------END PGP SIGNATURE-----
-
---Encpt1P6Mxii2VuT--
+> 
+> --
+> Cheers,
+> Luca.
