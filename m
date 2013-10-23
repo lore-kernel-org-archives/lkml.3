@@ -1,182 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab3JWCvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:51:50 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:56639 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab3JWCvs (ORCPT
+	id S1755603Ab3JWCx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:53:27 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54980 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab3JWCx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:51:48 -0400
-From: Francois Bedard <Francois.Bedard@synopsys.com>
-To: Chen Gang <gang.chen@asianux.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Claudiu Zissulescu" <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        joern Rennecke <joern.rennecke@embecosm.com>
-Subject: RE: [Suggestion] arc: compiler: bug: about an arc compiler's bug
- which is not in gcc main source code.
-Thread-Topic: [Suggestion] arc: compiler: bug: about an arc compiler's bug
- which is not in gcc main source code.
-Thread-Index: AQHOuCLuuJ+I1B5OuE6iMAndydbhgZnTWFwAgC7T7gD//5b5gA==
-Date: Wed, 23 Oct 2013 02:51:46 +0000
-Message-ID: <3B8191AEEF8AD9429F893BDAAB473CA258E064A4@US01WEMBX2.internal.synopsys.com>
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com>
- <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
- <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com>
-In-Reply-To: <52672DAC.1030307@asianux.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 22 Oct 2013 22:53:26 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52673A1E.60005@roeck-us.net>
+Date: Tue, 22 Oct 2013 19:53:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Andrew Boie <andrew.p.boie@intel.com>,
+        linux-kernel@vger.kernel.org
+CC: tglx@linutronix.de, mmarek@suse.cz
+Subject: Re: [PATCH 1/1] x86: boot: support minigzip bzImage compression
+References: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com> <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com> <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>
+In-Reply-To: <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9N2puLG010013
 
-Hi Chen,
+On 10/22/2013 05:26 PM, H. Peter Anvin wrote:
+> Wouldn't it be better to fix gzip than hacking around this in the kernel?
+>
+Or just change the build system to have /bin/gzip point to minigzip if so
+desired. I have done the same to replace it with pigz.
+Debian/Ubuntu provides the update-alternatives command for that
+purpose. If that is not available, just hard-link it.
 
-Our sources are on github at https://github.com/foss-for-synopsys-dwc-arc-processors  and you can report problems by opening "Issues" with command lines and log outputs below against relevant toolchain component:
+In general, I don't think it would be a good idea to add tool variant
+dependencies like this one to the kernel configuration.
 
-For GCC:  https://github.com/foss-for-synopsys-dwc-arc-processors/gcc/issues?state=open
-For binutils: https://github.com/foss-for-synopsys-dwc-arc-processors/binutils/issues?page=1&state=open 
+Guenter
 
-Go ahead and officially file these and we'll take a look at them. 
-
-Thanks,
-
-Francois
-
------Original Message-----
-From: Chen Gang [mailto:gang.chen@asianux.com] 
-Sent: Tuesday, October 22, 2013 7:00 PM
-To: Vineet Gupta
-Cc: jeremy.bennett@embecosm.com; linux-kernel@vger.kernel.org; Claudiu Zissulescu; Francois Bedard; joern Rennecke
-Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug which is not in gcc main source code.
-
-On 09/23/2013 02:53 PM, Chen Gang wrote:
-> On 09/23/2013 02:39 PM, Vineet Gupta wrote:
->> Hi Chen,
+> Andrew Boie <andrew.p.boie@intel.com> wrote:
+>> Android OTA system computes very efficient diffs of compressed files
+>> if the deflate() algorithm it has access to is the same version as
+>> used to create the original file. Here we add support for compressing
+>> the kernel with 'minigzip' which uses the deflate() inside zlib.
+>> This is much better than using 'gzip' as that tool has a very old
+>> version of deflate() inside the gzip codebase instead of linking
+>> against
+>> zlib.
 >>
-...
+>> Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
+>> ---
+>> arch/x86/Kconfig                  |  1 +
+>> arch/x86/boot/compressed/Makefile |  3 +++
+>> arch/x86/boot/compressed/misc.c   |  2 +-
+>> init/Kconfig                      | 18 +++++++++++++++++-
+>> scripts/Makefile.lib              |  7 +++++++
+>> 5 files changed, 29 insertions(+), 2 deletions(-)
 >>
->> Jeremy, Claudiu, Joern maintain the gcc and rest of GNU toolchain 
->> ports for ARC so please add them to any future posting on toolchain issues.
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index f67e839..aa91cef 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -62,6 +62,7 @@ config X86
+>> 	select HAVE_REGS_AND_STACK_ACCESS_API
+>> 	select HAVE_DMA_API_DEBUG
+>> 	select HAVE_KERNEL_GZIP
+>> +	select HAVE_KERNEL_MINIGZIP
+>> 	select HAVE_KERNEL_BZIP2
+>> 	select HAVE_KERNEL_LZMA
+>> 	select HAVE_KERNEL_XZ
+>> diff --git a/arch/x86/boot/compressed/Makefile
+>> b/arch/x86/boot/compressed/Makefile
+>> index dcd90df..f000791 100644
+>> --- a/arch/x86/boot/compressed/Makefile
+>> +++ b/arch/x86/boot/compressed/Makefile
+>> @@ -56,6 +56,8 @@ vmlinux.bin.all-$(CONFIG_X86_NEED_RELOCS) +=
+>> $(obj)/vmlinux.relocs
 >>
+>> $(obj)/vmlinux.bin.gz: $(vmlinux.bin.all-y) FORCE
+>> 	$(call if_changed,gzip)
+>> +$(obj)/vmlinux.bin.mgz: $(vmlinux.bin.all-y) FORCE
+>> +	$(call if_changed,minigzip)
+>> $(obj)/vmlinux.bin.bz2: $(vmlinux.bin.all-y) FORCE
+>> 	$(call if_changed,bzip2)
+>> $(obj)/vmlinux.bin.lzma: $(vmlinux.bin.all-y) FORCE
+>> @@ -68,6 +70,7 @@ $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
+>> 	$(call if_changed,lz4)
+>>
+>> suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+>> +suffix-$(CONFIG_KERNEL_MINIGZIP):= mgz
+>> suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+>> suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+>> suffix-$(CONFIG_KERNEL_XZ)	:= xz
+>> diff --git a/arch/x86/boot/compressed/misc.c
+>> b/arch/x86/boot/compressed/misc.c
+>> index 434f077..4e55d32 100644
+>> --- a/arch/x86/boot/compressed/misc.c
+>> +++ b/arch/x86/boot/compressed/misc.c
+>> @@ -125,7 +125,7 @@ static char *vidmem;
+>> static int vidport;
+>> static int lines, cols;
+>>
+>> -#ifdef CONFIG_KERNEL_GZIP
+>> +#if defined(CONFIG_KERNEL_GZIP) || defined(CONFIG_KERNEL_MINIGZIP)
+>> #include "../../../../lib/decompress_inflate.c"
+>> #endif
+>>
+>> diff --git a/init/Kconfig b/init/Kconfig
+>> index 3ecd8a1..818f225 100644
+>> --- a/init/Kconfig
+>> +++ b/init/Kconfig
+>> @@ -100,6 +100,9 @@ config LOCALVERSION_AUTO
+>> config HAVE_KERNEL_GZIP
+>> 	bool
+>>
+>> +config HAVE_KERNEL_MINIGZIP
+>> +	bool
+>> +
+>> config HAVE_KERNEL_BZIP2
+>> 	bool
+>>
+>> @@ -118,7 +121,7 @@ config HAVE_KERNEL_LZ4
+>> choice
+>> 	prompt "Kernel compression mode"
+>> 	default KERNEL_GZIP
+>> -	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA
+>> || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+>> +	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_MINIGZIP ||
+>> HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ ||
+>> HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+>> 	help
+>> 	  The linux kernel is a kind of self-extracting executable.
+>> 	  Several compression algorithms are available, which differ
+>> @@ -144,6 +147,19 @@ config KERNEL_GZIP
+>> 	  The old and tried gzip compression. It provides a good balance
+>> 	  between compression ratio and decompression speed.
+>>
+>> +config KERNEL_MINIGZIP
+>> +	bool "Minigzip"
+>> +	depends on HAVE_KERNEL_MINIGZIP
+>> +	help
+>> +	  Use minigzip to compress the bzImage. This is very similar to gzip
+>> +	  but uses the zlib library to compress, rather than the very old
+>> version
+>> +	  of zlib inside the gzip codebase. This is used for Android kernels
+>> +	  so that the same version of the deflate() algorithm is used when
+>> +	  building the kernel and constructing diffs with OTA applypatch,
+>> which
+>> +	  uncompresses sections of files that it detects are gzipped before
+>> computing
+>> +	  the diffs. If the versions of deflate() are out of alignment the
+>> binary
+>> +	  diffs tend to be very large.
+>> +
+>> config KERNEL_BZIP2
+>> 	bool "Bzip2"
+>> 	depends on HAVE_KERNEL_BZIP2
+>> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+>> index 49392ec..deb1bb8 100644
+>> --- a/scripts/Makefile.lib
+>> +++ b/scripts/Makefile.lib
+>> @@ -240,6 +240,13 @@ quiet_cmd_gzip = GZIP    $@
+>> cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
+>> 	(rm -f $@ ; false)
+>>
+>> +# Minigzip
+>> +#
+>> ---------------------------------------------------------------------------
+>> +
+>> +quiet_cmd_minigzip = MINGZIP $@
+>> +cmd_minigzip = (cat $(filter-out FORCE,$^) | minigzip -c -9 > $@) || \
+>> +	(rm -f $@ ; false)
+>> +
+>> # DTC
+>> #
+>> ---------------------------------------------------------------------------
+>>
+>
 
-
-Firstly, sorry for so late to continue arc. Now I use latest tool-chain (content gcc-4.8.0) to compile kernel with allmodconfig, and find three tool chain issues (2 for gcc, 1 for binutils).
-
-And also excuse me, I am still not quite sure where I should sent these information to, although you have mentioned some valuable information.
-
-I just list the issue details below, if necessary, please provide more details where these information should be sent to (e.g. bugzilla), and I will/should follow and work with related tool chain guys. thanks.
-
-
--------------------------information begin----------------------------
-
-Operation:
-
-  for Linux next-20130927 tree
-  make ARCH=arc CROSS_COMPILE=/usr/local/bin/arc-elf32- allmodconfig
-  make ARCH=arc CROSS_COMPILE=/usr/local/bin/arc-elf32-
-
-Binutils (1 issue, ld and as information):
-
-  when calling panic(), printk(), or memset() with R_ARC_S21W_PCREL, it may be overflow (I guess it need be R_ARC_S25W_PCREL).
-
-  /usr/local/bin/arc-elf32-ld --build-id -X -o .tmp_vmlinux1 -T /android/public-kernel/linux-next/arch/arc/kernel/vmlinux.lds arch/arc/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arc/built-in.o arch/arc/boot/dts/built-in.o arch/arc/plat-arcfpga/built-in.o arch/arc/plat-tb10x/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o lib/lib.a arch/arc/lib/lib.a /usr/local/lib/gcc/arc-elf32/4.8.0/libgcc.a lib/built-in.o arch/arc/lib/built-in.o /usr/local/lib/gcc/arc-elf32/4.8.0/libgcc.a drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
-  /usr/local/bin/arc-elf32-ld: Error: Overflow detected in relocation value;
-  /usr/local/bin/arc-elf32-ld: Relocation value should be between 1048575 and -1048576 whereas it  2404264
-  /usr/local/bin/arc-elf32-ld: Global symbol: "panic".
-  /usr/local/bin/arc-elf32-ld:
-  Relocation type is:R_ARC_S21W_PCREL
-  FileName:arch/arc/built-in.o
-  Section Name:.text
-  Offset in Section:1716
-  /usr/local/bin/arc-elf32-ld: final link failed: Bad value
-  make: *** [vmlinux] Error 1
-
-  [root@gchenlinux binutils]# arc-elf32-ld -v
-  GNU ld (GNU Binutils) 2.23.2
-
-  [root@gchenlinux binutils]# arc-elf32-as -v
-  GNU assembler version 2.23.2 (arc-elf32) using BFD version (GNU Binutils) 2.23.2
-
-GCC (2 issues, and gcc information):
-
-    CC      drivers/rtc/systohc.o
-  drivers/rtc/systohc.c: In function 'rtc_set_ntp_time':
-  drivers/rtc/systohc.c:44:1: internal compiler error: in arc_ifcvt, at config/arc/arc.c:8315
-   }
-   ^
-  0x939c94 arc_ifcvt
-  	../../gcc/gcc/config/arc/arc.c:8315
-  0x93a394 arc_reorg
-  	../../gcc/gcc/config/arc/arc.c:5985
-  0x7517d9 rest_of_handle_machine_reorg
-  	../../gcc/gcc/reorg.c:3927
-  Please submit a full bug report,
-  with preprocessed source if appropriate.
-  Please include the complete backtrace with any bug report.
-  See <http://gcc.gnu.org/bugs.html> for instructions.
-  make[2]: *** [drivers/rtc/systohc.o] Error 1
-  make[1]: *** [drivers/rtc] Error 2
-  make: *** [drivers] Error 2
-  
-  
-    CC [M]  drivers/target/target_core_pr.o
-  drivers/target/target_core_pr.c: In function 'target_scsi3_emulate_pr_in':
-  drivers/target/target_core_pr.c:4033:1: error: unrecognizable insn:
-   }
-   ^
-  (insn 846 194 196 12 (set (reg:QI 1 r1)
-          (subreg:QI (mem/j/c:DI (plus:SI (reg/v/f:SI 2 r2 [orig:199 pr_reg ] [199])
-                      (const_int 576 [0x240])) [0 pr_reg_50->pr_res_key+0 S8 A32]) 7)) drivers/target/target_core_pr.c:3677 -1
-       (nil))
-  drivers/target/target_core_pr.c:4033:1: internal compiler error: in extract_insn, at recog.c:2151
-  0x758fb5 _fatal_insn(char const*, rtx_def const*, char const*, int, char const*)
-  	../../gcc/gcc/rtl-error.c:109
-  0x758fe9 _fatal_insn_not_found(rtx_def const*, char const*, int, char const*)
-  	../../gcc/gcc/rtl-error.c:117
-  0x726e83 extract_insn(rtx_def*)
-  	../../gcc/gcc/recog.c:2151
-  0x726ef4 extract_insn_cached(rtx_def*)
-  	../../gcc/gcc/recog.c:2054
-  0x5fe026 cleanup_subreg_operands(rtx_def*)
-  	../../gcc/gcc/final.c:3305
-  0x750c2e reload(rtx_def*, int)
-  	../../gcc/gcc/reload1.c:1240
-  0x68e703 do_reload
-  	../../gcc/gcc/ira.c:4631
-  0x68e703 rest_of_handle_reload
-  	../../gcc/gcc/ira.c:4731
-  Please submit a full bug report,
-  with preprocessed source if appropriate.
-  Please include the complete backtrace with any bug report.
-  See <http://gcc.gnu.org/bugs.html> for instructions.
-  make[2]: *** [drivers/target/target_core_pr.o] Error 1
-  make[1]: *** [drivers/target] Error 2
-  make: *** [drivers] Error 2
-  
-  
-  [root@gchenlinux linux-next]# /usr/local/bin/arc-elf32-gcc -v
-  Using built-in specs.
-  COLLECT_GCC=/usr/local/bin/arc-elf32-gcc
-  COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/arc-elf32/4.8.0/lto-wrapper
-  Target: arc-elf32
-  Configured with: ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 --disable-multilib --with-headers=../newlib/newlib/libc/include
-  Thread model: single
-  gcc version 4.8.0 (GCC) 
-
--------------------------information end------------------------------
-
-
-Thanks.
---
-Chen Gang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
