@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3JWJMC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:12:02 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:45825 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3JWJL7 (ORCPT
+	id S1752377Ab3JWJNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:13:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51962 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3JWJNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:11:59 -0400
-Date: Wed, 23 Oct 2013 11:09:26 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Zhang <nvmarkzhang@gmail.com>
-Cc: rpurdie@rpsys.net, jg1.han@samsung.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
-Message-ID: <20131023090925.GC11954@ulmo.nvidia.com>
-References: <525F8895.5010806@gmail.com>
- <20131017071445.GA2502@ulmo.nvidia.com>
- <5260BD8C.7000200@gmail.com>
- <20131022072443.GB8681@ulmo.nvidia.com>
- <52663D6D.5000806@gmail.com>
- <20131022124905.GA24255@ulmo.nvidia.com>
- <52673178.8070805@gmail.com>
- <20131023080002.GB7404@ulmo.nvidia.com>
- <52678D99.8090003@gmail.com>
+	Wed, 23 Oct 2013 05:13:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i7F3eY7HS/tUJxUd"
-Content-Disposition: inline
-In-Reply-To: <52678D99.8090003@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1791712.tJBFGgQvyI@vostro.rjw.lan>
+References: <a0cad3326c6a6c8f0517332dd2230edaf67268e7.1378979483.git.viresh.kumar@linaro.org>
+	<793a5fadad931d04c2adb3a61c64063b7e62d083.1378979483.git.viresh.kumar@linaro.org>
+	<1791712.tJBFGgQvyI@vostro.rjw.lan>
+Date: Wed, 23 Oct 2013 14:43:12 +0530
+Message-ID: <CAKohpomWjBZfLLqYjnP=n059bTC6pDseqfWbJmZy894fqHW7Nw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 September 2013 00:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> So the problem is real, but the fix seems to be of a "quick and dirty" kind.
+>
+> First of all, it looks like we need a clear "begin transition" call that
+> I suppose drivers should execute from their .target() methods once they have
+> decided to do a transition.  That would increment the "ongoing" counter etc.
+>
+> Second, we need a corresponding "end transition" call that would be executed
+> whenever appropriate from the driver's perspective.
+>
+> Clearly, these two things should be independent of the notifiers and the
+> notifications should only be done between "begin transition" and "end
+> transition" and only by whoever called the "begin transition" to start with.
+>
+> Now, question is what should happen if "begin transition" is called when
+> the previous transition hasn't been completed yet, should it block or should
+> it fail?  There seem to be arguments for both, but I suppose blocking would be
+> easier to implement.
 
---i7F3eY7HS/tUJxUd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I got another solution which is much simpler, and I really can't believe
+(psychologically) that it will solve all the problems we were talking about..
+Please see if there is any loophole in there..
 
-On Wed, Oct 23, 2013 at 04:49:29PM +0800, Mark Zhang wrote:
-> On 10/23/2013 04:00 PM, Thierry Reding wrote:
-> > On Wed, Oct 23, 2013 at 10:16:24AM +0800, Mark Zhang wrote:
-> >> On 10/22/2013 08:49 PM, Thierry Reding wrote:
-> >>> On Tue, Oct 22, 2013 at 04:55:09PM +0800, Mark Zhang wrote:
-> >>>> On 10/22/2013 03:24 PM, Thierry Reding wrote:
-> >>>>> On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
-> >>>> [...]
-> >>>>>>>
-> >>>>>>
-> >>>>>> Okay, I just want to set the "notify" function pointer in "struct
-> >>>>>> platform_pwm_backlight_data", because I want to tune the brightness
-> >>>>>> value before the pwm-bl sets the brightness to hardware. I don't k=
-now
-> >>>>>> how to do that, unless we define the platform data explicitly.
-> >>>>>
-> >>>>> Okay, my question should have been what you need the functions for =
-and
-> >>>>> why you think you need them.
-> >>>>>
-> >>>>
-> >>>> If I understanding you correctly, I suppose I've said that: "because=
- I
-> >>>> want to tune the brightness value before the pwm-bl sets the brightn=
-ess
-> >>>> to hardware".
-> >>>
-> >>> Why do you want to tune the brightness value? What are you trying to
-> >>> achieve?
-> >>>
-> >>
-> >> Oh, Tegra has a feature named PRISM(aka SmartDimmer). It changes the
-> >> color value to make the display looks bright so that we can reduce the
-> >> backlight brightness to save power. So everytime PRISM is triggered, we
-> >> call "backlight_update_status", then in the "notify" callback, we chan=
-ge
-> >> the brightness value which pwm-bl provides by considering the PRISM
-> >> compensations.
-> >=20
-> > If you automatically call backlight_update_status() everytime PRISM
-> > gives you new data, can't you just pass the correct value in in the
-> > first place so that you don't have to tweak it in the .notify()
-> > callback?
->=20
-> OK, how to do that? -- "pass the correct value in in the first place"?
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index ec391d7..e4ed89a 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -340,6 +340,13 @@ static void __cpufreq_notify_transition(struct
+cpufreq_policy *policy,
+        }
+ }
 
-Well, if you call backlight_update_status(), then you can pass in a
-brightness value, right? You usually do that by setting the backlight's
-props.brightness field.
++void cpufreq_notify_transition_each_cpu(struct cpufreq_policy *policy,
++               struct cpufreq_freqs *freqs, unsigned int state)
++{
++       for_each_cpu(freqs->cpu, policy->cpus)
++               __cpufreq_notify_transition(policy, freqs, state);
++}
++
+ /**
+  * cpufreq_notify_transition - call notifier chain and adjust_jiffies
+  * on frequency transition.
+@@ -351,8 +358,34 @@ static void __cpufreq_notify_transition(struct
+cpufreq_policy *policy,
+ void cpufreq_notify_transition(struct cpufreq_policy *policy,
+                struct cpufreq_freqs *freqs, unsigned int state)
+ {
+-       for_each_cpu(freqs->cpu, policy->cpus)
+-               __cpufreq_notify_transition(policy, freqs, state);
++       if ((state != CPUFREQ_PRECHANGE) && (state != CPUFREQ_POSTCHANGE))
++               return cpufreq_notify_transition_each_cpu(policy, freqs, state);
++
++       /* Serialize pre-post notifications */
++       mutex_lock(&policy->transition_lock);
++       if (unlikely(WARN_ON(!policy->transition_ongoing &&
++                               (state == CPUFREQ_POSTCHANGE)))) {
++               mutex_unlock(&policy->transition_lock);
++               return;
++       }
++
++       if (state == CPUFREQ_PRECHANGE) {
++               while (policy->transition_ongoing) {
++                       mutex_unlock(&policy->transition_lock);
++                       cpu_relax();
++                       mutex_lock(&policy->transition_lock);
++               }
++
++               policy->transition_ongoing = true;
++               mutex_unlock(&policy->transition_lock);
++       }
++
++       cpufreq_notify_transition_each_cpu(policy, freqs, state);
++
++       if (state == CPUFREQ_POSTCHANGE) {
++               policy->transition_ongoing = false;
++               mutex_unlock(&policy->transition_lock);
++       }
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
 
-So when PRISM gives you new data, you could just read out the current
-brightness, compute the new one based on the current one and the PRISM
-data, set the props.brightness field to that value and then call
-backlight_update_status().
+@@ -950,6 +983,8 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
+                goto err_free_cpumask;
 
-Thierry
+        INIT_LIST_HEAD(&policy->policy_list);
++       mutex_init(&policy->transition_lock);
++
+        return policy;
 
---i7F3eY7HS/tUJxUd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSZ5JFAAoJEN0jrNd/PrOhsQkP+wUwgz6WMeVOnudgw/BhmNim
-p1sKqqZfYpiWjp3ZR3ccQkpr/spUvMwvoe+92hV6tBQLwZKVkvjXN7eSd7l0RW3Q
-WshjN8j8zz3X/qU391vIs8oc7txy8SBSh93XlDup3VBn4fXRyCObUDOLtJzdOp9x
-dkJO3vLaQ+reZ3BW3Ql0rh5RWI0VqQU4H6llDroXBPxC0Ka4/dPtIk+Hz2RPwoe+
-enjWucW82KyZSl9UMVGQmqZjlO82YVXJb+5M4tTbgxJGsVRjPrknvCFwhIOtgKua
-ykPXvQzmsRekTzbf/xLqNxDfejRXP7VOtp5aAJq53t8z89yC8F45MRIVZAu+z2K8
-pc70xQHolkNqnnxcotWTb7VoYjhUUujNPyb1kf957cE0Lm4SEZwAIaY4DR46rzd/
-HkBcWUunq1TA3L9QrCqOw6er0aqCjLD+ej8v/+c0CywMD6s8U+bmwA/El/GDrQV4
-kwNjUxdHySP4Ofs7DTKeq2A+dZX1bAdsEVgwcN4xs3gOWvVrtYdwE7QUN+N1VKbz
-cce6012OrmqIqMAUY+eM02dIo4w0ZXxWMsUhsMH9KitgSFcxF+sqwlXcBQHB917Y
-CRhIDhQ5vxDPHG3CJsXgFLJR6sAtxJtqEn5x6A49nAfHLnvyUcRzhEvjVYoo6rME
-dg5fz56eAA8cgj0Lawyv
-=RKsT
------END PGP SIGNATURE-----
-
---i7F3eY7HS/tUJxUd--
+ err_free_cpumask:
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 0aba2a6c..bb76909 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -85,6 +85,8 @@ struct cpufreq_policy {
+        struct list_head        policy_list;
+        struct kobject          kobj;
+        struct completion       kobj_unregister;
++       bool                    transition_ongoing; /* Tracks
+transition status */
++       struct mutex            transition_lock;
+ };
