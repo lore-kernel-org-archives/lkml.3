@@ -1,152 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab3JWOK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:10:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32284 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3JWOK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:10:57 -0400
-Date: Wed, 23 Oct 2013 10:09:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v8 13/19] swiotlb-xen: use xen_dma_map/unmap_page,
- xen_dma_sync_single_for_cpu/device
-Message-ID: <20131023140927.GD27771@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
- <1382031814-8782-13-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1752338Ab3JWOLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:11:08 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:57189 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab3JWOLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:11:03 -0400
+Message-ID: <5267D8E7.9000806@interlog.com>
+Date: Wed, 23 Oct 2013 10:10:47 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382031814-8782-13-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Vaughan Cao <vaughan.cao@oracle.com>,
+        Madper Xie <cxie@redhat.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
+References: <20131022205608.GA6616@hostway.ca>	 <52671B3E.6070804@interlog.com> <1382514295.2081.32.camel@dabdike.quadriga.com>
+In-Reply-To: <1382514295.2081.32.camel@dabdike.quadriga.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 06:43:28PM +0100, Stefano Stabellini wrote:
-> Call xen_dma_map_page, xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
-> xen_dma_sync_single_for_device from swiotlb-xen to ensure cpu/device
-> coherency of the pages used for DMA, including the ones belonging to the
-> swiotlb buffer.
+On 13-10-23 03:44 AM, James Bottomley wrote:
+> On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
+>> On 13-10-22 04:56 PM, Simon Kirby wrote:
+>>> Hello!
+>>>
+>>> While trying to figure out why the request queue to sda (ext4) was
+>>> clogging up on one of our btrfs backup boxes, I noticed a megarc process
+>>> in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+>>>
+>>> [  205.372823] ================================================
+>>> [  205.372901] [ BUG: lock held when returning to user space! ]
+>>> [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+>>> [  205.373055] ------------------------------------------------
+>>> [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+>>> [  205.373212] 1 lock held by megarc.bin/5283:
+>>> [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+>>>
+>>> Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+>>> tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+>>> though I haven't tried with lockdep.
+>>>
+>>> This is caused by some of our internal RAID monitoring scripts that run
+>>> "megarc.bin -dispCfg -a0" (even though that controller isn't present on
+>>> this server -- a PowerEdge 2950 w/Perc 5).
+>>>
+>>> strace output of the program execution that causes the above message is
+>>> here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
+>>
+>> This has been reported. That patch will be reverted or,
+>> if there is enough time, a fix will (or at least should)
+>> go in before the release of lk 3.12 .
+>
+> I think you've got about a week to prove you can fix it (before 3.12
+> goes final).  I'll send my current set of fixes to Linus without doing
+> anything about sg.
 
-You lost me.
+"prove" is a big ask, especially coming from a
+mathematician. I consider it more hacking (in the
+golf sense) on my part to tweak well-meaning patches
+to the sg driver that cause collateral damage. Further,
+I suspect Vaughan's patch was an attempt to fix
+damage left be a previous sg_open() hacker.
 
-Isn't it the driver's responsibility to do this?
+I have asked Simon Kirby to apply the patch:
+   http://marc.info/?l=linux-scsi&m=138237283432010&w=2
+and report if it fixes his problems. Further I have
+written three test programs to test O_EXCL handling on
+SCSI devices, two of which are in the examples directory
+of sg3_utils version 1.37 . The latest one (single
+exclusive writer, multiple readers) can be found in
+the News section of:
+    http://sg.danny.cz/sg/
+These tests don't check all possibilities (e.g. random
+signals, ml error processing and detached devices) but
+they are better than nothing. And, as a side issue, they
+break bsg (cause it ignores O_EXCL) and break the block
+layer (e.g. /dev/sdb) so perhaps it should be reverted :-)
 
-Looking at what 'xen_dma_map_page()' does for x86 it looks to add an extra
-call - page_to_phys - and we ignore it here.
+Perhaps the original bug reporter (Madper Xie) might also
+test the proposed patch and report if it fixes what he saw.
 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/swiotlb-xen.c |   39 +++++++++++++++++++++++++++++++--------
->  1 files changed, 31 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 189b8db..4221cb5 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -378,8 +378,13 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
->  	 * buffering it.
->  	 */
->  	if (dma_capable(dev, dev_addr, size) &&
-> -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
-> +	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> +		/* we are not interested in the dma_addr returned by
-> +		 * xen_dma_map_page, only in the potential cache flushes executed
-> +		 * by the function. */
-> +		xen_dma_map_page(dev, page, offset, size, dir, attrs);
->  		return dev_addr;
-> +	}
->  
->  	/*
->  	 * Oh well, have to allocate and map a bounce buffer.
-> @@ -388,6 +393,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
->  	if (map == SWIOTLB_MAP_ERROR)
->  		return DMA_ERROR_CODE;
->  
-> +	xen_dma_map_page(dev, pfn_to_page(map >> PAGE_SHIFT),
-> +					map & ~PAGE_MASK, size, dir, attrs);
->  	dev_addr = xen_phys_to_bus(map);
->  
->  	/*
-> @@ -410,12 +417,15 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
->   * whatever the device wrote there.
->   */
->  static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
-> -			     size_t size, enum dma_data_direction dir)
-> +			     size_t size, enum dma_data_direction dir,
-> +				 struct dma_attrs *attrs)
->  {
->  	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
->  
->  	BUG_ON(dir == DMA_NONE);
->  
-> +	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-> +
->  	/* NOTE: We use dev_addr here, not paddr! */
->  	if (is_xen_swiotlb_buffer(dev_addr)) {
->  		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-> @@ -438,7 +448,7 @@ void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
->  			    size_t size, enum dma_data_direction dir,
->  			    struct dma_attrs *attrs)
->  {
-> -	xen_unmap_single(hwdev, dev_addr, size, dir);
-> +	xen_unmap_single(hwdev, dev_addr, size, dir, attrs);
->  }
->  EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_page);
->  
-> @@ -461,11 +471,15 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
->  
->  	BUG_ON(dir == DMA_NONE);
->  
-> +	if (target == SYNC_FOR_CPU)
-> +		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-> +
->  	/* NOTE: We use dev_addr here, not paddr! */
-> -	if (is_xen_swiotlb_buffer(dev_addr)) {
-> +	if (is_xen_swiotlb_buffer(dev_addr))
->  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
-> -		return;
-> -	}
-> +
-> +	if (target == SYNC_FOR_DEVICE)
-> +		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
->  
->  	if (dir != DMA_FROM_DEVICE)
->  		return;
-> @@ -536,8 +550,17 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  				return DMA_ERROR_CODE;
->  			}
->  			sg->dma_address = xen_phys_to_bus(map);
-> -		} else
-> +		} else {
-> +			/* we are not interested in the dma_addr returned by
-> +			 * xen_dma_map_page, only in the potential cache flushes executed
-> +			 * by the function. */
-> +			xen_dma_map_page(hwdev, pfn_to_page(paddr >> PAGE_SHIFT),
-> +						paddr & ~PAGE_MASK,
-> +						sg->length,
-> +						dir,
-> +						attrs);
->  			sg->dma_address = dev_addr;
-> +		}
->  		sg_dma_len(sg) = sg->length;
->  	}
->  	return nelems;
-> @@ -559,7 +582,7 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  	BUG_ON(dir == DMA_NONE);
->  
->  	for_each_sg(sgl, sg, nelems, i)
-> -		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
-> +		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir, attrs);
->  
->  }
->  EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
-> -- 
-> 1.7.2.5
-> 
+Doug Gilbert
+
+
+
+
+
+
+
