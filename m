@@ -1,49 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab3JWTRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:17:21 -0400
-Received: from smtprelay0167.hostedemail.com ([216.40.44.167]:48673 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752461Ab3JWTPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:15:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1539:1567:1711:1714:1730:1747:1777:1792:1981:2194:2196:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3868:4250:4385:5007:6119:6261:10004:10026:10848:11026:11232:11658:11914:12043:12114:12296:12438:12517:12519:12555:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sugar20_69177701ab52f
-X-Filterd-Recvd-Size: 1485
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Subject: [PATCH 1/8] Documentation: Remove OOM message after input_allocate_device
-Date: Wed, 23 Oct 2013 12:14:47 -0700
-Message-Id: <29b73e4ca6d5fb40746b20eaf9e1373bc6ab6e79.1382555436.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1382555436.git.joe@perches.com>
-References: <cover.1382555436.git.joe@perches.com>
+	id S1752656Ab3JWTUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:20:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab3JWTUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 15:20:15 -0400
+Date: Wed, 23 Oct 2013 15:20:01 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: change pid to portid for audit_reply
+Message-ID: <20131023192001.GB5059@madcap2.tricolour.ca>
+References: <1382527523-22505-1-git-send-email-gaofeng@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382527523-22505-1-git-send-email-gaofeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emitting an OOM message isn't necessary after input_allocate_device
-as there's a generic OOM and a dump_stack already done.
+On Wed, Oct 23, 2013 at 07:25:23PM +0800, Gao feng wrote:
+> The "pid" is not a suitable name for netlink port,
+> change it to "portid".
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/input/input-programming.txt | 1 -
- 1 file changed, 1 deletion(-)
+That is already in the works:
+	https://www.redhat.com/archives/linux-audit/2013-August/msg00023.html
+	https://lkml.org/lkml/2013/8/20/630
 
-diff --git a/Documentation/input/input-programming.txt b/Documentation/input/input-programming.txt
-index 7f8b9d9..462390c 100644
---- a/Documentation/input/input-programming.txt
-+++ b/Documentation/input/input-programming.txt
-@@ -38,7 +38,6 @@ static int __init button_init(void)
- 
- 	button_dev = input_allocate_device();
- 	if (!button_dev) {
--		printk(KERN_ERR "button.c: Not enough memory\n");
- 		error = -ENOMEM;
- 		goto err_free_irq;
- 	}
--- 
-1.8.1.2.459.gbcd45b4.dirty
+May I add your Signed-off-by: to that previous patch?
 
+> more information, please see commit
+> 15e473046cb6e5d18a4d0057e61d76315230382b
+> 
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+>  kernel/audit.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 7b0e23a..50fdcba 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -165,7 +165,7 @@ struct audit_buffer {
+>  };
+>  
+>  struct audit_reply {
+> -	int pid;
+> +	int portid;
+>  	struct sk_buff *skb;
+>  };
+>  
+> @@ -487,7 +487,7 @@ int audit_send_list(void *_dest)
+>  	return 0;
+>  }
+>  
+> -struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
+> +struct sk_buff *audit_make_reply(int portid, int seq, int type, int done,
+>  				 int multi, const void *payload, int size)
+>  {
+>  	struct sk_buff	*skb;
+> @@ -500,7 +500,7 @@ struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
+>  	if (!skb)
+>  		return NULL;
+>  
+> -	nlh	= nlmsg_put(skb, pid, seq, t, size, flags);
+> +	nlh	= nlmsg_put(skb, portid, seq, t, size, flags);
+>  	if (!nlh)
+>  		goto out_kfree_skb;
+>  	data = nlmsg_data(nlh);
+> @@ -521,13 +521,13 @@ static int audit_send_reply_thread(void *arg)
+>  
+>  	/* Ignore failure. It'll only happen if the sender goes away,
+>  	   because our timeout is set to infinite. */
+> -	netlink_unicast(audit_sock, reply->skb, reply->pid, 0);
+> +	netlink_unicast(audit_sock, reply->skb, reply->portid, 0);
+>  	kfree(reply);
+>  	return 0;
+>  }
+>  /**
+>   * audit_send_reply - send an audit reply message via netlink
+> - * @pid: process id to send reply to
+> + * @portid: the portid of netlink socket
+>   * @seq: sequence number
+>   * @type: audit message type
+>   * @done: done (last) flag
+> @@ -538,7 +538,7 @@ static int audit_send_reply_thread(void *arg)
+>   * Allocates an skb, builds the netlink message, and sends it to the pid.
+>   * No failure notifications.
+>   */
+> -static void audit_send_reply(int pid, int seq, int type, int done, int multi,
+> +static void audit_send_reply(int portid, int seq, int type, int done, int multi,
+>  			     const void *payload, int size)
+>  {
+>  	struct sk_buff *skb;
+> @@ -549,11 +549,11 @@ static void audit_send_reply(int pid, int seq, int type, int done, int multi,
+>  	if (!reply)
+>  		return;
+>  
+> -	skb = audit_make_reply(pid, seq, type, done, multi, payload, size);
+> +	skb = audit_make_reply(portid, seq, type, done, multi, payload, size);
+>  	if (!skb)
+>  		goto out;
+>  
+> -	reply->pid = pid;
+> +	reply->portid = portid;
+>  	reply->skb = skb;
+>  
+>  	tsk = kthread_run(audit_send_reply_thread, reply, "audit_send_reply");
+> -- 
+> 1.8.3.1
+> 
+> --
+> Linux-audit mailing list
+> Linux-audit@redhat.com
+> https://www.redhat.com/mailman/listinfo/linux-audit
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
