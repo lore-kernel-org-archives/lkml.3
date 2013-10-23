@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab3JWFzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 01:55:51 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:40318 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3JWFzt (ORCPT
+	id S1751426Ab3JWF4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 01:56:06 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:51374 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3JWF4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 01:55:49 -0400
+	Wed, 23 Oct 2013 01:56:03 -0400
+Message-ID: <526764EA.9000002@gmail.com>
+Date: Wed, 23 Oct 2013 06:55:54 +0100
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131004123928.GD19953@linutronix.de>
-References: <CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
-	<CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
-	<CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
-	<alpine.LFD.2.02.1305131223470.2863@ionos>
-	<CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
-	<CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
-	<CAKohpon0dC6O_QBXnbyxUOO0DcrRxTzFkZSJNh6VrNL5kzT66Q@mail.gmail.com>
-	<CAKohpomGSoU5VOcrbonD1=NE-6xDVr+pveAmuXdrzjmLotmEug@mail.gmail.com>
-	<CAKohpokzTj-=2BgrAH4UabiCAe_sZXhdyKu1L-VDnYBJ97BAyA@mail.gmail.com>
-	<20131004123928.GD19953@linutronix.de>
-Date: Wed, 23 Oct 2013 11:25:49 +0530
-Message-ID: <CAKohpoksr+E6X1AWpROBxGvasXQ5zXHqKM7Xr7QFO=tzkEkoWQ@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paul.mckenney@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        PDSW-power-team <pdsw-power-team@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-rt-users@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 03/14] perf script: Make perf_script a local variable
+References: <1382427258-17495-1-git-send-email-adrian.hunter@intel.com> <1382427258-17495-4-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1382427258-17495-4-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 October 2013 18:09, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> tglx, could you please take a look at this patch / thread?
+On 10/22/13 8:34 AM, Adrian Hunter wrote:
+> -static int __cmd_script(struct perf_session *session)
+> +static int __cmd_script(struct perf_script *scr)
 
-Thomas, Ping!!
+for naming consistency that should be *script.
+
+>   {
+>   	int ret;
+>
+>   	signal(SIGINT, sig_handler);
+>
+> -	ret = perf_session__process_events(session, &perf_script);
+> +	ret = perf_session__process_events(scr->session, &scr->tool);
+>
+>   	if (debug_mode)
+>   		pr_err("Misordered timestamps: %" PRIu64 "\n", nr_unordered);
+> @@ -1273,6 +1264,21 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+>   	char *script_path = NULL;
+>   	const char **__argv;
+>   	int i, j, err;
+> +	struct perf_script perf_script = {
+
+Ditto: struct perf_script script;
+
+
+Otherwise the change looks fine to me.
+
+Acked-by: David Ahern <dsahern@gmail.com>
+
