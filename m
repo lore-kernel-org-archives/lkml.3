@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3JWPBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 11:01:47 -0400
-Received: from ring0.de ([91.143.88.219]:42033 "EHLO smtp.ring0.de"
+	id S1752779Ab3JWPCB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 11:02:01 -0400
+Received: from ring0.de ([91.143.88.219]:42040 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab3JWPBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 11:01:44 -0400
+	id S1751349Ab3JWPB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 11:01:59 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -19,9 +19,9 @@ Cc: Grant Likely <grant.likely@linaro.org>,
         Peter Ujfalusi <peter.ujfalusi@ti.com>,
         Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCHv2 3/3] Input: twl4030-pwrbutton: simplify driver using devm_*
-Date: Wed, 23 Oct 2013 17:01:22 +0200
-Message-Id: <1382540482-12261-4-git-send-email-sre@debian.org>
+Subject: [PATCHv2 2/3] Input: twl4030-pwrbutton: use dev_err for errors
+Date: Wed, 23 Oct 2013 17:01:21 +0200
+Message-Id: <1382540482-12261-3-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1382540482-12261-1-git-send-email-sre@debian.org>
 References: <1382540482-12261-1-git-send-email-sre@debian.org>
@@ -29,53 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use managed irq resource to simplify the driver.
+Use dev_err() to output errors instead of dev_dbg().
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- drivers/input/misc/twl4030-pwrbutton.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/input/misc/twl4030-pwrbutton.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index 3efbb13..49ca7b1 100644
+index a3a0fe3..3efbb13 100644
 --- a/drivers/input/misc/twl4030-pwrbutton.c
 +++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -70,7 +70,7 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 	pwr->phys = "twl4030_pwrbutton/input0";
- 	pwr->dev.parent = &pdev->dev;
+@@ -60,7 +60,7 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
  
--	err = request_threaded_irq(irq, NULL, powerbutton_irq,
-+	err = devm_request_threaded_irq(&pwr->dev, irq, NULL, powerbutton_irq,
+ 	pwr = input_allocate_device();
+ 	if (!pwr) {
+-		dev_dbg(&pdev->dev, "Can't allocate power button\n");
++		dev_err(&pdev->dev, "Can't allocate power button\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -74,13 +74,13 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
  			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
  			"twl4030_pwrbutton", pwr);
  	if (err < 0) {
-@@ -81,15 +81,13 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 	err = input_register_device(pwr);
- 	if (err) {
- 		dev_err(&pdev->dev, "Can't register power button: %d\n", err);
--		goto free_irq;
-+		goto free_input_dev;
+-		dev_dbg(&pdev->dev, "Can't get IRQ for pwrbutton: %d\n", err);
++		dev_err(&pdev->dev, "Can't get IRQ for pwrbutton: %d\n", err);
+ 		goto free_input_dev;
  	}
  
- 	platform_set_drvdata(pdev, pwr);
+ 	err = input_register_device(pwr);
+ 	if (err) {
+-		dev_dbg(&pdev->dev, "Can't register power button: %d\n", err);
++		dev_err(&pdev->dev, "Can't register power button: %d\n", err);
+ 		goto free_irq;
+ 	}
  
- 	return 0;
- 
--free_irq:
--	free_irq(irq, pwr);
- free_input_dev:
- 	input_free_device(pwr);
- 	return err;
-@@ -98,9 +96,7 @@ free_input_dev:
- static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
- {
- 	struct input_dev *pwr = platform_get_drvdata(pdev);
--	int irq = platform_get_irq(pdev, 0);
- 
--	free_irq(irq, pwr);
- 	input_unregister_device(pwr);
- 
- 	return 0;
 -- 
 1.8.4.rc3
 
