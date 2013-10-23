@@ -1,177 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3JWOH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:07:27 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53674 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751230Ab3JWOH0 (ORCPT
+	id S1752056Ab3JWOHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:07:43 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:63019 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab3JWOHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:07:26 -0400
-Message-ID: <1382537234.21850.7.camel@dabdike>
-Subject: Re: [GIT PULL] SCSI fixes for 3.12-rc6
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Oct 2013 15:07:14 +0100
-In-Reply-To: <CA+55aFyLpN6aym28n96+eO-cJhopZ5G9Er=nHvf-d4i72fQsGQ@mail.gmail.com>
-References: <1382527624.16097.23.camel@dabdike.quadriga.com>
-	 <CA+55aFzo-sA4P_rMC1wWfLp50QswfP0GdLxMQ+Wbw8ArK5capw@mail.gmail.com>
-	 <1382530790.16097.29.camel@dabdike.quadriga.com>
-	 <CA+55aFyLpN6aym28n96+eO-cJhopZ5G9Er=nHvf-d4i72fQsGQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Oct 2013 10:07:41 -0400
+Message-ID: <5267D82A.3010307@gmail.com>
+Date: Wed, 23 Oct 2013 16:07:38 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: The development of GNU GRUB <grub-devel@gnu.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>, keir@xen.org,
+        david.woodhouse@intel.com, stefano.stabellini@eu.citrix.com,
+        Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>, xen-devel@lists.xen.org,
+        Jan Beulich <JBeulich@suse.com>, ross.philipson@citrix.com,
+        richard.l.maliszewski@intel.com, boris.ostrovsky@oracle.com
+Subject: Re: [Xen-devel] EFI and multiboot2 devlopment work for Xen
+References: <5266620602000078000FCA48@nat28.tlf.novell.com> <1382435127.1657.70.camel@hastur.hellion.org.uk> <526668A502000078000FCA7B@nat28.tlf.novell.com> <20131022134252.GA27302@phenom.dumpdata.com> <1382449985.18283.12.camel@hastur.hellion.org.uk> <20131022140947.GA17829@phenom.dumpdata.com> <1382451868.18283.21.camel@hastur.hellion.org.uk> <1382455358.18283.31.camel@hastur.hellion.org.uk> <20131022162632.GB19189@phenom.dumpdata.com> <1382517150.22417.21.camel@hastur.hellion.org.uk> <20131023131348.GA23898@phenom.dumpdata.com>
+In-Reply-To: <20131023131348.GA23898@phenom.dumpdata.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2EGGLESAVBQLOBUFKDFAN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 13:42 +0100, Linus Torvalds wrote:
-> You need to think about *WHY* we had a "new driver" exception. And
-> realize that it probably will never actually be relevant for any SCSI
-> driver (not counting things like USB storage etc).
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2EGGLESAVBQLOBUFKDFAN
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-OK, point taken, here's the new pull request
-
-----
-
-This is a set of 2 fixes which cause oopses (Buslogic, qla2xxx) and 1
-fix which may cause a hang because of request miscounting (sd).
-
-The patch is available here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
-
-The short changelog is:
-
-Aaron Lu (1):
-      sd: call blk_pm_runtime_init before add_disk
-
-Chad Dupuis (1):
-      qla2xxx: Fix request queue null dereference.
-
-Khalid Aziz (1):
-      BusLogic: Fix an oops when intializing multimaster adapter
-
-And the diffstat:
-
- drivers/scsi/BusLogic.c        | 16 ++++++++--------
- drivers/scsi/qla2xxx/qla_dbg.c |  2 +-
- drivers/scsi/qla2xxx/qla_isr.c |  9 +++++++++
- drivers/scsi/sd.c              |  2 +-
- 4 files changed, 19 insertions(+), 10 deletions(-)
-
-With full diff below.
-
-James
-
----
-
-diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
-index feab3a5..757eb07 100644
---- a/drivers/scsi/BusLogic.c
-+++ b/drivers/scsi/BusLogic.c
-@@ -696,7 +696,7 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
- 	while ((pci_device = pci_get_device(PCI_VENDOR_ID_BUSLOGIC,
- 					PCI_DEVICE_ID_BUSLOGIC_MULTIMASTER,
- 					pci_device)) != NULL) {
--		struct blogic_adapter *adapter = adapter;
-+		struct blogic_adapter *host_adapter = adapter;
- 		struct blogic_adapter_info adapter_info;
- 		enum blogic_isa_ioport mod_ioaddr_req;
- 		unsigned char bus;
-@@ -744,9 +744,9 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
- 		   known and enabled, note that the particular Standard ISA I/O
- 		   Address should not be probed.
- 		 */
--		adapter->io_addr = io_addr;
--		blogic_intreset(adapter);
--		if (blogic_cmd(adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
-+		host_adapter->io_addr = io_addr;
-+		blogic_intreset(host_adapter);
-+		if (blogic_cmd(host_adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
- 				&adapter_info, sizeof(adapter_info)) ==
- 				sizeof(adapter_info)) {
- 			if (adapter_info.isa_port < 6)
-@@ -762,7 +762,7 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
- 		   I/O Address assigned at system initialization.
- 		 */
- 		mod_ioaddr_req = BLOGIC_IO_DISABLE;
--		blogic_cmd(adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
-+		blogic_cmd(host_adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
- 				sizeof(mod_ioaddr_req), NULL, 0);
- 		/*
- 		   For the first MultiMaster Host Adapter enumerated,
-@@ -779,12 +779,12 @@ static int __init blogic_init_mm_probeinfo(struct blogic_adapter *adapter)
- 
- 			fetch_localram.offset = BLOGIC_AUTOSCSI_BASE + 45;
- 			fetch_localram.count = sizeof(autoscsi_byte45);
--			blogic_cmd(adapter, BLOGIC_FETCH_LOCALRAM,
-+			blogic_cmd(host_adapter, BLOGIC_FETCH_LOCALRAM,
- 					&fetch_localram, sizeof(fetch_localram),
- 					&autoscsi_byte45,
- 					sizeof(autoscsi_byte45));
--			blogic_cmd(adapter, BLOGIC_GET_BOARD_ID, NULL, 0, &id,
--					sizeof(id));
-+			blogic_cmd(host_adapter, BLOGIC_GET_BOARD_ID, NULL, 0,
-+					&id, sizeof(id));
- 			if (id.fw_ver_digit1 == '5')
- 				force_scan_order =
- 					autoscsi_byte45.force_scan_order;
-diff --git a/drivers/scsi/qla2xxx/qla_dbg.c b/drivers/scsi/qla2xxx/qla_dbg.c
-index 2ef497e..ee5c183 100644
---- a/drivers/scsi/qla2xxx/qla_dbg.c
-+++ b/drivers/scsi/qla2xxx/qla_dbg.c
-@@ -20,7 +20,7 @@
-  * | Device Discovery             |       0x2095       | 0x2020-0x2022, |
-  * |                              |                    | 0x2011-0x2012, |
-  * |                              |                    | 0x2016         |
-- * | Queue Command and IO tracing |       0x3058       | 0x3006-0x300b  |
-+ * | Queue Command and IO tracing |       0x3059       | 0x3006-0x300b  |
-  * |                              |                    | 0x3027-0x3028  |
-  * |                              |                    | 0x303d-0x3041  |
-  * |                              |                    | 0x302d,0x3033  |
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index df1b30b..ff9c86b 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -1957,6 +1957,15 @@ qla2x00_status_entry(scsi_qla_host_t *vha, struct rsp_que *rsp, void *pkt)
- 	que = MSW(sts->handle);
- 	req = ha->req_q_map[que];
- 
-+	/* Check for invalid queue pointer */
-+	if (req == NULL ||
-+	    que >= find_first_zero_bit(ha->req_qid_map, ha->max_req_queues)) {
-+		ql_dbg(ql_dbg_io, vha, 0x3059,
-+		    "Invalid status handle (0x%x): Bad req pointer. req=%p, "
-+		    "que=%u.\n", sts->handle, req, que);
-+		return;
-+	}
-+
- 	/* Validate handle. */
- 	if (handle < req->num_outstanding_cmds)
- 		sp = req->outstanding_cmds[handle];
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e62d17d..5693f6d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2854,6 +2854,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 		gd->events |= DISK_EVENT_MEDIA_CHANGE;
- 	}
- 
-+	blk_pm_runtime_init(sdp->request_queue, dev);
- 	add_disk(gd);
- 	if (sdkp->capacity)
- 		sd_dif_config_host(sdkp);
-@@ -2862,7 +2863,6 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 
- 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
- 		  sdp->removable ? "removable " : "");
--	blk_pm_runtime_init(sdp->request_queue, dev);
- 	scsi_autopm_put_device(sdp);
- 	put_device(&sdkp->dev);
- }
+On 23.10.2013 15:13, Konrad Rzeszutek Wilk wrote:
+>  - not make an ExitBootServices call - which it does right now in the S=
+olaris
+>    GRUB2 case and in the Fedora GRUB2 case.
+What about having a special tag in multiboot2 file header "RKEBSIHE":
+"request to keep EFI boot services" and then bootloader will pass
+another (empty, other than header) info tag: "Beware of EFI"
+>  - Do the signature verification (hand-waving which one - probably both=
+).
+Can someone throw me the link on the EFI signature specification? Can't
+really find it now.
+>  - Pack the right bits in the multiboot2 structure.
+As soon as my patch is tested for compatibility with Solaris, I commit
+it. Tell me if you need sth else.
 
 
+------enig2EGGLESAVBQLOBUFKDFAN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iF4EAREKAAYFAlJn2CoACgkQNak7dOguQglb5QD+KtDa5y4T4bCajaI/IehayhQ3
+YeRPLrRXQpUCHH36N3AA/0NEXyP01ZoZd7Ez5aJx8MnooeomFHAVX16krDFgK2sw
+=CQ4C
+-----END PGP SIGNATURE-----
+
+------enig2EGGLESAVBQLOBUFKDFAN--
