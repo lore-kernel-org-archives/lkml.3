@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3JWJcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:32:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54400 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3JWJcM (ORCPT
+	id S1753369Ab3JWJcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:32:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47803 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab3JWJcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:32:12 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] ARM: dts: omap5-uevm: Correct twl6040 reset GPIO pinmux
-Date: Wed, 23 Oct 2013 12:32:19 +0300
-Message-ID: <1382520740-11197-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382520740-11197-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1382520740-11197-1-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 23 Oct 2013 05:32:39 -0400
+Date: Wed, 23 Oct 2013 10:32:34 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [ 109/171 ] userns: Dont allow creation if the user is chrooted
+Message-ID: <20131023093234.GA5968@hercules>
+References: <20130411202503.783159048@goodmis.org>
+ <20130411202604.189219756@goodmis.org>
+ <20131022111535.GC4263@hercules>
+ <87wql5yzau.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wql5yzau.fsf@xmission.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the omap5-evm.dts file has been renamed to omap5-uevm.dts and the sEVM
-support got deprecated in favor of uEVM (or Panda5) the content was not
-validated.
-On uEVM the twl6040 reset GPIO is from gpio5_141 and not via gpio5_145, which
-was the case in sEVM.
+On Tue, Oct 22, 2013 at 10:45:45AM -0700, Eric W. Biederman wrote:
+> Luis Henriques <luis.henriques@canonical.com> writes:
+> 
+> > On Thu, Apr 11, 2013 at 04:26:52PM -0400, Steven Rostedt wrote:
+> >> 3.6.11.2 stable review patch.
+> >> If anyone has any objections, please let me know.
+> >> 
+> >> ------------------
+> >> 
+> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> >> 
+> >> [ Upstream commit 3151527ee007b73a0ebd296010f1c0454a919c7d ]
+> >
+> > While looking at some security bugs, I came across this one
+> > (CVE-2013-1956).  All the references I could find refer to the 3.8
+> > kernel only, and this was the only backport I could find to older
+> > stable kernels.
+> >
+> > Could someone clarify if this fix should be included in other stable
+> > kernels?  Or the only affected kernels were the 3.8.0 to 3.8.5?
+> 
+> Strictly speaking there are older kernels affected.  I think it was 3.5
+> that had my earliest user namespace bits, and this bug came in with the
+> first of those bits.  However prior to 3.8 simply not enough things were
+> converted for most people to build a kernel with user namespaces
+> enabled.  I don't think distro's will have user namespaces enabled prior
+> to 3.12 as that is when xfs the last hold out was finally converted.
+> 
+> Eric
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/boot/dts/omap5-uevm.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That makes perfect sense to me.  Thanks a lot for the clarification,
+Eric.
 
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index e06a04a..8432409 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -71,7 +71,7 @@
- 
- 	twl6040_pins: pinmux_twl6040_pins {
- 		pinctrl-single,pins = <
--			0x18a (PIN_OUTPUT | MUX_MODE6)	/* perslimbus2_clock.gpio5_145 */
-+			0x17e (PIN_OUTPUT | MUX_MODE6)	/* mcspi1_somi.gpio5_141 */
- 		>;
- 	};
- 
--- 
-1.8.4
-
+Cheers,
+--
+Luis
