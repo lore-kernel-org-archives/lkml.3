@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab3JWABd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 20:01:33 -0400
-Received: from tundra.namei.org ([65.99.196.166]:53819 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753387Ab3JWABb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 20:01:31 -0400
-Date: Wed, 23 Oct 2013 11:02:36 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-In-Reply-To: <52601DD8.7090308@schaufler-ca.com>
-Message-ID: <alpine.LRH.2.02.1310231047180.7063@tundra.namei.org>
-References: <20130920203556.GA8726@www.outflux.net> <alpine.LRH.2.02.1310171858170.32257@tundra.namei.org> <52601DD8.7090308@schaufler-ca.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754976Ab3JWADw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 20:03:52 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:47023 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab3JWADv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 20:03:51 -0400
+Message-ID: <52671265.2020107@linaro.org>
+Date: Tue, 22 Oct 2013 20:03:49 -0400
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/13] uprobes: allow arch access to xol slot
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com>
+In-Reply-To: <20131019163627.GA7837@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Oct 2013, Casey Schaufler wrote:
+On 10/19/13 12:36, Oleg Nesterov wrote:
+> On 10/15, David Long wrote:
+>>
+>> Allow arches to customize how the instruction is filled into the xol
+>> slot.  ARM will use this to insert an undefined instruction after the
+>> real instruction in order to simulate a single step of the instruction
+>> without hardware support.
+>
+> OK, but
+>
+>> +void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
+>> +{
+>> +	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
+>> +}
+>> +
+>>   /*
+>>    * xol_get_insn_slot - allocate a slot for xol.
+>>    * Returns the allocated slot address or 0.
+>> @@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+>>   {
+>>   	struct xol_area *area;
+>>   	unsigned long xol_vaddr;
+>> +	void *kaddr;
+>>
+>>   	area = get_xol_area();
+>>   	if (!area)
+>> @@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+>>   		return 0;
+>>
+>>   	/* Initialize the slot */
+>> -	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
+>> +	kaddr = kmap_atomic(area->page);
+>> +	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
+>> +	kunmap_atomic(kaddr);
+>
+> This looks a bit strange and defeats the purpose of generic helper...
+>
+> How about
+>
+> 	void __weak arch_uprobe_xol_copy(...)
+> 	{
+> 		copy_to_page(...);
+> 	}
+>
+> then just
+>
+> 	- copy_to_page(...);
+> 	+ arch_uprobe_xol_copy(...);
+>
+> ?
+>
 
-> On 10/17/2013 1:02 AM, James Morris wrote:
-> > This seems like a regression in terms of separating mechanism and policy.  
-> >
-> > We have several access control systems available (SELinux, at least) which 
-> > can implement this functionality with existing mechanisms using dynamic 
-> > policy.
-> 
-> They said the same thing about Smack.
-> 
+I was trying to avoid duplicating the VM calls in the 
+architecture-specific implementations, but maybe that is the cleaner way 
+to do it after all.  I've made changes as suggested above.
 
-Nope.  Smack separates mechanism and policy.  The argument then was 
-whether we need more than one such enhanced access control system.
+> Or, I am just curious, can't we have an empty "__weak arch_uprobe_xol_copy" if
+> we call it right after copy_to_page() ?
+>
 
-The issue now is that we do have several of them (SELinux, Smack, 
-AppArmor) which are policy-flexible, whether to regress back to adding 
-hard-coded security policies into the kernel.
+Then there would potentially be effectively two copy calls.  That 
+doesn't feel at all the right thing to do.
 
-> The problem there is that you have to buy into the entirety of
-> SELinux to implement a small bit of behavior. You have to write
-> a policy that takes every aspect of system behavior into account
-> when all you care about is loading restrictions on modules.
+-dl
 
-You always need to consider the behavior of the system as a whole when 
-designing security policies.
-
-It's a major step backwards to hard-code a series of ad-hoc policies in 
-the kernel.  You still need to compose them somehow, and reason about the 
-security of the system as a whole.
-
-> The rationale is that lots of people doing little things is
-> likely to get us relevant security in a reasonable amount of time.
-> The existing LSMs reflect 20th century technologies and use cases.
-> They are fine for multi-user timesharing systems. We need to move
-> forward to support networked gaming, phones, tablets and toasters.
-
-You keep making these grand assertions but never provide any detail, or 
-any kind of evidence to back them up.  Yet there are many, many examples 
-of how the current LSMs meet all of these needs in the 21st century, such 
-as Smack being adopted for Tizen, digital television etc.:
-
-http://en.wikipedia.org/wiki/Smack
-
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
