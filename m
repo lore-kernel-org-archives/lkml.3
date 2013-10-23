@@ -1,84 +1,1515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3JWHyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:54:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55881 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3JWHyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:54:01 -0400
-Date: Wed, 23 Oct 2013 00:53:36 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-7db5952846dfa015d74e64b5e8656acac979490b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1382099356-4918-7-git-send-email-adrian.hunter@intel.com>
-References: <1382099356-4918-7-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session:
-  Add missing members to perf_event__attr_swap()
-Git-Commit-ID: 7db5952846dfa015d74e64b5e8656acac979490b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752522Ab3JWHx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:53:56 -0400
+Received: from msr12.hinet.net ([168.95.4.112]:58713 "EHLO msr12.hinet.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752430Ab3JWHxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 03:53:51 -0400
+X-Greylist: delayed 16658 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 03:53:51 EDT
+From: Duson Lin <duson.lin@msa.hinet.net>
+To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        dmitry.torokhov@gmail.com
+Cc: agnescheng@google.com, phoenix@emc.com.tw, Duson Lin <dusonlin@emc.com.tw>
+Subject: =?UTF-8?q?=5BPATCH=5D=20Input=3A=20add=20i2c=20driver=20for=20elan=20i2c=20touchpad?=
+Date: Wed, 23 Oct 2013 11:15:10 +0800
+Message-Id: <1382498110-4782-1-git-send-email-duson.lin@msa.hinet.net>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:53:42 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7db5952846dfa015d74e64b5e8656acac979490b
-Gitweb:     http://git.kernel.org/tip/7db5952846dfa015d74e64b5e8656acac979490b
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Fri, 18 Oct 2013 15:29:03 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 21 Oct 2013 11:19:24 -0300
+From: Duson Lin <dusonlin@emc.com.tw>
 
-perf session: Add missing members to perf_event__attr_swap()
-
-The perf_event__attr_swap() method needs to swap all members of struct
-perf_event_attr.  Add missing ones.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-7-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This driver adds support for elan i2c touchpad found on some laptops.
 ---
- tools/perf/util/session.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/input/mouse/Kconfig    |   10 +
+ drivers/input/mouse/Makefile   |    1 +
+ drivers/input/mouse/elan_i2c.c | 1439 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1450 insertions(+)
+ create mode 100644 drivers/input/mouse/elan_i2c.c
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d51e62d..d4559ca 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -453,6 +453,9 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
- 	attr->bp_type		= bswap_32(attr->bp_type);
- 	attr->bp_addr		= bswap_64(attr->bp_addr);
- 	attr->bp_len		= bswap_64(attr->bp_len);
-+	attr->branch_sample_type = bswap_64(attr->branch_sample_type);
-+	attr->sample_regs_user	 = bswap_64(attr->sample_regs_user);
-+	attr->sample_stack_user  = bswap_32(attr->sample_stack_user);
+diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+index effa9c5..8ad4b38 100644
+--- a/drivers/input/mouse/Kconfig
++++ b/drivers/input/mouse/Kconfig
+@@ -215,6 +215,16 @@ config MOUSE_CYAPA
+ 	  To compile this driver as a module, choose M here: the module will be
+ 	  called cyapa.
  
- 	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
- }
++config MOUSE_ELAN_I2C
++	tristate "ELAN I2C Touchpad support"
++	depends on I2C
++	help
++	  This driver adds support for Elan I2C Trackpads.
++	  Say y here if you have a ELAN I2C Touchpad.
++
++	  To compile this driver as a module, choose M here: the module will be
++	  called elan_i2c.
++
+ config MOUSE_INPORT
+ 	tristate "InPort/MS/ATIXL busmouse"
+ 	depends on ISA
+diff --git a/drivers/input/mouse/Makefile b/drivers/input/mouse/Makefile
+index c25efdb..24a12a6 100644
+--- a/drivers/input/mouse/Makefile
++++ b/drivers/input/mouse/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_MOUSE_APPLETOUCH)		+= appletouch.o
+ obj-$(CONFIG_MOUSE_ATARI)		+= atarimouse.o
+ obj-$(CONFIG_MOUSE_BCM5974)		+= bcm5974.o
+ obj-$(CONFIG_MOUSE_CYAPA)		+= cyapa.o
++obj-$(CONFIG_MOUSE_ELAN_I2C)		+= elan_i2c.o
+ obj-$(CONFIG_MOUSE_GPIO)		+= gpio_mouse.o
+ obj-$(CONFIG_MOUSE_INPORT)		+= inport.o
+ obj-$(CONFIG_MOUSE_LOGIBM)		+= logibm.o
+diff --git a/drivers/input/mouse/elan_i2c.c b/drivers/input/mouse/elan_i2c.c
+new file mode 100644
+index 0000000..bc6e957
+--- /dev/null
++++ b/drivers/input/mouse/elan_i2c.c
+@@ -0,0 +1,1439 @@
++﻿/*
++ * Elan I2C Touchpad driver
++ *
++ * Copyright (c) 2013 ELAN Microelectronics Corp.
++ *
++ * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
++ * Version: 1.4.5
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ *
++ * Trademarks are the property of their respective owners.
++ */
++
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/firmware.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/input/mt.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/cdev.h>
++#include <linux/kernel.h>
++#include <linux/major.h>
++#include <linux/sched.h>
++#include <linux/input.h>
++#include <linux/uaccess.h>
++#include <linux/jiffies.h>
++
++#define DRIVER_NAME		"elan_i2c"
++#define ELAN_DRIVER_VERSION	"1.4.5"
++#define ETP_PRESSURE_OFFSET	25
++#define ETP_MAX_PRESSURE	255
++#define ETP_FWIDTH_REDUCE	90
++#define ETP_FINGER_WIDTH	15
++
++#define ELAN_ADAPTER_FUNC_NONE   0
++#define ELAN_ADAPTER_FUNC_I2C    1
++
++/* Length of Elan touchpad information */
++#define ETP_INF_LENGTH		2
++#define ETP_MAX_FINGERS		5
++#define ETP_FINGER_DATA_LEN	5
++#define ETP_REPORT_ID		0x5D
++#define ETP_MAX_REPORT_LEN	34
++#define ETP_ENABLE_ABS		0x0001
++#define ETP_ENABLE_CALIBRATE	0x0002
++#define ETP_DISABLE_CALIBRATE	0x0000
++
++/* Elan i2c command */
++#define ETP_I2C_RESET			0x0100
++#define ETP_I2C_WAKE_UP			0x0800
++#define ETP_I2C_SLEEP			0x0801
++#define ETP_I2C_DESC_CMD		0x0001
++#define ETP_I2C_REPORT_DESC_CMD		0x0002
++#define ETP_I2C_STAND_CMD		0x0005
++#define ETP_I2C_UNIQUEID_CMD		0x0101
++#define ETP_I2C_FW_VERSION_CMD		0x0102
++#define ETP_I2C_SM_VERSION_CMD		0x0103
++#define ETP_I2C_XY_TRACENUM_CMD		0x0105
++#define ETP_I2C_MAX_X_AXIS_CMD		0x0106
++#define ETP_I2C_MAX_Y_AXIS_CMD		0x0107
++#define ETP_I2C_RESOLUTION_CMD		0x0108
++#define ETP_I2C_IAP_VERSION_CMD		0x0110
++#define ETP_I2C_SET_CMD			0x0300
++#define ETP_I2C_MAX_BASELINE_CMD	0x0306
++#define ETP_I2C_MIN_BASELINE_CMD	0x0307
++#define ETP_I2C_FW_CHECKSUM_CMD		0x030F
++#define ETP_I2C_IAP_CTRL_CMD		0x0310
++#define ETP_I2C_IAP_CMD			0x0311
++#define ETP_I2C_IAP_RESET_CMD		0x0314
++#define ETP_I2C_IAP_CHECKSUM_CMD	0x0315
++#define ETP_I2C_CALIBRATE_CMD		0x0316
++#define ETP_I2C_REPORT_LEN		34
++#define ETP_I2C_FINGER_DATA_OFFSET	4
++#define ETP_I2C_REPORT_ID_OFFSET	2
++#define ETP_I2C_DESC_LENGTH		30
++#define ETP_I2C_REPORT_DESC_LENGTH	158
++
++/* IAP F/W updater */
++#define ETP_FW_NAME		"elan_i2c.bin"
++#define ETP_FW_IAP_REG_L	0x01
++#define ETP_FW_IAP_REG_H	0x06
++#define ETP_IAP_VERSION_ADDR	0x0082
++#define ETP_IAP_START_ADDR	0x0083
++#define ETP_IAP_RESET		0xF0F0
++#define ETP_ENABLE_FWUPDATE	0x1EA5
++#define ETP_FW_IAP_MODE_ON	(1<<9)
++#define ETP_FW_IAP_PAGE_ERR	(1<<5)
++#define ETP_FW_IAP_INTERFACE_ERR (1<<4)
++#define ETP_FW_PAGE_SIZE	64
++#define ETP_FW_PAGE_COUNT	768
++#define ETP_FW_SIZE		(ETP_FW_PAGE_SIZE * ETP_FW_PAGE_COUNT)
++enum {IAP_MODE = 0, MAIN_MODE};
++
++struct dbfs_data {
++	bool	bfetch;
++	u8	buffer[ETP_MAX_REPORT_LEN];
++};
++
++/* The main device structure */
++struct elan_tp_data {
++	struct i2c_client	*client;
++	struct input_dev	*input;
++	unsigned int		max_x;
++	unsigned int		max_y;
++	unsigned int		width_x;
++	unsigned int		width_y;
++	unsigned int		irq;
++
++	/* fields required for IAP firmware updater */
++	u16			unique_id;
++	u16			fw_version;
++	u16			sm_version;
++	u16			iap_version;
++	bool			updated_fw;
++	u16			iap_start_addr;
++	u8			adapter_func;
++
++	/* irq wake is enabled */
++	bool			irq_wake;
++	bool			enable_detail_info;
++
++	/* fields required for debug fs */
++	struct mutex		dbfs_mutex;
++	struct dentry		*dbfs_root;
++	struct dbfs_data	dbfs_buffer;
++};
++
++u8 val[256];
++
++static int elan_i2c_read_block(struct i2c_client *client,
++				 u16 reg, u8 *val, u16 len);
++static int elan_i2c_read_cmd(struct i2c_client *client, u16 reg, u8 *val);
++static int elan_i2c_write_cmd(struct i2c_client *client, u16 reg, u16 cmd);
++static int elan_i2c_reinitialize(struct i2c_client *client);
++static int elan_i2c_enable_calibrate(struct i2c_client *client);
++static int elan_i2c_disable_calibrate(struct i2c_client *client);
++
++/*
++ **************************************************************
++ * debugfs interface
++ **************************************************************
++*/
++static int elan_dbfs_open(struct inode *inode, struct file *file)
++{
++	int retval;
++	struct elan_tp_data *data = inode->i_private;
++
++	if (!data)
++		return -ENODEV;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return retval;
++
++	if (!kobject_get(&data->client->dev.kobj)) {
++		retval = -ENODEV;
++		goto dbfs_out;
++	}
++
++	file->private_data = data;
++dbfs_out:
++	mutex_unlock(&data->dbfs_mutex);
++	return 0;
++}
++
++static int elan_dbfs_release(struct inode *inode, struct file *file)
++{
++	struct elan_tp_data *data = file->private_data;
++	int retval;
++	if (!data)
++		return -ENODEV;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return retval;
++	file->private_data = NULL;
++	kobject_put(&data->client->dev.kobj);
++	mutex_unlock(&data->dbfs_mutex);
++	return 0;
++}
++
++
++static ssize_t elan_dbfs_read(struct file *file,
++		char __user *buffer, size_t count, loff_t *ppos)
++{
++	struct elan_tp_data *data = file->private_data;
++	int retval;
++	if (!data)
++		return -ENODEV;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return -EFAULT;
++	if (data->dbfs_buffer.bfetch == false) {
++		if (!copy_to_user(buffer, data->dbfs_buffer.buffer, count)) {
++			data->dbfs_buffer.bfetch = true;
++			retval = count;
++		} else {
++			retval = -2;
++		}
++	} else {
++		retval = -4;
++	}
++	mutex_unlock(&data->dbfs_mutex);
++	return retval;
++}
++
++static ssize_t elan_dbfs_write(struct file *file,
++		const char __user *buffer, size_t count, loff_t *ppos)
++{
++	struct elan_tp_data *data = file->private_data;
++	int retval;
++	if (!data)
++		return -ENODEV;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return -EFAULT;
++	retval = count;
++	mutex_unlock(&data->dbfs_mutex);
++	return retval;
++}
++
++static long elan_dbfs_ioctrl(struct file *file,
++		unsigned int cmd, unsigned long arg)
++{
++	int retval = 0;
++	struct elan_tp_data *data = file->private_data;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return retval;
++	mutex_unlock(&data->dbfs_mutex);
++	return retval;
++}
++
++static const struct file_operations elan_debug_fops = {
++	.open = elan_dbfs_open,
++	.release = elan_dbfs_release,
++	.read = elan_dbfs_read,
++	.write = elan_dbfs_write,
++	.unlocked_ioctl = elan_dbfs_ioctrl
++};
++
++static int elan_dbfs_init(struct elan_tp_data *data)
++{
++	/* Create a global debugfs root for all elan devices */
++	/* sys/kernel/debug/elan */
++	data->dbfs_root = debugfs_create_dir("elan", NULL);
++	if (!data->dbfs_root) {
++		dev_err(&data->client->dev, "cannot create dbfs_root.\n");
++		return -ENODEV;
++	}
++	mutex_init(&data->dbfs_mutex);
++
++	debugfs_create_file(DRIVER_NAME, 0777,
++				data->dbfs_root, data, &elan_debug_fops);
++	data->dbfs_buffer.bfetch = false;
++	return 0;
++}
++
++/**********************************************************
++ * IAP firmware updater related routines                  *
++ **********************************************************
++*/
++
++static int elan_iap_getmode(struct elan_tp_data *data)
++{
++	u16 constant;
++	int retval = 0;
++	struct i2c_client *client = data->client;
++
++	retval = elan_i2c_read_cmd(client, ETP_I2C_IAP_CTRL_CMD, val);
++	if (retval < 0)
++		return false;
++
++	constant = le16_to_cpup((__le16 *)val);
++	dev_dbg(&client->dev, "control reg: 0x%04x.\n", constant);
++
++	if (constant & ETP_FW_IAP_MODE_ON)
++		return MAIN_MODE;
++
++	return IAP_MODE;
++}
++
++static int elan_iap_checksum(struct elan_tp_data *data)
++{
++	int retval = 0;
++	u16 checksum = -1;
++	struct i2c_client *client = data->client;
++
++	retval = elan_i2c_read_cmd(client, ETP_I2C_IAP_CHECKSUM_CMD, val);
++	if (retval < 0) {
++		dev_err(&client->dev, "Read checksum fail, %d\n", retval);
++		return -1;
++	}
++	checksum = le16_to_cpup((__le16 *)val);
++	return checksum;
++}
++
++static bool elan_iap_reset(struct elan_tp_data *data)
++{
++	int retval = 0;
++	struct i2c_client *client = data->client;
++
++	retval = elan_i2c_write_cmd(client, ETP_I2C_IAP_RESET_CMD,
++						ETP_IAP_RESET);
++	if (retval < 0) {
++		dev_err(&client->dev, "cannot reset IC, %d\n", retval);
++		return false;
++	}
++	return true;
++}
++
++static bool elan_iap_setflashkey(struct elan_tp_data *data, int mode)
++{
++	int retval = 0;
++	struct i2c_client *client = data->client;
++
++	retval = elan_i2c_write_cmd(client, ETP_I2C_IAP_CMD,
++						ETP_ENABLE_FWUPDATE);
++	if (retval < 0) {
++		dev_err(&client->dev, "cannot set flash key, %d\n", retval);
++		return false;
++	}
++
++	/* Wait for F/W IAP initialization */
++	if (mode == MAIN_MODE)
++		msleep(100);
++	else
++		msleep(30);
++
++	return true;
++}
++
++static bool elan_iap_page_write_ok(struct elan_tp_data *data)
++{
++	u16 constant;
++	int retval = 0;
++	struct i2c_client *client = data->client;
++
++	retval = elan_i2c_read_cmd(client, ETP_I2C_IAP_CTRL_CMD, val);
++	if (retval < 0)
++		return false;
++
++	constant = le16_to_cpup((__le16 *)val);
++
++	if (constant & ETP_FW_IAP_PAGE_ERR)
++		return false;
++
++	if (constant & ETP_FW_IAP_INTERFACE_ERR)
++		return false;
++
++	return true;
++}
++
++static int elan_check_fw(struct elan_tp_data *data,
++				const struct firmware *fw)
++{
++	u16 uniqueid_addr, uniqueid;
++	struct device *dev = &data->client->dev;
++
++	/* Firmware must match exact PAGE_NUM * PAGE_SIZE bytes */
++	if (fw->size != ETP_FW_SIZE) {
++		dev_err(dev, "invalid firmware size = %zu, expected %d.\n",
++					fw->size, ETP_FW_SIZE);
++		return -EBADF;
++	}
++
++	/* Check IAP Version */
++	if (!memcmp(&fw->data[ETP_IAP_VERSION_ADDR * 2],
++				&data->iap_version, 2)) {
++		dev_err(dev, "IAP F/W updating version does not match.");
++		return -EEXIST;
++	}
++
++	/* Get IAP Start Address*/
++	memcpy(&data->iap_start_addr, &fw->data[ETP_IAP_START_ADDR * 2], 2);
++	/* Get Unique ID Address */
++	memcpy(&uniqueid_addr, &fw->data[data->iap_start_addr * 2], 2);
++	/* Get Unique ID */
++	memcpy(&uniqueid, &fw->data[uniqueid_addr * 2], 2);
++
++	return 0;
++}
++
++static int elan_prepare_fw_update(struct elan_tp_data *data)
++{
++	struct i2c_client *client = data->client;
++	struct device *dev = &data->client->dev;
++
++	/* Get FW in which mode	(IAP_MODE/MAIN_MODE)  */
++	int mode = elan_iap_getmode(data);
++
++	if (mode == IAP_MODE) {
++		/* Reset IC */
++		if (elan_iap_reset(data) == false)
++			return -1;
++		msleep(30);
++	}
++
++	/* set flash key*/
++	if (elan_iap_setflashkey(data, mode) == false) {
++		dev_err(dev, "cannot set flash key\n");
++		return -1;
++	}
++
++	/* check is in iap mode or not*/
++	if (elan_iap_getmode(data) == MAIN_MODE) {
++		dev_err(dev, "status wrong.\n");
++		return -1;
++	}
++
++	/* set flash key again */
++	if (elan_iap_setflashkey(data, mode) == false) {
++		dev_err(dev, "cannot set flash key\n");
++		return -1;
++	}
++
++	/* read back to check we actually enabled successfully. */
++	if (elan_i2c_read_cmd(client, ETP_I2C_IAP_CMD, val) < 0) {
++		dev_err(dev, "cannot get iap register\n");
++		return -1;
++	}
++
++	if (le16_to_cpup((__le16 *)val) != ETP_ENABLE_FWUPDATE) {
++		dev_err(dev, "wrong iap password = 0x%X\n",
++				le16_to_cpup((__le16 *)val));
++		return -1;
++	}
++	return 0;
++}
++
++static int elan_write_fw_block(struct elan_tp_data *data,
++				const u8 *page, u16 checksum)
++{
++	struct device *dev = &data->client->dev;
++	int ret;
++	int repeat = 3;
++	u8 page_store[ETP_FW_PAGE_SIZE + 4];
++
++	page_store[0] = ETP_FW_IAP_REG_L;
++	page_store[1] = ETP_FW_IAP_REG_H;
++	memcpy(&page_store[2], page, ETP_FW_PAGE_SIZE);
++
++	/* recode checksum at last two bytes */
++	page_store[ETP_FW_PAGE_SIZE+2] = (u8)(checksum & 0xFF);
++	page_store[ETP_FW_PAGE_SIZE+3] = (u8)((checksum >> 8)&0xFF);
++
++	do {
++		ret = i2c_master_send(data->client, page_store,
++						 ETP_FW_PAGE_SIZE + 4);
++
++		/* Wait for F/W to update one page ROM data. */
++		msleep(20);
++
++		if (ret == (ETP_FW_PAGE_SIZE + 4)) {
++			if (elan_iap_page_write_ok(data))
++				break;
++		}
++		dev_dbg(dev, "IAP retry this page!\n");
++		repeat--;
++	} while (repeat == 0);
++
++	if (repeat > 0)
++		return 0;
++	return -1;
++}
++
++static int elan_firmware(struct elan_tp_data *data)
++{
++	struct device *dev = &data->client->dev;
++	const struct firmware *fw;
++	const char *fw_name = ETP_FW_NAME;
++	int i, j, ret;
++	u16 boot_page_count;
++	u16 sw_checksum, fw_checksum;
++
++	ret = request_firmware(&fw, ETP_FW_NAME, dev);
++	if (ret) {
++		dev_err(dev, "cannot load firmware from %s, %d\n",
++							fw_name, ret);
++		goto done;
++	}
++	ret = elan_check_fw(data, fw);
++	if (ret) {
++		dev_err(dev, "Invalid Elan firmware from %s, %d\n",
++							fw_name, ret);
++		goto done;
++	}
++
++	/* set flash key and into IAP mode */
++	ret = elan_prepare_fw_update(data);
++	if (ret)
++		goto done;
++
++	sw_checksum = 0;
++	fw_checksum = 0;
++	boot_page_count = (data->iap_start_addr * 2) / ETP_FW_PAGE_SIZE;
++	for (i = boot_page_count; i < ETP_FW_PAGE_COUNT; i++) {
++		u16 checksum = 0;
++		const u8 *page = &fw->data[i * ETP_FW_PAGE_SIZE];
++
++		for (j = 0; j < ETP_FW_PAGE_SIZE; j += 2)
++			checksum += ((page[j + 1] << 8) | page[j]);
++
++		ret = elan_write_fw_block(data, page, checksum);
++		if (ret)
++			goto done;
++		sw_checksum += checksum;
++	}
++	/* Wait WDT rest and power on reset*/
++	msleep(600);
++
++	/* check checksum */
++	fw_checksum = elan_iap_checksum(data);
++	if (sw_checksum != fw_checksum) {
++		dev_err(dev, "checksum diff sw=[%04X], fw=[%04X]\n",
++					sw_checksum, fw_checksum);
++		ret = -1;
++		goto done;
++	}
++	ret = 0;
++done:
++	if (ret != 0)
++		elan_iap_reset(data);
++	release_firmware(fw);
++	return ret;
++}
++
++/**************************************************************************
++* Genernal functions
++***************************************************************************
++*/
++
++/*
++ * (value from firmware) * 10 + 790 = dpi
++ * we also have to convert dpi to dots/mm (*10/254 to avoid floating point)
++ */
++static unsigned int elan_convert_res(char val)
++{
++	int res;
++	if (val & 0x80) {
++		val = ~val + 1;
++		res = (790 - val * 10) * 10 / 254;
++	} else
++		res = (val * 10 + 790) * 10 / 254;
++	return res;
++}
++
++static int elan_get_iap_version(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_block(data->client, ETP_I2C_IAP_VERSION_CMD, val, 3);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++static int elan_get_x_max(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_MAX_X_AXIS_CMD, val);
++	ret = (0x0f & val[1]) << 8 | val[0];
++	return ret;
++}
++
++static int elan_get_y_max(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_MAX_Y_AXIS_CMD, val);
++	ret = (0x0f & val[1]) << 8 | val[0];
++	return ret;
++}
++
++static int elan_get_x_tracenum(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_XY_TRACENUM_CMD, val);
++	ret = (val[0] - 1);
++	return ret;
++}
++
++static int elan_get_y_tracenum(struct elan_tp_data *data)
++{
++	int ret;
++	ret = elan_i2c_read_cmd(data->client, ETP_I2C_XY_TRACENUM_CMD, val);
++	ret = (val[1] - 1);
++	return ret;
++}
++
++static int elan_get_fw_version(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_FW_VERSION_CMD, val);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++static int elan_get_sm_version(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_block(data->client, ETP_I2C_SM_VERSION_CMD, val, 1);
++	ret = val[0];
++	return ret;
++}
++
++static int elan_get_unique_id(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_UNIQUEID_CMD, val);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++static int elan_get_x_resolution(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_RESOLUTION_CMD, val);
++	ret = elan_convert_res(val[0]);
++	return ret;
++}
++
++static int elan_get_y_resolution(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_RESOLUTION_CMD, val);
++	ret = elan_convert_res(val[1]);
++	return ret;
++}
++
++static int elan_get_fw_checksum(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_FW_CHECKSUM_CMD, val);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++static int elan_get_max_baseline(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_MAX_BASELINE_CMD, val);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++static int elan_get_min_baseline(struct elan_tp_data *data)
++{
++	int ret;
++	elan_i2c_read_cmd(data->client,	ETP_I2C_MIN_BASELINE_CMD, val);
++	ret = le16_to_cpup((__le16 *)val);
++	return ret;
++}
++
++
++static int elan_enable_calibrate(struct elan_tp_data *data)
++{
++	int ret;
++	ret = elan_i2c_enable_calibrate(data->client);
++	return ret;
++}
++
++static int elan_disable_calibrate(struct elan_tp_data *data)
++{
++	int ret;
++	ret = elan_i2c_disable_calibrate(data->client);
++	return ret;
++}
++
++/********************************************************************
++ * below routines export interfaces to sysfs file system.
++ * so user can get firmware/driver/hardware information using cat command.
++ * e.g.: use below command to get firmware version
++ *      cat /sys/bus/i2c/drivers/elan_i2c/1-0015/firmware_version
++ *******************************************************************
++ */
++static ssize_t elan_enable_detailinfo(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	data->enable_detail_info = true;
++	return sprintf(buf, "enable\n");
++}
++
++static ssize_t elan_read_fw_checksum(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	unsigned int checksum = 0;
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	if (data->enable_detail_info == true) {
++		checksum = elan_get_fw_checksum(data);
++		data->enable_detail_info = false;
++	}
++	return sprintf(buf, "0x%04x\n", checksum);
++}
++
++static ssize_t elan_read_unique_id(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	data->unique_id = elan_get_unique_id(data);
++	return sprintf(buf, "0x%04x\n", data->unique_id);
++}
++
++static ssize_t elan_read_driver_ver(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	return sprintf(buf, "%s\n", ELAN_DRIVER_VERSION);
++}
++
++static ssize_t elan_read_fw_ver(struct device *dev,
++				    struct device_attribute *attr,
++				    char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	data->fw_version = elan_get_fw_version(data);
++	return sprintf(buf, "0x%04x\n", data->fw_version);
++}
++
++static ssize_t elan_read_sm_ver(struct device *dev,
++				    struct device_attribute *attr,
++				    char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	data->sm_version = elan_get_sm_version(data);
++	return sprintf(buf, "0x%04x\n", data->sm_version);
++}
++
++static ssize_t elan_read_iap_ver(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	data->iap_version = elan_get_iap_version(data);
++	return sprintf(buf, "0x%04x\n", data->iap_version);
++}
++
++
++static ssize_t elan_update_fw(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	int ret;
++	data->updated_fw = true;
++	ret = elan_firmware(data);
++	if (ret)
++		dev_err(dev, "firmware update failed.\n");
++	else
++		dev_info(dev, "firmware update succeeded.\n");
++	return ret ? ret : count;
++}
++
++static ssize_t elan_do_calibrate(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	int tries = 20;
++	int ret = 0;
++	val[0] = 0;
++
++	disable_irq(data->irq);
++	elan_enable_calibrate(data);
++	elan_i2c_write_cmd(data->client, ETP_I2C_CALIBRATE_CMD, 1);
++
++	do {
++		/* wait 250ms and check finish or not */
++		msleep(250);
++		elan_i2c_read_block(data->client,
++					ETP_I2C_CALIBRATE_CMD, val, 1);
++
++		/* calibrate finish */
++		if (val[0] == 0)
++			break;
++	} while (--tries);
++
++	elan_disable_calibrate(data);
++	enable_irq(data->irq);
++
++	if (tries == 0) {
++		dev_err(dev, "Failed to calibrate. Timeout.\n");
++		ret = -ETIMEDOUT;
++	}
++	return ret < 0 ? ret : count;
++}
++
++
++static ssize_t elan_read_baseline(struct device *dev,
++				   struct device_attribute *attr,
++				   char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	int max_baseline, min_baseline;
++
++	disable_irq(data->irq);
++	elan_enable_calibrate(data);
++	msleep(250);
++	max_baseline = elan_get_max_baseline(data);
++	min_baseline = elan_get_min_baseline(data);
++	elan_disable_calibrate(data);
++	enable_irq(data->irq);
++	return sprintf(buf, "max:%d min:%d\n", max_baseline, min_baseline);
++}
++
++static ssize_t elan_do_reinitialize(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++	int ret;
++	disable_irq(data->irq);
++	ret = elan_i2c_reinitialize(data->client);
++	enable_irq(data->irq);
++	if (ret < 0)
++		return sprintf(buf, "reinitialize fail\n");
++
++	return sprintf(buf, "reinitialize success\n");
++}
++
++static DEVICE_ATTR(unique_id, S_IRUGO, elan_read_unique_id, NULL);
++static DEVICE_ATTR(firmware_version, S_IRUGO, elan_read_fw_ver, NULL);
++static DEVICE_ATTR(sample_version, S_IRUGO, elan_read_sm_ver, NULL);
++static DEVICE_ATTR(driver_version, S_IRUGO, elan_read_driver_ver, NULL);
++static DEVICE_ATTR(iap_version, S_IRUGO, elan_read_iap_ver, NULL);
++static DEVICE_ATTR(fw_checksum, S_IRUGO, elan_read_fw_checksum, NULL);
++static DEVICE_ATTR(open_info, S_IRUGO, elan_enable_detailinfo, NULL);
++static DEVICE_ATTR(baseline, S_IRUGO, elan_read_baseline, NULL);
++static DEVICE_ATTR(reinitialize, S_IRUGO, elan_do_reinitialize, NULL);
++static DEVICE_ATTR(calibrate, S_IWUSR, NULL, elan_do_calibrate);
++static DEVICE_ATTR(update_fw, S_IWUSR, NULL, elan_update_fw);
++
++static struct attribute *elan_sysfs_entries[] = {
++	&dev_attr_unique_id.attr,
++	&dev_attr_firmware_version.attr,
++	&dev_attr_sample_version.attr,
++	&dev_attr_driver_version.attr,
++	&dev_attr_iap_version.attr,
++	&dev_attr_fw_checksum.attr,
++	&dev_attr_open_info.attr,
++	&dev_attr_baseline.attr,
++	&dev_attr_reinitialize.attr,
++	&dev_attr_calibrate.attr,
++	&dev_attr_update_fw.attr,
++	NULL,
++};
++
++static const struct attribute_group elan_sysfs_group = {
++	.attrs = elan_sysfs_entries,
++};
++
++/*****************************************************************
++* Elan i2c interface
++******************************************************************
++*/
++static int elan_i2c_read_block(struct i2c_client *client,
++				 u16 reg, u8 *val, u16 len)
++{
++	struct i2c_msg msgs[2];
++	u8 buf[2];
++	int ret;
++
++	buf[0] = reg & 0xff;
++	buf[1] = (reg >> 8) & 0xff;
++
++	msgs[0].addr = client->addr;
++	msgs[0].flags = client->flags & I2C_M_TEN;
++	msgs[0].len = 2;
++	msgs[0].buf = buf;
++
++	msgs[1].addr = client->addr;
++	msgs[1].flags = client->flags & I2C_M_TEN;
++	msgs[1].flags |= I2C_M_RD;
++	msgs[1].len = len;
++	msgs[1].buf = val;
++
++	ret = i2c_transfer(client->adapter, msgs, 2);
++	return ret != 2 ? -EIO : 0;
++}
++
++static int elan_i2c_read_cmd(struct i2c_client *client, u16 reg, u8 *val)
++{
++	int retval;
++
++	retval = elan_i2c_read_block(client, reg, val, ETP_INF_LENGTH);
++	if (retval < 0) {
++		dev_err(&client->dev, "reading cmd (0x%04x) fail.\n", reg);
++		return retval;
++	}
++	return 0;
++}
++
++static int elan_i2c_write_cmd(struct i2c_client *client, u16 reg, u16 cmd)
++{
++	struct i2c_msg msg;
++	u8 buf[4];
++	int ret;
++
++	buf[0] = reg & 0xff;
++	buf[1] = (reg >> 8) & 0xff;
++	buf[2] = cmd & 0xff;
++	buf[3] = (cmd >> 8) & 0xff;
++
++	msg.addr = client->addr;
++	msg.flags = client->flags & I2C_M_TEN;
++	msg.len = 4;
++	msg.buf = buf;
++
++	ret = i2c_transfer(client->adapter, &msg, 1);
++	return ret != 1 ? -EIO : 0;
++}
++
++static int elan_i2c_reset(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD,
++						ETP_I2C_RESET);
++}
++
++static int elan_i2c_wake_up(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD,
++						ETP_I2C_WAKE_UP);
++}
++
++static int elan_i2c_sleep(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD,
++						ETP_I2C_SLEEP);
++}
++
++static int elan_i2c_enable_absolute_mode(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_SET_CMD,
++						ETP_ENABLE_ABS);
++}
++
++static int elan_i2c_enable_calibrate(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_SET_CMD,
++			ETP_ENABLE_ABS|ETP_ENABLE_CALIBRATE);
++}
++
++static int elan_i2c_disable_calibrate(struct i2c_client *client)
++{
++	return elan_i2c_write_cmd(client, ETP_I2C_SET_CMD,
++			ETP_ENABLE_ABS|ETP_DISABLE_CALIBRATE);
++}
++
++static int elan_i2c_get_desc(struct i2c_client *client, u8 *val)
++{
++	return elan_i2c_read_block(client, ETP_I2C_DESC_CMD, val,
++					ETP_I2C_DESC_LENGTH);
++}
++
++static int elan_i2c_get_report_desc(struct i2c_client *client, u8 *val)
++{
++	return elan_i2c_read_block(client, ETP_I2C_REPORT_DESC_CMD,
++				 val, ETP_I2C_REPORT_DESC_LENGTH);
++}
++
++static int elan_i2c_initialize(struct i2c_client *client)
++{
++	struct device *dev = &client->dev;
++	int rc;
++
++	rc = elan_i2c_reset(client);
++	if (rc < 0) {
++		dev_err(dev, "device reset failed.\n");
++		return -1;
++	}
++
++	/* wait for get reset return flag */
++	msleep(100);
++	/* get reset return flag 0000 */
++	rc = i2c_master_recv(client, val, ETP_INF_LENGTH);
++	if (rc < 0) {
++		dev_err(dev, "get device reset return value failed.\n");
++		return -1;
++	}
++
++	rc = elan_i2c_get_desc(client, val);
++	if (rc < 0) {
++		dev_err(dev, "cannot get device descriptor.\n");
++		return -1;
++	}
++
++	rc = elan_i2c_get_report_desc(client, val);
++	if (rc < 0) {
++		dev_err(dev, "fetching report descriptor failed.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++static int elan_i2c_reinitialize(struct i2c_client *client)
++{
++	int ret;
++
++	ret = elan_i2c_initialize(client);
++	if (ret < 0) {
++		dev_err(&client->dev, "device initialize failed.\n");
++		goto err_i2c_reinitialize;
++	}
++
++	ret = elan_i2c_enable_absolute_mode(client);
++	if (ret < 0) {
++		dev_err(&client->dev, "cannot switch to absolute mode.\n");
++		goto err_i2c_reinitialize;
++	}
++
++	ret = elan_i2c_wake_up(client);
++	if (ret < 0)
++		dev_err(&client->dev, "device wake up failed.\n");
++err_i2c_reinitialize:
++	return ret;
++}
++
++/*****************************************************************
++* Elan isr functions
++******************************************************************
++*/
++
++static int elan_check_packet(struct elan_tp_data *data, u8 *packet)
++{
++	u8 rid;
++	rid = packet[ETP_I2C_REPORT_ID_OFFSET];
++	/* check report id */
++	if (rid != ETP_REPORT_ID) {
++		dev_err(&data->client->dev, "report id [%x] fail.\n", rid);
++		return -1;
++	}
++	return 0;
++}
++
++static void elan_report_absolute(struct elan_tp_data *data, u8 *packet)
++{
++	struct input_dev *input = data->input;
++	u8 *finger_data;
++	bool finger_on;
++	int pos_x, pos_y;
++	int pressure, mk_x, mk_y;
++	int i, area_x, area_y, major, minor, new_pressure;
++	int finger_count = 0;
++	int btn_click;
++	u8  tp_info;
++
++	finger_data = &packet[ETP_I2C_FINGER_DATA_OFFSET];
++	tp_info = packet[3];
++
++	btn_click = (tp_info & 0x01);
++	for (i = 0; i < ETP_MAX_FINGERS; i++) {
++		finger_on = (tp_info >> (3 + i)) & 0x01;
++
++		/* analyze touched finger raw data*/
++		if (finger_on) {
++			pos_x = ((finger_data[0] & 0xf0) << 4) |
++				finger_data[1];
++			pos_y = ((finger_data[0] & 0x0f) << 8) |
++				finger_data[2];
++			pos_y =  data->max_y - pos_y;
++			mk_x = (finger_data[3] & 0x0f);
++			mk_y = (finger_data[3] >> 4);
++			pressure = finger_data[4];
++
++			/*
++			to avoid fat finger be as palm, so reduce the
++			width x and y per trace
++			*/
++			area_x = mk_x * (data->width_x - ETP_FWIDTH_REDUCE);
++			area_y = mk_y * (data->width_y - ETP_FWIDTH_REDUCE);
++
++			major = max(area_x, area_y);
++			minor = min(area_x, area_y);
++
++			new_pressure = pressure + ETP_PRESSURE_OFFSET;
++			if (new_pressure > ETP_MAX_PRESSURE)
++				new_pressure = ETP_MAX_PRESSURE;
++
++			input_mt_slot(input, i);
++			input_mt_report_slot_state(input, MT_TOOL_FINGER,
++									true);
++			input_report_abs(input, ABS_MT_POSITION_X, pos_x);
++			input_report_abs(input, ABS_MT_POSITION_Y, pos_y);
++			input_report_abs(input, ABS_MT_PRESSURE, new_pressure);
++			input_report_abs(input, ABS_TOOL_WIDTH, mk_x);
++			input_report_abs(input, ABS_MT_TOUCH_MAJOR, major);
++			input_report_abs(input, ABS_MT_TOUCH_MINOR, minor);
++			finger_data += ETP_FINGER_DATA_LEN;
++			finger_count++;
++		} else {
++			input_mt_slot(input, i);
++			input_mt_report_slot_state(input,
++						MT_TOOL_FINGER, false);
++		}
++	}
++
++	input_report_key(input, BTN_LEFT, (btn_click == 1));
++	input_mt_report_pointer_emulation(input, true);
++	input_sync(input);
++}
++
++static irqreturn_t elan_isr(int irq, void *dev_id)
++{
++	struct elan_tp_data *data = dev_id;
++	u8 raw[ETP_MAX_REPORT_LEN];
++	int retval;
++	int report_len;
++
++	retval = mutex_lock_interruptible(&data->dbfs_mutex);
++	if (retval)
++		return IRQ_HANDLED;
++
++	if (data->updated_fw) {
++		retval = i2c_master_recv(data->client, raw,
++						ETP_INF_LENGTH);
++		if (retval == 2 && !le16_to_cpup((__le16 *)raw)) {
++			dev_info(&data->client->dev,
++				"reinitializing after F/W update...");
++			elan_i2c_reinitialize(data->client);
++		}
++		data->updated_fw = false;
++		goto elan_isr_end;
++	}
++
++	report_len = ETP_I2C_REPORT_LEN;
++	retval = i2c_master_recv(data->client, raw, report_len);
++
++	if (retval != report_len) {
++		dev_err(&data->client->dev, "wrong packet len(%d)", retval);
++		goto elan_isr_end;
++	}
++
++	if (elan_check_packet(data, raw) < 0) {
++		dev_err(&data->client->dev, "wrong packet format.");
++		goto elan_isr_end;
++	}
++	elan_report_absolute(data, raw);
++	data->dbfs_buffer.bfetch = false;
++	memcpy(data->dbfs_buffer.buffer, raw, report_len);
++
++elan_isr_end:
++	mutex_unlock(&data->dbfs_mutex);
++	return IRQ_HANDLED;
++}
++
++
++static int elan_input_dev_create(struct elan_tp_data *data)
++{
++	struct i2c_client *client = data->client;
++	struct input_dev *input;
++	unsigned int x_res, y_res;
++	int ret;
++
++	data->input = input = input_allocate_device();
++	if (!input)
++		return -ENOMEM;
++	input->name = "Elan Touchpad";
++	input->id.bustype = BUS_I2C;
++	input->dev.parent = &data->client->dev;
++
++	__set_bit(INPUT_PROP_POINTER, input->propbit);
++	__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
++	__set_bit(EV_KEY, input->evbit);
++	__set_bit(EV_ABS, input->evbit);
++
++	__set_bit(BTN_LEFT, input->keybit);
++	__set_bit(BTN_TOUCH, input->keybit);
++	__set_bit(BTN_TOOL_FINGER, input->keybit);
++	__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
++	__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
++	__set_bit(BTN_TOOL_QUADTAP, input->keybit);
++	__set_bit(BTN_TOOL_QUINTTAP, input->keybit);
++
++	__set_bit(ABS_MT_TOUCH_MAJOR, input->absbit);
++	__set_bit(ABS_MT_TOUCH_MINOR, input->absbit);
++	__set_bit(ABS_MT_POSITION_X, input->absbit);
++	__set_bit(ABS_MT_POSITION_Y, input->absbit);
++
++	data->unique_id = elan_get_unique_id(data);
++	data->fw_version = elan_get_fw_version(data);
++	data->sm_version = elan_get_sm_version(data);
++	data->iap_version = elan_get_iap_version(data);
++	data->max_x = elan_get_x_max(data);
++	data->max_y = elan_get_y_max(data);
++	data->width_x = data->max_x / elan_get_x_tracenum(data);
++	data->width_y = data->max_y / elan_get_y_tracenum(data);
++	x_res = elan_get_x_resolution(data);
++	y_res = elan_get_y_resolution(data);
++
++	dev_info(&client->dev,
++		"Elan Touchpad Information:\n"
++		"    Module unique ID:  0x%04x\n"
++		"    Firmware Version:  0x%04x\n"
++		"    Sample Version:  0x%04x\n"
++		"    IAP Version:  0x%04x\n"
++		"    Max ABS X,Y:   %d,%d\n"
++		"    Width X,Y:   %d,%d\n"
++		"    Resolution X,Y:   %d,%d (dots/mm)\n",
++		data->unique_id,
++		data->fw_version,
++		data->sm_version,
++		data->iap_version,
++		data->max_x, data->max_y,
++		data->width_x, data->width_y,
++		(char)x_res, (char)y_res);
++
++	input_set_abs_params(input, ABS_X, 0, data->max_x, 0, 0);
++	input_set_abs_params(input, ABS_Y, 0, data->max_y, 0, 0);
++	input_abs_set_res(input, ABS_X, x_res);
++	input_abs_set_res(input, ABS_Y, y_res);
++	input_set_abs_params(input, ABS_PRESSURE, 0, ETP_MAX_PRESSURE, 0, 0);
++	input_set_abs_params(input, ABS_TOOL_WIDTH, 0, ETP_FINGER_WIDTH, 0, 0);
++
++	/* handle pointer emulation and unused slots in core */
++	ret = input_mt_init_slots(input, ETP_MAX_FINGERS,
++				  INPUT_MT_POINTER | INPUT_MT_DROP_UNUSED);
++	if (ret) {
++		dev_err(&client->dev, "allocate MT slots failed, %d\n", ret);
++		goto err_free_device;
++	}
++	input_set_abs_params(input, ABS_MT_POSITION_X, 0, data->max_x, 0, 0);
++	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, data->max_y, 0, 0);
++	input_abs_set_res(input, ABS_MT_POSITION_X, x_res);
++	input_abs_set_res(input, ABS_MT_POSITION_Y, y_res);
++	input_set_abs_params(input, ABS_MT_PRESSURE, 0,
++				ETP_MAX_PRESSURE, 0, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0,
++		ETP_FINGER_WIDTH * max(data->width_x, data->width_y), 0, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0,
++		ETP_FINGER_WIDTH * min(data->width_x, data->width_y), 0, 0);
++
++	/* Register the device in input subsystem */
++	ret = input_register_device(input);
++	if (ret) {
++		dev_err(&client->dev, "input device register failed, %d\n",
++			ret);
++		goto err_free_device;
++	}
++
++	return 0;
++
++err_free_device:
++	input_free_device(input);
++	return ret;
++}
++
++static u8 elan_check_adapter_functionality(struct i2c_client *client)
++{
++	u8 ret = ELAN_ADAPTER_FUNC_NONE;
++
++	if (i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		ret |= ELAN_ADAPTER_FUNC_I2C;
++	return ret;
++}
++
++static int elan_probe(struct i2c_client *client,
++				    const struct i2c_device_id *dev_id)
++{
++	struct elan_tp_data *data;
++	int ret;
++	u8 adapter_func;
++	struct device *dev = &client->dev;
++
++	adapter_func = elan_check_adapter_functionality(client);
++	if (adapter_func == ELAN_ADAPTER_FUNC_NONE) {
++		dev_err(dev, "not a supported I2C adapter\n");
++		return -EIO;
++	}
++
++	data = kzalloc(sizeof(struct elan_tp_data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->client = client;
++	data->updated_fw = false;
++	data->enable_detail_info = false;
++	data->adapter_func = adapter_func;
++	data->irq = client->irq;
++
++	ret = elan_i2c_initialize(client);
++	if (ret < 0)
++		goto err_init;
++
++	ret = elan_input_dev_create(data);
++	if (ret < 0)
++		goto err_input_dev;
++
++	if (elan_dbfs_init(data)) {
++		dev_err(&client->dev, "error create elan debugfs.\n");
++		goto err_input_dev;
++	}
++	ret = request_threaded_irq(client->irq, NULL, elan_isr,
++				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++				  client->name, data);
++	if (ret < 0) {
++		dev_err(&client->dev, "cannot register irq=%d\n",
++							 client->irq);
++		goto err_irq;
++	}
++
++	ret = elan_i2c_enable_absolute_mode(client);
++	if (ret < 0) {
++		dev_err(&client->dev, "cannot switch to abs mode.\n");
++		goto err_switch_mode;
++	}
++
++	ret = elan_i2c_wake_up(client);
++	if (ret < 0) {
++		dev_err(&client->dev, "device wake up failed.\n");
++		goto err_switch_mode;
++	}
++
++	device_init_wakeup(&client->dev, 1);
++	ret = sysfs_create_group(&client->dev.kobj, &elan_sysfs_group);
++	if (ret < 0) {
++		dev_err(&client->dev, "cannot register dev attribute %d", ret);
++		goto err_switch_mode;
++	}
++	i2c_set_clientdata(client, data);
++	return 0;
++
++err_switch_mode:
++	free_irq(data->irq, data);
++err_irq:
++	input_free_device(data->input);
++	debugfs_remove_recursive(data->dbfs_root);
++	mutex_destroy(&data->dbfs_mutex);
++err_input_dev:
++	kfree(data);
++err_init:
++	dev_err(&client->dev, "Elan Trackpad probe fail!\n");
++	return ret;
++}
++
++static int elan_remove(struct i2c_client *client)
++{
++	struct elan_tp_data *data = i2c_get_clientdata(client);
++
++	free_irq(data->irq, data);
++	debugfs_remove_recursive(data->dbfs_root);
++	mutex_destroy(&data->dbfs_mutex);
++
++	input_unregister_device(data->input);
++	kfree(data);
++	sysfs_remove_group(&client->dev.kobj, &elan_sysfs_group);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int elan_suspend(struct device *dev)
++{
++	int ret;
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++
++	disable_irq(data->irq);
++	ret = elan_i2c_sleep(data->client);
++
++	if (ret < 0) {
++		dev_err(dev, "suspend mode failed, %d\n", ret);
++	} else {
++		if (device_may_wakeup(dev))
++			data->irq_wake = (enable_irq_wake(data->irq) == 0);
++	}
++	return 0;
++}
++
++static int elan_resume(struct device *dev)
++{
++	int ret = 0;
++	struct elan_tp_data *data = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev) && data->irq_wake)
++		disable_irq_wake(data->irq);
++
++	ret = elan_i2c_reinitialize(data->client);
++
++	if (ret < 0)
++		dev_err(dev, "resume active power failed, %d\n", ret);
++
++	enable_irq(data->irq);
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(elan_pm_ops, elan_suspend, elan_resume);
++
++static const struct i2c_device_id elan_id[] = {
++	{ DRIVER_NAME, 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, elan_id);
++
++static struct i2c_driver elan_driver = {
++	.driver = {
++		.name	= DRIVER_NAME,
++		.owner	= THIS_MODULE,
++		.pm	= &elan_pm_ops,
++	},
++	.probe		= elan_probe,
++	.remove		= elan_remove,
++	.id_table	= elan_id,
++};
++
++
++static int __init elan_init(void)
++{
++	int ret;
++	ret = i2c_add_driver(&elan_driver);
++	if (ret) {
++		pr_err("elan driver register FAILED.\n");
++		return ret;
++	}
++
++	return ret;
++}
++
++static void __exit elan_exit(void)
++{
++	i2c_del_driver(&elan_driver);
++}
++
++module_init(elan_init);
++module_exit(elan_exit);
++
++MODULE_AUTHOR("Duson Lin <dusonlin@emc.com.tw>");
++MODULE_DESCRIPTION("Elan I2C Touchpad driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
+
