@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab3JWTmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:42:15 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:61519 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab3JWTmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:42:14 -0400
+	id S1753205Ab3JWTqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:46:22 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:38555 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752742Ab3JWTqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 15:46:21 -0400
+Date: Wed, 23 Oct 2013 22:37:19 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Jesse Gross <jesse@nicira.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH 1/4] [RFC] net: Explicitly initialize u64_stats_sync
+ structures for lockdep
+In-Reply-To: <52681407.8060804@linaro.org>
+Message-ID: <alpine.LFD.2.03.1310232222380.1747@ssi.bg>
+References: <1381186321-4906-1-git-send-email-john.stultz@linaro.org> <1381186321-4906-2-git-send-email-john.stultz@linaro.org> <52681407.8060804@linaro.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20131022205205.GA2374@obsidianresearch.com>
-References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de> <20131022205205.GA2374@obsidianresearch.com>
-From: Rajiv Andrade <mail@srajiv.net>
-Date: Wed, 23 Oct 2013 17:41:53 -0200
-Message-ID: <CAEQAOwoFpiVeDKTa6UgjiRoy9aKcUPHT7CYwa1eM1EUVm0gM=Q@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm maintainer
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, tpmdd-devel@lists.sourceforge.net,
-        adlai@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
 
-Long time, no see..
+	Hello,
 
-I stopped being active (administrative-wise specially) since I handed
-it over to Kent. Now that he stepped down, I can come back at my own
-private time.
+On Wed, 23 Oct 2013, John Stultz wrote:
 
-Peter, thank you a ton for stepping in. Since you're of course the
-owner (yes, we need such figure), let me know if my help is desirable
-or if you think there isn't additional bandwidth needed to maintain
-it.
+> Just wanted to ping folks on this patch, as I haven't gotten any feedback.
+> 
+> As its a prereq for the seqcount lockdep support, I'd like to get it
+> queued/merged, but I'm not sure what the right maintainer path or
+> approach should be.
+> 
+> 1) Do folks prefer to see this patch split up into 30-some separate
+> trivial clenaup patches, or have it go in all as one logical change?
+> 
+> 2) Would folks want this patch (in whichever form) to be merged
+> separately via the networking maintainers, or can it be merged via -tip
+> as part of the seqcount lockdep series?
 
-Cheers,
+	The IPVS part in net/netfilter/ipvs/ looks ok to me.
+We do not have any pending changes for this area, so you can
+skip the ipvs trees for this change. If you need ack for the
+IPVS part, here it is:
 
-On Tue, Oct 22, 2013 at 6:52 PM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> On Tue, Oct 22, 2013 at 07:36:50PM +0200, Peter Huewe wrote:
->> Since I'm actively maintaining the tpm subsystem for a few months now,
->> it's time to step up and be an official maintainer for the tpm subsystem,
->> atleast until I hear something different from my company.
->
-> Sounds good!
->
-> As others have said, please purge the list of inactive people...
->
-> Thanks,
-> Jason
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Acked-by: Julian Anastasov <ja@ssi.bg>
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
