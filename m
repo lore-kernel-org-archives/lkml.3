@@ -1,489 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3JWU62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:58:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55374 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3JWU60 (ORCPT
+	id S1752575Ab3JWV3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 17:29:33 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:59057 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab3JWV3b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:58:26 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/16] perf bench: Change the procps visible command-name of invididual benchmark tests plus cleanups
-Date: Wed, 23 Oct 2013 17:58:05 -0300
-Message-Id: <1382561895-8237-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
-References: <1382561895-8237-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 23 Oct 2013 17:29:31 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Matt Porter <matt.porter@linaro.org>, Rob Herring <robherring2@gmail.com>
+CC: Matthijs Kooijman <matthijs@stdin.nl>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Felipe Balbi <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
+Thread-Topic: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
+Thread-Index: AQHOzAwS6OPEcw2UMEy2WbSX6ha4XJn/XMMAgAGo+YCAAApMAIAAq2wAgAEeDgD///m1oA==
+Date: Wed, 23 Oct 2013 21:29:22 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E1DB5B@US01WEMBX2.internal.synopsys.com>
+References: <20131018141221.GH2721@beef> <5264F37E.9060307@ti.com>
+ <20131022104829.GF15425@login.drsnuggles.stderr.nl>
+ <20131022112520.GE29341@beef> <5266F06C.2080701@gmail.com>
+ <20131023144242.GI29341@beef>
+In-Reply-To: <20131023144242.GI29341@beef>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+> From: Matt Porter [mailto:matt.porter@linaro.org]
+> Sent: Wednesday, October 23, 2013 7:43 AM
+> 
+> On Tue, Oct 22, 2013 at 04:38:52PM -0500, Rob Herring wrote:
+> > On 10/22/2013 06:25 AM, Matt Porter wrote:
+> > > On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
+> > >> Hi Kishon,
+> > >>
+> > >> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
+> > >>> I think it makes sense to keep the data width property in the dwc2 node itself.
+> > >>> I mean it describes how the dwc2 IP is configured in that particular SoC (given
+> > >>> that it can be either <8> or <16>).
+> > >> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
+> > >> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
+> > >> and 16 supported" would make sense as a property of dwc2 (though this
+> > >> value should be autodetectable through GHWCFG4), while the actual 8 or
+> > >> 16 supported by the PHY would make sense as property of a phy.
+> > >
+> > > There would be no value in adding a property for an already detectable
+> > > value to dwc2's binding. To be honest, it's pretty much useless
+> > > information due to the existence of the "8 and 16" option.
+> > >
+> > >> Note sure if this is really useful in practice as well, or if just
+> > >> setting the actual width to use on dwc2 makes more sense...
+> > >
+> > > The GHWCFG4 information itself is not useful in practice, as described
+> > > in the original thread: https://lkml.org/lkml/2013/10/10/477
+> > >
+> > > It's certainly useful in practice to have this width property in either
+> > > the dwc2 or the phy binding. One can make a case for either. As I
+> > > mentioned in the original post, if we put it in the phy binding we'll be
+> > > updating the generic phy binding. We'll then need an api added into the
+> > > generic phy framework to fetch the width of a phy.
+> > >
+> > > Both cases are doable and trivial, we just need the canonical decision
+> > > from a DT maintainer as to where the property belongs. Given that they
+> > > are in ARM ksummit, I'm not expecting to hear anything right this
+> > > moment. :)
+> >
+> > The host can support both, so it is not a property of the host and is a
+> > property of the phy. It is no different than what mode a SPI slave
+> > requires or whether an i2c slave supports 8 or 10-bit addressing. Those
+> > examples are all 1 to many rather than 1 to 1 where it doesn't really
+> > matter, but the same logic applies.
+> 
+> Makes good sense, thanks.
+> 
+> In this case, given the PHY ownership of width, we can completely avoid
+> any DT properties. The generic phy compliant BCM Kona phy driver can
+> report via the generic phy framework that it is 8-bit wide. There's no
+> support for this type of thing now but it's pretty trivial to add.
 
-Before this patch, looking at 'perf bench sched pipe' behavior over
-'top' only told us that something related to perf is running:
+> I went ahead and did a quick proof-of-concept that adds a free-form
+> phy attributes struct for the generic phy. Given that generic phys can
+> be for any transmission technology this could be filled with a jumble
+> unrelated and often unpopulated attributes over time. In any case, the
+> below patch allows the phy provider to choose to specify utmi_width and
+> a controller driver that cares can use phy_get_attrs() to fetch the
+> optional phy attributes and use the utmi_width field if applicable.
 
-      PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-    19934 mingo     20   0 54836 1296  952 R 18.6  0.0   0:00.56 perf
-    19935 mingo     20   0 54836  384   36 S 18.6  0.0   0:00.56 perf
+As an alternate approach, you could add a 'utmi_width' property to the
+PHY's DT node, and have the dwc2 driver scan the tree until it finds its
+PHY, and then check it for that property. That would avoid the need to
+add anything new to the PHY framework. I don't know if that would be
+considered good practice by the DT guys, though.
 
-After the patch it's clearly visible what's going on:
-
-      PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-    19744 mingo     20   0  125m 3536 2644 R 68.2  0.0   0:01.12 sched-pipe
-    19745 mingo     20   0  125m 1172  276 R 68.2  0.0   0:01.12 sched-pipe
-
-The benchmark-subsystem name is concatenated with the individual
-testcase name.
-
-Unfortunately 'perf top' does not show the reconfigured name, possibly
-because it caches ->comm[] values and does not recognize changes to
-them?
-
-Also clean up a few bits in builtin-bench.c while at it and reorganize
-the code and the output strings to be consistent.
-
-Use iterators to access the various arrays. Rename 'suites' concept to
-'benchmark collection' and the 'bench_suite' to 'benchmark/bench'. The
-many repetitions of 'suite' made the code harder to read and understand.
-
-The new output is:
-
-  comet:~/tip/tools/perf> ./perf bench
-  Usage:
-        perf bench [<common options>] <collection> <benchmark> [<options>]
-
-        # List of all available benchmark collections:
-
-         sched: Scheduler and IPC benchmarks
-           mem: Memory access benchmarks
-          numa: NUMA scheduling and MM benchmarks
-           all: All benchmarks
-
-  comet:~/tip/tools/perf> ./perf bench sched
-
-        # List of available benchmarks for collection 'sched':
-
-     messaging: Benchmark for scheduling and IPC
-          pipe: Benchmark for pipe() between two processes
-           all: Test all scheduler benchmarks
-
-  comet:~/tip/tools/perf> ./perf bench mem
-
-        # List of available benchmarks for collection 'mem':
-
-        memcpy: Benchmark for memcpy()
-        memset: Benchmark for memset() tests
-           all: Test all memory benchmarks
-
-  comet:~/tip/tools/perf> ./perf bench numa
-
-        # List of available benchmarks for collection 'numa':
-
-           mem: Benchmark for NUMA workloads
-           all: Test all NUMA benchmarks
-
-Individual benchmark modules were not touched.
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Hitoshi Mitake <h.mitake@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20131023123756.GA17871@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-bench.c | 239 +++++++++++++++++++++++----------------------
- 1 file changed, 122 insertions(+), 117 deletions(-)
-
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index 33af80fa49cf..e47f90cc7b98 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -1,21 +1,18 @@
- /*
-- *
-  * builtin-bench.c
-  *
-- * General benchmarking subsystem provided by perf
-+ * General benchmarking collections provided by perf
-  *
-  * Copyright (C) 2009, Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-- *
-  */
- 
- /*
-+ * Available benchmark collection list:
-  *
-- * Available subsystem list:
-- *  sched ... scheduler and IPC mechanism
-+ *  sched ... scheduler and IPC performance
-  *  mem   ... memory access performance
-- *
-+ *  numa  ... NUMA scheduling and MM performance
-  */
--
- #include "perf.h"
- #include "util/util.h"
- #include "util/parse-options.h"
-@@ -25,112 +22,92 @@
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
-+#include <sys/prctl.h>
- 
--struct bench_suite {
--	const char *name;
--	const char *summary;
--	int (*fn)(int, const char **, const char *);
-+typedef int (*bench_fn_t)(int argc, const char **argv, const char *prefix);
-+
-+struct bench {
-+	const char	*name;
-+	const char	*summary;
-+	bench_fn_t	fn;
- };
--						\
--/* sentinel: easy for help */
--#define suite_all { "all", "Test all benchmark suites", NULL }
- 
- #ifdef HAVE_LIBNUMA_SUPPORT
--static struct bench_suite numa_suites[] = {
--	{ "mem",
--	  "Benchmark for NUMA workloads",
--	  bench_numa },
--	suite_all,
--	{ NULL,
--	  NULL,
--	  NULL                  }
-+static struct bench numa_benchmarks[] = {
-+	{ "mem",	"Benchmark for NUMA workloads",			bench_numa		},
-+	{ "all",	"Test all NUMA benchmarks",			NULL			},
-+	{ NULL,		NULL,						NULL			}
- };
- #endif
- 
--static struct bench_suite sched_suites[] = {
--	{ "messaging",
--	  "Benchmark for scheduler and IPC mechanisms",
--	  bench_sched_messaging },
--	{ "pipe",
--	  "Flood of communication over pipe() between two processes",
--	  bench_sched_pipe      },
--	suite_all,
--	{ NULL,
--	  NULL,
--	  NULL                  }
-+static struct bench sched_benchmarks[] = {
-+	{ "messaging",	"Benchmark for scheduling and IPC",		bench_sched_messaging	},
-+	{ "pipe",	"Benchmark for pipe() between two processes",	bench_sched_pipe	},
-+	{ "all",	"Test all scheduler benchmarks",		NULL			},
-+	{ NULL,		NULL,						NULL			}
- };
- 
--static struct bench_suite mem_suites[] = {
--	{ "memcpy",
--	  "Simple memory copy in various ways",
--	  bench_mem_memcpy },
--	{ "memset",
--	  "Simple memory set in various ways",
--	  bench_mem_memset },
--	suite_all,
--	{ NULL,
--	  NULL,
--	  NULL             }
-+static struct bench mem_benchmarks[] = {
-+	{ "memcpy",	"Benchmark for memcpy()",			bench_mem_memcpy	},
-+	{ "memset",	"Benchmark for memset() tests",			bench_mem_memset	},
-+	{ "all",	"Test all memory benchmarks",			NULL			},
-+	{ NULL,		NULL,						NULL			}
- };
- 
--struct bench_subsys {
--	const char *name;
--	const char *summary;
--	struct bench_suite *suites;
-+struct collection {
-+	const char	*name;
-+	const char	*summary;
-+	struct bench	*benchmarks;
- };
- 
--static struct bench_subsys subsystems[] = {
-+static struct collection collections[] = {
-+	{ "sched",	"Scheduler and IPC benchmarks",		sched_benchmarks	},
-+	{ "mem",	"Memory access benchmarks",			mem_benchmarks		},
- #ifdef HAVE_LIBNUMA_SUPPORT
--	{ "numa",
--	  "NUMA scheduling and MM behavior",
--	  numa_suites },
-+	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
- #endif
--	{ "sched",
--	  "scheduler and IPC mechanism",
--	  sched_suites },
--	{ "mem",
--	  "memory access performance",
--	  mem_suites },
--	{ "all",		/* sentinel: easy for help */
--	  "all benchmark subsystem",
--	  NULL },
--	{ NULL,
--	  NULL,
--	  NULL       }
-+	{ "all",	"All benchmarks",				NULL			},
-+	{ NULL,		NULL,						NULL			}
- };
- 
--static void dump_suites(int subsys_index)
-+/* Iterate over all benchmark collections: */
-+#define for_each_collection(coll) \
-+	for (coll = collections; coll->name; coll++)
-+
-+/* Iterate over all benchmarks within a collection: */
-+#define for_each_bench(coll, bench) \
-+	for (bench = coll->benchmarks; bench->name; bench++)
-+
-+static void dump_benchmarks(struct collection *coll)
- {
--	int i;
-+	struct bench *bench;
- 
--	printf("# List of available suites for %s...\n\n",
--	       subsystems[subsys_index].name);
-+	printf("\n        # List of available benchmarks for collection '%s':\n\n", coll->name);
- 
--	for (i = 0; subsystems[subsys_index].suites[i].name; i++)
--		printf("%14s: %s\n",
--		       subsystems[subsys_index].suites[i].name,
--		       subsystems[subsys_index].suites[i].summary);
-+	for_each_bench(coll, bench)
-+		printf("%14s: %s\n", bench->name, bench->summary);
- 
- 	printf("\n");
--	return;
- }
- 
- static const char *bench_format_str;
-+
-+/* Output/formatting style, exported to benchmark modules: */
- int bench_format = BENCH_FORMAT_DEFAULT;
- 
- static const struct option bench_options[] = {
--	OPT_STRING('f', "format", &bench_format_str, "default",
--		    "Specify format style"),
-+	OPT_STRING('f', "format", &bench_format_str, "default", "Specify format style"),
- 	OPT_END()
- };
- 
- static const char * const bench_usage[] = {
--	"perf bench [<common options>] <subsystem> <suite> [<options>]",
-+	"perf bench [<common options>] <collection> <benchmark> [<options>]",
- 	NULL
- };
- 
- static void print_usage(void)
- {
-+	struct collection *coll;
- 	int i;
- 
- 	printf("Usage: \n");
-@@ -138,11 +115,10 @@ static void print_usage(void)
- 		printf("\t%s\n", bench_usage[i]);
- 	printf("\n");
- 
--	printf("# List of available subsystems...\n\n");
-+	printf("        # List of all available benchmark collections:\n\n");
- 
--	for (i = 0; subsystems[i].name; i++)
--		printf("%14s: %s\n",
--		       subsystems[i].name, subsystems[i].summary);
-+	for_each_collection(coll)
-+		printf("%14s: %s\n", coll->name, coll->summary);
- 	printf("\n");
- }
- 
-@@ -159,44 +135,74 @@ static int bench_str2int(const char *str)
- 	return BENCH_FORMAT_UNKNOWN;
- }
- 
--static void all_suite(struct bench_subsys *subsys)	  /* FROM HERE */
-+/*
-+ * Run a specific benchmark but first rename the running task's ->comm[]
-+ * to something meaningful:
-+ */
-+static int run_bench(const char *coll_name, const char *bench_name, bench_fn_t fn,
-+		     int argc, const char **argv, const char *prefix)
- {
--	int i;
-+	int size;
-+	char *name;
-+	int ret;
-+
-+	size = strlen(coll_name) + 1 + strlen(bench_name) + 1;
-+
-+	name = zalloc(size);
-+	BUG_ON(!name);
-+
-+	scnprintf(name, size, "%s-%s", coll_name, bench_name);
-+
-+	prctl(PR_SET_NAME, name);
-+	argv[0] = name;
-+
-+	ret = fn(argc, argv, prefix);
-+
-+	free(name);
-+
-+	return ret;
-+}
-+
-+static void run_collection(struct collection *coll)
-+{
-+	struct bench *bench;
- 	const char *argv[2];
--	struct bench_suite *suites = subsys->suites;
- 
- 	argv[1] = NULL;
- 	/*
- 	 * TODO:
--	 * preparing preset parameters for
-+	 *
-+	 * Preparing preset parameters for
- 	 * embedded, ordinary PC, HPC, etc...
--	 * will be helpful
-+	 * would be helpful.
- 	 */
--	for (i = 0; suites[i].fn; i++) {
--		printf("# Running %s/%s benchmark...\n",
--		       subsys->name,
--		       suites[i].name);
-+	for_each_bench(coll, bench) {
-+		if (!bench->fn)
-+			break;
-+		printf("# Running %s/%s benchmark...\n", coll->name, bench->name);
- 		fflush(stdout);
- 
--		argv[1] = suites[i].name;
--		suites[i].fn(1, argv, NULL);
-+		argv[1] = bench->name;
-+		run_bench(coll->name, bench->name, bench->fn, 1, argv, NULL);
- 		printf("\n");
- 	}
- }
- 
--static void all_subsystem(void)
-+static void run_all_collections(void)
- {
--	int i;
--	for (i = 0; subsystems[i].suites; i++)
--		all_suite(&subsystems[i]);
-+	struct collection *coll;
-+
-+	for_each_collection(coll)
-+		run_collection(coll);
- }
- 
- int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
- {
--	int i, j, status = 0;
-+	struct collection *coll;
-+	int ret = 0;
- 
- 	if (argc < 2) {
--		/* No subsystem specified. */
-+		/* No collection specified. */
- 		print_usage();
- 		goto end;
- 	}
-@@ -206,7 +212,7 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	bench_format = bench_str2int(bench_format_str);
- 	if (bench_format == BENCH_FORMAT_UNKNOWN) {
--		printf("Unknown format descriptor:%s\n", bench_format_str);
-+		printf("Unknown format descriptor: '%s'\n", bench_format_str);
- 		goto end;
- 	}
- 
-@@ -216,52 +222,51 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
- 	}
- 
- 	if (!strcmp(argv[0], "all")) {
--		all_subsystem();
-+		run_all_collections();
- 		goto end;
- 	}
- 
--	for (i = 0; subsystems[i].name; i++) {
--		if (strcmp(subsystems[i].name, argv[0]))
-+	for_each_collection(coll) {
-+		struct bench *bench;
-+
-+		if (strcmp(coll->name, argv[0]))
- 			continue;
- 
- 		if (argc < 2) {
--			/* No suite specified. */
--			dump_suites(i);
-+			/* No bench specified. */
-+			dump_benchmarks(coll);
- 			goto end;
- 		}
- 
- 		if (!strcmp(argv[1], "all")) {
--			all_suite(&subsystems[i]);
-+			run_collection(coll);
- 			goto end;
- 		}
- 
--		for (j = 0; subsystems[i].suites[j].name; j++) {
--			if (strcmp(subsystems[i].suites[j].name, argv[1]))
-+		for_each_bench(coll, bench) {
-+			if (strcmp(bench->name, argv[1]))
- 				continue;
- 
- 			if (bench_format == BENCH_FORMAT_DEFAULT)
--				printf("# Running %s/%s benchmark...\n",
--				       subsystems[i].name,
--				       subsystems[i].suites[j].name);
-+				printf("# Running '%s/%s' benchmark:\n", coll->name, bench->name);
- 			fflush(stdout);
--			status = subsystems[i].suites[j].fn(argc - 1,
--							    argv + 1, prefix);
-+			ret = run_bench(coll->name, bench->name, bench->fn, argc-1, argv+1, prefix);
- 			goto end;
- 		}
- 
- 		if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
--			dump_suites(i);
-+			dump_benchmarks(coll);
- 			goto end;
- 		}
- 
--		printf("Unknown suite:%s for %s\n", argv[1], argv[0]);
--		status = 1;
-+		printf("Unknown benchmark: '%s' for collection '%s'\n", argv[1], argv[0]);
-+		ret = 1;
- 		goto end;
- 	}
- 
--	printf("Unknown subsystem:%s\n", argv[0]);
--	status = 1;
-+	printf("Unknown collection: '%s'\n", argv[0]);
-+	ret = 1;
- 
- end:
--	return status;
-+	return ret;
- }
 -- 
-1.8.1.4
+Paul
 
