@@ -1,70 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3JWMLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 08:11:05 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:36241 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab3JWMLD (ORCPT
+	id S1753183Ab3JWMTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 08:19:15 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48564 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752767Ab3JWMTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 08:11:03 -0400
+	Wed, 23 Oct 2013 08:19:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19BWkO87CwVq9wIe8TIEEXj
+Date: Wed, 23 Oct 2013 05:19:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, Greg KH <greg@kroah.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the arm-soc tree
+Message-ID: <20131023121903.GT15154@atomide.com>
+References: <1382369814-7582-1-git-send-email-treding@nvidia.com>
+ <1382454649-16442-1-git-send-email-treding@nvidia.com>
+ <1382454649-16442-4-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <1382514295.2081.32.camel@dabdike.quadriga.com>
-References: <20131022205608.GA6616@hostway.ca>
-	<52671B3E.6070804@interlog.com>
-	<1382514295.2081.32.camel@dabdike.quadriga.com>
-Date: Wed, 23 Oct 2013 05:11:02 -0700
-X-Google-Sender-Auth: wkzxMcBg9FD1YirAv-LKbThYkmw
-Message-ID: <CA+5PVA6+6jZyypZODiuY4NWY3V2CsJeurFTuy4Wt-KcPddzaSQ@mail.gmail.com>
-Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: dgilbert@interlog.com, Simon Kirby <sim@hostway.ca>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Vaughan Cao <vaughan.cao@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382454649-16442-4-git-send-email-treding@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 12:44 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
->> On 13-10-22 04:56 PM, Simon Kirby wrote:
->> > Hello!
->> >
->> > While trying to figure out why the request queue to sda (ext4) was
->> > clogging up on one of our btrfs backup boxes, I noticed a megarc process
->> > in D state, so enabled locking debugging, and got this (on 3.12-rc6):
->> >
->> > [  205.372823] ================================================
->> > [  205.372901] [ BUG: lock held when returning to user space! ]
->> > [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
->> > [  205.373055] ------------------------------------------------
->> > [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
->> > [  205.373212] 1 lock held by megarc.bin/5283:
->> > [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
->> >
->> > Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
->> > tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
->> > though I haven't tried with lockdep.
->> >
->> > This is caused by some of our internal RAID monitoring scripts that run
->> > "megarc.bin -dispCfg -a0" (even though that controller isn't present on
->> > this server -- a PowerEdge 2950 w/Perc 5).
->> >
->> > strace output of the program execution that causes the above message is
->> > here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
->>
->> This has been reported. That patch will be reverted or,
->> if there is enough time, a fix will (or at least should)
->> go in before the release of lk 3.12 .
->
-> I think you've got about a week to prove you can fix it (before 3.12
-> goes final).  I'll send my current set of fixes to Linus without doing
-> anything about sg.
+* Thierry Reding <thierry.reding@gmail.com> [131022 08:13]:
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> 
+> 	arch/arm/boot/dts/omap3-evm.dts
+> 
+> caused by commits 975d963 (ARM: dts: omap: update usb_otg_hs data) and
+> 465ce68 (ARM: dts: Add common support for omap3-evm).
+> 
+> I fixed it up (see below). Please verify that the resolution looks good.
+> Note that the resolution adds the phys and phy-names properties in the
+> usb_otg_hs node to complement the common omap3-evm DTSI introduced in
+> 465ce68 with the changes done in 975d963.
 
-In the event that a suitable fix isn't found, are you going to revert
-the commit(s) that caused the issue?
+Sigh there was no conflict in sight when I acked patch "ARM: dts: Add common
+support for omap3-evm", then I created the omap3-evm-common.dtsi not
+remembering about the earlier patch. So a totally self-inflicted merge
+conflict again and more proof that the dts files need to be always
+merged seprately from the drivers.
 
-josh
+The merge conflict below looks correct thanks.
+
+Regards,
+
+Tony
+ 
+> diff --cc arch/arm/boot/dts/omap3-evm-common.dtsi
+> index 0000000,b549329..3007e79
+> mode 000000,100644..100644
+> --- a/arch/arm/boot/dts/omap3-evm-common.dtsi
+> +++ b/arch/arm/boot/dts/omap3-evm-common.dtsi
+> @@@ -1,0 -1,94 +1,96 @@@
+> + /*
+> +  * Common support for omap3 EVM boards
+> +  */
+> + 
+> + #include "omap-gpmc-smsc911x.dtsi"
+> + 
+> + / {
+> + 	cpus {
+> + 		cpu@0 {
+> + 			cpu0-supply = <&vcc>;
+> + 		};
+> + 	};
+> + 
+> + 	leds {
+> + 		compatible = "gpio-leds";
+> + 		ledb {
+> + 			label = "omap3evm::ledb";
+> + 			gpios = <&twl_gpio 19 GPIO_ACTIVE_HIGH>; /* LEDB */
+> + 			linux,default-trigger = "default-on";
+> + 		};
+> + 	};
+> + 
+> + 	wl12xx_vmmc: wl12xx_vmmc {
+> + 		compatible = "regulator-fixed";
+> + 		regulator-name = "vwl1271";
+> + 		regulator-min-microvolt = <1800000>;
+> + 		regulator-max-microvolt = <1800000>;
+> + 		gpio = <&gpio5 22 0>;	/* gpio150 */
+> + 		startup-delay-us = <70000>;
+> + 		enable-active-high;
+> + 		vin-supply = <&vmmc2>;
+> + 	};
+> + };
+> + 
+> + &i2c1 {
+> + 	clock-frequency = <2600000>;
+> + 
+> + 	twl: twl@48 {
+> + 		reg = <0x48>;
+> + 		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+> + 		interrupt-parent = <&intc>;
+> + 	};
+> + };
+> + 
+> + #include "twl4030.dtsi"
+> + #include "twl4030_omap3.dtsi"
+> + 
+> + &i2c2 {
+> + 	clock-frequency = <400000>;
+> + };
+> + 
+> + &i2c3 {
+> + 	clock-frequency = <400000>;
+> + 
+> + 	/*
+> + 	 * TVP5146 Video decoder-in for analog input support.
+> + 	 */
+> + 	tvp5146@5c {
+> + 		compatible = "ti,tvp5146m2";
+> + 		reg = <0x5c>;
+> + 	};
+> + };
+> + 
+> + &mmc1 {
+> + 	vmmc-supply = <&vmmc1>;
+> + 	vmmc_aux-supply = <&vsim>;
+> + 	bus-width = <8>;
+> + };
+> + 
+> + &mmc2 {
+> + 	vmmc-supply = <&wl12xx_vmmc>;
+> + 	non-removable;
+> + 	bus-width = <4>;
+> + 	cap-power-off-card;
+> + };
+> + 
+> + &twl_gpio {
+> + 	ti,use-leds;
+> + };
+> + 
+> + &usb_otg_hs {
+> + 	interface-type = <0>;
+> + 	usb-phy = <&usb2_phy>;
+> ++	phys = <&usb2_phy>;
+> ++	phy-names = "usb2-phy";
+> + 	mode = <3>;
+> + 	power = <50>;
+> + };
+> + 
+> + &gpmc {
+> + 	ethernet@gpmc {
+> + 		interrupt-parent = <&gpio6>;
+> + 		interrupts = <16 8>;
+> + 		reg = <5 0 0xff>;
+> + 	};
+> + };
