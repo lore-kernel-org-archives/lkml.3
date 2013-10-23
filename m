@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3JWH4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:56:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56077 "EHLO
+	id S1753204Ab3JWH40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:56:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56079 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab3JWH4C (ORCPT
+	with ESMTP id S1753102Ab3JWH4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:56:02 -0400
-Date: Wed, 23 Oct 2013 00:55:07 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-f5fc14124c5cefdd052a2b2a6a3f0ed531540113@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1381847254-28809-2-git-send-email-jolsa@redhat.com>
-References: <1381847254-28809-2-git-send-email-jolsa@redhat.com>
+	Wed, 23 Oct 2013 03:56:03 -0400
+Date: Wed, 23 Oct 2013 00:55:44 -0700
+From: tip-bot for Waiman Long <tipbot@zytor.com>
+Message-ID: <tip-5dbb6e81d85e55ee2b4cf523c1738e16f63e5400@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, Waiman.Long@hp.com,
+        dsahern@gmail.com, tglx@linutronix.de, scott.norton@hp.com,
+        davidlohr@hp.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com, aswin@hp.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
+        acme@redhat.com, a.p.zijlstra@chello.nl, jolsa@redhat.com,
+        Waiman.Long@hp.com, dsahern@gmail.com, tglx@linutronix.de,
+        davidlohr@hp.com, scott.norton@hp.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com, aswin@hp.com
+In-Reply-To: <1382107129-2010-5-git-send-email-Waiman.Long@hp.com>
+References: <1382107129-2010-5-git-send-email-Waiman.Long@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add data object to handle perf data file
-Git-Commit-ID: f5fc14124c5cefdd052a2b2a6a3f0ed531540113
+Subject: [tip:perf/core] perf top:
+  Add --max-stack option to limit callchain stack scan
+Git-Commit-ID: 5dbb6e81d85e55ee2b4cf523c1738e16f63e5400
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,877 +36,113 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:55:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:55:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f5fc14124c5cefdd052a2b2a6a3f0ed531540113
-Gitweb:     http://git.kernel.org/tip/f5fc14124c5cefdd052a2b2a6a3f0ed531540113
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 15 Oct 2013 16:27:32 +0200
+Commit-ID:  5dbb6e81d85e55ee2b4cf523c1738e16f63e5400
+Gitweb:     http://git.kernel.org/tip/5dbb6e81d85e55ee2b4cf523c1738e16f63e5400
+Author:     Waiman Long <Waiman.Long@hp.com>
+AuthorDate: Fri, 18 Oct 2013 10:38:49 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 21 Oct 2013 17:33:24 -0300
+CommitDate: Mon, 21 Oct 2013 17:36:25 -0300
 
-perf tools: Add data object to handle perf data file
+perf top: Add --max-stack option to limit callchain stack scan
 
-This patch is adding 'struct perf_data_file' object as a placeholder for
-all attributes regarding perf.data file handling. Changing
-perf_session__new to take it as an argument.
+When the callgraph function is enabled (-G), it may take a long time to
+scan all the stack data and merge them accordingly.
 
-The rest of the functionality will be added later to keep this change
-simple enough, because all the places using perf_session are changed
-now.
+This patch adds a new --max-stack option to perf-top to limit the depth
+of callchain stack data to look at to reduce the time it takes for
+perf-top to finish its processing. It reduces the amount of information
+provided to the user in exchange for faster speed.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1381847254-28809-2-git-send-email-jolsa@redhat.com
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1382107129-2010-5-git-send-email-Waiman.Long@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c      |  9 ++++--
- tools/perf/builtin-buildid-cache.c |  8 +++--
- tools/perf/builtin-buildid-list.c  |  9 ++++--
- tools/perf/builtin-diff.c          | 19 +++++++-----
- tools/perf/builtin-evlist.c        |  7 ++++-
- tools/perf/builtin-inject.c        |  7 ++++-
- tools/perf/builtin-kmem.c          |  7 ++++-
- tools/perf/builtin-kvm.c           | 13 ++++++--
- tools/perf/builtin-lock.c          |  7 ++++-
- tools/perf/builtin-mem.c           |  9 ++++--
- tools/perf/builtin-record.c        | 61 ++++++++++++++++++++------------------
- tools/perf/builtin-report.c        | 10 +++++--
- tools/perf/builtin-sched.c         |  6 +++-
- tools/perf/builtin-script.c        | 15 ++++++++--
- tools/perf/builtin-timechart.c     | 10 +++++--
- tools/perf/builtin-top.c           |  6 +++-
- tools/perf/builtin-trace.c         |  8 +++--
- tools/perf/perf.h                  |  1 -
- tools/perf/util/data.h             | 29 ++++++++++++++++++
- tools/perf/util/session.c          | 12 ++++----
- tools/perf/util/session.h          |  6 ++--
- 21 files changed, 186 insertions(+), 73 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 8 ++++++++
+ tools/perf/builtin-top.c              | 8 ++++++--
+ tools/perf/util/top.h                 | 1 +
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 94f9a8e..95df683 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -28,6 +28,7 @@
- #include "util/hist.h"
- #include "util/session.h"
- #include "util/tool.h"
-+#include "util/data.h"
- #include "arch/common.h"
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index f65777c..c16a09e 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -158,6 +158,14 @@ Default is to monitor all CPUS.
  
- #include <dlfcn.h>
-@@ -199,9 +200,13 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 	struct perf_session *session;
- 	struct perf_evsel *pos;
- 	u64 total_nr_samples;
-+	struct perf_data_file file = {
-+		.path  = input_name,
-+		.mode  = PERF_DATA_MODE_READ,
-+		.force = ann->force,
-+	};
+ 	Default: fractal,0.5,callee.
  
--	session = perf_session__new(input_name, O_RDONLY,
--				    ann->force, false, &ann->tool);
-+	session = perf_session__new(&file, false, &ann->tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
-index 8140b7b..cfede86 100644
---- a/tools/perf/builtin-buildid-cache.c
-+++ b/tools/perf/builtin-buildid-cache.c
-@@ -221,8 +221,12 @@ static bool dso__missing_buildid_cache(struct dso *dso, int parm __maybe_unused)
- 
- static int build_id_cache__fprintf_missing(const char *filename, bool force, FILE *fp)
- {
--	struct perf_session *session = perf_session__new(filename, O_RDONLY,
--							 force, false, NULL);
-+	struct perf_data_file file = {
-+		.path  = filename,
-+		.mode  = PERF_DATA_MODE_READ,
-+		.force = force,
-+	};
-+	struct perf_session *session = perf_session__new(&file, false, NULL);
- 	if (session == NULL)
- 		return -1;
- 
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index e74366a..0164c1c 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -15,6 +15,7 @@
- #include "util/parse-options.h"
- #include "util/session.h"
- #include "util/symbol.h"
-+#include "util/data.h"
- 
- static int sysfs__fprintf_build_id(FILE *fp)
- {
-@@ -52,6 +53,11 @@ static bool dso__skip_buildid(struct dso *dso, int with_hits)
- static int perf_session__list_build_ids(bool force, bool with_hits)
- {
- 	struct perf_session *session;
-+	struct perf_data_file file = {
-+		.path  = input_name,
-+		.mode  = PERF_DATA_MODE_READ,
-+		.force = force,
-+	};
- 
- 	symbol__elf_init();
- 	/*
-@@ -60,8 +66,7 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
- 	if (filename__fprintf_build_id(input_name, stdout))
- 		goto out;
- 
--	session = perf_session__new(input_name, O_RDONLY, force, false,
--				    &build_id__mark_dso_hit_ops);
-+	session = perf_session__new(&file, false, &build_id__mark_dso_hit_ops);
- 	if (session == NULL)
- 		return -1;
- 	/*
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 2a78dc8..419d27d 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -16,6 +16,7 @@
- #include "util/sort.h"
- #include "util/symbol.h"
- #include "util/util.h"
-+#include "util/data.h"
- 
- #include <stdlib.h>
- #include <math.h>
-@@ -42,7 +43,7 @@ struct diff_hpp_fmt {
- 
- struct data__file {
- 	struct perf_session	*session;
--	const char		*file;
-+	struct perf_data_file	file;
- 	int			 idx;
- 	struct hists		*hists;
- 	struct diff_hpp_fmt	 fmt[PERF_HPP_DIFF__MAX_INDEX];
-@@ -601,7 +602,7 @@ static void data__fprintf(void)
- 
- 	data__for_each_file(i, d)
- 		fprintf(stdout, "#  [%d] %s %s\n",
--			d->idx, d->file,
-+			d->idx, d->file.path,
- 			!d->idx ? "(Baseline)" : "");
- 
- 	fprintf(stdout, "#\n");
-@@ -663,17 +664,16 @@ static int __cmd_diff(void)
- 	int ret = -EINVAL, i;
- 
- 	data__for_each_file(i, d) {
--		d->session = perf_session__new(d->file, O_RDONLY, force,
--					       false, &tool);
-+		d->session = perf_session__new(&d->file, false, &tool);
- 		if (!d->session) {
--			pr_err("Failed to open %s\n", d->file);
-+			pr_err("Failed to open %s\n", d->file.path);
- 			ret = -ENOMEM;
- 			goto out_delete;
- 		}
- 
- 		ret = perf_session__process_events(d->session, &tool);
- 		if (ret) {
--			pr_err("Failed to process %s\n", d->file);
-+			pr_err("Failed to process %s\n", d->file.path);
- 			goto out_delete;
- 		}
- 
-@@ -1016,7 +1016,12 @@ static int data_init(int argc, const char **argv)
- 		return -ENOMEM;
- 
- 	data__for_each_file(i, d) {
--		d->file = use_default ? defaults[i] : argv[i];
-+		struct perf_data_file *file = &d->file;
++--max-stack::
++	Set the stack depth limit when parsing the callchain, anything
++	beyond the specified depth will be ignored. This is a trade-off
++	between information loss and faster processing especially for
++	workloads that can have a very long callchain stack.
 +
-+		file->path  = use_default ? defaults[i] : argv[i];
-+		file->mode  = PERF_DATA_MODE_READ,
-+		file->force = force,
++	Default: 127
 +
- 		d->idx  = i;
- 	}
- 
-diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-index 05bd9df..20b0f12 100644
---- a/tools/perf/builtin-evlist.c
-+++ b/tools/perf/builtin-evlist.c
-@@ -14,13 +14,18 @@
- #include "util/parse-events.h"
- #include "util/parse-options.h"
- #include "util/session.h"
-+#include "util/data.h"
- 
- static int __cmd_evlist(const char *file_name, struct perf_attr_details *details)
- {
- 	struct perf_session *session;
- 	struct perf_evsel *pos;
-+	struct perf_data_file file = {
-+		.path = file_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
--	session = perf_session__new(file_name, O_RDONLY, 0, false, NULL);
-+	session = perf_session__new(&file, 0, NULL);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index f51a963..4aa6d78 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -15,6 +15,7 @@
- #include "util/tool.h"
- #include "util/debug.h"
- #include "util/build-id.h"
-+#include "util/data.h"
- 
- #include "util/parse-options.h"
- 
-@@ -345,6 +346,10 @@ static int __cmd_inject(struct perf_inject *inject)
- {
- 	struct perf_session *session;
- 	int ret = -EINVAL;
-+	struct perf_data_file file = {
-+		.path = inject->input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
- 	signal(SIGINT, sig_handler);
- 
-@@ -355,7 +360,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 		inject->tool.tracing_data = perf_event__repipe_tracing_data;
- 	}
- 
--	session = perf_session__new(inject->input_name, O_RDONLY, false, true, &inject->tool);
-+	session = perf_session__new(&file, true, &inject->tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 9b5f077..1126382 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -13,6 +13,7 @@
- 
- #include "util/parse-options.h"
- #include "util/trace-event.h"
-+#include "util/data.h"
- 
- #include "util/debug.h"
- 
-@@ -486,8 +487,12 @@ static int __cmd_kmem(void)
- 		{ "kmem:kfree",			perf_evsel__process_free_event, },
-     		{ "kmem:kmem_cache_free",	perf_evsel__process_free_event, },
- 	};
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false, &perf_kmem);
-+	session = perf_session__new(&file, false, &perf_kmem);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index cfa0b79..188bb29 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -17,6 +17,7 @@
- #include "util/tool.h"
- #include "util/stat.h"
- #include "util/top.h"
-+#include "util/data.h"
- 
- #include <sys/prctl.h>
- #include <sys/timerfd.h>
-@@ -1215,10 +1216,13 @@ static int read_events(struct perf_kvm_stat *kvm)
- 		.comm			= perf_event__process_comm,
- 		.ordered_samples	= true,
- 	};
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
- 	kvm->tool = eops;
--	kvm->session = perf_session__new(kvm->file_name, O_RDONLY, 0, false,
--					 &kvm->tool);
-+	kvm->session = perf_session__new(&file, false, &kvm->tool);
- 	if (!kvm->session) {
- 		pr_err("Initializing perf session failed\n");
- 		return -EINVAL;
-@@ -1450,6 +1454,9 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 		"perf kvm stat live [<options>]",
- 		NULL
- 	};
-+	struct perf_data_file file = {
-+		.mode = PERF_DATA_MODE_WRITE,
-+	};
- 
- 
- 	/* event handling */
-@@ -1514,7 +1521,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 	/*
- 	 * perf session
- 	 */
--	kvm->session = perf_session__new(NULL, O_WRONLY, false, false, &kvm->tool);
-+	kvm->session = perf_session__new(&file, false, &kvm->tool);
- 	if (kvm->session == NULL) {
- 		err = -ENOMEM;
- 		goto out;
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 6a9076f..33c7253 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -15,6 +15,7 @@
- #include "util/debug.h"
- #include "util/session.h"
- #include "util/tool.h"
-+#include "util/data.h"
- 
- #include <sys/types.h>
- #include <sys/prctl.h>
-@@ -853,8 +854,12 @@ static int __cmd_report(bool display_info)
- 		.comm		 = perf_event__process_comm,
- 		.ordered_samples = true,
- 	};
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
-+	session = perf_session__new(&file, false, &eops);
- 	if (!session) {
- 		pr_err("Initializing perf session failed\n");
- 		return -ENOMEM;
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 253133a..31c00f1 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -5,6 +5,7 @@
- #include "util/trace-event.h"
- #include "util/tool.h"
- #include "util/session.h"
-+#include "util/data.h"
- 
- #define MEM_OPERATION_LOAD	"load"
- #define MEM_OPERATION_STORE	"store"
-@@ -119,10 +120,14 @@ static int process_sample_event(struct perf_tool *tool,
- 
- static int report_raw_events(struct perf_mem *mem)
- {
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 	int err = -EINVAL;
- 	int ret;
--	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
--							 0, false, &mem->tool);
-+	struct perf_session *session = perf_session__new(&file, false,
-+							 &mem->tool);
- 
- 	if (session == NULL)
- 		return -ENOMEM;
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d269dfa..4ea46ff 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -24,6 +24,7 @@
- #include "util/symbol.h"
- #include "util/cpumap.h"
- #include "util/thread_map.h"
-+#include "util/data.h"
- 
- #include <unistd.h>
- #include <sched.h>
-@@ -65,11 +66,10 @@ struct perf_record {
- 	struct perf_tool	tool;
- 	struct perf_record_opts	opts;
- 	u64			bytes_written;
--	const char		*output_name;
-+	struct perf_data_file	file;
- 	struct perf_evlist	*evlist;
- 	struct perf_session	*session;
- 	const char		*progname;
--	int			output;
- 	int			realtime_prio;
- 	bool			no_buildid;
- 	bool			no_buildid_cache;
-@@ -84,8 +84,10 @@ static void advance_output(struct perf_record *rec, size_t size)
- 
- static int write_output(struct perf_record *rec, void *buf, size_t size)
- {
-+	struct perf_data_file *file = &rec->file;
-+
- 	while (size) {
--		int ret = write(rec->output, buf, size);
-+		int ret = write(file->fd, buf, size);
- 
- 		if (ret < 0) {
- 			pr_err("failed to write perf data, error: %m\n");
-@@ -248,13 +250,15 @@ out:
- 
- static int process_buildids(struct perf_record *rec)
- {
--	u64 size = lseek(rec->output, 0, SEEK_CUR);
-+	struct perf_data_file *file  = &rec->file;
-+	struct perf_session *session = rec->session;
- 
-+	u64 size = lseek(file->fd, 0, SEEK_CUR);
- 	if (size == 0)
- 		return 0;
- 
--	rec->session->fd = rec->output;
--	return __perf_session__process_events(rec->session, rec->post_processing_offset,
-+	session->fd = file->fd;
-+	return __perf_session__process_events(session, rec->post_processing_offset,
- 					      size - rec->post_processing_offset,
- 					      size, &build_id__mark_dso_hit_ops);
- }
-@@ -262,17 +266,18 @@ static int process_buildids(struct perf_record *rec)
- static void perf_record__exit(int status, void *arg)
- {
- 	struct perf_record *rec = arg;
-+	struct perf_data_file *file = &rec->file;
- 
- 	if (status != 0)
- 		return;
- 
--	if (!rec->opts.pipe_output) {
-+	if (!file->is_pipe) {
- 		rec->session->header.data_size += rec->bytes_written;
- 
- 		if (!rec->no_buildid)
- 			process_buildids(rec);
- 		perf_session__write_header(rec->session, rec->evlist,
--					   rec->output, true);
-+					   file->fd, true);
- 		perf_session__delete(rec->session);
- 		perf_evlist__delete(rec->evlist);
- 		symbol__exit();
-@@ -342,14 +347,15 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- {
- 	struct stat st;
- 	int flags;
--	int err, output, feat;
-+	int err, feat;
- 	unsigned long waking = 0;
- 	const bool forks = argc > 0;
- 	struct machine *machine;
- 	struct perf_tool *tool = &rec->tool;
- 	struct perf_record_opts *opts = &rec->opts;
- 	struct perf_evlist *evsel_list = rec->evlist;
--	const char *output_name = rec->output_name;
-+	struct perf_data_file *file = &rec->file;
-+	const char *output_name = file->path;
- 	struct perf_session *session;
- 	bool disabled = false;
- 
-@@ -363,13 +369,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	if (!output_name) {
- 		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
--			opts->pipe_output = true;
-+			file->is_pipe = true;
- 		else
--			rec->output_name = output_name = "perf.data";
-+			file->path = output_name = "perf.data";
- 	}
- 	if (output_name) {
- 		if (!strcmp(output_name, "-"))
--			opts->pipe_output = true;
-+			file->is_pipe = true;
- 		else if (!stat(output_name, &st) && st.st_size) {
- 			char oldname[PATH_MAX];
- 			snprintf(oldname, sizeof(oldname), "%s.old",
-@@ -381,19 +387,16 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	flags = O_CREAT|O_RDWR|O_TRUNC;
- 
--	if (opts->pipe_output)
--		output = STDOUT_FILENO;
-+	if (file->is_pipe)
-+		file->fd = STDOUT_FILENO;
- 	else
--		output = open(output_name, flags, S_IRUSR | S_IWUSR);
--	if (output < 0) {
-+		file->fd = open(output_name, flags, S_IRUSR | S_IWUSR);
-+	if (file->fd < 0) {
- 		perror("failed to create output file");
- 		return -1;
- 	}
- 
--	rec->output = output;
--
--	session = perf_session__new(output_name, O_WRONLY,
--				    true, false, NULL);
-+	session = perf_session__new(file, false, NULL);
- 	if (session == NULL) {
- 		pr_err("Not enough memory for reading perf file header\n");
- 		return -1;
-@@ -415,7 +418,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	if (forks) {
- 		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
--						    argv, opts->pipe_output,
-+						    argv, file->is_pipe,
- 						    true);
- 		if (err < 0) {
- 			pr_err("Couldn't run the workload!\n");
-@@ -436,13 +439,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	 */
- 	on_exit(perf_record__exit, rec);
- 
--	if (opts->pipe_output) {
--		err = perf_header__write_pipe(output);
-+	if (file->is_pipe) {
-+		err = perf_header__write_pipe(file->fd);
- 		if (err < 0)
- 			goto out_delete_session;
- 	} else {
- 		err = perf_session__write_header(session, evsel_list,
--						 output, false);
-+						 file->fd, false);
- 		if (err < 0)
- 			goto out_delete_session;
- 	}
-@@ -455,11 +458,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
- 	}
- 
--	rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
-+	rec->post_processing_offset = lseek(file->fd, 0, SEEK_CUR);
- 
- 	machine = &session->machines.host;
- 
--	if (opts->pipe_output) {
-+	if (file->is_pipe) {
- 		err = perf_event__synthesize_attrs(tool, session,
- 						   process_synthesized_event);
- 		if (err < 0) {
-@@ -476,7 +479,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 			 * return this more properly and also
- 			 * propagate errors that now are calling die()
- 			 */
--			err = perf_event__synthesize_tracing_data(tool, output, evsel_list,
-+			err = perf_event__synthesize_tracing_data(tool, file->fd, evsel_list,
- 								  process_synthesized_event);
- 			if (err <= 0) {
- 				pr_err("Couldn't record tracing data.\n");
-@@ -845,7 +848,7 @@ const struct option record_options[] = {
- 	OPT_STRING('C', "cpu", &record.opts.target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
- 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
--	OPT_STRING('o', "output", &record.output_name, "file",
-+	OPT_STRING('o', "output", &record.file.path, "file",
- 		    "output file name"),
- 	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
- 		    "child tasks do not inherit counters"),
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 21b5c2f..60d7f8e 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -33,6 +33,7 @@
- #include "util/thread.h"
- #include "util/sort.h"
- #include "util/hist.h"
-+#include "util/data.h"
- #include "arch/common.h"
- 
- #include <dlfcn.h>
-@@ -857,6 +858,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_END()
- 	};
-+	struct perf_data_file file = {
-+		.mode  = PERF_DATA_MODE_READ,
-+	};
- 
- 	perf_config(perf_report_config, &report);
- 
-@@ -886,9 +890,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		perf_hpp__init();
- 	}
- 
-+	file.path  = input_name;
-+	file.force = report.force;
-+
- repeat:
--	session = perf_session__new(input_name, O_RDONLY,
--				    report.force, false, &report.tool);
-+	session = perf_session__new(&file, false, &report.tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index d8c51b2..5a46b10 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1446,8 +1446,12 @@ static int perf_sched__read_events(struct perf_sched *sched,
- 		{ "sched:sched_migrate_task", process_sched_migrate_task_event, },
- 	};
- 	struct perf_session *session;
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false, &sched->tool);
-+	session = perf_session__new(&file, false, &sched->tool);
- 	if (session == NULL) {
- 		pr_debug("No Memory for session\n");
- 		return -1;
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ebb2b5f..f0c77a1 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -15,6 +15,7 @@
- #include "util/evlist.h"
- #include "util/evsel.h"
- #include "util/sort.h"
-+#include "util/data.h"
- #include <linux/bitmap.h>
- 
- static char const		*script_name;
-@@ -1115,10 +1116,14 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
- 	char scripts_path[MAXPATHLEN], lang_path[MAXPATHLEN];
- 	DIR *scripts_dir, *lang_dir;
- 	struct perf_session *session;
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 	char *temp;
- 	int i = 0;
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false, NULL);
-+	session = perf_session__new(&file, false, NULL);
- 	if (!session)
- 		return -1;
- 
-@@ -1319,12 +1324,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		"perf script [<options>] <top-script> [script-args]",
- 		NULL
- 	};
-+	struct perf_data_file file = {
-+		.mode = PERF_DATA_MODE_READ,
-+	};
- 
- 	setup_scripting();
- 
- 	argc = parse_options(argc, argv, options, script_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 
-+	file.path = input_name;
-+
- 	if (argc > 1 && !strncmp(argv[0], "rec", strlen("rec"))) {
- 		rec_script_path = get_script_path(argv[1], RECORD_SUFFIX);
- 		if (!rec_script_path)
-@@ -1488,8 +1498,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!script_name)
- 		setup_pager();
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false,
--				    &perf_script);
-+	session = perf_session__new(&file, false, &perf_script);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index c2e0231..e11c61d 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -36,6 +36,7 @@
- #include "util/session.h"
- #include "util/svghelper.h"
- #include "util/tool.h"
-+#include "util/data.h"
- 
- #define SUPPORT_OLD_POWER_EVENTS 1
- #define PWR_EVENT_EXIT -1
-@@ -990,8 +991,13 @@ static int __cmd_timechart(const char *output_name)
- 		{ "power:power_frequency",	process_sample_power_frequency },
- #endif
- 	};
--	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
--							 0, false, &perf_timechart);
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
-+
-+	struct perf_session *session = perf_session__new(&file, false,
-+							 &perf_timechart);
- 	int ret = -EINVAL;
- 
- 	if (session == NULL)
+ --ignore-callees=<regex>::
+         Ignore callees of the function(s) matching the given regex.
+         This has the effect of collecting the callers of each such
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 65c49b2..752bebe 100644
+index 112cb7d..386d833 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -929,11 +929,15 @@ static int __cmd_top(struct perf_top *top)
- 	struct perf_record_opts *opts = &top->record_opts;
- 	pthread_t thread;
- 	int ret;
-+	struct perf_data_file file = {
-+		.mode = PERF_DATA_MODE_WRITE,
-+	};
-+
- 	/*
- 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
- 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
- 	 */
--	top->session = perf_session__new(NULL, O_WRONLY, false, false, NULL);
-+	top->session = perf_session__new(&file, false, NULL);
- 	if (top->session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index db959ac..fa620bc 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1834,7 +1834,10 @@ static int trace__replay(struct trace *trace)
- 		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
- 		{ "probe:vfs_getname",	     trace__vfs_getname, },
+@@ -771,7 +771,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 			err = machine__resolve_callchain(machine, evsel,
+ 							 al.thread, sample,
+ 							 &parent, &al,
+-							 PERF_MAX_STACK_DEPTH);
++							 top->max_stack);
+ 			if (err)
+ 				return;
+ 		}
+@@ -1048,10 +1048,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.user_freq	= UINT_MAX,
+ 			.user_interval	= ULLONG_MAX,
+ 			.freq		= 4000, /* 4 KHz */
+-			.target		     = {
++			.target		= {
+ 				.uses_mmap   = true,
+ 			},
+ 		},
++		.max_stack	     = PERF_MAX_STACK_DEPTH,
+ 		.sym_pcnt_filter     = 5,
  	};
--
-+	struct perf_data_file file = {
-+		.path  = input_name,
-+		.mode  = PERF_DATA_MODE_READ,
-+	};
- 	struct perf_session *session;
- 	int err = -1;
- 
-@@ -1857,8 +1860,7 @@ static int trace__replay(struct trace *trace)
- 	if (symbol__init() < 0)
- 		return -1;
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false,
--				    &trace->tool);
-+	session = perf_session__new(&file, false, &trace->tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 84502e8..f61c230 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -220,7 +220,6 @@ struct perf_record_opts {
- 	bool	     no_delay;
- 	bool	     no_inherit;
- 	bool	     no_samples;
--	bool	     pipe_output;
- 	bool	     raw_samples;
- 	bool	     sample_address;
- 	bool	     sample_weight;
-diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
-new file mode 100644
-index 0000000..ffa0186
---- /dev/null
-+++ b/tools/perf/util/data.h
-@@ -0,0 +1,29 @@
-+#ifndef __PERF_DATA_H
-+#define __PERF_DATA_H
-+
-+#include <stdbool.h>
-+
-+enum perf_data_mode {
-+	PERF_DATA_MODE_WRITE,
-+	PERF_DATA_MODE_READ,
-+};
-+
-+struct perf_data_file {
-+	const char *path;
-+	int fd;
-+	bool is_pipe;
-+	bool force;
-+	enum perf_data_mode mode;
-+};
-+
-+static inline bool perf_data_file__is_read(struct perf_data_file *file)
-+{
-+	return file->mode == PERF_DATA_MODE_READ;
-+}
-+
-+static inline bool perf_data_file__is_write(struct perf_data_file *file)
-+{
-+	return file->mode == PERF_DATA_MODE_WRITE;
-+}
-+
-+#endif /* __PERF_DATA_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d4559ca..e3f63df 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -106,11 +106,11 @@ static void perf_session__destroy_kernel_maps(struct perf_session *self)
- 	machines__destroy_kernel_maps(&self->machines);
- }
- 
--struct perf_session *perf_session__new(const char *filename, int mode,
--				       bool force, bool repipe,
--				       struct perf_tool *tool)
-+struct perf_session *perf_session__new(struct perf_data_file *file,
-+				       bool repipe, struct perf_tool *tool)
- {
- 	struct perf_session *self;
-+	const char *filename = file->path;
- 	struct stat st;
- 	size_t len;
- 
-@@ -134,11 +134,11 @@ struct perf_session *perf_session__new(const char *filename, int mode,
- 	INIT_LIST_HEAD(&self->ordered_samples.to_free);
- 	machines__init(&self->machines);
- 
--	if (mode == O_RDONLY) {
--		if (perf_session__open(self, force) < 0)
-+	if (perf_data_file__is_read(file)) {
-+		if (perf_session__open(self, file->force) < 0)
- 			goto out_delete;
- 		perf_session__set_id_hdr_size(self);
--	} else if (mode == O_WRONLY) {
-+	} else if (perf_data_file__is_write(file)) {
- 		/*
- 		 * In O_RDONLY mode this will be performed when reading the
- 		 * kernel MMAP event, in perf_event__process_mmap().
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 04bf737..f2f6251 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -7,6 +7,7 @@
- #include "machine.h"
- #include "symbol.h"
- #include "thread.h"
-+#include "data.h"
- #include <linux/rbtree.h>
- #include <linux/perf_event.h>
- 
-@@ -49,9 +50,8 @@ struct perf_session {
- 
- struct perf_tool;
- 
--struct perf_session *perf_session__new(const char *filename, int mode,
--				       bool force, bool repipe,
--				       struct perf_tool *tool);
-+struct perf_session *perf_session__new(struct perf_data_file *file,
-+				       bool repipe, struct perf_tool *tool);
- void perf_session__delete(struct perf_session *session);
- 
- void perf_event_header__bswap(struct perf_event_header *self);
+ 	struct perf_record_opts *opts = &top.record_opts;
+@@ -1110,6 +1111,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
+ 			     "mode[,dump_size]", record_callchain_help,
+ 			     &parse_callchain_opt, "fp"),
++	OPT_INTEGER(0, "max-stack", &top.max_stack,
++		    "Set the maximum stack depth when parsing the callchain. "
++		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
+ 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+ 		   "ignore callees of these functions in call graphs",
+ 		   report_parse_ignore_callees_opt),
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index b554ffc..88cfeaf 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -24,6 +24,7 @@ struct perf_top {
+ 	u64		   exact_samples;
+ 	u64		   guest_us_samples, guest_kernel_samples;
+ 	int		   print_entries, count_filter, delay_secs;
++	int		   max_stack;
+ 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+ 	bool		   use_tui, use_stdio;
+ 	bool		   kptr_restrict_warned;
