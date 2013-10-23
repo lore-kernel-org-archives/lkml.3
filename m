@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab3JWU63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:58:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55380 "EHLO
+	id S1753976Ab3JWVBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 17:01:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55413 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3JWU61 (ORCPT
+	with ESMTP id S1752307Ab3JWU63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:58:27 -0400
+	Wed, 23 Oct 2013 16:58:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/16] perf probe: Find fentry mcount fuzzed parameter location
-Date: Wed, 23 Oct 2013 17:58:04 -0300
-Message-Id: <1382561895-8237-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/16] perf sched: Optimize build time
+Date: Wed, 23 Oct 2013 17:58:07 -0300
+Message-Id: <1382561895-8237-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
 References: <1382561895-8237-1-git-send-email-acme@infradead.org>
@@ -26,138 +30,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-At this point, --fentry (mcount function entry) option for gcc fuzzes
-the debuginfo variable locations by skipping the mcount instruction
-offset (on x86, this is a 5 byte call instruction).
+builtin-sched.c took a log time to build with -O6 optimization. This
+turned out to be caused by:
 
-This makes variable searching fail at the entry of functions which
-are mcount'ed.
+	.curr_pid = { [0 ... MAX_CPUS - 1] = -1 },
 
-e.g.)
-Available variables at vfs_read
-        @<vfs_read+0>
-                (No matched variables)
+Fix by initializing curr_pid programmatically.
 
-This patch adds additional location search at the function entry point
-to solve this issue, which tries to find the earliest address for the
-variable location.
+This addresses the problem cured in f36f83f947ed using a smaller hammer.
 
-Note that this only works with function parameters (formal parameters)
-because any local variables should not exist on the function entry
-address (those are not initialized yet).
-
-With this patch, perf probe shows correct parameters if possible;
- # perf probe --vars vfs_read
- Available variables at vfs_read
-         @<vfs_read+0>
-                 char*   buf
-                 loff_t* pos
-                 size_t  count
-                 struct file*    file
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20131011071025.15557.13275.stgit@udc4-manage.rcp.hitachi.co.jp
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1382427258-17495-13-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 39 +++++++++++++++++++++++++++++++--------
- 1 file changed, 31 insertions(+), 8 deletions(-)
+ tools/perf/builtin-sched.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 5a46be968c0b..c04405296e5b 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -273,12 +273,15 @@ static struct probe_trace_arg_ref *alloc_trace_arg_ref(long offs)
- /*
-  * Convert a location into trace_arg.
-  * If tvar == NULL, this just checks variable can be converted.
-+ * If fentry == true and vr_die is a parameter, do huristic search
-+ * for the location fuzzed by function entry mcount.
-  */
- static int convert_variable_location(Dwarf_Die *vr_die, Dwarf_Addr addr,
--				     Dwarf_Op *fb_ops,
-+				     Dwarf_Op *fb_ops, Dwarf_Die *sp_die,
- 				     struct probe_trace_arg *tvar)
- {
- 	Dwarf_Attribute attr;
-+	Dwarf_Addr tmp = 0;
- 	Dwarf_Op *op;
- 	size_t nops;
- 	unsigned int regn;
-@@ -291,12 +294,29 @@ static int convert_variable_location(Dwarf_Die *vr_die, Dwarf_Addr addr,
- 		goto static_var;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 5a338566195e..ddb5dc15be17 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1670,7 +1670,6 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
+ 		.start_work_mutex     = PTHREAD_MUTEX_INITIALIZER,
+ 		.work_done_wait_mutex = PTHREAD_MUTEX_INITIALIZER,
+-		.curr_pid	      = { [0 ... MAX_CPUS - 1] = -1 },
+ 		.sort_order	      = default_sort_order,
+ 		.replay_repeat	      = 10,
+ 		.profile_cpu	      = -1,
+@@ -1732,6 +1731,10 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.switch_event	    = replay_switch_event,
+ 		.fork_event	    = replay_fork_event,
+ 	};
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(sched.curr_pid); i++)
++		sched.curr_pid[i] = -1;
  
- 	/* TODO: handle more than 1 exprs */
--	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL ||
--	    dwarf_getlocation_addr(&attr, addr, &op, &nops, 1) <= 0 ||
--	    nops == 0) {
--		/* TODO: Support const_value */
-+	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL)
-+		return -EINVAL;	/* Broken DIE ? */
-+	if (dwarf_getlocation_addr(&attr, addr, &op, &nops, 1) <= 0) {
-+		ret = dwarf_entrypc(sp_die, &tmp);
-+		if (ret || addr != tmp ||
-+		    dwarf_tag(vr_die) != DW_TAG_formal_parameter ||
-+		    dwarf_highpc(sp_die, &tmp))
-+			return -ENOENT;
-+		/*
-+		 * This is fuzzed by fentry mcount. We try to find the
-+		 * parameter location at the earliest address.
-+		 */
-+		for (addr += 1; addr <= tmp; addr++) {
-+			if (dwarf_getlocation_addr(&attr, addr, &op,
-+						   &nops, 1) > 0)
-+				goto found;
-+		}
- 		return -ENOENT;
- 	}
-+found:
-+	if (nops == 0)
-+		/* TODO: Support const_value */
-+		return -ENOENT;
- 
- 	if (op->atom == DW_OP_addr) {
- static_var:
-@@ -600,7 +620,7 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 		 dwarf_diename(vr_die));
- 
- 	ret = convert_variable_location(vr_die, pf->addr, pf->fb_ops,
--					pf->tvar);
-+					&pf->sp_die, pf->tvar);
- 	if (ret == -ENOENT)
- 		pr_err("Failed to find the location of %s at this address.\n"
- 		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
-@@ -1148,13 +1168,15 @@ struct local_vars_finder {
- static int copy_variables_cb(Dwarf_Die *die_mem, void *data)
- {
- 	struct local_vars_finder *vf = data;
-+	struct probe_finder *pf = vf->pf;
- 	int tag;
- 
- 	tag = dwarf_tag(die_mem);
- 	if (tag == DW_TAG_formal_parameter ||
- 	    tag == DW_TAG_variable) {
- 		if (convert_variable_location(die_mem, vf->pf->addr,
--					      vf->pf->fb_ops, NULL) == 0) {
-+					      vf->pf->fb_ops, &pf->sp_die,
-+					      NULL) == 0) {
- 			vf->args[vf->nargs].var = (char *)dwarf_diename(die_mem);
- 			if (vf->args[vf->nargs].var == NULL) {
- 				vf->ret = -ENOMEM;
-@@ -1302,7 +1324,8 @@ static int collect_variables_cb(Dwarf_Die *die_mem, void *data)
- 	if (tag == DW_TAG_formal_parameter ||
- 	    tag == DW_TAG_variable) {
- 		ret = convert_variable_location(die_mem, af->pf.addr,
--						af->pf.fb_ops, NULL);
-+						af->pf.fb_ops, &af->pf.sp_die,
-+						NULL);
- 		if (ret == 0) {
- 			ret = die_get_varname(die_mem, buf, MAX_VAR_LEN);
- 			pr_debug2("Add new var: %s\n", buf);
+ 	argc = parse_options(argc, argv, sched_options, sched_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
 -- 
 1.8.1.4
 
