@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab3JWSVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 14:21:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48695 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab3JWSVs (ORCPT
+	id S1753085Ab3JWSXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 14:23:10 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:59706 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab3JWSXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 14:21:48 -0400
-Date: Wed, 23 Oct 2013 13:21:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: Alexander Shiyan <shc_work@mail.ru>, <gregkh@linuxfoundation.org>,
-        <jslaby@suse.cz>, <ning.li@intel.com>, <ivan.gorinov@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mrst_max3110: fix SPI UART interrupt parameters
-Message-ID: <20131023182143.GK25954@gimli>
-Reply-To: <balbi@ti.com>
-References: <1382470930-13807-1-git-send-email-david.a.cohen@linux.intel.com>
- <5266E070.2060408@linux.intel.com>
- <5267041F.2090905@linux.intel.com>
- <1382509666.28248007@f107.i.mail.ru>
- <52681128.2010404@linux.intel.com>
+	Wed, 23 Oct 2013 14:23:08 -0400
+Message-ID: <52681407.8060804@linaro.org>
+Date: Wed, 23 Oct 2013 11:23:03 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="00hq2S6J2Jlg6EbK"
-Content-Disposition: inline
-In-Reply-To: <52681128.2010404@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Roger Luethi <rl@hellgate.ch>, Patrick McHardy <kaber@trash.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
+        Jesse Gross <jesse@nicira.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH 1/4] [RFC] net: Explicitly initialize u64_stats_sync structures
+ for lockdep
+References: <1381186321-4906-1-git-send-email-john.stultz@linaro.org> <1381186321-4906-2-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1381186321-4906-2-git-send-email-john.stultz@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00hq2S6J2Jlg6EbK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/07/2013 03:51 PM, John Stultz wrote:
+> In order to enable lockdep on seqcount/seqlock structures, we
+> must explicitly initialize any locks.
+>
+> The u64_stats_sync structure, uses a seqcount, and thus we need
+> to introduce a u64_stats_init() function and use it to initialize
+> the structure.
+>
+> This unfortunately adds a lot of fairly trivial initialization code
+> to a number of drivers. But the benefit of ensuring correctness makes
+> this worth while.
+>
+> Because these changes are required for lockdep to be enabled, and the
+> changes are quite trivial, I've not yet split this patch out into 30-some
+> separate patches, as I figured it would be better to get the various
+> maintainers thoughts on how to best merge this change along with
+> the seqcount lockdep enablement.
 
-Hi,
+Just wanted to ping folks on this patch, as I haven't gotten any feedback.
 
-On Wed, Oct 23, 2013 at 11:10:48AM -0700, David Cohen wrote:
-> >My idea is always use threaded irq and passing flags into request.
-> >Like as:
-> >unsigned long flags =3D res->flags & IORESOURCE_BITS;
-> >...
-> >request_threaded_irq(max->irq, serial_m3110_irq, IRQF_ONESHOT | flags, "=
-max3110", max);
->=20
->=20
-> Oh, maybe we were talking about different things afterall :)
-> The reason this struct plat_max3110 was created is to allow platform
-> code (located under arch/x86/platform/intel-mid/device_libs/) to define
-> the irq edge type.
-> When I saw your comment I though you were referring to struct resource
-> (which has IORESOURCE_IRQ_* flags). But unlike platform_device,
-> spi_device has no struct resource * to replace the need of struct
-> plat_max3110.
->=20
-> OTOH your suggestion can replace this piece of code:
->=20
-> @@ -68,6 +69,7 @@ struct uart_max3110 {
->         u8 clock;
->         u8 parity, word_7bits;
->         u16 irq;
-> +       u16 irq_edge_triggered;
+As its a prereq for the seqcount lockdep support, I'd like to get it
+queued/merged, but I'm not sure what the right maintainer path or
+approach should be.
 
-max3110 is already edge triggered:
+1) Do folks prefer to see this patch split up into 30-some separate
+trivial clenaup patches, or have it go in all as one logical change?
 
-495                 ret =3D request_irq(max->irq, serial_m3110_irq,
-496                                 IRQ_TYPE_EDGE_FALLING, "max3110", max);
+2) Would folks want this patch (in whichever form) to be merged
+separately via the networking maintainers, or can it be merged via -tip
+as part of the seqcount lockdep series?
 
-it would be nice a threaded IRQ instead of using a singlethread
-workqueue, though.
-
---=20
-balbi
-
---00hq2S6J2Jlg6EbK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSaBO3AAoJEIaOsuA1yqRE7QMP+gL6E9QJnOoI/l6FDtCMCRZo
-IJnmTZrqz3d/tKb833gORyiH0loZhygiJBLHlgxaq2B2mCd5/fUZls+W/vuG73SW
-sbgjMbeBh0uAh4yhfKqZFKmfu9emmereLAvCA2xSgEr1YL7Br6ngou10Dw+e43cy
-DitYBsc9XHM9AqJPkJyRYtxCz7fRjZXOBxqArkbYG59Efg/zqcKVRiKjpdUM0iQE
-hU/ky+d3WmT6d7IaHSvaC+3w/5uPWOf2P00xGJHAEAacQd38hnbla3IXEoin6MWU
-O8sH7nP8LIRYnnLGpfnDEdoFmt1C2ind0bI1/XLWimCxRmG10KYIpeo1ybvvSbOA
-ABq22OSZJVLRLEF6kPBDhG3OWGMqnTjVsONAma7BaVyi75CTF3mXrc3/7psnLTkO
-Q/FJ1UHeX3iic2tJfKYczTlEfx/Yrr1tAoLas5CCrZOZFntsEIpXr8Qpr5IDZsRd
-RIwtuWXZAu1SrivF1feqKrxa8euUSxUvaFuODH3f7uYKx0y9RJp8+gZjq7YfAiXS
-fzXYakrkuftIxoPw1jSM3sJ4j1r5k5sSJtBw1sddrZ2rG8bH3/UOSbqwTzz141Ek
-ON2HivMTSRsQXlRwrbyG17n4fC6vTvykhyDpRAT2Z3+y3MmW0blYCoQv4pCS+Q7k
-evhNuKQ/bWUrOSd0pi+y
-=y8l4
------END PGP SIGNATURE-----
-
---00hq2S6J2Jlg6EbK--
+thanks
+-john
