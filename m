@@ -1,291 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3JWIAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 04:00:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55796 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab3JWHxP (ORCPT
+	id S1752392Ab3JWICl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 04:02:41 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:64711 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab3JWICg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:53:15 -0400
-Date: Wed, 23 Oct 2013 00:52:17 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-ujg8se8glq5izmu8cdkq15po@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Use vfs_getname hook if available
-Git-Commit-ID: c522739d72a341a3e74a369ce6298b9412813d3f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 23 Oct 2013 04:02:36 -0400
+Date: Wed, 23 Oct 2013 10:00:03 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Zhang <nvmarkzhang@gmail.com>
+Cc: rpurdie@rpsys.net, jg1.han@samsung.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
+Message-ID: <20131023080002.GB7404@ulmo.nvidia.com>
+References: <525F8895.5010806@gmail.com>
+ <20131017071445.GA2502@ulmo.nvidia.com>
+ <5260BD8C.7000200@gmail.com>
+ <20131022072443.GB8681@ulmo.nvidia.com>
+ <52663D6D.5000806@gmail.com>
+ <20131022124905.GA24255@ulmo.nvidia.com>
+ <52673178.8070805@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:23 -0700 (PDT)
+In-Reply-To: <52673178.8070805@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c522739d72a341a3e74a369ce6298b9412813d3f
-Gitweb:     http://git.kernel.org/tip/c522739d72a341a3e74a369ce6298b9412813d3f
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 27 Sep 2013 18:06:19 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 16 Oct 2013 11:18:24 -0300
 
-perf trace: Use vfs_getname hook if available
+--TRYliJ5NKNqkz5bu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Initially it tries to find a probe:vfs_getname that should be setup
-with:
+On Wed, Oct 23, 2013 at 10:16:24AM +0800, Mark Zhang wrote:
+> On 10/22/2013 08:49 PM, Thierry Reding wrote:
+> > On Tue, Oct 22, 2013 at 04:55:09PM +0800, Mark Zhang wrote:
+> >> On 10/22/2013 03:24 PM, Thierry Reding wrote:
+> >>> On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
+> >> [...]
+> >>>>>
+> >>>>
+> >>>> Okay, I just want to set the "notify" function pointer in "struct
+> >>>> platform_pwm_backlight_data", because I want to tune the brightness
+> >>>> value before the pwm-bl sets the brightness to hardware. I don't know
+> >>>> how to do that, unless we define the platform data explicitly.
+> >>>
+> >>> Okay, my question should have been what you need the functions for and
+> >>> why you think you need them.
+> >>>
+> >>
+> >> If I understanding you correctly, I suppose I've said that: "because I
+> >> want to tune the brightness value before the pwm-bl sets the brightness
+> >> to hardware".
+> >=20
+> > Why do you want to tune the brightness value? What are you trying to
+> > achieve?
+> >=20
+>=20
+> Oh, Tegra has a feature named PRISM(aka SmartDimmer). It changes the
+> color value to make the display looks bright so that we can reduce the
+> backlight brightness to save power. So everytime PRISM is triggered, we
+> call "backlight_update_status", then in the "notify" callback, we change
+> the brightness value which pwm-bl provides by considering the PRISM
+> compensations.
 
- perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+If you automatically call backlight_update_status() everytime PRISM
+gives you new data, can't you just pass the correct value in in the
+first place so that you don't have to tweak it in the .notify()
+callback?
 
-or with slight changes to cope with code flux in the getname_flags code.
+Thierry
 
-In the future, if a "vfs:getname" tracepoint becomes available, then it
-will be preferred.
+--TRYliJ5NKNqkz5bu
+Content-Type: application/pgp-signature
 
-This is not strictly required and more expensive method of reading the
-/proc/pid/fd/ symlink will be used when the fd->path array entry is not
-populated by a previous vfs_getname + open syscall ret sequence.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-As with any other 'perf probe' probe the setup must be done just once
-and the probe will be left inactive, waiting for users, be it 'perf
-trace' of any other tool.
+iQIcBAEBAgAGBQJSZ4ICAAoJEN0jrNd/PrOhZigP/RG48hoAQj1DJb8znndLZZh6
+nwsgfbLaeiAepUOcldS0BUOMfZ0e1mi6lPY9Vwiy6tCB32mRV7CxJgMWlbRAUVFk
+Ot5D5YLOHkWqvBRUTsFxN2Ihrfprtlgp4ThRE4FvaPu4MDv9ScoKjlJqPb11yAbU
+2nwvuscK51edNTlwTywTaUMBO1W1DWULewoJutJbciIKJgYAkpfliz69gvpU0W+D
+/TWY5OOPKzNo83YJKEMMMxmQbKcDOZeAE5nZGOMBNZmy7NYmTxkr6MvNBkbbZLMZ
+19zBmZVC1rpR81kdgQmngu9Bvg8bepluKjUeIArcV0OU1h4YJ6sXt3ni+zXh73/3
+zuoyKomXG7/AZYdH7AjrC5rvaFLLuigUDYUbgq3p5+nCZQgaFPAbi1TOBpDxwyZ9
+ktj/aV2x3OJHBE0p/p9GIc78/NT3j1KtqaBsTRNe1BYAZblsj5hApkOlFcoL5F/m
+5wq+zYh+9vtAlGhxaLQ0cz2x1rp3R4n2pKd8d3tsYqPu9de77BppBsA6x7K0yqIp
+SiT2+VBVFHWGyTIVn9UZJy1pslF0X+9RzJU5Q59avcchUewqPYRhqBEjntuNUHkP
+jXlhhmz0bKFlz4wzrL2t65UNJVsqi0jfKNVNEJ7HPc+eIk4t1urU6yCuTz/yx+FK
+FFUX4TGP6dc1/j6PjynN
+=4PuB
+-----END PGP SIGNATURE-----
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ujg8se8glq5izmu8cdkq15po@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-trace.txt |  4 ++
- tools/perf/builtin-trace.c              | 83 ++++++++++++++++++++++++++++-----
- 2 files changed, 75 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 54139c6..7b0497f 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -97,6 +97,10 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- 	Show a summary of syscalls by thread with min, max, and average times (in
-     msec) and relative stddev.
- 
-+--tool_stats::
-+	Show tool stats such as number of times fd->pathname was discovered thru
-+	hooking the open syscall return + vfs_getname or via reading /proc/pid/fd, etc.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 763bef4..86d2b1f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -951,7 +951,10 @@ fail:
- 
- struct trace {
- 	struct perf_tool	tool;
--	int			audit_machine;
-+	struct {
-+		int		machine;
-+		int		open_id;
-+	}			audit;
- 	struct {
- 		int		max;
- 		struct syscall  *table;
-@@ -965,14 +968,19 @@ struct trace {
- 	struct strlist		*ev_qualifier;
- 	bool			not_ev_qualifier;
- 	bool			live;
-+	const char 		*last_vfs_getname;
- 	struct intlist		*tid_list;
- 	struct intlist		*pid_list;
- 	bool			sched;
- 	bool			multiple_threads;
- 	bool			summary;
- 	bool			show_comm;
-+	bool			show_tool_stats;
- 	double			duration_filter;
- 	double			runtime_ms;
-+	struct {
-+		u64		vfs_getname, proc_getname;
-+	} stats;
- };
- 
- static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
-@@ -1027,7 +1035,8 @@ static int thread__read_fd_path(struct thread *thread, int fd)
- 	return trace__set_fd_pathname(thread, fd, pathname);
- }
- 
--static const char *thread__fd_path(struct thread *thread, int fd, bool live)
-+static const char *thread__fd_path(struct thread *thread, int fd,
-+				   struct trace *trace)
- {
- 	struct thread_trace *ttrace = thread->priv;
- 
-@@ -1037,9 +1046,13 @@ static const char *thread__fd_path(struct thread *thread, int fd, bool live)
- 	if (fd < 0)
- 		return NULL;
- 
--	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL) &&
--	    (!live || thread__read_fd_path(thread, fd)))
--		return NULL;
-+	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL))
-+		if (!trace->live)
-+			return NULL;
-+		++trace->stats.proc_getname;
-+		if (thread__read_fd_path(thread, fd)) {
-+			return NULL;
-+	}
- 
- 	return ttrace->paths.table[fd];
- }
-@@ -1049,7 +1062,7 @@ static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
- {
- 	int fd = arg->val;
- 	size_t printed = scnprintf(bf, size, "%d", fd);
--	const char *path = thread__fd_path(arg->thread, fd, arg->trace->live);
-+	const char *path = thread__fd_path(arg->thread, fd, arg->trace);
- 
- 	if (path)
- 		printed += scnprintf(bf + printed, size - printed, "<%s>", path);
-@@ -1186,7 +1199,7 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- {
- 	char tp_name[128];
- 	struct syscall *sc;
--	const char *name = audit_syscall_to_name(id, trace->audit_machine);
-+	const char *name = audit_syscall_to_name(id, trace->audit.machine);
- 
- 	if (name == NULL)
- 		return -1;
-@@ -1450,6 +1463,12 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 
- 	ret = perf_evsel__intval(evsel, sample, "ret");
- 
-+	if (id == trace->audit.open_id && ret >= 0 && trace->last_vfs_getname) {
-+		trace__set_fd_pathname(thread, ret, trace->last_vfs_getname);
-+		trace->last_vfs_getname = NULL;
-+		++trace->stats.vfs_getname;
-+	}
-+
- 	ttrace = thread->priv;
- 
- 	ttrace->exit_time = sample->time;
-@@ -1494,6 +1513,13 @@ out:
- 	return 0;
- }
- 
-+static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
-+			      struct perf_sample *sample)
-+{
-+	trace->last_vfs_getname = perf_evsel__rawptr(evsel, sample, "pathname");
-+	return 0;
-+}
-+
- static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evsel,
- 				     struct perf_sample *sample)
- {
-@@ -1616,6 +1642,22 @@ static int trace__record(int argc, const char **argv)
- 
- static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp);
- 
-+static void perf_evlist__add_vfs_getname(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = perf_evsel__newtp("probe", "vfs_getname",
-+						     evlist->nr_entries);
-+	if (evsel == NULL)
-+		return;
-+
-+	if (perf_evsel__field(evsel, "pathname") == NULL) {
-+		perf_evsel__delete(evsel);
-+		return;
-+	}
-+
-+	evsel->handler.func = trace__vfs_getname;
-+	perf_evlist__add(evlist, evsel);
-+}
-+
- static int trace__run(struct trace *trace, int argc, const char **argv)
- {
- 	struct perf_evlist *evlist = perf_evlist__new();
-@@ -1635,6 +1677,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
- 		goto out_error_tp;
- 
-+	perf_evlist__add_vfs_getname(evlist);
-+
- 	if (trace->sched &&
- 		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
- 				trace__sched_stat_runtime))
-@@ -1741,12 +1785,22 @@ again:
- 
- 	if (done)
- 		perf_evlist__disable(evlist);
--
--	goto again;
-+	else
-+		goto again;
- 
- out_unmap_evlist:
--	if (!err && trace->summary)
--		trace__fprintf_thread_summary(trace, trace->output);
-+	if (!err) {
-+		if (trace->summary)
-+			trace__fprintf_thread_summary(trace, trace->output);
-+
-+		if (trace->show_tool_stats) {
-+			fprintf(trace->output, "Stats:\n "
-+					       " vfs_getname : %" PRIu64 "\n"
-+					       " proc_getname: %" PRIu64 "\n",
-+				trace->stats.vfs_getname,
-+				trace->stats.proc_getname);
-+		}
-+	}
- 
- 	perf_evlist__munmap(evlist);
- out_close_evlist:
-@@ -1788,6 +1842,7 @@ static int trace__replay(struct trace *trace)
- 	const struct perf_evsel_str_handler handlers[] = {
- 		{ "raw_syscalls:sys_enter",  trace__sys_enter, },
- 		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
-+		{ "probe:vfs_getname",	     trace__vfs_getname, },
- 	};
- 
- 	struct perf_session *session;
-@@ -1997,7 +2052,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		NULL
- 	};
- 	struct trace trace = {
--		.audit_machine = audit_detect_machine(),
-+		.audit = {
-+			.machine = audit_detect_machine(),
-+			.open_id = audit_name_to_syscall("open", trace.audit.machine),
-+		},
- 		.syscalls = {
- 			. max = -1,
- 		},
-@@ -2019,6 +2077,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	const struct option trace_options[] = {
- 	OPT_BOOLEAN(0, "comm", &trace.show_comm,
- 		    "show the thread COMM next to its id"),
-+	OPT_BOOLEAN(0, "tool_stats", &trace.show_tool_stats, "show tool stats"),
- 	OPT_STRING('e', "expr", &ev_qualifier_str, "expr",
- 		    "list of events to trace"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+--TRYliJ5NKNqkz5bu--
