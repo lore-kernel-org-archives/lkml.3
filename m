@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3JWCRn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:17:43 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:19936 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab3JWCRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:17:41 -0400
-X-Spam-Score: -100.8
-Message-ID: <52673186.4050806@asianux.com>
-Date: Wed, 23 Oct 2013 10:16:38 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755697Ab3JWCSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:18:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15931 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755111Ab3JWCSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 22:18:10 -0400
+Date: Wed, 23 Oct 2013 10:17:31 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131023021730.GE4594@dhcp-16-126.nay.redhat.com>
+References: <20131012075443.GD7550@dhcp-16-126.nay.redhat.com>
+ <20131012101308.GI12321@console-pimps.org>
+ <20131012103054.GA13739@pd.tnic>
+ <20131013031126.GB1914@darkstar.nay.redhat.com>
+ <20131013092521.GA22866@pd.tnic>
+ <20131014155851.GJ4009@pd.tnic>
+ <20131021124739.GA4515@dhcp-16-126.nay.redhat.com>
+ <20131021133741.GA5716@nazgul.tnic>
+ <20131021150426.GB4515@dhcp-16-126.nay.redhat.com>
+ <20131022111857.GA10660@nazgul.tnic>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        noamc@ezchip.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: kernel: remove '__init' for first_lines_of_secondary()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022111857.GA10660@nazgul.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-first_lines_of_secondary() is a '__init' function, but it may be called
-by __cpu_up() by _cpu_up() by cpu_up() which is a normal export symbol
-function. So recommend to remove '__init'.
+On 10/22/13 at 01:18pm, Borislav Petkov wrote:
+> On Mon, Oct 21, 2013 at 11:04:26PM +0800, Dave Young wrote:
+> > > You need this to map the runtime regions in the kexec kernel, right?
+> > > Please write that in the commit message.
+> > 
+> > Yes, will do
+> 
+> Ok, but but, why doesn't the normal code path in efi_enter_virtual_mode
+> work anymore? I mean, why do you need another function instead of doing
+> what you did previously:
+> 
+> 	if (!kexec)
+> 		phys_efi_set_virtual_address_map(...)
+> 
+> The path up to here does the mapping already anyway so you only need to
+> do the mapping in the kexec kernel and skip set set_virtual_map thing.
 
-The related warning (with allmodconfig):
+Hi,
 
-    MODPOST vmlinux.o
-  WARNING: vmlinux.o(.text+0x315c): Section mismatch in reference from the function __cpu_up() to the function .init.text:first_lines_of_secondary()
-  The function __cpu_up() references
-  the function __init first_lines_of_secondary().
-  This is often because __cpu_up lacks a __init
-  annotation or the annotation of first_lines_of_secondary is wrong.
+The reason is that I only pass runtime regions from 1st kernel to kexec
+kernel, your efi mapping function uses the region size to determin the 
+virtual address from top to down. Because the passed-in md ranges in kexec
+kernel are different from ranges booting from firmware so the virtual address
+will be different.
+
+Even I pass the whole untouched ranges including BOOT_SERVICE there's still
+chance the function for reserving boot regions overwrite the boot region
+size to 0, and 1st kernel will leave it to be used as normal memory after efi init.
+I think we have talked about this issue previously.
+
+Thanks
+Dave
 
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/include/asm/smp.h |    2 +-
- arch/arc/kernel/head.S     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arc/include/asm/smp.h b/arch/arc/include/asm/smp.h
-index c4fb211..eefc29f 100644
---- a/arch/arc/include/asm/smp.h
-+++ b/arch/arc/include/asm/smp.h
-@@ -30,7 +30,7 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-  * APIs provided by arch SMP code to rest of arch code
-  */
- extern void __init smp_init_cpus(void);
--extern void __init first_lines_of_secondary(void);
-+extern void first_lines_of_secondary(void);
- extern const char *arc_platform_smp_cpuinfo(void);
- 
- /*
-diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
-index 0f944f0..2c878e9 100644
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -95,7 +95,7 @@ stext:
- ;----------------------------------------------------------------
- ;     First lines of code run by secondary before jumping to 'C'
- ;----------------------------------------------------------------
--	.section .init.text, "ax",@progbits
-+	.section .text, "ax",@progbits
- 	.type first_lines_of_secondary, @function
- 	.globl first_lines_of_secondary
- 
--- 
-1.7.7.6
+> 
+> Thanks.
