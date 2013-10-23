@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3JWDS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 23:18:56 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36409 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3JWDSz (ORCPT
+	id S1755508Ab3JWDYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 23:24:05 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:37497 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab3JWDYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 23:18:55 -0400
-From: Ming Lei <tom.leiming@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chen Gang <gang.chen@asianux.com>
-Subject: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-Date: Wed, 23 Oct 2013 11:18:40 +0800
-Message-Id: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 22 Oct 2013 23:24:02 -0400
+Subject: [PATCH 0/2] Remove pcibios_last_bus stuff
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 22 Oct 2013 21:23:59 -0600
+Message-ID: <20131023032140.12410.43295.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Address of non-module kernel symbol should always be located
-from CONFIG_PAGE_OFFSET on, so only show these legal kernel
-symbols in /proc/kallsyms.
+pcibios_last_bus is an x86 thing that has gotten copied into mn10300
+and FR-V.  On mn10300, it is clearly useless because it is set but
+never tested.
 
-On ARM, some symbols(see below) may drop in relocatable code, so
-perf can't parse kernel symbols any more from /proc/kallsyms, this
-patch fixes the problem.
+On FR-V, I suspect it is also useless, but it is possible that people
+boot with "pci=lastbus=<X>".  Please speak up if you think it should
+be kept for FR-V.
 
-	00000000 t __vectors_start
-	00000020 A cpu_v7_suspend_size
-	00001000 t __stubs_start
-	00001004 t vector_rst
-	00001020 t vector_irq
-	000010a0 t vector_dabt
-	00001120 t vector_pabt
-	000011a0 t vector_und
-	00001220 t vector_addrexcptn
-	00001224 t vector_fiq
-	00001224 T vector_fiq_offset
-
-The issue can be fixed in scripts/kallsyms.c too, but looks this
-approach is easier.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- kernel/kallsyms.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 3127ad5..184f271 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -543,7 +543,7 @@ static int s_show(struct seq_file *m, void *p)
- 					tolower(iter->type);
- 		seq_printf(m, "%pK %c %s\t[%s]\n", (void *)iter->value,
- 			   type, iter->name, iter->module_name);
--	} else
-+	} else if (iter->value >= CONFIG_PAGE_OFFSET)
- 		seq_printf(m, "%pK %c %s\n", (void *)iter->value,
- 			   iter->type, iter->name);
- 	return 0;
--- 
-1.7.9.5
+Bjorn Helgaas (2):
+      frv/PCI: Remove pcibios_last_bus
+      mn10300/PCI: Remove useless pcibios_last_bus
 
+
+ arch/frv/mb93090-mb00/pci-frv.h         |    1 -
+ arch/frv/mb93090-mb00/pci-vdk.c         |   36 -------------------------------
+ arch/mn10300/unit-asb2305/pci-asb2305.h |    1 -
+ arch/mn10300/unit-asb2305/pci.c         |    5 ----
+ 4 files changed, 43 deletions(-)
