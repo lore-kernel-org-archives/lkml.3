@@ -1,200 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab3JWHeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:34:10 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:39682
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750820Ab3JWHeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:34:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 23 Oct 2013 15:33:59 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rostislav Lisovy <lisovy@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        <pisa@cmp.felk.cvut.cz>
-Subject: Re: [PATCH 4/4] ARM: dts: i.MX53: Devicetree for Voipac Baseboard
- using x53-dmm-668 module
-Message-ID: <20131023073357.GJ2839@S2101-09.ap.freescale.net>
-References: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
- <1382461643-16790-5-git-send-email-lisovy@gmail.com>
+	id S1751420Ab3JWHjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:39:52 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:55661 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab3JWHjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 03:39:51 -0400
+Date: Wed, 23 Oct 2013 16:39:43 +0900
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH] mm: Ensure get_unmapped_area() returns higheraddressthan mmap_min_addr
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
+References: <20131023145303.B205.38390934@jp.panasonic.com> <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20131023163943.B209.38390934@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1382461643-16790-5-git-send-email-lisovy@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 07:07:23PM +0200, Rostislav Lisovy wrote:
-> Supported peripherals: Audio -- headphone output, LEDs, Buttons
-> (using keyboard controller), SD-card.
+
+On Wed, 23 Oct 2013 02:50:49 -0400
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+
+> On Wed, Oct 23, 2013 at 02:53:03PM +0900, Akira Takeuchi wrote:
+> > Hi,
+> > 
+> > On Wed, 23 Oct 2013 00:26:05 -0400
+> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> > 
+> > > Hi,
+> > > 
+> > > On Wed, Oct 23, 2013 at 11:46:53AM +0900, Akira Takeuchi wrote:
+> > > > This patch fixes the problem that get_unmapped_area() can return illegal
+> > > > address and result in failing mmap(2) etc.
+> > > > 
+> > > > In case that the address higher than PAGE_SIZE is set to
+> > > > /proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+> > > > returned by get_unmapped_area(), even if you do not pass any virtual
+> > > > address hint (i.e. the second argument).
+> > > > 
+> > > > This is because the current get_unmapped_area() code does not take into
+> > > > account mmap_min_addr.
+> > > > 
+> > > > This leads to two actual problems as follows:
+> > > > 
+> > > > 1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+> > > >    although any illegal parameter is not passed.
+> > > > 
+> > > > 2. The bottom-up search path after the top-down search might not work in
+> > > >    arch_get_unmapped_area_topdown().
+> > > > 
+> > > > [How to reproduce]
+> > > > 
+> > > > 	--- test.c -------------------------------------------------
+> > > > 	#include <stdio.h>
+> > > > 	#include <unistd.h>
+> > > > 	#include <sys/mman.h>
+> > > > 	#include <sys/errno.h>
+> > > > 
+> > > > 	int main(int argc, char *argv[])
+> > > > 	{
+> > > > 		void *ret = NULL, *last_map;
+> > > > 		size_t pagesize = sysconf(_SC_PAGESIZE);
+> > > > 
+> > > > 		do {
+> > > > 			last_map = ret;
+> > > > 			ret = mmap(0, pagesize, PROT_NONE,
+> > > > 				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+> > > > 	//		printf("ret=%p\n", ret);
+> > > > 		} while (ret != MAP_FAILED);
+> > > > 
+> > > > 		if (errno != ENOMEM) {
+> > > > 			printf("ERR: unexpected errno: %d (last map=%p)\n",
+> > > > 			errno, last_map);
+> > > > 		}
+> > > > 
+> > > > 		return 0;
+> > > > 	}
+> > > > 	---------------------------------------------------------------
+> > > > 
+> > > > 	$ gcc -m32 -o test test.c
+> > > > 	$ sudo sysctl -w vm.mmap_min_addr=65536
+> > > > 	vm.mmap_min_addr = 65536
+> > > > 	$ ./test  (run as non-priviledge user)
+> > > > 	ERR: unexpected errno: 1 (last map=0x10000)
+> > > > 
+> > > > Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> > > > Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+> > > > ---
+> > > >  mm/mmap.c |   10 +++++-----
+> > > >  1 files changed, 5 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/mm/mmap.c b/mm/mmap.c
+> > > > index 9d54851..362e5f1 100644
+> > > > --- a/mm/mmap.c
+> > > > +++ b/mm/mmap.c
+> > > > @@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+> > > >  	struct vm_area_struct *vma;
+> > > >  	struct vm_unmapped_area_info info;
+> > > >  
+> > > > -	if (len > TASK_SIZE)
+> > > > +	if (len > TASK_SIZE - mmap_min_addr)
+> > > >  		return -ENOMEM;
+> > > >  
+> > > >  	if (flags & MAP_FIXED)
+> > > 
+> > > I feel that it looks clearer to fix this in round_hint_to_min(),
+> > > with doing mmap_min_addr check in hint == NULL case.
+> > > Does it work for you?
+> > 
+> > The current round_hint_to_min() code checks and adjusts just for
+> > the hint address, not for "len". Also, it returns no error.
+> > 
+> > Do you mean adding "len" to the argument of round_hint_to_min()
+> > and making round_hint_to_min() return any error ?
 > 
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
+> I thought of just removing (hint != NULL) check in round_hint_to_min(),
+> but in my rethinking I found that that affects other code and needs
+> more changes, so your approach is simpler. I drop my suggestion.
 > 
->  create mode 100644 arch/arm/boot/dts/imx53-voipac-bsb.dts
+> The above check is to detect too big request, and in your reproducer
+> len is small (4096), so I'm a bit confused :)  
+> Although it doesn't fix your problem itself, it's correct, 
 
-Add the dtb target into arch/arm/boot/dts/Makefile.
+I'll add a description as a "Note" to my v2 patch to avoid such
+confusing. The difference between v1 and v2 patch is only adding
+the "Note". Thank you for reviewing !
 
+
+Regadrs,
+Akira Takeuchi
+
+
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 > 
-> diff --git a/arch/arm/boot/dts/imx53-voipac-bsb.dts b/arch/arm/boot/dts/imx53-voipac-bsb.dts
-> new file mode 100644
-> index 0000000..7b48462
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/imx53-voipac-bsb.dts
-> @@ -0,0 +1,135 @@
-> +/*
-> + * Copyright 2013 Rostislav Lisovy <lisovy@gmail.com>, PiKRON s.r.o.
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +/dts-v1/;
-> +#include "imx53-voipac-dmm-668.dtsi"
-> +
-> +/ {
-> +	sound {
-> +		compatible = "fsl,imx53-voipac-sgtl5000",
-> +			     "fsl,imx-audio-sgtl5000";
-> +		model = "imx53-voipac-sgtl5000";
-> +		ssi-controller = <&ssi2>;
-> +		audio-codec = <&sgtl5000>;
-> +		audio-routing =
-> +			"Headphone Jack", "HP_OUT";
-> +		mux-int-port = <2>;
-> +		mux-ext-port = <5>;
-> +	};
-> +
-> +	leds {
-> +		compatible = "gpio-leds";
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&led_pin_gpio>;
-> +
-> +		led1 {
-> +			label = "led-red";
-> +			gpios = <&gpio3 29 0>;
-> +			default-state = "off";
-> +		};
-> +
-> +		led2 {
-> +			label = "led-orange";
-> +			gpios = <&gpio2 31 0>;
-> +			default-state = "off";
-> +		};
-> +	};
-> +};
-> +
-> +&iomuxc {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_hog>;
-> +
-> +	hog {
-> +		pinctrl_hog: hoggrp {
-> +			fsl,pins = <
-> +				/* SD2_CD */
-> +				MX53_PAD_EIM_D25__GPIO3_25	0x80000000
-> +				/* SD2_WP */
-> +				MX53_PAD_EIM_A19__GPIO2_19 	0x80000000
-> +			>;
-> +		};
-> +
-> +		led_pin_gpio: led_gpio@0 {
-
-Drop the '@0' from node name, since you do not have a 'reg' property for
-the node at all.
-
-> +			fsl,pins = <
-> +				MX53_PAD_EIM_D29__GPIO3_29	0x80000000
-> +				MX53_PAD_EIM_EB3__GPIO2_31	0x80000000
-> +			>;
-> +		};
-> +	};
-> +
-> +	/* Keyboard controller */
-> +	kpp {
-> +		pinctrl_kpp_1: kppgrp-1 {
-> +			fsl,pins = <
-> +				MX53_PAD_GPIO_9__KPP_COL_6	0xe8
-> +				MX53_PAD_GPIO_4__KPP_COL_7	0xe8
-> +				MX53_PAD_KEY_COL2__KPP_COL_2	0xe8
-> +				MX53_PAD_KEY_COL3__KPP_COL_3	0xe8
-> +				MX53_PAD_KEY_COL4__KPP_COL_4	0xe8
-> +
-> +				MX53_PAD_GPIO_2__KPP_ROW_6	0xe0
-> +				MX53_PAD_GPIO_5__KPP_ROW_7	0xe0
-> +				MX53_PAD_KEY_ROW2__KPP_ROW_2	0xe0
-> +				MX53_PAD_KEY_ROW3__KPP_ROW_3	0xe0
-> +				MX53_PAD_KEY_ROW4__KPP_ROW_4	0xe0
-> +			>;
-> +		};
-> +	};
-> +};
-> +
-> +&i2c3 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_i2c3_2>;
-> +	status = "okay";
-> +
-> +	sgtl5000: codec@0a {
-> +		compatible = "fsl,sgtl5000";
-> +		reg = <0x0a>;
-> +		VDDA-supply = <&reg_3p3v>;
-> +		VDDIO-supply = <&reg_3p3v>;
-> +		clocks = <&clks 150>;
-> +	};
-> +};
-> +
-> +&kpp {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_kpp_1>;
-> +	linux,keymap = <
-> +			0x0203003b	/* KEY_F1 */
-> +			0x0603003c	/* KEY_F2 */
-> +			0x0207003d	/* KEY_F3 */
-> +			0x0607003e	/* KEY_F4 */
-> +			>;
-> +	keypad,num-rows = <8>;
-> +	keypad,num-columns = <8>;
-> +	status = "okay";
-> +};
-> +
-> +&ssi2 {
-> +	fsl,mode = "i2s-slave";
-> +	status = "okay";
-> +};
-> +
-> +&audmux {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_audmux_1>; /* SSI1 */
-> +	status = "okay";
-> +};
-> +
-> +&esdhc2 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_esdhc2_1>;
-> +	cd-gpios = <&gpio3 25 0>;
-> +	wp-gpios = <&gpio2 19 0>;
-> +	vmmc-supply = <&reg_3p3v>;
-> +	status = "okay";
-> +};
-
-Sort these nodes, please.
-
-Shawn
-
-> -- 
-> 1.7.10.4
+> Thanks,
+> Naoya Horiguchi
 > 
+> > 
+> > Regards,
+> > Akira Takeuchi
+> > 
+> > > Thanks,
+> > > Naoya Horiguchi
+> > > 
+> > > > @@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+> > > >  	if (addr) {
+> > > >  		addr = PAGE_ALIGN(addr);
+> > > >  		vma = find_vma(mm, addr);
+> > > > -		if (TASK_SIZE - len >= addr &&
+> > > > +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+> > > >  		    (!vma || addr + len <= vma->vm_start))
+> > > >  			return addr;
+> > > >  	}
+> > > > @@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+> > > >  	struct vm_unmapped_area_info info;
+> > > >  
+> > > >  	/* requested length too big for entire address space */
+> > > > -	if (len > TASK_SIZE)
+> > > > +	if (len > TASK_SIZE - mmap_min_addr)
+> > > >  		return -ENOMEM;
+> > > >  
+> > > >  	if (flags & MAP_FIXED)
+> > > > @@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+> > > >  	if (addr) {
+> > > >  		addr = PAGE_ALIGN(addr);
+> > > >  		vma = find_vma(mm, addr);
+> > > > -		if (TASK_SIZE - len >= addr &&
+> > > > +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+> > > >  				(!vma || addr + len <= vma->vm_start))
+> > > >  			return addr;
+> > > >  	}
+> > > >  
+> > > >  	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
+> > > >  	info.length = len;
+> > > > -	info.low_limit = PAGE_SIZE;
+> > > > +	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
+> > > >  	info.high_limit = mm->mmap_base;
+> > > >  	info.align_mask = 0;
+> > > >  	addr = vm_unmapped_area(&info);
+> > > > -- 
+> > > > 1.7.0.4
+> > > > 
+> > > > 
+> > > > -- 
+> > > > Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> > > > 
+> > > > --
+> > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > > see: http://www.linux-mm.org/ .
+> > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > > > 
+> > 
+> > -- 
+> > Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+
+-- 
+Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
