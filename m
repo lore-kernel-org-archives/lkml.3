@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab3JWOz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:55:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36654 "EHLO mx1.redhat.com"
+	id S1752413Ab3JWO4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:56:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42793 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab3JWOz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:55:57 -0400
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: "Luck\, Tony" <tony.luck@intel.com>, Anton Vorontsov <anton@enomsg.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Lenny Szubowicz <lszubowi@redhat.com>
-Cc: =?utf-8?B?5oiQ6aqPIOiwog==?= <bbboson@gmail.com>
-Subject: [PATCH] pstore: avoid incorrectly mark entry as duplicate
-Date: Wed, 23 Oct 2013 22:55:42 +0800
-Message-ID: <87r4bcdok1.fsf@redhat.com>
+	id S1751788Ab3JWO4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:56:41 -0400
+Message-ID: <5267E3A4.40705@suse.cz>
+Date: Wed, 23 Oct 2013 16:56:36 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Julia Lawall <julia.lawall@lip6.fr>, Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr
+Subject: Re: [PATCH] scripts/coccinelle/api: remove devm_request_and_ioremap.cocci
+References: <1376562633-16204-1-git-send-email-wsa@the-dreams.de> <20131006134921.GA4173@katana> <alpine.DEB.2.02.1310061552541.2037@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1310061552541.2037@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pstore try to find duplicate entries by check both ID, type and psi.
-They are not really enough for efi backend. dumped vars always have
-the same type, psi and ID. like follows:
-dump-type0-9-1-1382511508-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-dump-type0-9-1-1382515661-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+On 6.10.2013 15:53, Julia Lawall wrote:
+> On Sun, 6 Oct 2013, Wolfram Sang wrote:
+> 
+>> On Thu, Aug 15, 2013 at 12:30:25PM +0200, Wolfram Sang wrote:
+>>> Use of this function is discouraged in favour of
+>>> devm_ioremap_resource(). Don't advertise it.
+>>>
+>>> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> 
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-The "duplicate" entries won't appear in pstorefs. And a complain will be
-print -- pstore: failed to load 76 record(s) from 'efi'
-So I add one more check: timespec.
+Applied to kbuild.git#misc now. For some reason, I overlooked the patch
+before.
 
-Signed-off-by: Madper Xie <cxie@redhat.com>
----
- fs/pstore/inode.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 1282384..f70f1e5 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -47,6 +47,7 @@ static LIST_HEAD(allpstore);
- struct pstore_private {
- 	struct list_head list;
- 	struct pstore_info *psi;
-+	struct timespec time;
- 	enum pstore_type_id type;
- 	u64	id;
- 	int	count;
-@@ -290,7 +291,8 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 	list_for_each_entry(pos, &allpstore, list) {
- 		if (pos->type == type &&
- 		    pos->id == id &&
--		    pos->psi == psi) {
-+		    pos->psi == psi &&
-+		    !timespec_compare(&pos->time, &time)) {
- 			rc = -EEXIST;
- 			break;
- 		}
-@@ -312,6 +314,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 	private->id = id;
- 	private->count = count;
- 	private->psi = psi;
-+	memcpy(&private->time, &time, sizeof(struct timespec));
- 
- 	switch (type) {
- 	case PSTORE_TYPE_DMESG:
--- 
-1.8.4.1
+Michal
