@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3JWTQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:16:07 -0400
-Received: from smtprelay0055.hostedemail.com ([216.40.44.55]:57011 "EHLO
+	id S1753490Ab3JWTQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:16:58 -0400
+Received: from smtprelay0212.hostedemail.com ([216.40.44.212]:51336 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753296Ab3JWTQF (ORCPT
+	by vger.kernel.org with ESMTP id S1753239Ab3JWTPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:16:05 -0400
+	Wed, 23 Oct 2013 15:15:55 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3867:3868:4250:4321:4605:5007:6261:9040:10004:10026:10848:11026:11657:11658:11914:12043:12114:12296:12438:12517:12519:12555:13095:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bomb07_6efd415122157
-X-Filterd-Recvd-Size: 2822
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3302:3353:3868:4250:4605:5007:6261:10004:10026:10848:11026:11232:11657:11658:11914:12043:12114:12296:12438:12517:12519:12555:13095:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: title23_6da5521ba6520
+X-Filterd-Recvd-Size: 3252
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, devel@driverdev.osuosl.org,
-        linux-iio@vger.kernel.org
-Subject: [PATCH 7/8] staging: Remove OOM message after input_allocate_device
-Date: Wed, 23 Oct 2013 12:14:53 -0700
-Message-Id: <607933414008a7de55bcd88348d525cbec238ed1.1382555436.git.joe@perches.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>, linux-media@vger.kernel.org
+Subject: [PATCH 5/8] media: Remove OOM message after input_allocate_device
+Date: Wed, 23 Oct 2013 12:14:51 -0700
+Message-Id: <7ee413793a1f3926952dcd6338f55d61511e56e6.1382555436.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1382555436.git.joe@perches.com>
 References: <cover.1382555436.git.joe@perches.com>
@@ -31,52 +30,66 @@ as there's a generic OOM and a dump_stack already done.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/cptm1217/clearpad_tm1217.c    | 2 --
- drivers/staging/iio/adc/mxs-lradc.c           | 4 +---
- drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c | 2 --
- 3 files changed, 1 insertion(+), 7 deletions(-)
+ drivers/media/rc/imon.c                 | 8 ++------
+ drivers/media/usb/em28xx/em28xx-input.c | 4 +---
+ drivers/media/usb/pwc/pwc-if.c          | 1 -
+ 3 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
-index 42a5f5c..ca4c2c6 100644
---- a/drivers/staging/cptm1217/clearpad_tm1217.c
-+++ b/drivers/staging/cptm1217/clearpad_tm1217.c
-@@ -457,8 +457,6 @@ static int cp_tm1217_probe(struct i2c_client *client,
- 	for (i = 0; i < TOUCH_SUPPORTED; i++) {
- 		input_dev = input_allocate_device();
- 		if (input_dev == NULL) {
--			dev_err(ts->dev,
--				"cp_tm1217:Input Device Struct alloc failed\n");
- 			retval = -ENOMEM;
- 			goto fail;
- 		}
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index 9da64bf..696fbb3 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -529,10 +529,8 @@ static int mxs_lradc_ts_register(struct mxs_lradc *lradc)
- 		return 0;
+diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
+index 72e3fa6..5e8e06c 100644
+--- a/drivers/media/rc/imon.c
++++ b/drivers/media/rc/imon.c
+@@ -1909,10 +1909,8 @@ static struct input_dev *imon_init_idev(struct imon_context *ictx)
+ 	int ret, i;
  
- 	input = input_allocate_device();
--	if (!input) {
--		dev_err(dev, "Failed to allocate TS device!\n");
-+	if (!input)
- 		return -ENOMEM;
+ 	idev = input_allocate_device();
+-	if (!idev) {
+-		dev_err(ictx->dev, "input dev allocation failed\n");
++	if (!idev)
+ 		goto out;
 -	}
  
- 	input->name = DRIVER_NAME;
- 	input->id.bustype = BUS_HOST;
-diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-index 386362c..28b3930 100644
---- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-+++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-@@ -911,8 +911,6 @@ static int synaptics_rmi4_probe
+ 	snprintf(ictx->name_idev, sizeof(ictx->name_idev),
+ 		 "iMON Panel, Knob and Mouse(%04x:%04x)",
+@@ -1960,10 +1958,8 @@ static struct input_dev *imon_init_touch(struct imon_context *ictx)
+ 	int ret;
  
- 	rmi4_data->input_dev = input_allocate_device();
- 	if (rmi4_data->input_dev == NULL) {
--		dev_err(&client->dev, "%s:input device alloc failed\n",
--						__func__);
- 		retval = -ENOMEM;
- 		goto err_input;
+ 	touch = input_allocate_device();
+-	if (!touch) {
+-		dev_err(ictx->dev, "touchscreen input dev allocation failed\n");
++	if (!touch)
+ 		goto touch_alloc_failed;
+-	}
+ 
+ 	snprintf(ictx->name_touch, sizeof(ictx->name_touch),
+ 		 "iMON USB Touchscreen (%04x:%04x)",
+diff --git a/drivers/media/usb/em28xx/em28xx-input.c b/drivers/media/usb/em28xx/em28xx-input.c
+index ea181e4..13938ba 100644
+--- a/drivers/media/usb/em28xx/em28xx-input.c
++++ b/drivers/media/usb/em28xx/em28xx-input.c
+@@ -508,10 +508,8 @@ static void em28xx_register_snapshot_button(struct em28xx *dev)
+ 
+ 	em28xx_info("Registering snapshot button...\n");
+ 	input_dev = input_allocate_device();
+-	if (!input_dev) {
+-		em28xx_errdev("input_allocate_device failed\n");
++	if (!input_dev)
+ 		return;
+-	}
+ 
+ 	usb_make_path(dev->udev, dev->snapshot_button_path,
+ 		      sizeof(dev->snapshot_button_path));
+diff --git a/drivers/media/usb/pwc/pwc-if.c b/drivers/media/usb/pwc/pwc-if.c
+index 77bbf78..49406ef 100644
+--- a/drivers/media/usb/pwc/pwc-if.c
++++ b/drivers/media/usb/pwc/pwc-if.c
+@@ -1078,7 +1078,6 @@ static int usb_pwc_probe(struct usb_interface *intf, const struct usb_device_id
+ 	/* register webcam snapshot button input device */
+ 	pdev->button_dev = input_allocate_device();
+ 	if (!pdev->button_dev) {
+-		PWC_ERROR("Err, insufficient memory for webcam snapshot button device.");
+ 		rc = -ENOMEM;
+ 		goto err_video_unreg;
  	}
 -- 
 1.8.1.2.459.gbcd45b4.dirty
