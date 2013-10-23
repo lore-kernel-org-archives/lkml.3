@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3JWLUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 07:20:49 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:27569 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3JWLUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 07:20:47 -0400
-X-Spam-Score: -100.8
-Message-ID: <5267B0C9.3000402@asianux.com>
-Date: Wed, 23 Oct 2013 19:19:37 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Paul McKenney <paulmck@linux.vnet.ibm.com>, khilman@linaro.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: context_tracking: use extern function instead
- of static inline function for user_enter/exit()
-References: <5267A72B.7060808@asianux.com> <20131023111147.GB2502@localhost.localdomain>
-In-Reply-To: <20131023111147.GB2502@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753247Ab3JWLXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 07:23:02 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:43325 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425Ab3JWLXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 07:23:00 -0400
+From: Andrew Lunn <andrew@lunn.ch>
+To: peter@hurleysoftware.com, gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-kernel@vger.kernel.org, jhovold@gmail.com,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH] tty: Add C_MSPAR(tty)
+Date: Wed, 23 Oct 2013 13:18:21 +0200
+Message-Id: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 07:11 PM, Frederic Weisbecker wrote:
-> On Wed, Oct 23, 2013 at 06:38:35PM +0800, Chen Gang wrote:
->> The related assemble code can not find the static inline function. The
->> related commit "ad65782 context_tracking: Optimize main APIs off case
->> with static key" causes this issue.
->>
->> The related error (for arm, with allmodconfig):
->>
->>     LD      init/built-in.o
->>   arch/arm/kernel/built-in.o: In function `ret_fast_syscall':
->>   arch/arm/kernel/entry-common.S:42: undefined reference to `user_enter'
->>   arch/arm/kernel/built-in.o: In function `no_work_pending':
->>   arch/arm/kernel/entry-common.S:77: undefined reference to `user_enter'
->>   arch/arm/kernel/built-in.o: In function `vector_swi':
->>   arch/arm/kernel/entry-common.S:376: undefined reference to `user_exit'
->>   arch/arm/kernel/built-in.o: In function `__dabt_usr':
->>   arch/arm/kernel/entry-armv.S:365: undefined reference to `user_exit'
->>   arch/arm/kernel/built-in.o: In function `__irq_usr':
->>   arch/arm/kernel/entry-armv.S:375: undefined reference to `user_exit'
->>   arch/arm/kernel/built-in.o: In function `__und_usr':
->>   arch/arm/kernel/entry-armv.S:388: undefined reference to `user_exit'
->>   arch/arm/kernel/built-in.o: In function `__pabt_usr':
->>   arch/arm/kernel/entry-armv.S:662: undefined reference to `user_exit'
->>
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> Doesn't 0c06a5d4b13cd66c833805a0d1db76b977944aac
-> ("arm: Fix build error with context tracking calls") fix the issue for you?
-> Or may be it's another problem I missed?
-> 
+Add the missing C_MSPAR(tty) macro.
 
-Oh, yes it is, it is my fault, I still use original next-20130927 tree
-(I really need reference another next tree or torvalds tree).  :-)
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+---
+ include/linux/tty.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-Next, I will/should reference another next tree, at least.
-
-Thanks again.
-
-> Thanks.
-> 
-> 
-
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 64f8646..630678d 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -137,6 +137,7 @@ struct tty_bufhead {
+ #define C_CLOCAL(tty)	_C_FLAG((tty), CLOCAL)
+ #define C_CIBAUD(tty)	_C_FLAG((tty), CIBAUD)
+ #define C_CRTSCTS(tty)	_C_FLAG((tty), CRTSCTS)
++#define C_MSPAR(tty)	_C_FLAG((tty), CMSPAR)
+ 
+ #define L_ISIG(tty)	_L_FLAG((tty), ISIG)
+ #define L_ICANON(tty)	_L_FLAG((tty), ICANON)
 -- 
-Chen Gang
+1.8.4.rc3
+
