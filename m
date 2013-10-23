@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3JWJ6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:58:19 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:50813 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab3JWJ4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 05:56:01 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 9/9] backlight: atmel-pwm-bl: use gpio_request_one
-Date: Wed, 23 Oct 2013 11:55:43 +0200
-Message-Id: <1382522143-32072-10-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+	id S1753495Ab3JWJ63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:58:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58649 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839Ab3JWJ6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 05:58:25 -0400
+Date: Wed, 23 Oct 2013 11:50:40 +0200
+From: Jan Kara <jack@suse.cz>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: viro@zeniv.linux.org.uk, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffm@suse.com,
+        marco.stornelli@gmail.com, jack@suse.cz
+Subject: Re: [PATCH] reiserfs: remove duplicate define
+Message-ID: <20131023095040.GD1275@quack.suse.cz>
+References: <1382342097-2991-1-git-send-email-michael.opdenacker@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382342097-2991-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_gpio_request_one rather than requesting and setting direction
-in two calls.
+On Mon 21-10-13 09:54:57, Michael Opdenacker wrote:
+> This patch removes a duplicate define in fs/reiserfs/reiserfs.h
+  Hum, so the duplicate define certainly isn't nice but it's really a
+result of a namespace collision between return codes of two different (sets
+of) functions. So deleting the duplicate isn't really solving the problem,
+just hiding it. So I'd prefer more one of the following two solutions:
+1) Just ignore the problem. Reiserfs is mostly dead and this isn't likely to
+cause any subtle issues.
+2) Prefix the return codes somehow so that those two error namespaces don't
+clash. As a bonus you can convert defines to enums but I'm not sure that's
+worth the bother (prefixing is a simple search & replace so that should be
+trivial, well except for the CARRY_ON case).
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>:w
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/video/backlight/atmel-pwm-bl.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 1277e0c..5ea2517 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -124,6 +124,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
- 	const struct atmel_pwm_bl_platform_data *pdata;
- 	struct backlight_device *bldev;
- 	struct atmel_pwm_bl *pwmbl;
-+	int flags;
- 	int retval;
- 
- 	pdata = dev_get_platdata(&pdev->dev);
-@@ -149,14 +150,14 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
- 		return retval;
- 
- 	if (gpio_is_valid(pwmbl->gpio_on)) {
--		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
--					"gpio_atmel_pwm_bl");
--		if (retval)
--			goto err_free_pwm;
--
- 		/* Turn display off by default. */
--		retval = gpio_direction_output(pwmbl->gpio_on,
--				0 ^ pdata->on_active_low);
-+		if (pdata->on_active_low)
-+			flags = GPIOF_OUT_INIT_HIGH;
-+		else
-+			flags = GPIOF_OUT_INIT_LOW;
-+
-+		retval = devm_gpio_request_one(&pdev->dev, pwmbl->gpio_on,
-+						flags, "gpio_atmel_pwm_bl");
- 		if (retval)
- 			goto err_free_pwm;
- 	}
+								Honza
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  fs/reiserfs/reiserfs.h | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
+> index f8adaee..a27d69b 100644
+> --- a/fs/reiserfs/reiserfs.h
+> +++ b/fs/reiserfs/reiserfs.h
+> @@ -597,7 +597,6 @@ void reiserfs_file_buffer(struct buffer_head *bh, int list);
+>  extern struct file_system_type reiserfs_fs_type;
+>  int reiserfs_resize(struct super_block *, unsigned long);
+>  
+> -#define CARRY_ON                0
+>  #define SCHEDULE_OCCURRED       1
+>  
+>  #define SB_BUFFER_WITH_SB(s) (REISERFS_SB(s)->s_sbh)
+> -- 
+> 1.8.1.2
+> 
 -- 
-1.8.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
