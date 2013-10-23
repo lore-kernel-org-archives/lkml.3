@@ -1,273 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab3JWH2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:28:31 -0400
-Received: from [213.199.154.252] ([213.199.154.252]:4032 "EHLO
-	db9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751196Ab3JWH23 (ORCPT
+	id S1751502Ab3JWH3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:29:09 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:18907 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab3JWH3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:28:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 23 Oct 2013 15:27:40 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rostislav Lisovy <lisovy@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        <pisa@cmp.felk.cvut.cz>
-Subject: Re: [PATCH 3/4] ARM: dts: i.MX53: dts for Voipac x53-dmm-668 module
-Message-ID: <20131023072738.GI2839@S2101-09.ap.freescale.net>
-References: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
- <1382461643-16790-4-git-send-email-lisovy@gmail.com>
+	Wed, 23 Oct 2013 03:29:07 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-16.tower-178.messagelabs.com!1382513343!24450265!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.12; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 23 Oct 2013 09:29:04 +0200
+Date: Wed, 23 Oct 2013 09:29:01 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Michael Buesch <m@bues.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Driver Design Question
+Message-ID: <20131023072901.GB24193@jtlinux>
+References: <20131022070256.GA5527@jtlinux>
+ <52673E08.4070707@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1382461643-16790-4-git-send-email-lisovy@gmail.com>
+In-Reply-To: <52673E08.4070707@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 23 Oct 2013 07:29:02.0508 (UTC) FILETIME=[8C04B6C0:01CECFC1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 07:07:22PM +0200, Rostislav Lisovy wrote:
-> Enable UART1 and FEC
+On Tue, Oct 22, 2013 at 08:10:00PM -0700, Guenter Roeck wrote:
+> On 10/22/2013 12:02 AM, Johannes Thumshirn wrote:
+> >Hi List,
+> >
+> >I have a design question concerning a device driver. The device in question is
+> >somewhere in between drivers/mfd/timberdale and drivers/ssb. It is mapped
+> >connected via PCI and on PCI Bar 0 there is a table describing which
+> >"sub-devices" are contained in the FPGA as well as where their Memory and IRQ
+> >resources are.
+> >
+> >Unlike the timberdale driver, there is no static configuration of the FPGA's
+> >sub-devices, but their number and kind is variable. But luckily we have unique
+> >device-ids for every sub-device, so it is possible to do a PCI/USB like
+> >enumeration.
+> >
+> >In my understanding the MFD API, which timberdale uses, isn't tailored to this
+> >Plug'n'Play like behavior. Whereas the I think (virtual) bus concept used by
+>
+> Not sure if that is true. There is no requirement to declare mfd cells
+> statically. As long as the devices don't change after mfd probe, an mfd based
+> solution would at least be implementable.
 
-You have more than these two enabled.
+Yes it would be implementable, but would it be a good idea to do so?
 
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> 
->  create mode 100644 arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
-> new file mode 100644
-> index 0000000..04695c9
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
-> @@ -0,0 +1,195 @@
-> +/*
-> + * Copyright 2013 Rostislav Lisovy <lisovy@gmail.com>, PiKRON s.r.o.
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +#include "imx53.dtsi"
-> +
-> +/ {
-> +	model = "Voipac i.MX53 X53-DMM-668";
-> +	compatible = "vp,imx53-dmm-668", "fsl,imx53";
-> +
-> +	memory@0 {
-> +		device_type = "memory";
-> +		reg = <0x70000000 0x20000000>;
-> +	};
-> +
-> +	memory@1 {
-> +		device_type = "memory";
-> +		reg = <0xb0000000 0x20000000>;
-> +	};
+>
+> However, adding support for new sub-devices might be an issue, as you would
+> have to update the mfd driver to add support for each new device (to create its
+> mfd cell and platform data), in addition to writing the actual driver.
+>
 
-The 'num' in memory@num should match the first number in 'reg' property,
-so they should looks like:
+Adding sub-devices could probably be done without changing th mfd driver, as I
+have a device-id, which is part o the article number, so I could generate the
+string for the modalias in a generic way.
 
-	memory@70000000 {
-		device_type = "memory";
-		reg = <0x70000000 0x20000000>;
-	}
+> >SSB is much more suited for this kind of devices. But would it be wise to add a
+> >bus only suited to devices manufactured by one vendor, when there is already a
+> >API for such kinds of multi function devices?
+> >
+> Assuming you refer to mfd, isn't that a contradiction ? You just stated that mfd
+> doesn't exactly meet your requirements. There is also an API for adding a new bus,
+> and it is used quite widely.
 
-	memory@b0000000 {
-		device_type = "memory";
-		reg = <0xb0000000 0x20000000>;
-	}
+Well my requirements probably can be met using the mfd framework, but I'm not
+shure if it would be a good design decission then. Or maybe adding a bus would
+be a better decission. The thing is, I don't want to make me a maintainence
+hell, but have something I ideally don't need to touch a 2nd time once it is
+done right.
 
-> +
-> +	regulators {
-> +		compatible = "simple-bus";
-> +
-> +		reg_3p3v: 3p3v {
-> +			compatible = "regulator-fixed";
-> +			regulator-name = "3P3V";
-> +			regulator-min-microvolt = <3300000>;
-> +			regulator-max-microvolt = <3300000>;
-> +			regulator-always-on;
-> +		};
-> +	};
-> +};
-> +
-> +&iomuxc {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_hog>;
-> +
-> +	hog {
-> +		pinctrl_hog: hoggrp {
-> +			fsl,pins = <
-> +				/* Make DA9053 regulator functional */
-> +				MX53_PAD_GPIO_16__GPIO7_11	0x80000000
-> +
+>
+> Question for me would be if the additional overhead for adding a bus outweighs its
+> benefits.
+>
+> >Long story short, which would be the preferred way to implement such a driver? At
+> >the point I currently reached I could go in both directions.
+> >
+> >I'd appreciate any advice I can get on this topic.
+> >
+>
+> I'm adding Greg KH to the thread. Maybe he has some useful advice as the driver core
+> maintainer. I have struggled with the question if to add a bus myself, so maybe I can
+> get something useful out of it ;).
 
-Drop these blank lines.  We generally only have blank lines between
-nodes.
+This really would be great. If you can get an answer as well, we'd have a win
+win situation ;).
 
-> +				/* FEC Power enable */
-> +				MX53_PAD_GPIO_11__GPIO4_1	0x80000000
-> +
-> +				/* FEC RST */
-> +				MX53_PAD_GPIO_12__GPIO4_2	0x80000000
-> +			>;
-> +		};
-> +	};
-> +};
-> +
-> +&uart1 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_uart1_2>;
-> +	status = "okay";
-> +};
-> +
-> +&i2c1 {
+Thanks a lot for your comments.
 
-Please sort these nodes alphabetically in label name, so that new node
-can find they slots easily.
-
-Shawn
-
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_i2c1_2>;
-> +	status = "okay";
-> +
-> +	pmic: dialog@48 {
-> +		compatible = "dlg,da9053-aa", "dlg,da9052";
-> +		reg = <0x48>;
-> +		interrupt-parent = <&gpio7>;
-> +		interrupts = <11 0x8>; /* low-level active IRQ at GPIO7_11 */
-> +
-> +		regulators {
-> +			buck1_reg: buck1 {
-> +				regulator-name = "BUCKCORE";
-> +				regulator-min-microvolt = <1200000>;
-> +				regulator-max-microvolt = <1400000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			buck2_reg: buck2 {
-> +				regulator-name = "BUCKPRO";
-> +				regulator-min-microvolt = <900000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			buck3_reg: buck3 {
-> +				regulator-name = "BUCKMEM";
-> +				regulator-min-microvolt = <1420000>;
-> +				regulator-max-microvolt = <1580000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			buck4_reg: buck4 {
-> +				regulator-name = "BUCKPERI";
-> +				regulator-min-microvolt = <2370000>;
-> +				regulator-max-microvolt = <2630000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo1_reg: ldo1 {
-> +				regulator-name = "ldo1_1v3";
-> +				regulator-min-microvolt = <1250000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-boot-on;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo2_reg: ldo2 {
-> +				regulator-name = "ldo2_1v3";
-> +				regulator-min-microvolt = <1250000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo3_reg: ldo3 {
-> +				regulator-name = "ldo3_3v3";
-> +				regulator-min-microvolt = <3250000>;
-> +				regulator-max-microvolt = <3350000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo4_reg: ldo4 {
-> +				regulator-name = "ldo4_2v775";
-> +				regulator-min-microvolt = <2770000>;
-> +				regulator-max-microvolt = <2780000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo5_reg: ldo5 {
-> +				regulator-name = "ldo5_3v3";
-> +				regulator-min-microvolt = <3250000>;
-> +				regulator-max-microvolt = <3350000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo6_reg: ldo6 {
-> +				regulator-name = "ldo6_1v3";
-> +				regulator-min-microvolt = <1250000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo7_reg: ldo7 {
-> +				regulator-name = "ldo7_2v75";
-> +				regulator-min-microvolt = <2700000>;
-> +				regulator-max-microvolt = <2800000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo8_reg: ldo8 {
-> +				regulator-name = "ldo8_1v8";
-> +				regulator-min-microvolt = <1750000>;
-> +				regulator-max-microvolt = <1850000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo9_reg: ldo9 {
-> +				regulator-name = "ldo9_1v5";
-> +				regulator-min-microvolt = <1450000>;
-> +				regulator-max-microvolt = <1550000>;
-> +				regulator-always-on;
-> +			};
-> +
-> +			ldo10_reg: ldo10 {
-> +				regulator-name = "ldo10_1v3";
-> +				regulator-min-microvolt = <1250000>;
-> +				regulator-max-microvolt = <1350000>;
-> +				regulator-always-on;
-> +			};
-> +		};
-> +	};
-> +};
-> +
-> +&ecspi1 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_ecspi1_1>;
-> +	fsl,spi-num-chipselects = <4>;
-> +	cs-gpios = <&gpio2 30 0>, <&gpio3 19 0>, <&gpio2 16 0>, <&gpio2 17 0>;
-> +	status = "okay";
-> +};
-> +
-> +&fec {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_fec_1>;
-> +	phy-mode = "rmii";
-> +	phy-reset-gpios = <&gpio4 2 0>;
-> +	status = "okay";
-> +};
-> -- 
-> 1.7.10.4
-> 
-
+       Johannes
