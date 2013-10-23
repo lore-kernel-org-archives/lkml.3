@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3JWKQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 06:16:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32310 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab3JWKQv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 06:16:51 -0400
-X-IronPort-AV: E=Sophos;i="4.93,553,1378828800"; 
-   d="scan'208";a="8838789"
-Message-ID: <5267A0B7.7000202@cn.fujitsu.com>
-Date: Wed, 23 Oct 2013 18:11:03 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752908Ab3JWKT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 06:19:58 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60126 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab3JWKT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 06:19:56 -0400
+Date: Wed, 23 Oct 2013 11:17:03 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, dave@sr71.net,
+        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
+        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
+        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 06/40] mm: Demarcate and maintain pageblocks in
+ region-order in the zones' freelists
+Message-ID: <20131023101703.GC2043@cmpxchg.org>
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com>
+ <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] f2fs: delete and free dirty dir freeing inode entry when
- sync dirty dir inodes
-References: <5264D574.6000105@cn.fujitsu.com> <1382440544.992.64.camel@kjgkr>
-In-Reply-To: <1382440544.992.64.camel@kjgkr>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/23 18:14:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/23 18:14:18
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130925231454.26184.19783.stgit@srivatsabhat.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
-On 10/22/2013 07:15 PM, Jaegeuk Kim wrote:
+On Thu, Sep 26, 2013 at 04:44:56AM +0530, Srivatsa S. Bhat wrote:
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -517,6 +517,111 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
+>  	return 0;
+>  }
+>  
+> +static void add_to_freelist(struct page *page, struct free_list *free_list)
+> +{
+> +	struct list_head *prev_region_list, *lru;
+> +	struct mem_region_list *region;
+> +	int region_id, i;
+> +
+> +	lru = &page->lru;
+> +	region_id = page_zone_region_id(page);
+> +
+> +	region = &free_list->mr_list[region_id];
+> +	region->nr_free++;
+> +
+> +	if (region->page_block) {
+> +		list_add_tail(lru, region->page_block);
+> +		return;
+> +	}
+> +
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +	WARN(region->nr_free != 1, "%s: nr_free is not unity\n", __func__);
+> +#endif
+> +
+> +	if (!list_empty(&free_list->list)) {
+> +		for (i = region_id - 1; i >= 0; i--) {
+> +			if (free_list->mr_list[i].page_block) {
+> +				prev_region_list =
+> +					free_list->mr_list[i].page_block;
+> +				goto out;
+> +			}
+> +		}
+> +	}
+> +
+> +	/* This is the first region, so add to the head of the list */
+> +	prev_region_list = &free_list->list;
+> +
+> +out:
+> +	list_add(lru, prev_region_list);
+> +
+> +	/* Save pointer to page block of this region */
+> +	region->page_block = lru;
 
-> 2013-10-21 (월), 15:19 +0800, Gu Zheng:
->> In sync_dirty_dir_inodes(), remove_dirty_dir_inode() will be called
->> in the callback of filemap_flush to delete and free dirty dir inode entry.
->> But for the freeing inode entry, missed this step after sbumit data bio,
->> and this may lead to a dead loop if these is freeing inode entry in
->> dir_inode_list. So add the delete and free step to fix it.
-> 
-> Hi Gu,
-> 
-> This dirty inode will be removed by f2fs_evict_inode() after submitting
-> any pending bio, f2fs_submit_bio().
+"Pageblock" has a different meaning in the allocator already.
 
-Yeah, got it, thanks for your direction, please ignore this patch.
-
-Regards,
-Gu
-
-> Thanks,
-> 
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  fs/f2fs/checkpoint.c |    9 +++++++++
->>  1 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
->> index 8d16071..f61838f 100644
->> --- a/fs/f2fs/checkpoint.c
->> +++ b/fs/f2fs/checkpoint.c
->> @@ -600,7 +600,16 @@ retry:
->>  		 * wribacking dentry pages in the freeing inode.
->>  		 */
->>  		f2fs_submit_bio(sbi, DATA, true);
->> +
->> +		spin_lock(&sbi->dir_inode_lock);
->> +		list_del(&entry->list);
->> +#ifdef CONFIG_F2FS_STAT_FS
->> +		sbi->n_dirty_dirs--;
->> +#endif
->> +		spin_unlock(&sbi->dir_inode_lock);
->> +		kmem_cache_free(inode_entry_slab, entry);
->>  	}
->> +
->>  	goto retry;
->>  }
->>  
-> 
-
-
+The things you string up here are just called pages, regardless of
+which order they are in and how many pages they can be split into.
