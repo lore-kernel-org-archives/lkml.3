@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab3JWMc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 08:32:59 -0400
-Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:44274 "EHLO
-	smtp6.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3JWMc6 (ORCPT
+	id S1753449Ab3JWMh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 08:37:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57284 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab3JWMh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 08:32:58 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 08:32:58 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 smtp6.sgsi.ucl.ac.be 15F4818343B
-Date: Wed, 23 Oct 2013 14:25:43 +0200
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>, fengguang.wu@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: -27% netperf TCP_STREAM regression by "tcp_memcontrol: Kill
- struct tcp_memcontrol"
-Message-ID: <20131023122543.GH5132@cpaasch-mac>
-References: <20131022214129.GB2715@localhost>
- <20131022.180023.1141845387743361648.davem@davemloft.net>
- <87k3h461ql.fsf@tw-ebiederman.twitter.com>
+	Wed, 23 Oct 2013 08:37:27 -0400
+Date: Wed, 23 Oct 2013 13:37:04 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Young <dyoung@redhat.com>, Matt Fleming <matt@console-pimps.org>,
+        X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131023123704.GA29106@srcf.ucam.org>
+References: <20131012103054.GA13739@pd.tnic>
+ <20131013031126.GB1914@darkstar.nay.redhat.com>
+ <20131013092521.GA22866@pd.tnic>
+ <20131014155851.GJ4009@pd.tnic>
+ <20131021124739.GA4515@dhcp-16-126.nay.redhat.com>
+ <20131021133741.GA5716@nazgul.tnic>
+ <20131021150426.GB4515@dhcp-16-126.nay.redhat.com>
+ <20131022111857.GA10660@nazgul.tnic>
+ <20131023021730.GE4594@dhcp-16-126.nay.redhat.com>
+ <20131023122531.GA15848@nazgul.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87k3h461ql.fsf@tw-ebiederman.twitter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Sgsi-Spamcheck: SASL authenticated, 
-X-SGSI-MailScanner-ID: 15F4818343B.A164D
-X-SGSI-MailScanner: Found to be clean
-X-SGSI-From: christoph.paasch@uclouvain.be
-X-SGSI-Spam-Status: No
+In-Reply-To: <20131023122531.GA15848@nazgul.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Oct 23, 2013 at 02:25:31PM +0200, Borislav Petkov wrote:
 
-On 22/10/13 - 21:38:10, Eric W. Biederman wrote:
-> David Miller <davem@davemloft.net> writes:
-> > From: fengguang.wu@intel.com
-> > Date: Tue, 22 Oct 2013 22:41:29 +0100
-> >
-> >> We noticed big netperf throughput regressions
-> >> 
-> >>     a4fe34bf902b8f709c63      2e685cad57906e19add7  
-> >> ------------------------  ------------------------  
-> >>                   707.40       -40.7%       419.60  lkp-nex04/micro/netperf/120s-200%-TCP_STREAM
-> >>                  2775.60       -23.7%      2116.40  lkp-sb03/micro/netperf/120s-200%-TCP_STREAM
-> >>                  3483.00       -27.2%      2536.00  TOTAL netperf.Throughput_Mbps
-> >> 
-> >> and bisected it to
-> >> 
-> >> commit 2e685cad57906e19add7189b5ff49dfb6aaa21d3
-> >> Author: Eric W. Biederman <ebiederm@xmission.com>
-> >> Date:   Sat Oct 19 16:26:19 2013 -0700
-> >> 
-> >>     tcp_memcontrol: Kill struct tcp_memcontrol
-> >
-> > Eric please look into this, I'd rather have a fix to apply than revert your
-> > work.
-> 
-> Will do I expect some ordering changed, and that changed the cache line
-> behavior.
+> Matt, didn't you question the need to keep boot services regions
+> mapped indefinitely? What was the story there?
 
-may it be the below?
+We shouldn't need boot services regions to be mapped after 
+SetVirtualAddressMap is called.
 
-
-Cheers,
-Christoph
-
-----
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-Subject: [PATCH] Fix: Dereference pointer-value of sk_prot->memory_pressure
-
-2e685cad57 (tcp_memcontrol: Kill struct tcp_memcontrol) falsly modified
-the access to memory_pressure of sk->sk_prot->memory_pressure. The patch
-did modify the memory_pressure-field of struct cg_proto, but not the one
-of struct proto.
-
-So, the access to sk_prot->memory_pressure should not be changed.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
----
- include/net/sock.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/net/sock.h b/include/net/sock.h
-index c93542f..e3a18ff 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1137,7 +1137,7 @@ static inline bool sk_under_memory_pressure(const struct sock *sk)
-        if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
-                return !!sk->sk_cgrp->memory_pressure;
-
--       return !!sk->sk_prot->memory_pressure;
-+       return !!*sk->sk_prot->memory_pressure;
- }
-
- static inline void sk_leave_memory_pressure(struct sock *sk)
 -- 
-1.8.3.2
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
