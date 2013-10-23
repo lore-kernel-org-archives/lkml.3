@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab3JWNlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:41:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39598 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469Ab3JWNlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:41:02 -0400
-Date: Wed, 23 Oct 2013 15:40:59 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: Frank Haverkamp <haver@vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver
-Message-ID: <20131023134059.GB21936@sepie.suse.cz>
-References: <1374740897-20304-1-git-send-email-haver@vnet.ibm.com>
- <1374740897-20304-2-git-send-email-haver@vnet.ibm.com>
- <51F12668.8000400@suse.cz>
- <1382534154.2791.8.camel@oc7383187364.ibm.com>
+	id S1752085Ab3JWNlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:41:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47068 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab3JWNlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 09:41:44 -0400
+Date: Wed, 23 Oct 2013 09:41:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Jim Davis <jim.epost@gmail.com>, Zoltan Kiss <zoltan.kiss@citrix.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing/events: Fix swiotlb tracepoint creation
+Message-ID: <20131023134138.GA27771@phenom.dumpdata.com>
+References: <20131022180625.GD20496@phenom.dumpdata.com>
+ <1382527924-12892-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382534154.2791.8.camel@oc7383187364.ibm.com>
+In-Reply-To: <1382527924-12892-1-git-send-email-treding@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 03:15:54PM +0200, Frank Haverkamp wrote:
-> Hi Marek,
+On Wed, Oct 23, 2013 at 01:32:04PM +0200, Thierry Reding wrote:
+> Tracepoints are only created when Xen support is enabled, but they are
+> also referenced within lib/swiotlb.c. So unless Xen support is enabled
+> the tracepoints will be missing, therefore causing builds to fail. Fix
+> this by moving the tracepoint creation to lib/swiotlb.c, which works
+> nicely because the Xen swiotlb support selects the generic swiotlb
+> support.
+
+Sweet. Thanks!
 > 
-> it took a little while, but here are the requested changes to our
-> driver:
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  drivers/xen/swiotlb-xen.c | 1 -
+>  lib/swiotlb.c             | 1 +
+>  2 files changed, 1 insertion(+), 1 deletion(-)
 > 
-> Rework comments:
->  o Removed __DATE__ macros as suggested by Michal Marek
-
-Hi Frank,
-
-did you send an old version of the patch? There are still two ocurences
-of __DATE__:
-
-
-> +static int genwqe_probe(struct pci_dev *pci_dev,
-> +			const struct pci_device_id *id)
-> +{
-[...]
-> +	dev_info(&pci_dev->dev, "GenWQE driver version: %s (build %s) %s%u\n",
-> +		 DRV_VERS_STRING, __DATE__, GENWQE_DEVNAME, cd->card_idx);
-
-and
-
-> +static ssize_t show_card_info(struct device *dev,
-> +			      struct device_attribute *attr, char *buf)
-> +{
-[...]
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "GenWQE driver version: %s (build %s)\n"
-> +			 "    Device Name/Type: %s %s CardIdx: %d\n"
-> +			 "    SLU/APP Config  : 0x%016llx/0x%016llx\n"
-> +			 "    Build Date/Type : %u/%x/%u %s\n"
-> +			 "    Base Clock      : %u MHz\n"
-> +			 "    Arch/SVN Release: %u/%llx\n"
-> +			 "    Bitstream       : %llx\n",
-> +			 DRV_VERS_STRING, __DATE__, dev_name(&pci_dev->dev),
-
-
-Thanks,
-Michal
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index b310810..44af9d8 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -43,7 +43,6 @@
+>  #include <xen/xen-ops.h>
+>  #include <xen/hvc-console.h>
+>  
+> -#define CREATE_TRACE_POINTS
+>  #include <trace/events/swiotlb.h>
+>  /*
+>   * Used to do a quick range check in swiotlb_tbl_unmap_single and
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index f0d8419..5558706 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/bootmem.h>
+>  #include <linux/iommu-helper.h>
+>  
+> +#define CREATE_TRACE_POINTS
+>  #include <trace/events/swiotlb.h>
+>  
+>  #define OFFSET(val,align) ((unsigned long)	\
+> -- 
+> 1.8.4
+> 
