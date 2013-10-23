@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3JWTze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:55:34 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:47638 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3JWTzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:55:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Paasch <christoph.paasch@uclouvain.be>, fengguang.wu@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-References: <20131022214129.GB2715@localhost>
-	<20131022.180023.1141845387743361648.davem@davemloft.net>
-	<87k3h461ql.fsf@tw-ebiederman.twitter.com>
-	<20131023122543.GH5132@cpaasch-mac>
-	<1382533364.7572.15.camel@edumazet-glaptop.roam.corp.google.com>
-Date: Wed, 23 Oct 2013 12:55:18 -0700
-In-Reply-To: <1382533364.7572.15.camel@edumazet-glaptop.roam.corp.google.com>
-	(Eric Dumazet's message of "Wed, 23 Oct 2013 06:02:44 -0700")
-Message-ID: <87r4bbiwyh.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753394Ab3JWT4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:56:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab3JWT4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 15:56:05 -0400
+Date: Wed, 23 Oct 2013 15:55:50 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, eparis@redhat.com
+Subject: Re: [BUG][PATCH] audit: audit_log_start running on auditd should not
+ stop
+Message-ID: <20131023195550.GA9109@madcap2.tricolour.ca>
+References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
+ <5257C5D7.80308@cn.fujitsu.com>
+ <5257EF15.6080209@jp.fujitsu.com>
+ <20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com>
+ <525CE10A.90907@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/5tYLdG7+vSFQlOVeY7ld8sfHnlDO1k/g=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0345]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Eric Dumazet <eric.dumazet@gmail.com>
-X-Spam-Relay-Country: 
-Subject: [PATCH] Fix: Dereference pointer-value of sk_prot->memory_pressure
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525CE10A.90907@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-Date: Wed, 23 Oct 2013 12:49:21 -0700
+On Tue, Oct 15, 2013 at 02:30:34PM +0800, Gao feng wrote:
+> Hi Toshiyuki-san,
 
-2e685cad57 (tcp_memcontrol: Kill struct tcp_memcontrol) falsly modified
-the access to memory_pressure of sk->sk_prot->memory_pressure. The patch
-did modify the memory_pressure-field of struct cg_proto, but not the one
-of struct proto.
+Toshiuki and Gao,
 
-So, the access to sk_prot->memory_pressure should not be changed.
+> On 10/15/2013 12:43 PM, Toshiyuki Okajima wrote:
+> > The backlog cannot be consumed when audit_log_start is running on auditd
+> > even if audit_log_start calls wait_for_auditd to consume it.
+> > The situation is a deadlock because only auditd can consume the backlog.
+> > If the other process needs to send the backlog, it can be also stopped 
+> > by the deadlock.
+> > 
+> > So, audit_log_start running on auditd should not stop.
+> > 
+> > You can see the deadlock with the following reproducer:
+> >  # auditctl -a exit,always -S all
+> >  # reboot
 
-Acked-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- include/net/sock.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Hmm, I see, There may be other code paths that auditd can call audit_log_start except
+> audit_log_config_change. so it's better to handle this problem in audit_log_start.
+> 
+> but current task is only meaningful when gfp_mask & __GFP_WAIT is true.
+> so maybe the below patch is what you want.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index c93542f92420..e3a18ff0c38b 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1137,7 +1137,7 @@ static inline bool sk_under_memory_pressure(const struct sock *sk)
- 	if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
- 		return !!sk->sk_cgrp->memory_pressure;
- 
--	return !!sk->sk_prot->memory_pressure;
-+	return !!*sk->sk_prot->memory_pressure;
- }
- 
- static inline void sk_leave_memory_pressure(struct sock *sk)
--- 
-1.7.5.4
+I have been following this thread with interest.  I like the general
+evolution of this patch.  The first patch was a bit too abrupt, dropping
+too much, but this one makes much more sense.  I would be tempted to
+make the reserve even bigger.
 
+I see that you should be using a kernel that has included commit
+8ac1c8d5 (which made it into v3.12-rc3)
+	audit: fix endless wait in audit_log_start()
+That was an obvious bug, but I was still concerned about the cause of
+the initial wait.  There are other fixes and ideas in the works that
+should alleviate some of the pressure to make the service more usable.
+	https://lkml.org/lkml/2013/9/18/453
+
+I have tested with and without this v3 patch and I don't see any
+significant difference with the reproducer provided above.  I'm also
+testing with a reproducer of the endless wait bug (readahead-collector).
+
+What are your expected results?  What are your actual results in each
+case?  How are they different?
+
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 7b0e23a..10b4545 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1095,7 +1095,9 @@ struct audit_buffer *audit_log_start(struct audit_context
+>         struct audit_buffer     *ab     = NULL;
+>         struct timespec         t;
+>         unsigned int            uninitialized_var(serial);
+> -       int reserve;
+> +       int reserve = 5; /* Allow atomic callers to go up to five
+> +                           entries over the normal backlog limit */
+> +
+>         unsigned long timeout_start = jiffies;
+> 
+>         if (audit_initialized != AUDIT_INITIALIZED)
+> @@ -1104,11 +1106,12 @@ struct audit_buffer *audit_log_start(struct audit_contex
+>         if (unlikely(audit_filter_type(type)))
+>                 return NULL;
+> 
+> -       if (gfp_mask & __GFP_WAIT)
+> -               reserve = 0;
+> -       else
+> -               reserve = 5; /* Allow atomic callers to go up to five
+> -                               entries over the normal backlog limit */
+> +       if (gfp_mask & __GFP_WAIT) {
+> +               if (audit_pid && audit_pid == current->pid)
+> +                       gfp_mask &= ~__GFP_WAIT;
+> +               else
+> +                       reserve = 0;
+> +       }
+> 
+>         while (audit_backlog_limit
+>                && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserv
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
