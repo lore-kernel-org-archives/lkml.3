@@ -1,146 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3JWNdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:33:21 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37291 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3JWNaA (ORCPT
+	id S1754072Ab3JWNeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:34:09 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:60047 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3JWN36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:30:00 -0400
+	Wed, 23 Oct 2013 09:29:58 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v3 08/15] KVM: MMU: introduce pte-list lockless walker
-Date: Wed, 23 Oct 2013 21:29:26 +0800
-Message-Id: <1382534973-13197-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 04/15] KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
+Date: Wed, 23 Oct 2013 21:29:22 +0800
+Message-Id: <1382534973-13197-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102313-7014-0000-0000-000003D17B2A
+x-cbid: 13102313-5816-0000-0000-00000A8A956E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The basic idea is from nulls list which uses a nulls to indicate
-whether the desc is moved to different pte-list
+Now we can flush all the TLBs out of the mmu lock without TLB corruption when
+write-proect the sptes, it is because:
+- we have marked large sptes readonly instead of dropping them that means we
+  just change the spte from writable to readonly so that we only need to care
+  the case of changing spte from present to present (changing the spte from
+  present to nonpresent will flush all the TLBs immediately), in other words,
+  the only case we need to care is mmu_spte_update()
 
-Note, we should do bottom-up walk in the desc since we always move
-the bottom entry to the deleted position
-
-Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
+- in mmu_spte_update(), we haved checked
+  SPTE_HOST_WRITEABLE | PTE_MMU_WRITEABLE instead of PT_WRITABLE_MASK, that
+  means it does not depend on PT_WRITABLE_MASK anymore
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 53 insertions(+), 4 deletions(-)
+ arch/x86/kvm/mmu.c | 18 ++++++++++++++----
+ arch/x86/kvm/x86.c |  9 +++++++--
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 4687329..a864140 100644
+index 62f18ec..337d173 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -975,6 +975,10 @@ static int count_spte_number(struct pte_list_desc *desc)
- 	return first_free + desc_num * PTE_LIST_EXT;
- }
+@@ -4273,15 +4273,25 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 			if (*rmapp)
+ 				__rmap_write_protect(kvm, rmapp, false);
  
-+#define rcu_assign_pte_list(pte_list_p, value)				\
-+	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
-+			(unsigned long *)(value))
+-			if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
+-				kvm_flush_remote_tlbs(kvm);
++			if (need_resched() || spin_needbreak(&kvm->mmu_lock))
+ 				cond_resched_lock(&kvm->mmu_lock);
+-			}
+ 		}
+ 	}
+ 
+-	kvm_flush_remote_tlbs(kvm);
+ 	spin_unlock(&kvm->mmu_lock);
 +
- /*
-  * Pte mapping structures:
-  *
-@@ -994,7 +998,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
- 
- 	if (!*pte_list) {
- 		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
--		*pte_list = (unsigned long)spte;
-+		rcu_assign_pte_list(pte_list, spte);
- 		return 0;
- 	}
- 
-@@ -1004,7 +1008,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
- 		desc->sptes[0] = (u64 *)*pte_list;
- 		desc->sptes[1] = spte;
- 		desc_mark_nulls(pte_list, desc);
--		*pte_list = (unsigned long)desc | 1;
-+		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
- 		return 1;
- 	}
- 
-@@ -1017,7 +1021,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
- 		new_desc = mmu_alloc_pte_list_desc(vcpu);
- 		new_desc->more = desc;
- 		desc = new_desc;
--		*pte_list = (unsigned long)desc | 1;
-+		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
- 	}
- 
- 	free_pos = find_first_free(desc);
-@@ -1125,6 +1129,51 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
- 	WARN_ON(desc_get_nulls_value(desc) != pte_list);
- }
- 
-+/* The caller should hold rcu lock. */
-+static void pte_list_walk_lockless(unsigned long *pte_list,
-+				   pte_list_walk_fn fn)
-+{
-+	struct pte_list_desc *desc;
-+	unsigned long pte_list_value;
-+	int i;
-+
-+restart:
 +	/*
-+	 * Force the pte_list to be reloaded.
-+	 *
-+	 * See the comments in hlist_nulls_for_each_entry_rcu().
++	 * We can flush all the TLBs out of the mmu lock without TLB
++	 * corruption since we just change the spte from writable to
++	 * readonly so that we only need to care the case of changing
++	 * spte from present to present (changing the spte from present
++	 * to nonpresent will flush all the TLBs immediately), in other
++	 * words, the only case we care is mmu_spte_update() where we
++	 * haved checked SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE
++	 * instead of PT_WRITABLE_MASK, that means it does not depend
++	 * on PT_WRITABLE_MASK anymore.
 +	 */
-+	barrier();
-+	pte_list_value = *rcu_dereference(pte_list);
-+	if (!pte_list_value)
-+		return;
-+
-+	if (!(pte_list_value & 1))
-+		return fn((u64 *)pte_list_value);
-+
-+	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
-+	while (!desc_is_a_nulls(desc)) {
-+		/*
-+		 * We should do top-down walk since we always use the higher
-+		 * indices to replace the deleted entry if only one desc is
-+		 * used in the rmap when a spte is removed. Otherwise the
-+		 * moved entry will be missed.
-+		 */
-+		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
-+			if (desc->sptes[i])
-+				fn(desc->sptes[i]);
-+
-+		desc = rcu_dereference(desc->more);
-+
-+		/* It is being initialized. */
-+		if (unlikely(!desc))
-+			goto restart;
-+	}
-+
-+	if (unlikely(desc_get_nulls_value(desc) != pte_list))
-+		goto restart;
-+}
-+
- static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
- 				    struct kvm_memory_slot *slot)
- {
-@@ -4615,7 +4664,7 @@ int kvm_mmu_module_init(void)
- {
- 	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
- 					    sizeof(struct pte_list_desc),
--					    0, 0, NULL);
-+					    0, SLAB_DESTROY_BY_RCU, NULL);
- 	if (!pte_list_desc_cache)
- 		goto nomem;
++	kvm_flush_remote_tlbs(kvm);
+ }
  
+ #define BATCH_ZAP_PAGES	10
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index b3aa650..573c6b3 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3571,11 +3571,16 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
+ 		offset = i * BITS_PER_LONG;
+ 		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
+ 	}
+-	if (is_dirty)
+-		kvm_flush_remote_tlbs(kvm);
+ 
+ 	spin_unlock(&kvm->mmu_lock);
+ 
++	/*
++	 * All the TLBs can be flushed out of mmu lock, see the comments in
++	 * kvm_mmu_slot_remove_write_access().
++	 */
++	if (is_dirty)
++		kvm_flush_remote_tlbs(kvm);
++
+ 	r = -EFAULT;
+ 	if (copy_to_user(log->dirty_bitmap, dirty_bitmap_buffer, n))
+ 		goto out;
 -- 
 1.8.1.4
 
