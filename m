@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab3JWH4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:56:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56073 "EHLO
+	id S1753232Ab3JWH4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:56:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56074 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab3JWHz7 (ORCPT
+	with ESMTP id S1753109Ab3JWHz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 03:55:59 -0400
-Date: Wed, 23 Oct 2013 00:55:35 -0700
-From: tip-bot for Waiman Long <tipbot@zytor.com>
-Message-ID: <tip-91e95617429cb272fd908b1928a1915b37b9655f@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, Waiman.Long@hp.com,
-        dsahern@gmail.com, tglx@linutronix.de, scott.norton@hp.com,
-        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, adrian.hunter@intel.com, aswin@hp.com
-Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
-        acme@redhat.com, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        Waiman.Long@hp.com, dsahern@gmail.com, tglx@linutronix.de,
-        scott.norton@hp.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        adrian.hunter@intel.com, aswin@hp.com
-In-Reply-To: <1382107129-2010-4-git-send-email-Waiman.Long@hp.com>
-References: <1382107129-2010-4-git-send-email-Waiman.Long@hp.com>
+Date: Wed, 23 Oct 2013 00:55:26 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-cc9784bd9fa9d8e27fdea61142398cb85ce401a8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1381847254-28809-4-git-send-email-jolsa@redhat.com>
+References: <1381847254-28809-4-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  Add --max-stack option to limit callchain stack scan
-Git-Commit-ID: 91e95617429cb272fd908b1928a1915b37b9655f
+Subject: [tip:perf/core] perf session:
+  Separating data file properties from session
+Git-Commit-ID: cc9784bd9fa9d8e27fdea61142398cb85ce401a8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,259 +34,415 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:55:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:55:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  91e95617429cb272fd908b1928a1915b37b9655f
-Gitweb:     http://git.kernel.org/tip/91e95617429cb272fd908b1928a1915b37b9655f
-Author:     Waiman Long <Waiman.Long@hp.com>
-AuthorDate: Fri, 18 Oct 2013 10:38:48 -0400
+Commit-ID:  cc9784bd9fa9d8e27fdea61142398cb85ce401a8
+Gitweb:     http://git.kernel.org/tip/cc9784bd9fa9d8e27fdea61142398cb85ce401a8
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 15 Oct 2013 16:27:34 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 21 Oct 2013 17:36:25 -0300
+CommitDate: Mon, 21 Oct 2013 17:33:25 -0300
 
-perf report: Add --max-stack option to limit callchain stack scan
+perf session: Separating data file properties from session
 
-When callgraph data was included in the perf data file, it may take a
-long time to scan all those data and merge them together especially if
-the stored callchains are long and the perf data file itself is large,
-like a Gbyte or so.
+Removing 'fd, fd_pipe, filename, size' from struct perf_session and
+replacing them with struct perf_data_file object.
 
-The callchain stack is currently limited to PERF_MAX_STACK_DEPTH (127).
-This is a large value. Usually the callgraph data that developers are
-most interested in are the first few levels, the rests are usually not
-looked at.
-
-This patch adds a new --max-stack option to perf-report to limit the
-depth of callchain stack data to look at to reduce the time it takes for
-perf-report to finish its processing. It trades the presence of trailing
-stack information with faster speed.
-
-The following table shows the elapsed time of doing perf-report on a
-perf.data file of size 985,531,828 bytes.
-
-  --max_stack   Elapsed Time    Output data size
-  -----------   ------------    ----------------
-  not set        88.0s          124,422,651
-  64             87.5s          116,303,213
-  32             87.2s          112,023,804
-  16             86.6s           94,326,380
-  8              59.9s           33,697,248
-  4              40.7s           10,116,637
-  -g none        27.1s            2,555,810
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Acked-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382107129-2010-4-git-send-email-Waiman.Long@hp.com
+Link: http://lkml.kernel.org/r/1381847254-28809-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-report.txt |  8 ++++++++
- tools/perf/builtin-report.c              | 22 +++++++++++++++++-----
- tools/perf/builtin-top.c                 |  3 ++-
- tools/perf/util/machine.c                | 14 +++++++++-----
- tools/perf/util/machine.h                |  3 ++-
- tools/perf/util/session.c                |  3 ++-
- 6 files changed, 40 insertions(+), 13 deletions(-)
+ tools/perf/builtin-annotate.c     |  2 +-
+ tools/perf/builtin-buildid-list.c |  2 +-
+ tools/perf/builtin-record.c       |  1 -
+ tools/perf/builtin-report.c       |  8 +++++---
+ tools/perf/builtin-script.c       |  2 +-
+ tools/perf/util/data.h            | 15 +++++++++++++++
+ tools/perf/util/header.c          | 22 +++++++++++++---------
+ tools/perf/util/session.c         | 36 +++++++++++++++++++-----------------
+ tools/perf/util/session.h         |  5 +----
+ 9 files changed, 56 insertions(+), 37 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index be5ad87..10a2798 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -141,6 +141,14 @@ OPTIONS
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 95df683..03cfa59 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -259,7 +259,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	}
  
- 	Default: fractal,0.5,callee,function.
+ 	if (total_nr_samples == 0) {
+-		ui__error("The %s file has no samples!\n", session->filename);
++		ui__error("The %s file has no samples!\n", file.path);
+ 		goto out_delete;
+ 	}
  
-+--max-stack::
-+	Set the stack depth limit when parsing the callchain, anything
-+	beyond the specified depth will be ignored. This is a trade-off
-+	between information loss and faster processing especially for
-+	workloads that can have a very long callchain stack.
-+
-+	Default: 127
-+
- -G::
- --inverted::
-         alias for inverted caller based call graph.
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index 0164c1c..ed3873b 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -73,7 +73,7 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
+ 	 * in pipe-mode, the only way to get the buildids is to parse
+ 	 * the record stream. Buildids are stored as RECORD_HEADER_BUILD_ID
+ 	 */
+-	if (with_hits || session->fd_pipe)
++	if (with_hits || perf_data_file__is_pipe(&file))
+ 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+ 
+ 	perf_session__fprintf_dsos_buildid(session, stdout, dso__skip_buildid, with_hits);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 428e28f..ab8d15e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -257,7 +257,6 @@ static int process_buildids(struct perf_record *rec)
+ 	if (size == 0)
+ 		return 0;
+ 
+-	session->fd = file->fd;
+ 	return __perf_session__process_events(session, rec->post_processing_offset,
+ 					      size - rec->post_processing_offset,
+ 					      size, &build_id__mark_dso_hit_ops);
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index fa68a36..81addca 100644
+index 60d7f8e..fa68a36 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -49,6 +49,7 @@ struct perf_report {
- 	bool			show_threads;
- 	bool			inverted_callchain;
- 	bool			mem_mode;
-+	int			max_stack;
- 	struct perf_read_values	show_threads_values;
- 	const char		*pretty_printing_style;
- 	const char		*cpu_list;
-@@ -90,7 +91,8 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain) &&
- 	    sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -181,7 +183,8 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
- 	}
-@@ -244,18 +247,21 @@ out:
- 	return err;
- }
- 
--static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
-+static int perf_evsel__add_hist_entry(struct perf_tool *tool,
-+				      struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
- 				      struct machine *machine)
+@@ -368,8 +368,9 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
  {
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
- 	int err = 0;
- 	struct hist_entry *he;
+ 	struct perf_session *self = rep->session;
+ 	u64 sample_type = perf_evlist__combined_sample_type(self->evlist);
++	bool is_pipe = perf_data_file__is_pipe(self->file);
  
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al);
-+						 sample, &parent, al,
-+						 rep->max_stack);
- 		if (err)
- 			return err;
+-	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++	if (!is_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+ 			ui__error("Selected --sort parent, but no "
+ 				    "callchain data. Did you call "
+@@ -392,7 +393,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
  	}
-@@ -332,7 +338,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		if (al.map != NULL)
- 			al.map->dso->hit = 1;
  
--		ret = perf_evsel__add_hist_entry(evsel, &al, sample, machine);
-+		ret = perf_evsel__add_hist_entry(tool, evsel, &al, sample,
-+						 machine);
- 		if (ret < 0)
- 			pr_debug("problem incrementing symbol period, skipping event\n");
- 	}
-@@ -772,6 +779,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.ordered_samples = true,
- 			.ordering_requires_timestamps = true,
- 		},
-+		.max_stack		 = PERF_MAX_STACK_DEPTH,
- 		.pretty_printing_style	 = "normal",
- 	};
- 	const struct option options[] = {
-@@ -812,6 +820,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
-+	OPT_INTEGER(0, "max-stack", &report.max_stack,
-+		    "Set the maximum stack depth when parsing the callchain, "
-+		    "anything beyond the specified depth will be ignored. "
-+		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
- 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index d934f70..112cb7d 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -770,7 +770,8 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		    sample->callchain) {
- 			err = machine__resolve_callchain(machine, evsel,
- 							 al.thread, sample,
--							 &parent, &al);
-+							 &parent, &al,
-+							 PERF_MAX_STACK_DEPTH);
- 			if (err)
- 				return;
- 		}
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6b861ae..ea93425 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1253,10 +1253,12 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
- 					     struct symbol **parent,
--					     struct addr_location *root_al)
-+					     struct addr_location *root_al,
-+					     int max_stack)
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
--	unsigned int i;
-+	int chain_nr = min(max_stack, (int)chain->nr);
-+	int i;
- 	int err;
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+-		if (!self->fd_pipe &&
++		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+ 			ui__error("Selected -b but no branch data. "
+ 				  "Did you call perf record without -b?\n");
+@@ -488,6 +489,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	struct map *kernel_map;
+ 	struct kmap *kernel_kmap;
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
++	struct perf_data_file *file = session->file;
  
- 	callchain_cursor_reset(&callchain_cursor);
-@@ -1266,7 +1268,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	signal(SIGINT, sig_handler);
+ 
+@@ -572,7 +574,7 @@ static int __cmd_report(struct perf_report *rep)
+ 		return 0;
+ 
+ 	if (nr_samples == 0) {
+-		ui__error("The %s file has no samples!\n", session->filename);
++		ui__error("The %s file has no samples!\n", file->path);
  		return 0;
  	}
  
--	for (i = 0; i < chain->nr; i++) {
-+	for (i = 0; i < chain_nr; i++) {
- 		u64 ip;
- 		struct addr_location al;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index f0c77a1..27de606 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1525,7 +1525,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			return -1;
+ 		}
  
-@@ -1338,12 +1340,14 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al)
-+			       struct addr_location *root_al,
-+			       int max_stack)
+-		input = open(session->filename, O_RDONLY);	/* input_name */
++		input = open(file.path, O_RDONLY);	/* input_name */
+ 		if (input < 0) {
+ 			perror("failed to open file");
+ 			return -1;
+diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
+index d6c262e..8c2df80 100644
+--- a/tools/perf/util/data.h
++++ b/tools/perf/util/data.h
+@@ -27,6 +27,21 @@ static inline bool perf_data_file__is_write(struct perf_data_file *file)
+ 	return file->mode == PERF_DATA_MODE_WRITE;
+ }
+ 
++static inline int perf_data_file__is_pipe(struct perf_data_file *file)
++{
++	return file->is_pipe;
++}
++
++static inline int perf_data_file__fd(struct perf_data_file *file)
++{
++	return file->fd;
++}
++
++static inline unsigned long perf_data_file__size(struct perf_data_file *file)
++{
++	return file->size;
++}
++
+ int perf_data_file__open(struct perf_data_file *file);
+ void perf_data_file__close(struct perf_data_file *file);
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index c3e5a3b..26d9520 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -22,6 +22,7 @@
+ #include "vdso.h"
+ #include "strbuf.h"
+ #include "build-id.h"
++#include "data.h"
+ 
+ static bool no_buildid_cache = false;
+ 
+@@ -2189,7 +2190,7 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
  {
- 	int ret;
+ 	struct header_print_data hd;
+ 	struct perf_header *header = &session->header;
+-	int fd = session->fd;
++	int fd = perf_data_file__fd(session->file);
+ 	hd.fp = fp;
+ 	hd.full = full;
  
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent, root_al);
-+						sample->callchain, parent,
-+						root_al, max_stack);
- 	if (ret)
- 		return ret;
+@@ -2650,7 +2651,8 @@ static int perf_header__read_pipe(struct perf_session *session)
+ 	struct perf_header *header = &session->header;
+ 	struct perf_pipe_file_header f_header;
  
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index d44c09b..4c1f5d5 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -92,7 +92,8 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
- 			       struct symbol **parent,
--			       struct addr_location *root_al);
-+			       struct addr_location *root_al,
-+			       int max_stack);
+-	if (perf_file_header__read_pipe(&f_header, header, session->fd,
++	if (perf_file_header__read_pipe(&f_header, header,
++					perf_data_file__fd(session->file),
+ 					session->repipe) < 0) {
+ 		pr_debug("incompatible file format\n");
+ 		return -EINVAL;
+@@ -2751,18 +2753,19 @@ static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
  
- /*
-  * Default guest kernel is defined by parameter --guestkallsyms
+ int perf_session__read_header(struct perf_session *session)
+ {
++	struct perf_data_file *file = session->file;
+ 	struct perf_header *header = &session->header;
+ 	struct perf_file_header	f_header;
+ 	struct perf_file_attr	f_attr;
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
+-	int fd = session->fd;
++	int fd = perf_data_file__fd(file);
+ 
+ 	session->evlist = perf_evlist__new();
+ 	if (session->evlist == NULL)
+ 		return -ENOMEM;
+ 
+-	if (session->fd_pipe)
++	if (perf_data_file__is_pipe(file))
+ 		return perf_header__read_pipe(session);
+ 
+ 	if (perf_file_header__read(&f_header, header, fd) < 0)
+@@ -2777,7 +2780,7 @@ int perf_session__read_header(struct perf_session *session)
+ 	if (f_header.data.size == 0) {
+ 		pr_warning("WARNING: The %s file's data size field is 0 which is unexpected.\n"
+ 			   "Was the 'perf record' command properly terminated?\n",
+-			   session->filename);
++			   file->path);
+ 	}
+ 
+ 	nr_attrs = f_header.attrs.size / f_header.attr_size;
+@@ -2990,18 +2993,19 @@ int perf_event__process_tracing_data(struct perf_tool *tool __maybe_unused,
+ 				     struct perf_session *session)
+ {
+ 	ssize_t size_read, padding, size = event->tracing_data.size;
+-	off_t offset = lseek(session->fd, 0, SEEK_CUR);
++	int fd = perf_data_file__fd(session->file);
++	off_t offset = lseek(fd, 0, SEEK_CUR);
+ 	char buf[BUFSIZ];
+ 
+ 	/* setup for reading amidst mmap */
+-	lseek(session->fd, offset + sizeof(struct tracing_data_event),
++	lseek(fd, offset + sizeof(struct tracing_data_event),
+ 	      SEEK_SET);
+ 
+-	size_read = trace_report(session->fd, &session->pevent,
++	size_read = trace_report(fd, &session->pevent,
+ 				 session->repipe);
+ 	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
+ 
+-	if (readn(session->fd, buf, padding) < 0) {
++	if (readn(fd, buf, padding) < 0) {
+ 		pr_err("%s: reading input file", __func__);
+ 		return -1;
+ 	}
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 19fc716..854c5aa 100644
+index d857c18..19fc716 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -1512,7 +1512,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 	if (symbol_conf.use_callchain && sample->callchain) {
+@@ -18,17 +18,16 @@
  
- 		if (machine__resolve_callchain(machine, evsel, al.thread,
--					       sample, NULL, NULL) != 0) {
-+					       sample, NULL, NULL,
-+					       PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
+ static int perf_session__open(struct perf_session *self)
+ {
+-	if (self->fd_pipe) {
+-		if (perf_session__read_header(self) < 0)
+-			pr_err("incompatible file format (rerun with -v to learn more)");
+-		return 0;
+-	}
++	struct perf_data_file *file = self->file;
+ 
+ 	if (perf_session__read_header(self) < 0) {
+ 		pr_err("incompatible file format (rerun with -v to learn more)");
+ 		return -1;
+ 	}
+ 
++	if (perf_data_file__is_pipe(file))
++		return 0;
++
+ 	if (!perf_evlist__valid_sample_type(self->evlist)) {
+ 		pr_err("non matching sample_type");
+ 		return -1;
+@@ -87,10 +86,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		if (perf_data_file__open(file))
+ 			goto out_delete;
+ 
+-		self->fd       = file->fd;
+-		self->fd_pipe  = file->is_pipe;
+-		self->filename = file->path;
+-		self->size     = file->size;
++		self->file = file;
+ 
+ 		if (perf_data_file__is_read(file)) {
+ 			if (perf_session__open(self) < 0)
+@@ -158,7 +154,8 @@ void perf_session__delete(struct perf_session *self)
+ 	perf_session__delete_threads(self);
+ 	perf_session_env__delete(&self->header.env);
+ 	machines__exit(&self->machines);
+-	close(self->fd);
++	if (self->file)
++		perf_data_file__close(self->file);
+ 	free(self);
+ 	vdso__exit();
+ }
+@@ -1015,6 +1012,7 @@ static int perf_session_deliver_event(struct perf_session *session,
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	int err;
+ 
+ 	dump_event(session, event, file_offset, NULL);
+@@ -1028,7 +1026,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 		return err;
+ 	case PERF_RECORD_HEADER_TRACING_DATA:
+ 		/* setup for reading amidst mmap */
+-		lseek(session->fd, file_offset, SEEK_SET);
++		lseek(fd, file_offset, SEEK_SET);
+ 		return tool->tracing_data(tool, event, session);
+ 	case PERF_RECORD_HEADER_BUILD_ID:
+ 		return tool->build_id(tool, event, session);
+@@ -1154,6 +1152,7 @@ volatile int session_done;
+ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 					       struct perf_tool *tool)
+ {
++	int fd = perf_data_file__fd(self->file);
+ 	union perf_event *event;
+ 	uint32_t size, cur_size = 0;
+ 	void *buf = NULL;
+@@ -1172,7 +1171,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 		return -errno;
+ more:
+ 	event = buf;
+-	err = readn(self->fd, event, sizeof(struct perf_event_header));
++	err = readn(fd, event, sizeof(struct perf_event_header));
+ 	if (err <= 0) {
+ 		if (err == 0)
+ 			goto done;
+@@ -1204,7 +1203,7 @@ more:
+ 	p += sizeof(struct perf_event_header);
+ 
+ 	if (size - sizeof(struct perf_event_header)) {
+-		err = readn(self->fd, p, size - sizeof(struct perf_event_header));
++		err = readn(fd, p, size - sizeof(struct perf_event_header));
+ 		if (err <= 0) {
+ 			if (err == 0) {
+ 				pr_err("unexpected end of event stream\n");
+@@ -1285,6 +1284,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_tool *tool)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	u64 head, page_offset, file_offset, file_pos, progress_next;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+@@ -1317,7 +1317,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 		mmap_flags = MAP_PRIVATE;
+ 	}
+ remap:
+-	buf = mmap(NULL, mmap_size, mmap_prot, mmap_flags, session->fd,
++	buf = mmap(NULL, mmap_size, mmap_prot, mmap_flags, fd,
+ 		   file_offset);
+ 	if (buf == MAP_FAILED) {
+ 		pr_err("failed to mmap file\n");
+@@ -1382,16 +1382,17 @@ out_err:
+ int perf_session__process_events(struct perf_session *self,
+ 				 struct perf_tool *tool)
+ {
++	u64 size = perf_data_file__size(self->file);
+ 	int err;
+ 
+ 	if (perf_session__register_idle_thread(self) == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!self->fd_pipe)
++	if (!perf_data_file__is_pipe(self->file))
+ 		err = __perf_session__process_events(self,
+ 						     self->header.data_offset,
+ 						     self->header.data_size,
+-						     self->size, tool);
++						     size, tool);
+ 	else
+ 		err = __perf_session__process_pipe_events(self, tool);
+ 
+@@ -1615,13 +1616,14 @@ int perf_session__cpu_bitmap(struct perf_session *session,
+ void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
+ 				bool full)
+ {
++	int fd = perf_data_file__fd(session->file);
+ 	struct stat st;
+ 	int ret;
+ 
+ 	if (session == NULL || fp == NULL)
+ 		return;
+ 
+-	ret = fstat(session->fd, &st);
++	ret = fstat(fd, &st);
+ 	if (ret == -1)
+ 		return;
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index e1ca2d0..27c74d3 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -30,16 +30,13 @@ struct ordered_samples {
+ 
+ struct perf_session {
+ 	struct perf_header	header;
+-	unsigned long		size;
+ 	struct machines		machines;
+ 	struct perf_evlist	*evlist;
+ 	struct pevent		*pevent;
+ 	struct events_stats	stats;
+-	int			fd;
+-	bool			fd_pipe;
+ 	bool			repipe;
+ 	struct ordered_samples	ordered_samples;
+-	const char		*filename;
++	struct perf_data_file	*file;
+ };
+ 
+ #define PRINT_IP_OPT_IP		(1<<0)
