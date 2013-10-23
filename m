@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab3JWHxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:53:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26499 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab3JWHxg (ORCPT
+	id S1752464Ab3JWHxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:53:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55862 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab3JWHxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:53:36 -0400
-Date: Wed, 23 Oct 2013 09:53:14 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>
-Cc: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
-	<phcoder@gmail.com>,
-        The development of GNU GRUB <grub-devel@gnu.org>,
-        "Woodhouse, David" <david.woodhouse@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, "keir@xen.org" <keir@xen.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "ross.philipson@citrix.com" <ross.philipson@citrix.com>,
-        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131023075314.GT3626@debian70-amd64.local.net-space.pl>
-References: <20131022165140.GL3626@debian70-amd64.local.net-space.pl>
- <CE8C01A3.244A%richard.l.maliszewski@intel.com>
+	Wed, 23 Oct 2013 03:53:48 -0400
+Date: Wed, 23 Oct 2013 00:53:27 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-8c16b649606ff9f6d742ad6f71c76fc0ee996c8e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1382099356-4918-6-git-send-email-adrian.hunter@intel.com>
+References: <1382099356-4918-6-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf session:
+  Add missing sample flush for piped events
+Git-Commit-ID: 8c16b649606ff9f6d742ad6f71c76fc0ee996c8e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CE8C01A3.244A%richard.l.maliszewski@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:53:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 05:21:15PM +0000, Maliszewski, Richard L wrote:
-> The latter.  The code I was looking at definitely has the linuxefi
-> directive.  FWIW, if you install FC18/19 on an EFI system, the grub2
-> config file uses the linuxefi and companion initrd directives for launch.
->
-> --Richard
->
-> On 10/22/13 9:51 AM, "Daniel Kiper" <daniel.kiper@oracle.com> wrote:
->
-> >On Tue, Oct 22, 2013 at 04:36:04PM +0000, Maliszewski, Richard L wrote:
-> >> I may be off-base, but when I was wading through the grub2 code earlier
-> >> this year, it looked to me like it was going to refuse to launch
-> >>anything
-> >> via MB1 or MB2 if the current state was a secure boot launch.
-> >
-> >Are you talking about upstream GRUB2 or GRUB2 with tons of distros
-> >patches including linuxefi one. If later one it could be the case.
+Commit-ID:  8c16b649606ff9f6d742ad6f71c76fc0ee996c8e
+Gitweb:     http://git.kernel.org/tip/8c16b649606ff9f6d742ad6f71c76fc0ee996c8e
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Fri, 18 Oct 2013 15:29:02 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 21 Oct 2013 11:19:07 -0300
 
-I realized that in SB case GRUB2 with linuefi patches does not have
-a lot features (correct me if I am wrong). So you are able to just
-load Linux or something which supports Linux Boot protocol. It is
-not so flexible as it was designed. I think that it should be changed
-and support for others systems/hypervisors should be added without
-breaking SB support of course. GRUB2 upstream solution is preferred.
+perf session: Add missing sample flush for piped events
 
-Daniel
+Piped events can be sorted so a final flush is needed.
+
+Add that and remove a redundant 'err = 0'.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1382099356-4918-6-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d1e4495..d51e62d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1263,7 +1263,9 @@ more:
+ 	if (!session_done())
+ 		goto more;
+ done:
+-	err = 0;
++	/* do the final flush for ordered samples */
++	self->ordered_samples.next_flush = ULLONG_MAX;
++	err = flush_sample_queue(self, tool);
+ out_err:
+ 	free(buf);
+ 	perf_session__warn_about_errors(self, tool);
+@@ -1392,13 +1394,13 @@ more:
+ 				    "Processing events...");
+ 	}
+ 
+-	err = 0;
+ 	if (session_done())
+-		goto out_err;
++		goto out;
+ 
+ 	if (file_pos < file_size)
+ 		goto more;
+ 
++out:
+ 	/* do the final flush for ordered samples */
+ 	session->ordered_samples.next_flush = ULLONG_MAX;
+ 	err = flush_sample_queue(session, tool);
