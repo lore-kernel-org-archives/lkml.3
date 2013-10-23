@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3JWOTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:19:55 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:55524 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3JWOTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:19:53 -0400
-Date: Wed, 23 Oct 2013 15:19:51 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Michael Neuling <mikey@neuling.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: benh@kernel.crashing.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        michael@ellerman.id.au
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131023141948.GB3566@localhost.localdomain>
-References: <12083.1382486094@ale.ozlabs.ibm.com>
+	id S1751940Ab3JWOXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:23:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab3JWOXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:23:19 -0400
+Date: Wed, 23 Oct 2013 12:22:52 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131023142251.GA4034@infradead.org>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
+ <20131010180049.GD9929@pd.tnic>
+ <20131016124627.GA2611@gmail.com>
+ <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+ <20131016175302.GB4100@infradead.org>
+ <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+ <20131017081420.GB22705@gmail.com>
+ <CABPqkBTBqEUU9p3SwNTXwwJ9j7VQXdofA5DzyoDmw+xJBE-uUw@mail.gmail.com>
+ <20131022221803.GA3824@infradead.org>
+ <CABPqkBSSFFVHH657-bvis4sSz9av4V4ziG4TVdmMZhO4LMfAdw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <12083.1382486094@ale.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBSSFFVHH657-bvis4sSz9av4V4ziG4TVdmMZhO4LMfAdw@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 10:54:54AM +1100, Michael Neuling wrote:
-> Frederic,
-> 
-> In the perf ring buffer code we have this in perf_output_get_handle():
-> 
-> 	if (!local_dec_and_test(&rb->nest))
-> 		goto out;
-> 
-> 	/*
-> 	 * Publish the known good head. Rely on the full barrier implied
-> 	 * by atomic_dec_and_test() order the rb->head read and this
-> 	 * write.
-> 	 */
-> 	rb->user_page->data_head = head;
-> 
-> The comment says atomic_dec_and_test() but the code is
-> local_dec_and_test().
-> 
-> On powerpc, local_dec_and_test() doesn't have a memory barrier but
-> atomic_dec_and_test() does.  Is the comment wrong, or is
-> local_dec_and_test() suppose to imply a memory barrier too and we have
-> it wrongly implemented in powerpc?
-> 
-> My guess is that local_dec_and_test() is correct but we to add an
-> explicit memory barrier like below:
-> 
-> (Kudos to Victor Kaplansky for finding this)
-> 
-> Mikey
-> 
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index cd55144..95768c6 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -87,10 +87,10 @@ again:
->  		goto out;
->  
->  	/*
-> -	 * Publish the known good head. Rely on the full barrier implied
-> -	 * by atomic_dec_and_test() order the rb->head read and this
-> -	 * write.
-> +	 * Publish the known good head. We need a memory barrier to order the
-> +	 * order the rb->head read and this write.
->  	 */
-> +	smp_mb ();
->  	rb->user_page->data_head = head;
->  
->  	/*
+Em Wed, Oct 23, 2013 at 11:34:42AM +0200, Stephane Eranian escreveu:
+> On Wed, Oct 23, 2013 at 12:18 AM, Arnaldo Carvalho de Melo
+> > What about:
 
+> >  # perf stat -a -e power/energy-cores/,power/energy-pkg/,ref-cycles -I 1000 sleep 1000
+> >  #           time                     events
+> >       1.000264953              2.09 Joules power/energy-cores/
+> >       1.000264953              5.94 Joules power/energy-pkg/
+> >       1.000264953       160,530,320 ref-cycles
+> >       2.000640422              2.07 Joules power/energy-cores/
+> >       2.000640422              5.94 Joules power/energy-pkg/
+> >       2.000640422       152,673,056 ref-cycles
+> >       3.000964416              2.08 Joules power/energy-cores/
+> >       3.000964416              5.93 Joules power/energy-pkg/
+> >       3.000964416       158,779,184 ref-cycles
 
-I'm adding Peter in Cc since he wrote that code.
-I agree that local_dec_and_test() doesn't need to imply an smp barrier.
-All it has to provide as a guarantee is the atomicity against local concurrent
-operations (interrupts, preemption, ...).
+> > ?
+> > Or even 2.09J power/energy-cores/?
 
-Now I'm a bit confused about this barrier.
+> I can try that.
 
-I think we want this ordering:
+> > I.e. a perf_evsel__fprintf_value(evsel) would append a unit string, if
+> > available.
 
-    Kernel                             User
+> I don't have this function is my tree yet (tip.git).
 
-   READ rb->user_page->data_tail       READ rb->user_page->data_head
-   smp_mb()                            smp_mb()
-   WRITE rb data                       READ rb  data
-   smp_mb()                            smp_mb()
-   rb->user_page->data_head            WRITE rb->user_page->data_tail
+That would be a new one :-)
 
-So yeah we want a berrier between the data published and the user data_head.
-But this ordering concerns wider layout than just rb->head and rb->user_page->data_head
+At some point I'll study the %pM, etc things in the kernel printk code
+to come up with something like perf_evsel__{f,scn}printf that allows us
+to use just one string format and then pick things like units as a
+modifier, but till then having these fprintf variants seems good enough.
 
-And BTW I can see an smp_rmb() after we read rb->user_page->data_tail. This is probably the
-first kernel barrier in my above example. (not sure if rmb() alone is enough though).
+- Arnaldo
