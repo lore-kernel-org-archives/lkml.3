@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab3JWQr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 12:47:59 -0400
-Received: from ring0.de ([91.143.88.219]:42479 "EHLO smtp.ring0.de"
+	id S1753224Ab3JWQsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 12:48:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58001 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab3JWQrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 12:47:46 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCHv3 2/3] Input: twl4030-pwrbutton: use dev_err for errors
-Date: Wed, 23 Oct 2013 18:47:14 +0200
-Message-Id: <1382546835-20212-3-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382546835-20212-1-git-send-email-sre@debian.org>
-References: <1382546835-20212-1-git-send-email-sre@debian.org>
+	id S1751722Ab3JWQro convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 12:47:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="397428184"
+From: "Boie, Andrew P" <andrew.p.boie@intel.com>
+To: Guenter Roeck <linux@roeck-us.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mmarek@suse.cz" <mmarek@suse.cz>
+Subject: RE: [PATCH 1/1] x86: boot: support minigzip bzImage compression
+Thread-Topic: [PATCH 1/1] x86: boot: support minigzip bzImage compression
+Thread-Index: AQHOz2pV0LFDi52eiUWQWG1/lb50mZoB44CAgAApEQCAAGoR9Q==
+Date: Wed, 23 Oct 2013 16:47:38 +0000
+Message-ID: <2E57EB624252DB47AFBC064A9AFBA98064B75AF3@ORSMSX104.amr.corp.intel.com>
+References: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com>
+ <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com>
+ <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>,<52673A1E.60005@roeck-us.net>
+In-Reply-To: <52673A1E.60005@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.19.9.41]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_err() to output errors instead of dev_dbg().
+> From: Guenter Roeck [linux@roeck-us.net]
+> Or just change the build system to have /bin/gzip point to minigzip if so
+> desired. I have done the same to replace it with pigz.
+> Debian/Ubuntu provides the update-alternatives command for that
+> purpose. If that is not available, just hard-link it.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- drivers/input/misc/twl4030-pwrbutton.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Android minigzip and gzip unfortunately don't have the same command line syntax. Before I wrote this patch I had a horrible hack in place involving a shell script named "gzip" that called minigzip internally.
 
-diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-index a3a0fe3..3efbb13 100644
---- a/drivers/input/misc/twl4030-pwrbutton.c
-+++ b/drivers/input/misc/twl4030-pwrbutton.c
-@@ -60,7 +60,7 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 
- 	pwr = input_allocate_device();
- 	if (!pwr) {
--		dev_dbg(&pdev->dev, "Can't allocate power button\n");
-+		dev_err(&pdev->dev, "Can't allocate power button\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -74,13 +74,13 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
- 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
- 			"twl4030_pwrbutton", pwr);
- 	if (err < 0) {
--		dev_dbg(&pdev->dev, "Can't get IRQ for pwrbutton: %d\n", err);
-+		dev_err(&pdev->dev, "Can't get IRQ for pwrbutton: %d\n", err);
- 		goto free_input_dev;
- 	}
- 
- 	err = input_register_device(pwr);
- 	if (err) {
--		dev_dbg(&pdev->dev, "Can't register power button: %d\n", err);
-+		dev_err(&pdev->dev, "Can't register power button: %d\n", err);
- 		goto free_irq;
- 	}
- 
--- 
-1.8.4.rc3
-
+Andrew
