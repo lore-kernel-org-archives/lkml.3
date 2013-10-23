@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3JWVCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 17:02:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55404 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab3JWU62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752556Ab3JWU62 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Oct 2013 16:58:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55374 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab3JWU60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 16:58:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/16] perf tools: Show progress on histogram collapsing
-Date: Wed, 23 Oct 2013 17:58:15 -0300
-Message-Id: <1382561895-8237-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/16] perf bench: Change the procps visible command-name of invididual benchmark tests plus cleanups
+Date: Wed, 23 Oct 2013 17:58:05 -0300
+Message-Id: <1382561895-8237-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
 References: <1382561895-8237-1-git-send-email-acme@infradead.org>
@@ -28,183 +26,464 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-It can take quite amount of time so add progress bar UI to inform user.
+Before this patch, looking at 'perf bench sched pipe' behavior over
+'top' only told us that something related to perf is running:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+      PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+    19934 mingo     20   0 54836 1296  952 R 18.6  0.0   0:00.56 perf
+    19935 mingo     20   0 54836  384   36 S 18.6  0.0   0:00.56 perf
+
+After the patch it's clearly visible what's going on:
+
+      PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+    19744 mingo     20   0  125m 3536 2644 R 68.2  0.0   0:01.12 sched-pipe
+    19745 mingo     20   0  125m 1172  276 R 68.2  0.0   0:01.12 sched-pipe
+
+The benchmark-subsystem name is concatenated with the individual
+testcase name.
+
+Unfortunately 'perf top' does not show the reconfigured name, possibly
+because it caches ->comm[] values and does not recognize changes to
+them?
+
+Also clean up a few bits in builtin-bench.c while at it and reorganize
+the code and the output strings to be consistent.
+
+Use iterators to access the various arrays. Rename 'suites' concept to
+'benchmark collection' and the 'bench_suite' to 'benchmark/bench'. The
+many repetitions of 'suite' made the code harder to read and understand.
+
+The new output is:
+
+  comet:~/tip/tools/perf> ./perf bench
+  Usage:
+        perf bench [<common options>] <collection> <benchmark> [<options>]
+
+        # List of all available benchmark collections:
+
+         sched: Scheduler and IPC benchmarks
+           mem: Memory access benchmarks
+          numa: NUMA scheduling and MM benchmarks
+           all: All benchmarks
+
+  comet:~/tip/tools/perf> ./perf bench sched
+
+        # List of available benchmarks for collection 'sched':
+
+     messaging: Benchmark for scheduling and IPC
+          pipe: Benchmark for pipe() between two processes
+           all: Test all scheduler benchmarks
+
+  comet:~/tip/tools/perf> ./perf bench mem
+
+        # List of available benchmarks for collection 'mem':
+
+        memcpy: Benchmark for memcpy()
+        memset: Benchmark for memset() tests
+           all: Test all memory benchmarks
+
+  comet:~/tip/tools/perf> ./perf bench numa
+
+        # List of available benchmarks for collection 'numa':
+
+           mem: Benchmark for NUMA workloads
+           all: Test all NUMA benchmarks
+
+Individual benchmark modules were not touched.
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Hitoshi Mitake <h.mitake@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1381468543-25334-4-git-send-email-namhyung@kernel.org
-[ perf_progress -> ui_progress ]
+Link: http://lkml.kernel.org/r/20131023123756.GA17871@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |  2 +-
- tools/perf/builtin-diff.c     |  2 +-
- tools/perf/builtin-report.c   | 10 +++++++++-
- tools/perf/builtin-top.c      |  4 ++--
- tools/perf/tests/hists_link.c |  2 +-
- tools/perf/util/hist.c        |  5 ++++-
- tools/perf/util/hist.h        |  3 ++-
- 7 files changed, 20 insertions(+), 8 deletions(-)
+ tools/perf/builtin-bench.c | 239 +++++++++++++++++++++++----------------------
+ 1 file changed, 122 insertions(+), 117 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 17c6b494e8cc..6c5ae57831f6 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -247,7 +247,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 33af80fa49cf..e47f90cc7b98 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -1,21 +1,18 @@
+ /*
+- *
+  * builtin-bench.c
+  *
+- * General benchmarking subsystem provided by perf
++ * General benchmarking collections provided by perf
+  *
+  * Copyright (C) 2009, Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+- *
+  */
  
- 		if (nr_samples > 0) {
- 			total_nr_samples += nr_samples;
--			hists__collapse_resort(hists);
-+			hists__collapse_resort(hists, NULL);
- 			hists__output_resort(hists);
+ /*
++ * Available benchmark collection list:
+  *
+- * Available subsystem list:
+- *  sched ... scheduler and IPC mechanism
++ *  sched ... scheduler and IPC performance
+  *  mem   ... memory access performance
+- *
++ *  numa  ... NUMA scheduling and MM performance
+  */
+-
+ #include "perf.h"
+ #include "util/util.h"
+ #include "util/parse-options.h"
+@@ -25,112 +22,92 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <sys/prctl.h>
  
- 			if (symbol_conf.event_group &&
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 9c828881714c..b605009e803f 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -369,7 +369,7 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		struct hists *hists = &evsel->hists;
- 
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, NULL);
- 	}
- }
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index e3598a456017..98d3891392e2 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -496,6 +496,7 @@ static int __cmd_report(struct perf_report *rep)
- 	struct map *kernel_map;
- 	struct kmap *kernel_kmap;
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
-+	struct ui_progress prog;
- 	struct perf_data_file *file = session->file;
- 
- 	signal(SIGINT, sig_handler);
-@@ -558,13 +559,19 @@ static int __cmd_report(struct perf_report *rep)
- 	}
- 
- 	nr_samples = 0;
-+	list_for_each_entry(pos, &session->evlist->entries, node)
-+		nr_samples += pos->hists.nr_entries;
+-struct bench_suite {
+-	const char *name;
+-	const char *summary;
+-	int (*fn)(int, const char **, const char *);
++typedef int (*bench_fn_t)(int argc, const char **argv, const char *prefix);
 +
-+	ui_progress__init(&prog, nr_samples, "Merging related events...");
++struct bench {
++	const char	*name;
++	const char	*summary;
++	bench_fn_t	fn;
+ };
+-						\
+-/* sentinel: easy for help */
+-#define suite_all { "all", "Test all benchmark suites", NULL }
+ 
+ #ifdef HAVE_LIBNUMA_SUPPORT
+-static struct bench_suite numa_suites[] = {
+-	{ "mem",
+-	  "Benchmark for NUMA workloads",
+-	  bench_numa },
+-	suite_all,
+-	{ NULL,
+-	  NULL,
+-	  NULL                  }
++static struct bench numa_benchmarks[] = {
++	{ "mem",	"Benchmark for NUMA workloads",			bench_numa		},
++	{ "all",	"Test all NUMA benchmarks",			NULL			},
++	{ NULL,		NULL,						NULL			}
+ };
+ #endif
+ 
+-static struct bench_suite sched_suites[] = {
+-	{ "messaging",
+-	  "Benchmark for scheduler and IPC mechanisms",
+-	  bench_sched_messaging },
+-	{ "pipe",
+-	  "Flood of communication over pipe() between two processes",
+-	  bench_sched_pipe      },
+-	suite_all,
+-	{ NULL,
+-	  NULL,
+-	  NULL                  }
++static struct bench sched_benchmarks[] = {
++	{ "messaging",	"Benchmark for scheduling and IPC",		bench_sched_messaging	},
++	{ "pipe",	"Benchmark for pipe() between two processes",	bench_sched_pipe	},
++	{ "all",	"Test all scheduler benchmarks",		NULL			},
++	{ NULL,		NULL,						NULL			}
+ };
+ 
+-static struct bench_suite mem_suites[] = {
+-	{ "memcpy",
+-	  "Simple memory copy in various ways",
+-	  bench_mem_memcpy },
+-	{ "memset",
+-	  "Simple memory set in various ways",
+-	  bench_mem_memset },
+-	suite_all,
+-	{ NULL,
+-	  NULL,
+-	  NULL             }
++static struct bench mem_benchmarks[] = {
++	{ "memcpy",	"Benchmark for memcpy()",			bench_mem_memcpy	},
++	{ "memset",	"Benchmark for memset() tests",			bench_mem_memset	},
++	{ "all",	"Test all memory benchmarks",			NULL			},
++	{ NULL,		NULL,						NULL			}
+ };
+ 
+-struct bench_subsys {
+-	const char *name;
+-	const char *summary;
+-	struct bench_suite *suites;
++struct collection {
++	const char	*name;
++	const char	*summary;
++	struct bench	*benchmarks;
+ };
+ 
+-static struct bench_subsys subsystems[] = {
++static struct collection collections[] = {
++	{ "sched",	"Scheduler and IPC benchmarks",		sched_benchmarks	},
++	{ "mem",	"Memory access benchmarks",			mem_benchmarks		},
+ #ifdef HAVE_LIBNUMA_SUPPORT
+-	{ "numa",
+-	  "NUMA scheduling and MM behavior",
+-	  numa_suites },
++	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
+ #endif
+-	{ "sched",
+-	  "scheduler and IPC mechanism",
+-	  sched_suites },
+-	{ "mem",
+-	  "memory access performance",
+-	  mem_suites },
+-	{ "all",		/* sentinel: easy for help */
+-	  "all benchmark subsystem",
+-	  NULL },
+-	{ NULL,
+-	  NULL,
+-	  NULL       }
++	{ "all",	"All benchmarks",				NULL			},
++	{ NULL,		NULL,						NULL			}
+ };
+ 
+-static void dump_suites(int subsys_index)
++/* Iterate over all benchmark collections: */
++#define for_each_collection(coll) \
++	for (coll = collections; coll->name; coll++)
 +
-+	nr_samples = 0;
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
- 		struct hists *hists = &pos->hists;
- 
- 		if (pos->idx == 0)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, &prog);
- 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
-@@ -576,6 +583,7 @@ static int __cmd_report(struct perf_report *rep)
- 			hists__link(leader_hists, hists);
- 		}
- 	}
-+	ui_progress__finish();
- 
- 	if (session_done())
- 		return 0;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 386d83324a8d..76c9264ed070 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -286,7 +286,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 		return;
- 	}
- 
--	hists__collapse_resort(&top->sym_evsel->hists);
-+	hists__collapse_resort(&top->sym_evsel->hists, NULL);
- 	hists__output_resort(&top->sym_evsel->hists);
- 	hists__decay_entries(&top->sym_evsel->hists,
- 			     top->hide_user_symbols,
-@@ -552,7 +552,7 @@ static void perf_top__sort_new_samples(void *arg)
- 	if (t->evlist->selected != NULL)
- 		t->sym_evsel = t->evlist->selected;
- 
--	hists__collapse_resort(&t->sym_evsel->hists);
-+	hists__collapse_resort(&t->sym_evsel->hists, NULL);
- 	hists__output_resort(&t->sym_evsel->hists);
- 	hists__decay_entries(&t->sym_evsel->hists,
- 			     t->hide_user_symbols,
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 025503a22ff7..b51abcb2c243 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -467,7 +467,7 @@ int test__hists_link(void)
- 		goto out;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		hists__collapse_resort(&evsel->hists);
-+		hists__collapse_resort(&evsel->hists, NULL);
- 
- 		if (verbose > 2)
- 			print_hists(&evsel->hists);
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f0b863ef4896..7e80253074b0 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -399,6 +399,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	if (!he)
- 		return NULL;
- 
-+	hists->nr_entries++;
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
-@@ -604,7 +605,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
- 	hists__filter_entry_by_symbol(hists, he);
- }
- 
--void hists__collapse_resort(struct hists *hists)
-+void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
++/* Iterate over all benchmarks within a collection: */
++#define for_each_bench(coll, bench) \
++	for (bench = coll->benchmarks; bench->name; bench++)
++
++static void dump_benchmarks(struct collection *coll)
  {
- 	struct rb_root *root;
- 	struct rb_node *next;
-@@ -631,6 +632,8 @@ void hists__collapse_resort(struct hists *hists)
- 			 */
- 			hists__apply_filters(hists, n);
- 		}
-+		if (prog)
-+			ui_progress__update(prog, 1);
+-	int i;
++	struct bench *bench;
+ 
+-	printf("# List of available suites for %s...\n\n",
+-	       subsystems[subsys_index].name);
++	printf("\n        # List of available benchmarks for collection '%s':\n\n", coll->name);
+ 
+-	for (i = 0; subsystems[subsys_index].suites[i].name; i++)
+-		printf("%14s: %s\n",
+-		       subsystems[subsys_index].suites[i].name,
+-		       subsystems[subsys_index].suites[i].summary);
++	for_each_bench(coll, bench)
++		printf("%14s: %s\n", bench->name, bench->summary);
+ 
+ 	printf("\n");
+-	return;
+ }
+ 
+ static const char *bench_format_str;
++
++/* Output/formatting style, exported to benchmark modules: */
+ int bench_format = BENCH_FORMAT_DEFAULT;
+ 
+ static const struct option bench_options[] = {
+-	OPT_STRING('f', "format", &bench_format_str, "default",
+-		    "Specify format style"),
++	OPT_STRING('f', "format", &bench_format_str, "default", "Specify format style"),
+ 	OPT_END()
+ };
+ 
+ static const char * const bench_usage[] = {
+-	"perf bench [<common options>] <subsystem> <suite> [<options>]",
++	"perf bench [<common options>] <collection> <benchmark> [<options>]",
+ 	NULL
+ };
+ 
+ static void print_usage(void)
+ {
++	struct collection *coll;
+ 	int i;
+ 
+ 	printf("Usage: \n");
+@@ -138,11 +115,10 @@ static void print_usage(void)
+ 		printf("\t%s\n", bench_usage[i]);
+ 	printf("\n");
+ 
+-	printf("# List of available subsystems...\n\n");
++	printf("        # List of all available benchmark collections:\n\n");
+ 
+-	for (i = 0; subsystems[i].name; i++)
+-		printf("%14s: %s\n",
+-		       subsystems[i].name, subsystems[i].summary);
++	for_each_collection(coll)
++		printf("%14s: %s\n", coll->name, coll->summary);
+ 	printf("\n");
+ }
+ 
+@@ -159,44 +135,74 @@ static int bench_str2int(const char *str)
+ 	return BENCH_FORMAT_UNKNOWN;
+ }
+ 
+-static void all_suite(struct bench_subsys *subsys)	  /* FROM HERE */
++/*
++ * Run a specific benchmark but first rename the running task's ->comm[]
++ * to something meaningful:
++ */
++static int run_bench(const char *coll_name, const char *bench_name, bench_fn_t fn,
++		     int argc, const char **argv, const char *prefix)
+ {
+-	int i;
++	int size;
++	char *name;
++	int ret;
++
++	size = strlen(coll_name) + 1 + strlen(bench_name) + 1;
++
++	name = zalloc(size);
++	BUG_ON(!name);
++
++	scnprintf(name, size, "%s-%s", coll_name, bench_name);
++
++	prctl(PR_SET_NAME, name);
++	argv[0] = name;
++
++	ret = fn(argc, argv, prefix);
++
++	free(name);
++
++	return ret;
++}
++
++static void run_collection(struct collection *coll)
++{
++	struct bench *bench;
+ 	const char *argv[2];
+-	struct bench_suite *suites = subsys->suites;
+ 
+ 	argv[1] = NULL;
+ 	/*
+ 	 * TODO:
+-	 * preparing preset parameters for
++	 *
++	 * Preparing preset parameters for
+ 	 * embedded, ordinary PC, HPC, etc...
+-	 * will be helpful
++	 * would be helpful.
+ 	 */
+-	for (i = 0; suites[i].fn; i++) {
+-		printf("# Running %s/%s benchmark...\n",
+-		       subsys->name,
+-		       suites[i].name);
++	for_each_bench(coll, bench) {
++		if (!bench->fn)
++			break;
++		printf("# Running %s/%s benchmark...\n", coll->name, bench->name);
+ 		fflush(stdout);
+ 
+-		argv[1] = suites[i].name;
+-		suites[i].fn(1, argv, NULL);
++		argv[1] = bench->name;
++		run_bench(coll->name, bench->name, bench->fn, 1, argv, NULL);
+ 		printf("\n");
  	}
  }
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 20b175808cd3..0c7ce8bb8eba 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -5,6 +5,7 @@
- #include <pthread.h>
- #include "callchain.h"
- #include "header.h"
-+#include "ui/progress.h"
+-static void all_subsystem(void)
++static void run_all_collections(void)
+ {
+-	int i;
+-	for (i = 0; subsystems[i].suites; i++)
+-		all_suite(&subsystems[i]);
++	struct collection *coll;
++
++	for_each_collection(coll)
++		run_collection(coll);
+ }
  
- extern struct callchain_param callchain_param;
+ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	int i, j, status = 0;
++	struct collection *coll;
++	int ret = 0;
  
-@@ -108,7 +109,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
- 					  u64 weight);
+ 	if (argc < 2) {
+-		/* No subsystem specified. */
++		/* No collection specified. */
+ 		print_usage();
+ 		goto end;
+ 	}
+@@ -206,7 +212,7 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
  
- void hists__output_resort(struct hists *self);
--void hists__collapse_resort(struct hists *self);
-+void hists__collapse_resort(struct hists *self, struct ui_progress *prog);
+ 	bench_format = bench_str2int(bench_format_str);
+ 	if (bench_format == BENCH_FORMAT_UNKNOWN) {
+-		printf("Unknown format descriptor:%s\n", bench_format_str);
++		printf("Unknown format descriptor: '%s'\n", bench_format_str);
+ 		goto end;
+ 	}
  
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
- void hists__output_recalc_col_len(struct hists *hists, int max_rows);
+@@ -216,52 +222,51 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	}
+ 
+ 	if (!strcmp(argv[0], "all")) {
+-		all_subsystem();
++		run_all_collections();
+ 		goto end;
+ 	}
+ 
+-	for (i = 0; subsystems[i].name; i++) {
+-		if (strcmp(subsystems[i].name, argv[0]))
++	for_each_collection(coll) {
++		struct bench *bench;
++
++		if (strcmp(coll->name, argv[0]))
+ 			continue;
+ 
+ 		if (argc < 2) {
+-			/* No suite specified. */
+-			dump_suites(i);
++			/* No bench specified. */
++			dump_benchmarks(coll);
+ 			goto end;
+ 		}
+ 
+ 		if (!strcmp(argv[1], "all")) {
+-			all_suite(&subsystems[i]);
++			run_collection(coll);
+ 			goto end;
+ 		}
+ 
+-		for (j = 0; subsystems[i].suites[j].name; j++) {
+-			if (strcmp(subsystems[i].suites[j].name, argv[1]))
++		for_each_bench(coll, bench) {
++			if (strcmp(bench->name, argv[1]))
+ 				continue;
+ 
+ 			if (bench_format == BENCH_FORMAT_DEFAULT)
+-				printf("# Running %s/%s benchmark...\n",
+-				       subsystems[i].name,
+-				       subsystems[i].suites[j].name);
++				printf("# Running '%s/%s' benchmark:\n", coll->name, bench->name);
+ 			fflush(stdout);
+-			status = subsystems[i].suites[j].fn(argc - 1,
+-							    argv + 1, prefix);
++			ret = run_bench(coll->name, bench->name, bench->fn, argc-1, argv+1, prefix);
+ 			goto end;
+ 		}
+ 
+ 		if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
+-			dump_suites(i);
++			dump_benchmarks(coll);
+ 			goto end;
+ 		}
+ 
+-		printf("Unknown suite:%s for %s\n", argv[1], argv[0]);
+-		status = 1;
++		printf("Unknown benchmark: '%s' for collection '%s'\n", argv[1], argv[0]);
++		ret = 1;
+ 		goto end;
+ 	}
+ 
+-	printf("Unknown subsystem:%s\n", argv[0]);
+-	status = 1;
++	printf("Unknown collection: '%s'\n", argv[0]);
++	ret = 1;
+ 
+ end:
+-	return status;
++	return ret;
+ }
 -- 
 1.8.1.4
 
