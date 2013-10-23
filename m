@@ -1,96 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab3JWA5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 20:57:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:48350 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab3JWA5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 20:57:51 -0400
-X-IronPort-AV: E=Sophos;i="4.93,551,1378828800"; 
-   d="scan'208";a="8832974"
-Message-ID: <52671F55.5030108@cn.fujitsu.com>
-Date: Wed, 23 Oct 2013 08:59:01 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755171Ab3JWBDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 21:03:34 -0400
+Received: from smtp106.biz.mail.ne1.yahoo.com ([98.138.207.13]:28654 "HELO
+	smtp106.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754925Ab3JWBD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 21:03:26 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vDbE8TYVM1lXb1hGWZNmU97d3kP_wfExYHVMtBWIvbPyglj
+ 19fhbI2yKSsik6m6fGOLbOQHuv_cO.qLRc_RfG1PoeGwSudgxdaICgbwzzKw
+ SArFZJfuXqu2QTzH2sjtBskl1lBoymKwFfX3iU7g.FlLN9ry_RxulIv3yOMU
+ AkhTqC6z8n4xKSxiJSpAVRs.XowfQL1gu.KLu5rwFLxkL4.5tuN.A4vp5Xrb
+ uqrC9n2hUaxDpq7sRLfcCPEnUkksioUu_Fy0OH7VbCwq_RlAss9byPc6zKdr
+ F2PkDazyyaIj1JE4Wikz__jP1ljFKPlbdKhNcsXBSWGAGhQmzIPp3ZQr7cND
+ vbvJ0dMoKRQwUINVO9BW9tJsfykuExUNTEoNXli0T7zHGklHFpLPpFwObF7l
+ HHVXvH1pKYr0hXdxFcD13s_i.d1nVxQMNjfsYSh1rIfd5Q_BFy7Sk.h0Fg_k
+ rN0r4vE7mIT5a6eQNY8AFAM_kesOg5RPV6RbMC4LrTKg6l28FPqzSOHmhHCA
+ h7X6tBOEIZU68bmfdkUJxSatJzRmvb96.s39IAajNZ6JNVaFCEM.4we.5xcw
+ .6nNMjsVz6e.LZ4lLRsV.Z060ldYccbmERz96LXQi6Cgw3WF37Dgth6lHKbV
+ rCM6jziuR
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@67.180.103.242 with )
+        by smtp106.biz.mail.ne1.yahoo.com with SMTP; 22 Oct 2013 18:03:24 -0700 PDT
+Message-ID: <5267205C.7000304@schaufler-ca.com>
+Date: Tue, 22 Oct 2013 18:03:24 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: allow unlimited audit_backlog_limit [was: Re: [PATCH] audit:
- don't create audit log when audit_backlog_limit is zero]
-References: <1382342500-12693-1-git-send-email-gaofeng@cn.fujitsu.com> <20131022175901.GA5059@madcap2.tricolour.ca>
-In-Reply-To: <20131022175901.GA5059@madcap2.tricolour.ca>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/23 08:55:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/23 08:55:20,
-	Serialize complete at 2013/10/23 08:55:20
-Content-Transfer-Encoding: 7bit
+To: James Morris <jmorris@namei.org>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
+References: <20130920203556.GA8726@www.outflux.net> <alpine.LRH.2.02.1310171858170.32257@tundra.namei.org> <52601DD8.7090308@schaufler-ca.com> <alpine.LRH.2.02.1310231047180.7063@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1310231047180.7063@tundra.namei.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 01:59 AM, Richard Guy Briggs wrote:
-> On Mon, Oct 21, 2013 at 04:01:40PM +0800, Gao feng wrote:
->> As the man page of auditctl said:
->> "
->> -b backlog
->>               Set max number of outstanding audit buffers allowed (Kernel Default=64)
->> 	      If all buffers are full, the failure flag is consulted by the kernel
->>               for action.
->> "
+On 10/22/2013 5:02 PM, James Morris wrote:
+> On Thu, 17 Oct 2013, Casey Schaufler wrote:
+>
+>> On 10/17/2013 1:02 AM, James Morris wrote:
+>>> This seems like a regression in terms of separating mechanism and policy.  
+>>>
+>>> We have several access control systems available (SELinux, at least) which 
+>>> can implement this functionality with existing mechanisms using dynamic 
+>>> policy.
+>> They said the same thing about Smack.
 >>
->> So if audit_backlog_limit is zero, it means no audit buffer
->> should be allocated.
-> 
-> Which sounds the same as audit=0 on the kernel boot line or "auditctl -e 0"
-> to disable it.  This is redundant.  I would suggest instead that it
-> would be more useful to have backlog set to zero mean unlimited (well,
-> limited by system RAM).  This can be dangerous, but that can be
-> warned in the manpage.  So, to accomplish that, a minor change is
-> needed in the audit_hold_skb() funciton:
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> @@ -355,7 +355,8 @@ static int audit_set_failure(int state)
->  static void audit_hold_skb(struct sk_buff *skb)
->  {
->  	if (audit_default &&
-> -	    skb_queue_len(&audit_skb_hold_queue) < audit_backlog_limit)
-> +	    (!audit_backlog_limit ||
-> +	     skb_queue_len(&audit_skb_hold_queue) < audit_backlog_limit))
->  		skb_queue_tail(&audit_skb_hold_queue, skb);
->  	else
->  		kfree_skb(skb);
-> 
-> And here is what I would propose for the corresponding userspace mod:
-> 
-> diff --git a/trunk/docs/auditctl.8 b/trunk/docs/auditctl.8
-> @@ -8,7 +8,7 @@ The \fBauditctl\fP program is used to control the behavior, get status, and add
->  .SH OPTIONS
->  .TP
->  .BI \-b\  backlog
-> -Set max number of outstanding audit buffers allowed (Kernel Default=64) If all buffers are full, the failure flag is consulted by the kernel for action.
-> +Set max number of outstanding audit buffers allowed (Kernel Default=64) If all buffers are full, the failure flag is consulted by the kernel for action.  Setting this to "0" (which is dangerous) implies an unlimited queue, limited only by system resources.
->  .TP
->  \fB\-e\fP [\fB0\fP..\fB2\fP]
->  Set enabled flag. When \fB0\fP is passed, this can be used to temporarily disable auditing. When \fB1\fP is passed as an argument, it will enable auditing. To lock the audit configuration so that it can't be changed, pass a \fB2\fP as the argument. Locking the configuration is intended to be the last command in audit.rules for anyone wishing this feature to be active. Any attempt to change the configuration in this mode will be audited and denied. The configuration can only be changed by rebooting the machine.
-> diff --git a/trunk/src/auditctl.c b/trunk/src/auditctl.c
-> @@ -107,7 +107,7 @@ static void usage(void)
->       "    -a <l,a>            Append rule to end of <l>ist with <a>ction\n"
->       "    -A <l,a>            Add rule at beginning of <l>ist with <a>ction\n"
->       "    -b <backlog>        Set max number of outstanding audit buffers\n"
-> -     "                        allowed Default=64\n"
-> +     "                        allowed. Default=64 Unlimited=0(dangerous)\n"
->       "    -c                  Continue through errors in rules\n"
->       "    -C f=f              Compare collected fields if available:\n"
->       "                        Field name, operator(=,!=), field name\n"
-> 
-> 
-> Does this sound like a reasonable change?
-> 
+> Nope.  Smack separates mechanism and policy.  The argument then was 
+> whether we need more than one such enhanced access control system.
+>
+> The issue now is that we do have several of them (SELinux, Smack, 
+> AppArmor) which are policy-flexible, whether to regress back to adding 
+> hard-coded security policies into the kernel.
+>
+>> The problem there is that you have to buy into the entirety of
+>> SELinux to implement a small bit of behavior. You have to write
+>> a policy that takes every aspect of system behavior into account
+>> when all you care about is loading restrictions on modules.
+> You always need to consider the behavior of the system as a whole when 
+> designing security policies.
 
-Yes, it's reasonable, I'm ok with this change, just like audit_rate_limit,
-zero means unlimited. And it's better to change the comments of audit_backlog_limit
-in kernel.
+This is right thinking. It's just not common thinking.
 
-Thanks.
+> It's a major step backwards to hard-code a series of ad-hoc policies in 
+> the kernel.  You still need to compose them somehow, and reason about the 
+> security of the system as a whole.
+
+It's not like we're talking about throwing out the legacy monolithic LSMs.
+And let us not forget that Fedora is using SELinux and Yama. There's a
+perception of value in independent security mechanisms used in combination.
+
+>> The rationale is that lots of people doing little things is
+>> likely to get us relevant security in a reasonable amount of time.
+>> The existing LSMs reflect 20th century technologies and use cases.
+>> They are fine for multi-user timesharing systems. We need to move
+>> forward to support networked gaming, phones, tablets and toasters.
+> You keep making these grand
+
+Cool! Most people use other, less complimentary adjectives!
+
+> assertions but never provide any detail, or 
+> any kind of evidence to back them up.
+
+There are simple reasons for that. Between Tizen and the stacking patch
+the work on a real Application+Service+Resource security model and the
+implementation thereof has gotten insufficient attention. I have been
+emphasizing work on enabling technology over work on what needs to be
+enabled. Kees' approach to security development on CromeOS is the example
+I'll hold up for the wave of the future.
+
+> Yet there are many, many examples 
+> of how the current LSMs meet all of these needs in the 21st century, such 
+> as Smack being adopted for Tizen, digital television etc.:
+
+Smack in Tizen is an example of old school distribution packaging.
+Tizen is very old school in its approach. It's working out pretty
+well, but Tizen is hardly a major advance in the world of OS security.
+
+If you look at Android, their (re/miss/ab)use of the UID mechanism and
+reliance on the binder to wedge an application based security policy
+on top of existing mechanisms it should be pretty obvious that they
+would have been better suited with new security features than with
+retrofitting to existing technology.
+
+SEAndroid is taking a refreshing approach by putting the access controls
+in the middleware and by doing so enabling an appropriate implementation
+on the flask architecture. I would not say that SEAndroid qualifies as an
+example of adopting an LSM.
+
+> http://en.wikipedia.org/wiki/Smack
+>
+>
+>
+> - James
+
