@@ -1,126 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3JWCqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:46:51 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:9323 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3JWCqt (ORCPT
+	id S1755453Ab3JWCrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:47:42 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43539 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab3JWCrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:46:49 -0400
-Message-ID: <1382496404.10556.27.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: walken@google.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Oct 2013 19:46:44 -0700
-In-Reply-To: <20131022154802.GA25490@localhost>
-References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
-	 <20131022154802.GA25490@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Tue, 22 Oct 2013 22:47:41 -0400
+Message-ID: <526738C4.1080508@linux.vnet.ibm.com>
+Date: Wed, 23 Oct 2013 10:47:32 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [sched] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus()
+References: <20131019005129.GA5979@localhost> <20131022204632.GD2490@laptop.programming.kicks-ass.net> <20131022212447.GA1373@localhost>
+In-Reply-To: <20131022212447.GA1373@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102302-8878-0000-0000-0000096313F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 08:48 -0700, walken@google.com wrote:
-> On Thu, Oct 17, 2013 at 05:50:35PM -0700, Davidlohr Bueso wrote:
-> > Linus recently pointed out[1] some of the amount of unnecessary work 
-> > being done with the mmap_sem held. This patchset is a very initial 
-> > approach on reducing some of the contention on this lock, and moving
-> > work outside of the critical region.
-> > 
-> > Patch 1 adds a simple helper function.
-> > 
-> > Patch 2 moves out some trivial setup logic in mlock related calls.
-> > 
-> > Patch 3 allows managing new vmas without requiring the mmap_sem for
-> > vdsos. While it's true that there are many other scenarios where
-> > this can be done, few are actually as straightforward as this in the
-> > sense that we *always* end up allocating memory anyways, so there's really
-> > no tradeoffs. For this reason I wanted to get this patch out in the open.
-> > 
-> > There are a few points to consider when preallocating vmas at the start
-> > of system calls, such as how many new vmas (ie: callers of split_vma can
-> > end up calling twice, depending on the mm state at that point) or the probability
-> > that we end up merging the vma instead of having to create a new one, like the 
-> > case of brk or copy_vma. In both cases the overhead of creating and freeing
-> > memory at every syscall's invocation might outweigh what we gain in not holding
-> > the sem.
+On 10/23/2013 05:24 AM, Fengguang Wu wrote:
+[snip]
 > 
-> Hi Davidlohr,
+>> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+>>  	p = find_process_by_pid(pid);
+>>  	if (!p) {
+>>  		rcu_read_unlock();
+>> -		put_online_cpus();
+>>  		return -ESRCH;
 > 
-> I had a quick look at the patches and I don't see anything wrong with them.
-> However, I must also say that I have 99 problems with mmap_sem and the one
-> you're solving doesn't seem to be one of them, so I would be interested to
-> see performance numbers showing how much difference these changes make.
+> Yes, it fixed the WARNING.
 > 
+> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Thanks for taking a look, could I get your ack? Unless folks have any
-problems with the patchset, I do think it's worth picking up...
-
-As discussed with Ingo, the numbers aren't too exciting, mainly because
-of the nature of vdsos: with all patches combined I'm getting roughly
-+5% throughput boost on some aim7 workloads. This was a first attempt at
-dealing with the new vma allocation we do with the mmap_sem held. I've
-recently explored some of the options I mentioned above, like for
-brk(2). Unfortunately I haven't gotten good results; for instance we get
-a -15% hit in ops/sec with aim9's brk_test program. So we end up using
-already existing vmas a lot more than creating new ones, which makes a
-lot of sense anyway. So all in all I don't think that preallocating vmas
-outside the lock is a path to go, even at a micro-optimization level,
-except for vdsos.
-
-> Generally the problems I see with mmap_sem are related to long latency
-> operations. Specifically, the mmap_sem write side is currently held
-> during the entire munmap operation, which iterates over user pages to
-> free them, and can take hundreds of milliseconds for large VMAs. Also,
-> the mmap_sem read side is held during user page fauls - well, the
-> VM_FAULT_RETRY mechanism allows us to drop mmap_sem during major page
-> faults, but it is still held while allocating user pages or page tables,
-> and while going through FS code for asynchronous readahead, which turns
-> out not to be as asynchronous as you'd think as it can still block for
-> reading extends etc... So, generally the main issues I am seeing with
-> mmap_sem are latency related, while your changes only help for throughput
-> for workloads that don't hit the above latency issues. I think that's a
-> valid thing to do but I'm not sure if common workloads hit these throughput
-> issues today ?
-
-IMHO munmap is just one more example where having one big fat lock for
-serializing an entire address space is something that must be addressed
-(and, as you mention, mmap_sem doesn't even limit itself only to vmas -
-heck... we even got it protecting superpage faults). For instance, it
-would be really nice if we could somehow handle rbtrees with RCU, and
-avoid taking any locks for things like lookups (ie: find_vma), of course
-we need to guarantee that the vma won't be free'd underneath us one it's
-found :) Or event allow concurrent updates and rebalancing - nonetheless
-I don't know how realistic such things can be in the kernel.
+Thanks for the testing :)
 
 > 
-> > [1] https://lkml.org/lkml/2013/10/9/665 
+> // The tests was queued for Michael Wang and have just finished.
 > 
-> Eh, that post really makes it look easy doesn't it :)
+> There seems show up a new unreliable error "BUG:kernel_test_crashed".
+> I'll increase test runs to confirm whether it's a new bug.
+
+I guess it will be a new thread when get confirmed, let's fix this easy
+one firstly, will send a formal patch later.
+
+Regards,
+Michael Wang
+
 > 
-> There are a few complications with mmap_sem as it turns out to protect
-> more than just the VMA structures. For example, mmap_sem plays a role
-> in preventing page tables from being unmapped while follow_page_mask()
-> reads through them (there are other arch specific ways to do that,
-> like disabling local interrupts on x86 to prevent TLB shootdown, but
-> none that are currently available in generic code). This isn't an
-> issue with your current proposed patches but is something you need to
-> be aware of if you're going to do more work around the mmap_sem issues
-> (which I would encourage you to BTW - there are a lot of issues around
-> mmap_sem, so it definitely helps to have more people looking at this :)
-
-Thanks for shedding some light on the topic!
-
-Davidlohr
-
+> /kernel/x86_64-lkp/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e                                  
+> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
+> |                                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
+> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
+> | good_boots                                                                       | 539       | 0            | 16           |
+> | has_kernel_error_warning                                                         | 24        | 20           | 1            |
+> | INFO:task_blocked_for_more_than_seconds                                          | 14        |              |              |
+> | WARNING:CPU:PID:at_arch/x86/kernel/cpu/perf_event_intel.c:intel_pmu_handle_irq() | 1         |              |              |
+> | INFO:NMI_handler(perf_event_nmi_handler)took_too_long_to_run:msecs               | 1         |              |              |
+> | XFS(vde):xlog_verify_grant_tail:space_BBTOB(tail_blocks)                         | 5         |              |              |
+> | Corruption_detected.Unmount_and_run_xfs_repair                                   | 5         |              |              |
+> | metadata_I/O_error:block(xfs_trans_read_buf_map)error_numblks                    | 5         |              |              |
+> | BUG:kernel_test_hang                                                             | 3         |              |              |
+> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                | 0         | 20           |              |
+> | BUG:kernel_test_crashed                                                          | 0         | 0            | 1            |
+> +----------------------------------------------------------------------------------+-----------+--------------+--------------+
+> 
+> /kernel/x86_64-lkp-CONFIG_SCHED_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
+>                                   
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> |                                                                                    | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> | good_boots                                                                         | 39        | 0            | 16           |
+> | has_kernel_error_warning                                                           | 0         | 20           |              |
+> | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 1            |              |
+> | INFO:task_blocked_for_more_than_seconds                                            | 0         | 6            |              |
+> | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 3            |              |
+> | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 3            |              |
+> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                                  | 0         | 12           |              |
+> | BUG:kernel_test_crashed                                                            | 0         | 1            |              |
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> 
+> /kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/686c61a262ef88fdbc81c4d18bd0fcfc904d3f3e
+> 
+> +------------------------------------------------------------------+-----------+--------------+--------------+
+> |                                                                  | v3.12-rc4 | 6acce3ef8452 | 686c61a262ef |
+> +------------------------------------------------------------------+-----------+--------------+--------------+
+> | good_boots                                                       | 38        | 1            | 17           |
+> | has_kernel_error_warning                                         | 1         | 20           | 1            |
+> | Out_of_memory:Kill_process                                       | 1         |              |              |
+> | Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes | 1         |              |              |
+> | BUG:kernel_test_oops                                             | 1         |              |              |
+> | WARNING:CPU:PID:at_kernel/cpu.c:put_online_cpus()                | 0         | 20           |              |
+> | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)      | 0         | 0            | 1            |
+> +------------------------------------------------------------------+-----------+--------------+--------------+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
