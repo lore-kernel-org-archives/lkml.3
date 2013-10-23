@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3JWMTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 08:19:55 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53295 "EHLO
+	id S1753420Ab3JWMWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 08:22:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53311 "EHLO
 	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753188Ab3JWMTx (ORCPT
+	by vger.kernel.org with ESMTP id S1752770Ab3JWMWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 08:19:53 -0400
-Message-ID: <1382530790.16097.29.camel@dabdike.quadriga.com>
-Subject: Re: [GIT PULL] SCSI fixes for 3.12-rc6
+	Wed, 23 Oct 2013 08:22:41 -0400
+Message-ID: <1382530957.16097.30.camel@dabdike.quadriga.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Oct 2013 13:19:50 +0100
-In-Reply-To: <CA+55aFzo-sA4P_rMC1wWfLp50QswfP0GdLxMQ+Wbw8ArK5capw@mail.gmail.com>
-References: <1382527624.16097.23.camel@dabdike.quadriga.com>
-	 <CA+55aFzo-sA4P_rMC1wWfLp50QswfP0GdLxMQ+Wbw8ArK5capw@mail.gmail.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: dgilbert@interlog.com, Simon Kirby <sim@hostway.ca>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Vaughan Cao <vaughan.cao@oracle.com>
+Date: Wed, 23 Oct 2013 13:22:37 +0100
+In-Reply-To: <CA+5PVA6+6jZyypZODiuY4NWY3V2CsJeurFTuy4Wt-KcPddzaSQ@mail.gmail.com>
+References: <20131022205608.GA6616@hostway.ca>
+	 <52671B3E.6070804@interlog.com>
+	 <1382514295.2081.32.camel@dabdike.quadriga.com>
+	 <CA+5PVA6+6jZyypZODiuY4NWY3V2CsJeurFTuy4Wt-KcPddzaSQ@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.8.5 
 Mime-Version: 1.0
@@ -26,51 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 13:07 +0100, Linus Torvalds wrote:
-> On Wed, Oct 23, 2013 at 12:27 PM, James Bottomley
+On Wed, 2013-10-23 at 05:11 -0700, Josh Boyer wrote:
+> On Wed, Oct 23, 2013 at 12:44 AM, James Bottomley
 > <James.Bottomley@hansenpartnership.com> wrote:
+> > On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
+> >> On 13-10-22 04:56 PM, Simon Kirby wrote:
+> >> > Hello!
+> >> >
+> >> > While trying to figure out why the request queue to sda (ext4) was
+> >> > clogging up on one of our btrfs backup boxes, I noticed a megarc process
+> >> > in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+> >> >
+> >> > [  205.372823] ================================================
+> >> > [  205.372901] [ BUG: lock held when returning to user space! ]
+> >> > [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+> >> > [  205.373055] ------------------------------------------------
+> >> > [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+> >> > [  205.373212] 1 lock held by megarc.bin/5283:
+> >> > [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+> >> >
+> >> > Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+> >> > tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+> >> > though I haven't tried with lockdep.
+> >> >
+> >> > This is caused by some of our internal RAID monitoring scripts that run
+> >> > "megarc.bin -dispCfg -a0" (even though that controller isn't present on
+> >> > this server -- a PowerEdge 2950 w/Perc 5).
+> >> >
+> >> > strace output of the program execution that causes the above message is
+> >> > here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
+> >>
+> >> This has been reported. That patch will be reverted or,
+> >> if there is enough time, a fix will (or at least should)
+> >> go in before the release of lk 3.12 .
 > >
-> > The patch is available here:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+> > I think you've got about a week to prove you can fix it (before 3.12
+> > goes final).  I'll send my current set of fixes to Linus without doing
+> > anything about sg.
 > 
-> No it's not. "Already up-to-date.".
+> In the event that a suitable fix isn't found, are you going to revert
+> the commit(s) that caused the issue?
 
-Um, sorry, forgot to make a tag.  Done now.
-
-> Also, even if it was, I'm not feeling the reason to pull it. "Cleanup
-> sprintf formatting of firmware version"? "Remove superfluous mask of
-> pcie_cap_reg"? Seriously?
-
-Well, yes, provided the new driver exception still holds.  The eas2r
-driver was added in the last merge window so it qualifies.  Previously
-you'd said that drivers that weren't previously in the tree could have
-changes and cleanups added even at the -rc stage ... if you're reversing
-this, I can pull the eas2r updates into the misc tree insead.
-
-> Multi-hundred-line pull requests that come in this late had better
-> look a bit more serious than that.
-> 
-> There's *HUNDREDS* of lines of changes, all of which seems to come
-> from the change to use the (admittedly much superior) native bit
-> handling fucntions, instead of the shit-for-brains abortion that is
-> "esas2r_lock_set/clear_flags()"
-> 
-> And I see why you'd want to get rid of that horrible crap, but I see
-> absolutely _zero_ reason to do it in -rc7.
-> 
-> As far as I can tell from the patch, a few lines are for actual
-> problems like oopses. And the rest is pure and utter garbage that
-> should have happened during the merge window.
-> 
-> So I literally *cannot* pull this, because the git tree doesn't
-> contain what you said it contains. But even if it did, I would not
-> *want* to pull this kind of completely brainless crap.
-> 
-> You need to curse at the people who send you this kind of crap.
-> Seriously. This is not acceptablee timing.
-
-OK, so is the new driver exception gone then?
+That's what I said I'd do previously, yes.
 
 James
 
