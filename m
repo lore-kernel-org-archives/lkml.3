@@ -1,109 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab3JWWYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 18:24:19 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:36485 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab3JWWYR (ORCPT
+	id S1753169Ab3JWWjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 18:39:11 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:64366 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab3JWWjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 18:24:17 -0400
-Message-ID: <52684C8E.6080802@gmail.com>
-Date: Wed, 23 Oct 2013 17:24:14 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 23 Oct 2013 18:39:08 -0400
+Date: Wed, 23 Oct 2013 16:39:04 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yoknis, Mike" <mike.yoknis@hp.com>,
+        "Pearson, Greg" <greg.pearson@hp.com>
+Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
+ resource conversion
+Message-ID: <20131023223904.GA18454@google.com>
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
+ <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
+ <20131016235541.GD17866@google.com>
+ <525F7F0F.5010306@intel.com>
+ <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com>
+ <52612D1C.4070701@intel.com>
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv5 1/3] Input: twl4030-pwrbutton - add device tree support
-References: <1382560002-6299-1-git-send-email-sre@debian.org> <1382560002-6299-2-git-send-email-sre@debian.org>
-In-Reply-To: <1382560002-6299-2-git-send-email-sre@debian.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52612D1C.4070701@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 03:26 PM, Sebastian Reichel wrote:
-> Add device tree support for twl4030 power button driver.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  .../devicetree/bindings/input/twl4030-pwrbutton.txt      | 13 +++++++++++++
->  drivers/input/misc/twl4030-pwrbutton.c                   | 16 ++++++++++++----
->  2 files changed, 25 insertions(+), 4 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> new file mode 100644
-> index 0000000..945ec74
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> @@ -0,0 +1,13 @@
-> +* TWL4030's pwrbutton device tree bindings
-> +
-> +Required SoC Specific Properties:
-> +- compatible: should be one of the following
-> +   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
-> +- interrupt: should be one of the following
-> +   - <8>: For controllers compatible with twl4030
-> +
-> +Example:
-> +	twl_pwrbutton: pwrbutton {
-> +		compatible = "ti,twl4030-pwrbutton";
-> +		interrupts = <8>;
-> +	};
+[+cc Greg]
 
-So a twl4030 device is only a power button? DT should describe the h/w
-not a node for a sub-function of a device.
+On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
+> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
+>> On Thu, Oct 17, 2013 at 12:09 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>>>On 2013年10月17日 07:55, Bjorn Helgaas wrote:
+>>>> On Fri, Oct 11, 2013 at 08:19:01PM +0800, tianyu.lan@intel.com wrote:
 
-Rob
+>>I wonder if it would make sense to make
+>>acpi_dev_resource_address_space() ignore addr.translation_offset for
+>>IO resources.  Or maybe ignore it if the _TTP (type translation) bit
+>>is set?
+>
+> I wonder why current code doesn't check _TTP? The code in the
+> add_io_space() seems to think _TTP is always set, right?
 
-> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-> index b9a05fd..a3a0fe3 100644
-> --- a/drivers/input/misc/twl4030-pwrbutton.c
-> +++ b/drivers/input/misc/twl4030-pwrbutton.c
-> @@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
-> +static int twl4030_pwrbutton_probe(struct platform_device *pdev)
->  {
->  	struct input_dev *pwr;
->  	int irq = platform_get_irq(pdev, 0);
-> @@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
-> +       { .compatible = "ti,twl4030-pwrbutton" },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
-> +#endif
-> +
->  static struct platform_driver twl4030_pwrbutton_driver = {
-> +	.probe		= twl4030_pwrbutton_probe,
->  	.remove		= __exit_p(twl4030_pwrbutton_remove),
->  	.driver		= {
->  		.name	= "twl4030_pwrbutton",
->  		.owner	= THIS_MODULE,
-> +		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
->  	},
->  };
-> -
-> -module_platform_driver_probe(twl4030_pwrbutton_driver,
-> -			twl4030_pwrbutton_probe);
-> +module_platform_driver(twl4030_pwrbutton_driver);
->  
->  MODULE_ALIAS("platform:twl4030_pwrbutton");
->  MODULE_DESCRIPTION("Triton2 Power Button");
-> 
+I think it's an oversight, and you should fix it.  I suggest that you
+ignore the _TRA value when _TTP is set.  Obviously this only applies
+to I/O port resources, since _TTP is only defined in the I/O Resource
+Flag (Table 6-185 in ACPI 5.0 spec).
 
+>>Mike, is there any chance you could collect an acpidump from an
+>>rx7620 or similar ia64 system?  In particular, I want to see a
+>>multi-node system where we have several PCI domains, and whether it
+>>sets the _TTP bits.
+
+Greg collected an acpidump from an HP system that uses these I/O port
+ranges.  Unfortunately the system wasn't running Linux, so it's an EFI
+dump, not the usual one we get from the "pmtools" package.  But I
+think it has the information we want.
+
+It's huge, and I put some of the relevant parts of it here:
+https://bugzilla.kernel.org/show_bug.cgi?id=63581  Here's a sample
+that shows the _TTP bit is set for the I/O aperture:
+
+    Device E000 (\_SB_.N000.E000)
+      Name _SEG (\_SB_.N000.E000._SEG)
+        0x01
+      Name _CRS (\_SB_.N000.E001._CRS)
+        Buffer
+          0x0092
+          ByteList <0x88 0x0d 0x00 0x02 0x0e 0x00 0x00 0x00
+                    0x00 0x00 0xff 0x00 0x00 0x00 0x00 0x01
+
+                    0x8a 0x2b 0x00 0x01 0x0c 0x33 0x00 0x00
+                    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+                    0x00 0x00 0x00 0x00 0x00 0x00 0xff 0xff
+                    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+                    0x00 0xd0 0x00 0x04 0x00 0x00 0x00 0x00
+                    0x01 0x00 0x00 0x00 0x00 0x00
+
+Byte 0: 0x8a (QWORD address space descriptor)
+Byte 3: Resource Type = 0x01 (I/O range)
+Byte 5: Type Specific Flags = 0x33 (_TRS, _TTP, _RNG = 3)
+
+          QWORD Address Space Descriptor:
+             Type: I/O
+             Flags:  Sparse, Translate, ISA I/O addresses, Non-ISA I/O addresses
+             GRA: 0x0000000000000000
+             MIN: 0x0000000000000000  MAX: 0x000000000000ffff
+             TRA: 0x00000400d0000000  LEN: 0x0000000000010000
+             MAX address fixed
+             MIN address fixed
+             Address positively decoded
+             Device produces and consumes this resource
+
+Bjorn
