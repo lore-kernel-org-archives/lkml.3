@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3JWOHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:07:43 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:63019 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab3JWOHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:07:41 -0400
-Message-ID: <5267D82A.3010307@gmail.com>
-Date: Wed, 23 Oct 2013 16:07:38 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1752180Ab3JWOIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:08:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab3JWOIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:08:46 -0400
+Message-ID: <5267D85D.5030505@redhat.com>
+Date: Wed, 23 Oct 2013 10:08:29 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: The development of GNU GRUB <grub-devel@gnu.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <ian.campbell@citrix.com>, keir@xen.org,
-        david.woodhouse@intel.com, stefano.stabellini@eu.citrix.com,
-        Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg59@srcf.ucam.org>, xen-devel@lists.xen.org,
-        Jan Beulich <JBeulich@suse.com>, ross.philipson@citrix.com,
-        richard.l.maliszewski@intel.com, boris.ostrovsky@oracle.com
-Subject: Re: [Xen-devel] EFI and multiboot2 devlopment work for Xen
-References: <5266620602000078000FCA48@nat28.tlf.novell.com> <1382435127.1657.70.camel@hastur.hellion.org.uk> <526668A502000078000FCA7B@nat28.tlf.novell.com> <20131022134252.GA27302@phenom.dumpdata.com> <1382449985.18283.12.camel@hastur.hellion.org.uk> <20131022140947.GA17829@phenom.dumpdata.com> <1382451868.18283.21.camel@hastur.hellion.org.uk> <1382455358.18283.31.camel@hastur.hellion.org.uk> <20131022162632.GB19189@phenom.dumpdata.com> <1382517150.22417.21.camel@hastur.hellion.org.uk> <20131023131348.GA23898@phenom.dumpdata.com>
-In-Reply-To: <20131023131348.GA23898@phenom.dumpdata.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2EGGLESAVBQLOBUFKDFAN"
+To: Ming Lei <ming.lei@canonical.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        tigran@aivazian.fsnet.co.uk
+Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
+ no uevent
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com>	<1382304926-1641-2-git-send-email-prarit@redhat.com>	<CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com>	<5265A9A4.2000100@redhat.com>	<CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>	<526706FC.2070105@redhat.com>	<CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com>	<5267A6CA.1000505@redhat.com>	<5267BAE7.2090300@redhat.com> <CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
+In-Reply-To: <CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2EGGLESAVBQLOBUFKDFAN
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 23.10.2013 15:13, Konrad Rzeszutek Wilk wrote:
->  - not make an ExitBootServices call - which it does right now in the S=
-olaris
->    GRUB2 case and in the Fedora GRUB2 case.
-What about having a special tag in multiboot2 file header "RKEBSIHE":
-"request to keep EFI boot services" and then bootloader will pass
-another (empty, other than header) info tag: "Beware of EFI"
->  - Do the signature verification (hand-waving which one - probably both=
-).
-Can someone throw me the link on the EFI signature specification? Can't
-really find it now.
->  - Pack the right bits in the multiboot2 structure.
-As soon as my patch is tested for compatibility with Solaris, I commit
-it. Tell me if you need sth else.
 
 
-------enig2EGGLESAVBQLOBUFKDFAN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+On 10/23/2013 09:21 AM, Ming Lei wrote:
+> On Wed, Oct 23, 2013 at 8:02 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+> 
+>>
+>> After all this I completely forgot the problem I'm trying to solve here.  The
+>> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
+>> is not found (that is the file is not found on disk), then EACH cpu waits 1
+>> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
+>>
+>> Which is terrible... so HOTPLUG doesn't work here.
+>>
+>> Let me back up Ming and see if you have a better solution for me.  I have a
+>> system that does not have the x86 microcode loaded on disk.  I use the microcode
+>> module which calls request_firmware_nowait() to load the microcode image and I
+>> want it done as fast as possible.  The microcode loader does not have a uevent
+>> so I'm not waiting on userspace for completion.
+>>
+>> How do I avoid the 60 second delay/cpu introduced in the microcode path?  I
+>> don't see one.  If I use HOTPLUG I'm waiting 60 seconds.  If I use NOHOTPLUG
+>> AFAICT the loading function never will return.  AFAICT the same issue arises
+>> with the dell_rbu code -- it appears to never load the dell_rbu firmware.
+> 
+> As I said, the 60 second delay is from udev, so that is the root cause.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Okay, so then my other option is to use NOHOTPLUG.  I've correctly modified it
+to return and not wait for a NULL uevent.  The synchronization between the cont
+function return and the actual application of the firmware is done in the driver
+(in my 2/2 patch) where I've used a completion struct.  ... Am I still missing
+something at this point?
 
-iF4EAREKAAYFAlJn2CoACgkQNak7dOguQglb5QD+KtDa5y4T4bCajaI/IehayhQ3
-YeRPLrRXQpUCHH36N3AA/0NEXyP01ZoZd7Ez5aJx8MnooeomFHAVX16krDFgK2sw
-=CQ4C
------END PGP SIGNATURE-----
+I also have to make that change to the dell_rbu code because it too, is broken
+the same way.  That is, I can load the dell_rbu module and it just hangs without
+applying the firmware.
 
-------enig2EGGLESAVBQLOBUFKDFAN--
+I'll submit a new version of these patches and we can continue from there.
+
+P.
+> 
+> There are some workarounds for your reference:
+> 
+
+These are workarounds for an issue that arises in the kernel.
+
+P.
