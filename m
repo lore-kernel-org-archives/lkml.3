@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3JWSeg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 14:34:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20011 "EHLO mga14.intel.com"
+	id S1752585Ab3JWStw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 14:49:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36958 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab3JWSef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 14:34:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="311717368"
-Message-ID: <526817B6.3090309@linux.intel.com>
-Date: Wed, 23 Oct 2013 11:38:46 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Alexander Shiyan <shc_work@mail.ru>, gregkh@linuxfoundation.org,
-        jslaby@suse.cz, ning.li@intel.com, ivan.gorinov@intel.com,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 2/2] mrst_max3110: fix SPI UART interrupt parameters
-References: <1382470930-13807-1-git-send-email-david.a.cohen@linux.intel.com> <5266E070.2060408@linux.intel.com> <5267041F.2090905@linux.intel.com> <1382509666.28248007@f107.i.mail.ru> <52681128.2010404@linux.intel.com> <20131023182143.GK25954@gimli> <20131023182351.GL25954@gimli>
-In-Reply-To: <20131023182351.GL25954@gimli>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752119Ab3JWStv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 14:49:51 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH] ftrace: open tracer when ftrace_dump_on_oops is used
+Date: Wed, 23 Oct 2013 11:49:57 -0700
+Message-Id: <1382554197-16961-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102318-7182-0000-0000-000008DCCE20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 11:23 AM, Felipe Balbi wrote:
-> Hi again,
->
-> On Wed, Oct 23, 2013 at 01:21:43PM -0500, Felipe Balbi wrote:
->> On Wed, Oct 23, 2013 at 11:10:48AM -0700, David Cohen wrote:
->>>> My idea is always use threaded irq and passing flags into request.
->>>> Like as:
->>>> unsigned long flags = res->flags & IORESOURCE_BITS;
->>>> ...
->>>> request_threaded_irq(max->irq, serial_m3110_irq, IRQF_ONESHOT | flags, "max3110", max);
->>>
->>>
->>> Oh, maybe we were talking about different things afterall :)
->>> The reason this struct plat_max3110 was created is to allow platform
->>> code (located under arch/x86/platform/intel-mid/device_libs/) to define
->>> the irq edge type.
->>> When I saw your comment I though you were referring to struct resource
->>> (which has IORESOURCE_IRQ_* flags). But unlike platform_device,
->>> spi_device has no struct resource * to replace the need of struct
->>> plat_max3110.
->>>
->>> OTOH your suggestion can replace this piece of code:
->>>
->>> @@ -68,6 +69,7 @@ struct uart_max3110 {
->>>          u8 clock;
->>>          u8 parity, word_7bits;
->>>          u16 irq;
->>> +       u16 irq_edge_triggered;
->>
->> max3110 is already edge triggered:
->>
->> 495                 ret = request_irq(max->irq, serial_m3110_irq,
->> 496                                 IRQ_TYPE_EDGE_FALLING, "max3110", max);
->>
->> it would be nice a threaded IRQ instead of using a singlethread
->> workqueue, though.
->
-> making it clearer, you only converted to threaded IRQ when
-> edge_triggered isn't set, why don't you *always* use threaded IRQs ?
+With ftrace_dump_on_oops, we previously did not open the tracer in
+question, sometimes causing the trace output to be useless.
 
-This is a very difficult question to answer, considering the
-non-threaded irq is used just to wake up a wq :)
-I wish this driver was better maintained.
+For example, the function_graph tracer with tracing_thresh set dumped via ftrace_dump_on_oops
+would show a series of '}' indented at different levels, but no function
+names.
 
-I'll rework this whole IRQ scheme here.
+call trace->open() (and do a few other fixups copied from the normal dump
+path) to make the output more intelligible.
 
-Br, David Cohen
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ kernel/trace/trace.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7974ba2..18a1b61 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -6253,6 +6253,17 @@ void trace_init_global_iter(struct trace_iterator *iter)
+ 	iter->trace = iter->tr->current_trace;
+ 	iter->cpu_file = RING_BUFFER_ALL_CPUS;
+ 	iter->trace_buffer = &global_trace.trace_buffer;
++
++	if (iter->trace && iter->trace->open)
++		iter->trace->open(iter);
++
++	/* Annotate start of buffers if we had overruns */
++	if (ring_buffer_overruns(iter->trace_buffer->buffer))
++		iter->iter_flags |= TRACE_FILE_ANNOTATE;
++
++	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
++	if (trace_clocks[iter->tr->clock_id].in_ns)
++		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ }
+ 
+ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+-- 
+1.8.1.5
+
