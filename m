@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3JWKq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 06:46:28 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60092 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab3JWKq1 (ORCPT
+	id S1753303Ab3JWKre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 06:47:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:62474 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752408Ab3JWKrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 06:46:27 -0400
-Message-ID: <5267A8F9.9050907@gmail.com>
-Date: Wed, 23 Oct 2013 18:46:17 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: rpurdie@rpsys.net, jg1.han@samsung.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+	Wed, 23 Oct 2013 06:47:33 -0400
+Message-ID: <1382525244.5283.3.camel@pippen.local.home>
+Subject: Re: [PATCH] kernel: context_tracking: use extern function instead
+ of static inline function for user_enter/exit()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, khilman@linaro.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
-References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com> <5260BD8C.7000200@gmail.com> <20131022072443.GB8681@ulmo.nvidia.com> <52663D6D.5000806@gmail.com> <20131022124905.GA24255@ulmo.nvidia.com> <52673178.8070805@gmail.com> <20131023080002.GB7404@ulmo.nvidia.com> <52678D99.8090003@gmail.com> <20131023090925.GC11954@ulmo.nvidia.com> <5267A691.8050503@gmail.com>
-In-Reply-To: <5267A691.8050503@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 23 Oct 2013 06:47:24 -0400
+In-Reply-To: <5267A72B.7060808@asianux.com>
+References: <5267A72B.7060808@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 06:36 PM, Mark Zhang wrote:
-> On 10/23/2013 05:09 PM, Thierry Reding wrote:
->> On Wed, Oct 23, 2013 at 04:49:29PM +0800, Mark Zhang wrote:
->>> On 10/23/2013 04:00 PM, Thierry Reding wrote:
->>>> On Wed, Oct 23, 2013 at 10:16:24AM +0800, Mark Zhang wrote:
->>>>> On 10/22/2013 08:49 PM, Thierry Reding wrote:
->>>>>> On Tue, Oct 22, 2013 at 04:55:09PM +0800, Mark Zhang wrote:
->>>>>>> On 10/22/2013 03:24 PM, Thierry Reding wrote:
->>>>>>>> On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
->>>>>>> [...]
->>>>>>>>>>
->>>>>>>>>
->>>>>>>>> Okay, I just want to set the "notify" function pointer in "struct
->>>>>>>>> platform_pwm_backlight_data", because I want to tune the brightness
->>>>>>>>> value before the pwm-bl sets the brightness to hardware. I don't know
->>>>>>>>> how to do that, unless we define the platform data explicitly.
->>>>>>>>
->>>>>>>> Okay, my question should have been what you need the functions for and
->>>>>>>> why you think you need them.
->>>>>>>>
->>>>>>>
->>>>>>> If I understanding you correctly, I suppose I've said that: "because I
->>>>>>> want to tune the brightness value before the pwm-bl sets the brightness
->>>>>>> to hardware".
->>>>>>
->>>>>> Why do you want to tune the brightness value? What are you trying to
->>>>>> achieve?
->>>>>>
->>>>>
->>>>> Oh, Tegra has a feature named PRISM(aka SmartDimmer). It changes the
->>>>> color value to make the display looks bright so that we can reduce the
->>>>> backlight brightness to save power. So everytime PRISM is triggered, we
->>>>> call "backlight_update_status", then in the "notify" callback, we change
->>>>> the brightness value which pwm-bl provides by considering the PRISM
->>>>> compensations.
->>>>
->>>> If you automatically call backlight_update_status() everytime PRISM
->>>> gives you new data, can't you just pass the correct value in in the
->>>> first place so that you don't have to tweak it in the .notify()
->>>> callback?
->>>
->>> OK, how to do that? -- "pass the correct value in in the first place"?
->>
->> Well, if you call backlight_update_status(), then you can pass in a
->> brightness value, right? You usually do that by setting the backlight's
->> props.brightness field.
->>
->> So when PRISM gives you new data, you could just read out the current
->> brightness, compute the new one based on the current one and the PRISM
->> data, set the props.brightness field to that value and then call
->> backlight_update_status().
->>
-> 
-> Okay, anyway, I got the idea. Actually it's simpler. :)
-> I'm just curious that if we can do that in this way, why we need
-> "notify" anymore?
+On Wed, 2013-10-23 at 18:38 +0800, Chen Gang wrote:
 
-Oh, by the way, how about "check_fb" fops? Is there some kind of
-substitution as well? I mean, if I wanna set "check_fb" and also want to
-define the backlight device via DT, is there a way to do that?
-
-Mark
 > 
-> Mark
->> Thierry
->>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  include/linux/context_tracking.h |   14 ++------------
+>  kernel/context_tracking.c        |   12 ++++++++++++
+>  2 files changed, 14 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+> index 1581587..bf220f7 100644
+> --- a/include/linux/context_tracking.h
+> +++ b/include/linux/context_tracking.h
+> @@ -10,23 +10,13 @@
+>  #ifdef CONFIG_CONTEXT_TRACKING
+>  extern void context_tracking_cpu_set(int cpu);
+>  
+> +extern void user_enter(void);
+> +extern void user_exit(void);
+>  extern void context_tracking_user_enter(void);
+>  extern void context_tracking_user_exit(void);
+>  extern void __context_tracking_task_switch(struct task_struct *prev,
+>  					   struct task_struct *next);
+>  
+> -static inline void user_enter(void)
+> -{
+> -	if (static_key_false(&context_tracking_enabled))
+> -		context_tracking_user_enter();
+> -
+> -}
+> -static inline void user_exit(void)
+> -{
+> -	if (static_key_false(&context_tracking_enabled))
+> -		context_tracking_user_exit();
+> -}
+> -
+>  static inline enum ctx_state exception_enter(void)
+>  {
+>  	enum ctx_state prev_ctx;
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 013161f..c03d0d6 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -29,6 +29,18 @@ EXPORT_SYMBOL_GPL(context_tracking_enabled);
+>  DEFINE_PER_CPU(struct context_tracking, context_tracking);
+>  EXPORT_SYMBOL_GPL(context_tracking);
+>  
+> +void user_enter(void)
+> +{
+> +	if (static_key_false(&context_tracking_enabled))
+> +		context_tracking_user_enter();
+> +}
+> +
+> +void user_exit(void)
+> +{
+> +	if (static_key_false(&context_tracking_enabled))
+> +		context_tracking_user_exit();
+> +}
+> +
+>  void context_tracking_cpu_set(int cpu)
+>  {
+>  	if (!per_cpu(context_tracking.active, cpu)) {
+
+Ug, you just put an unneeded function call into a fast path because of a
+failure with a particular arch.
+
+If you need the assembly to call this code, then make yourself a wrapper
+function to call that does the user_enter/exit() calls.
+
+void arch_user_enter(void)
+{
+	user_enter();
+}
+
+-- Steve
+
+
