@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab3JWOh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:37:58 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54159 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750949Ab3JWOh5 (ORCPT
+	id S1752014Ab3JWOjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:39:13 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:46404 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3JWOjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:37:57 -0400
-Date: Wed, 23 Oct 2013 15:37:22 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: allow ioremap_cache() to use existing RAM mappings
-Message-ID: <20131023143717.GA19317@mbp>
-References: <1382362594-24947-1-git-send-email-msalter@redhat.com>
- <1382519898.10408.1.camel@mbp>
- <1382535972.1768.68.camel@deneb.redhat.com>
+	Wed, 23 Oct 2013 10:39:11 -0400
+Message-ID: <5267DF8D.70800@linaro.org>
+Date: Wed, 23 Oct 2013 15:39:09 +0100
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382535972.1768.68.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        konrad.wilk@oracle.com, Ian.Campbell@citrix.com, ben-linux@fluff.org,
+        kgene.kim@samsung.com, sbkim73@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v8 14/19] ASoC: Samsung: Rename dma_ops by samsung_dma_ops
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-14-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1382031814-8782-14-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 02:46:12PM +0100, Mark Salter wrote:
-> On Wed, 2013-10-23 at 10:18 +0100, Catalin Marinas wrote:
-> > On Mon, 2013-10-21 at 14:36 +0100, msalter@redhat.com wrote:
-> > > diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
-> > > index 1725cd6..fb44b3d 100644
-> > > --- a/arch/arm64/mm/ioremap.c
-> > > +++ b/arch/arm64/mm/ioremap.c
-> > > @@ -79,6 +79,21 @@ void __iounmap(volatile void __iomem *io_addr)
-> > >  {
-> > >  	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
-> > >  
-> > > +	/* Nothing to do for normal memory. See ioremap_cache() */
-> > > +	if (pfn_valid(__virt_to_phys(addr) >> PAGE_SHIFT))
-> > > +		return;
-> > 
-> > addr here can be some I/O address mapped previously, so __virt_to_phys()
-> > is not valid (you don't actually get the pfn by shifting).
-> > 
-> 
-> Yeah, that's ugly. The thought was that only the kernel mapping of RAM
-> would yield a valid address from __virt_to_phys(). Anything else, like
-> a mapping of I/O space would lead to an invalid PFN. There's probably a
-> clearer way of doing that that. Other than that, is the general concept
-> of the patch reasonable?
+(Add samsung sounds maintainers)
 
-I think the concept is fine. You could change the check on
-VMALLOC_START/END or just always create a new mapping as long as it has
-the same caching attributes (PROT_NORMAL).
+On 10/17/2013 06:43 PM, Stefano Stabellini wrote:
+> From: Julien Grall <julien.grall@linaro.org>
+>
+> The commit "arm: introduce a global dma_ops pointer" introduce compilation issue
+> when CONFIG_SND_SOC_SAMSUNG is enabled.
+>
+> sound/soc/samsung/dma.c:345:27: error: conflicting types for 'dma_ops'
+> /local/home/julien/works/arndale/linux/arch/arm/include/asm/dma-mapping.h:16:28:
+> note: previous declaration of 'dma_ops' was here
+>
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>   sound/soc/samsung/dma.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+> index 21b7926..827c0d8 100644
+> --- a/sound/soc/samsung/dma.c
+> +++ b/sound/soc/samsung/dma.c
+> @@ -341,7 +341,7 @@ static int dma_mmap(struct snd_pcm_substream *substream,
+>   				     runtime->dma_bytes);
+>   }
+>
+> -static struct snd_pcm_ops dma_ops = {
+> +static struct snd_pcm_ops samsung_dma_ops = {
+>   	.open		= dma_open,
+>   	.close		= dma_close,
+>   	.ioctl		= snd_pcm_lib_ioctl,
+> @@ -428,7 +428,7 @@ out:
+>   }
+>
+>   static struct snd_soc_platform_driver samsung_asoc_platform = {
+> -	.ops		= &dma_ops,
+> +	.ops		= &samsung_dma_ops,
+>   	.pcm_new	= dma_new,
+>   	.pcm_free	= dma_free_dma_buffers,
+>   };
+>
 
 -- 
-Catalin
+Julien Grall
