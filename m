@@ -1,113 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab3JWEYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 00:24:50 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:58121 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab3JWEYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 00:24:49 -0400
-Message-ID: <52674EE0.9070103@linux.vnet.ibm.com>
-Date: Wed, 23 Oct 2013 09:51:52 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Michael Neuling <mikey@neuling.org>, Mike Galbraith <bitbucket@online.de>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
- of the parent domain's group
-References: <20131021114002.13291.31478.stgit@drishya> <20131021114442.13291.99344.stgit@drishya> <20131022221138.GJ2490@laptop.programming.kicks-ass.net> <526749EC.9030005@linux.vnet.ibm.com>
-In-Reply-To: <526749EC.9030005@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751379Ab3JWE0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 00:26:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab3JWE0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 00:26:13 -0400
+Date: Wed, 23 Oct 2013 00:26:05 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Message-ID: <1382502365-mvxw30qu-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131023114642.B201.38390934@jp.panasonic.com>
+References: <20131023114642.B201.38390934@jp.panasonic.com>
+Subject: Re: [PATCH] mm: Ensure get_unmapped_area() returns higher addressthan
+ mmap_min_addr
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102304-9574-0000-0000-00000A3BD230
+Content-Disposition: inline
+X-Mutt-References: <20131023114642.B201.38390934@jp.panasonic.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 09:30 AM, Preeti U Murthy wrote:
-> Hi Peter,
-> 
-> On 10/23/2013 03:41 AM, Peter Zijlstra wrote:
->> On Mon, Oct 21, 2013 at 05:14:42PM +0530, Vaidyanathan Srinivasan wrote:
->>>  kernel/sched/fair.c |   19 +++++++++++++------
->>>  1 file changed, 13 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 7c70201..12f0eab 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -5807,12 +5807,19 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->>>  
->>>  	rcu_read_lock();
->>>  	for_each_domain(cpu, sd) {
->>> +		struct sched_domain *sd_parent = sd->parent;
->>> +		struct sched_group *sg;
->>> +		struct sched_group_power *sgp;
->>> +		int nr_busy;
->>> +
->>> +		if (sd_parent) {
->>> +			sg = sd_parent->groups;
->>> +			sgp = sg->sgp;
->>> +			nr_busy = atomic_read(&sgp->nr_busy_cpus);
->>> +
->>> +			if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
->>> +				goto need_kick_unlock;
->>> +		}
->>>  
->>>  		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->>>  		    && (cpumask_first_and(nohz.idle_cpus_mask,
->>>
->>
->> Almost I'd say; what happens on !sd_parent && SD_ASYM_PACKING ?
-> 
-> You are right, sorry about this. The idea was to correct the nr_busy
-> computation before the patch that would remove its usage in the second
-> patch. But that would mean the condition nr_busy != sg->group_weight
-> would be invalid with this patch. The second patch needs to go first to
-> avoid this confusion.
-> 
->>
->> Also, this made me look at the nr_busy stuff again, and somehow that
->> entire thing makes me a little sad.
->>
->> Can't we do something like the below and cut that nr_busy sd iteration
->> short?
-> 
-> We can surely cut the nr_busy sd iteration but not like what is done
-> with this patch. You stop the nr_busy computation at the sched domain
-> that has the flag SD_SHARE_PKG_RESOURCES set. But nohz_kick_needed()
-> would want to know the nr_busy for one level above this.
->    Consider a core. Assume it is the highest domain with this flag set.
-> The nr_busy of its groups, which are logical threads are set to 1/0
-> each. But nohz_kick_needed() would like to know the sum of the nr_busy
-> parameter of all the groups, i.e. the threads in a core before it
-> decides if it can kick nohz_idle balancing. The information about the
-> individual group's nr_busy is of no relevance here.
-> 
-> Thats why the above patch tries to get the
-> sd->parent->groups->sgp->nr_busy_cpus. This will translate rightly to
-> the core's busy cpus in this example. But the below patch stops before
-> updating this parameter at the sd->parent level, where sd is the highest
-> level sched domain with the SD_SHARE_PKG_RESOURCES flag set.
-> 
-> But we can get around all this confusion if we can move the nr_busy
-> parameter to be included in the sched_domain structure rather than the
-> sched_groups_power structure. Anyway the only place where nr_busy is
-> used, that is at nohz_kick_needed(), is done to know the total number of
-> busy cpus at a sched domain level which has the SD_SHARE_PKG_RESOURCES
-> set and not at a sched group level.
-> 
-> So why not move nr_busy to struct sched_domain  and having the below
-> patch which just updates this parameter for the sched domain, sd_busy ?
+Hi,
 
-Oh this can't be done :( Domain structures are per cpu!
+On Wed, Oct 23, 2013 at 11:46:53AM +0900, Akira Takeuchi wrote:
+> This patch fixes the problem that get_unmapped_area() can return illegal
+> address and result in failing mmap(2) etc.
+> 
+> In case that the address higher than PAGE_SIZE is set to
+> /proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+> returned by get_unmapped_area(), even if you do not pass any virtual
+> address hint (i.e. the second argument).
+> 
+> This is because the current get_unmapped_area() code does not take into
+> account mmap_min_addr.
+> 
+> This leads to two actual problems as follows:
+> 
+> 1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+>    although any illegal parameter is not passed.
+> 
+> 2. The bottom-up search path after the top-down search might not work in
+>    arch_get_unmapped_area_topdown().
+> 
+> [How to reproduce]
+> 
+> 	--- test.c -------------------------------------------------
+> 	#include <stdio.h>
+> 	#include <unistd.h>
+> 	#include <sys/mman.h>
+> 	#include <sys/errno.h>
+> 
+> 	int main(int argc, char *argv[])
+> 	{
+> 		void *ret = NULL, *last_map;
+> 		size_t pagesize = sysconf(_SC_PAGESIZE);
+> 
+> 		do {
+> 			last_map = ret;
+> 			ret = mmap(0, pagesize, PROT_NONE,
+> 				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+> 	//		printf("ret=%p\n", ret);
+> 		} while (ret != MAP_FAILED);
+> 
+> 		if (errno != ENOMEM) {
+> 			printf("ERR: unexpected errno: %d (last map=%p)\n",
+> 			errno, last_map);
+> 		}
+> 
+> 		return 0;
+> 	}
+> 	---------------------------------------------------------------
+> 
+> 	$ gcc -m32 -o test test.c
+> 	$ sudo sysctl -w vm.mmap_min_addr=65536
+> 	vm.mmap_min_addr = 65536
+> 	$ ./test  (run as non-priviledge user)
+> 	ERR: unexpected errno: 1 (last map=0x10000)
+> 
+> Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+> ---
+>  mm/mmap.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 9d54851..362e5f1 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+>  	struct vm_area_struct *vma;
+>  	struct vm_unmapped_area_info info;
+>  
+> -	if (len > TASK_SIZE)
+> +	if (len > TASK_SIZE - mmap_min_addr)
+>  		return -ENOMEM;
+>  
+>  	if (flags & MAP_FIXED)
 
-Regards
-Preeti U Murthy
+I feel that it looks clearer to fix this in round_hint_to_min(),
+with doing mmap_min_addr check in hint == NULL case.
+Does it work for you?
 
+Thanks,
+Naoya Horiguchi
+
+> @@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+>  	if (addr) {
+>  		addr = PAGE_ALIGN(addr);
+>  		vma = find_vma(mm, addr);
+> -		if (TASK_SIZE - len >= addr &&
+> +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+>  		    (!vma || addr + len <= vma->vm_start))
+>  			return addr;
+>  	}
+> @@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+>  	struct vm_unmapped_area_info info;
+>  
+>  	/* requested length too big for entire address space */
+> -	if (len > TASK_SIZE)
+> +	if (len > TASK_SIZE - mmap_min_addr)
+>  		return -ENOMEM;
+>  
+>  	if (flags & MAP_FIXED)
+> @@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+>  	if (addr) {
+>  		addr = PAGE_ALIGN(addr);
+>  		vma = find_vma(mm, addr);
+> -		if (TASK_SIZE - len >= addr &&
+> +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+>  				(!vma || addr + len <= vma->vm_start))
+>  			return addr;
+>  	}
+>  
+>  	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
+>  	info.length = len;
+> -	info.low_limit = PAGE_SIZE;
+> +	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
+>  	info.high_limit = mm->mmap_base;
+>  	info.align_mask = 0;
+>  	addr = vm_unmapped_area(&info);
+> -- 
+> 1.7.0.4
+> 
+> 
+> -- 
+> Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
