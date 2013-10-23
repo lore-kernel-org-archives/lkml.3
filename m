@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab3JWXV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 19:21:57 -0400
-Received: from carrot.rf.net.nz ([103.11.126.193]:51175 "EHLO carrot.rf.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673Ab3JWXV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 19:21:56 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 19:21:55 EDT
-From: Jasper Bryant-Greene <jbg@rf.net.nz>
-Content-Type: multipart/signed; boundary="Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0"; protocol="application/pkcs7-signature"; micalg=sha1
-Subject: EFI boot problem in 3.11
-Message-Id: <32EA1272-FF5B-4FAA-B136-1447BF6F9876@rf.net.nz>
-Date: Thu, 24 Oct 2013 12:14:26 +1300
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1812\))
-X-Mailer: Apple Mail (2.1812)
+	id S1753326Ab3JWXx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 19:53:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53640 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3JWXx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 19:53:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+ <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+ <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com> <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 23 Oct 2013 17:53:34 -0600
+Message-ID: <CAErSpo7x7ym=Lp=UmsQ=JM7QaALoouShnv366EthRTwr=eAMYg@mail.gmail.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 17, 2013 at 7:59 AM, Andreas Noever
+<andreas.noever@gmail.com> wrote:
+> On Wed, Oct 16, 2013 at 10:21 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Tue, Oct 15, 2013 at 03:44:52AM +0100, Matthew Garrett wrote:
+>>> On Mon, Oct 14, 2013 at 05:50:38PM -0600, Bjorn Helgaas wrote:
+>>> > [+cc Rafael, Mika, Kirill, linux-pci]
+>>> >
+>>> > On Mon, Oct 14, 2013 at 4:47 PM, Andreas Noever
+>>> > <andreas.noever@gmail.com> wrote:
+>>> > > When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
+>>> > > crashes a few seconds later. Using
+>>> > > echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
+>>> > > to remove a bridge two levels above the device triggers the fault immediately:
+>>> >
+>>> > There have been significant changes in acpiphp related to Thunderbolt
+>>> > since v3.11.
+>>>
+>>> Apple don't expose Thunderbolt via ACPI, so it appears as native PCIe.
+>>> I'd be surprised if acpiphp makes a difference here.
+>>
+>> Yeah, you're right; I wasn't paying attention.
+>>
+>> We save a pci_dev pointer in the pci_pme_list, which of course has a
+>> longer lifetime than the pci_dev itself, but we don't acquire a reference
+>> on it, so I suspect the pci_dev got released before we got around to
+>> doing the pci_pme_list_scan().
+>>
+>> Andreas, can you try the patch below?  It's against v3.12-rc2, but it
+>> should apply to v3.11, too.
+>
+> I have tested your patch against 3.11 where it solves the problem. Thanks!
 
---Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=windows-1252
+Hi Andreas, sorry for the delay here.  I'm still trying to understand
+exactly why my patch fixes the problem, since I don't see a relevant
+refcounting change between v3.11 and v3.12-rc5.  And I don't actually
+see the hole yet from inspection.  It seems like we should be safe
+even without my patch.
 
-I have a box here which is set up for EFI boot with no boot loader.
+But maybe it's a case of releasing the pci_bus before releasing a
+pci_dev on the bus.  I thought we recently fixed a hole there, but
+maybe not.  I'll look more carefully at that path.
 
-The kernel is compiled with a built-in initrd and command line.
+Can I trouble you to collect a complete dmesg log from v3.11 without
+my patch?  Maybe if I stare long enough at that and the lspci you
+supplied, I can figure out what's going on.  If you were really
+gung-ho, you could add instrumentation to print out the pci_dev and
+pci_bus pointers as we enumerate them.  My guess is that we'd see one
+of those pointers in the GPF register dump.
 
-In 3.10 this was all working well. However, after updating to 3.11.5 a =
-reboot leads to the EFI firmware boot screen appearing followed by the =
-middle section of it going black (just leaving two vertical stripes of =
-the EFI firmware boot screen on either side of the screen) and the =
-system locking up (numlock etc do not work).
-
-However, if I hit =91delete=92 quickly when powering on, and enter the =
-firmware setup screen, I can then =91exit without saving=92 and the =
-system will boot successfully =97 =91save and exit=92 does not work as =
-that performs a full reboot while =91exit without saving=92 seems to =
-continue the boot where it left off.
-
-Due to the aforementioned graphics corruption, I am wondering whether it =
-is somehow related to the frame buffer? As this is a production system I =
-unfortunately do not have flexibility to try a number of kernel versions =
-in-between to locate where the issue was introduced.
-
-All enabled .config options in the graphics section are: FB, FB_EFI, =
-VGA_ARB, LOGO, LOGO_LINUX_CLUT224, VGA_CONSOLE, FRAMEBUFFER_CONSOLE
-
-Please Cc me in replies.
-
-Best,
-Jasper Bryant-Greene
-
-
---Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0
-Content-Disposition: attachment;
-	filename=smime.p7s
-Content-Type: application/pkcs7-signature;
-	name=smime.p7s
-Content-Transfer-Encoding: base64
-
-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
-rAAAAAAAAA==
-
---Apple-Mail=_3D636B03-16CD-4600-B789-DBC421C498E0--
+Bjorn
