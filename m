@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3JWPBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 11:01:38 -0400
-Received: from ring0.de ([91.143.88.219]:42023 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab3JWPBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 11:01:36 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCHv2 0/3] DT Support for TWL4030 power button
-Date: Wed, 23 Oct 2013 17:01:19 +0200
-Message-Id: <1382540482-12261-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1752845Ab3JWPE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 11:04:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37642 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3JWPE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 11:04:26 -0400
+Message-ID: <5267E56F.7030909@pengutronix.de>
+Date: Wed, 23 Oct 2013 17:04:15 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org,
+        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
+Subject: Re: [PATCH 3.2 094/149] can: flexcan: fix flexcan_chip_start() on
+ imx6
+References: <lsq.1382345188.205668698@decadent.org.uk> <5265037D.2080908@pengutronix.de>
+In-Reply-To: <5265037D.2080908@pengutronix.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="MJfqCEx4O3daWDpGX3N9an0VGv2Fe7HPo"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--MJfqCEx4O3daWDpGX3N9an0VGv2Fe7HPo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This is the second iteration of DT support for the TWL4030
-power button.
+On 10/21/2013 12:35 PM, Marc Kleine-Budde wrote:
+> On 10/21/2013 10:46 AM, Ben Hutchings wrote:
+>> 3.2.52-rc1 review patch.  If anyone has any objections, please let me =
+know.
+>=20
+> Please postpone until:
+>=20
+> d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB
+>         for TX and abort pending TX
+>=20
+> hits mainline as this patch (fix flexcan_chip_start() on imx6) causes
+> another problem.
+>=20
+> As soon as both are mainline, please apply them:
+>=20
+> d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB
+>         for TX and abort pending TX
+> 0d1862e can: flexcan: fix flexcan_chip_start() on imx6
 
-Changes since v1 [0]:
- * Simplify OF handling of twl4030_pwrbutton_dt_match_table
- * Remove Patch 4 (queued by Benoit)
+Damn, probably had too much jummy Scottish food :) The correct patches ar=
+e of course:
 
-[0] https://lkml.org/lkml/2013/10/22/151
+d5a7b40 can: flexcan: flexcan_chip_start: fix regression, mark one MB for=
+ TX and abort pending TX
+0d1862e can: flexcan: fix flexcan_chip_start() on imx6
 
--- Sebastian
+Marc
 
-Sebastian Reichel (3):
-  Input: twl4030-pwrbutton - add device tree support
-  Input: twl4030-pwrbutton: use dev_err for errors
-  Input: twl4030-pwrbutton: simplify driver using devm_*
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
- drivers/input/misc/twl4030-pwrbutton.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
 
--- 
-1.8.4.rc3
+--MJfqCEx4O3daWDpGX3N9an0VGv2Fe7HPo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlJn5W8ACgkQjTAFq1RaXHNpBACeLTKtobXOpSXlRUn2RXk0qVFL
+YlkAniFmp2xwIfzDVgNQfSOnM06UDrvV
+=uvFy
+-----END PGP SIGNATURE-----
+
+--MJfqCEx4O3daWDpGX3N9an0VGv2Fe7HPo--
