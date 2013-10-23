@@ -1,73 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab3JWOIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 10:08:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201Ab3JWOIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 10:08:46 -0400
-Message-ID: <5267D85D.5030505@redhat.com>
-Date: Wed, 23 Oct 2013 10:08:29 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1751899Ab3JWOK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 10:10:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32284 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab3JWOK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 10:10:57 -0400
+Date: Wed, 23 Oct 2013 10:09:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
+Subject: Re: [PATCH v8 13/19] swiotlb-xen: use xen_dma_map/unmap_page,
+ xen_dma_sync_single_for_cpu/device
+Message-ID: <20131023140927.GD27771@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
+ <1382031814-8782-13-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        tigran@aivazian.fsnet.co.uk
-Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
- no uevent
-References: <1382304926-1641-1-git-send-email-prarit@redhat.com>	<1382304926-1641-2-git-send-email-prarit@redhat.com>	<CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com>	<5265A9A4.2000100@redhat.com>	<CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>	<526706FC.2070105@redhat.com>	<CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com>	<5267A6CA.1000505@redhat.com>	<5267BAE7.2090300@redhat.com> <CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
-In-Reply-To: <CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382031814-8782-13-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 17, 2013 at 06:43:28PM +0100, Stefano Stabellini wrote:
+> Call xen_dma_map_page, xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
+> xen_dma_sync_single_for_device from swiotlb-xen to ensure cpu/device
+> coherency of the pages used for DMA, including the ones belonging to the
+> swiotlb buffer.
 
+You lost me.
 
-On 10/23/2013 09:21 AM, Ming Lei wrote:
-> On Wed, Oct 23, 2013 at 8:02 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+Isn't it the driver's responsibility to do this?
+
+Looking at what 'xen_dma_map_page()' does for x86 it looks to add an extra
+call - page_to_phys - and we ignore it here.
+
 > 
->>
->> After all this I completely forgot the problem I'm trying to solve here.  The
->> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
->> is not found (that is the file is not found on disk), then EACH cpu waits 1
->> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
->>
->> Which is terrible... so HOTPLUG doesn't work here.
->>
->> Let me back up Ming and see if you have a better solution for me.  I have a
->> system that does not have the x86 microcode loaded on disk.  I use the microcode
->> module which calls request_firmware_nowait() to load the microcode image and I
->> want it done as fast as possible.  The microcode loader does not have a uevent
->> so I'm not waiting on userspace for completion.
->>
->> How do I avoid the 60 second delay/cpu introduced in the microcode path?  I
->> don't see one.  If I use HOTPLUG I'm waiting 60 seconds.  If I use NOHOTPLUG
->> AFAICT the loading function never will return.  AFAICT the same issue arises
->> with the dell_rbu code -- it appears to never load the dell_rbu firmware.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  drivers/xen/swiotlb-xen.c |   39 +++++++++++++++++++++++++++++++--------
+>  1 files changed, 31 insertions(+), 8 deletions(-)
 > 
-> As I said, the 60 second delay is from udev, so that is the root cause.
-
-Okay, so then my other option is to use NOHOTPLUG.  I've correctly modified it
-to return and not wait for a NULL uevent.  The synchronization between the cont
-function return and the actual application of the firmware is done in the driver
-(in my 2/2 patch) where I've used a completion struct.  ... Am I still missing
-something at this point?
-
-I also have to make that change to the dell_rbu code because it too, is broken
-the same way.  That is, I can load the dell_rbu module and it just hangs without
-applying the firmware.
-
-I'll submit a new version of these patches and we can continue from there.
-
-P.
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 189b8db..4221cb5 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -378,8 +378,13 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+>  	 * buffering it.
+>  	 */
+>  	if (dma_capable(dev, dev_addr, size) &&
+> -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
+> +	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
+> +		/* we are not interested in the dma_addr returned by
+> +		 * xen_dma_map_page, only in the potential cache flushes executed
+> +		 * by the function. */
+> +		xen_dma_map_page(dev, page, offset, size, dir, attrs);
+>  		return dev_addr;
+> +	}
+>  
+>  	/*
+>  	 * Oh well, have to allocate and map a bounce buffer.
+> @@ -388,6 +393,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+>  	if (map == SWIOTLB_MAP_ERROR)
+>  		return DMA_ERROR_CODE;
+>  
+> +	xen_dma_map_page(dev, pfn_to_page(map >> PAGE_SHIFT),
+> +					map & ~PAGE_MASK, size, dir, attrs);
+>  	dev_addr = xen_phys_to_bus(map);
+>  
+>  	/*
+> @@ -410,12 +417,15 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
+>   * whatever the device wrote there.
+>   */
+>  static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+> -			     size_t size, enum dma_data_direction dir)
+> +			     size_t size, enum dma_data_direction dir,
+> +				 struct dma_attrs *attrs)
+>  {
+>  	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
+>  
+>  	BUG_ON(dir == DMA_NONE);
+>  
+> +	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
+> +
+>  	/* NOTE: We use dev_addr here, not paddr! */
+>  	if (is_xen_swiotlb_buffer(dev_addr)) {
+>  		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
+> @@ -438,7 +448,7 @@ void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
+>  			    size_t size, enum dma_data_direction dir,
+>  			    struct dma_attrs *attrs)
+>  {
+> -	xen_unmap_single(hwdev, dev_addr, size, dir);
+> +	xen_unmap_single(hwdev, dev_addr, size, dir, attrs);
+>  }
+>  EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_page);
+>  
+> @@ -461,11 +471,15 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+>  
+>  	BUG_ON(dir == DMA_NONE);
+>  
+> +	if (target == SYNC_FOR_CPU)
+> +		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
+> +
+>  	/* NOTE: We use dev_addr here, not paddr! */
+> -	if (is_xen_swiotlb_buffer(dev_addr)) {
+> +	if (is_xen_swiotlb_buffer(dev_addr))
+>  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+> -		return;
+> -	}
+> +
+> +	if (target == SYNC_FOR_DEVICE)
+> +		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
+>  
+>  	if (dir != DMA_FROM_DEVICE)
+>  		return;
+> @@ -536,8 +550,17 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+>  				return DMA_ERROR_CODE;
+>  			}
+>  			sg->dma_address = xen_phys_to_bus(map);
+> -		} else
+> +		} else {
+> +			/* we are not interested in the dma_addr returned by
+> +			 * xen_dma_map_page, only in the potential cache flushes executed
+> +			 * by the function. */
+> +			xen_dma_map_page(hwdev, pfn_to_page(paddr >> PAGE_SHIFT),
+> +						paddr & ~PAGE_MASK,
+> +						sg->length,
+> +						dir,
+> +						attrs);
+>  			sg->dma_address = dev_addr;
+> +		}
+>  		sg_dma_len(sg) = sg->length;
+>  	}
+>  	return nelems;
+> @@ -559,7 +582,7 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+>  	BUG_ON(dir == DMA_NONE);
+>  
+>  	for_each_sg(sgl, sg, nelems, i)
+> -		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
+> +		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir, attrs);
+>  
+>  }
+>  EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
+> -- 
+> 1.7.2.5
 > 
-> There are some workarounds for your reference:
-> 
-
-These are workarounds for an issue that arises in the kernel.
-
-P.
