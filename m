@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3JWNqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:46:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3JWNqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:46:40 -0400
-Message-ID: <1382535972.1768.68.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: allow ioremap_cache() to use existing RAM
- mappings
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Oct 2013 09:46:12 -0400
-In-Reply-To: <1382519898.10408.1.camel@mbp>
-References: <1382362594-24947-1-git-send-email-msalter@redhat.com>
-	 <1382519898.10408.1.camel@mbp>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752281Ab3JWNr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:47:57 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33520 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751363Ab3JWNr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 09:47:56 -0400
+Message-ID: <5267D386.4050206@hurleysoftware.com>
+Date: Wed, 23 Oct 2013 09:47:50 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Andrew Lunn <andrew@lunn.ch>
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        jhovold@gmail.com
+Subject: Re: [PATCH] tty: Add C_MSPAR(tty)
+References: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
+In-Reply-To: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 10:18 +0100, Catalin Marinas wrote:
-> On Mon, 2013-10-21 at 14:36 +0100, msalter@redhat.com wrote:
-> > diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
-> > index 1725cd6..fb44b3d 100644
-> > --- a/arch/arm64/mm/ioremap.c
-> > +++ b/arch/arm64/mm/ioremap.c
-> > @@ -79,6 +79,21 @@ void __iounmap(volatile void __iomem *io_addr)
-> >  {
-> >  	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
-> >  
-> > +	/* Nothing to do for normal memory. See ioremap_cache() */
-> > +	if (pfn_valid(__virt_to_phys(addr) >> PAGE_SHIFT))
-> > +		return;
-> 
-> addr here can be some I/O address mapped previously, so __virt_to_phys()
-> is not valid (you don't actually get the pfn by shifting).
-> 
+On 10/23/2013 07:18 AM, Andrew Lunn wrote:
+> Add the missing C_MSPAR(tty) macro.
+>
+> Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+> ---
+>   include/linux/tty.h | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 64f8646..630678d 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -137,6 +137,7 @@ struct tty_bufhead {
+>   #define C_CLOCAL(tty)	_C_FLAG((tty), CLOCAL)
+>   #define C_CIBAUD(tty)	_C_FLAG((tty), CIBAUD)
+>   #define C_CRTSCTS(tty)	_C_FLAG((tty), CRTSCTS)
+> +#define C_MSPAR(tty)	_C_FLAG((tty), CMSPAR)
+>
+>   #define L_ISIG(tty)	_L_FLAG((tty), ISIG)
+>   #define L_ICANON(tty)	_L_FLAG((tty), ICANON)
 
-Yeah, that's ugly. The thought was that only the kernel mapping of RAM
-would yield a valid address from __virt_to_phys(). Anything else, like
-a mapping of I/O space would lead to an invalid PFN. There's probably a
-clearer way of doing that that. Other than that, is the general concept
-of the patch reasonable?
+Is this to support an out-of-tree driver?
 
---Mark
-
-
+Regards,
+Peter Hurley
