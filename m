@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066Ab3JWEmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 00:42:14 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:44293 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3JWEmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 00:42:13 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Miller <davem@davemloft.net>
-Cc: fengguang.wu@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20131022214129.GB2715@localhost>
-	<20131022.180023.1141845387743361648.davem@davemloft.net>
-Date: Tue, 22 Oct 2013 21:38:10 -0700
-In-Reply-To: <20131022.180023.1141845387743361648.davem@davemloft.net> (David
-	Miller's message of "Tue, 22 Oct 2013 18:00:23 -0400 (EDT)")
-Message-ID: <87k3h461ql.fsf@tw-ebiederman.twitter.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX199KVyX5Dv60hNYeJHX3wyuUIedHgWtntQ=
-X-SA-Exim-Connect-IP: 8.25.197.25
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0073]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 XMBrknScrpt_02 Possible Broken Spam Script
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: Re: -27% netperf TCP_STREAM regression by "tcp_memcontrol: Kill struct tcp_memcontrol"
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1751330Ab3JWEmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 00:42:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18507 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230Ab3JWEmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 00:42:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,553,1378882800"; 
+   d="scan'208";a="421168404"
+From: Haicheng Li <haicheng.li@linux.intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>
+Subject: [PATCH] f2fs: use bool for booleans
+Date: Wed, 23 Oct 2013 12:39:32 +0800
+Message-Id: <1382503172-28030-1-git-send-email-haicheng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+---
+ fs/f2fs/checkpoint.c |    4 ++--
+ fs/f2fs/f2fs.h       |    4 ++--
+ fs/f2fs/node.c       |    4 ++--
+ fs/f2fs/recovery.c   |    8 ++++----
+ fs/f2fs/super.c      |    2 +-
+ 5 files changed, 11 insertions(+), 11 deletions(-)
 
-> From: fengguang.wu@intel.com
-> Date: Tue, 22 Oct 2013 22:41:29 +0100
->
->> We noticed big netperf throughput regressions
->> 
->>     a4fe34bf902b8f709c63      2e685cad57906e19add7  
->> ------------------------  ------------------------  
->>                   707.40       -40.7%       419.60  lkp-nex04/micro/netperf/120s-200%-TCP_STREAM
->>                  2775.60       -23.7%      2116.40  lkp-sb03/micro/netperf/120s-200%-TCP_STREAM
->>                  3483.00       -27.2%      2536.00  TOTAL netperf.Throughput_Mbps
->> 
->> and bisected it to
->> 
->> commit 2e685cad57906e19add7189b5ff49dfb6aaa21d3
->> Author: Eric W. Biederman <ebiederm@xmission.com>
->> Date:   Sat Oct 19 16:26:19 2013 -0700
->> 
->>     tcp_memcontrol: Kill struct tcp_memcontrol
->
-> Eric please look into this, I'd rather have a fix to apply than revert your
-> work.
-
-Will do I expect some ordering changed, and that changed the cache line
-behavior.
-
-If I can't find anything we can revert this one particular patch without
-affecting anything else, but it would be nice to keep the data structure
-smaller.
-
-Fengguag what would I need to do to reproduce this?
-
-Eric
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 8d16071..bd0aa9c 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -279,7 +279,7 @@ int recover_orphan_inodes(struct f2fs_sb_info *sbi)
+ 	if (!is_set_ckpt_flags(F2FS_CKPT(sbi), CP_ORPHAN_PRESENT_FLAG))
+ 		return 0;
+ 
+-	sbi->por_doing = 1;
++	sbi->por_doing = true;
+ 	start_blk = __start_cp_addr(sbi) + 1;
+ 	orphan_blkaddr = __start_sum_addr(sbi) - 1;
+ 
+@@ -296,7 +296,7 @@ int recover_orphan_inodes(struct f2fs_sb_info *sbi)
+ 	}
+ 	/* clear Orphan Flag */
+ 	clear_ckpt_flags(F2FS_CKPT(sbi), CP_ORPHAN_PRESENT_FLAG);
+-	sbi->por_doing = 0;
++	sbi->por_doing = false;
+ 	return 0;
+ }
+ 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 171c52f..2b163f8 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -360,8 +360,8 @@ struct f2fs_sb_info {
+ 	struct rw_semaphore cp_rwsem;		/* blocking FS operations */
+ 	struct mutex node_write;		/* locking node writes */
+ 	struct mutex writepages;		/* mutex for writepages() */
+-	int por_doing;				/* recovery is doing or not */
+-	int on_build_free_nids;			/* build_free_nids is doing */
++	bool por_doing;				/* recovery is doing or not */
++	bool on_build_free_nids;		/* build_free_nids is doing */
+ 	struct task_struct *cp_task;		/* checkpoint task */
+ 
+ 	/* for orphan inode management */
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index ef80f79..f90485b 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1444,9 +1444,9 @@ retry:
+ 
+ 	/* Let's scan nat pages and its caches to get free nids */
+ 	mutex_lock(&nm_i->build_lock);
+-	sbi->on_build_free_nids = 1;
++	sbi->on_build_free_nids = true;
+ 	build_free_nids(sbi);
+-	sbi->on_build_free_nids = 0;
++	sbi->on_build_free_nids = false;
+ 	mutex_unlock(&nm_i->build_lock);
+ 	goto retry;
+ }
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 353cf4f..b278c68 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -425,7 +425,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+ {
+ 	struct list_head inode_list;
+ 	int err;
+-	int need_writecp = 0;
++	bool need_writecp = false;
+ 
+ 	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
+ 			sizeof(struct fsync_inode_entry), NULL);
+@@ -435,7 +435,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+ 	INIT_LIST_HEAD(&inode_list);
+ 
+ 	/* step #1: find fsynced inode numbers */
+-	sbi->por_doing = 1;
++	sbi->por_doing = true;
+ 	err = find_fsync_dnodes(sbi, &inode_list);
+ 	if (err)
+ 		goto out;
+@@ -443,7 +443,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+ 	if (list_empty(&inode_list))
+ 		goto out;
+ 
+-	need_writecp = 1;
++	need_writecp = true;
+ 
+ 	/* step #2: recover data */
+ 	err = recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
+@@ -451,7 +451,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
+ out:
+ 	destroy_fsync_dnodes(&inode_list);
+ 	kmem_cache_destroy(fsync_entry_slab);
+-	sbi->por_doing = 0;
++	sbi->por_doing = false;
+ 	if (!err && need_writecp)
+ 		write_checkpoint(sbi, false);
+ 	return err;
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 692f35f..9a09459 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -850,7 +850,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	mutex_init(&sbi->writepages);
+ 	mutex_init(&sbi->cp_mutex);
+ 	mutex_init(&sbi->node_write);
+-	sbi->por_doing = 0;
++	sbi->por_doing = false;
+ 	spin_lock_init(&sbi->stat_lock);
+ 	init_rwsem(&sbi->bio_sem);
+ 	init_rwsem(&sbi->cp_rwsem);
+-- 
+1.7.9.5
 
