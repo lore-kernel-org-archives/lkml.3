@@ -1,188 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3JWNeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:34:31 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:32921 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab3JWN35 (ORCPT
+	id S1753341Ab3JWN34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:29:56 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55619 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3JWN3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:29:57 -0400
+	Wed, 23 Oct 2013 09:29:54 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v3 05/15] KVM: MMU: update spte and add it into rmap before dirty log
-Date: Wed, 23 Oct 2013 21:29:23 +0800
-Message-Id: <1382534973-13197-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 01/15] KVM: MMU: properly check last spte in fast_page_fault()
+Date: Wed, 23 Oct 2013 21:29:19 +0800
+Message-Id: <1382534973-13197-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102313-6102-0000-0000-00000463C503
+x-cbid: 13102313-5140-0000-0000-0000040A87FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm_vm_ioctl_get_dirty_log() write-protects the spte based on the its dirty
-bitmap, so we should ensure the writable spte can be found in rmap before the
-dirty bitmap is visible. Otherwise, we clear the dirty bitmap but fail to
-write-protect the page which is detailed in the comments in this patch
+Using sp->role.level instead of @level since @level is not got from the
+page table hierarchy
+
+There is no issue in current code since the fast page fault currently only
+fixes the fault caused by dirty-log that is always on the last level
+(level = 1)
+
+This patch makes the code more readable and avoids potential issue in the
+further development
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 84 ++++++++++++++++++++++++++++++++++++++++++------------
- arch/x86/kvm/x86.c | 10 +++++++
- 2 files changed, 76 insertions(+), 18 deletions(-)
+ arch/x86/kvm/mmu.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 337d173..e85eed6 100644
+index 40772ef..d2aacc2 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -2427,6 +2427,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- {
- 	u64 spte;
- 	int ret = 0;
-+	bool remap = is_rmap_spte(*sptep);
+@@ -2798,9 +2798,9 @@ static bool page_fault_can_be_fast(u32 error_code)
+ }
  
- 	if (set_mmio_spte(vcpu->kvm, sptep, gfn, pfn, pte_access))
- 		return 0;
-@@ -2488,12 +2489,73 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		}
+ static bool
+-fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte)
++fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			u64 *sptep, u64 spte)
+ {
+-	struct kvm_mmu_page *sp = page_header(__pa(sptep));
+ 	gfn_t gfn;
+ 
+ 	WARN_ON(!sp->role.direct);
+@@ -2826,6 +2826,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 			    u32 error_code)
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
++	struct kvm_mmu_page *sp;
+ 	bool ret = false;
+ 	u64 spte = 0ull;
+ 
+@@ -2846,7 +2847,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 		goto exit;
  	}
  
--	if (pte_access & ACC_WRITE_MASK)
--		mark_page_dirty(vcpu->kvm, gfn);
--
- set_pte:
- 	if (mmu_spte_update(sptep, spte))
- 		kvm_flush_remote_tlbs(vcpu->kvm);
-+
-+	if (!remap) {
-+		if (rmap_add(vcpu, sptep, gfn) > RMAP_RECYCLE_THRESHOLD)
-+			rmap_recycle(vcpu, sptep, gfn);
-+
-+		if (level > PT_PAGE_TABLE_LEVEL)
-+			++vcpu->kvm->stat.lpages;
-+	}
-+
-+	/*
-+	 * The orders we require are:
-+	 * 1) set spte to writable __before__ set the dirty bitmap.
-+	 *    It makes sure that dirty-logging is not missed when do
-+	 *    live migration at the final step where kvm should stop
-+	 *    the guest and push the remaining dirty pages got from
-+	 *    dirty-bitmap to the destination. The similar cases are
-+	 *    in fast_pf_fix_direct_spte() and kvm_write_guest_page().
-+	 *
-+	 * 2) add the spte into rmap __before__ set the dirty bitmap.
-+	 *
-+	 * They can ensure we can find the writable spte on the rmap
-+	 * when we do lockless write-protection since
-+	 * kvm_vm_ioctl_get_dirty_log() write-protects the pages based
-+	 * on its dirty-bitmap, otherwise these cases will happen:
-+	 *
-+	 *      CPU 0                         CPU 1
-+	 *                              kvm ioctl doing get-dirty-pages
-+	 * mark_page_dirty(gfn) which
-+	 * set the gfn on the dirty maps
-+	 *                              mask = xchg(dirty_bitmap, 0)
-+	 *
-+	 *                              try to write-protect gfns which
-+	 *                              are set on "mask" then walk then
-+	 *                              rmap, see no spte on that rmap
-+	 * add the spte into rmap
-+	 *
-+	 * !!!!!! Then the page can be freely wrote but not recorded in
-+	 * the dirty bitmap.
-+	 *
-+	 * And:
-+	 *
-+	 *      VCPU 0                        CPU 1
-+	 *                                kvm ioctl doing get-dirty-pages
-+	 * mark_page_dirty(gfn) which
-+	 * set the gfn on the dirty maps
-+	 *
-+	 * add spte into rmap
-+	 *                                mask = xchg(dirty_bitmap, 0)
-+	 *
-+	 *                                try to write-protect gfns which
-+	 *                                are set on "mask" then walk then
-+	 *                                rmap, see spte is on the ramp
-+	 *                                but it is readonly or nonpresent
-+	 * Mark spte writable
-+	 *
-+	 * !!!!!! Then the page can be freely wrote but not recorded in the
-+	 * dirty bitmap.
-+	 *
-+	 * See the comments in kvm_vm_ioctl_get_dirty_log().
-+	 */
-+	smp_wmb();
-+
-+	if (pte_access & ACC_WRITE_MASK)
-+		mark_page_dirty(vcpu->kvm, gfn);
- done:
- 	return ret;
- }
-@@ -2503,9 +2565,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 			 int level, gfn_t gfn, pfn_t pfn, bool speculative,
- 			 bool host_writable)
- {
--	int was_rmapped = 0;
--	int rmap_count;
--
- 	pgprintk("%s: spte %llx write_fault %d gfn %llx\n", __func__,
- 		 *sptep, write_fault, gfn);
+-	if (!is_last_spte(spte, level))
++	sp = page_header(__pa(iterator.sptep));
++	if (!is_last_spte(spte, sp->role.level))
+ 		goto exit;
  
-@@ -2527,8 +2586,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 				 spte_to_pfn(*sptep), pfn);
- 			drop_spte(vcpu->kvm, sptep);
- 			kvm_flush_remote_tlbs(vcpu->kvm);
--		} else
--			was_rmapped = 1;
-+		}
- 	}
- 
- 	if (set_spte(vcpu, sptep, pte_access, level, gfn, pfn, speculative,
-@@ -2546,16 +2604,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		 is_large_pte(*sptep)? "2MB" : "4kB",
- 		 *sptep & PT_PRESENT_MASK ?"RW":"R", gfn,
- 		 *sptep, sptep);
--	if (!was_rmapped && is_large_pte(*sptep))
--		++vcpu->kvm->stat.lpages;
--
--	if (is_shadow_present_pte(*sptep)) {
--		if (!was_rmapped) {
--			rmap_count = rmap_add(vcpu, sptep, gfn);
--			if (rmap_count > RMAP_RECYCLE_THRESHOLD)
--				rmap_recycle(vcpu, sptep, gfn);
--		}
--	}
- 
- 	kvm_release_pfn_clean(pfn);
- }
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 573c6b3..4ac3a27 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3566,6 +3566,16 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
- 		is_dirty = true;
- 
- 		mask = xchg(&dirty_bitmap[i], 0);
-+		/*
-+		 * smp_rmb();
-+		 *
-+		 * The read-barrier is implied in xchg() acting as a
-+		 * full barrier and it ensures getting dirty bitmap
-+		 * is before walking the rmap and spte write-protection.
-+		 *
-+		 * See the comments in set_spte().
-+		 */
-+
- 		dirty_bitmap_buffer[i] = mask;
- 
- 		offset = i * BITS_PER_LONG;
+ 	/*
+@@ -2872,7 +2874,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 	 * the gfn is not stable for indirect shadow page.
+ 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
+ 	 */
+-	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
++	ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
+ exit:
+ 	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
+ 			      spte, ret);
 -- 
 1.8.1.4
 
