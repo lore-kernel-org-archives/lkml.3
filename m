@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab3JWJ5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 05:57:47 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:52078 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab3JWJ4B (ORCPT
+	id S1753405Ab3JWJ5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 05:57:46 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:41512 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab3JWJ4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Oct 2013 05:56:01 -0400
 From: Johan Hovold <jhovold@gmail.com>
@@ -14,35 +14,77 @@ Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH RESEND 0/9] backlight: atmel-pwm-bl: fixes and clean ups
-Date: Wed, 23 Oct 2013 11:55:34 +0200
-Message-Id: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 8/9] backlight: atmel-pwm-bl: refactor gpio_on handling
+Date: Wed, 23 Oct 2013 11:55:42 +0200
+Message-Id: <1382522143-32072-9-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix a few issues and clean up the atmel-pwm-bl driver
-somewhat.
+Add helper function to control the gpio_on signal.
 
-Resend with added ack from Jingo Han.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-Johan
-
-Johan Hovold (9):
-  backlight: atmel-pwm-bl: fix reported brightness
-  backlight: atmel-pwm-bl: fix gpio polarity in remove
-  backlight: atmel-pwm-bl: fix module autoload
-  backlight: atmel-pwm-bl: clean up probe error handling
-  backlight: atmel-pwm-bl: clean up get_intensity
-  backlight: atmel-pwm-bl: remove unused include
-  backlight: atmel-pwm-bl: use gpio_is_valid
-  backlight: atmel-pwm-bl: refactor gpio_on handling
-  backlight: atmel-pwm-bl: use gpio_request_one
-
- drivers/video/backlight/atmel-pwm-bl.c | 86 ++++++++++++++++------------------
- 1 file changed, 40 insertions(+), 46 deletions(-)
-
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index ffc30d2..1277e0c 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -26,6 +26,14 @@ struct atmel_pwm_bl {
+ 	int					gpio_on;
+ };
+ 
++static void atmel_pwm_bl_set_gpio_on(struct atmel_pwm_bl *pwmbl, int on)
++{
++	if (!gpio_is_valid(pwmbl->gpio_on))
++		return;
++
++	gpio_set_value(pwmbl->gpio_on, on ^ pwmbl->pdata->on_active_low);
++}
++
+ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ {
+ 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
+@@ -48,19 +56,13 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ 		pwm_duty = pwmbl->pdata->pwm_duty_min;
+ 
+ 	if (!intensity) {
+-		if (gpio_is_valid(pwmbl->gpio_on)) {
+-			gpio_set_value(pwmbl->gpio_on,
+-					0 ^ pwmbl->pdata->on_active_low);
+-		}
++		atmel_pwm_bl_set_gpio_on(pwmbl, 0);
+ 		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
+ 		pwm_channel_disable(&pwmbl->pwmc);
+ 	} else {
+ 		pwm_channel_enable(&pwmbl->pwmc);
+ 		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
+-		if (gpio_is_valid(pwmbl->gpio_on)) {
+-			gpio_set_value(pwmbl->gpio_on,
+-					1 ^ pwmbl->pdata->on_active_low);
+-		}
++		atmel_pwm_bl_set_gpio_on(pwmbl, 1);
+ 	}
+ 
+ 	return 0;
+@@ -196,10 +198,7 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
+ {
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+ 
+-	if (gpio_is_valid(pwmbl->gpio_on)) {
+-		gpio_set_value(pwmbl->gpio_on,
+-					0 ^ pwmbl->pdata->on_active_low);
+-	}
++	atmel_pwm_bl_set_gpio_on(pwmbl, 0);
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 
 -- 
 1.8.4
 
