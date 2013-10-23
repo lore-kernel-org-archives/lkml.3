@@ -1,215 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab3JWP23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 11:28:29 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:42917 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab3JWP22 (ORCPT
+	id S1752295Ab3JWPfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 11:35:18 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:47547 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab3JWPfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 11:28:28 -0400
+	Wed, 23 Oct 2013 11:35:15 -0400
+Date: Wed, 23 Oct 2013 16:35:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL] MFD patches due for v3.13
+Message-ID: <20131023153510.GF2620@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <52679BD6.6090507@linux.vnet.ibm.com>
-References: <20131021114002.13291.31478.stgit@drishya>
-	<20131021114442.13291.99344.stgit@drishya>
-	<20131022221138.GJ2490@laptop.programming.kicks-ass.net>
-	<52679BD6.6090507@linux.vnet.ibm.com>
-Date: Wed, 23 Oct 2013 17:28:26 +0200
-Message-ID: <CAKfTPtAUFdmc7PasebNksYztMwRrWsGWPgN6JJJurddu+UP-hQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
- of the parent domain's group
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Preeti
+The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
 
-On 23 October 2013 11:50, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> Hi Peter
->
-> On 10/23/2013 03:41 AM, Peter Zijlstra wrote:
->> This nohz stuff really needs to be re-thought and made more scalable --
->> its a royal pain :/
->
-> Why  not do something like the below instead? It does the following.
->
-> This patch introduces sd_busy just like your suggested patch, except that
-> it points to the parent of the highest level sched domain which has the
-> SD_SHARE_PKG_RESOURCES set and initializes it in update_top_cache_domain().
-> This is the sched domain that is relevant in nohz_kick_needed().
->
-> sd_set_sd_state_busy(), sd_set_sd_state_idle() and nohz_kick_needed() query
-> and update *only* this sched domain(sd_busy) for nr_busy_cpus. They are the
-> only users of this parameter. While we are at it, we might as well change
-> the nohz_idle parameter to be updated at the sd_busy domain level alone and
-> not the base domain level of a CPU. This will unify the concept of busy cpus
-> at just one level of sched domain.
->
-> There is no need to iterate through all levels of sched domains of a cpu to
-> update nr_busy_cpus since it is irrelevant at all other sched domains except
-> at sd_busy level.
->
-> De-couple asymmetric load balancing from the nr_busy parameter which the
-> PATCH 2/3 anyway does. sd_busy therefore is irrelevant for asymmetric load
-> balancing.
->
-> Regards
-> Preeti U Murthy
-> --------------------START_PATCH-------------------------------
->
-> sched: Fix nohz_kick_needed()
->
-> ---
->  kernel/sched/core.c  |    4 ++++
->  kernel/sched/fair.c  |   40 ++++++++++++++++++++++------------------
->  kernel/sched/sched.h |    1 +
->  3 files changed, 27 insertions(+), 18 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index c06b8d3..c1dd11c 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5271,6 +5271,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
->  DEFINE_PER_CPU(int, sd_llc_size);
->  DEFINE_PER_CPU(int, sd_llc_id);
->  DEFINE_PER_CPU(struct sched_domain *, sd_numa);
-> +DEFINE_PER_CPU(struct sched_domain *, sd_busy);
->
->  static void update_top_cache_domain(int cpu)
->  {
-> @@ -5290,6 +5291,9 @@ static void update_top_cache_domain(int cpu)
->
->         sd = lowest_flag_domain(cpu, SD_NUMA);
->         rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
-> +
-> +       sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES)->parent;
+  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
 
-highest_flag_domain can return null pointer
+are available in the git repository at:
 
-> +       rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
->  }
->
->  /*
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 813dd61..71e6f14 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6515,16 +6515,16 @@ static inline void nohz_balance_exit_idle(int cpu)
->  static inline void set_cpu_sd_state_busy(void)
->  {
->         struct sched_domain *sd;
-> +       int cpu = smp_processor_id();
->
->         rcu_read_lock();
-> -       sd = rcu_dereference_check_sched_domain(this_rq()->sd);
-> +       sd = per_cpu(sd_busy, cpu);
+  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.13-1
 
-Don't you need to use rcu_dereference when using sd_busy ?
+for you to fetch changes up to 6bfd1e63de34a278d67db32e3644340838308252:
 
->
->         if (!sd || !sd->nohz_idle)
->                 goto unlock;
->         sd->nohz_idle = 0;
->
-> -       for (; sd; sd = sd->parent)
-> -               atomic_inc(&sd->groups->sgp->nr_busy_cpus);
-> +       atomic_inc(&sd->groups->sgp->nr_busy_cpus);
->  unlock:
->         rcu_read_unlock();
->  }
-> @@ -6532,16 +6532,16 @@ unlock:
->  void set_cpu_sd_state_idle(void)
->  {
->         struct sched_domain *sd;
-> +       int cpu = smp_processor_id();
->
->         rcu_read_lock();
-> -       sd = rcu_dereference_check_sched_domain(this_rq()->sd);
-> +       sd = per_cpu(sd_busy, cpu);
->
->         if (!sd || sd->nohz_idle)
->                 goto unlock;
->         sd->nohz_idle = 1;
->
-> -       for (; sd; sd = sd->parent)
-> -               atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-> +       atomic_dec(&sd->groups->sgp->nr_busy_cpus);
->  unlock:
->         rcu_read_unlock();
->  }
-> @@ -6748,6 +6748,9 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->  {
->         unsigned long now = jiffies;
->         struct sched_domain *sd;
-> +       struct sched_group *sg;
-> +       struct sched_group_power *sgp;
-> +       int nr_busy;
->
->         if (unlikely(idle_cpu(cpu)))
->                 return 0;
-> @@ -6773,22 +6776,23 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
->                 goto need_kick;
->
->         rcu_read_lock();
-> -       for_each_domain(cpu, sd) {
-> -               struct sched_group *sg = sd->groups;
-> -               struct sched_group_power *sgp = sg->sgp;
-> -               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
-> +       sd = per_cpu(sd_busy, cpu);
->
-> -               if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
-> -                       goto need_kick_unlock;
-> +       if (sd) {
-> +               sg = sd->groups;
+  mfd: lpc_sch: Ignore resource conflicts when adding mfd cells (2013-10-23 16:22:40 +0100)
 
-sg is not needed anymore
+----------------------------------------------------------------
+mfd-lee-3.13-1
 
-> +               sgp = sg->sgp;
-> +               nr_busy = atomic_read(&sgp->nr_busy_cpus);
->
-> -               if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
-> -                   && (cpumask_first_and(nohz.idle_cpus_mask,
-> -                                         sched_domain_span(sd)) < cpu))
-> +               if (nr_busy > 1)
->                         goto need_kick_unlock;
-> -
-> -               if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
-> -                       break;
->         }
-> +
-> +       sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
-> +
-> +       if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
-> +                                 sched_domain_span(sd)) < cpu))
-> +               goto need_kick_unlock;
-> +
->         rcu_read_unlock();
->         return 0;
->
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index ffc7087..0f1253f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -623,6 +623,7 @@ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
->  DECLARE_PER_CPU(int, sd_llc_size);
->  DECLARE_PER_CPU(int, sd_llc_id);
->  DECLARE_PER_CPU(struct sched_domain *, sd_numa);
-> +DECLARE_PER_CPU(struct sched_domain *, sd_busy);
->
->  struct sched_group_power {
->         atomic_t ref;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+MFD patches due for v3.13.
+
+----------------------------------------------------------------
+Andrzej Hajda (2):
+      mfd: max77693: Remove device wakeup from driver
+      mfd: max77693: Added device tree support
+
+Charles Keepax (5):
+      mfd: arizona: Update registers for WM5110 DSP
+      mfd: wm5110: Update noise gate default to match the patch file
+      mfd: arizona: Correct register definition for FLL2_SYNC_BW
+      mfd: arizona: Correct handling of device tree gpio defaults
+      mfd: arizona: Mark missing AOD registers as volatile
+
+David Jander (1):
+      mfd: da9052: Avoid multiwrite mode due to silicon errata
+
+Guenter Roeck (1):
+      mfd: sm501: dbg_regs attribute must be read-only
+
+Jingoo Han (3):
+      mfd: lpc_ich: Remove unnecessary pci_set_drvdata()
+      mfd: sm501: Remove unnecessary pci_set_drvdata()
+      mfd: timberdale: Remove unnecessary pci_set_drvdata()
+
+Johannes Thumshirn (1):
+      mfd: lpc_sch: Ignore resource conflicts when adding mfd cells
+
+Laxman Dewangan (5):
+      mfd: palmas: Remove call of mfd_remove_devices
+      mfd: palmas: Add MODULE_DEVICE_TABLE for of_device table
+      mfd: palmas: Reset pm_power_off if it is set for the device
+      mfd: palmas: Fix resource leak of i2c_dummy devices
+      mfd: Add support for ams AS3722 PMIC
+
+Lee Jones (1):
+      mfd: arizona: Only attempt to parse DT if platform data was not passed
+
+Linus Walleij (2):
+      mfd: Add STw481x driver
+      mfd: tc3589x: Detect the precise version
+
+Mark Brown (4):
+      mfd: wm8994: Inline register I/O functions
+      mfd: wm8994: Remove unused irq_lock
+      mfd: mc13xxx: Don't require lock for simple register I/O
+      mfd: mc13xxx: Move SPI erratum workaround into SPI I/O function
+
+Matthias Kaehlcke (2):
+      mfd: ti_am335x_tscadc: Fix idle timeout value
+      mfd: ti_am335x_tscadc: Restore clock divider on resume
+
+Peter Chen (1):
+      mfd: syscon: Return -ENOSYS if CONFIG_MFD_SYSCON is not enabled
+
+Roger Quadros (1):
+      mfd: omap-usb: prepare/unprepare clock while enable/disable
+
+Sachin Kamat (18):
+      mfd: aat2870: Fix sparse error
+      mfd: mc12xx-i2c: rtsx_pcr: ti-ssp: Remove redundant dev_set_drvdata
+      mfd: max8925: Remove redundant of_match_ptr
+      mfd: tps65217: Remove redundant of_match_ptr
+      mfd: 88pm860x: Remove redundant of_match_ptr
+      mfd: ti_am335x_tscadc: Remove redundant of_match_ptr
+      mfd: omap-usb: Remove redundant of_match_ptr
+      mfd: palmas: Remove redundant of_match_ptr
+      mfd: as3711: Include linux/of.h header
+      mfd: arizona: Include linux/of.h header
+      mfd: tps65910: Include linux/of.h header
+      mfd: tps6586x: Include linux/of.h header
+      mfd: tps6507x: Include linux/of.h header
+      mfd: sec-core: Include linux/of.h header
+      mfd: max8997: Include linux/of.h header
+      mfd: max8907: Include linux/of.h header
+      mfd: max77686: Include linux/of.h header
+      mfd: max77693: Include linux/of.h header
+
+Sebastian Andrzej Siewior (1):
+      mfd: ti_am335x_tscadc: Avoid possible deadlock of reg_lock
+
+Stephen Warren (1):
+      mfd: tps6586x: Implement irq_set_wake
+
+Wei WANG (1):
+      mfd: rtsx: Modify rts5249_optimize_phy
+
+Wei Yongjun (3):
+      mfd: ucb1x00-core: Fix error return code in ucb1x00_probe()
+      mfd: ezx-pcap: Drop devm_free_irq of devm_ allocated irq
+      mfd: twl6040: Drop devm_free_irq of devm_ allocated irq
+
+ Documentation/devicetree/bindings/mfd/as3722.txt | 194 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/88pm860x-core.c                      |   2 +-
+ drivers/mfd/Kconfig                              |  22 ++++++
+ drivers/mfd/Makefile                             |   2 +
+ drivers/mfd/aat2870-core.c                       |   2 +-
+ drivers/mfd/arizona-core.c                       |   6 +-
+ drivers/mfd/arizona-i2c.c                        |   1 +
+ drivers/mfd/arizona-spi.c                        |   1 +
+ drivers/mfd/as3711.c                             |   1 +
+ drivers/mfd/as3722.c                             | 449 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/da9052-i2c.c                         |  12 ++-
+ drivers/mfd/ezx-pcap.c                           |   8 +-
+ drivers/mfd/lpc_ich.c                            |   2 -
+ drivers/mfd/lpc_sch.c                            |   3 +
+ drivers/mfd/max77686.c                           |   1 +
+ drivers/mfd/max77693.c                           |  19 +++--
+ drivers/mfd/max8907.c                            |   1 +
+ drivers/mfd/max8925-i2c.c                        |   2 +-
+ drivers/mfd/max8997.c                            |   1 +
+ drivers/mfd/mc13xxx-core.c                       |   5 --
+ drivers/mfd/mc13xxx-i2c.c                        |   1 -
+ drivers/mfd/mc13xxx-spi.c                        |   5 ++
+ drivers/mfd/omap-usb-host.c                      |  18 ++---
+ drivers/mfd/omap-usb-tll.c                       |   6 +-
+ drivers/mfd/palmas.c                             |  30 ++++++--
+ drivers/mfd/rts5249.c                            |  48 +++++++++++-
+ drivers/mfd/rtsx_pcr.c                           |   5 +-
+ drivers/mfd/sec-core.c                           |   1 +
+ drivers/mfd/sm501.c                              |   4 +-
+ drivers/mfd/stw481x.c                            | 250 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/tc3589x.c                            |  37 +++++++++-
+ drivers/mfd/ti-ssp.c                             |   1 -
+ drivers/mfd/ti_am335x_tscadc.c                   |  24 +++---
+ drivers/mfd/timberdale.c                         |   6 +-
+ drivers/mfd/tps6507x.c                           |   1 +
+ drivers/mfd/tps65217.c                           |   2 +-
+ drivers/mfd/tps6586x.c                           |  19 ++++-
+ drivers/mfd/tps65910.c                           |   1 +
+ drivers/mfd/twl6040.c                            |  10 +--
+ drivers/mfd/ucb1x00-core.c                       |   1 +
+ drivers/mfd/wm5102-tables.c                      |   1 -
+ drivers/mfd/wm5110-tables.c                      |  39 +++++++++-
+ drivers/mfd/wm8994-core.c                        |  78 --------------------
+ include/dt-bindings/mfd/as3722.h                 |  52 +++++++++++++
+ include/linux/mfd/arizona/registers.h            |   2 +-
+ include/linux/mfd/as3722.h                       | 423 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9052/da9052.h                |  20 +++--
+ include/linux/mfd/max77693-private.h             |   1 -
+ include/linux/mfd/max77693.h                     |   2 -
+ include/linux/mfd/mc13xxx.h                      |   7 ++
+ include/linux/mfd/rtsx_pci.h                     |  53 ++++++++++++++
+ include/linux/mfd/stw481x.h                      |  56 ++++++++++++++
+ include/linux/mfd/syscon.h                       |  25 +++++++
+ include/linux/mfd/ti_am335x_tscadc.h             |  20 +++--
+ include/linux/mfd/wm8994/core.h                  |  47 +++++++++---
+ sound/soc/codecs/mc13783.c                       |   4 -
+ 56 files changed, 1826 insertions(+), 208 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/as3722.txt
+ create mode 100644 drivers/mfd/as3722.c
+ create mode 100644 drivers/mfd/stw481x.c
+ create mode 100644 include/dt-bindings/mfd/as3722.h
+ create mode 100644 include/linux/mfd/as3722.h
+ create mode 100644 include/linux/mfd/stw481x.h
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
