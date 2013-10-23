@@ -1,138 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3JWWuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 18:50:46 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:54146 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3JWWuM (ORCPT
+	id S1753565Ab3JWWy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 18:54:58 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:18230 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab3JWWy5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 18:50:12 -0400
-X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
-From: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Mark Jackson <mpfj-list@newflow.co.uk>, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: [PATCH 1/2] serial: omap: improve RS-485 performance
-Date: Wed, 23 Oct 2013 18:49:58 -0400
-Message-Id: <7467fa806d1c3f5e9e7e849d67df79f4b56895ab.1382567103.git.philippe.proulx@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
-References: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
-In-Reply-To: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
-References: <cover.1382567103.git.philippe.proulx@savoirfairelinux.com>
+	Wed, 23 Oct 2013 18:54:57 -0400
+X-AuditID: cbfec372-b7fe76d000003347-bc-526853be6b6a
+Date: Wed, 23 Oct 2013 23:54:48 +0100
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: Don't send to devicetree list for
+ "arch/*/boot/dts"
+Message-id: <20131023235448.4de21b8d.m.chehab@samsung.com>
+In-reply-to: <52680380.7020204@gmail.com>
+References: <1382534520-15688-1-git-send-email-dianders@chromium.org>
+ <52680380.7020204@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t/hYN19wRlBBjs/qVjMWb+GzWLWtSCL
+	+UfOsVqcXXaQzeLAnx2MFs2L17NZzL7/mMXi8q45bBaHVxxgsvj+7RubA5fHgs9X2D2O3J7B
+	7DG74SKLx85Zd9k97lzbw+ZxYsZvFo/9c9ewe3xZdY3Z4/MmuQDOKC6blNSczLLUIn27BK6M
+	W9deMBdcE65Y+W8JawPjDf4uRg4OCQETia5raV2MnECmmMSFe+vZuhi5OIQEljBKPJh7mAnC
+	aWSS6NrzgAmkikVAVaJz/Vswm03ASOJVYwsriC0ioC7xbflxsG5mgftMEluvnmcB2SAsEC4x
+	Yb8GSA2vgJXErXl7weo5BTQler6eZQIpERJIkbj6LADiHieJ3QekIKoFJX5MvscCYjMDTZ80
+	bxEzhK0t8eTdBdYJjAKzkJTNQlI2C0nZAkbmVYyipcXJBcVJ6bmGesWJucWleel6yfm5mxgh
+	UVK0g/HZBqtDjAIcjEo8vBof0oOEWBPLiitzDzFKcDArifBe8M4IEuJNSaysSi3Kjy8qzUkt
+	PsTIxMEp1cB4gEfEcbcN29VjrwVWnzo+J3nGq0mrZ7rdXPO/j2ObiPBlRXWfb6cip3eUca1n
+	WbS+dn7Jfc8t+tmr/y73ybAVKN/ioHPp/dNPwVXtJsEaMk9FjL6FhPZ4O/M/Daz+8VHY+mb2
+	s5YTnx5Jan/dtIlD8TXrNpftLFlbtm9j2D/5gLMaU9z2BE1LJZbijERDLeai4kQALL/bWnAC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If RS-485 is enabled, make the OMAP UART fire THR interrupts when both
-TX FIFO and TX shift register are empty instead of polling the
-equivalent status bit. This removes the burst of interrupt requests
-seen at every end of transmission.
+Em Wed, 23 Oct 2013 12:12:32 -0500
+Rob Herring <robherring2@gmail.com> escreveu:
 
-Also: the comment said that the TX FIFO trigger level was set at 16
-characters when it's 32 in reality.
+> On 10/23/2013 08:22 AM, Doug Anderson wrote:
+> > As discussed in the ARM kernel summit, people on the devicetree list
+> > would no longer like to receive emails about all dts changes.  Remove
+> > from MAINTAINERS.
+> 
+> We need to make sure platform maintainers are copied though. That may be
+> hard since we don't have standard layout/naming of dts files.
+> 
+> We might also want to drop these:
+> K:      of_get_property
+> K:      of_match_table
+> 
+> They are at least on the wrong maintainer list now as they should be
+> associated with the binding maintainers and not DT core code if we do
+> keep them.
+> 
+> Also based on the discussion, we need to add
+> Documentation/devicetree/bindings/* to appropriate subsystem
+> maintainers, but that should probably wait until after Friday at least.
 
-Signed-off-by: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
----
- drivers/tty/serial/omap-serial.c | 50 ++++++++++++++++++++++++++++++----------
- 1 file changed, 38 insertions(+), 12 deletions(-)
+/me is confused. What's the procedure for the DT patches for the devices
+supported by the subsystem I maintain, e. g. patches for
+/drivers/media/platform? 
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index c715778..02cb61e 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -283,21 +283,22 @@ static void serial_omap_enable_ms(struct uart_port *port)
- static void serial_omap_stop_tx(struct uart_port *port)
- {
- 	struct uart_omap_port *up = to_uart_omap_port(port);
--	struct circ_buf *xmit = &up->port.state->xmit;
- 	int res;
- 
- 	pm_runtime_get_sync(up->dev);
- 
--	/* handle rs485 */
-+	/* Handle RS-485 */
- 	if (up->rs485.flags & SER_RS485_ENABLED) {
--		/* do nothing if current tx not yet completed */
--		res = serial_in(up, UART_LSR) & UART_LSR_TEMT;
--		if (!res)
--			return;
--
--		/* if there's no more data to send, turn off rts */
--		if (uart_circ_empty(xmit)) {
--			/* if rts not already disabled */
-+		if (up->scr & OMAP_UART_SCR_TX_EMPTY) {
-+			/* THR interrupt is fired when both TX FIFO and TX
-+			 * shift register are empty. This means there's nothing
-+			 * left to transmit now, so make sure the THR interrupt
-+			 * is fired when TX FIFO is below the trigger level,
-+			 * disable THR interrupts and toggle the RS-485 GPIO
-+			 * data direction pin if needed.
-+			 */
-+			up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
-+			serial_out(up, UART_OMAP_SCR, up->scr);
- 			res = (up->rs485.flags & SER_RS485_RTS_AFTER_SEND) ? 1 : 0;
- 			if (gpio_get_value(up->rts_gpio) != res) {
- 				if (up->rs485.delay_rts_after_send > 0) {
-@@ -305,6 +306,18 @@ static void serial_omap_stop_tx(struct uart_port *port)
- 				}
- 				gpio_set_value(up->rts_gpio, res);
- 			}
-+		} else {
-+			/* We're asked to stop, but there's still stuff in the
-+			 * UART FIFO, so make sure the THR interrupt is fired
-+			 * when both TX FIFO and TX shift register are empty.
-+			 * The next THR interrupt (if no transmission is started
-+			 * in the meantime) will indicate the end of a
-+			 * transmission. Therefore we _don't_ disable THR
-+			 * interrupts in this situation.
-+			 */
-+			up->scr |= OMAP_UART_SCR_TX_EMPTY;
-+			serial_out(up, UART_OMAP_SCR, up->scr);
-+			return;
- 		}
- 	}
- 
-@@ -384,8 +397,12 @@ static void serial_omap_start_tx(struct uart_port *port)
- 
- 	pm_runtime_get_sync(up->dev);
- 
--	/* handle rs485 */
-+	/* Handle RS-485 */
- 	if (up->rs485.flags & SER_RS485_ENABLED) {
-+		/* Fire THR interrupts when FIFO is below trigger level */
-+		up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
-+		serial_out(up, UART_OMAP_SCR, up->scr);
-+
- 		/* if rts not already enabled */
- 		res = (up->rs485.flags & SER_RS485_RTS_ON_SEND) ? 1 : 0;
- 		if (gpio_get_value(up->rts_gpio) != res) {
-@@ -938,7 +955,7 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 	 */
- 
- 	/* Set receive FIFO threshold to 16 characters and
--	 * transmit FIFO threshold to 16 spaces
-+	 * transmit FIFO threshold to 32 spaces
- 	 */
- 	up->fcr &= ~OMAP_UART_FCR_RX_FIFO_TRIG_MASK;
- 	up->fcr &= ~OMAP_UART_FCR_TX_FIFO_TRIG_MASK;
-@@ -1344,6 +1361,15 @@ serial_omap_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
- 	up->ier = mode;
- 	serial_out(up, UART_IER, up->ier);
- 
-+	/* If RS-485 is disabled, make sure the THR interrupt is fired when
-+	 * TX FIFO is below the trigger level.
-+	 */
-+	if (!(up->rs485.flags & SER_RS485_ENABLED) &&
-+	    (up->scr & OMAP_UART_SCR_TX_EMPTY)) {
-+		up->scr &= ~OMAP_UART_SCR_TX_EMPTY;
-+		serial_out(up, UART_OMAP_SCR, up->scr);
-+	}
-+
- 	spin_unlock_irqrestore(&up->port.lock, flags);
- 	pm_runtime_mark_last_busy(up->dev);
- 	pm_runtime_put_autosuspend(up->dev);
+Should I just apply them, if I think that it is needed by the hardware? 
+Are there any criteria to be followed? If so, what criteria?
+
+/me hopes that all those questions will be discussed/answered at KS on
+Friday's discussions ;)
+
+In any case, my suggestion is that this patch should be a way more verbose,
+and should come together with a patch adding something at Documentation
+(SubmittingPatches, or maybe SubmitingDTPatches) in order to be sure that
+both developers and subsystem maintainers will do the right thing.
+
+Thanks,
+Mauro
+> 
+> Rob
+> 
+> > 
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > ---
+> >  MAINTAINERS | 2 --
+> >  1 file changed, 2 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index ebaf8bd..0166e8e 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -5987,7 +5987,6 @@ OMAP DEVICE TREE SUPPORT
+> >  M:	Benoît Cousson <bcousson@baylibre.com>
+> >  M:	Tony Lindgren <tony@atomide.com>
+> >  L:	linux-omap@vger.kernel.org
+> > -L:	devicetree@vger.kernel.org
+> >  S:	Maintained
+> >  F:	arch/arm/boot/dts/*omap*
+> >  F:	arch/arm/boot/dts/*am3*
+> > @@ -6167,7 +6166,6 @@ M:	Ian Campbell <ijc+devicetree@hellion.org.uk>
+> >  L:	devicetree@vger.kernel.org
+> >  S:	Maintained
+> >  F:	Documentation/devicetree/
+> > -F:	arch/*/boot/dts/
+> >  F:	include/dt-bindings/
+> >  
+> >  OPENRISC ARCHITECTURE
+> > 
+> 
+
+
 -- 
-1.8.4.1
 
+Cheers,
+Mauro
