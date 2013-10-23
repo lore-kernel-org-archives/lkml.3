@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab3JWRfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 13:35:24 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:42505 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3JWRfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 13:35:17 -0400
-X-IronPort-AV: E=Sophos;i="4.93,555,1378857600"; 
-   d="scan'208";a="63927247"
-Date: Wed, 23 Oct 2013 18:34:13 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v8 18/19] swiotlb-xen: no need to do execute two bus_to_phys
- translations in a row
-In-Reply-To: <20131023140150.GB27771@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1310231833560.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-18-git-send-email-stefano.stabellini@eu.citrix.com> <20131023140150.GB27771@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1751863Ab3JWRm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 13:42:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15981 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977Ab3JWRm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 13:42:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,555,1378882800"; 
+   d="scan'208";a="415908363"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: [GIT PULLv2] For x86/mce ... enhanced error logs
+In-reply-to: <5266bc543597964da@agluck-desk.sc.intel.com>
+Date: Wed, 23 Oct 2013 10:42:56 -0700
+Message-Id: <52680aa01445165d7@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Oct 17, 2013 at 06:43:33PM +0100, Stefano Stabellini wrote:
-> > xen_unmap_single calls xen_bus_to_phys, then passes dev_addr to
-> > is_xen_swiotlb_buffer that calls xen_bus_to_phys again.
-> 
-> It does?
-> 
-> I see it call mfn_to_local_pfn which calls pfn_to_mfn and
-> get_phys_to_machine (which I presume is going to be a slow
-> operation on ARM).
+Replacement for yesterday's pull request - fixes a build bug when CONFIG_SMP=n
+found by Fengguang's zero-day auto-build robot army.  If you pulled (and pushed)
+that one before finding this in your mailbox - then I can send the one-line
+patch to be applied on top of yesterday's version.
 
-Yeah, I am trying to reduce the number of pfn_to_mfn and mfn_to_pfn
-translations.
-That said, this patch is not needed to have a fully functional
-swiotlb-xen on arm and I would OK with postponing it.
+-Tony
 
+The following changes since commit 31d141e3a666269a3b6fcccddb0351caf7454240:
 
-> > xen_bus_to_phys is potentially a slow operation that might involve
-> > walking a tree.
-> > We can avoid calling xen_bus_to_phys twice by removing the
-> > is_xen_swiotlb_buffer call and doing the check directly in
-> > xen_unmap_single using the physical address.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Have you tested this with a PFN that is in a foreign domain?
+  Linux 3.12-rc6 (2013-10-19 12:28:15 -0700)
 
-That would be blkback. I only tested blkback on ARM, I'll test on x86
-too.
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-eMCA-fix
 
-> I am bit uncomfortable with this - I recall when developing this
-> that I had hit some odd cases of doing DMA of a page to a guest
-> and it not always working. It was the case of not detecting whether
-> the pfn was foreign or not. Sadly I can't recall the details.
-> 
-> I would think that this problem would also be present with ARM?
-> But perhaps all the new changes in the pfn_to_mfn that had lately
-> been done have fixed this?
+for you to fetch changes up to 0f6d98727f0eea8cdeea4a3eacff266cad7dc764:
 
-No, because on ARM the guest is autotranslate so the pfn returned by
-mfn_to_pfn is always "local".
-However thanks to the m2p_override now we should get the "local" pfn
-from mfn_to_pfn on x86 too.
-I'll test this case though.
+  UEFI, CPER: Move cper.c to a more proper place (2013-10-23 10:11:08 -0700)
 
+----------------------------------------------------------------
+There is a enhanced error logging mechanism for Xeon processors.
+Full description is here:
+http://www.intel.com/content/www/us/en/architecture-and-technology/enhanced-mca-logging-xeon-paper.html
+This patch series provides a module (and support code) to
+check for an extended error log and print extra details about
+the error on the console.
 
-> > ---
-> >  drivers/xen/swiotlb-xen.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index 4d50058..6d9ca61 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -426,8 +426,8 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
-> >  
-> >  	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-> >  
-> > -	/* NOTE: We use dev_addr here, not paddr! */
-> > -	if (is_xen_swiotlb_buffer(dev_addr)) {
-> > +	if (paddr >= virt_to_phys(xen_io_tlb_start) &&
-> > +		paddr < virt_to_phys(xen_io_tlb_end)) {
-> >  		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-> >  		return;
-> >  	}
-> > -- 
-> > 1.7.2.5
-> > 
+----------------------------------------------------------------
+Chen, Gong (10):
+      ACPI, APEI, CPER: Fix status check during error printing
+      ACPI, CPER: Update cper info
+      bitops: Introduce a more generic BITMASK macro
+      ACPI, x86: Extended error log driver for x86 platform
+      DMI: Parse memory device (type 17) in SMBIOS
+      ACPI, APEI, CPER: Add UEFI 2.4 support for memory error
+      ACPI, APEI, CPER: Enhance memory reporting capability
+      ACPI, APEI, CPER: Cleanup CPER memory error output format
+      EDAC, GHES: Update ghes error record info
+      UEFI, CPER: Move cper.c to a more proper place
+
+ arch/ia64/kernel/setup.c              |   1 +
+ arch/x86/include/asm/mce.h            |   1 +
+ arch/x86/kernel/cpu/mcheck/mce-apei.c |   3 +-
+ arch/x86/kernel/setup.c               |   1 +
+ drivers/acpi/Kconfig                  |  20 +++
+ drivers/acpi/Makefile                 |   2 +
+ drivers/acpi/acpi_extlog.c            | 327 ++++++++++++++++++++++++++++++++++
+ drivers/acpi/apei/Kconfig             |   1 +
+ drivers/acpi/apei/Makefile            |   2 +-
+ drivers/acpi/apei/apei-internal.h     |  12 +-
+ drivers/acpi/apei/ghes.c              |  58 +++---
+ drivers/acpi/bus.c                    |   3 +-
+ drivers/edac/amd64_edac.c             |  46 ++---
+ drivers/edac/amd64_edac.h             |   8 -
+ drivers/edac/ghes_edac.c              |  16 +-
+ drivers/edac/sb_edac.c                |   2 +-
+ drivers/firmware/dmi_scan.c           |  60 +++++++
+ drivers/video/sis/init.c              |   5 +-
+ include/acpi/actbl1.h                 |  14 +-
+ include/acpi/ghes.h                   |   2 +-
+ include/linux/acpi.h                  |   1 +
+ include/linux/bitops.h                |   8 +
+ include/linux/cper.h                  |  13 +-
+ include/linux/dmi.h                   |   5 +
+ include/linux/edac.h                  |   2 +-
+ lib/Kconfig                           |   4 +
+ lib/Makefile                          |   1 +
+ {drivers/acpi/apei => lib}/cper.c     | 132 +++++++-------
+ 28 files changed, 600 insertions(+), 150 deletions(-)
+ create mode 100644 drivers/acpi/acpi_extlog.c
+ rename {drivers/acpi/apei => lib}/cper.c (76%)
