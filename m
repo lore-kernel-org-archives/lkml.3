@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab3JWWjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 18:39:11 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64366 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3JWWjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 18:39:08 -0400
-Date: Wed, 23 Oct 2013 16:39:04 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Yoknis, Mike" <mike.yoknis@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>
-Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
- resource conversion
-Message-ID: <20131023223904.GA18454@google.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
- <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
- <20131016235541.GD17866@google.com>
- <525F7F0F.5010306@intel.com>
- <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com>
- <52612D1C.4070701@intel.com>
+	id S1753599Ab3JWWut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 18:50:49 -0400
+Received: from ring0.de ([91.143.88.219]:43723 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752519Ab3JWWuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 18:50:13 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Thu, 24 Oct 2013 00:49:42 +0200
+From: Sebastian Reichel <sre@debian.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv5 1/3] Input: twl4030-pwrbutton - add device tree support
+Message-ID: <20131023224940.GA19522@earth.universe>
+Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Peter Ujfalusi <peter.ujfalusi@ti.com>,
+	Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+References: <1382560002-6299-1-git-send-email-sre@debian.org>
+ <1382560002-6299-2-git-send-email-sre@debian.org>
+ <52684C8E.6080802@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52612D1C.4070701@intel.com>
+In-Reply-To: <52684C8E.6080802@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Greg]
 
-On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
-> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
->> On Thu, Oct 17, 2013 at 12:09 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
->>>On 2013年10月17日 07:55, Bjorn Helgaas wrote:
->>>> On Fri, Oct 11, 2013 at 08:19:01PM +0800, tianyu.lan@intel.com wrote:
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>I wonder if it would make sense to make
->>acpi_dev_resource_address_space() ignore addr.translation_offset for
->>IO resources.  Or maybe ignore it if the _TTP (type translation) bit
->>is set?
->
-> I wonder why current code doesn't check _TTP? The code in the
-> add_io_space() seems to think _TTP is always set, right?
+On Wed, Oct 23, 2013 at 05:24:14PM -0500, Rob Herring wrote:
+> So a twl4030 device is only a power button? DT should describe the h/w
+> not a node for a sub-function of a device.
 
-I think it's an oversight, and you should fix it.  I suggest that you
-ignore the _TRA value when _TTP is set.  Obviously this only applies
-to I/O port resources, since _TTP is only defined in the I/O Resource
-Flag (Table 6-185 in ACPI 5.0 spec).
+No. TWL4030 is a companion chip for the OMAP3 processor. It provides
+miscellaneous functionality, e.g.:
 
->>Mike, is there any chance you could collect an acpidump from an
->>rx7620 or similar ia64 system?  In particular, I want to see a
->>multi-node system where we have several PCI domains, and whether it
->>sets the _TTP bits.
+ * RTC
+ * Watchdog
+ * Regulators
+ * Keypad Matrix
+ * USB
+ * Audio
+ * Vibrator
+ * GPIO
+ * ...
 
-Greg collected an acpidump from an HP system that uses these I/O port
-ranges.  Unfortunately the system wasn't running Linux, so it's an EFI
-dump, not the usual one we get from the "pmtools" package.  But I
-think it has the information we want.
+One part of the functionality is the power button. The patch
+assumes, that the twl4030-pwrbutton node is used as follows:
 
-It's huge, and I put some of the relevant parts of it here:
-https://bugzilla.kernel.org/show_bug.cgi?id=63581  Here's a sample
-that shows the _TTP bit is set for the I/O aperture:
+twl {
+    /* ... common stuff ... */
 
-    Device E000 (\_SB_.N000.E000)
-      Name _SEG (\_SB_.N000.E000._SEG)
-        0x01
-      Name _CRS (\_SB_.N000.E001._CRS)
-        Buffer
-          0x0092
-          ByteList <0x88 0x0d 0x00 0x02 0x0e 0x00 0x00 0x00
-                    0x00 0x00 0xff 0x00 0x00 0x00 0x00 0x01
+    pwrbutton {
+        compatible = "ti,twl4030-pwrbutton";
+		interrupts = <8>;
+    };
+};
 
-                    0x8a 0x2b 0x00 0x01 0x0c 0x33 0x00 0x00
-                    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
-                    0x00 0x00 0x00 0x00 0x00 0x00 0xff 0xff
-                    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
-                    0x00 0xd0 0x00 0x04 0x00 0x00 0x00 0x00
-                    0x01 0x00 0x00 0x00 0x00 0x00
+See also:
+* Documentation/devicetree/bindings/mfd/twl-familly.txt
+* Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
+* Documentation/devicetree/bindings/sound/omap-twl4030.txt
+* Documentation/devicetree/bindings/mfd/twl4030-power.txt
+* Documentation/devicetree/bindings/mfd/twl4030-audio.txt
+* Documentation/devicetree/bindings/gpio/gpio-twl4030.txt
 
-Byte 0: 0x8a (QWORD address space descriptor)
-Byte 3: Resource Type = 0x01 (I/O range)
-Byte 5: Type Specific Flags = 0x33 (_TRS, _TTP, _RNG = 3)
+-- Sebastian
 
-          QWORD Address Space Descriptor:
-             Type: I/O
-             Flags:  Sparse, Translate, ISA I/O addresses, Non-ISA I/O addresses
-             GRA: 0x0000000000000000
-             MIN: 0x0000000000000000  MAX: 0x000000000000ffff
-             TRA: 0x00000400d0000000  LEN: 0x0000000000010000
-             MAX address fixed
-             MIN address fixed
-             Address positively decoded
-             Device produces and consumes this resource
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSaFKEAAoJENju1/PIO/qaThIP/RIh/gXpohEecXYYShzhNfoz
+LVoMrx876PcWtzUl79aXWKu5YvrWio2H2yoc/5VcS3zQTUEIWaXDRowVQ/Zm0ltb
+Up+tNwP3IKQBjLXTAY8cUqXyqIerA9lxHlSSd2fEfdp8b5GwxKxBPRm7IZ2KZ3yO
+YWvnPHXLcV6mTkthNQf4WHUUW4AmqRdwdtzbn4ZuqTwv5IPygUz3YdwVw0J0EXVK
+fGdQN9PAGJ09APwYyTDbSOmmqG2mWqadr8OQiaHddrjDBZQ9SBFHoUovu8LfDJ92
+4O5Dx1cG3xKVut5UXU1mvexLU/QHKzfCnc5lspRRwHAbzniH0zm5Rmcf7p3kK5ZF
+9sSLGqJF2lqSJB3gDotmIanPXXggcF/Si21GBJQkaeW8mmYl7mi4Wa89dVyukZDE
+1acFbTOrUbqa+W9TxyiPuQmbotVdus+RJi/aholbCC1HQK1xvJ3xEqNXT6rP43Og
+6igAjKIgbY4TP2vb4wVrJdHpw8FVPtg0MqOF0tdmFCmQSzuXKMblzMUyhA+l+sq7
+xB3o0kp8mrRGaF+Vmz4heuDDkhZoDAXcQ2LXl5e7iBXTyLrQ9IvbnkQNJbsxQxtx
+T6nXURxqTD7wn2d5UMO7RvBm760Wa7rCa6PUPQWBZh54oXqkjGaLeq8gzXs/k+3u
+OzlPrnZu2ulaaAcV2YEU
+=VSpi
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
