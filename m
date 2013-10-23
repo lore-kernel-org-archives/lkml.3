@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3JWH5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:57:35 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:35840
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751913Ab3JWHyf (ORCPT
+	id S1753316Ab3JWH55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:57:57 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:42484 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3JWH5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:54:35 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 23 Oct 2013 15:39:21 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rostislav Lisovy <lisovy@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        <pisa@cmp.felk.cvut.cz>
-Subject: Re: [PATCH 1/4] ARM: dts: i.MX53: Add alternate pinmux option for
- i2c_3
-Message-ID: <20131023073918.GK2839@S2101-09.ap.freescale.net>
-References: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
- <1382461643-16790-2-git-send-email-lisovy@gmail.com>
+	Wed, 23 Oct 2013 03:57:55 -0400
+Message-ID: <5267817E.40906@atmel.com>
+Date: Wed, 23 Oct 2013 08:57:50 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1382461643-16790-2-git-send-email-lisovy@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Jingoo Han <jg1.han@samsung.com>, "'Johan Hovold'" <jhovold@gmail.com>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] backlight: atmel-pwm-bl: fixes and clean ups
+References: <1382462819-28576-1-git-send-email-jhovold@gmail.com> <001801cecf8d$f3834d90$da89e8b0$%han@samsung.com>
+In-Reply-To: <001801cecf8d$f3834d90$da89e8b0$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 07:07:20PM +0200, Rostislav Lisovy wrote:
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> 
+On 23/10/2013 02:19, Jingoo Han :
+> On Wednesday, October 23, 2013 2:27 AM, Johan Hovold wrote:
+>>
+>> These patches fix a few issues and clean up the atmel-pwm-bl driver
+>> somewhat.
+>>
+>> Johan
+>>
+>> Johan Hovold (9):
+>>    backlight: atmel-pwm-bl: fix reported brightness
+>>    backlight: atmel-pwm-bl: fix gpio polarity in remove
+>>    backlight: atmel-pwm-bl: fix module autoload
+>>    backlight: atmel-pwm-bl: clean up probe error handling
+>>    backlight: atmel-pwm-bl: clean up get_intensity
+>>    backlight: atmel-pwm-bl: remove unused include
+>>    backlight: atmel-pwm-bl: use gpio_is_valid
+>>    backlight: atmel-pwm-bl: refactor gpio_on handling
+>>    backlight: atmel-pwm-bl: use gpio_request_one
+>
+> ++cc Andrew Morton, Tomi Valkeinen, Jean-Christophe Plagniol-Villard
+>
+> Hi Johan Hovold,
+>
+> Currently, because there is no git tree for backlight,
+> backlight patches have been merged to mm-tree by Andrew Morton.
+> Please, add Andrew Morton to CC list.
+>
+> Also, there is another way.
+> If Nicolas Ferre wants to merge these patches, the patches can be
+> merged through ATMEL-SoC tree with my Acked-by.
 
-Applied #1 and #2, thanks.
+Hi,
 
-Shawn
+As it's a driver without interaction with AT91 code, maybe routing this 
+patch series through mm-tree is the way to go.
 
-> diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-> index 4307e80..55e83d1 100644
-> --- a/arch/arm/boot/dts/imx53.dtsi
-> +++ b/arch/arm/boot/dts/imx53.dtsi
-> @@ -599,6 +599,13 @@
->  							MX53_PAD_GPIO_5__I2C3_SCL 0xc0000000
->  						>;
->  					};
-> +
-> +					pinctrl_i2c3_2: i2c3grp-2 {
-> +						fsl,pins = <
-> +							MX53_PAD_GPIO_3__I2C3_SCL	0xc0000000
-> +							MX53_PAD_GPIO_6__I2C3_SDA	0xc0000000
-> +						>;
-> +					};
->  				};
->  
->  				ipu_disp0 {
-> -- 
-> 1.7.10.4
-> 
+If you find any issue in the process, please tell me. I would be happy 
+to ease the process.
 
+Bye,
+
+
+>>
+>>   drivers/video/backlight/atmel-pwm-bl.c | 86 ++++++++++++++++------------------
+>>   1 file changed, 40 insertions(+), 46 deletions(-)
+>
+>
+
+
+-- 
+Nicolas Ferre
