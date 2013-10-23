@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab3JWTzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 15:55:05 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36018 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab3JWTzC (ORCPT
+	id S1753327Ab3JWTze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 15:55:34 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:47638 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3JWTzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 15:55:02 -0400
-Date: Wed, 23 Oct 2013 15:53:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v8 18/19] swiotlb-xen: no need to do execute two
- bus_to_phys translations in a row
-Message-ID: <20131023195335.GC28963@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com>
- <1382031814-8782-18-git-send-email-stefano.stabellini@eu.citrix.com>
- <20131023140150.GB27771@phenom.dumpdata.com>
- <alpine.DEB.2.02.1310231833560.26077@kaball.uk.xensource.com>
+	Wed, 23 Oct 2013 15:55:32 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>, fengguang.wu@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+References: <20131022214129.GB2715@localhost>
+	<20131022.180023.1141845387743361648.davem@davemloft.net>
+	<87k3h461ql.fsf@tw-ebiederman.twitter.com>
+	<20131023122543.GH5132@cpaasch-mac>
+	<1382533364.7572.15.camel@edumazet-glaptop.roam.corp.google.com>
+Date: Wed, 23 Oct 2013 12:55:18 -0700
+In-Reply-To: <1382533364.7572.15.camel@edumazet-glaptop.roam.corp.google.com>
+	(Eric Dumazet's message of "Wed, 23 Oct 2013 06:02:44 -0700")
+Message-ID: <87r4bbiwyh.fsf_-_@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1310231833560.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/5tYLdG7+vSFQlOVeY7ld8sfHnlDO1k/g=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0345]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Eric Dumazet <eric.dumazet@gmail.com>
+X-Spam-Relay-Country: 
+Subject: [PATCH] Fix: Dereference pointer-value of sk_prot->memory_pressure
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 06:34:13PM +0100, Stefano Stabellini wrote:
-> > On Thu, Oct 17, 2013 at 06:43:33PM +0100, Stefano Stabellini wrote:
-> > > xen_unmap_single calls xen_bus_to_phys, then passes dev_addr to
-> > > is_xen_swiotlb_buffer that calls xen_bus_to_phys again.
-> > 
-> > It does?
-> > 
-> > I see it call mfn_to_local_pfn which calls pfn_to_mfn and
-> > get_phys_to_machine (which I presume is going to be a slow
-> > operation on ARM).
-> 
-> Yeah, I am trying to reduce the number of pfn_to_mfn and mfn_to_pfn
-> translations.
-> That said, this patch is not needed to have a fully functional
-> swiotlb-xen on arm and I would OK with postponing it.
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
+Date: Wed, 23 Oct 2013 12:49:21 -0700
 
-OK, lets do that as it requires some hard thinking.
-> 
-> 
-> > > xen_bus_to_phys is potentially a slow operation that might involve
-> > > walking a tree.
-> > > We can avoid calling xen_bus_to_phys twice by removing the
-> > > is_xen_swiotlb_buffer call and doing the check directly in
-> > > xen_unmap_single using the physical address.
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > Have you tested this with a PFN that is in a foreign domain?
-> 
-> That would be blkback. I only tested blkback on ARM, I'll test on x86
-> too.
-> 
-> 
-> > I am bit uncomfortable with this - I recall when developing this
-> > that I had hit some odd cases of doing DMA of a page to a guest
-> > and it not always working. It was the case of not detecting whether
-> > the pfn was foreign or not. Sadly I can't recall the details.
-> > 
-> > I would think that this problem would also be present with ARM?
-> > But perhaps all the new changes in the pfn_to_mfn that had lately
-> > been done have fixed this?
-> 
-> No, because on ARM the guest is autotranslate so the pfn returned by
-> mfn_to_pfn is always "local".
-> However thanks to the m2p_override now we should get the "local" pfn
-> from mfn_to_pfn on x86 too.
-> I'll test this case though.
+2e685cad57 (tcp_memcontrol: Kill struct tcp_memcontrol) falsly modified
+the access to memory_pressure of sk->sk_prot->memory_pressure. The patch
+did modify the memory_pressure-field of struct cg_proto, but not the one
+of struct proto.
 
-Right, so maybe the pfn_to_mfn_local test is useless nowadays?
+So, the access to sk_prot->memory_pressure should not be changed.
 
-> 
-> 
-> > > ---
-> > >  drivers/xen/swiotlb-xen.c |    4 ++--
-> > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > > index 4d50058..6d9ca61 100644
-> > > --- a/drivers/xen/swiotlb-xen.c
-> > > +++ b/drivers/xen/swiotlb-xen.c
-> > > @@ -426,8 +426,8 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
-> > >  
-> > >  	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-> > >  
-> > > -	/* NOTE: We use dev_addr here, not paddr! */
-> > > -	if (is_xen_swiotlb_buffer(dev_addr)) {
-> > > +	if (paddr >= virt_to_phys(xen_io_tlb_start) &&
-> > > +		paddr < virt_to_phys(xen_io_tlb_end)) {
-> > >  		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-> > >  		return;
-> > >  	}
-> > > -- 
-> > > 1.7.2.5
-> > > 
+Acked-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ include/net/sock.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index c93542f92420..e3a18ff0c38b 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1137,7 +1137,7 @@ static inline bool sk_under_memory_pressure(const struct sock *sk)
+ 	if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
+ 		return !!sk->sk_cgrp->memory_pressure;
+ 
+-	return !!sk->sk_prot->memory_pressure;
++	return !!*sk->sk_prot->memory_pressure;
+ }
+ 
+ static inline void sk_leave_memory_pressure(struct sock *sk)
+-- 
+1.7.5.4
+
