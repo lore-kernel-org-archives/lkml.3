@@ -1,178 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459Ab3JWF7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 01:59:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41717 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab3JWF7I convert rfc822-to-8bit (ORCPT
+	id S1751307Ab3JWGML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 02:12:11 -0400
+Received: from smtprelay0156.b.hostedemail.com ([64.98.42.156]:35193 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751201Ab3JWGMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 01:59:08 -0400
-Subject: Re: [RFC] ARM: tty: Move HVC DCC assembly to arch/arm
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1382120064-2459-1-git-send-email-cov@codeaurora.org>
-Date: Wed, 23 Oct 2013 00:59:05 -0500
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B273A106-344F-4D36-998B-E44F889AD93F@codeaurora.org>
-References: <1382120064-2459-1-git-send-email-cov@codeaurora.org>
-To: Christopher Covington <cov@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 23 Oct 2013 02:12:10 -0400
+X-Greylist: delayed 526 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 02:12:10 EDT
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:,RULES_HIT:41:152:355:379:582:966:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2525:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3308:3352:3421:3622:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4361:4385:5007:6119:6261:6630:6691:7875:7903:8603:9025:9108:10004:10400:10450:10455:10848:11658:11914:12043:12517:12519:12555:12663:12698:12737:13069:13071:13160:13161:13166:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mist77_1d46700ef4457
+X-Filterd-Recvd-Size: 1972
+Date: Wed, 23 Oct 2013 06:03:21 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <707282746.213759.1382508201161.JavaMail.mail@webmail01>
+Subject: Disabling in-memory write cache for x86-64 in Linux 3.11
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [79.141.59.82]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-On Oct 18, 2013, at 1:14 PM, Christopher Covington wrote:
+On my x86-64 PC (Intel Core i5 2500, 16GB RAM), I have the same 3.11 kernel
+built for the i686 (with PAE) and x86-64 architectures. What's really troubling me
+is that the x86-64 kernel has the following problem:
 
-> Put architecture-specific assembly code where it belongs,
-> allowing for support of additional architectures such as arm64 in
-> the future.
-> 
-> Signed-off-by: Christopher Covington <cov@codeaurora.org>
-> ---
-> arch/arm/include/asm/dcc.h | 45 +++++++++++++++++++++++++++++++++++++++++++
-> drivers/tty/hvc/hvc_dcc.c  | 48 ++--------------------------------------------
-> 2 files changed, 47 insertions(+), 46 deletions(-)
-> create mode 100644 arch/arm/include/asm/dcc.h
-> 
-> diff --git a/arch/arm/include/asm/dcc.h b/arch/arm/include/asm/dcc.h
-> new file mode 100644
-> index 0000000..306d1fc
-> --- /dev/null
-> +++ b/arch/arm/include/asm/dcc.h
-> @@ -0,0 +1,45 @@
-> +/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <asm/barrier.h>
-> +
-> +/* DCC Status Bits */
-> +#define DCC_STATUS_RX		(1 << 30)
-> +#define DCC_STATUS_TX		(1 << 29)
-> +
+When I copy large files to any storage device, be it my HDD with ext4 partitions
+or flash drive with FAT32 partitions, the kernel first caches them in memory entirely
+then flushes them some time later (quite unpredictably though) or immediately upon
+running "sync".
 
-Why'd you move these define's here?  They don't seem to be arch specific and I don't see them used in the asm anywhere.
+How can I disable this memory cache altogether? When running the i686 kernel with
+the same configuration I don't observe this effect - files get written out almost immediately
+(for instance "sync" takes less than a second, whereas on x86-64 it can take a dozen of
+_minutes_ depending on a file size and storage performance).
 
-> +static inline u32 __dcc_getstatus(void)
-> +{
-> +	u32 __ret;
-> +	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-> +		: "=r" (__ret) : : "cc");
-> +
-> +	return __ret;
-> +}
-> +
-> +static inline char __dcc_getchar(void)
-> +{
-> +	char __c;
-> +
-> +	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-> +		: "=r" (__c));
-> +	isb();
-> +
-> +	return __c;
-> +}
-> +
-> +static inline void __dcc_putchar(char c)
-> +{
-> +	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
-> +		: /* no output register */
-> +		: "r" (c));
-> +	isb();
-> +}
-> diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-> index 44fbeba..e9f0191 100644
-> --- a/drivers/tty/hvc/hvc_dcc.c
-> +++ b/drivers/tty/hvc/hvc_dcc.c
-> @@ -1,4 +1,4 @@
-> -/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> +/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
->  *
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License version 2 and
-> @@ -8,57 +8,13 @@
->  * but WITHOUT ANY WARRANTY; without even the implied warranty of
->  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->  * GNU General Public License for more details.
-> - *
-> - * You should have received a copy of the GNU General Public License
-> - * along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-> - * 02110-1301, USA.
->  */
-> 
-> -#include <linux/console.h>
-> -#include <linux/delay.h>
-> -#include <linux/err.h>
-> -#include <linux/init.h>
-> -#include <linux/moduleparam.h>
-> -#include <linux/types.h>
-> -
-> +#include <asm/dcc.h>
-> #include <asm/processor.h>
-> 
-> #include "hvc_console.h"
-> 
-> -/* DCC Status Bits */
-> -#define DCC_STATUS_RX		(1 << 30)
-> -#define DCC_STATUS_TX		(1 << 29)
-> -
-> -static inline u32 __dcc_getstatus(void)
-> -{
-> -	u32 __ret;
-> -	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-> -		: "=r" (__ret) : : "cc");
-> -
-> -	return __ret;
-> -}
-> -
-> -
-> -static inline char __dcc_getchar(void)
-> -{
-> -	char __c;
-> -
-> -	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-> -		: "=r" (__c));
-> -	isb();
-> -
-> -	return __c;
-> -}
-> -
-> -static inline void __dcc_putchar(char c)
-> -{
-> -	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
-> -		: /* no output register */
-> -		: "r" (c));
-> -	isb();
-> -}
-> -
-> static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
-> {
-> 	int i;
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by the Linux Foundation.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I'm _not_ talking about disabling write cache on my storage itself (hdparm -W 0 /dev/XXX)
+- firstly this command is detrimental to the performance of my PC, secondly, it won't help
+in this instance.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Swap is totally disabled, usually my memory is entirely free.
 
+My kernel configuration can be fetched here: https://bugzilla.kernel.org/show_bug.cgi?id=63531
+
+Please, advise.
+
+Best regards,
+
+Artem
