@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab3JWKnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 06:43:17 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:33161 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab3JWKnP (ORCPT
+	id S1753325Ab3JWKoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 06:44:13 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:49936 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab3JWKoM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 06:43:15 -0400
-Message-ID: <5267A840.60007@gmail.com>
-Date: Wed, 23 Oct 2013 12:43:12 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: The development of GNU GRUB <grub-devel@gnu.org>,
-        boris.ostrovsky@oracle.com, david.woodhouse@intel.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, keir@xen.org,
-        konrad.wilk@oracle.com, pjones@redhat.com,
-        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl> <526599A8.9090501@gmail.com> <52663D54.2020800@gmail.com> <20131023070528.GQ3626@debian70-amd64.local.net-space.pl>
-In-Reply-To: <20131023070528.GQ3626@debian70-amd64.local.net-space.pl>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2WBDAXFMQIRGMUUXUAEEX"
+	Wed, 23 Oct 2013 06:44:12 -0400
+Date: Wed, 23 Oct 2013 12:43:33 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tom.leiming@gmail.com,
+        gregkh@linuxfoundation.org
+Subject: Re: userspace firmware load fails with current linux-next
+Message-ID: <20131023124333.356d0e15@ipc1.ka-ro>
+In-Reply-To: <20131023182609.6646b5c0@tom-ThinkPad-T410>
+References: <20131023110618.7bd07899@ipc1.ka-ro>
+	<20131023182609.6646b5c0@tom-ThinkPad-T410>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2WBDAXFMQIRGMUUXUAEEX
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 23.10.2013 09:05, Daniel Kiper wrote:
-> Thanks. Could you send me a pointer to current multiboot2 protocol docs=
-?
-It's managed as "multiboot2" branch in our repo:
-http://git.savannah.gnu.org/cgit/grub.git
-Note: we're in process of moving from bzr to git which may cause the
-link to change.
+Ming Lei wrote:
+> On Wed, 23 Oct 2013 11:06:18 +0200
+> Lothar Waßmann <LW@KARO-electronics.de> wrote:
+> 
+[...]
+> > Or is it an unintended side effect of some recent change?
+> 
+> Maybe yes, could you test below patch?
+> 
+> Tejun, looks we need to keep special attention on zero size of bin file
+> as before, could you comment at the patch?
+> 
+> --
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index 5d818df..366ae8d 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -277,7 +277,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+>  	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+>  	char *buf;
+>  
+> -	if (sysfs_is_bin(of->sd)) {
+> +	if (sysfs_is_bin(of->sd) && size) {
+>  		loff_t size = file_inode(file)->i_size;
+>  
+>  		if (size <= *ppos)
+> 
+> 
+> 
+The patch as is produces a build error, because 'size' is only defined
+after the 'if' statement.
+
+The modified patch below works for me.
+
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 5d818df..709d6f5 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -277,7 +277,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+ 	char *buf;
+ 
+-	if (sysfs_is_bin(of->sd)) {
++	if (sysfs_is_bin(of->sd) && file_inode(file)->i_size) {
+ 		loff_t size = file_inode(file)->i_size;
+ 
+ 		if (size <= *ppos)
 
 
-------enig2WBDAXFMQIRGMUUXUAEEX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-iF4EAREKAAYFAlJnqEAACgkQNak7dOguQgk5sQD/QKDCaebNrSyXzxWvkl8g0UHz
-x6sOOs+liV7cmYz+34kA/0Ro4oL9hLUe9ccwgQSaf6M/Q79OEl4xfYa68ElOEgD3
-=yg1b
------END PGP SIGNATURE-----
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-------enig2WBDAXFMQIRGMUUXUAEEX--
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
