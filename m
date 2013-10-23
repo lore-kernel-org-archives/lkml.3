@@ -1,213 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab3JWHjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:39:52 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:55661 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3JWHjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:39:51 -0400
-Date: Wed, 23 Oct 2013 16:39:43 +0900
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH] mm: Ensure get_unmapped_area() returns higheraddressthan mmap_min_addr
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
-References: <20131023145303.B205.38390934@jp.panasonic.com> <1382511049-gd4rydjg-mutt-n-horiguchi@ah.jp.nec.com>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20131023163943.B209.38390934@jp.panasonic.com>
+	id S1751584Ab3JWHkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:40:06 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:48501 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3JWHkD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 03:40:03 -0400
+In-Reply-To: <12083.1382486094@ale.ozlabs.ibm.com>
+References: <12083.1382486094@ale.ozlabs.ibm.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+X-KeepSent: D776C320:26C485FF-43257C0D:00264F32;
+ type=4; name=$KeepSent
+To: Michael Neuling <mikey@neuling.org>
+Cc: anton@samba.org, benh@kernel.crashing.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        michael@ellerman.id.au
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFD776C320.26C485FF-ON43257C0D.00264F32-43257C0D.002A1BA7@il.ibm.com>
+From: Victor Kaplansky <VICTORK@il.ibm.com>
+Date: Wed, 23 Oct 2013 10:39:55 +0300
+X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5|July 31, 2013) at
+ 23/10/2013 10:39:45
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
+Content-type: text/plain; charset=US-ASCII
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102307-2966-0000-0000-0000091FAE07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+See below.
 
-On Wed, 23 Oct 2013 02:50:49 -0400
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+Michael Neuling <mikey@neuling.org> wrote on 10/23/2013 02:54:54 AM:
 
-> On Wed, Oct 23, 2013 at 02:53:03PM +0900, Akira Takeuchi wrote:
-> > Hi,
-> > 
-> > On Wed, 23 Oct 2013 00:26:05 -0400
-> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> > 
-> > > Hi,
-> > > 
-> > > On Wed, Oct 23, 2013 at 11:46:53AM +0900, Akira Takeuchi wrote:
-> > > > This patch fixes the problem that get_unmapped_area() can return illegal
-> > > > address and result in failing mmap(2) etc.
-> > > > 
-> > > > In case that the address higher than PAGE_SIZE is set to
-> > > > /proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
-> > > > returned by get_unmapped_area(), even if you do not pass any virtual
-> > > > address hint (i.e. the second argument).
-> > > > 
-> > > > This is because the current get_unmapped_area() code does not take into
-> > > > account mmap_min_addr.
-> > > > 
-> > > > This leads to two actual problems as follows:
-> > > > 
-> > > > 1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
-> > > >    although any illegal parameter is not passed.
-> > > > 
-> > > > 2. The bottom-up search path after the top-down search might not work in
-> > > >    arch_get_unmapped_area_topdown().
-> > > > 
-> > > > [How to reproduce]
-> > > > 
-> > > > 	--- test.c -------------------------------------------------
-> > > > 	#include <stdio.h>
-> > > > 	#include <unistd.h>
-> > > > 	#include <sys/mman.h>
-> > > > 	#include <sys/errno.h>
-> > > > 
-> > > > 	int main(int argc, char *argv[])
-> > > > 	{
-> > > > 		void *ret = NULL, *last_map;
-> > > > 		size_t pagesize = sysconf(_SC_PAGESIZE);
-> > > > 
-> > > > 		do {
-> > > > 			last_map = ret;
-> > > > 			ret = mmap(0, pagesize, PROT_NONE,
-> > > > 				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-> > > > 	//		printf("ret=%p\n", ret);
-> > > > 		} while (ret != MAP_FAILED);
-> > > > 
-> > > > 		if (errno != ENOMEM) {
-> > > > 			printf("ERR: unexpected errno: %d (last map=%p)\n",
-> > > > 			errno, last_map);
-> > > > 		}
-> > > > 
-> > > > 		return 0;
-> > > > 	}
-> > > > 	---------------------------------------------------------------
-> > > > 
-> > > > 	$ gcc -m32 -o test test.c
-> > > > 	$ sudo sysctl -w vm.mmap_min_addr=65536
-> > > > 	vm.mmap_min_addr = 65536
-> > > > 	$ ./test  (run as non-priviledge user)
-> > > > 	ERR: unexpected errno: 1 (last map=0x10000)
-> > > > 
-> > > > Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-> > > > Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-> > > > ---
-> > > >  mm/mmap.c |   10 +++++-----
-> > > >  1 files changed, 5 insertions(+), 5 deletions(-)
-> > > > 
-> > > > diff --git a/mm/mmap.c b/mm/mmap.c
-> > > > index 9d54851..362e5f1 100644
-> > > > --- a/mm/mmap.c
-> > > > +++ b/mm/mmap.c
-> > > > @@ -1856,7 +1856,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
-> > > >  	struct vm_area_struct *vma;
-> > > >  	struct vm_unmapped_area_info info;
-> > > >  
-> > > > -	if (len > TASK_SIZE)
-> > > > +	if (len > TASK_SIZE - mmap_min_addr)
-> > > >  		return -ENOMEM;
-> > > >  
-> > > >  	if (flags & MAP_FIXED)
-> > > 
-> > > I feel that it looks clearer to fix this in round_hint_to_min(),
-> > > with doing mmap_min_addr check in hint == NULL case.
-> > > Does it work for you?
-> > 
-> > The current round_hint_to_min() code checks and adjusts just for
-> > the hint address, not for "len". Also, it returns no error.
-> > 
-> > Do you mean adding "len" to the argument of round_hint_to_min()
-> > and making round_hint_to_min() return any error ?
-> 
-> I thought of just removing (hint != NULL) check in round_hint_to_min(),
-> but in my rethinking I found that that affects other code and needs
-> more changes, so your approach is simpler. I drop my suggestion.
-> 
-> The above check is to detect too big request, and in your reproducer
-> len is small (4096), so I'm a bit confused :)  
-> Although it doesn't fix your problem itself, it's correct, 
+>
+> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> index cd55144..95768c6 100644
+> --- a/kernel/events/ring_buffer.c
+> +++ b/kernel/events/ring_buffer.c
+> @@ -87,10 +87,10 @@ again:
+>        goto out;
+>
+>     /*
+> -    * Publish the known good head. Rely on the full barrier implied
+> -    * by atomic_dec_and_test() order the rb->head read and this
+> -    * write.
+> +    * Publish the known good head. We need a memory barrier to order the
+> +    * order the rb->head read and this write.
+>      */
+> +   smp_mb ();
+>     rb->user_page->data_head = head;
+>
+>     /*
 
-I'll add a description as a "Note" to my v2 patch to avoid such
-confusing. The difference between v1 and v2 patch is only adding
-the "Note". Thank you for reviewing !
+1. As far as I understand, smp_mb() is superfluous in this case, smp_wmb()
+should be enough.
+   (same for the space between the name of function and open
+parenthesis :-) )
 
+2. Again, as far as I understand from ./Documentation/atomic_ops.txt, it is
+mistake in architecture independent
+   code to rely on memory barriers in atomic operations, all the more so in
+"local" operations.
 
-Regadrs,
-Akira Takeuchi
+3. The solution above is sub-optimal on architectures where memory barrier
+is part of "local", since we are going to execute
+   two consecutive barriers. So, maybe, it would be better to use
+smp_mb__after_atomic_dec().
 
+4. I'm not sure, but I think there is another, unrelated potential problem
+in function perf_output_put_handle()
+   - the write to "data_head" -
 
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
-> Thanks,
-> Naoya Horiguchi
-> 
-> > 
-> > Regards,
-> > Akira Takeuchi
-> > 
-> > > Thanks,
-> > > Naoya Horiguchi
-> > > 
-> > > > @@ -1865,7 +1865,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
-> > > >  	if (addr) {
-> > > >  		addr = PAGE_ALIGN(addr);
-> > > >  		vma = find_vma(mm, addr);
-> > > > -		if (TASK_SIZE - len >= addr &&
-> > > > +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
-> > > >  		    (!vma || addr + len <= vma->vm_start))
-> > > >  			return addr;
-> > > >  	}
-> > > > @@ -1895,7 +1895,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
-> > > >  	struct vm_unmapped_area_info info;
-> > > >  
-> > > >  	/* requested length too big for entire address space */
-> > > > -	if (len > TASK_SIZE)
-> > > > +	if (len > TASK_SIZE - mmap_min_addr)
-> > > >  		return -ENOMEM;
-> > > >  
-> > > >  	if (flags & MAP_FIXED)
-> > > > @@ -1905,14 +1905,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
-> > > >  	if (addr) {
-> > > >  		addr = PAGE_ALIGN(addr);
-> > > >  		vma = find_vma(mm, addr);
-> > > > -		if (TASK_SIZE - len >= addr &&
-> > > > +		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
-> > > >  				(!vma || addr + len <= vma->vm_start))
-> > > >  			return addr;
-> > > >  	}
-> > > >  
-> > > >  	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
-> > > >  	info.length = len;
-> > > > -	info.low_limit = PAGE_SIZE;
-> > > > +	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
-> > > >  	info.high_limit = mm->mmap_base;
-> > > >  	info.align_mask = 0;
-> > > >  	addr = vm_unmapped_area(&info);
-> > > > -- 
-> > > > 1.7.0.4
-> > > > 
-> > > > 
-> > > > -- 
-> > > > Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-> > > > 
-> > > > --
-> > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > > see: http://www.linux-mm.org/ .
-> > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > > > 
-> > 
-> > -- 
-> > Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
+kernel/events/ring_buffer.c:
 
--- 
-Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+ 77         /*
+ 78          * Publish the known good head. Rely on the full barrier
+implied
+ 79          * by atomic_dec_and_test() order the rb->head read and this
+ 80          * write.
+ 81          */
+ 82         rb->user_page->data_head = head;
+
+As data_head is 64-bit wide, the update should be done by an atomic64_set
+().
+
+Regards,
+-- Victor
 
