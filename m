@@ -1,200 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab3JWHst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:48:49 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:36257 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3JWHsr (ORCPT
+	id S1752057Ab3JWHxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:53:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55791 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3JWHxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:48:47 -0400
-Date: Wed, 23 Oct 2013 09:48:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/26] perf/core improvements and fixes
-Message-ID: <20131023074842.GC9916@gmail.com>
-References: <1382452114-1243-1-git-send-email-acme@infradead.org>
+	Wed, 23 Oct 2013 03:53:13 -0400
+Date: Wed, 23 Oct 2013 00:52:08 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-ydo5rumyv9hdc1vsfmqamugs@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace: Split fd -> pathname array handling
+Git-Commit-ID: 97119f37bbebbab852899bd37ed52b80396728f9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1382452114-1243-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:52:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  97119f37bbebbab852899bd37ed52b80396728f9
+Gitweb:     http://git.kernel.org/tip/97119f37bbebbab852899bd37ed52b80396728f9
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 27 Sep 2013 17:34:10 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 16 Oct 2013 11:05:01 -0300
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+perf trace: Split fd -> pathname array handling
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 1ff9ecf797e398b9937d9da4c2236f4140b96339:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-10-15 11:55:46 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 5dbb6e81d85e55ee2b4cf523c1738e16f63e5400:
-> 
->   perf top: Add --max-stack option to limit callchain stack scan (2013-10-21 17:36:25 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Convert callchain children list to rbtree, greatly reducing the time
->   taken for callchain processing, from Namhyung Kim.
-> 
-> . Add --max-stack option to limit callchain stack scan in 'top' and 'report',
->   improving callchain processing when reducing the stack depth is an option,
->   from Waiman Long.
-> 
-> . Compare dso's also when comparing symbols, to avoid grouping together
->   symbols with the same name but on different DSOs, fix from Namhyung Kim.
-> 
-> . 'perf trace' now can can use a 'perf probe' wannabe tracepoint to hook into
->   the userspace -> kernel pathname copy so that it can map fds to pathnames
->   without reading /proc/pid/fd/ symlinks.
-> 
-> . 'perf trace' now emits hints as to why tracing is not possible, helping the
->   user to setup the system to allow tracing in the desired permission
->   granularity, telling if the problem is due to debugfs not being mounted or
->   with not enough permission for !root, /proc/sys/kernel/perf_event_paranoit
->   value, etc.
-> 
-> . Add missing 'mmap2' in evsel debug print, from Adrian Hunter.
-> 
-> . Add missing decrement in id sample parsing, not a fix per se, just to
->   avoid a problem whem somebody adds another field, from Adrian Hunter.
-> 
-> . Improve write_output error message in 'perf record', from Adrian Hunter.
-> 
-> . Add missing sample flush for piped events, fix from Adrian Hunter.
-> 
-> . Add missing members to perf_event__attr_swap(), fix from Adrian Hunter.
-> 
-> . Assorted fixes for 32-bit build, from Adrian Hunter
-> 
-> . Print addr by default for BTS in 'perf script', from Adrian Juntmer
-> 
-> . Separating data file properties from session, code reorganization from
->   Jiri Olsa.
-> 
-> . Show error in 'perf list' if tracepoints not available, from Pekka Enberg.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (11):
->       perf evsel: Add missing 'mmap2' from debug print
->       perf evsel: Add missing decrement in id sample parsing
->       perf record: Improve write_output error message
->       perf session: Add missing sample flush for piped events
->       perf session: Add missing members to perf_event__attr_swap()
->       perf evlist: Fix 32-bit build error
->       perf tools: Fix test_on_exit for 32-bit build
->       perf tools: Fix bench/numa.c for 32-bit build
->       perf evlist: Fix perf_evlist__mmap comments
->       perf evlist: Factor out duplicated mmap code
->       perf script: Print addr by default for BTS
-> 
-> Arnaldo Carvalho de Melo (7):
->       perf scripting perl: Fix build error on Fedora 12
->       perf trace: Split fd -> pathname array handling
->       perf trace: Use vfs_getname hook if available
->       perf trace: Improve event processing exit
->       perf evlist: Introduce perf_evlist__strerror_tp method
->       perf tools: Introduce filename__read_int helper
->       perf trace: Improve messages related to /proc/sys/kernel/perf_event_paranoid
-> 
-> Jiri Olsa (3):
->       perf tools: Add data object to handle perf data file
->       perf tools: Add perf_data_file__open interface to data object
->       perf session: Separating data file properties from session
-> 
-> Namhyung Kim (2):
->       perf callchain: Convert children list to rbtree
->       perf tools: Compare dso's also when comparing symbols
-> 
-> Pekka Enberg (1):
->       perf list: Show error if tracepoints not available
-> 
-> Waiman Long (2):
->       perf report: Add --max-stack option to limit callchain stack scan
->       perf top: Add --max-stack option to limit callchain stack scan
-> 
->  tools/perf/Documentation/perf-report.txt           |   8 +
->  tools/perf/Documentation/perf-top.txt              |   8 +
->  tools/perf/Documentation/perf-trace.txt            |   4 +
->  tools/perf/Makefile.perf                           |   1 +
->  tools/perf/bench/numa.c                            |   4 +-
->  tools/perf/builtin-annotate.c                      |  11 +-
->  tools/perf/builtin-buildid-cache.c                 |   8 +-
->  tools/perf/builtin-buildid-list.c                  |  11 +-
->  tools/perf/builtin-diff.c                          |  19 +-
->  tools/perf/builtin-evlist.c                        |   7 +-
->  tools/perf/builtin-inject.c                        |   7 +-
->  tools/perf/builtin-kmem.c                          |   7 +-
->  tools/perf/builtin-kvm.c                           |  13 +-
->  tools/perf/builtin-lock.c                          |   7 +-
->  tools/perf/builtin-mem.c                           |   9 +-
->  tools/perf/builtin-record.c                        |  80 +++------
->  tools/perf/builtin-report.c                        |  40 +++--
->  tools/perf/builtin-sched.c                         |   6 +-
->  tools/perf/builtin-script.c                        |  21 ++-
->  tools/perf/builtin-timechart.c                     |  10 +-
->  tools/perf/builtin-top.c                           |  16 +-
->  tools/perf/builtin-trace.c                         | 196 +++++++++++++--------
->  tools/perf/config/feature-checks/test-on-exit.c    |   1 +
->  tools/perf/perf.h                                  |   1 -
->  tools/perf/util/callchain.c                        | 147 ++++++++++++----
->  tools/perf/util/callchain.h                        |  11 +-
->  tools/perf/util/data.c                             | 120 +++++++++++++
->  tools/perf/util/data.h                             |  48 +++++
->  tools/perf/util/evlist.c                           | 159 +++++++++++------
->  tools/perf/util/evlist.h                           |   3 +
->  tools/perf/util/evsel.c                            |   2 +
->  tools/perf/util/header.c                           |  22 ++-
->  tools/perf/util/machine.c                          |  14 +-
->  tools/perf/util/machine.h                          |   3 +-
->  tools/perf/util/parse-events.c                     |   4 +-
->  .../perf/util/scripting-engines/trace-event-perl.c |   2 +-
->  tools/perf/util/session.c                          | 139 ++++++---------
->  tools/perf/util/session.h                          |  11 +-
->  tools/perf/util/sort.c                             |  10 ++
->  tools/perf/util/top.h                              |   1 +
->  tools/perf/util/util.c                             |  17 ++
->  tools/perf/util/util.h                             |   2 +
->  42 files changed, 834 insertions(+), 376 deletions(-)
->  create mode 100644 tools/perf/util/data.c
->  create mode 100644 tools/perf/util/data.h
+So that the part that grows the array as needed is untied from the code
+that reads the /proc/pid/fd symlink and can be used for the vfs_getname
+hook that will set the fd -> path translation too, when available.
 
-Pulled, thanks a lot Arnaldo!
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ydo5rumyv9hdc1vsfmqamugs@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 49 +++++++++++++++++++++++++---------------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index d0f91fe..763bef4 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -975,30 +975,9 @@ struct trace {
+ 	double			runtime_ms;
+ };
+ 
+-static int thread__read_fd_path(struct thread *thread, int fd)
++static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
+ {
+ 	struct thread_trace *ttrace = thread->priv;
+-	char linkname[PATH_MAX], pathname[PATH_MAX];
+-	struct stat st;
+-	int ret;
+-
+-	if (thread->pid_ == thread->tid) {
+-		scnprintf(linkname, sizeof(linkname),
+-			  "/proc/%d/fd/%d", thread->pid_, fd);
+-	} else {
+-		scnprintf(linkname, sizeof(linkname),
+-			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
+-	}
+-
+-	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
+-		return -1;
+-
+-	ret = readlink(linkname, pathname, sizeof(pathname));
+-
+-	if (ret < 0 || ret > st.st_size)
+-		return -1;
+-
+-	pathname[ret] = '\0';
+ 
+ 	if (fd > ttrace->paths.max) {
+ 		char **npath = realloc(ttrace->paths.table, (fd + 1) * sizeof(char *));
+@@ -1022,6 +1001,32 @@ static int thread__read_fd_path(struct thread *thread, int fd)
+ 	return ttrace->paths.table[fd] != NULL ? 0 : -1;
+ }
+ 
++static int thread__read_fd_path(struct thread *thread, int fd)
++{
++	char linkname[PATH_MAX], pathname[PATH_MAX];
++	struct stat st;
++	int ret;
++
++	if (thread->pid_ == thread->tid) {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/fd/%d", thread->pid_, fd);
++	} else {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
++	}
++
++	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
++		return -1;
++
++	ret = readlink(linkname, pathname, sizeof(pathname));
++
++	if (ret < 0 || ret > st.st_size)
++		return -1;
++
++	pathname[ret] = '\0';
++	return trace__set_fd_pathname(thread, fd, pathname);
++}
++
+ static const char *thread__fd_path(struct thread *thread, int fd, bool live)
+ {
+ 	struct thread_trace *ttrace = thread->priv;
