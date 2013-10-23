@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3JWHyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:54:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55902 "EHLO
+	id S1752706Ab3JWHyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:54:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55913 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3JWHyL (ORCPT
+	with ESMTP id S1751201Ab3JWHyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:54:11 -0400
-Date: Wed, 23 Oct 2013 00:53:45 -0700
+	Wed, 23 Oct 2013 03:54:17 -0400
+Date: Wed, 23 Oct 2013 00:53:54 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-2af68ef50c6afc1632edc984e9c834545d90f597@git.kernel.org>
+Message-ID: <tip-9402802a416c96b48b2bd9331c070ba2d7550b36@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
@@ -20,11 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1382099356-4918-11-git-send-email-adrian.hunter@intel.com>
-References: <1382099356-4918-11-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1382099356-4918-12-git-send-email-adrian.hunter@intel.com>
+References: <1382099356-4918-12-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Fix 32-bit build error
-Git-Commit-ID: 2af68ef50c6afc1632edc984e9c834545d90f597
+Subject: [tip:perf/core] perf tools: Fix test_on_exit for 32-bit build
+Git-Commit-ID: 9402802a416c96b48b2bd9331c070ba2d7550b36
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,23 +33,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:53:51 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 23 Oct 2013 00:54:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2af68ef50c6afc1632edc984e9c834545d90f597
-Gitweb:     http://git.kernel.org/tip/2af68ef50c6afc1632edc984e9c834545d90f597
+Commit-ID:  9402802a416c96b48b2bd9331c070ba2d7550b36
+Gitweb:     http://git.kernel.org/tip/9402802a416c96b48b2bd9331c070ba2d7550b36
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Fri, 18 Oct 2013 15:29:07 +0300
+AuthorDate: Fri, 18 Oct 2013 15:29:08 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 21 Oct 2013 11:19:41 -0300
+CommitDate: Mon, 21 Oct 2013 11:19:42 -0300
 
-perf evlist: Fix 32-bit build error
+perf tools: Fix test_on_exit for 32-bit build
 
-util/evlist.c: In function 'perf_evlist__mmap':
-util/evlist.c:772:2: error: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'size_t' [-Werror=format]
-cc1: all warnings being treated as errors
+builtin-record.c:42:12: error: static declaration of 'on_exit' follows non-static declaration
+In file included from util/util.h:51:0,
+                 from builtin.h:4,
+                 from builtin-record.c:8:
+/usr/include/stdlib.h:536:12: note: previous declaration of 'on_exit' was here
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -61,22 +63,19 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382099356-4918-11-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1382099356-4918-12-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/config/feature-checks/test-on-exit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 0b5425b..07ba0a4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -769,7 +769,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+index 8f64ed3..8e88b16 100644
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ b/tools/perf/config/feature-checks/test-on-exit.c
+@@ -1,4 +1,5 @@
+ #include <stdio.h>
++#include <stdlib.h>
  
- 	evlist->overwrite = overwrite;
- 	evlist->mmap_len = perf_evlist__mmap_size(pages);
--	pr_debug("mmap size %luB\n", evlist->mmap_len);
-+	pr_debug("mmap size %zuB\n", evlist->mmap_len);
- 	mask = evlist->mmap_len - page_size - 1;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
+ static void exit_fn(int status, void *__data)
+ {
