@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3JWK0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 06:26:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48082 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3JWK0V convert rfc822-to-8bit (ORCPT
+	id S1752927Ab3JWKbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 06:31:41 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:35241 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3JWKbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 06:26:21 -0400
-Date: Wed, 23 Oct 2013 18:26:09 +0800
-From: Ming Lei <ming.lei@canonical.com>
-To: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>, tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tom.leiming@gmail.com, gregkh@linuxfoundation.org
-Subject: Re: userspace firmware load fails with current linux-next
-Message-ID: <20131023182609.6646b5c0@tom-ThinkPad-T410>
-In-Reply-To: <20131023110618.7bd07899@ipc1.ka-ro>
-References: <20131023110618.7bd07899@ipc1.ka-ro>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Oct 2013 06:31:39 -0400
+Message-ID: <5267A582.9070504@gmail.com>
+Date: Wed, 23 Oct 2013 18:31:30 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: rpurdie@rpsys.net, jg1.han@samsung.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        tomi.valkeinen@ti.com, linux-pwm@vger.kernel.org,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to set fops in "struct platform_pwm_backlight_data"?
+References: <525F8895.5010806@gmail.com> <20131017071445.GA2502@ulmo.nvidia.com> <5260BD8C.7000200@gmail.com> <20131022072443.GB8681@ulmo.nvidia.com> <52663D6D.5000806@gmail.com> <20131022124905.GA24255@ulmo.nvidia.com> <52673178.8070805@gmail.com> <20131023080002.GB7404@ulmo.nvidia.com> <52678D99.8090003@gmail.com> <20131023090925.GC11954@ulmo.nvidia.com>
+In-Reply-To: <20131023090925.GC11954@ulmo.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 23 Oct 2013 11:06:18 +0200
-Lothar Waßmann <LW@KARO-electronics.de> wrote:
-
-> Hi,
+On 10/23/2013 05:09 PM, Thierry Reding wrote:
+> On Wed, Oct 23, 2013 at 04:49:29PM +0800, Mark Zhang wrote:
+>> On 10/23/2013 04:00 PM, Thierry Reding wrote:
+>>> On Wed, Oct 23, 2013 at 10:16:24AM +0800, Mark Zhang wrote:
+>>>> On 10/22/2013 08:49 PM, Thierry Reding wrote:
+>>>>> On Tue, Oct 22, 2013 at 04:55:09PM +0800, Mark Zhang wrote:
+>>>>>> On 10/22/2013 03:24 PM, Thierry Reding wrote:
+>>>>>>> On Fri, Oct 18, 2013 at 12:48:12PM +0800, Mark Zhang wrote:
+>>>>>> [...]
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Okay, I just want to set the "notify" function pointer in "struct
+>>>>>>>> platform_pwm_backlight_data", because I want to tune the brightness
+>>>>>>>> value before the pwm-bl sets the brightness to hardware. I don't know
+>>>>>>>> how to do that, unless we define the platform data explicitly.
+>>>>>>>
+>>>>>>> Okay, my question should have been what you need the functions for and
+>>>>>>> why you think you need them.
+>>>>>>>
+>>>>>>
+>>>>>> If I understanding you correctly, I suppose I've said that: "because I
+>>>>>> want to tune the brightness value before the pwm-bl sets the brightness
+>>>>>> to hardware".
+>>>>>
+>>>>> Why do you want to tune the brightness value? What are you trying to
+>>>>> achieve?
+>>>>>
+>>>>
+>>>> Oh, Tegra has a feature named PRISM(aka SmartDimmer). It changes the
+>>>> color value to make the display looks bright so that we can reduce the
+>>>> backlight brightness to save power. So everytime PRISM is triggered, we
+>>>> call "backlight_update_status", then in the "notify" callback, we change
+>>>> the brightness value which pwm-bl provides by considering the PRISM
+>>>> compensations.
+>>>
+>>> If you automatically call backlight_update_status() everytime PRISM
+>>> gives you new data, can't you just pass the correct value in in the
+>>> first place so that you don't have to tweak it in the .notify()
+>>> callback?
+>>
+>> OK, how to do that? -- "pass the correct value in in the first place"?
 > 
-> with the current linux-next loading firmware from userspace fails
-> because when writing to /sys/class/firmware/*/data the return code is
-> always 0 (meaning to the userspace too that no data was written).
-> Thus the userspace tool (mdev) keeps writing the same block of data
-> over and over again.
+> Well, if you call backlight_update_status(), then you can pass in a
+> brightness value, right? You usually do that by setting the backlight's
+> props.brightness field.
 > 
-> A cursory check of the latest updates to /drivers/base/firmware* didn't
-> reveal anything that could be the cause of this misbehaviour.
+> So when PRISM gives you new data, you could just read out the current
+> brightness, compute the new one based on the current one and the PRISM
+> data, set the props.brightness field to that value and then call
+> backlight_update_status().
 > 
-> Interestingly when changing the .size member of the
-> struct bin_attribute firmware_attr_data in drivers/base/firmware_class.c
-> (which is now '0') to e.g. PAGE_SIZE firmware loading works again.
 
-Thank you for the report and analysis.
+The param of "backlight_update_status" is "struct backlight_device *".
+So you mean after I get a pointer of correct backlight device, just set
+the brightness value I want to it's "props.brightness" directly?
 
+I think the "struct backlight_device" should be opaque(although it's
+definition is in include/linux/backlight.h, I know that), so it's better
+not to touch it's member directly, that's why I wanna use that "notify"
+callback.
+
+Mark
+> Thierry
 > 
-> Since .size was at '0' since the beginning of the .git universe there
-> must have been a fundamental change in the guts of the kernel handling
-> sysfs attribute files.
-
-It may be introduced by Tejun's recent change.
-
-> 
-> Is this behavioural change intended?
-
-I think no.
-
-> Do all sysfs attributes that are created with zero size need to be
-> changed?
-
-I think no, since drivers have no idea of size of their firmwares. 
-
-> Or is it an unintended side effect of some recent change?
-
-Maybe yes, could you test below patch?
-
-Tejun, looks we need to keep special attention on zero size of bin file
-as before, could you comment at the patch?
-
---
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 5d818df..366ae8d 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -277,7 +277,7 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
- 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
- 	char *buf;
- 
--	if (sysfs_is_bin(of->sd)) {
-+	if (sysfs_is_bin(of->sd) && size) {
- 		loff_t size = file_inode(file)->i_size;
- 
- 		if (size <= *ppos)
-
-
-
-Thanks,
--- 
-Ming Lei
