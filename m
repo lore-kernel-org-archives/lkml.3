@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab3JWINc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 04:13:32 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56315 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab3JWINY (ORCPT
+	id S1752101Ab3JWIOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 04:14:35 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:64968 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3JWIOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 04:13:24 -0400
+	Wed, 23 Oct 2013 04:14:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1382307299-22587-4-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <CACRpkdaXtE7TEGd0cV7Frw4MReppowRJPQTTXUM3K4B-62YCnw@mail.gmail.com>
 References: <1382307299-22587-1-git-send-email-acourbot@nvidia.com>
 	<1382307299-22587-4-git-send-email-acourbot@nvidia.com>
-Date: Wed, 23 Oct 2013 10:13:23 +0200
-Message-ID: <CACRpkdaXtE7TEGd0cV7Frw4MReppowRJPQTTXUM3K4B-62YCnw@mail.gmail.com>
+	<CACRpkdaXtE7TEGd0cV7Frw4MReppowRJPQTTXUM3K4B-62YCnw@mail.gmail.com>
+Date: Wed, 23 Oct 2013 10:14:33 +0200
+Message-ID: <CACRpkdbm-N89_zdTufyGY8H53jBVQsVASd7eP3NMfh-37Rbx_g@mail.gmail.com>
 Subject: Re: [PATCH 3/3] gpiolib: make GPIO_DEVRES depend on GPIOLIB
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Alexandre Courbot <acourbot@nvidia.com>
@@ -24,17 +25,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 12:14 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-
-> Current Kconfig allows GPIO_DEVRES to be selected and compiled without
-> GPIOLIB. This does not make sense anymore since GPIOLIB has become the
-> exclusive way to deal with GPIOs. This patch makes GPIO_DEVRES available
-> only if GPIOLIB is selected.
+On Wed, Oct 23, 2013 at 10:13 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Mon, Oct 21, 2013 at 12:14 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> Current Kconfig allows GPIO_DEVRES to be selected and compiled without
+>> GPIOLIB. This does not make sense anymore since GPIOLIB has become the
+>> exclusive way to deal with GPIOs. This patch makes GPIO_DEVRES available
+>> only if GPIOLIB is selected.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> Hm, I wonder about this. Are, or where there ever consumers of generic
+> GPIO using devres without gpiolib?
 
-Hm, I wonder about this. Are, or where there ever consumers of generic
-GPIO using devres without gpiolib?
+However I've applied the patch so we can see what happens, what
+other way is there to test it...
 
 Yours,
 Linus Walleij
