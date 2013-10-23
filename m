@@ -1,78 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3JWU6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 16:58:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55438 "EHLO
+	id S1753660Ab3JWU6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 16:58:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55453 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3JWU6c (ORCPT
+	with ESMTP id S1753549Ab3JWU6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 16:58:32 -0400
+	Wed, 23 Oct 2013 16:58:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/16] perf inject: Do not repipe attributes to a perf.data file
-Date: Wed, 23 Oct 2013 17:58:09 -0300
-Message-Id: <1382561895-8237-11-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/16] perf/core improvements and fixes
+Date: Wed, 23 Oct 2013 17:57:59 -0300
+Message-Id: <1382561895-8237-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
-References: <1382561895-8237-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-perf.data files contain the attributes separately, do not put them in
-the event stream as well.
+Hi Ingo,
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382427258-17495-6-git-send-email-adrian.hunter@intel.com
+	Please consider pulling,
+
+- Arnaldo
+
+The following changes since commit aa30a2e03a453aad9fd96c3f2d4a82c3497674e5:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-10-23 09:45:50 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to c1fb5651bb40f9efaf32d280f39e06df7e352673:
+
+  perf tools: Show progress on histogram collapsing (2013-10-23 15:48:24 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Show progress on histogram collapsing, that can take a long time, from
+  Namhyung Kim.
+
+. Support "$vars" meta argument syntax for local variables, allowing
+  asking for all possible variables at a given probe point to be
+  collected when it hits, from Masami Hiramatsu.
+
+. Address the root cause of that 'perf sched' stack initialization build
+  slowdown, by programmatically setting a big array after moving the
+  global variable back to the stack. Fix from Adrian Hunter.
+
+. Do not repipe attributes to a perf.data file in 'perf inject',
+  fix from Adrian Hunter
+
+. Change the procps visible command-name of invididual benchmark tests
+  plus cleanups, from Ingo Molnar.
+
+. Do not accept parse_tag_value() overflow, fix from Adrian Hunter.
+
+. Validate that mmap_pages is not too big. From Adrian Hunter.
+
+. Fix non-debug build, from Adrian Hunter
+
+. Clarify the "sample parsing" test entry.
+
+. Consider PERF_SAMPLE_TRANSACTION in the "sample parsing" test.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-inject.c | 5 +++++
- 1 file changed, 5 insertions(+)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index eb1a5941912b..409ceaf3b9b9 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -72,12 +72,17 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
- 				   union perf_event *event,
- 				   struct perf_evlist **pevlist)
- {
-+	struct perf_inject *inject = container_of(tool, struct perf_inject,
-+						  tool);
- 	int ret;
- 
- 	ret = perf_event__process_attr(tool, event, pevlist);
- 	if (ret)
- 		return ret;
- 
-+	if (!inject->pipe_output)
-+		return 0;
-+
- 	return perf_event__repipe_synth(tool, event);
- }
- 
--- 
-1.8.1.4
+----------------------------------------------------------------
+Adrian Hunter (7):
+      perf sched: Make struct perf_sched sched a local variable
+      perf sched: Optimize build time
+      perf script: Make perf_script a local variable
+      perf inject: Do not repipe attributes to a perf.data file
+      perf tools: Do not accept parse_tag_value() overflow
+      perf evlist: Validate that mmap_pages is not too big
+      perf tools: Fix non-debug build
 
+Arnaldo Carvalho de Melo (5):
+      perf test: Clarify the "sample parsing" test entry
+      perf test: Consider PERF_SAMPLE_TRANSACTION in the "sample parsing" test
+      perf tools: Stop using 'self' in some more places
+      perf ui: Rename ui_progress to ui_progress_ops
+      perf ui progress: Per progress bar state
+
+Ingo Molnar (1):
+      perf bench: Change the procps visible command-name of invididual benchmark tests plus cleanups
+
+Masami Hiramatsu (2):
+      perf probe: Support "$vars" meta argument syntax for local variables
+      perf probe: Find fentry mcount fuzzed parameter location
+
+Namhyung Kim (1):
+      perf tools: Show progress on histogram collapsing
+
+ tools/perf/Makefile.perf          |   1 +
+ tools/perf/builtin-annotate.c     |   6 +-
+ tools/perf/builtin-bench.c        | 239 +++++++++++++++++++-------------------
+ tools/perf/builtin-diff.c         |   7 +-
+ tools/perf/builtin-inject.c       |  27 +++--
+ tools/perf/builtin-report.c       |  24 ++--
+ tools/perf/builtin-sched.c        |  44 +++----
+ tools/perf/builtin-script.c       |  40 ++++---
+ tools/perf/builtin-top.c          |   4 +-
+ tools/perf/config/Makefile        |   4 +
+ tools/perf/tests/hists_link.c     |   2 +-
+ tools/perf/tests/sample-parsing.c |   4 +-
+ tools/perf/ui/gtk/gtk.h           |   2 +-
+ tools/perf/ui/gtk/progress.c      |  20 ++--
+ tools/perf/ui/gtk/setup.c         |   2 +-
+ tools/perf/ui/progress.c          |  32 +++--
+ tools/perf/ui/progress.h          |  19 +--
+ tools/perf/ui/tui/progress.c      |  15 +--
+ tools/perf/ui/tui/setup.c         |   3 +-
+ tools/perf/ui/tui/tui.h           |   6 +
+ tools/perf/util/build-id.c        |   6 +-
+ tools/perf/util/evlist.c          |  14 ++-
+ tools/perf/util/hist.c            |  23 ++--
+ tools/perf/util/hist.h            |   3 +-
+ tools/perf/util/probe-event.c     |   1 -
+ tools/perf/util/probe-finder.c    | 133 ++++++++++++++++++---
+ tools/perf/util/probe-finder.h    |   1 +
+ tools/perf/util/session.c         |  24 ++--
+ tools/perf/util/sort.c            | 124 ++++++++++----------
+ tools/perf/util/strfilter.c       |  46 ++++----
+ tools/perf/util/thread.c          |  72 ++++++------
+ tools/perf/util/util.c            |   2 +
+ 32 files changed, 560 insertions(+), 390 deletions(-)
+ create mode 100644 tools/perf/ui/tui/tui.h
