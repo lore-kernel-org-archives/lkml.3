@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3JWCGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 22:06:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:22905 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3JWCGF (ORCPT
+	id S1755312Ab3JWCJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 22:09:58 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:41957 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab3JWCJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 22:06:05 -0400
-X-Spam-Score: -100.8
-Message-ID: <52672ECD.9010800@asianux.com>
-Date: Wed, 23 Oct 2013 10:05:01 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 22 Oct 2013 22:09:57 -0400
+Date: Wed, 23 Oct 2013 04:09:55 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 11/11] asmlinkage, wan/sbni: Make inline assembler
+ symbols visible and assembler global
+Message-ID: <20131023020955.GF29695@two.firstfloor.org>
+References: <1382458346-24811-1-git-send-email-andi@firstfloor.org>
+ <1382458346-24811-12-git-send-email-andi@firstfloor.org>
+ <20131022.135928.2040131908206663695.davem@davemloft.net>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        realmz paranoid <realmz6@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] arch: *: remove '__init' for setup_profiling_timer()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022.135928.2040131908206663695.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of architectures not use '__init' for setup_profiling_timer(), so
-need remove it, or can generate warning (e.g. arc with allmodconfig):
+On Tue, Oct 22, 2013 at 01:59:28PM -0400, David Miller wrote:
+> From: Andi Kleen <andi@firstfloor.org>
+> Date: Tue, 22 Oct 2013 09:12:26 -0700
+> 
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > - Inline assembler defining C callable code has to be global
+> > - The function has to be visible
+> > 
+> > Do this in wan/sbni
+> > 
+> > Cc: netdev@vger.kernel.org
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> Is it really impossible to use the generic crc32 support instead of this
+> unsightly custom inline assembler?
 
-    MODPOST vmlinux.o
-  WARNING: vmlinux.o(.text+0x3c682): Section mismatch in reference from the function write_profile() to the function .init.text:setup_profiling_timer()
-  The function write_profile() references
-  the function __init setup_profiling_timer().
-  This is often because write_profile lacks a __init
-  annotation or the annotation of setup_profiling_timer is wrong.
+Yes it's impossible.
 
+There's no way for me to test it, and this would be a far too big change
+to submit untested.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/kernel/smp.c          |    2 +-
- arch/blackfin/mach-bf561/smp.c |    2 +-
- arch/parisc/kernel/smp.c       |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Also my only interest here is this thing not breaking my LTO
+allyesconfig build. I'm not even sure what it does.
 
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-index bca3052..3bdac11 100644
---- a/arch/arc/kernel/smp.c
-+++ b/arch/arc/kernel/smp.c
-@@ -187,7 +187,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
- /*
-  * not supported here
-  */
--int __init setup_profiling_timer(unsigned int multiplier)
-+int setup_profiling_timer(unsigned int multiplier)
- {
- 	return -EINVAL;
- }
-diff --git a/arch/blackfin/mach-bf561/smp.c b/arch/blackfin/mach-bf561/smp.c
-index 11789be..3bef058 100644
---- a/arch/blackfin/mach-bf561/smp.c
-+++ b/arch/blackfin/mach-bf561/smp.c
-@@ -43,7 +43,7 @@ void __init platform_prepare_cpus(unsigned int max_cpus)
- 	init_cpu_present(&mask);
- }
- 
--int __init setup_profiling_timer(unsigned int multiplier) /* not supported */
-+int setup_profiling_timer(unsigned int multiplier) /* not supported */
- {
- 	return -EINVAL;
- }
-diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
-index 8a252f2..2e8cd36 100644
---- a/arch/parisc/kernel/smp.c
-+++ b/arch/parisc/kernel/smp.c
-@@ -433,7 +433,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *tidle)
- }
- 
- #ifdef CONFIG_PROC_FS
--int __init
-+int
- setup_profiling_timer(unsigned int multiplier)
- {
- 	return -EINVAL;
--- 
-1.7.7.6
+Just because some legacy driver breaks my build you cannot make me
+accountable for maintaining it now. 
+
+If it's not possible to get this trivial change in I would need
+to mark it "depends on !LTO" in Kconfig.
+
+-Andi
