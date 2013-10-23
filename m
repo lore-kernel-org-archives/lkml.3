@@ -1,80 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3JWAIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 20:08:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41888 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3JWAH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 20:07:59 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <526712B2.7070108@jp.fujitsu.com>
-Date: Wed, 23 Oct 2013 09:05:06 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754117Ab3JWA0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 20:26:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52319 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab3JWA0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 20:26:52 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com>
+References: <1382476041-1115-1-git-send-email-andrew.p.boie@intel.com> <1382476041-1115-2-git-send-email-andrew.p.boie@intel.com>
 MIME-Version: 1.0
-To: jerry.hoemann@hp.com
-CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131022220803.GA32387@anatevka.fc.hp.com>
-In-Reply-To: <20131022220803.GA32387@anatevka.fc.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/1] x86: boot: support minigzip bzImage compression
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 23 Oct 2013 01:26:19 +0100
+To: Andrew Boie <andrew.p.boie@intel.com>, linux-kernel@vger.kernel.org
+CC: tglx@linutronix.de, mmarek@suse.cz
+Message-ID: <e7a2d995-e90f-4912-a0b9-4cf5725b246b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/23 7:08), jerry.hoemann@hp.com wrote:
-> On Wed, Oct 23, 2013 at 12:01:18AM +0900, HATAYAMA Daisuke wrote:
->> This patch set is to allow kdump 2nd kernel to wake up multiple CPUs
->> even if 1st kernel crashs on some AP, a continueing work from:
->>
->>    [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
->>    https://lkml.org/lkml/2013/10/16/300.
->>
->> In this version, basic design has changed. Now users need to figure
->> out initial APIC ID of BSP in the 1st kernel and configures kernel
->> parameter for the 2nd kernel manually using disable_cpu_apic kernel
->> parameter to be newly introduced in this patch set. This design is
->> more flexible than the previous version in that we no longer have to
->> rely on ACPI/MP table to get initial APIC ID of BSP.
->>
->> Sorry, this patch set have not include in-source documentation
->> requested by Borislav Petkov yet, but I'll post it later separately,
->> which would be better to focus on documentation reviewing.
->>
->> ChangeLog
->>
->> v3 => v4)
->>
->> - Rebased on top of v3.12-rc6
->>
->> - Basic design has been changed. Now users need to figure out initial
->>    APIC ID of BSP in the 1st kernel and configures kernel parameter for
->>    the 2nd kernel manually using disable_cpu_apic kernel parameter to
->>    be newly introduced in this patch set. This design is more flexible
->>    than the previous version in that we no longer have to rely on
->>    ACPI/MP table to get initial APIC ID of BSP.
->
->
-> Do you literally mean a human at each boot will have to configure
-> the kdump configuration files for passing disable_cpu_apic?
-> Or do you envision the setting of disable_cpu_apic being put into
-> the kdump initialization scripts?
->
-> thanks
->
-> Jerry
+Wouldn't it be better to fix gzip than hacking around this in the kernel?
 
-Nearer to the former case, but this is not what a human should do. It's
-a cumbersome task. I think, on fedora/RHEL system for example, kdump
-service should check at each boot automatically.
+Andrew Boie <andrew.p.boie@intel.com> wrote:
+>Android OTA system computes very efficient diffs of compressed files
+>if the deflate() algorithm it has access to is the same version as
+>used to create the original file. Here we add support for compressing
+>the kernel with 'minigzip' which uses the deflate() inside zlib.
+>This is much better than using 'gzip' as that tool has a very old
+>version of deflate() inside the gzip codebase instead of linking
+>against
+>zlib.
+>
+>Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
+>---
+> arch/x86/Kconfig                  |  1 +
+> arch/x86/boot/compressed/Makefile |  3 +++
+> arch/x86/boot/compressed/misc.c   |  2 +-
+> init/Kconfig                      | 18 +++++++++++++++++-
+> scripts/Makefile.lib              |  7 +++++++
+> 5 files changed, 29 insertions(+), 2 deletions(-)
+>
+>diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>index f67e839..aa91cef 100644
+>--- a/arch/x86/Kconfig
+>+++ b/arch/x86/Kconfig
+>@@ -62,6 +62,7 @@ config X86
+> 	select HAVE_REGS_AND_STACK_ACCESS_API
+> 	select HAVE_DMA_API_DEBUG
+> 	select HAVE_KERNEL_GZIP
+>+	select HAVE_KERNEL_MINIGZIP
+> 	select HAVE_KERNEL_BZIP2
+> 	select HAVE_KERNEL_LZMA
+> 	select HAVE_KERNEL_XZ
+>diff --git a/arch/x86/boot/compressed/Makefile
+>b/arch/x86/boot/compressed/Makefile
+>index dcd90df..f000791 100644
+>--- a/arch/x86/boot/compressed/Makefile
+>+++ b/arch/x86/boot/compressed/Makefile
+>@@ -56,6 +56,8 @@ vmlinux.bin.all-$(CONFIG_X86_NEED_RELOCS) +=
+>$(obj)/vmlinux.relocs
+> 
+> $(obj)/vmlinux.bin.gz: $(vmlinux.bin.all-y) FORCE
+> 	$(call if_changed,gzip)
+>+$(obj)/vmlinux.bin.mgz: $(vmlinux.bin.all-y) FORCE
+>+	$(call if_changed,minigzip)
+> $(obj)/vmlinux.bin.bz2: $(vmlinux.bin.all-y) FORCE
+> 	$(call if_changed,bzip2)
+> $(obj)/vmlinux.bin.lzma: $(vmlinux.bin.all-y) FORCE
+>@@ -68,6 +70,7 @@ $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
+> 	$(call if_changed,lz4)
+> 
+> suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+>+suffix-$(CONFIG_KERNEL_MINIGZIP):= mgz
+> suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+> suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+> suffix-$(CONFIG_KERNEL_XZ)	:= xz
+>diff --git a/arch/x86/boot/compressed/misc.c
+>b/arch/x86/boot/compressed/misc.c
+>index 434f077..4e55d32 100644
+>--- a/arch/x86/boot/compressed/misc.c
+>+++ b/arch/x86/boot/compressed/misc.c
+>@@ -125,7 +125,7 @@ static char *vidmem;
+> static int vidport;
+> static int lines, cols;
+> 
+>-#ifdef CONFIG_KERNEL_GZIP
+>+#if defined(CONFIG_KERNEL_GZIP) || defined(CONFIG_KERNEL_MINIGZIP)
+> #include "../../../../lib/decompress_inflate.c"
+> #endif
+> 
+>diff --git a/init/Kconfig b/init/Kconfig
+>index 3ecd8a1..818f225 100644
+>--- a/init/Kconfig
+>+++ b/init/Kconfig
+>@@ -100,6 +100,9 @@ config LOCALVERSION_AUTO
+> config HAVE_KERNEL_GZIP
+> 	bool
+> 
+>+config HAVE_KERNEL_MINIGZIP
+>+	bool
+>+
+> config HAVE_KERNEL_BZIP2
+> 	bool
+> 
+>@@ -118,7 +121,7 @@ config HAVE_KERNEL_LZ4
+> choice
+> 	prompt "Kernel compression mode"
+> 	default KERNEL_GZIP
+>-	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA
+>|| HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+>+	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_MINIGZIP ||
+>HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ ||
+>HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+> 	help
+> 	  The linux kernel is a kind of self-extracting executable.
+> 	  Several compression algorithms are available, which differ
+>@@ -144,6 +147,19 @@ config KERNEL_GZIP
+> 	  The old and tried gzip compression. It provides a good balance
+> 	  between compression ratio and decompression speed.
+> 
+>+config KERNEL_MINIGZIP
+>+	bool "Minigzip"
+>+	depends on HAVE_KERNEL_MINIGZIP
+>+	help
+>+	  Use minigzip to compress the bzImage. This is very similar to gzip
+>+	  but uses the zlib library to compress, rather than the very old
+>version
+>+	  of zlib inside the gzip codebase. This is used for Android kernels
+>+	  so that the same version of the deflate() algorithm is used when
+>+	  building the kernel and constructing diffs with OTA applypatch,
+>which
+>+	  uncompresses sections of files that it detects are gzipped before
+>computing
+>+	  the diffs. If the versions of deflate() are out of alignment the
+>binary
+>+	  diffs tend to be very large.
+>+
+> config KERNEL_BZIP2
+> 	bool "Bzip2"
+> 	depends on HAVE_KERNEL_BZIP2
+>diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+>index 49392ec..deb1bb8 100644
+>--- a/scripts/Makefile.lib
+>+++ b/scripts/Makefile.lib
+>@@ -240,6 +240,13 @@ quiet_cmd_gzip = GZIP    $@
+> cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
+> 	(rm -f $@ ; false)
+> 
+>+# Minigzip
+>+#
+>---------------------------------------------------------------------------
+>+
+>+quiet_cmd_minigzip = MINGZIP $@
+>+cmd_minigzip = (cat $(filter-out FORCE,$^) | minigzip -c -9 > $@) || \
+>+	(rm -f $@ ; false)
+>+
+> # DTC
+>#
+>---------------------------------------------------------------------------
+> 
 
 -- 
-Thanks.
-HATAYAMA, Daisuke
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
