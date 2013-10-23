@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3JWMWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 08:22:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53311 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752770Ab3JWMWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 08:22:41 -0400
-Message-ID: <1382530957.16097.30.camel@dabdike.quadriga.com>
-Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: dgilbert@interlog.com, Simon Kirby <sim@hostway.ca>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Vaughan Cao <vaughan.cao@oracle.com>
-Date: Wed, 23 Oct 2013 13:22:37 +0100
-In-Reply-To: <CA+5PVA6+6jZyypZODiuY4NWY3V2CsJeurFTuy4Wt-KcPddzaSQ@mail.gmail.com>
-References: <20131022205608.GA6616@hostway.ca>
-	 <52671B3E.6070804@interlog.com>
-	 <1382514295.2081.32.camel@dabdike.quadriga.com>
-	 <CA+5PVA6+6jZyypZODiuY4NWY3V2CsJeurFTuy4Wt-KcPddzaSQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753346Ab3JWMZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 08:25:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49401 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752910Ab3JWMZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 08:25:37 -0400
+Date: Wed, 23 Oct 2013 14:25:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131023122531.GA15848@nazgul.tnic>
+References: <20131012101308.GI12321@console-pimps.org>
+ <20131012103054.GA13739@pd.tnic>
+ <20131013031126.GB1914@darkstar.nay.redhat.com>
+ <20131013092521.GA22866@pd.tnic>
+ <20131014155851.GJ4009@pd.tnic>
+ <20131021124739.GA4515@dhcp-16-126.nay.redhat.com>
+ <20131021133741.GA5716@nazgul.tnic>
+ <20131021150426.GB4515@dhcp-16-126.nay.redhat.com>
+ <20131022111857.GA10660@nazgul.tnic>
+ <20131023021730.GE4594@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131023021730.GE4594@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-23 at 05:11 -0700, Josh Boyer wrote:
-> On Wed, Oct 23, 2013 at 12:44 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
-> >> On 13-10-22 04:56 PM, Simon Kirby wrote:
-> >> > Hello!
-> >> >
-> >> > While trying to figure out why the request queue to sda (ext4) was
-> >> > clogging up on one of our btrfs backup boxes, I noticed a megarc process
-> >> > in D state, so enabled locking debugging, and got this (on 3.12-rc6):
-> >> >
-> >> > [  205.372823] ================================================
-> >> > [  205.372901] [ BUG: lock held when returning to user space! ]
-> >> > [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
-> >> > [  205.373055] ------------------------------------------------
-> >> > [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
-> >> > [  205.373212] 1 lock held by megarc.bin/5283:
-> >> > [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
-> >> >
-> >> > Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
-> >> > tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
-> >> > though I haven't tried with lockdep.
-> >> >
-> >> > This is caused by some of our internal RAID monitoring scripts that run
-> >> > "megarc.bin -dispCfg -a0" (even though that controller isn't present on
-> >> > this server -- a PowerEdge 2950 w/Perc 5).
-> >> >
-> >> > strace output of the program execution that causes the above message is
-> >> > here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
-> >>
-> >> This has been reported. That patch will be reverted or,
-> >> if there is enough time, a fix will (or at least should)
-> >> go in before the release of lk 3.12 .
-> >
-> > I think you've got about a week to prove you can fix it (before 3.12
-> > goes final).  I'll send my current set of fixes to Linus without doing
-> > anything about sg.
-> 
-> In the event that a suitable fix isn't found, are you going to revert
-> the commit(s) that caused the issue?
+On Wed, Oct 23, 2013 at 10:17:31AM +0800, Dave Young wrote:
+> The reason is that I only pass runtime regions from 1st kernel to
+> kexec kernel, your efi mapping function uses the region size to
+> determin the virtual address from top to down. Because the passed-in
+> md ranges in kexec kernel are different from ranges booting from
+> firmware so the virtual address will be different.
 
-That's what I said I'd do previously, yes.
+Well, this shouldn't be because SetVirtualAddressMap has already fixed
+the virtual addresses for us. And if they're different, then runtime
+services won't work anyway. Or am I missing something...?
 
-James
+> Even I pass the whole untouched ranges including BOOT_SERVICE there's
+> still chance the function for reserving boot regions overwrite the
+> boot region size to 0, and 1st kernel will leave it to be used as
+> normal memory after efi init. I think we have talked about this issue
+> previously.
 
+Matt, didn't you question the need to keep boot services regions
+mapped indefinitely? What was the story there?
 
+Thanks.
