@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab3JWAlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Oct 2013 20:41:37 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:56642
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751199Ab3JWAlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Oct 2013 20:41:35 -0400
-Date: Wed, 23 Oct 2013 00:41:30 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
-Message-ID: <20131023004130.GA12788@mail.hallyn.com>
-References: <20130723181606.GA6342@sergelap>
- <20130723183018.GF21100@mtj.dyndns.org>
- <20130723183841.GA9021@tp>
- <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+	id S1755047Ab3JWAlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Oct 2013 20:41:47 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:41929 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754646Ab3JWAlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Oct 2013 20:41:45 -0400
+Message-ID: <52671B3E.6070804@interlog.com>
+Date: Tue, 22 Oct 2013 20:41:34 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Vaughan Cao <vaughan.cao@oracle.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
+References: <20131022205608.GA6616@hostway.ca>
+In-Reply-To: <20131022205608.GA6616@hostway.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> On Tue, Jul 23, 2013 at 2:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> > This doesn't delegate it into the container.  It allows me, on the host,
-> > to set the cgroup for a container.
-> 
-> Hmmm? I'm a bit confused. Isn't the description saying that the patch
-> allows pseudo-root in userns to change cgroup membership even if it
-> isn't actually root?
-> 
-> Besides, I find the whole check rather bogus and would actually much
-> prefer just nuking the check and just follow the standard permission
-> checks.
+On 13-10-22 04:56 PM, Simon Kirby wrote:
+> Hello!
+>
+> While trying to figure out why the request queue to sda (ext4) was
+> clogging up on one of our btrfs backup boxes, I noticed a megarc process
+> in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+>
+> [  205.372823] ================================================
+> [  205.372901] [ BUG: lock held when returning to user space! ]
+> [  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+> [  205.373055] ------------------------------------------------
+> [  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+> [  205.373212] 1 lock held by megarc.bin/5283:
+> [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+>
+> Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+> tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+> though I haven't tried with lockdep.
+>
+> This is caused by some of our internal RAID monitoring scripts that run
+> "megarc.bin -dispCfg -a0" (even though that controller isn't present on
+> this server -- a PowerEdge 2950 w/Perc 5).
+>
+> strace output of the program execution that causes the above message is
+> here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
 
-Can we please nuke it like this then?
+This has been reported. That patch will be reverted or,
+if there is enough time, a fix will (or at least should)
+go in before the release of lk 3.12 .
 
->From b840083ec8fa1f0645ae925c79db3dc51edd019c Mon Sep 17 00:00:00 2001
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-Date: Wed, 23 Oct 2013 01:34:00 +0200
-Subject: [PATCH 1/1] device_cgroup: remove can_attach
+See this thread:
+   http://marc.info/?t=138228547300001&r=1&w=2
 
-It is really only wanting to duplicate a check which is already done by the
-cgroup subsystem.
 
-With this patch, user jdoe still cannot move pid 1 into a devices cgroup
-he owns, but now he can move his own other tasks into devices cgroups.
+And you might test the patch and confirm that it does
+fix the problem (and report back).
 
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Aristeu Rozanski <aris@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
----
- security/device_cgroup.c | 11 -----------
- 1 file changed, 11 deletions(-)
-
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index efc6f68..a37c054 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -64,16 +64,6 @@ static inline struct dev_cgroup *task_devcgroup(struct task_struct *task)
- 
- struct cgroup_subsys devices_subsys;
- 
--static int devcgroup_can_attach(struct cgroup_subsys_state *new_css,
--				struct cgroup_taskset *set)
--{
--	struct task_struct *task = cgroup_taskset_first(set);
--
--	if (current != task && !capable(CAP_SYS_ADMIN))
--		return -EPERM;
--	return 0;
--}
--
- /*
-  * called under devcgroup_mutex
-  */
-@@ -698,7 +688,6 @@ static struct cftype dev_cgroup_files[] = {
- 
- struct cgroup_subsys devices_subsys = {
- 	.name = "devices",
--	.can_attach = devcgroup_can_attach,
- 	.css_alloc = devcgroup_css_alloc,
- 	.css_free = devcgroup_css_free,
- 	.css_online = devcgroup_online,
--- 
-1.8.3.2
+Doug Gilbert
 
