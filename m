@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab3JWHFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 03:05:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24674 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3JWHFt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 03:05:49 -0400
-Date: Wed, 23 Oct 2013 09:05:28 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
-	<phcoder@gmail.com>
-Cc: The development of GNU GRUB <grub-devel@gnu.org>,
-        boris.ostrovsky@oracle.com, david.woodhouse@intel.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, keir@xen.org,
-        konrad.wilk@oracle.com, pjones@redhat.com,
-        richard.l.maliszewski@intel.com, ross.philipson@citrix.com,
-        stefano.stabellini@eu.citrix.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131023070528.GQ3626@debian70-amd64.local.net-space.pl>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
- <526599A8.9090501@gmail.com>
- <52663D54.2020800@gmail.com>
+	id S1751957Ab3JWHHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 03:07:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19599 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842Ab3JWHHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 03:07:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="423298323"
+Date: Wed, 23 Oct 2013 00:07:48 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131023070748.GB7756@tassilo.jf.intel.com>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
+ <20131010180049.GD9929@pd.tnic>
+ <20131016124627.GA2611@gmail.com>
+ <CABPqkBRQcisi8ukhD=6fKMq+iqwM+Qgxd3=jo82EUJB5coXs1A@mail.gmail.com>
+ <20131016175302.GB4100@infradead.org>
+ <CABPqkBSs1YwTiy_nkyXc89vg8-Tg=ONqCk930A+ksoLKsGLdHw@mail.gmail.com>
+ <20131017081420.GB22705@gmail.com>
+ <CABPqkBTBqEUU9p3SwNTXwwJ9j7VQXdofA5DzyoDmw+xJBE-uUw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52663D54.2020800@gmail.com>
+In-Reply-To: <CABPqkBTBqEUU9p3SwNTXwwJ9j7VQXdofA5DzyoDmw+xJBE-uUw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 10:54:44AM +0200, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
-> On 21.10.2013 23:16, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
-> > Mail is big, I think I got your essential points but I didn't read it whole.
-> > On 21.10.2013 14:57, Daniel Kiper wrote:
-> >> Hi,
-> >>
-> >> During work on multiboot2 protocol support for Xen it was discovered
-> >> that memory map passed via relevant tag could not represent wide range
-> >> of memory types available on EFI platforms. Additionally, GRUB2
-> >> implementation calls ExitBootServices() on them just before jumping
-> >> into loaded image. In this situation loaded system could not clearly
-> >> identify reserved memory regions, EFI runtime services regions and others.
-> >>
-> > Will a multiboot2 tag with whole EFI memory map solve your problem?
-> I added such a tag in documentation and wrote a patch for it (attached).
+> # perf stat -a -e power/energy-cores/,power/energy-pkg/,ref-cycles -I
+> 1000 sleep 1000
+> #           time        unit            counts events
+>      1.000264953      Joules              2.09 power/energy-cores/
+>   [100.00%]
+>      1.000264953      Joules              5.94 power/energy-pkg/
+>      1.000264953                   160,530,320 ref-cycles
+>      2.000640422      Joules              2.07 power/energy-cores/
+>      2.000640422      Joules              5.94 power/energy-pkg/
+>      2.000640422                   152,673,056 ref-cycles
+>      3.000964416      Joules              2.08 power/energy-cores/
+>      3.000964416      Joules              5.93 power/energy-pkg/
+>      3.000964416                   158,779,184 ref-cycles
 
-Thanks. Could you send me a pointer to current multiboot2 protocol docs?
+Can you add some column marker that there is no unit (like -) ? 
 
-> Awaiting for someone to test it to commit
+This is just in case someone wants to parse this with a tool. Yes they
+should be using -x, but it is still better to be always parseable.
 
-On first sight it looks quite nice. However, as I know Solaris guys
-prepared similar solution. I am not sure it was discussed with GRUB2
-guys. However, I think that it is worth coordinating both works and
-do not break existing solution if it is possible.
-
-I will try to get more details about Solaris implementation.
-
-Daniel
+-Andi
