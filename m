@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab3JWNq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 09:46:28 -0400
-Received: from co202.xi-lite.net ([149.6.83.202]:36272 "EHLO co202.xi-lite.net"
+	id S1752391Ab3JWNqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 09:46:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6815 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab3JWNq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 09:46:27 -0400
-Message-ID: <5267D2DD.5000309@parrot.com>
-Date: Wed, 23 Oct 2013 15:45:01 +0200
-From: Jeremie Samuel <jeremie.samuel.ext@parrot.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: sdhci: dove: Fix build breakage
-References: <1382533832-21085-1-git-send-email-treding@nvidia.com>
-In-Reply-To: <1382533832-21085-1-git-send-email-treding@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751316Ab3JWNqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 09:46:40 -0400
+Message-ID: <1382535972.1768.68.camel@deneb.redhat.com>
+Subject: Re: [PATCH] arm64: allow ioremap_cache() to use existing RAM
+ mappings
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Oct 2013 09:46:12 -0400
+In-Reply-To: <1382519898.10408.1.camel@mbp>
+References: <1382362594-24947-1-git-send-email-msalter@redhat.com>
+	 <1382519898.10408.1.camel@mbp>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soory, I thought I had corrected this typo.
+On Wed, 2013-10-23 at 10:18 +0100, Catalin Marinas wrote:
+> On Mon, 2013-10-21 at 14:36 +0100, msalter@redhat.com wrote:
+> > diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
+> > index 1725cd6..fb44b3d 100644
+> > --- a/arch/arm64/mm/ioremap.c
+> > +++ b/arch/arm64/mm/ioremap.c
+> > @@ -79,6 +79,21 @@ void __iounmap(volatile void __iomem *io_addr)
+> >  {
+> >  	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
+> >  
+> > +	/* Nothing to do for normal memory. See ioremap_cache() */
+> > +	if (pfn_valid(__virt_to_phys(addr) >> PAGE_SHIFT))
+> > +		return;
+> 
+> addr here can be some I/O address mapped previously, so __virt_to_phys()
+> is not valid (you don't actually get the pfn by shifting).
+> 
 
-Signed-off-by: Jeremie Samuel <jeremie.samuel.ext@parrot.com>
+Yeah, that's ugly. The thought was that only the kernel mapping of RAM
+would yield a valid address from __virt_to_phys(). Anything else, like
+a mapping of I/O space would lead to an invalid PFN. There's probably a
+clearer way of doing that that. Other than that, is the general concept
+of the patch reasonable?
 
--- 
-Jeremie Samuel              Parrot S.A.
-Software Engineer           14, quai de Jemmapes
-R&D/OS Platform             75010 Paris, France
-http://www.parrot.com
+--Mark
 
-On 23/10/2013 15:10, Thierry Reding wrote:
-> Commit 2d7c51f (mmc: sdhci: Use work structs instead of tasklets)
-> converts tasklets to work structs, but typos the conversion in the Dove
-> driver.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->   drivers/mmc/host/sdhci-dove.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
-> index 45c7f25..95f1076 100644
-> --- a/drivers/mmc/host/sdhci-dove.c
-> +++ b/drivers/mmc/host/sdhci-dove.c
-> @@ -39,7 +39,7 @@ static irqreturn_t sdhci_dove_carddetect_irq(int irq, void *data)
->   {
->   	struct sdhci_host *host = data;
->   
-> -	schedule_schedule(&host->card_detect_work);
-> +	schedule_work(&host->card_detect_work);
->   	return IRQ_HANDLED;
->   }
->   
 
