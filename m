@@ -1,146 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3JXFyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 01:54:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:17254 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492Ab3JXFy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 01:54:29 -0400
-X-IronPort-AV: E=Sophos;i="4.93,560,1378828800"; 
-   d="scan'208";a="8846753"
-Message-ID: <5268B659.7050204@cn.fujitsu.com>
-Date: Thu, 24 Oct 2013 13:55:37 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753239Ab3JXGAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 02:00:08 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:36531 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3JXGAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 02:00:06 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Jim Lieb <jlieb@panasas.com>,
+        tytso@mit.edu, viro@zeniv.linux.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bfields@redhat.com, jlayton@redhat.com
+References: <1381960919-4542-1-git-send-email-jlieb@panasas.com>
+	<1381960919-4542-2-git-send-email-jlieb@panasas.com>
+	<20131016224248.GQ13318@ZenIV.linux.org.uk>
+	<87ppr4lmp3.fsf@xmission.com>
+	<20131017012050.GR13318@ZenIV.linux.org.uk>
+	<87hacgk0yt.fsf@xmission.com> <52687468.3060206@mit.edu>
+Date: Wed, 23 Oct 2013 22:59:54 -0700
+In-Reply-To: <52687468.3060206@mit.edu> (Andy Lutomirski's message of "Wed, 23
+	Oct 2013 18:14:16 -0700")
+Message-ID: <8761snb44l.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>, eparis@redhat.com
-Subject: Re: [BUG][PATCH] audit: audit_log_start running on auditd should
- not stop
-References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com> <5257C5D7.80308@cn.fujitsu.com> <5257EF15.6080209@jp.fujitsu.com> <20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com> <525CE10A.90907@cn.fujitsu.com> <20131023195550.GA9109@madcap2.tricolour.ca>
-In-Reply-To: <20131023195550.GA9109@madcap2.tricolour.ca>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/24 13:51:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/24 13:51:55,
-	Serialize complete at 2013/10/24 13:51:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX196ddqDg0gFQFw0Ku4NSI+y3WBCQO3zLBE=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0356]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/3] switch_creds:  Syscall to switch creds for file server ops
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 03:55 AM, Richard Guy Briggs wrote:
-> On Tue, Oct 15, 2013 at 02:30:34PM +0800, Gao feng wrote:
->> Hi Toshiyuki-san,
-> 
-> Toshiuki and Gao,
-> 
->> On 10/15/2013 12:43 PM, Toshiyuki Okajima wrote:
->>> The backlog cannot be consumed when audit_log_start is running on auditd
->>> even if audit_log_start calls wait_for_auditd to consume it.
->>> The situation is a deadlock because only auditd can consume the backlog.
->>> If the other process needs to send the backlog, it can be also stopped 
->>> by the deadlock.
+Andy Lutomirski <luto@amacapital.net> writes:
+
+> On 10/16/2013 08:52 PM, Eric W. Biederman wrote:
+>> Al Viro <viro@ZenIV.linux.org.uk> writes:
+>> 
+>>> On Wed, Oct 16, 2013 at 06:18:16PM -0700, Eric W. Biederman wrote:
 >>>
->>> So, audit_log_start running on auditd should not stop.
+>>>> That doesn't look bad but it does need capable(CAP_SETUID) &&
+>>>> capable(CAP_SETGID) or possibly something a little more refined.
 >>>
->>> You can see the deadlock with the following reproducer:
->>>  # auditctl -a exit,always -S all
->>>  # reboot
-> 
->> Hmm, I see, There may be other code paths that auditd can call audit_log_start except
->> audit_log_config_change. so it's better to handle this problem in audit_log_start.
->>
->> but current task is only meaningful when gfp_mask & __GFP_WAIT is true.
->> so maybe the below patch is what you want.
-> 
-> I have been following this thread with interest.  I like the general
-> evolution of this patch.  The first patch was a bit too abrupt, dropping
-> too much, but this one makes much more sense.  I would be tempted to
-> make the reserve even bigger.
-> 
-> I see that you should be using a kernel that has included commit
-> 8ac1c8d5 (which made it into v3.12-rc3)
-> 	audit: fix endless wait in audit_log_start()
-> That was an obvious bug, 
+>>> D'oh
+>>>
+>>>> I don't think we want file descriptor passing to all of a sudden become
+>>>> a grant of privilege, beyond what the passed fd can do.
+>>>
+>>> Definitely.  And an extra ) to make it compile wouldn't hurt either...
+>> 
+>> There also appears to need to be a check that we don't gain any
+>> capabilities.
+>> 
+>> We also need a check so that you don't gain any capabilities, and
+>> possibly a few other things.
+>
+> Why?  I like the user_ns part, but I'm not immediately seeing the issue
+> with capabilities.
 
-include or not include?
+My reasoning was instead of making this syscall as generic as possible
+start it out by only allowing the cases Jim cares about and working with
+a model where you can't gain any permissions you couldn't gain
+otherwise.
 
-The problem is, if the audit_backlog_limit is 3, but there are 5 tasks
-calling audit_log_start, so 2 tasks will wait auditd to consume
-audit_skb_queue. if before auditd consumes skbs, somebody want to kill
-auditd, and auditd will set the audit_pid to zero, this will triger an
-audit message. so auditd will wait for himself. and this waiting is endless,
-since auditd cann't consume audit_skb_queue any more.
+Although the fd -1 trick to revert to your other existing cred seems
+reasonable.  
 
-the commit 8ac1c8d5 prevent this problem happening. because if once a task is
-blocked over the audit_backlog_wait_time. the audit_backlog_wait_time will
-be set to zero(audit_backlog_wait_overflow which is zero). so the other tasks
-will not wait anymore. but I'm confused if this is what we expected? these
-audit messages will lost once any task is blocked over audit_backlog_wait_time.
+>> So I suspect we want a check something like:
+>> 
+>> if ((new_cred->securebits != current_cred->securebits)  ||
+>>     (new_cred->cap_inheritable != current_cred->cap_inheritable) ||
+>>     (new_cred->cap_permitted != current_cred->cap_permitted) ||
+>>     (new_cred->cap_effective != current_cred->cap_effective) ||
+>>     (new_cred->cap_bset != current_cred->cap_bset) ||
+>>     (new_cred->jit_keyring != current_cred->jit_keyring) ||
+>>     (new_cred->session_keyring != current_cred->session_keyring) ||
+>>     (new_cred->process_keyring != current_cred->process_keyring) ||
+>>     (new_cred->thread_keyring != current_cred->thread_keyring) ||
+>>     (new_cred->request_keyring != current_cred->request_keyring) ||
+>>     (new_cred->security != current_cred->security) ||
+>>     (new_cred->user_ns != current_cred->user_ns)) {
+>> 	return -EPERM;
+>> }
+>> 
+>
+> I *really* don't like the idea of being able to use any old file
+> descriptor.  I barely care what rights the caller needs to have to
+> invoke this -- if you're going to pass an fd that grants a capability
+> (in the non-Linux sense of the work), please make sure that the sender
+> actually wants that behavior.
+>
+> IOW, have a syscall to generate a special fd for this purpose.  It's
+> only a couple lines of code, and I think we'll really regret it if we
+> fsck this up.
+>
+> (I will take it as a personal challenge to find at least one exploitable
+> privilege escalation in this if an arbitrary fd works.)
 
+If you can't switch to a uid or a gid you couldn't switch to otherwise
+then the worst that can happen is an information leak.  And information
+leaks are rarely directly exploitable.
 
-So, AFAIK if commit 8ac1c8d5 exist, this patch is not necessary, but
-we still do something to fix the problem commit 8ac1c8d5 brings.
+> Also... real_cred looks confusing.  AFAICS it is used *only* for knfsd
+> and faccessat.  That is, current userspace can't see it.  But now you'll
+> expose various oddities.  For example, AFAICS a capability-less process
+> that's a userns owner can always use setuid.  This will *overwrite*
+> real_cred.  Then you're screwed, especially if this happens by
+> accident.
 
-but I was still concerned about the cause of
-> the initial wait.  There are other fixes and ideas in the works that
-> should alleviate some of the pressure to make the service more usable.
-> 	https://lkml.org/lkml/2013/9/18/453
-> 
-> I have tested with and without this v3 patch and I don't see any
-> significant difference with the reproducer provided above.  I'm also
-> testing with a reproducer of the endless wait bug (readahead-collector).
-> 
-> What are your expected results?  What are your actual results in each
-> case?  How are they different?
-> 
->> diff --git a/kernel/audit.c b/kernel/audit.c
->> index 7b0e23a..10b4545 100644
->> --- a/kernel/audit.c
->> +++ b/kernel/audit.c
->> @@ -1095,7 +1095,9 @@ struct audit_buffer *audit_log_start(struct audit_context
->>         struct audit_buffer     *ab     = NULL;
->>         struct timespec         t;
->>         unsigned int            uninitialized_var(serial);
->> -       int reserve;
->> +       int reserve = 5; /* Allow atomic callers to go up to five
->> +                           entries over the normal backlog limit */
->> +
->>         unsigned long timeout_start = jiffies;
->>
->>         if (audit_initialized != AUDIT_INITIALIZED)
->> @@ -1104,11 +1106,12 @@ struct audit_buffer *audit_log_start(struct audit_contex
->>         if (unlikely(audit_filter_type(type)))
->>                 return NULL;
->>
->> -       if (gfp_mask & __GFP_WAIT)
->> -               reserve = 0;
->> -       else
->> -               reserve = 5; /* Allow atomic callers to go up to five
->> -                               entries over the normal backlog limit */
->> +       if (gfp_mask & __GFP_WAIT) {
->> +               if (audit_pid && audit_pid == current->pid)
->> +                       gfp_mask &= ~__GFP_WAIT;
->> +               else
->> +                       reserve = 0;
->> +       }
->>
->>         while (audit_backlog_limit
->>                && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserv
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer
-> Kernel Security
-> AMER ENG Base Operating Systems
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635
-> Internal: (81) 32635
-> Alt: +1.613.693.0684x3545
-> 
+And doing in userland what faccessat, and knfsd do in the kernel is
+exactly what is desired here.  But maybe there are issues with that.
 
+> That being said, Windows has had functions like this for a long time.
+> Processes have a primary token and possibly an impersonation token.  Any
+> process can call ImpersonateLoggedOnUser (no privilege required) to
+> impersonate the credentials of a token (which is special kind of fd).
+> Similarly, any process can call RevertToSelf to undo it.
+>
+> Is there any actual problem with allowing completely unprivileged tasks
+> to switch to one of these magic cred fds?  That would avoid needing a
+> "revert" operation.
+
+If the permission model is this switching of credentials doesn't get you
+anything you couldn't get some other way.  That would seem to totally
+rules out unprivileged processes switching these things.
+
+> Another note: I think that there may be issues if the creator of a token
+> has no_new_privs set and the user doesn't.  Imagine a daemon that
+> accepts one of these fds, impersonates it, and calls exec.  This could
+> be used to escape from no_new_privs land.
+
+Which is why I was suggesting that we don't allow changing any field in
+the cred except for uids and gids.
+
+Eric
