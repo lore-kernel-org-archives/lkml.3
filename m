@@ -1,165 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3JXHB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:01:29 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48813 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872Ab3JXHB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:01:27 -0400
-Message-ID: <5268C5A9.5040303@ti.com>
-Date: Thu, 24 Oct 2013 10:00:57 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-CC: <sre@debian.org>, <tony@atomide.com>, <pali.rohar@gmail.com>,
-        <pc+n900@asdf.org>, <pavel@ucw.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: OMAPFB: CMA allocation failures
-References: <1296360712.2526.1382565582863.JavaMail.apache@mail82.abv.bg>
-In-Reply-To: <1296360712.2526.1382565582863.JavaMail.apache@mail82.abv.bg>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="6eVjXObUFnsccQ7tDqomOhpqqrvb5Mmm0"
+	id S1754120Ab3JXHDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:03:09 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:44045 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab3JXHDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:03:07 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, inki.dae@samsung.com,
+        jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial]treewide: Fix typo incomment in /gpu/drm/exynos
+Date: Thu, 24 Oct 2013 16:02:57 +0900
+Message-Id: <1382598177-19166-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.4.1.559.gdb9bdfb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6eVjXObUFnsccQ7tDqomOhpqqrvb5Mmm0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Correct spelling typo in drivers/gpu/drm/exynos
 
-Hi,
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-On 24/10/13 00:59, =D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE =D0=94=D0=B8=D0=BC=
-=D0=B8=D1=82=D1=80=D0=BE=D0=B2 wrote:
->  Hi,
->=20
-> I wonder if there is any progress on the issue? Do you need me to send =
-more data? Or
-> should I raise the issue with the CMA maintainer?
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be kept; you may remove them yourself if you want to.
+# An empty message aborts the commit.
+# On branch exynos_typo
+# Changes to be committed:
+#	modified:   exynos_drm_crtc.c
+#	modified:   exynos_drm_g2d.c
+#	modified:   exynos_drm_gem.c
+#	modified:   exynos_drm_gem.h
+#	modified:   exynos_drm_ipp.c
+#	modified:   exynos_drm_ipp.h
+#
+---
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c | 4 ++--
+ drivers/gpu/drm/exynos/exynos_drm_g2d.c  | 2 +-
+ drivers/gpu/drm/exynos/exynos_drm_gem.c  | 2 +-
+ drivers/gpu/drm/exynos/exynos_drm_gem.h  | 2 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c  | 2 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h  | 4 ++--
+ 6 files changed, 8 insertions(+), 8 deletions(-)
 
-No, I haven't had time to look at this. And frankly, I don't even have
-an idea what to look for if I can't reproduce it. The issue is not about
-display, but DMA allocation, of which I know very little.
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+index ebc0150..6f3400f 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+@@ -36,9 +36,9 @@ enum exynos_crtc_mode {
+  * @pipe: a crtc index created at load() with a new crtc object creation
+  *	and the crtc object would be set to private->crtc array
+  *	to get a crtc object corresponding to this pipe from private->crtc
+- *	array when irq interrupt occured. the reason of using this pipe is that
++ *	array when irq interrupt occurred. the reason of using this pipe is that
+  *	drm framework doesn't support multiple irq yet.
+- *	we can refer to the crtc to current hardware interrupt occured through
++ *	we can refer to the crtc to current hardware interrupt occurred through
+  *	this pipe value.
+  * @dpms: store the crtc dpms value
+  * @mode: store the crtc mode value
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_g2d.c b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+index 3271fd4..c97709c 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_g2d.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+@@ -1124,7 +1124,7 @@ int exynos_g2d_set_cmdlist_ioctl(struct drm_device *drm_dev, void *data,
+ 	 * G2D interrupt event once current command list execution is
+ 	 * finished.
+ 	 * Otherwise only ACF bit should be set to INTEN register so
+-	 * that one interrupt is occured after all command lists
++	 * that one interrupt is occurred after all command lists
+ 	 * have been completed.
+ 	 */
+ 	if (node->event) {
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_gem.c b/drivers/gpu/drm/exynos/exynos_drm_gem.c
+index 1ade191..be59d50 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_gem.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_gem.c
+@@ -652,7 +652,7 @@ int exynos_drm_gem_dumb_create(struct drm_file *file_priv,
+ 	int ret;
+ 
+ 	/*
+-	 * alocate memory to be used for framebuffer.
++	 * allocate memory to be used for framebuffer.
+ 	 * - this callback would be called by user application
+ 	 *	with DRM_IOCTL_MODE_CREATE_DUMB command.
+ 	 */
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_gem.h b/drivers/gpu/drm/exynos/exynos_drm_gem.h
+index 702ec3a..b8c818b 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_gem.h
++++ b/drivers/gpu/drm/exynos/exynos_drm_gem.h
+@@ -60,7 +60,7 @@ struct exynos_drm_gem_buf {
+  * @vma: a pointer to vm_area.
+  * @flags: indicate memory type to allocated buffer and cache attruibute.
+  *
+- * P.S. this object would be transfered to user as kms_bo.handle so
++ * P.S. this object would be transferred to user as kms_bo.handle so
+  *	user can access the buffer through kms_bo.handle.
+  */
+ struct exynos_drm_gem_obj {
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+index 824e070..d519a4e 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+@@ -335,7 +335,7 @@ int exynos_drm_ipp_get_property(struct drm_device *drm_dev, void *data,
+ 	} else {
+ 		/*
+ 		 * Getting ippdrv capability by ipp_id.
+-		 * some deivce not supported wb, output interface.
++		 * some device not supported wb, output interface.
+ 		 * so, user application detect correct ipp driver
+ 		 * using this ioctl.
+ 		 */
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+index 4cadbea..ab1634b 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
++++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+@@ -48,7 +48,7 @@ struct drm_exynos_ipp_cmd_work {
+ /*
+  * A structure of command node.
+  *
+- * @priv: IPP private infomation.
++ * @priv: IPP private information.
+  * @list: list head to command queue information.
+  * @event_list: list head of event.
+  * @mem_list: list head to source,destination memory queue information.
+@@ -92,7 +92,7 @@ struct drm_exynos_ipp_buf_info {
+ };
+ 
+ /*
+- * A structure of wb setting infomation.
++ * A structure of wb setting information.
+  *
+  * @enable: enable flag for wb.
+  * @refresh: HZ of the refresh rate.
+-- 
+1.8.4.1.559.gdb9bdfb
 
-So yes, I suggest you try to discuss this with CMA/DMA people.
-
- Tomi
-
->=20
-> Regards,
-> Ivo
->=20
->  >-------- =D0=9E=D1=80=D0=B8=D0=B3=D0=B8=D0=BD=D0=B0=D0=BB=D0=BD=D0=BE=
- =D0=BF=D0=B8=D1=81=D0=BC=D0=BE --------
->  >=D0=9E=D1=82:  =D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE =D0=94=D0=B8=D0=BC=
-=D0=B8=D1=82=D1=80=D0=BE=D0=B2=20
->  >=D0=9E=D1=82=D0=BD=D0=BE=D1=81=D0=BD=D0=BE: Re: OMAPFB: CMA allocatio=
-n failures
->  >=D0=94=D0=BE: Tomi Valkeinen=20
->  >=D0=98=D0=B7=D0=BF=D1=80=D0=B0=D1=82=D0=B5=D0=BD=D0=BE =D0=BD=D0=B0: =
-=D0=A1=D1=80=D1=8F=D0=B4=D0=B0, 2013, =D0=9E=D0=BA=D1=82=D0=BE=D0=BC=D0=B2=
-=D1=80=D0=B8 16 09:33:51 EEST
->  >
->  >
->  > Hi Tomi,
->  >
->  >>I think we should somehow find out what the pages are that cannot be=
-
->  >>migrated, and where they come from.
->  >>
->  >>So there are &amp;quot;anonymous pages without mapping&amp;quot; wit=
-h page_count(page) !=3D
->  >>1. I have to say I don't know what that means =3D). I need to find s=
-ome
->  >>time to study the mm.
->  >
->  >I put some more traces in the point of failure, the result:
->  >page_count(page) =3D=3D 2, page->flags =3D=3D 0x0008025D, which is:
->  >PG_locked, PG_referenced, PG_uptodate, PG_dirty, PG_active, PG_arch_1=
-, PG_unevictable
->  >Whatever those mean :). I have no idea how to identify where those pa=
-ges come from.
->  >
->  >>Well, as I said, you're the first one to report any errors, after th=
-e
->  >>change being in use for a year. Maybe people just haven't used recen=
-t
->  >>enough kernels, and the issue is only now starting to emerge, but I
->  >>wouldn't draw any conclusions yet.
->  >
->  >I am (almost) sure I am the first one to test video playback on OMAP3=
- with DSP video
->  >acceleration, using recent kernel and Maemo5 on n900 :). So there is =
-high probability the
->  >issue was not reported earlier because noone have tested it thoroughl=
-y after the change.
->  >
->  >>If the CMA would have big generic issues, I think we would've seen
->  >>issues earlier. So I'm guessing it's some driver or app in your setu=
-p
->  >>that's causing the issues. Maybe the driver/app is broken, or maybe =
-that
->  >>specific behavior is not handled well by CMA. In both case I think w=
-e
->  >>need to identify what that driver/app is.
->  >
->  >What I know is going on, is that there is heavy fs I/O at the same ti=
-me - there is
->  >a thumbnailer process running in background which tries to extract th=
-umbnails of all video
->  >files in the system. Also, there are other processes doing various jo=
-bs (e-mail fetching, IM
->  >accounts login, whatnot). And in addition Xorg mlocks parts of its ad=
-dress space. Of course
->  >all this happens with lots of memory being swapped in and out. I gues=
-s all this is related.
->  >
->  >However, even after the system has settled, the CMA failures continue=
- to happen. It looks like
->  >some pages are allocated from CMA which should not be.
->  >
->  >>I wonder how I could try to reproduce this with a generic omap3 boar=
-d...
->  >
->  >I can always reproduce it here (well, not on generic board, but I gue=
-ss it is even better to
->  >test in real-life conditions), so if you need some specific tests or =
-traces or whatever, I
->  >can do them for you.
->  >
->  >Regards,
->  >Ivo
->  >
->=20
-
-
-
---6eVjXObUFnsccQ7tDqomOhpqqrvb5Mmm0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSaMWuAAoJEPo9qoy8lh71y3sQAIowX40AHZYu+WbAssoo+4pQ
-G3+ac5AS1gLwQsG90QeDF4ElmbmUuz/Tl3iA389lUcXpugrxKO0b2vqTFo043R4l
-Q9u0Fiw4dmUZf6cNqAzZYkW0GNFPzWGPqVZgPgRTpxoS0sKrdwlSExbzTCp7zTlF
-S2WqsIQU8IRRoJm8Z2oY9gxvTSM/VMTL7GY+Eu26UAe4hNoEXe818OvKupjTY19f
-Hiom5sSpfN4lu0aRe7A6Py7WQ5hTofM81swa5LahGVMhQwkhWS2YhVe41fjdienK
-K7oocAvoB0bMmvya/cEFiKL5jHw3ax69jrMzA5bljbkbZPAe4c5Ua1Wou/aVr8Hs
-IBl1514lEFtgIyMgSVCW61upqsTVQOLoahF6lVdweWNYwwI+IN2kgllCNfgfnxAP
-AUZTH+heYAjprwJM3nRw0FuCujj9ZXgGXFccqzMSh+EL8mgXiKoU7DzgknS1BrjZ
-Tfw5MQYeU08VyCcfHDJqo95hUVtDEnI7UKyu6NpGrGqAJ53nJ3gPzBbYPethOHBz
-oDa4SaaxrgnAPN49RUtI3nDiihcly0uYWbiqR2qsyuFmhvuPH35Z7LNI1+Ln27xo
-52o9a2NjLz+etG7E7s9L/eS4YDIXiimRPxc6EFV4hsrNl1lWxLdKvmmUD1M+bIH+
-hjPaKcCGaBTaDiQbon6p
-=WfQ8
------END PGP SIGNATURE-----
-
---6eVjXObUFnsccQ7tDqomOhpqqrvb5Mmm0--
