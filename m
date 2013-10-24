@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3JXJ2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:28:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36721 "EHLO
+	id S1754740Ab3JXJ2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:28:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36723 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab3JXJ0R (ORCPT
+	with ESMTP id S1754423Ab3JXJ0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Oct 2013 05:26:17 -0400
 From: Jens Axboe <axboe@kernel.dk>
 To: linux-kernel@vger.kernel.org
-Cc: hch@infradead.org, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 05/11] direct-io: only inc/dec inode->i_dio_count for file systems
-Date: Thu, 24 Oct 2013 10:25:58 +0100
-Message-Id: <1382606764-8309-6-git-send-email-axboe@kernel.dk>
+Cc: hch@infradead.org, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 04/11] block: remove request ref_count
+Date: Thu, 24 Oct 2013 10:25:57 +0100
+Message-Id: <1382606764-8309-5-git-send-email-axboe@kernel.dk>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
 References: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
@@ -21,112 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need truncate protection for block devices, so add a flag
-bypassing this cache line dirtying twice for every IO. This easily
-contributes to 5-10% of the CPU time on high IOPS O_DIRECT testing.
+From: Christoph Hellwig <hch@infradead.org>
 
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+This reference count has been around since before git history, but the only
+place where it's used is in blk_execute_rq, and ther it is entirely useless
+as it is incremented before submitting the request and decremented in the
+end_io handler before waking up the submitter thread.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 ---
- fs/block_dev.c     |  3 ++-
- fs/direct-io.c     | 14 +++++++++++++-
- fs/inode.c         |  7 ++++++-
- include/linux/fs.h |  4 ++++
- 4 files changed, 25 insertions(+), 3 deletions(-)
+ block/blk-core.c       | 3 ---
+ block/blk-exec.c       | 7 -------
+ include/linux/blkdev.h | 2 --
+ 3 files changed, 12 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 1e86823..e20b7c1 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -172,7 +172,8 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
- 	struct inode *inode = file->f_mapping->host;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 213e9f0..18faa7e 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -145,7 +145,6 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+ 	rq->cmd = rq->__cmd;
+ 	rq->cmd_len = BLK_MAX_CDB;
+ 	rq->tag = -1;
+-	rq->ref_count = 1;
+ 	rq->start_time = jiffies;
+ 	set_start_time_ns(rq);
+ 	rq->part = NULL;
+@@ -1272,8 +1271,6 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+ {
+ 	if (unlikely(!q))
+ 		return;
+-	if (unlikely(--req->ref_count))
+-		return;
  
- 	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov, offset,
--				    nr_segs, blkdev_get_block, NULL, NULL, 0);
-+				    nr_segs, blkdev_get_block, NULL, NULL,
-+				    DIO_IGNORE_TRUNCATE);
- }
+ 	blk_pm_put_request(req);
  
- int __sync_blockdev(struct block_device *bdev, int wait)
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 0e04142..3c96479 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -265,7 +265,11 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret,
- 	if (dio->end_io && dio->result)
- 		dio->end_io(dio->iocb, offset, transferred, dio->private);
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index ae4f27d..6b18d82 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -24,7 +24,6 @@ static void blk_end_sync_rq(struct request *rq, int error)
+ 	struct completion *waiting = rq->end_io_data;
  
--	inode_dio_done(dio->inode);
-+	if (dio->flags & DIO_IGNORE_TRUNCATE)
-+		__inode_dio_done(dio->inode);
-+	else
-+		inode_dio_done(dio->inode);
-+
- 	if (is_async) {
- 		if (dio->rw & WRITE) {
- 			int err;
-@@ -1194,6 +1198,14 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	}
+ 	rq->end_io_data = NULL;
+-	__blk_put_request(rq->q, rq);
  
  	/*
-+	 * Will be decremented at I/O completion time. For a block device
-+	 * we don't need to protect against truncate, so don't increment
-+	 * the inode direct IO count.
-+	 */
-+	if (!(dio->flags & DIO_IGNORE_TRUNCATE))
-+		atomic_inc(&inode->i_dio_count);
-+
-+	/*
- 	 * For file extending writes updating i_size before data
- 	 * writeouts complete can expose uninitialized blocks. So
- 	 * even for AIO, we need to wait for i/o to complete before
-diff --git a/fs/inode.c b/fs/inode.c
-index b33ba8e..22319db 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1854,6 +1854,11 @@ void inode_dio_wait(struct inode *inode)
- }
- EXPORT_SYMBOL(inode_dio_wait);
+ 	 * complete last, if this is a stack request the process (and thus
+@@ -103,12 +102,6 @@ int blk_execute_rq(struct request_queue *q, struct gendisk *bd_disk,
+ 	int err = 0;
+ 	unsigned long hang_check;
  
-+void __inode_dio_done(struct inode *inode)
-+{
-+	wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
-+}
-+
- /*
-  * inode_dio_done - signal finish of a direct I/O requests
-  * @inode: inode the direct I/O happens on
-@@ -1864,6 +1869,6 @@ EXPORT_SYMBOL(inode_dio_wait);
- void inode_dio_done(struct inode *inode)
- {
- 	if (atomic_dec_and_test(&inode->i_dio_count))
--		wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
-+		__inode_dio_done(inode);
- }
- EXPORT_SYMBOL(inode_dio_done);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3f40547..d90a688 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2468,6 +2468,9 @@ enum {
+-	/*
+-	 * we need an extra reference to the request, so we can look at
+-	 * it after io completion
+-	 */
+-	rq->ref_count++;
+-
+ 	if (!rq->sense) {
+ 		memset(sense, 0, sizeof(sense));
+ 		rq->sense = sense;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index f5c7596..0a8da96 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -160,8 +160,6 @@ struct request {
  
- 	/* filesystem does not support filling holes */
- 	DIO_SKIP_HOLES	= 0x02,
-+
-+	/* inode/fs/bdev does not need truncate protection */
-+	DIO_IGNORE_TRUNCATE = 0x04,
- };
+ 	unsigned short ioprio;
  
- void dio_end_io(struct bio *bio, int error);
-@@ -2488,6 +2491,7 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- #endif
+-	int ref_count;
+-
+ 	void *special;		/* opaque pointer available for LLD use */
+ 	char *buffer;		/* kaddr of the current segment if available */
  
- void inode_dio_wait(struct inode *inode);
-+void __inode_dio_done(struct inode *inode);
- void inode_dio_done(struct inode *inode);
- 
- extern const struct file_operations generic_ro_fops;
 -- 
 1.8.1.2
 
