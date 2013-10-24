@@ -1,197 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3JXPwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:52:36 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36487 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756133Ab3JXPwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:52:34 -0400
-Message-ID: <52694238.7050607@ti.com>
-Date: Thu, 24 Oct 2013 21:22:24 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-CC: <devicetree@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
-        <sw0312.kim@samsung.com>, <inki.dae@samsung.com>,
-        <rahul.sharma@samsung.com>, <kgene.kim@samsung.com>,
-        <s.nawrocki@samsung.com>, <thomas.abraham@linaro.org>,
-        <mturquette@linaro.org>
-Subject: Re: [RFC 04/12] phy: Add simple-phy driver
-References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com> <1382365111-6533-5-git-send-email-t.stanislaws@samsung.com>
-In-Reply-To: <1382365111-6533-5-git-send-email-t.stanislaws@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756177Ab3JXPw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:52:57 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:63105 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab3JXPuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 11:50:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 26/34] sysfs, kernfs: introduce kernfs_notify()
+Date: Thu, 24 Oct 2013 11:49:32 -0400
+Message-Id: <1382629780-10006-27-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
+References: <1382629780-10006-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Introduce kernfs interface to wake up poll(2) which takes and returns
+sysfs_dirents.
 
-On Monday 21 October 2013 07:48 PM, Tomasz Stanislawski wrote:
-> Add simple-phy driver to support a single register
-> PHY interfaces present on Exynos4 SoC.
+sysfs_notify_dirent() is renamed to kernfs_notify() and sysfs_notify()
+is updated so that it doesn't directly grab sysfs_mutex but acquires
+the target sysfs_dirents using sysfs_get_dirent().
+sysfs_notify_dirent() is reimplemented as a dumb inline wrapper around
+kernfs_notify().
 
-How are these PHY interfaces modelled in the SoC? Where does the register
-actually reside?
-> 
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> ---
->  drivers/phy/Kconfig      |    5 ++
->  drivers/phy/Makefile     |    1 +
->  drivers/phy/phy-simple.c |  128 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 134 insertions(+)
->  create mode 100644 drivers/phy/phy-simple.c
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index ac239ac..619c657 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -38,4 +38,9 @@ config TWL4030_USB
->  	  This transceiver supports high and full speed devices plus,
->  	  in host mode, low speed.
->  
-> +config PHY_SIMPLE
-> +	tristate "Simple PHY driver"
+This patch doesn't introduce any behavior changes.
 
-This is too generic a name to be used. Lets name it something specific to what
-it is used for (EXYNOS/HDMI.. ?).
-> +	help
-> +	  Support for PHY controllers configured using single register.
-> +
->  endmenu
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index 0dd8a98..3d68e19 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -5,3 +5,4 @@
->  obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
->  obj-$(CONFIG_OMAP_USB2)		+= phy-omap-usb2.o
->  obj-$(CONFIG_TWL4030_USB)	+= phy-twl4030-usb.o
-> +obj-$(CONFIG_PHY_SIMPLE)	+= phy-simple.o
-> diff --git a/drivers/phy/phy-simple.c b/drivers/phy/phy-simple.c
-> new file mode 100644
-> index 0000000..4a28af7
-> --- /dev/null
-> +++ b/drivers/phy/phy-simple.c
-> @@ -0,0 +1,128 @@
-> +/*
-> + * Simple PHY driver
-> + *
-> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + * Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spinlock.h>
-> +
-> +struct simple_phy {
-> +	spinlock_t slock;
-> +	u32 on_value;
-> +	u32 off_value;
-> +	u32 mask;
-> +	void __iomem *regs;
-> +};
-> +
-> +static int sphy_set(struct simple_phy *sphy, bool on)
-> +{
-> +	u32 reg;
-> +
-> +	spin_lock(&sphy->slock);
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/file.c        | 33 ++++++++++++++++++++++-----------
+ include/linux/kernfs.h |  3 +++
+ include/linux/sysfs.h  |  9 +++++----
+ 3 files changed, 30 insertions(+), 15 deletions(-)
 
-Lets add spin_lock only when it is absolutely necessary. When your PHY provider
-implements only a single PHY, it is not needed. phy_power_on and phy_power_off
-is already protected by the framework.
-> +
-> +	reg = readl(sphy->regs);
-> +	reg &= ~sphy->mask;
-> +	reg |= sphy->mask & (on ? sphy->on_value : sphy->off_value);
-> +	writel(reg, sphy->regs);
-> +
-> +	spin_unlock(&sphy->slock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int simple_phy_power_on(struct phy *phy)
-> +{
-> +	return sphy_set(phy_get_drvdata(phy), 1);
-> +}
-> +
-> +static int simple_phy_power_off(struct phy *phy)
-> +{
-> +	return sphy_set(phy_get_drvdata(phy), 0);
-> +}
-> +
-> +static struct phy_ops simple_phy_ops = {
-> +	.power_on	= simple_phy_power_on,
-> +	.power_off	= simple_phy_power_off,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static int simple_phy_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct simple_phy *sphy;
-> +	struct resource *res;
-> +	struct phy_provider *phy_provider;
-> +	struct phy *phy;
-> +
-> +	sphy = devm_kzalloc(dev, sizeof(*sphy), GFP_KERNEL);
-> +	if (!sphy)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +
-> +	sphy->regs = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(sphy->regs)) {
-> +		dev_err(dev, "failed to ioremap registers\n");
-> +		return PTR_ERR(sphy->regs);
-> +	}
-> +
-> +	spin_lock_init(&sphy->slock);
-> +
-> +	phy_provider = devm_of_phy_provider_register(dev, NULL);
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 89134fc..9271180 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -837,7 +837,13 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
+ }
+ 
+-void sysfs_notify_dirent(struct sysfs_dirent *sd)
++/**
++ * kernfs_notify - notify a kernfs file
++ * @sd: file to notify
++ *
++ * Notify @sd such that poll(2) on @sd wakes up.
++ */
++void kernfs_notify(struct sysfs_dirent *sd)
+ {
+ 	struct sysfs_open_dirent *od;
+ 	unsigned long flags;
+@@ -854,22 +860,27 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
+ 
+ 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
+ }
+-EXPORT_SYMBOL_GPL(sysfs_notify_dirent);
++EXPORT_SYMBOL_GPL(kernfs_notify);
+ 
+ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ {
+-	struct sysfs_dirent *sd = k->sd;
+-
+-	mutex_lock(&sysfs_mutex);
++	struct sysfs_dirent *sd = k->sd, *tmp;
+ 
+ 	if (sd && dir)
+-		sd = sysfs_find_dirent(sd, dir, NULL);
+-	if (sd && attr)
+-		sd = sysfs_find_dirent(sd, attr, NULL);
+-	if (sd)
+-		sysfs_notify_dirent(sd);
++		sd = sysfs_get_dirent(sd, dir);
++	else
++		sysfs_get(sd);
+ 
+-	mutex_unlock(&sysfs_mutex);
++	if (sd && attr) {
++		tmp = sysfs_get_dirent(sd, attr);
++		sysfs_put(sd);
++		sd = tmp;
++	}
++
++	if (sd) {
++		kernfs_notify(sd);
++		sysfs_put(sd);
++	}
+ }
+ EXPORT_SYMBOL_GPL(sysfs_notify);
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 222040c..89993ad 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -82,6 +82,7 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
+ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 		     const char *new_name, const void *new_ns);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
++void kernfs_notify(struct sysfs_dirent *sd);
+ 
+ #else	/* CONFIG_SYSFS */
+ 
+@@ -116,6 +117,8 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
+ { return 0; }
+ 
++static inline void kernfs_notify(struct sysfs_dirent *sd) { }
++
+ #endif	/* CONFIG_SYSFS */
+ 
+ static inline struct sysfs_dirent *
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2bc735d..0ab2b02 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -243,7 +243,6 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+ 				  const char *link_name);
+ 
+ void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
+-void sysfs_notify_dirent(struct sysfs_dirent *sd);
+ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ 					 const unsigned char *name,
+ 					 const void *ns);
+@@ -418,9 +417,6 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
+ 				const char *attr)
+ {
+ }
+-static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+-{
+-}
+ static inline struct sysfs_dirent *
+ sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
+ 		    const void *ns)
+@@ -466,4 +462,9 @@ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
+ 	return sysfs_get_dirent_ns(parent_sd, name, NULL);
+ }
+ 
++static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
++{
++	kernfs_notify(sd);
++}
++
+ #endif /* _SYSFS_H_ */
+-- 
+1.8.3.1
 
-pass 'of_phy_simple_xlate' instead of NULL.
-> +	if (IS_ERR(phy_provider)) {
-> +		dev_err(dev, "failed to register PHY provider\n");
-> +		return PTR_ERR(phy_provider);
-> +	}
-> +
-> +	phy = devm_phy_create(dev, &simple_phy_ops, NULL);
-> +	if (IS_ERR(phy)) {
-> +		dev_err(dev, "failed to create PHY\n");
-> +		return PTR_ERR(phy);
-> +	}
-> +
-> +	sphy->mask = 1;
-> +	sphy->on_value = ~0;
-> +	sphy->off_value = 0;
-> +
-> +	of_property_read_u32(dev->of_node, "mask", &sphy->mask);
-
-This means your driver will depend on dt data to describe how the register
-should look like. Not a good idea.
-> +	of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
-> +	of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
-> +
-> +	phy_set_drvdata(phy, sphy);
-> +
-> +	dev_info(dev, "probe successful\n");
-Lets not make the boot noisy.
-
-Thanks
-Kishon
