@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3JXMI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:08:26 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47898 "EHLO
+	id S1754948Ab3JXMFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:05:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47805 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab3JXMFZ (ORCPT
+	with ESMTP id S1754905Ab3JXMFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:25 -0400
+	Thu, 24 Oct 2013 08:05:12 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Dave Chinner <dchinner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
+        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v11 04/15] memcg: move initialization to memcg creation
-Date: Thu, 24 Oct 2013 16:04:55 +0400
-Message-ID: <958291b8ed92e5b9f857a633a2f64e58fca6a23a.1382603434.git.vdavydov@parallels.com>
+Subject: [PATCH v11 02/15] memcg: consolidate callers of memcg_cache_id
+Date: Thu, 24 Oct 2013 16:04:53 +0400
+Message-ID: <e163eb4f0f4123f3839617666f81e85ee7fbe804.1382603434.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
 References: <cover.1382603434.git.vdavydov@parallels.com>
@@ -31,48 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@openvz.org>
 
-Those structures are only used for memcgs that are effectively using
-kmemcg. However, in a later patch I intend to use scan that list
-inconditionally (list empty meaning no kmem caches present), which
-simplifies the code a lot.
+Each caller of memcg_cache_id ends up sanitizing its parameters in its own way.
+Now that the memcg_cache_id itself is more robust, we can consolidate this.
 
-So move the initialization to early kmem creation.
+Also, as suggested by Michal, a special helper memcg_cache_idx is used when the
+result is expected to be used directly as an array index to make sure we never
+accesses in a negative index.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
 Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |   49 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 41c216a..5104d1f 100644
+index 0712277..0a5cc30 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3120,8 +3120,6 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
- 	}
- 
- 	memcg->kmemcg_id = num;
--	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
--	mutex_init(&memcg->slab_caches_mutex);
- 	return 0;
+@@ -2937,6 +2937,30 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
  }
  
-@@ -5916,6 +5914,8 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	int ret;
+ /*
++ * helper for acessing a memcg's index. It will be used as an index in the
++ * child cache array in kmem_cache, and also to derive its name. This function
++ * will return -1 when this is not a kmem-limited memcg.
++ */
++int memcg_cache_id(struct mem_cgroup *memcg)
++{
++	if (!memcg || !memcg_can_account_kmem(memcg))
++		return -1;
++	return memcg->kmemcg_id;
++}
++
++/*
++ * This helper around memcg_cache_id is not intented for use outside memcg
++ * core. It is meant for places where the cache id is used directly as an array
++ * index
++ */
++static int memcg_cache_idx(struct mem_cgroup *memcg)
++{
++	int ret = memcg_cache_id(memcg);
++	BUG_ON(ret < 0);
++	return ret;
++}
++
++/*
+  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+  * in the memcg_cache_params struct.
+  */
+@@ -2946,7 +2970,7 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
  
-+	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
-+	mutex_init(&memcg->slab_caches_mutex);
- 	memcg->kmemcg_id = -1;
- 	ret = memcg_propagate_kmem(memcg);
- 	if (ret)
+ 	VM_BUG_ON(p->is_root_cache);
+ 	cachep = p->root_cache;
+-	return cachep->memcg_params->memcg_caches[memcg_cache_id(p->memcg)];
++	return cachep->memcg_params->memcg_caches[memcg_cache_idx(p->memcg)];
+ }
+ 
+ #ifdef CONFIG_SLABINFO
+@@ -3051,18 +3075,6 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+ }
+ 
+ /*
+- * helper for acessing a memcg's index. It will be used as an index in the
+- * child cache array in kmem_cache, and also to derive its name. This function
+- * will return -1 when this is not a kmem-limited memcg.
+- */
+-int memcg_cache_id(struct mem_cgroup *memcg)
+-{
+-	if (!memcg || !memcg_can_account_kmem(memcg))
+-		return -1;
+-	return memcg->kmemcg_id;
+-}
+-
+-/*
+  * This ends up being protected by the set_limit mutex, during normal
+  * operation, because that is its main call site.
+  *
+@@ -3224,7 +3236,7 @@ void memcg_release_cache(struct kmem_cache *s)
+ 		goto out;
+ 
+ 	memcg = s->memcg_params->memcg;
+-	id  = memcg_cache_id(memcg);
++	id = memcg_cache_idx(memcg);
+ 
+ 	root = s->memcg_params->root_cache;
+ 	root->memcg_params->memcg_caches[id] = NULL;
+@@ -3387,9 +3399,7 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 	struct kmem_cache *new_cachep;
+ 	int idx;
+ 
+-	BUG_ON(!memcg_can_account_kmem(memcg));
+-
+-	idx = memcg_cache_id(memcg);
++	idx = memcg_cache_idx(memcg);
+ 
+ 	mutex_lock(&memcg_cache_mutex);
+ 	new_cachep = cachep->memcg_params->memcg_caches[idx];
+@@ -3562,10 +3572,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
+ 
+-	if (!memcg_can_account_kmem(memcg))
+-		goto out;
+-
+ 	idx = memcg_cache_id(memcg);
++	if (idx < 0)
++		return cachep;
+ 
+ 	/*
+ 	 * barrier to mare sure we're always seeing the up to date value.  The
 -- 
 1.7.10.4
 
