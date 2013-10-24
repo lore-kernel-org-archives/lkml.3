@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3JXBiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 21:38:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:53663 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab3JXBiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 21:38:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <tom.leiming@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Chen Gang <gang.chen@asianux.com>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-In-Reply-To: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 24 Oct 2013 11:51:18 +1030
-Message-ID: <87eh7bfoq9.fsf@rustcorp.com.au>
+	id S1753648Ab3JXBng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 21:43:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38607 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab3JXBnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 21:43:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52687AF4.5090404@jp.fujitsu.com>
+Date: Thu, 24 Oct 2013 10:42:12 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: jerry.hoemann@hp.com, hpa@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
+ parameter
+References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131022220803.GA32387@anatevka.fc.hp.com> <526712B2.7070108@jp.fujitsu.com> <20131023155127.GA17437@redhat.com>
+In-Reply-To: <20131023155127.GA17437@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> Address of non-module kernel symbol should always be located
-> from CONFIG_PAGE_OFFSET on, so only show these legal kernel
-> symbols in /proc/kallsyms.
+(2013/10/24 0:51), Vivek Goyal wrote:
+> On Wed, Oct 23, 2013 at 09:05:06AM +0900, HATAYAMA Daisuke wrote:
 >
-> On ARM, some symbols(see below) may drop in relocatable code, so
-> perf can't parse kernel symbols any more from /proc/kallsyms, this
-> patch fixes the problem.
+> [..]
+>>> Do you literally mean a human at each boot will have to configure
+>>> the kdump configuration files for passing disable_cpu_apic?
+>>> Or do you envision the setting of disable_cpu_apic being put into
+>>> the kdump initialization scripts?
+>>>
+>>> thanks
+>>>
+>>> Jerry
+>>
+>> Nearer to the former case, but this is not what a human should do. It's
+>> a cumbersome task. I think, on fedora/RHEL system for example, kdump
+>> service should check at each boot automatically.
 >
-> 	00000000 t __vectors_start
-> 	00000020 A cpu_v7_suspend_size
-> 	00001000 t __stubs_start
-> 	00001004 t vector_rst
-> 	00001020 t vector_irq
-> 	000010a0 t vector_dabt
-> 	00001120 t vector_pabt
-> 	000011a0 t vector_und
-> 	00001220 t vector_addrexcptn
-> 	00001224 t vector_fiq
-> 	00001224 T vector_fiq_offset
+> Hi Hatayama,
 >
-> The issue can be fixed in scripts/kallsyms.c too, but looks this
-> approach is easier.
-
-This fix looks hacky; if these symbols are not available, don't just
-remove them from /proc/kallsyms, but don't put them in the kernel at
-all.
-
-That way, they won't interfere with other kallsyms uses (eg. backtrace).
-
-Or, better, figure out a smart way of excluding them by knowing why
-these symbol addresses are wrong.
-
-Thanks,
-Rusty.
-
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Chen Gang <gang.chen@asianux.com>
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  kernel/kallsyms.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> So what information should I look for to prepare disable_cpu_apic=X in
+> kdump script?
 >
-> diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-> index 3127ad5..184f271 100644
-> --- a/kernel/kallsyms.c
-> +++ b/kernel/kallsyms.c
-> @@ -543,7 +543,7 @@ static int s_show(struct seq_file *m, void *p)
->  					tolower(iter->type);
->  		seq_printf(m, "%pK %c %s\t[%s]\n", (void *)iter->value,
->  			   type, iter->name, iter->module_name);
-> -	} else
-> +	} else if (iter->value >= CONFIG_PAGE_OFFSET)
->  		seq_printf(m, "%pK %c %s\n", (void *)iter->value,
->  			   iter->type, iter->name);
->  	return 0;
-> -- 
-> 1.7.9.5
+> Is BSP processor info exported to user space somewhere? Or assuming that
+> processor 0 is BSP and corresponding apicid should be disabled in kdump
+> kernel is good enough?
+>
+
+Yes, this patch set assumes that the processor 0 is BSP and there's no
+other BSP. Because this patch cares about only one BSP processor,
+the disabled_cpu_apicid variable has unsigned int, not mask.
+
+I think this assumption is reasonable since doing it rigorously requires
+additional processing between 1st and 2nd kernels just as I explained in
+previous mail.
+
+> I am looking at /proc/cpuinfo and following 3 fields seem interesting.
+>
+> processor: 0
+> apicid		: 0
+> initial apicid	: 0
+>
+> What's the difference between apicid and "initial apicid". I guess
+> initial apicid reflects the apicid number as set by firmware and then
+> kernel can overwrite it and new number would be reflected in "apicid"?
+>
+> If that's the case, then I guess we should be looking at "apicid" of
+> processor "0" and set that in disable_cpu_apic? Because that's the
+> number kdump kernel  boot should see in apic upon boot.
+>
+
+Yes, that's fully correct, and please see 10.4.6 Local APIC ID in Intel SPG
+for details.
+
+BTW, we can use cpuid instruction in user-space, too. It might be more
+flexible to use cpuid than looking up /proc/cpuinfo.
+
+Also, there's one corner case that if we hot-remove cpu0, we cannot
+look up /proc/cpuinfo to get cpu0 information since /proc/cpunifo displays
+*online* cpus only. We cannot use even cpuid instruction for offline cpu.
+So, to address this corner case, we need to prepare new interface to see
+cpu0 initial apicid which is always available.
+
+My idea is for example to introduce the following file in sysfs:
+
+   /sys/devices/system/cpu/cpu0/initial_apicid
+
+Under the current implementation, cpu0 hot-remove is software one and kernel
+must start with cpu0 in boot time. It's enough to assign the value of initial
+APIC ID in the boot time. The one in boot_cpu_data?
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
