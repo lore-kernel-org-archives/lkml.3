@@ -1,159 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3JXOtd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:49:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19796 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab3JXOta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:49:30 -0400
-Date: Thu, 24 Oct 2013 10:49:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Julien Grall <julien.grall@linaro.org>
-Cc: ian.campbell@citrix.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
- guests.
-Message-ID: <20131024144921.GB29944@phenom.dumpdata.com>
-References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com>
- <5245FD71.3080408@linaro.org>
- <20130930144513.GM3106@phenom.dumpdata.com>
- <5251CD98.70807@linaro.org>
- <20131023161518.GA28413@phenom.dumpdata.com>
- <526848C1.5030705@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526848C1.5030705@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1755588Ab3JXOt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:49:57 -0400
+Received: from ring0.de ([91.143.88.219]:46791 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755321Ab3JXOs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:48:56 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
+Date: Thu, 24 Oct 2013 16:48:44 +0200
+Message-Id: <1382626126-12565-2-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382626126-12565-1-git-send-email-sre@debian.org>
+References: <1382626126-12565-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 11:08:01PM +0100, Julien Grall wrote:
-> 
-> 
-> On 10/23/2013 05:15 PM, Konrad Rzeszutek Wilk wrote:
-> >On Sun, Oct 06, 2013 at 09:52:40PM +0100, Julien Grall wrote:
-> >>On 09/30/2013 03:45 PM, Konrad Rzeszutek Wilk wrote:
-> >>>On Fri, Sep 27, 2013 at 10:49:37PM +0100, Julien Grall wrote:
-> >>>>On 09/27/2013 10:25 PM, Konrad Rzeszutek Wilk wrote:
-> >>>>
-> >>>>>@@ -641,7 +641,20 @@ struct console xenboot_console = {
-> >>>>>
-> >>>>>  void xen_raw_console_write(const char *str)
-> >>>>>  {
-> >>>>>-	dom0_write_console(0, str, strlen(str));
-> >>>>>+	ssize_t len = strlen(str);
-> >>>>>+	int rc = 0;
-> >>>>>+
-> >>>>>+	if (xen_domain()) {
-> >>>>>+		dom0_write_console(0, str, len);
-> >>>>>+		if (rc == -ENOSYS && xen_hvm_domain())
-> >>>>>+			goto outb_print;
-> >>>>>+
-> >>>>>+	} else if (xen_cpuid_base()) {
-> >>>>>+		int i;
-> >>>>>+outb_print:
-> >>>>>+		for (i = 0; i < len; i++)
-> >>>>>+			outb(str[i], 0xe9);
-> >>>>>+	}
-> >>>>>  }
-> >>>>
-> >>>>xen_cpuid_base and outb(0xe9) is x86 specific and won't compile on ARM.
-> >>>
-> >>>Odd, I see outb defined in arch/arm and arch/arm64 ?(arch/arm[|64]/include/asm.io.h)
-> >>
-> >>On ARM32 the IO access is memory mapped (the exact address depends
-> >>on Linux configuration).
-> >>The main problem is not the outb macro but the ioport 0xe9.On ARM,
-> >>this ioport is not trapped by Xen.
-> >>
-> >>>You are of course right about xen_cpuid_base.
-> >>>
-> >>>How about this:
-> >>
-> >>For the ARM side, the code looks good.
-> >
-> >Can I that as 'Acked-by' ? thanks
-> 
-> Actually, I looked closer the code, with the new solution
-> xen_raw_printk/xen_raw_console_write can't be call on ARM during
-> early init.
-> 
-> On ARM, xen_domain_type is initialized during a core initcall. So
-> it's not possible to call the function before.
+Add device tree support for twl4030 power button driver.
 
-OK, so won't work and won't harm. That is OK I think.
-> 
-> >>> From 04b772d2b819f0dda2163e3193fa7cd447a6245c Mon Sep 17 00:00:00 2001
-> >>>From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>>Date: Fri, 27 Sep 2013 17:18:13 -0400
-> >>>Subject: [PATCH] xen/hvc: If we use xen_raw_printk let it also work on HVM
-> >>>  guests.
-> >>>
-> >>>The xen_raw_printk works great for debugging purposes. We use
-> >>>for PV guests and we can also use it for HVM guests.
-> >>>
-> >>>However, for HVM guests we have a fallback of using the 0xe9
-> >>>port in case the hypervisor does not support an HVM guest of
-> >>>using the console_io hypercall. As such lets use 0xe9 during
-> >>>early bootup, and once the hyper-page is setup and if the
-> >>>console_io hypercall is supported - use that. Otherwise we
-> >>>will fallback to using the 0xe9 after early bootup.
-> >>>
-> >>>We also alter the return value for dom0_write_console to return
-> >>>an error value instead of zero. The HVC API has been supporting
-> >>>returning error values for quite some time.
-> >>>
-> >>>P.S.
-> >>>To use (and to see the output in the Xen ring buffer) one has to build
-> >>>the hypervisor with 'debug=y'.
-> >>>
-> >>>Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>>[v1: ifdef xen_cpuid_base as it is X86 specific]
-> >>>---
-> >>>  drivers/tty/hvc/hvc_xen.c | 19 +++++++++++++++++--
-> >>>  1 file changed, 17 insertions(+), 2 deletions(-)
-> >>>
-> >>>diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> >>>index e61c36c..6458c9f 100644
-> >>>--- a/drivers/tty/hvc/hvc_xen.c
-> >>>+++ b/drivers/tty/hvc/hvc_xen.c
-> >>>@@ -183,7 +183,7 @@ static int dom0_write_console(uint32_t vtermno, const char *str, int len)
-> >>>  {
-> >>>  	int rc = HYPERVISOR_console_io(CONSOLEIO_write, len, (char *)str);
-> >>>  	if (rc < 0)
-> >>>-		return 0;
-> >>>+		return rc;
-> >>>
-> >>>  	return len;
-> >>>  }
-> >>>@@ -641,7 +641,22 @@ struct console xenboot_console = {
-> >>>
-> >>>  void xen_raw_console_write(const char *str)
-> >>>  {
-> >>>-	dom0_write_console(0, str, strlen(str));
-> >>>+	ssize_t len = strlen(str);
-> >>>+	int rc = 0;
-> >>>+
-> >>>+	if (xen_domain()) {
-> >>>+		rc = dom0_write_console(0, str, len);
-> >>>+#ifdef CONFIG_X86
-> >>>+		if (rc == -ENOSYS && xen_hvm_domain())
-> >>>+			goto outb_print;
-> >>>+
-> >>>+	} else if (xen_cpuid_base()) {
-> >>>+		int i;
-> >>>+outb_print:
-> >>>+		for (i = 0; i < len; i++)
-> >>>+			outb(str[i], 0xe9);
-> >>>+#endif
-> >>>+	}
-> >>>  }
-> >>>
-> >>>  void xen_raw_printk(const char *fmt, ...)
-> 
-> -- 
-> Julien Grall
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ .../devicetree/bindings/input/twl4030-pwrbutton.txt | 21 +++++++++++++++++++++
+ drivers/input/misc/twl4030-pwrbutton.c              | 16 ++++++++++++----
+ 2 files changed, 33 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+
+diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+new file mode 100644
+index 0000000..4375646
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+@@ -0,0 +1,21 @@
++Texas Instruments TWL family (twl4030) pwrbutton module
++
++This module is part of the TWL4030. For more details about the whole
++chip see Documentation/devicetree/bindings/mfd/twl-familly.txt.
++
++This module provides a simple power button event via an Interrupt.
++
++Required properties:
++- compatible: should be one of the following
++   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
++- interrupt: should be one of the following
++   - <8>: For controllers compatible with twl4030
++
++Example:
++
++&twl {
++	twl_pwrbutton: pwrbutton {
++		compatible = "ti,twl4030-pwrbutton";
++		interrupts = <8>;
++	};
++};
+diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
+index b9a05fd..a3a0fe3 100644
+--- a/drivers/input/misc/twl4030-pwrbutton.c
++++ b/drivers/input/misc/twl4030-pwrbutton.c
+@@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
++static int twl4030_pwrbutton_probe(struct platform_device *pdev)
+ {
+ 	struct input_dev *pwr;
+ 	int irq = platform_get_irq(pdev, 0);
+@@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
++       { .compatible = "ti,twl4030-pwrbutton" },
++       {},
++};
++MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
++#endif
++
+ static struct platform_driver twl4030_pwrbutton_driver = {
++	.probe		= twl4030_pwrbutton_probe,
+ 	.remove		= __exit_p(twl4030_pwrbutton_remove),
+ 	.driver		= {
+ 		.name	= "twl4030_pwrbutton",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
+ 	},
+ };
+-
+-module_platform_driver_probe(twl4030_pwrbutton_driver,
+-			twl4030_pwrbutton_probe);
++module_platform_driver(twl4030_pwrbutton_driver);
+ 
+ MODULE_ALIAS("platform:twl4030_pwrbutton");
+ MODULE_DESCRIPTION("Triton2 Power Button");
+-- 
+1.8.4.rc3
+
