@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3JXAVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 20:21:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25120 "EHLO mx1.redhat.com"
+	id S1753431Ab3JXAiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 20:38:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37401 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab3JXAVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 20:21:51 -0400
-References: <87r4bcdok1.fsf@redhat.com> <CA+8MBb+0wruR-T8Rkk_WQ6Try4ct2ZCm8o=js4eO8s7cogcs+g@mail.gmail.com>
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Madper Xie <cxie@redhat.com>, Anton Vorontsov <anton@enomsg.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        =?utf-8?B?5oiQ6aqPIOiwog==?= <bbboson@gmail.com>
-Subject: Re: [PATCH] pstore: avoid incorrectly mark entry as duplicate
-In-reply-to: <CA+8MBb+0wruR-T8Rkk_WQ6Try4ct2ZCm8o=js4eO8s7cogcs+g@mail.gmail.com>
-Date: Thu, 24 Oct 2013 08:21:40 +0800
-Message-ID: <87k3h35xij.fsf@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752760Ab3JXAiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 20:38:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="397603611"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH] x86/apic: Disable I/O APIC before shutdown local APIC
+Date: Wed, 23 Oct 2013 18:30:12 -0700
+Message-Id: <1382578212-4677-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-tony.luck@gmail.com writes:
+In reboot and crash path, when shutdown local APIC, I/O APIC is still active.
+This may cause issues because external interrupts can still come in and
+disturb local APIC during shutdown process. To quiet external interrupts,
+disable I/O APIC before shutdown local APIC.
 
-> On Wed, Oct 23, 2013 at 7:55 AM, Madper Xie <cxie@redhat.com> wrote:
->> The "duplicate" entries won't appear in pstorefs. And a complain will be
->> print -- pstore: failed to load 76 record(s) from 'efi'
->
-> Maybe I don't quite get this - but it sounds like you have a whole lot
-> of entries using up space in efivars that have similar names - differing
-> just in the timestamp - that won't show up in the pstore filesystem - because
-> we'd try to name them all the same thing.
->
-Maybe I misunderstand you...
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/kernel/crash.c  |    2 +-
+ arch/x86/kernel/reboot.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Sure pstore try to name them all the same thing, but it's another
-issue. and it doesn't prevent entries showing up in pstore fs.
-
-Consider the following case: (after efi-pstore support append mode, it
-always like this case):
-
-I choose four dumped efivars from my DELL XPS:
-dump-type0-9-1-1380441690-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-dump-type0-9-1-1380448560-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-dump-type0-9-1-1380460890-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-dump-type0-9-1-1382496073-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
-         ^        ^       [              ^                   ]
-         !        !                      !
-       type    timestamp                GUID
-
-When pstore load them from efivars, pstore incorrectly assuming that
-efivars with the same TYPE, ID and GUID are duplicate.
-
-list_for_each_entry(pos, &allpstore, list) {
-	if (pos->type == type &&    /---
-	    pos->id == id &&     <-| as I said, it only check type,id,psi
-	    pos->psi == psi) {      \---
-		rc = -EEXIST;    <- then set -EEXIST, and ignore *dup* entry
-		break;
-	}
-}
-You can see the code above, for those four entries, only one could be
-showed in pstorefs, all others will get a -EEXIST. So I add a timestamp
-check here, it's the only different part.
-
-> How did all those things end up in efivars?
-before the patch I can see 
-dmesg-efi-1   dmesg-efi-11  dmesg-efi-3  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-10  dmesg-efi-2   dmesg-efi-4  dmesg-efi-6  dmesg-efi-8
-after apply the patch:
-[root@dhcp-13-41 vars]# ls /dev/pstore/
-dmesg-efi-1  dmesg-efi-1   dmesg-efi-11  dmesg-efi-2  dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-11  dmesg-efi-2  dmesg-efi-3  dmesg-efi-5  dmesg-efi-7  dmesg-efi-8
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-12  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-8
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-13  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-14  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-15  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-16  dmesg-efi-3  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-7  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
-dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
-dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
-dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
-
->
-> Wouldn't the right fix be to make pstore allow them all to appear (using the
-> timestamp to differentiate names?) so that we could see them, log them,
-> and then remove them from pstore (in turn freeing up efivars space - which
-> people keep telling me is in short supply).
->
-Yeah, many file have the same name, just like my case above. But it not
-really block the file shows up and should be solved in another
-patch. And I'm trying fix it.
-> -Tony
-
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index e0e0841..18677a9 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -127,12 +127,12 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ 	cpu_emergency_vmxoff();
+ 	cpu_emergency_svm_disable();
+ 
+-	lapic_shutdown();
+ #ifdef CONFIG_X86_IO_APIC
+ 	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
+ 	ioapic_zap_locks();
+ 	disable_IO_APIC();
+ #endif
++	lapic_shutdown();
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 7e920bf..618ce26 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -550,6 +550,10 @@ static void native_machine_emergency_restart(void)
+ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
++#ifdef CONFIG_X86_IO_APIC
++	disable_IO_APIC();
++#endif
++
+ #ifdef CONFIG_SMP
+ 	/*
+ 	 * Stop all of the others. Also disable the local irq to
+@@ -562,10 +566,6 @@ void native_machine_shutdown(void)
+ 
+ 	lapic_shutdown();
+ 
+-#ifdef CONFIG_X86_IO_APIC
+-	disable_IO_APIC();
+-#endif
+-
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
 -- 
-Best,
-Madper Xie.
+1.6.0.3
+
