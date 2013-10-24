@@ -1,191 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab3JXMFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:05:42 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48003 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3JXMFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:39 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        "John Stultz" <john.stultz@linaro.org>, Michal Hocko <mhocko@suse.cz>,
-        "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v11 14/15] memcg: reap dead memcgs upon global memory pressure
-Date: Thu, 24 Oct 2013 16:05:05 +0400
-Message-ID: <241d5b4bde7cb5b96e459f48f7423f63974e9ad1.1382603434.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
-References: <cover.1382603434.git.vdavydov@parallels.com>
+	id S1755231Ab3JXMGS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:06:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43191 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754503Ab3JXMGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 08:06:14 -0400
+Message-ID: <52690D1E.6060400@redhat.com>
+Date: Thu, 24 Oct 2013 08:05:50 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.22.194]
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        tigran@aivazian.fsnet.co.uk
+Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
+ no uevent
+References: <1382304926-1641-1-git-send-email-prarit@redhat.com> <1382304926-1641-2-git-send-email-prarit@redhat.com> <CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com> <5265A9A4.2000100@redhat.com> <CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com> <526706FC.2070105@redhat.com> <CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com> <5267A6CA.1000505@redhat.com> <5267BAE7.2090300@redhat.com> <20131024111737.GC24862@khazad-dum.debian.net>
+In-Reply-To: <20131024111737.GC24862@khazad-dum.debian.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
 
-When we delete kmem-enabled memcgs, they can still be zombieing
-around for a while. The reason is that the objects may still be alive,
-and we won't be able to delete them at destruction time.
 
-The only entry point for that, though, are the shrinkers. The
-shrinker interface, however, is not exactly tailored to our needs. It
-could be a little bit better by using the API Dave Chinner proposed, but
-it is still not ideal since we aren't really a count-and-scan event, but
-more a one-off flush-all-you-can event that would have to abuse that
-somehow.
+On 10/24/2013 07:17 AM, Henrique de Moraes Holschuh wrote:
+> On Wed, 23 Oct 2013, Prarit Bhargava wrote:
+>> After all this I completely forgot the problem I'm trying to solve here.  The
+>> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
+>> is not found (that is the file is not found on disk), then EACH cpu waits 1
+>> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
+> 
+> The proper fix seems to be teaching the concept of negative caching to the
+> microcode core/drivers, as it was pointed out elsewhere in the thread.
+> Negative caching should have a lifetime of "the current update-all-cores
+> request".
+> 
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 77 insertions(+), 3 deletions(-)
+Yes, I'm implementing v2 to do this already; caching the microcode is obvious.
+I was actually looking at the code to see if there was a reason that each
+processor needs to do a load request but cannot see one.  I'm modifying the
+microcode driver to do this, as I said, in v2.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7bf4dc7..628ea0d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -285,8 +285,16 @@ struct mem_cgroup {
- 	/* thresholds for mem+swap usage. RCU-protected */
- 	struct mem_cgroup_thresholds memsw_thresholds;
- 
--	/* For oom notifier event fd */
--	struct list_head oom_notify;
-+	union {
-+		/* For oom notifier event fd */
-+		struct list_head oom_notify;
-+		/*
-+		 * we can only trigger an oom event if the memcg is alive.
-+		 * so we will reuse this field to hook the memcg in the list
-+		 * of dead memcgs.
-+		 */
-+		struct list_head dead;
-+	};
- 
- 	/*
- 	 * Should we move charges of a task when a task is moved into this
-@@ -336,6 +344,29 @@ struct mem_cgroup {
- 	/* WARNING: nodeinfo must be the last member here */
- };
- 
-+#if defined(CONFIG_MEMCG_KMEM) || defined(CONFIG_MEMCG_SWAP)
-+static LIST_HEAD(dangling_memcgs);
-+static DEFINE_MUTEX(dangling_memcgs_mutex);
-+
-+static inline void memcg_dangling_del(struct mem_cgroup *memcg)
-+{
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_del(&memcg->dead);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg)
-+{
-+	INIT_LIST_HEAD(&memcg->dead);
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_add(&memcg->dead, &dangling_memcgs);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+#else
-+static inline void memcg_dangling_free(struct mem_cgroup *memcg) {}
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg) {}
-+#endif
-+
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
-@@ -6352,6 +6383,41 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
- }
- 
- #ifdef CONFIG_MEMCG_KMEM
-+static void memcg_vmpressure_shrink_dead(void)
-+{
-+	struct memcg_cache_params *params, *tmp;
-+	struct kmem_cache *cachep;
-+	struct mem_cgroup *memcg;
-+
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_for_each_entry(memcg, &dangling_memcgs, dead) {
-+		mutex_lock(&memcg->slab_caches_mutex);
-+		/* The element may go away as an indirect result of shrink */
-+		list_for_each_entry_safe(params, tmp,
-+					 &memcg->memcg_slab_caches, list) {
-+			cachep = memcg_params_to_cache(params);
-+			/*
-+			 * the cpu_hotplug lock is taken in kmem_cache_create
-+			 * outside the slab_caches_mutex manipulation. It will
-+			 * be taken by kmem_cache_shrink to flush the cache.
-+			 * So we need to drop the lock. It is all right because
-+			 * the lock only protects elements moving in and out the
-+			 * list.
-+			 */
-+			mutex_unlock(&memcg->slab_caches_mutex);
-+			kmem_cache_shrink(cachep);
-+			mutex_lock(&memcg->slab_caches_mutex);
-+		}
-+		mutex_unlock(&memcg->slab_caches_mutex);
-+	}
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
-+{
-+	vmpressure_register_kernel_event(css, memcg_vmpressure_shrink_dead);
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	int ret;
-@@ -6409,6 +6475,10 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- 		css_put(&memcg->css);
- }
- #else
-+static inline void memcg_register_kmem_events(struct cgroup *cont)
-+{
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	return 0;
-@@ -6745,8 +6815,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
- 	int error = 0;
- 
--	if (!parent)
-+	if (!parent) {
-+		memcg_register_kmem_events(css);
- 		return 0;
-+	}
- 
- 	mutex_lock(&memcg_create_mutex);
- 
-@@ -6808,6 +6880,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
- 	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
-+	memcg_dangling_add(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
- 
-@@ -6816,6 +6889,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 
- 	memcg_destroy_kmem(memcg);
-+	memcg_dangling_del(memcg);
- 	__mem_cgroup_free(memcg);
- }
- 
--- 
-1.7.10.4
+> This would fix the absurd compound timeout delays, as on most systems it
+> will result in just one timeout (the first one).
+> 
+> That first timeout can be fixed by the user if they disable the userspace
+> firmware loader helper.  IMHO that might well be the best choice, as it is
+> already the way forward.
 
+The problem with that is I may have a configuration which depends on having the
+userspace firmware loader helper for a device, but not the processors so IMO it
+isn't a complete solution.
+
+I've also toyed with the idea that there should be a request_firmware_timeout()
+in which a timeout for HOTPLUG can be specified.
+
+P.
