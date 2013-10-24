@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab3JXXVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 19:21:03 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:10716 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3JXXVA (ORCPT
+	id S1754455Ab3JXXyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 19:54:12 -0400
+Received: from mail.mij.gov.ve ([200.11.241.122]:53806 "HELO mail.mij.gov.ve"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752501Ab3JXXyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 19:21:00 -0400
-Message-ID: <5269AB47.4000007@hp.com>
-Date: Thu, 24 Oct 2013 19:20:39 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 24 Oct 2013 19:54:11 -0400
+Date: Thu, 24 Oct 2013 18:43:39 -0430 (VET)
+From: UNION FINANCE LTD <tmartinez@mij.gov.ve>
+Reply-To: UNION FINANCE LTD <unionfinancelink@webadicta.org>
+Message-ID: <14647551.2981382656419744.JavaMail.root@mail.mij.gov.ve>
+Subject: Kredit-Angebot
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v8 10/10] MCS Lock: Make mcs_spinlock.h includable in
- other files
-References: <1382644912-16458-1-git-send-email-Waiman.Long@hp.com> <1382648315.11046.224.camel@schen9-DESK>
-In-Reply-To: <1382648315.11046.224.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [197.210.248.29]
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 04:58 PM, Tim Chen wrote:
->
-> Do we want to inline the unlock?  Will that prevent proper profile
-> accounting of unlock overhead?
->
-> Can we keep the mcs_spin_unlock and mcs_spin_lock in the same
-> kernel/mcs_spinlock.c file? That makes it easier to read and
-> maintain the code.
+UNION FINANCE LTD
 
-The unlock code is fast. The lock code, however, can run for a long 
-time. It will greatly increase the reported time spent in the calling 
-function if it is inlined. The same is true for spinlock. The 
-_raw_spin_lock() is a real function while _raw_spin_unlock() is inlined 
-in most cases.
+hallo
 
-Yes, I can bring the lock function back to the mcs_spinlock.h file with 
-name like _raw_mcs_spin_lock() and the mcs_spin_lock() in mcs_spinlock.c 
-will include the raw function. In that way, the mcs_spin_lock() will 
-still be a separate function while both the lock and unlock code will be 
-together.
+Was ist Ihre Situation? Sie müssen 100% Finanzierung . Sind Sie auf der Suche nach finanzieller Hilfe müde? haben Sie konsequent die von Banken und anderen Finanzinstituten abgelehnt , wir geben Darlehen an Gesellschaften, Unternehmen , Branchen bei 3 % Zins , geben wir sowohl mittel-und langfristige Darlehen. Jede interessierte Person, unabhängig von ihrem Land sollte uns per E-Mail kontaktieren Sie jetzt ( unionfinancelink@webadicta.org )
 
-> Can you check if you have applied all the previous MCS patches?
-> The last two for barrier corrections and optimizations seem
-> to be missing.
->
-> MCS Lock: optimizations and extra comments
-> https://lkml.org/lkml/2013/10/2/644
-> MCS Lock: Barrier corrections
-> https://lkml.org/lkml/2013/10/2/650
->
-> Thanks.
->
-> Tim
->
+Wir Darlehen einen Mindestbetrag von 5,000,00 Euro und maximal 1,000,000,00 Euro
 
-Apparently, I does have all the MCS patch  in my git tree. I will 
-regenerate a new one with the right diff. Thank for the review.
+Bei 3 % Zins .
 
--Longman
+Füllen Sie das untenstehende Formular aus , um mit den AGB weiter
+
+Beachten Sie, dass dieser Prozess nicht länger als drei Arbeitstage , es sei denn es gibt Fahrlässigkeit des Kreditnehmers
+    
+ 
+
+Name : ............................................... .................
+     
+Familienstand: ............................................... ......
+    
+CITY : ................................................ .........................
+     
+LAND: ................................................ .................
+     
+Telefon ................................................. ...............
+
+Monatliches Einkommen . .................................................. ....................
+    
+Darlehensbetrag benötigt: ............................................. ..........
+    
+Dauer des Darlehens .............................................
+
+BERUF: ................................................ .......................................
+
+Ausweis Nr.: ..............................................
+
+Zweck des Darlehens : ............................................. ...
+    
+Holen Sie sich zurück zu uns so bald wie möglich.
+
+Treffen Sie Ihre Nachfrage ist unser Ziel
+ 
+
+Mit freundlichen Grüßen,
+Mr. John Taylor
+Generaldirektor
+UNION FINANCE LTD
+Company No 04562011
+Head Office : Mansfield Road, Floride, North Yorkshire 240 5EB , UK.
+e-mail: unionfinancelink@webadicta.org
+ 
+Copyright © 2004-2013 UNION FINANCE LTD. Alle Rechte vorbehalten.
