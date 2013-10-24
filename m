@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3JXPuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:50:15 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:38145 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab3JXPuM (ORCPT
+	id S1756195Ab3JXPxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:53:20 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:45380 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab3JXPuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:50:12 -0400
+	Thu, 24 Oct 2013 11:50:14 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/34] sysfs, kernfs: remove SYSFS_KOBJ_BIN_ATTR
-Date: Thu, 24 Oct 2013 11:49:28 -0400
-Message-Id: <1382629780-10006-23-git-send-email-tj@kernel.org>
+Subject: [PATCH 24/34] sysfs, kernfs: remove sysfs_add_one()
+Date: Thu, 24 Oct 2013 11:49:30 -0400
+Message-Id: <1382629780-10006-25-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,188 +21,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After kernfs_ops and sysfs_dirent->s_attr.size addition, the
-distinction between SYSFS_KOBJ_BIN_ATTR and SYSFS_KOBJ_ATTR is only
-necessary while creating files to decide which kernfs_ops to use.
-Afterwards, they behave exactly the same.
+sysfs_add_one() is a wrapper around __sysfs_add_one() which prints out
+duplicate name warning if __sysfs_add_one() fails with -EEXIST.  The
+previous kernfs conversions moved all dup warnings to sysfs interface
+functions and sysfs_add_one() doesn't have any user left.
 
-This patch removes SYSFS_KOBJ_BIN_ATTR along with sysfs_is_bin().
-sysfs_add_file[_mode_ns]() are updated to take bool @is_bin instead of
-@type.
+Remove sysfs_add_one() and update __sysfs_add_one() to take its name.
 
-This patch doesn't introduce any behavior changes.  This completely
-isolates the distinction between the two sysfs file types in the sysfs
-layer proper.
+This patch doesn't make any functional changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c  | 23 ++++++++---------------
- fs/sysfs/group.c |  5 ++---
- fs/sysfs/inode.c |  1 -
- fs/sysfs/sysfs.h | 11 ++++-------
- 4 files changed, 14 insertions(+), 26 deletions(-)
+ fs/sysfs/dir.c     | 41 ++++-------------------------------------
+ fs/sysfs/file.c    |  2 +-
+ fs/sysfs/symlink.c |  2 +-
+ fs/sysfs/sysfs.h   |  2 --
+ 4 files changed, 6 insertions(+), 41 deletions(-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 8dd2d96..efa547d 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -47,11 +47,6 @@ struct sysfs_open_dirent {
- 	struct list_head	files; /* goes through sysfs_open_file.list */
- };
- 
--static bool sysfs_is_bin(struct sysfs_dirent *sd)
--{
--	return sysfs_type(sd) == SYSFS_KOBJ_BIN_ATTR;
--}
--
- static struct sysfs_open_file *sysfs_of(struct file *file)
- {
- 	return ((struct seq_file *)file->private_data)->private;
-@@ -904,7 +899,7 @@ static const struct kernfs_ops sysfs_bin_kfops_rw = {
- };
- 
- int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
--			   const struct attribute *attr, int type,
-+			   const struct attribute *attr, bool is_bin,
- 			   umode_t amode, const void *ns)
- {
- 	umode_t mode = (amode & S_IALLUGO) | S_IFREG;
-@@ -914,7 +909,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 	loff_t size;
- 	int rc;
- 
--	if (type == SYSFS_KOBJ_ATTR) {
-+	if (!is_bin) {
- 		struct kobject *kobj = dir_sd->priv;
- 		const struct sysfs_ops *sysfs_ops = kobj->ktype->sysfs_ops;
- 
-@@ -949,7 +944,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		size = battr->size;
- 	}
- 
--	sd = sysfs_new_dirent(attr->name, mode, type);
-+	sd = sysfs_new_dirent(attr->name, mode, SYSFS_KOBJ_ATTR);
- 	if (!sd)
- 		return -ENOMEM;
- 
-@@ -979,11 +974,10 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 	return rc;
- }
- 
--
- int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
--		   int type)
-+		   bool is_bin)
- {
--	return sysfs_add_file_mode_ns(dir_sd, attr, type, attr->mode, NULL);
-+	return sysfs_add_file_mode_ns(dir_sd, attr, is_bin, attr->mode, NULL);
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 0a1e1da..312e0d6 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -406,7 +406,7 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
  }
  
  /**
-@@ -997,8 +991,7 @@ int sysfs_create_file_ns(struct kobject *kobj, const struct attribute *attr,
+- *	__sysfs_add_one - add sysfs_dirent to parent without warning
++ *	sysfs_add_one - add sysfs_dirent to parent without warning
+  *	@acxt: addrm context to use
+  *	@sd: sysfs_dirent to be added
+  *	@parent_sd: the parent sysfs_dirent to add @sd to
+@@ -426,8 +426,8 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
+  *	0 on success, -EEXIST if entry with the given name already
+  *	exists.
+  */
+-int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+-		    struct sysfs_dirent *parent_sd)
++int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
++		  struct sysfs_dirent *parent_sd)
  {
- 	BUG_ON(!kobj || !kobj->sd || !attr);
- 
--	return sysfs_add_file_mode_ns(kobj->sd, attr, SYSFS_KOBJ_ATTR,
--				      attr->mode, ns);
-+	return sysfs_add_file_mode_ns(kobj->sd, attr, false, attr->mode, ns);
- 
+ 	struct sysfs_inode_attrs *ps_iattr;
+ 	int ret;
+@@ -491,39 +491,6 @@ void sysfs_warn_dup(struct sysfs_dirent *parent, const char *name)
  }
- EXPORT_SYMBOL_GPL(sysfs_create_file_ns);
-@@ -1037,7 +1030,7 @@ int sysfs_add_file_to_group(struct kobject *kobj,
- 	if (!dir_sd)
- 		return -ENOENT;
  
--	error = sysfs_add_file(dir_sd, attr, SYSFS_KOBJ_ATTR);
-+	error = sysfs_add_file(dir_sd, attr, false);
- 	sysfs_put(dir_sd);
+ /**
+- *	sysfs_add_one - add sysfs_dirent to parent
+- *	@acxt: addrm context to use
+- *	@sd: sysfs_dirent to be added
+- *	@parent_sd: the parent sysfs_dirent to add @sd to
+- *
+- *	Get @parent_sd and set @sd->s_parent to it and increment nlink of
+- *	the parent inode if @sd is a directory and link into the children
+- *	list of the parent.
+- *
+- *	This function should be called between calls to
+- *	sysfs_addrm_start() and sysfs_addrm_finish() and should be
+- *	passed the same @acxt as passed to sysfs_addrm_start().
+- *
+- *	LOCKING:
+- *	Determined by sysfs_addrm_start().
+- *
+- *	RETURNS:
+- *	0 on success, -EEXIST if entry with the given name already
+- *	exists.
+- */
+-int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+-		  struct sysfs_dirent *parent_sd)
+-{
+-	int ret;
+-
+-	ret = __sysfs_add_one(acxt, sd, parent_sd);
+-
+-	if (ret == -EEXIST)
+-		sysfs_warn_dup(parent_sd, sd->s_name);
+-	return ret;
+-}
+-
+-/**
+  *	sysfs_remove_one - remove sysfs_dirent from parent
+  *	@acxt: addrm context to use
+  *	@sd: sysfs_dirent to be removed
+@@ -689,7 +656,7 @@ struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
  
- 	return error;
-@@ -1129,7 +1122,7 @@ int sysfs_create_bin_file(struct kobject *kobj,
- {
- 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 	/* link in */
+ 	sysfs_addrm_start(&acxt);
+-	rc = __sysfs_add_one(&acxt, sd, parent);
++	rc = sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
  
--	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
-+	return sysfs_add_file(kobj->sd, &attr->attr, true);
- }
- EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
+ 	if (!rc)
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 62d620a..fa4d63d 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -995,7 +995,7 @@ struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
+ 		sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
  
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 065689d..9f65cd9 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -55,8 +55,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
- 				if (!mode)
- 					continue;
- 			}
--			error = sysfs_add_file_mode_ns(dir_sd, *attr,
--						       SYSFS_KOBJ_ATTR,
-+			error = sysfs_add_file_mode_ns(dir_sd, *attr, false,
- 						       (*attr)->mode | mode,
- 						       NULL);
- 			if (unlikely(error))
-@@ -269,7 +268,7 @@ int sysfs_merge_group(struct kobject *kobj,
- 		return -ENOENT;
+ 	sysfs_addrm_start(&acxt);
+-	rc = __sysfs_add_one(&acxt, sd, parent);
++	rc = sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
  
- 	for ((i = 0, attr = grp->attrs); *attr && !error; (++i, ++attr))
--		error = sysfs_add_file(dir_sd, *attr, SYSFS_KOBJ_ATTR);
-+		error = sysfs_add_file(dir_sd, *attr, false);
- 	if (error) {
- 		while (--i >= 0)
- 			kernfs_remove_by_name(dir_sd, (*--attr)->name);
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 037a892..b3c717a 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -269,7 +269,6 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		inode->i_fop = &sysfs_dir_operations;
- 		break;
- 	case SYSFS_KOBJ_ATTR:
--	case SYSFS_KOBJ_BIN_ATTR:
- 		inode->i_size = sd->s_attr.size;
- 		inode->i_fop = &kernfs_file_operations;
- 		break;
+ 	if (rc) {
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index b44d2ce..5600560 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -46,7 +46,7 @@ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 	sysfs_get(target);	/* ref owned by symlink */
+ 
+ 	sysfs_addrm_start(&acxt);
+-	error = __sysfs_add_one(&acxt, sd, parent);
++	error = sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
+ 
+ 	if (!error)
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index bf5685e..d1102c0 100644
+index d1102c0..dce319c 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -83,10 +83,9 @@ struct sysfs_dirent {
- #define SYSFS_TYPE_MASK			0x00ff
- #define SYSFS_DIR			0x0001
- #define SYSFS_KOBJ_ATTR			0x0002
--#define SYSFS_KOBJ_BIN_ATTR		0x0004
- #define SYSFS_KOBJ_LINK			0x0008
- #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
--#define SYSFS_ACTIVE_REF		(SYSFS_KOBJ_ATTR | SYSFS_KOBJ_BIN_ATTR)
-+#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
- 
- #define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
- #define SYSFS_FLAG_HAS_NS		0x01000
-@@ -115,10 +114,8 @@ do {								\
- static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
- {
- 	struct attribute *attr = sd->priv;
--	int type = sysfs_type(sd);
- 
--	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
--		attr->ignore_lockdep;
-+	return sysfs_type(sd) == SYSFS_KOBJ_ATTR && attr->ignore_lockdep;
- }
- 
- #else
-@@ -219,10 +216,10 @@ int sysfs_inode_init(void);
- extern const struct file_operations kernfs_file_operations;
- 
- int sysfs_add_file(struct sysfs_dirent *dir_sd,
--		   const struct attribute *attr, int type);
-+		   const struct attribute *attr, bool is_bin);
- 
- int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
--			   const struct attribute *attr, int type,
-+			   const struct attribute *attr, bool is_bin,
- 			   umode_t amode, const void *ns);
- void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
- 
+@@ -167,8 +167,6 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd);
+ void sysfs_put_active(struct sysfs_dirent *sd);
+ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt);
+ void sysfs_warn_dup(struct sysfs_dirent *parent, const char *name);
+-int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+-		    struct sysfs_dirent *parent_sd);
+ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+ 		  struct sysfs_dirent *parent_sd);
+ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
 -- 
 1.8.3.1
 
