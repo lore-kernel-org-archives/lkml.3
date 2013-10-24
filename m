@@ -1,97 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3JXTLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 15:11:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756094Ab3JXTLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 15:11:31 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: libseccomp-discuss@lists.sourceforge.net
-Cc: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [libseccomp-discuss] ARM seccomp filters and EABI/OABI
-Date: Thu, 24 Oct 2013 15:11:19 -0400
-Message-ID: <1393414.jBrsFW4xK5@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com>
-References: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1756153Ab3JXTMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 15:12:12 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:64466 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab3JXTMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 15:12:10 -0400
+Message-ID: <1382641926.16515.2.camel@lolumad>
+Subject: Re: [PATCH 3/4] ARM: dts: i.MX53: dts for Voipac x53-dmm-668 module
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        pisa@cmp.felk.cvut.cz
+Date: Thu, 24 Oct 2013 21:12:06 +0200
+In-Reply-To: <20131023072738.GI2839@S2101-09.ap.freescale.net>
+References: <1382461643-16790-1-git-send-email-lisovy@gmail.com>
+	 <1382461643-16790-4-git-send-email-lisovy@gmail.com>
+	 <20131023072738.GI2839@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 23, 2013 02:02:00 PM Andy Lutomirski wrote:
-> I'm looking at the seccomp code, the ARM entry code, and the
-> syscall(2) manpage, and I'm a bit lost.  (The fact that I don't really
-> speak ARM assembly doesn't help.)
+Dear Shawn;
+Thank you for your comments.
+Should I also add Voipac to
+Documentation/devicetree/bindings/vendor-prefixes.txt?
 
-I suspect Kees, and perhaps Will, will be able to provide the best answers, 
-but my thoughts are below.
+Best regards;
+Rostislav Lisovy
 
-> My basic question is: what happens if an OABI syscall happens?
 
-Well, libseccomp doesn't support ARM OABI and since all the new ARM stuff is 
-EABI I don't think there is much reason to worry about OABI.  I know this 
-doesn't answer your question, but perhaps this provides some context.
-
-> AFAICS, the syscall arguments for EABI are r0..r5, although their
-> ordering is a bit odd*.
-
-Hmmm, that could complicate things a bit - do you know if they are put in a 
-more "standard" order by the time they are accessed in seccomp_bpf_load() via 
-task_pt_regs()?  If not, we likely need to come up with some special handling 
-in libseccomp to account for this.
-
-> For OABI, r6 seems to play some role, but I'm
-> lost as to what it is.  The seccomp_bpf_load function won't load r6,
-> so there had better not be anything useful in there...  (Also, struct
-> seccomp_data will have issues with a seventh "argument".)
+On Wed, 2013-10-23 at 15:27 +0800, Shawn Guo wrote: 
+> On Tue, Oct 22, 2013 at 07:07:22PM +0200, Rostislav Lisovy wrote:
+> > Enable UART1 and FEC
 > 
-> But what happens to the syscall number?  For an EABI syscall, it's in
-> r7.  For an OABI syscall, it's in the swi instruction and gets copied
-> to r7 on entry.  If a debugger changes r7, presumably the syscall
-> number changes.
+> You have more than these two enabled.
 > 
-> Oddly, there are two different syscall tables.  The major differences
-> seem to be that some of the OABI entries have their argument order
-> changed.  But there's also a magic constant 0x900000 added to the
-> syscall number somewhere -- is it reflected in _sigsys._syscall?  Is
-> it reflected in ucontext's r7?
-
-Thankfully, I've been able to ignore most of this.
-
-> I'm a bit surprised to see that both the EABI and OABI ABIs show up as
-> AUDIT_ARCH_ARM.
-
-Yeah, the usage of AUDIT_ARCH_* is not really ideal for seccomp.  There are 
-similar issues with x32; not quite as bad as with ARM, but still ... 
-
-> Can any of you shed some light on this?  I don't have an ARM system I
-> can test on, but if one of you can point me at a decent QEMU image, I
-> can play around.
-
-I know Kees had one at one point, although I remember him commenting that it 
-was painfully slow under QEMU.
-
-> For reference, I'm working on userspace code to decode a TRAP and
-> eventually to allow syscall emulation (either by emulating the syscall
-> inside the signal handler and setting the return value or (egads!) by
-> changing the syscall and restarting it -- the latter is probably
-> impossible if the original syscall came in through OABI and may be
-> generally impossible if userspace expects any of the argument
-> registers to be preserved).
+> > 
+> > Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
+> > 
+> >  create mode 100644 arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
+> > 
+> > diff --git a/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
+> > new file mode 100644
+> > index 0000000..04695c9
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/imx53-voipac-dmm-668.dtsi
+> > @@ -0,0 +1,195 @@
+> > +/*
+> > + * Copyright 2013 Rostislav Lisovy <lisovy@gmail.com>, PiKRON s.r.o.
+> > + *
+> > + * The code contained herein is licensed under the GNU General Public
+> > + * License. You may obtain a copy of the GNU General Public License
+> > + * Version 2 or later at the following locations:
+> > + *
+> > + * http://www.opensource.org/licenses/gpl-license.html
+> > + * http://www.gnu.org/copyleft/gpl.html
+> > + */
+> > +
+> > +#include "imx53.dtsi"
+> > +
+> > +/ {
+> > +	model = "Voipac i.MX53 X53-DMM-668";
+> > +	compatible = "vp,imx53-dmm-668", "fsl,imx53";
+> > +
+> > +	memory@0 {
+> > +		device_type = "memory";
+> > +		reg = <0x70000000 0x20000000>;
+> > +	};
+> > +
+> > +	memory@1 {
+> > +		device_type = "memory";
+> > +		reg = <0xb0000000 0x20000000>;
+> > +	};
 > 
+> The 'num' in memory@num should match the first number in 'reg' property,
+> so they should looks like:
 > 
-> * I think that a syscall with signature long func(int a, long long b,
-> int c, int d, int e) ends up with c in r1 and b in r2/r3.  The
-> syscall(2) manpage appears to be entirely wrong.
+> 	memory@70000000 {
+> 		device_type = "memory";
+> 		reg = <0x70000000 0x20000000>;
+> 	}
+> 
+> 	memory@b0000000 {
+> 		device_type = "memory";
+> 		reg = <0xb0000000 0x20000000>;
+> 	}
+> 
+> > +
+> > +	regulators {
+> > +		compatible = "simple-bus";
+> > +
+> > +		reg_3p3v: 3p3v {
+> > +			compatible = "regulator-fixed";
+> > +			regulator-name = "3P3V";
+> > +			regulator-min-microvolt = <3300000>;
+> > +			regulator-max-microvolt = <3300000>;
+> > +			regulator-always-on;
+> > +		};
+> > +	};
+> > +};
+> > +
+> > +&iomuxc {
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&pinctrl_hog>;
+> > +
+> > +	hog {
+> > +		pinctrl_hog: hoggrp {
+> > +			fsl,pins = <
+> > +				/* Make DA9053 regulator functional */
+> > +				MX53_PAD_GPIO_16__GPIO7_11	0x80000000
+> > +
+> 
+> Drop these blank lines.  We generally only have blank lines between
+> nodes.
+> 
+> > +				/* FEC Power enable */
+> > +				MX53_PAD_GPIO_11__GPIO4_1	0x80000000
+> > +
+> > +				/* FEC RST */
+> > +				MX53_PAD_GPIO_12__GPIO4_2	0x80000000
+> > +			>;
+> > +		};
+> > +	};
+> > +};
+> > +
+> > +&uart1 {
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&pinctrl_uart1_2>;
+> > +	status = "okay";
+> > +};
+> > +
+> > +&i2c1 {
+> 
+> Please sort these nodes alphabetically in label name, so that new node
+> can find they slots easily.
+> 
+> Shawn
+> 
 
--- 
-paul moore
-security and virtualization @ redhat
 
