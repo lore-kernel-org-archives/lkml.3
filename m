@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3JXP7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:59:35 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:64594 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab3JXPtt (ORCPT
+	id S1756526Ab3JXQAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 12:00:25 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:49783 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab3JXQAW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:49:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/34] sysfs: move sysfs_hash_and_remove() to fs/sysfs/dir.c
-Date: Thu, 24 Oct 2013 11:49:10 -0400
-Message-Id: <1382629780-10006-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
-References: <1382629780-10006-1-git-send-email-tj@kernel.org>
+	Thu, 24 Oct 2013 12:00:22 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Large pastes into readline enabled programs causes breakage from v2.6.31 onwards
+Date: Thu, 24 Oct 2013 18:00:18 +0200
+User-Agent: KMail/1.13.7 (Linux/3.12.0-rc6-00275-g320437af; KDE/4.11.1; x86_64; ; )
+Cc: Margarita Manterola <margamanterola@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Maximiliano Curia <maxy@debian.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, bug-readline@gnu.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com> <CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com> <201309030717.57866.a.miskiewicz@gmail.com>
+In-Reply-To: <201309030717.57866.a.miskiewicz@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201310241800.18490.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most removal related logic is implemented in fs/sysfs/dir.c.  Move
-sysfs_hash_and_remove() to fs/sysfs/dir.c so that __sysfs_remove()
-doesn't have to be public.
+On Tuesday 03 of September 2013, Arkadiusz Miskiewicz wrote:
+> On Sunday 18 of August 2013, Margarita Manterola wrote:
+> > Hi,
+> > 
+> > On Sat, Aug 17, 2013 at 5:28 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > >> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> > >> index 4bf0fc0..2ba7f4e 100644
+> > >> --- a/drivers/tty/n_tty.c
+> > >> +++ b/drivers/tty/n_tty.c
+> > >> @@ -149,7 +149,8 @@ static int set_room(struct tty_struct *tty)
+> > >> 
+> > >>          * characters will be beeped.
+> > >>          */
+> > >>         
+> > >>         if (left <= 0)
+> > >> 
+> > >> -               left = ldata->icanon && !ldata->canon_data;
+> > >> +               if (waitqueue_active(&tty->read_wait))
+> > >> +                       left = ldata->icanon && !ldata->canon_data;
+> > >> 
+> > >>         old_left = tty->receive_room;
+> > >>         tty->receive_room = left;
+> > > 
+> > > Was this applied? You may want to cc rjw... it is a regression, it is
+> > > not pretty, and it is something I blieve I hit but thought it was some
+> > > kind of "X weirdness".
+> > 
+> > There were no replies to the previous mail asking for comments, and as
+> > far as I can see this has not been applied. I don't know who rjw is,
+> > could you be a bit more explicit, please?
+> 
 
-This is pure relocation.
+Hi
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/dir.c   | 38 +++++++++++++++++++++++++++++++++++++-
- fs/sysfs/inode.c | 26 --------------------------
- fs/sysfs/sysfs.h |  5 ++---
- 3 files changed, 39 insertions(+), 30 deletions(-)
+Was just going over bug-readline and lkml archives and found no continuation 
+of this. 
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index eab59de..486238d 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -813,7 +813,8 @@ static struct sysfs_dirent *sysfs_next_descendant_post(struct sysfs_dirent *pos,
- 	return pos->s_parent;
- }
- 
--void __sysfs_remove(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
-+static void __sysfs_remove(struct sysfs_addrm_cxt *acxt,
-+			   struct sysfs_dirent *sd)
- {
- 	struct sysfs_dirent *pos, *next;
- 
-@@ -847,6 +848,41 @@ void sysfs_remove(struct sysfs_dirent *sd)
- }
- 
- /**
-+ * sysfs_hash_and_remove - find a sysfs_dirent by name and remove it
-+ * @dir_sd: parent of the target
-+ * @name: name of the sysfs_dirent to remove
-+ * @ns: namespace tag of the sysfs_dirent to remove
-+ *
-+ * Look for the sysfs_dirent with @name and @ns under @dir_sd and remove
-+ * it.  Returns 0 on success, -ENOENT if such entry doesn't exist.
-+ */
-+int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
-+			  const void *ns)
-+{
-+	struct sysfs_addrm_cxt acxt;
-+	struct sysfs_dirent *sd;
-+
-+	if (!dir_sd) {
-+		WARN(1, KERN_WARNING "sysfs: can not remove '%s', no directory\n",
-+			name);
-+		return -ENOENT;
-+	}
-+
-+	sysfs_addrm_start(&acxt);
-+
-+	sd = sysfs_find_dirent(dir_sd, name, ns);
-+	if (sd)
-+		__sysfs_remove(&acxt, sd);
-+
-+	sysfs_addrm_finish(&acxt);
-+
-+	if (sd)
-+		return 0;
-+	else
-+		return -ENOENT;
-+}
-+
-+/**
-  *	sysfs_remove_dir - remove an object's directory.
-  *	@kobj:	object.
-  *
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 825c556..1750f79 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -314,32 +314,6 @@ void sysfs_evict_inode(struct inode *inode)
- 	sysfs_put(sd);
- }
- 
--int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
--			  const void *ns)
--{
--	struct sysfs_addrm_cxt acxt;
--	struct sysfs_dirent *sd;
--
--	if (!dir_sd) {
--		WARN(1, KERN_WARNING "sysfs: can not remove '%s', no directory\n",
--			name);
--		return -ENOENT;
--	}
--
--	sysfs_addrm_start(&acxt);
--
--	sd = sysfs_find_dirent(dir_sd, name, ns);
--	if (sd)
--		__sysfs_remove(&acxt, sd);
--
--	sysfs_addrm_finish(&acxt);
--
--	if (sd)
--		return 0;
--	else
--		return -ENOENT;
--}
--
- int sysfs_permission(struct inode *inode, int mask)
- {
- 	struct sysfs_dirent *sd;
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index e0753e5..8d3dc1d 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -172,8 +172,9 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
- 		    struct sysfs_dirent *parent_sd);
- int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
- 		  struct sysfs_dirent *parent_sd);
--void __sysfs_remove(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd);
- void sysfs_remove(struct sysfs_dirent *sd);
-+int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
-+			  const void *ns);
- void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
- 
- struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
-@@ -218,8 +219,6 @@ int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		  struct kstat *stat);
- int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		   size_t size, int flags);
--int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
--			  const void *ns);
- int sysfs_inode_init(void);
- 
- /*
+There was a patch proposed but didn't get applied. 
+https://lkml.org/lkml/2013/8/17/31
+Maybe it only needs proper patch submission?
+
+Looking from bug-readline archives debugging it took huge amount of work and 
+would be sad that all that ended up being wasted.
+
+Whole thread if someone lost it https://lkml.org/lkml/2013/7/25/205
+
 -- 
-1.8.3.1
-
+Arkadiusz Miśkiewicz, arekm / maven.pl
