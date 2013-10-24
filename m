@@ -1,138 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab3JXGwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 02:52:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16975 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3JXGwV (ORCPT
+	id S1753890Ab3JXGwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 02:52:45 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50448 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3JXGwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 02:52:21 -0400
-Date: Wed, 23 Oct 2013 23:52:12 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Deadlock in BPF JIT functions when running upowerd?
-Message-ID: <20131024065212.GB14083@birch.djwong.org>
-References: <20131024011734.GA14083@birch.djwong.org>
- <1382595913.7572.40.camel@edumazet-glaptop.roam.corp.google.com>
+	Thu, 24 Oct 2013 02:52:43 -0400
+Date: Thu, 24 Oct 2013 08:52:39 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
+Message-ID: <20131024065239.GA24888@gmail.com>
+References: <1382561895-8237-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382595913.7572.40.camel@edumazet-glaptop.roam.corp.google.com>
+In-Reply-To: <1382561895-8237-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 11:25:13PM -0700, Eric Dumazet wrote:
-> On Wed, 2013-10-23 at 18:17 -0700, Darrick J. Wong wrote:
-> > Hi,
-> > 
-> > I've been observing a softlockup with 3.11.6 and 3.12-rc6.  It looks like
-> > there's a deadlock occurring on purge_lock in __purge_vmap_area_lazy().  In
-> > short, the BPF JIT code has been changed[1] to call set_memory_r[ow]() when
-> > compiling and freeing JIT bytecode memory.  It seems that it's possible for
-> > upowerd to be compiling some BPF program and call __purge_vmap_area_lazy, then
-> > the timer interrupt comes in (due to the IPI?) and a softirq calls
-> > bpf_jit_free, which also calls __purge_vmap_area_lazy.
-> > 
-> > I'm not really sure who's at fault here--is this a BPF bug?
-> > 
-> > [1] 314beb9bcabfd6b4542ccbced2402af2c6f6142a
-> >     "x86: bpf_jit_comp: secure bpf jit against spraying attacks"
-> > 
-> > --D
-> > 
-> > Here's what 3.11.6 spits out; the 3.12-rc6 message has the same traceback.
-> > 
-> > [   52.370437] BUG: soft lockup - CPU#3 stuck for 22s! [upowerd:8359]
-> > [   52.370440] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 xt_conntrack xt_CHECKSUM iptable_mangle fuse tun microcode nfsd nfs_acl exportfs auth_rpcgss nfs lockd sunrpc af_packet xt_physdev xt_hl ip6t_rt nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT xt_sctp xt_limit xt_tcpudp xt_addrtype nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ip6table_filter ip6_tables nf_conntrack_netbios_ns nf_conntrack_broadcast nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack iptable_filter ip_tables x_tables sch_fq_codel bridge stp llc lpc_ich mfd_core loop bcache dm_crypt zlib_deflate libcrc32c firewire_ohci firewire_core usb_storage mpt2sas scsi_transport_sas raid_class
-> > [   52.370471] CPU: 3 PID: 8359 Comm: upowerd Not tainted 3.11.6-60-flax #1
-> > [   52.370472] Hardware name: OEM OEM/131-GT-E767, BIOS 6.00 PG 08/25/2011
-> > [   52.370474] task: ffff8806621f9700 ti: ffff88064b6a0000 task.ti: ffff88064b6a0000
-> > [   52.370475] RIP: 0010:[<ffffffff816b5a22>]  [<ffffffff816b5a22>] _raw_spin_lock+0x32/0x40
-> > [   52.370480] RSP: 0018:ffff88067fc63c10  EFLAGS: 00000297
-> > [   52.370481] RAX: 0000000000000061 RBX: ffff88065a318600 RCX: 0000000000000000
-> > [   52.370483] RDX: 0000000000000062 RSI: ffff88067fc63ce0 RDI: ffffffff81ea42bc
-> > [   52.370484] RBP: ffff88067fc63c10 R08: ffffffff81cdd608 R09: 0000000000000000
-> > [   52.370485] R10: ffff88067fc6d8e0 R11: 0000000000000000 R12: ffff88067fc63b88
-> > [   52.370486] R13: ffffffff816b7a47 R14: ffff88067fc63c10 R15: ffff88067fc63cd8
-> > [   52.370487] FS:  00007f55fff297c0(0000) GS:ffff88067fc60000(0000) knlGS:0000000000000000
-> > [   52.370488] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [   52.370489] CR2: 00007f55fff47000 CR3: 000000065dd10000 CR4: 00000000000007e0
-> > [   52.370490] Stack:
-> > [   52.370491]  ffff88067fc63cb0 ffffffff811955fd 0000000000000096 0000000000000347
-> > [   52.370494]  00000000000003c1 0000000000000001 0000000000000000 0000000000000000
-> > [   52.370496]  0000000000000033 ffff88067fc63c58 ffff88067fc63c58 0000000000000001
-> > [   52.370499] Call Trace:
-> > [   52.370500]  <IRQ> 
-> > [   52.370501]  [<ffffffff811955fd>] __purge_vmap_area_lazy+0x12d/0x4c0
-> > [   52.370507]  [<ffffffff8119612c>] vm_unmap_aliases+0x17c/0x190
-> > [   52.370512]  [<ffffffff81079814>] change_page_attr_set_clr+0xb4/0x4a0
-> > [   52.370516]  [<ffffffff810a927e>] ? irq_exit+0x7e/0xb0
-> > [   52.370519]  [<ffffffff81048e44>] ? smp_irq_work_interrupt+0x34/0x40
-> > [   52.370522]  [<ffffffff81079d8f>] set_memory_rw+0x2f/0x40
-> > [   52.370525]  [<ffffffff810a0a7c>] bpf_jit_free+0x2c/0x40
-> > [   52.370528]  [<ffffffff815f48aa>] sk_filter_release_rcu+0x1a/0x30
-> > [   52.370532]  [<ffffffff811262d2>] rcu_process_callbacks+0x1e2/0x5b0
-> > [   52.370535]  [<ffffffff810c9999>] ? enqueue_hrtimer+0x39/0xf0
-> > [   52.370537]  [<ffffffff810a8f20>] __do_softirq+0xe0/0x2f0
-> > [   52.370541]  [<ffffffff816b851c>] call_softirq+0x1c/0x30
-> > [   52.370543]  [<ffffffff81046155>] do_softirq+0x55/0x90
-> > [   52.370545]  [<ffffffff810a928e>] irq_exit+0x8e/0xb0
-> > [   52.370547]  [<ffffffff816b8b0a>] smp_apic_timer_interrupt+0x4a/0x60
-> > [   52.370549]  [<ffffffff816b7a47>] apic_timer_interrupt+0x67/0x70
-> > [   52.370550]  <EOI> 
-> > [   52.370552]  [<ffffffff8106eeb4>] ? default_send_IPI_mask_allbutself_phys+0xb4/0xe0
-> > [   52.370559]  [<ffffffff81188af7>] ? handle_pte_fault+0x567/0x920
-> > [   52.370561]  [<ffffffff8107cf30>] ? rbt_memtype_copy_nth_element+0xc0/0xc0
-> > [   52.370563]  [<ffffffff81072057>] physflat_send_IPI_allbutself+0x17/0x20
-> > [   52.370566]  [<ffffffff8106a992>] native_send_call_func_ipi+0x72/0x80
-> > [   52.370568]  [<ffffffff8107cf30>] ? rbt_memtype_copy_nth_element+0xc0/0xc0
-> > [   52.370570]  [<ffffffff81105834>] smp_call_function_many+0x1f4/0x290
-> > [   52.370572]  [<ffffffff81105a8a>] smp_call_function+0x3a/0x60
-> > [   52.370574]  [<ffffffff8107cf30>] ? rbt_memtype_copy_nth_element+0xc0/0xc0
-> > [   52.370576]  [<ffffffff81105b18>] on_each_cpu+0x38/0x80
-> > [   52.370578]  [<ffffffff8107d59d>] flush_tlb_kernel_range+0x6d/0x70
-> > [   52.370581]  [<ffffffff81195916>] __purge_vmap_area_lazy+0x446/0x4c0
-> > [   52.370584]  [<ffffffff81228e85>] ? ext4_file_open+0x75/0x1b0
-> > [   52.370586]  [<ffffffff8119612c>] vm_unmap_aliases+0x17c/0x190
-> > [   52.370590]  [<ffffffff81079814>] change_page_attr_set_clr+0xb4/0x4a0
-> > [   52.370592]  [<ffffffff81196ac2>] ? map_vm_area+0x32/0x50
-> > [   52.370595]  [<ffffffff81197761>] ? __vmalloc_node_range+0x121/0x1f0
-> > [   52.370597]  [<ffffffff810a08ab>] ? bpf_jit_compile+0x105b/0x1200
-> > [   52.370600]  [<ffffffff81079d4f>] set_memory_ro+0x2f/0x40
-> > [   52.370602]  [<ffffffff810744ca>] ? module_alloc+0x5a/0x60
-> > [   52.370604]  [<ffffffff810a081c>] bpf_jit_compile+0xfcc/0x1200
-> > [   52.370607]  [<ffffffff811aa75b>] ? __kmalloc+0x18b/0x1f0
-> > [   52.370610]  [<ffffffff811aa606>] ? __kmalloc+0x36/0x1f0
-> > [   52.370612]  [<ffffffff815f4b43>] ? sk_chk_filter+0x283/0x390
-> > [   52.370614]  [<ffffffff815f4d4b>] sk_attach_filter+0xfb/0x1b0
-> > [   52.370617]  [<ffffffff815d071d>] sock_setsockopt+0x4fd/0x900
-> > [   52.370620]  [<ffffffff811d2342>] ? fget_light+0x92/0x100
-> > [   52.370623]  [<ffffffff815cbdd6>] SyS_setsockopt+0xc6/0xd0
-> > [   52.370625]  [<ffffffff816b6dc6>] system_call_fastpath+0x1a/0x1f
-> > [   52.370626] Code: 89 e5 65 48 8b 04 25 f0 b8 00 00 83 80 44 e0 ff ff 01 b8 00 01 00 00 f0 66 0f c1 07 0f b6 d4 38 c2 74 0f 66 0f 1f 44 00 00 f3 90 <0f> b6 07 38 d0 75 f7 5d c3 0f 1f 44 00 00 66 66 66 66 90 55 48 
-> 
-> Could you try latest tree, as it includes :
-> 
-> commit d45ed4a4e33ae103053c0a53d280014e7101bb5c
-> Author: Alexei Starovoitov <ast@plumgrid.com>
-> Date:   Fri Oct 4 00:14:06 2013 -0700
-> 
->     net: fix unsafe set_memory_rw from softirq
 
-This seems to fix it, thank you! :D
-You can add, if you like:
-Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
---D
->     
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit aa30a2e03a453aad9fd96c3f2d4a82c3497674e5:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-10-23 09:45:50 +0200)
+> 
+> are available in the git repository at:
 > 
 > 
-> Thanks !
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
 > 
+> for you to fetch changes up to c1fb5651bb40f9efaf32d280f39e06df7e352673:
 > 
+>   perf tools: Show progress on histogram collapsing (2013-10-23 15:48:24 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Show progress on histogram collapsing, that can take a long time, from
+>   Namhyung Kim.
+> 
+> . Support "$vars" meta argument syntax for local variables, allowing
+>   asking for all possible variables at a given probe point to be
+>   collected when it hits, from Masami Hiramatsu.
+> 
+> . Address the root cause of that 'perf sched' stack initialization build
+>   slowdown, by programmatically setting a big array after moving the
+>   global variable back to the stack. Fix from Adrian Hunter.
+> 
+> . Do not repipe attributes to a perf.data file in 'perf inject',
+>   fix from Adrian Hunter
+> 
+> . Change the procps visible command-name of invididual benchmark tests
+>   plus cleanups, from Ingo Molnar.
+> 
+> . Do not accept parse_tag_value() overflow, fix from Adrian Hunter.
+> 
+> . Validate that mmap_pages is not too big. From Adrian Hunter.
+> 
+> . Fix non-debug build, from Adrian Hunter
+> 
+> . Clarify the "sample parsing" test entry.
+> 
+> . Consider PERF_SAMPLE_TRANSACTION in the "sample parsing" test.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (7):
+>       perf sched: Make struct perf_sched sched a local variable
+>       perf sched: Optimize build time
+>       perf script: Make perf_script a local variable
+>       perf inject: Do not repipe attributes to a perf.data file
+>       perf tools: Do not accept parse_tag_value() overflow
+>       perf evlist: Validate that mmap_pages is not too big
+>       perf tools: Fix non-debug build
+> 
+> Arnaldo Carvalho de Melo (5):
+>       perf test: Clarify the "sample parsing" test entry
+>       perf test: Consider PERF_SAMPLE_TRANSACTION in the "sample parsing" test
+>       perf tools: Stop using 'self' in some more places
+>       perf ui: Rename ui_progress to ui_progress_ops
+>       perf ui progress: Per progress bar state
+> 
+> Ingo Molnar (1):
+>       perf bench: Change the procps visible command-name of invididual benchmark tests plus cleanups
+> 
+> Masami Hiramatsu (2):
+>       perf probe: Support "$vars" meta argument syntax for local variables
+>       perf probe: Find fentry mcount fuzzed parameter location
+> 
+> Namhyung Kim (1):
+>       perf tools: Show progress on histogram collapsing
+> 
+>  tools/perf/Makefile.perf          |   1 +
+>  tools/perf/builtin-annotate.c     |   6 +-
+>  tools/perf/builtin-bench.c        | 239 +++++++++++++++++++-------------------
+>  tools/perf/builtin-diff.c         |   7 +-
+>  tools/perf/builtin-inject.c       |  27 +++--
+>  tools/perf/builtin-report.c       |  24 ++--
+>  tools/perf/builtin-sched.c        |  44 +++----
+>  tools/perf/builtin-script.c       |  40 ++++---
+>  tools/perf/builtin-top.c          |   4 +-
+>  tools/perf/config/Makefile        |   4 +
+>  tools/perf/tests/hists_link.c     |   2 +-
+>  tools/perf/tests/sample-parsing.c |   4 +-
+>  tools/perf/ui/gtk/gtk.h           |   2 +-
+>  tools/perf/ui/gtk/progress.c      |  20 ++--
+>  tools/perf/ui/gtk/setup.c         |   2 +-
+>  tools/perf/ui/progress.c          |  32 +++--
+>  tools/perf/ui/progress.h          |  19 +--
+>  tools/perf/ui/tui/progress.c      |  15 +--
+>  tools/perf/ui/tui/setup.c         |   3 +-
+>  tools/perf/ui/tui/tui.h           |   6 +
+>  tools/perf/util/build-id.c        |   6 +-
+>  tools/perf/util/evlist.c          |  14 ++-
+>  tools/perf/util/hist.c            |  23 ++--
+>  tools/perf/util/hist.h            |   3 +-
+>  tools/perf/util/probe-event.c     |   1 -
+>  tools/perf/util/probe-finder.c    | 133 ++++++++++++++++++---
+>  tools/perf/util/probe-finder.h    |   1 +
+>  tools/perf/util/session.c         |  24 ++--
+>  tools/perf/util/sort.c            | 124 ++++++++++----------
+>  tools/perf/util/strfilter.c       |  46 ++++----
+>  tools/perf/util/thread.c          |  72 ++++++------
+>  tools/perf/util/util.c            |   2 +
+>  32 files changed, 560 insertions(+), 390 deletions(-)
+>  create mode 100644 tools/perf/ui/tui/tui.h
+
+Pulled, thanks Arnaldo!
+
+	Ingo
