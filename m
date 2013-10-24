@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3JXOsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:48:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36906 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab3JXOsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:48:45 -0400
-Date: Thu, 24 Oct 2013 16:48:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: linux-kernel@vger.kernel.org, jic23@kernel.org, lars@metafoo.de,
-        gregkh@linuxfoundation.org
-Subject: Re: [RFC PATCH] debugobject: add support for kref
-In-Reply-To: <1382609345-29370-1-git-send-email-bigeasy@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1310241615280.14242@ionos.tec.linutronix.de>
-References: <1382609345-29370-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755394Ab3JXOs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:48:57 -0400
+Received: from ring0.de ([91.143.88.219]:46785 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755304Ab3JXOsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:48:53 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: lkml.org]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCHv6 0/3] DT Support for TWL4030 power button
+Date: Thu, 24 Oct 2013 16:48:43 +0200
+Message-Id: <1382626126-12565-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Oct 2013, Sebastian Andrzej Siewior wrote:
->  
->  struct kref {
->  	atomic_t refcount;
-> @@ -32,6 +33,9 @@ struct kref {
->  static inline void kref_init(struct kref *kref)
->  {
->  	atomic_set(&kref->refcount, 1);
-> +#ifdef CONFIG_DEBUG_OBJECTS_KREF
-> +	debug_object_init(kref, NULL);
+Hi,
 
-I rather prefer to have a debug_obj_descr handed in. It also should
-activate the object, because then you can catch freeing of an active
-kref as well. With state INIT the free checks are not triggering.
+This is the sixth iteration of DT support for the TWL4030
+power button.
 
->  /**
-> @@ -70,6 +74,12 @@ static inline int kref_sub(struct kref *kref, unsigned int count,
->  {
->  	WARN_ON(release == NULL);
->  
-> +#ifdef CONFIG_DEBUG_OBJECTS_KREF
-> +	if (!debug_object_is_tracked(kref)) {
-> +		debugobj_kref_splat(kref, release);
-> +		return 0;
+Changes since v5 [0]:
+* Updated documentation
 
-Why can't you use debug_object_active_state(kref, descr, 0, 0)? All it
-needs is a return value which tells you whether the object is tracked
-and its state is ACTIVE.
+[0] https://lkml.org/lkml/2013/10/23/416
 
-> +	}
-> +#endif
->  	if (atomic_sub_and_test((int) count, &kref->refcount)) {
->  		release(kref);
->  		return 1;
+-- Sebastian
 
-What calls debug_object_free() for the kref? You seem to add tracking
-objects without ever releasing them. Are you relying on kfree removing
-the inactive object from the debugobjects tracking list?
+Sebastian Reichel (3):
+  Input: twl4030-pwrbutton - add device tree support
+  Input: twl4030-pwrbutton: use dev_err for errors
+  Input: twl4030-pwrbutton: simplify driver using devm_*
 
-Not really a good idea. There might be some different release function
-than kfree. And it relies on DEBUG_OBJECTS_FREE being enabled.
+ .../bindings/input/twl4030-pwrbutton.txt           | 21 +++++++++++
+ drivers/input/misc/twl4030-pwrbutton.c             | 44 +++++++++-------------
+ 2 files changed, 38 insertions(+), 27 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
 
-So an explicit call to debug_objects_free() before release(kref) is
-required. Otherwise your new check is going to fail even when the kref
-is gone already.
+-- 
+1.8.4.rc3
 
-Thanks,
-
-	tglx
