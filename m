@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3JXH6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:58:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32513 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab3JXH6Z (ORCPT
+	id S1754296Ab3JXH65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:58:57 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29546 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab3JXH6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:58:25 -0400
-X-AuditID: cbfee68f-b7f836d000001b39-ac-5268d31c2411
+	Thu, 24 Oct 2013 03:58:22 -0400
+X-AuditID: cbfee68e-b7f416d0000020d6-91-5268d31c6257
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
         Changman Lee <cm224.lee@samsung.com>
-Subject: [PATCH 2/3] f2fs: introduce f2fs_balance_fs_bg for some background jobs
-Date: Thu, 24 Oct 2013 16:57:41 +0900
-Message-id: <1382601462-7989-2-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 3/3] f2fs: add reclaiming control by sysfs
+Date: Thu, 24 Oct 2013 16:57:42 +0900
+Message-id: <1382601462-7989-3-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
 In-reply-to: <1382601462-7989-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1382601462-7989-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t8zQ12ZyxlBBjdem1pc29fIZHF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxsfpzSwF
-	NyUrZr9cxtjAuEW0i5GTQ0LAROLOr+fsELaYxIV769m6GLk4hASWMUo8P7aTDaboxP8PrBCJ
-	6YwSradnMIIkhASamSROXkrqYuTgYBPQlti83wAkLCLALLFg6nlGkHpmgR2MEqcm7gGrFxYI
-	kJhxfD4LiM0ioCrx9c4LdpBeXgE3iU99URC7tCW2PZ8IVs4p4C4xdd42ZohVbhLHPk1iAZkp
-	IdDMLrHn6nxGiDkCEt8mH2IBmSMhICux6QAzxBxJiYMrbrBMYBRewMiwilE0tSC5oDgpvchY
-	rzgxt7g0L10vOT93EyMkdPt3MN49YH2IMRlo3ERmKdHkfGDo55XEGxqbGVmYmpgaG5lbmpEm
-	rCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxqY1S4XL+ZZ2yOjbyNmc9Zn7Mjxp
-	3eHgKTJnjH+/niqm9eJK5T859bLXbd+fLFoj9TRsz5egma/iI9o4HmpsWXc4jk3n88ajhr/v
-	KKn96r1oY1B9V+t83F47N7kHps3NO14/kW5bJTVF/PQu3+Wel0xOKKtvemJyN1x/+73J91gW
-	Bb24/O/21+dKLMUZiYZazEXFiQBX93OKcwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t9jQV2ZyxlBBi+uG1hc29fIZHF9118m
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t8zY13ZyxlBBt+bmCyu7Wtksri+6y+T
+	xaVF7hZ79p5ksbi8aw6bA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoErY/6SZsaC
+	1WoV89pfsTcw/pDrYuTkkBAwkXj+/gM7hC0mceHeerYuRi4OIYFljBIbPk9mgimac+IpE0Ri
+	OqNE45avLCAJIYFmJomTl5K6GDk42AS0JTbvNwAJiwgwSyyYep4RpJ5ZYAejxKmJexhBEsIC
+	VhIdU8+B2SwCqhJvTzwDW8Ar4CYxZ+5lFohl2hLbnk8Eq+EUcJeYOm8bM8QuN4ljnyaxgAyV
+	EGhml1i4fjcLxCABiW+TD7GAHCEhICux6QAzxBxJiYMrbrBMYBRewMiwilE0tSC5oDgpvchI
+	rzgxt7g0L10vOT93EyMkePt2MN48YH2IMRlo3ERmKdHkfGDw55XEGxqbGVmYmpgaG5lbmpEm
+	rCTOu+hhUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRss+NVUTjul3A4wfLNl/0Vaz78ZW
+	F79Dcu9X1DNFPtPN193TIJ/rrrs4OrFyY9LFaZMa5XaGMDyX6yr6vp5Hdvtqs8sPTi6/ZBF5
+	7fs56QzvVWt0VHgi1yp0d5S8eZxx7um0aR68ezNDC37saj375PekbqXrxi5hzWdW7NfhLdrB
+	tFFpytGwe0osxRmJhlrMRcWJANjXRA10AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jQV2ZyxlBBrsPWVlc29fIZHF9118m
 	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
 	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8bH6c0sBTclK2a/XMbYwLhFtIuRk0NCwETixP8PrBC2mMSFe+vZ
-	uhi5OIQEpjNKtJ6ewQiSEBJoZpI4eSmpi5GDg01AW2LzfgOQsIgAs8SCqecZQeqZBXYwSpya
-	uAesXlggQGLG8fksIDaLgKrE1zsv2EF6eQXcJD71RUHs0pbY9nwiWDmngLvE1HnbmCFWuUkc
-	+zSJZQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZHxTGoH48oGi0OMAhyMSjy8
-	Gh/Sg4RYE8uKK3MPMUpwMCuJ8HpWZAQJ8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4wavNK
-	4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgbGzn4W785CNpLGm
-	0zcxZ5Oq+RcXMqU7/c28/TZutoVK+Ias6Pgt5Rd/mR25J22llrb0jLvdpNIVXkcOytd77OGu
-	vdo3p1Kz78WxSPd33IELf1+Ue6ks9fDrp5f6vSnvpt3jLXwn/u/k9ujoRVn+ay9fe9+Vt2jb
-	k9fTvl/kXyYXFMfFNe3b2jQlluKMREMt5qLiRAAl9I+E0AIAAA==
+	MI0Rur4hQXA9RgZoIGEdY8b8Jc2MBavVKua1v2JvYPwh18XIySEhYCIx58RTJghbTOLCvfVs
+	XYxcHEIC0xklGrd8ZQFJCAk0M0mcvJTUxcjBwSagLbF5vwFIWESAWWLB1POMIPXMAjsYJU5N
+	3MMIkhAWsJLomHoOzGYRUJV4e+IZ2AJeATeJOXMvs0As05bY9nwiWA2ngLvE1HnbmCF2uUkc
+	+zSJZQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwbHxTHoH46oGi0OMAhyMSjy8
+	Gh/Sg4RYE8uKK3MPMUpwMCuJ8HpWZAQJ8aYkVlalFuXHF5XmpBYfYkwGumois5Rocj4wbvNK
+	4g2NTcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgXHVtTtfJzGvi+d9
+	5R4r1sa48XuS0IoIzhuqvS+/uZ+VvCRzotFwSbXpt7BfE1a6t8cvUbHff7zyz9PSLC+tN09r
+	NfvTVm4tdrte52Kh8qdY78u29cfvMF2TyH5qceFQhvgVXgZextJ9ygzXZ9z1aVx6VO/Dk2O9
+	5hwVrHIL/jyPlj5y4zq/5wUlluKMREMt5qLiRAC7l1Zv0QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,100 +49,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch merges some background jobs into this new function.
+This patch adds a control method in sysfs to reclaim prefree segments.
 
 Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/f2fs.h    |  2 ++
- fs/f2fs/gc.c      |  5 ++---
- fs/f2fs/node.c    | 10 +++-------
- fs/f2fs/segment.c |  8 ++++++++
- 4 files changed, 15 insertions(+), 10 deletions(-)
+ Documentation/filesystems/f2fs.txt |  6 +++++
+ fs/f2fs/super.c                    | 50 +++++++++++++++++++++++++++-----------
+ 2 files changed, 42 insertions(+), 14 deletions(-)
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 3c95d35..602a41d 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -965,6 +965,7 @@ long f2fs_compat_ioctl(struct file *, unsigned int, unsigned long);
-  */
- void f2fs_set_inode_flags(struct inode *);
- struct inode *f2fs_iget(struct super_block *, unsigned long);
-+int try_to_free_nats(struct f2fs_sb_info *, int);
- void update_inode(struct inode *, struct page *);
- int update_inode_page(struct inode *);
- int f2fs_write_inode(struct inode *, struct writeback_control *);
-@@ -1045,6 +1046,7 @@ void destroy_node_manager_caches(void);
-  * segment.c
-  */
- void f2fs_balance_fs(struct f2fs_sb_info *);
-+void f2fs_balance_fs_bg(struct f2fs_sb_info *);
- void invalidate_blocks(struct f2fs_sb_info *, block_t);
- void clear_prefree_segments(struct f2fs_sb_info *);
- int npages_for_summary_flush(struct f2fs_sb_info *);
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 783c6cc..b7ad1ec 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -83,9 +83,8 @@ static int gc_thread_func(void *data)
- 		if (f2fs_gc(sbi))
- 			wait_ms = gc_th->no_gc_sleep_time;
+diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+index 3cd27be..4c647c2 100644
+--- a/Documentation/filesystems/f2fs.txt
++++ b/Documentation/filesystems/f2fs.txt
+@@ -164,6 +164,12 @@ Files in /sys/fs/f2fs/<devname>
+                               gc_idle = 1 will select the Cost Benefit approach
+                               & setting gc_idle = 2 will select the greedy aproach.
  
--		/* balancing prefree segments */
--		if (excess_prefree_segs(sbi))
--			f2fs_sync_fs(sbi->sb, true);
-+		/* balancing f2fs's metadata periodically */
-+		f2fs_balance_fs_bg(sbi);
++ reclaim_segments             This parameter controls the number of prefree
++                              segments to be reclaimed. If the number of prefree
++			      segments is larger than this number, f2fs tries to
++			      conduct checkpoint to reclaim the prefree segments
++			      to free segments. By default, 100 segments, 200MB.
++
+ ================================================================================
+ USAGE
+ ================================================================================
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 9a09459..e42351c 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -69,24 +69,40 @@ static match_table_t f2fs_tokens = {
+ };
  
- 	} while (!kthread_should_stop());
- 	return 0;
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 89dd8a5..7bac481 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -240,7 +240,7 @@ retry:
- 	write_unlock(&nm_i->nat_tree_lock);
- }
+ /* Sysfs support for f2fs */
++enum {
++	GC_THREAD,	/* struct f2fs_gc_thread */
++	SM_INFO,	/* struct f2fs_sm_info */
++};
++
+ struct f2fs_attr {
+ 	struct attribute attr;
+ 	ssize_t (*show)(struct f2fs_attr *, struct f2fs_sb_info *, char *);
+ 	ssize_t (*store)(struct f2fs_attr *, struct f2fs_sb_info *,
+ 			 const char *, size_t);
++	int struct_type;
+ 	int offset;
+ };
  
--static int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
-+int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
- {
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 
-@@ -1205,12 +1205,8 @@ static int f2fs_write_node_pages(struct address_space *mapping,
- 	struct f2fs_sb_info *sbi = F2FS_SB(mapping->host->i_sb);
- 	long nr_to_write = wbc->nr_to_write;
- 
--	/* First check balancing cached NAT entries */
--	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
--				excess_prefree_segs(sbi)) {
--		f2fs_sync_fs(sbi->sb, true);
--		return 0;
--	}
-+	/* balancing f2fs's metadata in background */
-+	f2fs_balance_fs_bg(sbi);
- 
- 	/* collect a number of dirty node pages and write together */
- 	if (get_pages(sbi, F2FS_DIRTY_NODES) < COLLECT_DIRTY_NODES)
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 43ee91e..77aee83 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -36,6 +36,14 @@ void f2fs_balance_fs(struct f2fs_sb_info *sbi)
- 	}
- }
- 
-+void f2fs_balance_fs_bg(struct f2fs_sb_info *sbi)
++static unsigned char *__struct_ptr(struct f2fs_sb_info *sbi, int struct_type)
 +{
-+	/* check the # of cached NAT entries and prefree segments */
-+	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
-+				excess_prefree_segs(sbi))
-+		f2fs_sync_fs(sbi->sb, true);
++	if (struct_type == GC_THREAD)
++		return (unsigned char *)sbi->gc_thread;
++	else if (struct_type == SM_INFO)
++		return (unsigned char *)SM_I(sbi);
++	return NULL;
 +}
 +
- static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
- 		enum dirty_type dirty_type)
+ static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
+ 			struct f2fs_sb_info *sbi, char *buf)
  {
+-	struct f2fs_gc_kthread *gc_kth = sbi->gc_thread;
++	unsigned char *ptr = NULL;
+ 	unsigned int *ui;
+ 
+-	if (!gc_kth)
++	ptr = __struct_ptr(sbi, a->struct_type);
++	if (!ptr)
+ 		return -EINVAL;
+ 
+-	ui = (unsigned int *)(((char *)gc_kth) + a->offset);
++	ui = (unsigned int *)(ptr + a->offset);
+ 
+ 	return snprintf(buf, PAGE_SIZE, "%u\n", *ui);
+ }
+@@ -95,15 +111,16 @@ static ssize_t f2fs_sbi_store(struct f2fs_attr *a,
+ 			struct f2fs_sb_info *sbi,
+ 			const char *buf, size_t count)
+ {
+-	struct f2fs_gc_kthread *gc_kth = sbi->gc_thread;
++	unsigned char *ptr;
+ 	unsigned long t;
+ 	unsigned int *ui;
+ 	ssize_t ret;
+ 
+-	if (!gc_kth)
++	ptr = __struct_ptr(sbi, a->struct_type);
++	if (!ptr)
+ 		return -EINVAL;
+ 
+-	ui = (unsigned int *)(((char *)gc_kth) + a->offset);
++	ui = (unsigned int *)(ptr + a->offset);
+ 
+ 	ret = kstrtoul(skip_spaces(buf), 0, &t);
+ 	if (ret < 0)
+@@ -139,21 +156,25 @@ static void f2fs_sb_release(struct kobject *kobj)
+ 	complete(&sbi->s_kobj_unregister);
+ }
+ 
+-#define F2FS_ATTR_OFFSET(_name, _mode, _show, _store, _elname) \
++#define F2FS_ATTR_OFFSET(_struct_type, _name, _mode, _show, _store, _offset) \
+ static struct f2fs_attr f2fs_attr_##_name = {			\
+ 	.attr = {.name = __stringify(_name), .mode = _mode },	\
+ 	.show	= _show,					\
+ 	.store	= _store,					\
+-	.offset = offsetof(struct f2fs_gc_kthread, _elname),	\
++	.struct_type = _struct_type,				\
++	.offset = _offset					\
+ }
+ 
+-#define F2FS_RW_ATTR(name, elname)	\
+-	F2FS_ATTR_OFFSET(name, 0644, f2fs_sbi_show, f2fs_sbi_store, elname)
++#define F2FS_RW_ATTR(struct_type, struct_name, name, elname)	\
++	F2FS_ATTR_OFFSET(struct_type, name, 0644,		\
++		f2fs_sbi_show, f2fs_sbi_store,			\
++		offsetof(struct struct_name, elname))
+ 
+-F2FS_RW_ATTR(gc_min_sleep_time, min_sleep_time);
+-F2FS_RW_ATTR(gc_max_sleep_time, max_sleep_time);
+-F2FS_RW_ATTR(gc_no_gc_sleep_time, no_gc_sleep_time);
+-F2FS_RW_ATTR(gc_idle, gc_idle);
++F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_min_sleep_time, min_sleep_time);
++F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_max_sleep_time, max_sleep_time);
++F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_no_gc_sleep_time, no_gc_sleep_time);
++F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_idle, gc_idle);
++F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, reclaim_segments, rec_prefree_segments);
+ 
+ #define ATTR_LIST(name) (&f2fs_attr_##name.attr)
+ static struct attribute *f2fs_attrs[] = {
+@@ -161,6 +182,7 @@ static struct attribute *f2fs_attrs[] = {
+ 	ATTR_LIST(gc_max_sleep_time),
+ 	ATTR_LIST(gc_no_gc_sleep_time),
+ 	ATTR_LIST(gc_idle),
++	ATTR_LIST(reclaim_segments),
+ 	NULL,
+ };
+ 
 -- 
 1.8.4.474.g128a96c
 
