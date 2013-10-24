@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3JXIWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 04:22:35 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:63260 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3JXIWc convert rfc822-to-8bit (ORCPT
+	id S1753880Ab3JXIam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 04:30:42 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:59669 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3JXIaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 04:22:32 -0400
-X-AuditID: cbfee61a-b7f836d0000025d7-bc-5268d8bced3d
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH V2] f2fs: check all ones or zeros bitmap with bitops
- for better mount performance
-Date: Thu, 24 Oct 2013 16:21:28 +0800
-Message-id: <000401ced092$28087a90$78196fb0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7Qgix0aVOP3OzdT4eyTrKpTVQTQA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQd09NzKCDBYc0re4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujJnfnjMV
-	NPNUXH/1iK2B8T5nFyMnh4SAicSLhqOsELaYxIV769lAbCGB6YwSPdt9uxi5gOwfjBIdrzaw
-	gyTYBFQklnf8ZwKxRQSkJWZ9mscCUsQsMBuo4cszRpCEsECexLTP88FsFgFViQWTmsFsXgFL
-	ia41u6BsQYkfk+8BNXMANatLTJmSCxJmFtCWePLuAtRBChI7zr5mhNilJzFl+S02iBpxiY1H
-	brFMYBSYhWTSLIRJs5BMmoWkYwEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4IB+JrWD
-	cWWDxSFGAQ5GJR5ejQ/pQUKsiWXFlbmHGCU4mJVEeD0rMoKEeFMSK6tSi/Lji0pzUosPMUpz
-	sCiJ8x5otQ4UEkhPLEnNTk0tSC2CyTJxcEo1MKpt+6S077jl8hmxDR255dUhiptvBRr2zGr3
-	ma3hncOyUqztwzafWu/i+oQl/Zui1wluvqRm+I/hwFOzpKeLX4sJXv1ZxV2zunz6vXqLbz1/
-	6+z/c/UWvTCVZWFoUD7w4PLnbPPNyayJ5h4Z/zmYl51/defXrFNxn7ZJ7PzLnPn5fuGzFxbr
-	m5VYijMSDbWYi4oTAa4GF7lkAgAA
+	Thu, 24 Oct 2013 04:30:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <52688C42.3030907@asianux.com>
+References: <5267AE7D.4080600@asianux.com>
+	<C2D7FE5348E1B147BCA15975FBA23075152B30@IN01WEMBXA.internal.synopsys.com>
+	<52688C42.3030907@asianux.com>
+Date: Thu, 24 Oct 2013 10:30:38 +0200
+X-Google-Sender-Auth: iNaKTBXPu4KIFsMIjNDzYutIqSQ
+Message-ID: <CAMuHMdWD1ENyrBMimnoYQc4hzJ_Zkob-1RQ3F+wXbSktYcO9xQ@mail.gmail.com>
+Subject: Re: [PATCH] arc: kernel: add default extern variable 'screen_info' in "setup.c"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, check_block_count check valid_map with bit data type in common scenario that sit has all ones or zeros bitmap, it makes low mount performance.
-So let's check the special bitmap with integer data type instead of the bit one.
+On Thu, Oct 24, 2013 at 4:56 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> NAK.
+>
+> OK, thanks. At least this patch is incorrect.
+>
+>
+>> ARC will never have VGA console. You need to add !ARC to relevant Kconfig. However that approach is frowned upon in general. The current way to doing such things is to define a new Kconfig item which relevant arches can select.
+>
+> Hmm... it seems necessary to discuss about the 2 fixing ways (which
+> already had a long discussion in ARM64):
+>
+>  - add !ARC in related place, just like another (almost 30-40%) architectures done.
+>
+>  - add a new Kconfig item (e.g. HAVE_VGA_CONSOLE), and let the left (almost 50%) architectures which use VGA_CONSOLE to set it.
+>
+> Catalin, Will, Geert (it seems also include you) prefer 2nd way, but I
+> prefer 1st, my reasons are below, please help check:
+>
+>  - 1st way need add some (10-20%) of architectures in one place, which belongs to local wide.
+>    2nd way will let the left (almost 50%) architectures need add HAVE_VGA_CONSOLE in various place, which belongs to arch global wide.
+>
+>  - 1st way will let most (80-90%) of architectures don't care about VGA_CONSOLE (50% need it, 30-40% already mark it in the same place).
+>    2nd way will let 50% architectures care about VGA_CONSOLE (although can let the left 10-20% architectures do nothing -- not care about it).
+>
+>  - 1st way is still easy, sustainable, and clear enough in local wide fixing (although maybe it is not the best, or clearest way).
+>    2nd way is also easy, sustainable and clear enough (maybe the best, or clearest for 10-20% architectures), but it will let the fix in global wide
+>
+> All together, if we can bear and sustainable, I always prefer to fix it
+> in local wide, not lead to arch global (especially 80-90% architectures
+> already followed 1st way).
+>
+>
+> BTW: for me, if less than 20% architectures need XXX, we can trigger
+> defining a new Kconfig item (e.g. HAVE_XXX), or just follow original
+> implementation.
 
-v2:
-    use find_next_bit_le/find_next_zero_bit_le for better performance and readable as Jaegeuk suggested.
+Lot's of negative dependencies are missing for VGA_CONSOLE.
+I think only alpha, some arm, ia64, some mips, some powerpc, and x86
+may use it.
 
-Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Signed-off-by: Tan Shu <shu.tan@samsung.com>
-Signed-off-by: Yu Chao <chao2.yu@samsung.com>
----
- fs/f2fs/segment.h |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+The main reason for introducing HAVE_VGA_CONSOLE is maintainability.
+The question to ask is: does the logic have to change when adding a new
+architecture?
+  - If yes, you're better off with the HAVE_xxx scheme.
+  - If no, use the negative dependencies in the common place.
 
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 7f94d78..d25b6af 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -552,6 +552,23 @@ static inline void check_block_count(struct f2fs_sb_info *sbi,
- 	/* check boundary of a given segment number */
- 	BUG_ON(segno > end_segno);
- 
-+	/* check all ones or zeros valid_map */
-+	if (GET_SIT_VBLOCKS(raw_sit) == 0) {
-+		int pos = find_next_bit_le(&raw_sit->valid_map,
-+					sbi->blocks_per_seg,
-+					0);
-+		if (pos != sbi->blocks_per_seg)
-+			BUG();
-+		return;
-+	} else if (GET_SIT_VBLOCKS(raw_sit) == sbi->blocks_per_seg) {
-+		int pos = find_next_zero_bit_le(&raw_sit->valid_map,
-+					sbi->blocks_per_seg,
-+					0);
-+		if (pos != sbi->blocks_per_seg)
-+			BUG();
-+		return;
-+	}
-+
- 	/* check bitmap with valid block count */
- 	for (i = 0; i < sbi->blocks_per_seg; i++)
- 		if (f2fs_test_bit(i, raw_sit->valid_map))
--- 
-1.7.9.5
+VGA consoles are legacy, and not used on new systems. Witness the
+list of architectures I gave above. All of them are (at least) 20 years old
+(except for ia64, but that borrows from PC legacy).
+So every time when adding a new architecture, you have to add
+'&& !NEW_ARCH' to the VGA_CONSOLE dependency, which is in a
+common place (drivers/.../Kconfig).
+While with the HAVE_xxx scheme, you don't have to change anything.
 
+Compare this to a shiny new feature that available on all new architectures,
+but not on a few old one. There it makes sense to have the negative
+dependencies on the old architectures, that will never have the new feature.
+While new architectures have enabled it by default.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
