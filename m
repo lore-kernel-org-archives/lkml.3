@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab3JXJLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:11:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56983 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab3JXJLW (ORCPT
+	id S1754466Ab3JXJM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:12:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34563 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab3JXJMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:11:22 -0400
-Date: Thu, 24 Oct 2013 10:11:15 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Michael Grzeschik <mgr@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131024091115.GF31415@sirena.org.uk>
-References: <1381916039.17491.1.camel@phoenix>
+	Thu, 24 Oct 2013 05:12:25 -0400
+Date: Thu, 24 Oct 2013 11:12:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sricharan R <r.sricharan@ti.com>
+cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        santosh.shilimkar@ti.com, linux@arm.linux.org.uk, tony@atomide.com,
+        rnayak@ti.com, marc.zyngier@arm.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, mark.rutland@arm.com
+Subject: Re: [RFC PATCH 1/6] DRIVERS: IRQCHIP: IRQ-GIC: Add support for
+ routable irqs
+In-Reply-To: <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+Message-ID: <alpine.DEB.2.02.1310241104430.4983@ionos.tec.linutronix.de>
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QNDPHrPUIc00TOLW"
-Content-Disposition: inline
-In-Reply-To: <1381916039.17491.1.camel@phoenix>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.186.44
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Revert "regulator: da9052: Use apply_[reg|bit] with
- regmap based voltage_sel operations"
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Sep 2013, Sricharan R wrote:
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 1760ceb..c5778ab 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -72,6 +72,8 @@ struct gic_chip_data {
+>  
+>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>  
+> +const struct irq_domain_ops *gic_routable_irq_domain_ops;
+> +
+>  /*
+>   * The GIC mapping of CPU interfaces does not necessarily match
+>   * the logical CPU numbering.  Let's use a mapping as returned
+> @@ -675,11 +677,26 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+>  		irq_set_chip_and_handler(irq, &gic_chip,
+>  					 handle_fasteoi_irq);
+>  		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+> +
+> +		if (gic_routable_irq_domain_ops &&
+> +		    gic_routable_irq_domain_ops->map)
+> +			gic_routable_irq_domain_ops->map(d, irq, hw);
 
---QNDPHrPUIc00TOLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Shudder. Why are you sprinkling these if (ops && ops->fun)
+conditionals all over the place instead of having a default ops
+implementation which handles the non crossbar case by proper empty
+functions. That code is not on a hot path so it does not matter at
+all.
 
-On Wed, Oct 16, 2013 at 05:33:59PM +0800, Axel Lin wrote:
-> This reverts commit 68f7506017ba67f1334cf086ffab76606f2c5ac4.
->=20
-> Michael reported that with this patch we loose the fix_io code path from
-> da9052_reg_update. Thus revert it.
+>  	}
+>  	irq_set_chip_data(irq, d->host_data);
+>  	return 0;
+>  }
+>  
+> +static void gic_irq_domain_unmap(struct irq_domain *d, unsigned int irq)
+> +{
+> +	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
+> +
+> +	if (hw > 32) {
 
-Applied, thanks.
+Groan. This wants to be in the ops->unmap function. It's not related
+to the GIC core code.
 
---QNDPHrPUIc00TOLW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +		if (gic_routable_irq_domain_ops &&
+> +		    gic_routable_irq_domain_ops->unmap)
+> +			gic_routable_irq_domain_ops->unmap(d, irq);
+> +	}
+> +}
+> +
+>  static int gic_irq_domain_xlate(struct irq_domain *d,
+>  				struct device_node *controller,
+>  				const u32 *intspec, unsigned int intsize,
+> @@ -694,8 +711,15 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
+>  	*out_hwirq = intspec[1] + 16;
+>  
+>  	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
+> -	if (!intspec[0])
+> -		*out_hwirq += 16;
+> +	if (!intspec[0]) {
+> +		if (gic_routable_irq_domain_ops &&
+> +		    gic_routable_irq_domain_ops->xlate)
+> +			*out_hwirq = gic_routable_irq_domain_ops->xlate(d,
+> +						controller, intspec, intsize,
+> +						out_hwirq, out_type);
+> +		else
+> +			*out_hwirq += 16;
+> +	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+So if you have a default xlate ops implementation then this boils down to
 
-iQIcBAEBAgAGBQJSaOQwAAoJELSic+t+oim9dygP/13r9GGKSbtS0WbiUjXmWmUX
-jO1gBMN1twUyeewtx4sB9ZIcXMTJL1et1Efgqs3y2kf2f3O8AqUeE6+ke4x0+U95
-ffpfd2/dOT724lAfkYeE19vK8TxF4lA3zsgLsfhf8S01QDx6lLuAIC2JTDk6I//K
-mM8sfnGIi5PAw3qOQ16pnGhrSi9bnIQUCCUO5r8jwaVuh7PC4sEOzUzmIEy8IS71
-1zQjTEw+UZjTYpNoi1yMxTpzyr9gQ+973tDwaV4pwoz7oBi8UY7uk0JryBxrxEc4
-esBS1iHhC2w9hnUQD7KQnmR7B1BU8qHQhODNDFbm++CfO0lLi417viJNa9nuWXt7
-FGKqfLK57akxfk1251jLwHcAhHtZarS3aiDHxnNX1CIQmxxqBV0+XlSYGN3PpgY+
-i5bC+HmupOPPDngmdli0Pg29uYpmoKtiotDpsRcLJepIowHnSXbG5qD0Ebt7BE79
-cGOeZR6diRxPJN3FK5wSM/uCoFCcbpzMLgFHLTtuhM+wCgmnZkRDWesYnZ/vRzHD
-80wFq4cN5iziGbSUu9sdX8o0CY9p824gAARhUKqnNxbp/HJO7dIbUID6BKLcySiC
-U5ml/DQm2cnwTLXHMBF7hahCiF2tYVjVh+7/yu+4fd65Ulcbai1VXMnUtSXPkTZJ
-xMWMfimTmm6ffq3jmw5n
-=vLdQ
------END PGP SIGNATURE-----
+      if (!intspec[0])
+		*out_hwirq = routing_ops->xlate()
 
---QNDPHrPUIc00TOLW--
+And the default (non crossbar) implementation would be:
+
+    	return *out_hwirq + 16;
+    
+
+Thanks,
+
+	tglx
