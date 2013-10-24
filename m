@@ -1,406 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab3JXHn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:43:57 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:64073 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3JXHny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:43:54 -0400
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: <linux-perf-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dsahern@gmail.com>, <acme@ghostprotocols.net>
-Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: [PATCH 1/1] PERF: The tail position of the event buffer should only be modified after actually use that event.
-Date: Thu, 24 Oct 2013 15:43:33 +0800
-Message-Id: <1382600613-32177-1-git-send-email-zhouzhouyi@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753956Ab3JXHqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:46:25 -0400
+Received: from mout.gmx.net ([212.227.17.20]:59218 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab3JXHqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:46:24 -0400
+MIME-Version: 1.0
+Message-ID: <trinity-70027928-c00c-449a-8386-1eae281e1bd5-1382600782364@3capp-gmx-bs62>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>
+Cc: "Ashley Lai" <adlai@linux.vnet.ibm.com>, "Rajiv Andrade" <mail@srajiv.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Aw: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm
+ maintainer
+Content-Type: text/plain; charset=UTF-8
+Date: Thu, 24 Oct 2013 09:46:22 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <20131024041620.GA32346@obsidianresearch.com>
+References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
+ <20131022205205.GA2374@obsidianresearch.com>
+ <CAEQAOwoFpiVeDKTa6UgjiRoy9aKcUPHT7CYwa1eM1EUVm0gM=Q@mail.gmail.com>
+ <trinity-2863d941-7421-4bbb-8c72-4bf491937d37-1382569828674@3capp-gmx-bs20>
+ <20131024032736.GC30090@obsidianresearch.com>
+ <1382587279.5587.9.camel@fishsauce>,
+ <20131024041620.GA32346@obsidianresearch.com>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:RkyoQR4nTk5QfX7mkUaAmpvK7jkVp7zR72DVqpSQJ+y
+ xI/OrD4gmO0mmlgxsn0vFWDRr94etYEqCueloFSJD49dtYnvkm
+ takYrjDHwP6kN9KLWukScY2fiBkyKwDQ+1phzLMDIZ3Uw++KKA
+ dJYXO1rbEdCg2r+VDpsMLpBm7mxnOQioy/rYVOSeYQqf8PmFNe
+ ghQubcZTuoKz0/+803PEdxxewUFy/iK7AVIAhrsVPYMUVhmduo
+ U3+MPaxGgQ1Cpw5SNXQGg5wVAWamxj6ulp8rHj4Y6P5/+wtRf0 XxNI+M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jason,
 
-The tail position of the event buffer should only be 
-modified after actually use that event. If not the event
-buffer could be invalid before use, and segment fault occurs when invoking 
-perf top -G.
+> > Speaking of which, has anyone looked at the rest of my series?? Shall
+> > I repost it?
+> Jason Gunthorpe:
+> tpm: Pull everything related to /dev/tpmX into tpm-dev.c
+> tpm: Pull everything related to sysfs into tpm-sysfs.c
+> tpm: Create a tpm_class_ops structure and use it in the drivers
+> tpm: Use the ops structure instead of a copy in tpm_vendor_specific
+> tpm: Make tpm-dev allocate a per-file structure
 
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
----
- tools/perf/builtin-kvm.c                  |    4 ++++
- tools/perf/builtin-top.c                  |   11 +++++++++--
- tools/perf/builtin-trace.c                |    4 ++++
- tools/perf/tests/code-reading.c           |    1 +
- tools/perf/tests/keep-tracking.c          |    1 +
- tools/perf/tests/mmap-basic.c             |    4 ++++
- tools/perf/tests/open-syscall-tp-fields.c |    7 ++++++-
- tools/perf/tests/perf-record.c            |    3 +++
- tools/perf/tests/perf-time-to-tsc.c       |    5 ++++-
- tools/perf/tests/sw-clock.c               |    7 ++++++-
- tools/perf/tests/task-exit.c              |    5 ++++-
- tools/perf/util/evlist.c 		   |   13 +++++++++++--
- tools/perf/util/evlist.h 		   |    2 ++
- tools/perf/util/python.c                  |    7 ++++++-
- 14 files changed, 64 insertions(+), 8 deletions(-)
+> Peter's checkpatch clean up will create some minor conflicts, so I
+> should probably resend the lot after rebasing it.
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 935d522..e240846 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -888,16 +888,20 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
- 	while ((event = perf_evlist__mmap_read(kvm->evlist, idx)) != NULL) {
- 		err = perf_evlist__parse_sample(kvm->evlist, event, &sample);
- 		if (err) {
-+			perf_evlist__mmap_write_tail(kvm->evlist, idx);
- 			pr_err("Failed to parse sample\n");
- 			return -1;
- 		}
- 
- 		err = perf_session_queue_event(kvm->session, event, &sample, 0);
- 		if (err) {
-+			perf_evlist__mmap_write_tail(kvm->evlist, idx);
- 			pr_err("Failed to enqueue sample: %d\n", err);
- 			return -1;
- 		}
- 
-+		perf_evlist__mmap_write_tail(kvm->evlist, idx);
-+
- 		/* save time stamp of our first sample for this mmap */
- 		if (n == 0)
- 			*mmap_time = sample.time;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..5e03cf5 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -809,6 +809,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 	while ((event = perf_evlist__mmap_read(top->evlist, idx)) != NULL) {
- 		ret = perf_evlist__parse_sample(top->evlist, event, &sample);
- 		if (ret) {
-+			perf_evlist__mmap_write_tail(top->evlist, idx);
- 			pr_err("Can't parse sample, err = %d\n", ret);
- 			continue;
- 		}
-@@ -824,14 +825,18 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 		switch (origin) {
- 		case PERF_RECORD_MISC_USER:
- 			++top->us_samples;
--			if (top->hide_user_symbols)
-+			if (top->hide_user_symbols) {
-+				perf_evlist__mmap_write_tail(top->evlist, idx);
- 				continue;
-+			}
- 			machine = &session->machines.host;
- 			break;
- 		case PERF_RECORD_MISC_KERNEL:
- 			++top->kernel_samples;
--			if (top->hide_kernel_symbols)
-+			if (top->hide_kernel_symbols) {
-+				perf_evlist__mmap_write_tail(top->evlist, idx);
- 				continue;
-+			}
- 			machine = &session->machines.host;
- 			break;
- 		case PERF_RECORD_MISC_GUEST_KERNEL:
-@@ -847,6 +852,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			 */
- 			/* Fall thru */
- 		default:
-+			perf_evlist__mmap_write_tail(top->evlist, idx);
- 			continue;
- 		}
- 
-@@ -859,6 +865,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			machine__process_event(machine, event);
- 		} else
- 			++session->stats.nr_unknown_events;
-+		perf_evlist__mmap_write_tail(top->evlist, idx);
- 	}
- }
- 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 71aa3e3..7afb6cd 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -986,6 +986,7 @@ again:
- 
- 			err = perf_evlist__parse_sample(evlist, event, &sample);
- 			if (err) {
-+				perf_evlist__mmap_write_tail(evlist, i);
- 				fprintf(trace->output, "Can't parse sample, err = %d, skipping...\n", err);
- 				continue;
- 			}
-@@ -1000,11 +1001,13 @@ again:
- 
- 			evsel = perf_evlist__id2evsel(evlist, sample.id);
- 			if (evsel == NULL) {
-+				perf_evlist__mmap_write_tail(evlist, i);
- 				fprintf(trace->output, "Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
- 				continue;
- 			}
- 
- 			if (sample.raw_data == NULL) {
-+				perf_evlist__mmap_write_tail(evlist, i);
- 				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
- 				       perf_evsel__name(evsel), sample.tid,
- 				       sample.cpu, sample.raw_size);
-@@ -1014,6 +1017,7 @@ again:
- 			handler = evsel->handler.func;
- 			handler(trace, evsel, &sample);
- 
-+			perf_evlist__mmap_write_tail(evlist, i);
- 			if (done)
- 				goto out_unmap_evlist;
- 		}
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 6fb781d..2e5c20d 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -290,6 +290,7 @@ static int process_events(struct machine *machine, struct perf_evlist *evlist,
- 	for (i = 0; i < evlist->nr_mmaps; i++) {
- 		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
- 			ret = process_event(machine, evlist, event, state);
-+			perf_evlist__mmap_write_tail(evlist, i);
- 			if (ret < 0)
- 				return ret;
- 		}
-diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
-index d444ea2..ffa5836 100644
---- a/tools/perf/tests/keep-tracking.c
-+++ b/tools/perf/tests/keep-tracking.c
-@@ -36,6 +36,7 @@ static int find_comm(struct perf_evlist *evlist, const char *comm)
- 			    (pid_t)event->comm.tid == getpid() &&
- 			    strcmp(event->comm.comm, comm) == 0)
- 				found += 1;
-+			perf_evlist__mmap_write_tail(evlist, i);
- 		}
- 	}
- 	return found;
-diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
-index c4185b9..bbca5f4 100644
---- a/tools/perf/tests/mmap-basic.c
-+++ b/tools/perf/tests/mmap-basic.c
-@@ -103,6 +103,7 @@ int test__basic_mmap(void)
- 		struct perf_sample sample;
- 
- 		if (event->header.type != PERF_RECORD_SAMPLE) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			pr_debug("unexpected %s event\n",
- 				 perf_event__name(event->header.type));
- 			goto out_munmap;
-@@ -110,6 +111,7 @@ int test__basic_mmap(void)
- 
- 		err = perf_evlist__parse_sample(evlist, event, &sample);
- 		if (err) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			pr_err("Can't parse sample, err = %d\n", err);
- 			goto out_munmap;
- 		}
-@@ -117,11 +119,13 @@ int test__basic_mmap(void)
- 		err = -1;
- 		evsel = perf_evlist__id2evsel(evlist, sample.id);
- 		if (evsel == NULL) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			pr_debug("event with id %" PRIu64
- 				 " doesn't map to an evsel\n", sample.id);
- 			goto out_munmap;
- 		}
- 		nr_events[evsel->idx]++;
-+		perf_evlist__mmap_write_tail(evlist, 0);
- 	}
- 
- 	err = 0;
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
-index fc5b9fc..38e180c 100644
---- a/tools/perf/tests/open-syscall-tp-fields.c
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -77,11 +77,14 @@ int test__syscall_open_tp_fields(void)
- 
- 				++nr_events;
- 
--				if (type != PERF_RECORD_SAMPLE)
-+				if (type != PERF_RECORD_SAMPLE) {
-+					perf_evlist__mmap_write_tail(evlist, i);
- 					continue;
-+				}
- 
- 				err = perf_evsel__parse_sample(evsel, event, &sample);
- 				if (err) {
-+					perf_evlist__mmap_write_tail(evlist, i);
- 					pr_err("Can't parse sample, err = %d\n", err);
- 					goto out_munmap;
- 				}
-@@ -89,11 +92,13 @@ int test__syscall_open_tp_fields(void)
- 				tp_flags = perf_evsel__intval(evsel, &sample, "flags");
- 
- 				if (flags != tp_flags) {
-+					perf_evlist__mmap_write_tail(evlist, i);
- 					pr_debug("%s: Expected flags=%#x, got %#x\n",
- 						 __func__, flags, tp_flags);
- 					goto out_munmap;
- 				}
- 
-+				perf_evlist__mmap_write_tail(evlist, i);
- 				goto out_ok;
- 			}
- 		}
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index b8a7056..87a2b0c 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -173,6 +173,7 @@ int test__PERF_RECORD(void)
- 
- 				err = perf_evlist__parse_sample(evlist, event, &sample);
- 				if (err < 0) {
-+					perf_evlist__mmap_write_tail(evlist, i);
- 					if (verbose)
- 						perf_event__fprintf(event, stderr);
- 					pr_debug("Couldn't parse sample\n");
-@@ -236,6 +237,7 @@ int test__PERF_RECORD(void)
- 					}
- 					break;
- 				case PERF_RECORD_EXIT:
-+					perf_evlist__mmap_write_tail(evlist, i);
- 					goto found_exit;
- 				case PERF_RECORD_MMAP:
- 					mmap_filename = event->mmap.filename;
-@@ -263,6 +265,7 @@ int test__PERF_RECORD(void)
- 						 type);
- 					++errs;
- 				}
-+				perf_evlist__mmap_write_tail(evlist, i);
- 			}
- 		}
- 
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 0ab61b1..d911316 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -121,8 +121,10 @@ int test__perf_time_to_tsc(void)
- 
- 			if (event->header.type != PERF_RECORD_COMM ||
- 			    (pid_t)event->comm.pid != getpid() ||
--			    (pid_t)event->comm.tid != getpid())
-+			    (pid_t)event->comm.tid != getpid()) {
-+				perf_evlist__mmap_write_tail(evlist, i);
- 				continue;
-+			}
- 
- 			if (strcmp(event->comm.comm, comm1) == 0) {
- 				CHECK__(perf_evsel__parse_sample(evsel, event,
-@@ -134,6 +136,7 @@ int test__perf_time_to_tsc(void)
- 								 &sample));
- 				comm2_time = sample.time;
- 			}
-+			perf_evlist__mmap_write_tail(evlist, i);
- 		}
- 	}
- 
-diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
-index 2e41e2d..af7f2626 100644
---- a/tools/perf/tests/sw-clock.c
-+++ b/tools/perf/tests/sw-clock.c
-@@ -77,15 +77,20 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
- 	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
- 		struct perf_sample sample;
- 
--		if (event->header.type != PERF_RECORD_SAMPLE)
-+		if (event->header.type != PERF_RECORD_SAMPLE) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			continue;
-+		}
- 
- 		err = perf_evlist__parse_sample(evlist, event, &sample);
- 		if (err < 0) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			pr_debug("Error during parse sample\n");
- 			goto out_unmap_evlist;
- 		}
- 
-+		perf_evlist__mmap_write_tail(evlist, 0);
-+
- 		total_periods += sample.period;
- 		nr_samples++;
- 	}
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index 28fe589..3ef1dbd 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -96,9 +96,12 @@ int test__task_exit(void)
- 
- retry:
- 	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
--		if (event->header.type != PERF_RECORD_EXIT)
-+		if (event->header.type != PERF_RECORD_EXIT) {
-+			perf_evlist__mmap_write_tail(evlist, 0);
- 			continue;
-+		}
- 
-+		perf_evlist__mmap_write_tail(evlist, 0);
- 		nr_exit++;
- 	}
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index f9f77be..accb9b7 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -545,12 +545,21 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 
- 	md->prev = old;
- 
--	if (!evlist->overwrite)
--		perf_mmap__write_tail(md, old);
- 
- 	return event;
- }
- 
-+void perf_evlist__mmap_write_tail(struct perf_evlist *evlist, int idx)
-+{
-+	struct perf_mmap *md = &evlist->mmap[idx];
-+	unsigned int old = md->prev;
-+
-+	if (!evlist->overwrite)
-+		perf_mmap__write_tail(md, old);
-+
-+	return;
-+}
-+
- static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
- {
- 	if (evlist->mmap[idx].base != NULL) {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 880d713..a973e36 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -89,6 +89,8 @@ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
- 
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
- 
-+void perf_evlist__mmap_write_tail(struct perf_evlist *evlist, int idx);
-+
- int perf_evlist__open(struct perf_evlist *evlist);
- void perf_evlist__close(struct perf_evlist *evlist);
- 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 71b5412..5ed90d0 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -822,10 +822,15 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 		PyObject *pyevent = pyrf_event__new(event);
- 		struct pyrf_event *pevent = (struct pyrf_event *)pyevent;
- 
--		if (pyevent == NULL)
-+		if (pyevent == NULL) {
-+			perf_evlist__mmap_write_tail(evlist, cpu);
- 			return PyErr_NoMemory();
-+		}
- 
- 		err = perf_evlist__parse_sample(evlist, event, &pevent->sample);
-+
-+		perf_evlist__mmap_write_tail(evlist, cpu);
-+
- 		if (err)
- 			return PyErr_Format(PyExc_OSError,
- 					    "perf: can't parse sample, err=%d", err);
--- 
-1.7.10.4
+Yeah that would be nice.
 
+I did have a look at them, but not as close as I wanted to, yet ;(
+Since they are making some major changes to the tpm subsystem I did not want to hurry them in for 3.12, but give them a rather good testing on my machines as well. (I know you did test them ;)
+
+Unfortunately due to a lot of traveling that was not possible for me.
+So please repost them, so we can make them ready for 3.13.
+
+Thanks,
+Peter
