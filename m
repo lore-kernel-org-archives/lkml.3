@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3JXHcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:32:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52617 "EHLO song.cn.fujitsu.com"
+	id S1754360Ab3JXHcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:32:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2387 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab3JXHbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754115Ab3JXHbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Oct 2013 03:31:08 -0400
 X-IronPort-AV: E=Sophos;i="4.93,560,1378828800"; 
-   d="scan'208";a="8847753"
+   d="scan'208";a="8847754"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-audit@redhat.com
 Cc: containers@lists.linux-foundation.org, ebiederm@xmission.com,
         serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
         toshi.okajima@jp.fujitsu.com, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 14/20] audit: pass proper audit namespace to audit_log_common_recv_msg
-Date: Thu, 24 Oct 2013 15:31:59 +0800
-Message-Id: <1382599925-25143-15-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH 16/20] audit: allow GET,SET,USER MSG operations in audit namespace
+Date: Thu, 24 Oct 2013 15:32:01 +0800
+Message-Id: <1382599925-25143-17-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
@@ -28,96 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The audit log that generated in audit namespace should be
-received by the auditd running in this audit namespace.
+1, remove the permission check of pid namespace. it's no reason
+   to deny un-init pid namespace to operate audit subsystem.
+
+2, only allow init user namespace and init audit namespace to
+   operate list/add/del rule, tty set, trim, make equiv operations.
+
+3, allow audit namespace to get/set audit configuration, send
+   userspace audit message.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- kernel/audit.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ kernel/audit.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/audit.c b/kernel/audit.c
-index 5ac7365..92da21d 100644
+index 095f54d..c4d4291 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -605,7 +605,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- 	return err;
- }
- 
--static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type)
-+static int audit_log_common_recv_msg(struct audit_namespace *ns,
-+				     struct audit_buffer **ab, u16 msg_type)
+@@ -573,11 +573,7 @@ out:
+ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
  {
- 	int rc = 0;
- 	uid_t uid = from_kuid(&init_user_ns, current_uid());
-@@ -615,7 +616,7 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type)
- 		return rc;
- 	}
+ 	int err = 0;
+-
+-	/* Only support the initial namespaces for now. */
+-	if ((current_user_ns() != &init_user_ns) ||
+-	    (task_active_pid_ns(current) != &init_pid_ns))
+-		return -EPERM;
++	struct audit_namespace *ns = current->nsproxy->audit_ns;
  
--	*ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
-+	*ab = audit_log_start_ns(ns, NULL, GFP_KERNEL, msg_type);
- 	if (unlikely(!*ab))
- 		return rc;
- 	audit_log_format(*ab, "pid=%d uid=%u", task_tgid_vnr(current), uid);
-@@ -741,7 +742,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 				if (err)
- 					break;
- 			}
--			audit_log_common_recv_msg(&ab, msg_type);
-+			audit_log_common_recv_msg(ns, &ab, msg_type);
- 			if (msg_type != AUDIT_USER_TTY)
- 				audit_log_format(ab, " msg='%.1024s'",
- 						 (char *)data);
-@@ -756,7 +757,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 				audit_log_n_untrustedstring(ab, data, size);
- 			}
- 			audit_set_pid(ab, NETLINK_CB(skb).portid);
--			audit_log_end(ab);
-+			audit_log_end_ns(ns, ab);
- 		}
- 		break;
+ 	switch (msg_type) {
+ 	case AUDIT_LIST:
+@@ -586,6 +582,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 		return -EOPNOTSUPP;
+ 	case AUDIT_GET:
+ 	case AUDIT_SET:
++		break;
+ 	case AUDIT_LIST_RULES:
  	case AUDIT_ADD_RULE:
-@@ -764,9 +765,9 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		if (nlmsg_len(nlh) < sizeof(struct audit_rule_data))
- 			return -EINVAL;
- 		if (audit_enabled == AUDIT_LOCKED) {
--			audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE);
-+			audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE);
- 			audit_log_format(ab, " audit_enabled=%d res=0", audit_enabled);
--			audit_log_end(ab);
-+			audit_log_end_ns(ns, ab);
- 			return -EPERM;
- 		}
- 		/* fallthrough */
-@@ -776,9 +777,9 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		break;
+ 	case AUDIT_DEL_RULE:
+@@ -594,13 +591,15 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	case AUDIT_TTY_SET:
  	case AUDIT_TRIM:
- 		audit_trim_trees();
--		audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE);
-+		audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE);
- 		audit_log_format(ab, " op=trim res=1");
--		audit_log_end(ab);
-+		audit_log_end_ns(ns, ab);
+ 	case AUDIT_MAKE_EQUIV:
+-		if (!capable(CAP_AUDIT_CONTROL))
++		if ((current_user_ns() != &init_user_ns) ||
++		    (ns != &init_audit_ns) ||
++		    !capable(CAP_AUDIT_CONTROL))
+ 			err = -EPERM;
  		break;
- 	case AUDIT_MAKE_EQUIV: {
- 		void *bufp = data;
-@@ -806,14 +807,14 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		/* OK, here comes... */
- 		err = audit_tag_tree(old, new);
- 
--		audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE);
-+		audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE);
- 
- 		audit_log_format(ab, " op=make_equiv old=");
- 		audit_log_untrustedstring(ab, old);
- 		audit_log_format(ab, " new=");
- 		audit_log_untrustedstring(ab, new);
- 		audit_log_format(ab, " res=%d", !err);
--		audit_log_end(ab);
-+		audit_log_end_ns(ns, ab);
- 		kfree(old);
- 		kfree(new);
+ 	case AUDIT_USER:
+ 	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
+ 	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
+-		if (!capable(CAP_AUDIT_WRITE))
++		if (!ns_capable(ns->user_ns, CAP_AUDIT_WRITE))
+ 			err = -EPERM;
  		break;
+ 	default:  /* bad msg */
 -- 
 1.8.3.1
 
