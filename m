@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab3JXP6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:58:35 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:62246 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab3JXPtx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755793Ab3JXPtx (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Oct 2013 11:49:53 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:46013 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755713Ab3JXPts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 11:49:48 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/34] sysfs, kernfs: add skeletons for kernfs
-Date: Thu, 24 Oct 2013 11:49:13 -0400
-Message-Id: <1382629780-10006-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/34] sysfs: honor bin_attr.attr.ignore_lockdep
+Date: Thu, 24 Oct 2013 11:49:08 -0400
+Message-Id: <1382629780-10006-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,158 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Core sysfs implementation will be separated into kernfs so that it can
-be used by other non-kobject users.
+ignore_lockdep is currently honored only for regular files.  There's
+no reason to ignore it for bin files.  Update sysfs_ignore_lockdep()
+so that bin_attr.attr.ignore_lockdep works too.
 
-This patch creates fs/kernfs/ directory and makes boilerplate changes.
-kernfs interface will be directly based on sysfs_dirent and its
-forward declaration is moved to include/linux/kernfs.h which is
-included from include/linux/sysfs.h.  sysfs core implementation will
-be gradually separated out and moved to kernfs.
-
-This patch doesn't introduce any functional changes.
+While this doesn't have any in-kernel user, this unifies the behaviors
+between regular and bin files and will help later changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/Makefile            |  2 +-
- fs/kernfs/Makefile     |  5 +++++
- fs/kernfs/dir.c        |  9 +++++++++
- fs/kernfs/file.c       |  9 +++++++++
- fs/kernfs/inode.c      |  9 +++++++++
- fs/kernfs/symlink.c    |  9 +++++++++
- include/linux/kernfs.h | 12 ++++++++++++
- include/linux/sysfs.h  |  3 +--
- 8 files changed, 55 insertions(+), 3 deletions(-)
- create mode 100644 fs/kernfs/Makefile
- create mode 100644 fs/kernfs/dir.c
- create mode 100644 fs/kernfs/file.c
- create mode 100644 fs/kernfs/inode.c
- create mode 100644 fs/kernfs/symlink.c
- create mode 100644 include/linux/kernfs.h
+ fs/sysfs/sysfs.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 4fe6df3..39a824f 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -53,7 +53,7 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
- obj-y				+= quota/
- 
- obj-$(CONFIG_PROC_FS)		+= proc/
--obj-$(CONFIG_SYSFS)		+= sysfs/
-+obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
- obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
- obj-y				+= devpts/
- 
-diff --git a/fs/kernfs/Makefile b/fs/kernfs/Makefile
-new file mode 100644
-index 0000000..768c24c
---- /dev/null
-+++ b/fs/kernfs/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the kernfs pseudo filesystem
-+#
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index c095d952..bdce845 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -114,7 +114,9 @@ do {								\
+ /* Test for attributes that want to ignore lockdep for read-locking */
+ static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
+ {
+-	return sysfs_type(sd) == SYSFS_KOBJ_ATTR &&
++	int type = sysfs_type(sd);
 +
-+obj-y		:= inode.o dir.o file.o symlink.o
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-new file mode 100644
-index 0000000..1061602
---- /dev/null
-+++ b/fs/kernfs/dir.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/dir.c - kernfs directory implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-new file mode 100644
-index 0000000..90b1e88
---- /dev/null
-+++ b/fs/kernfs/file.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/file.c - kernfs file implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-new file mode 100644
-index 0000000..86bfeea
---- /dev/null
-+++ b/fs/kernfs/inode.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/inode.c - kernfs inode implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
-new file mode 100644
-index 0000000..2578715
---- /dev/null
-+++ b/fs/kernfs/symlink.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/symlink.c - kernfs symlink implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-new file mode 100644
-index 0000000..254b9e8
---- /dev/null
-+++ b/include/linux/kernfs.h
-@@ -0,0 +1,12 @@
-+/*
-+ * kernfs.h - pseudo filesystem decoupled from vfs locking
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#ifndef __LINUX_KERNFS_H
-+#define __LINUX_KERNFS_H
-+
-+struct sysfs_dirent;
-+
-+#endif	/* __LINUX_KERNFS_H */
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 6695040..2bc735d 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -12,6 +12,7 @@
- #ifndef _SYSFS_H_
- #define _SYSFS_H_
++	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
+ 		sd->s_attr.attr->ignore_lockdep;
+ }
  
-+#include <linux/kernfs.h>
- #include <linux/compiler.h>
- #include <linux/errno.h>
- #include <linux/list.h>
-@@ -175,8 +176,6 @@ struct sysfs_ops {
- 	ssize_t	(*store)(struct kobject *, struct attribute *, const char *, size_t);
- };
- 
--struct sysfs_dirent;
--
- #ifdef CONFIG_SYSFS
- 
- int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
 -- 
 1.8.3.1
 
