@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3JXHlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:41:20 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:54107 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab3JXHlT (ORCPT
+	id S1754041Ab3JXHlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:41:45 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:48757 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab3JXHln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:41:19 -0400
-X-Spam-Score: -100.8
-Message-ID: <5268CEDE.2080807@asianux.com>
-Date: Thu, 24 Oct 2013 15:40:14 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 24 Oct 2013 03:41:43 -0400
+Date: Thu, 24 Oct 2013 09:41:40 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@kernel.org>
+Subject: Re: linux-next: Tree for Oct 23
+Message-ID: <20131024074137.GB9403@ulmo.nvidia.com>
+References: <1382541202-6614-1-git-send-email-treding@nvidia.com>
+ <CA+icZUUUauzttknp3nK=hE=88gHrz6aC8AsbYR2W_1Uqo8nz8g@mail.gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: Re: [PATCH] kernel/modsign_certificate.S: use real contents instead
- of macro GLOBAL()
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <CAFLxGvzERDqwZhb_5d=bXKmqz6-Yrema_TLMTM7rjyeFeDJG_w@mail.gmail.com> <5268BD96.2060806@asianux.com> <5268C1D1.1020501@nod.at>
-In-Reply-To: <5268C1D1.1020501@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PmA2V3Z32TCmWXqI"
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUUauzttknp3nK=hE=88gHrz6aC8AsbYR2W_1Uqo8nz8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 02:44 PM, Richard Weinberger wrote:
-> Am 24.10.2013 08:26, schrieb Chen Gang:
->> On 10/24/2013 02:03 PM, Richard Weinberger wrote:
->> Anyway, maybe it is also the tool chain's bug (so I include related arc
->> tool chain guys in this mail).
-> 
-> That's exactly my point. Before you blindly patch the kernel just to make it
-> somehow build you need to find the root cause.
-> Do you even have an ARC board to test the kernel?
-> 
 
-Hmm... I don't think it is blindly, at least, we can not say: "if tool
-chain has issues, we should not use it, if we have no related hard
-wares, it is useless to compile them".
+--PmA2V3Z32TCmWXqI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We are focus on the contribution, not on whether others have issues or
-'qualifications', if we are sure this patch should be useful, we need go
-ahead.
+On Thu, Oct 24, 2013 at 09:20:53AM +0200, Sedat Dilek wrote:
+> On Wed, Oct 23, 2013 at 5:13 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > Hi all,
+> >
+> > I've uploaded today's linux-next tree to the master branch of the
+> > repository below:
+> >
+> >         git://gitorious.org/thierryreding/linux-next.git
+> >
+>=20
+> WebGit URL?
+>=20
+> Browsing "https://gitorious.org/thierryreding" gives me a...
+>=20
+> "This Git object is too large to be displayed in the browser
+>=20
+> Consider cloning the repository locally and look at the object there"
 
-For normal members, it is not quite important, but for managerial
-members or a company, of cause, they will/should understand these rules.
+I should work if you go to:
 
+	https://gitorious.org/thierryreding/linux-next
 
-> Thanks,
-> //richard
-> 
-> 
-> 
+> Thierry, you were talking about moving to a <kernel.org> address, what
+> happened?
 
-Thanks.
--- 
-Chen Gang
+I decided against it because people were starting to actively use the
+temporary location and I didn't want yet another change in URL to
+prevent testing from happening.
+
+My hope is that the next time Stephen needs a break, and provided that
+I'd be able and willing to volunteer for the job again, we will be
+better prepared and make the transition more seemless by using the
+standard location to begin with.
+
+Thierry
+
+--PmA2V3Z32TCmWXqI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSaM8xAAoJEN0jrNd/PrOhFTMP/Ap8wUXYuTd5f40n1agtc//0
+9OcF+NjLMNXoIewUn3PexFt9qYZftB7SJ7idOP8Tf9NmFw9hCUwv7BMpTrZnrSdD
+mWzl2MzPnYTXxrXem8EYKhlTQI86QkSXFiYRhbfxR7JEdJpkoqTFiseoEdZ01nhQ
+ZlUoEkuwsLKhdl8f0uFPIdXbJ6U4/M2MqxL8D7nStTZDode+gCeyIcWeOra8c3Zw
+FVT4rzT4n6n99loHerDNmWxwPBOIgTwMn8j+mxPrw3DwQczzn87nKW2Q6cRTLN0U
+h+HwafmzbYBQrYyQT0engeWNwghE83GvkxnI0QvrfDD5TGUFL9mbU8UiBuv3qUpl
+9A+aYcs0GuoJbgwy5MDmUepY/pt7af0OC93BrDpzF6O0SOWzcKYSmvdyRgqSOcFL
+PhYlP9IMrmxLJ15j8cHkMlZBXHuz6A2wkBj3NwY2nfO5gVIP+4Uw01pRwKjow0kh
+98VDfPN1cFRA33LAlkpTsgE100QTPba0/1jAqHqP/oSNKsbgFGuX88YXEQtFQyr5
+0kmBQ7quTSmNpU/yUm5UtY3sTAqmuKyOUmDFQsRdw2xqTr6+K2fLEZT4HBb10s9r
+mmqKdjXjpa0485UifCUETibcSi6sIE1bdn5xFh+R5PUDOF8buN2egWLrqx6kD1Ab
+izV79otqd5dRK1bcNqbr
+=oEsp
+-----END PGP SIGNATURE-----
+
+--PmA2V3Z32TCmWXqI--
