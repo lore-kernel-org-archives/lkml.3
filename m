@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099Ab3JXMsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:48:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36152 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab3JXMsG (ORCPT
+	id S1754989Ab3JXMud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:50:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52357 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab3JXMud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:48:06 -0400
-Date: Thu, 24 Oct 2013 14:47:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: zhang.yi20@zte.com.cn
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] futex: Remove the owner check when waking task in
- handle_futex_death
-In-Reply-To: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>
-Message-ID: <alpine.DEB.2.02.1310241231350.4983@ionos.tec.linutronix.de>
-References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 24 Oct 2013 08:50:33 -0400
+Date: Thu, 24 Oct 2013 05:50:32 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 01/11] Export __smp_call_function_single()
+Message-ID: <20131024125032.GA21286@infradead.org>
+References: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
+ <1382606764-8309-2-git-send-email-axboe@kernel.dk>
+ <20131024095010.GA17914@infradead.org>
+ <20131024101653.GV14598@kernel.dk>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1906511654-1382613053=:4983"
-Content-ID: <alpine.DEB.2.02.1310241445340.14242@ionos.tec.linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131024101653.GV14598@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-1906511654-1382613053=:4983
-Content-Type: TEXT/PLAIN; CHARSET=ISO-2022-JP
-Content-ID: <alpine.DEB.2.02.1310241445341.14242@ionos.tec.linutronix.de>
-
-On Thu, 26 Sep 2013, zhang.yi20@zte.com.cn wrote:
-> Task processes all its owned robust futex when it is exiting,
-> to ensure the futexes can be taken by other tasks.
+On Thu, Oct 24, 2013 at 11:16:53AM +0100, Jens Axboe wrote:
+> On Thu, Oct 24 2013, Christoph Hellwig wrote:
+> > On Thu, Oct 24, 2013 at 10:25:54AM +0100, Jens Axboe wrote:
+> > > The blk-mq core and the blk-mq null driver uses it.
+> > 
+> > Can't say I really like exporting it as all users will need a major
+> > ifdef mess.  If at all we'd expose the higher level add to llist and ipi
+> > abstraction that both blk-mq and the null_blk driver use.
+> > 
+> > For now I'd just suggest removing the NULL_IRQ_SOFTIRQ mode from
+> > null_blk and decouple that from blk-mq itself.  I'll try to cook up such
+> > an abstraction in the meantime.
 > 
-> Though this can not work good in sometimes.
-> Think about this scene：
-> 1. A robust mutex is shared for two processes, each process has
->    multi threads to lock the mutex.
-> 2. One of the threads locks the mutex, and the others are waiting
->    and sorted in order of priority.
-> 3. The process to which the mutex owner thread belongs is dying
->    without unlocking the mutex，and handle_futex_death is invoked
->    to wake the first waiter.
-> 4. If the first waiter belongs to the same process，it has no chance
->    to return to the userspace to lock the mutex, and it won't wake
->    the next waiter because it is not the owner of the mutex.
-> 5. The rest waiters of the other process may block forever.
+> Agree, lets get a proper interface exported for this from kernel/smp.c
+> instead. I've killed this patch and the softirq mode in null_blk for
+> now.
 
-Fair enough.
- 
-> This patch remove the owner check when waking task in handle_futex_death.
-> If above occured, The dying task can wake the next waiter by processing its list_op_pending.
-> The waked task could return to userspace and try to lock the mutex again.
-> 
+Turns out the proper interface is __smp_call_function_single as long as
+we make sure it's always available.  I've got a series that allows us to
+use it directly without the llist wrapping, but it probably won't be
+ready for the next merge window.
 
-The owner check needs to stay. The robust list is a user space managed
-list on which the kernel operates. We do not trust it at all and we
-really want as many sanity checks as possible and definitely not
-removing one.
+So I'll take my earlier objection back, instead please add a:
 
-The simplest solution is just to wake all waiters and let them sort it
-out. We could do a more complex one by checking whether this is a
-group exit and not wake any threads belonging to the same process, but
-that's not really worth the trouble.
-
-Thanks,
-
-	tglx
---8323329-1906511654-1382613053=:4983--
+Reviewed-by: Christoph Hellwig <hch@lst.de>
