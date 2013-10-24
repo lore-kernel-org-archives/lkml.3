@@ -1,109 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3JXHbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:31:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52617 "EHLO song.cn.fujitsu.com"
+	id S1754207Ab3JXHb2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:31:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2387 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754065Ab3JXHbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:31:06 -0400
+	id S1754137Ab3JXHbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:31:09 -0400
 X-IronPort-AV: E=Sophos;i="4.93,560,1378828800"; 
-   d="scan'208";a="8847748"
+   d="scan'208";a="8847758"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-audit@redhat.com
 Cc: containers@lists.linux-foundation.org, ebiederm@xmission.com,
         serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
         toshi.okajima@jp.fujitsu.com, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 07/20] aduit: make audit_nlk_portid per audit namespace
-Date: Thu, 24 Oct 2013 15:31:52 +0800
-Message-Id: <1382599925-25143-8-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH 19/20] audit: make audit_backlog_limit per audit namespace
+Date: Thu, 24 Oct 2013 15:32:04 +0800
+Message-Id: <1382599925-25143-20-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/10/24 15:28:23,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/24 15:28:29,
-	Serialize complete at 2013/10/24 15:28:29
+ 2013/10/24 15:28:32,
+	Serialize complete at 2013/10/24 15:28:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use audit_nlk_portid to decide to send
-audit netlink message to which auditd processes.
-it should be per audit namespace too.
+This patch makes audit_backlog_limit per audit
+namespace, so we can limit the memory usage of
+audit namespace through limit the value of
+auditns's audit_backlog_limit.
+
+By default, the backlog_limit of new created
+audit namespace is zero, so processes in this
+auditns has no ability to generate audit log.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
  include/linux/audit_namespace.h |  2 ++
- kernel/audit.c                  | 14 ++++----------
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ kernel/audit.c                  | 47 +++++++++++++++++++++++------------------
+ 2 files changed, 28 insertions(+), 21 deletions(-)
 
 diff --git a/include/linux/audit_namespace.h b/include/linux/audit_namespace.h
-index 2c0eede..a9e6a40 100644
+index b17f052..4648b4f 100644
 --- a/include/linux/audit_namespace.h
 +++ b/include/linux/audit_namespace.h
-@@ -11,6 +11,8 @@ struct audit_namespace {
- 	atomic_t count;
- 	/* pid of the auditd process */
+@@ -14,6 +14,8 @@ struct audit_namespace {
  	int pid;
-+	/* portid of the auditd process's netlink socket */
-+	int portid;
+ 	/* portid of the auditd process's netlink socket */
+ 	int portid;
++	/* number of outstanding audit_buffers allowed */
++	int backlog_limit;
  	struct user_namespace *user_ns;
  	struct sk_buff_head queue;
  	/* queue of skbs to send to auditd when/if it comes back */
 diff --git a/kernel/audit.c b/kernel/audit.c
-index ceb1cbd..37375fb 100644
+index 86212d3..63797557 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -89,13 +89,6 @@ static int	audit_default;
- /* If auditing cannot proceed, audit_failure selects what happens. */
- static int	audit_failure = AUDIT_FAIL_PRINTK;
- 
--/*
-- * If audit records are to be written to the netlink socket, audit_pid
-- * contains the pid of the auditd process and audit_nlk_portid contains
-- * the portid to use to send netlink messages to that process.
-- */
--static int	audit_nlk_portid;
--
- /* If audit_rate_limit is non-zero, limit the rate of sending audit records
-  * to that number per second.  This prevents DoS attacks, but results in
+@@ -94,8 +94,6 @@ static int	audit_failure = AUDIT_FAIL_PRINTK;
   * audit records being dropped. */
-@@ -381,7 +374,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
- 	int err;
- 	/* take a reference in case we can't send it and we want to hold it */
- 	skb_get(skb);
--	err = netlink_unicast(audit_sock, skb, audit_nlk_portid, 0);
-+	err = netlink_unicast(audit_sock, skb, init_audit_ns.portid, 0);
- 	if (err < 0) {
- 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
- 		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", init_audit_ns.pid);
-@@ -645,7 +638,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	u16			msg_type = nlh->nlmsg_type;
- 	struct audit_sig_info   *sig_data;
- 	char			*ctx = NULL;
--	struct audit_namespace	*ns = current_audit_ns();
-+	struct audit_namespace	*ns = current->nsproxy->audit_ns;
- 	u32			len;
+ static int	audit_rate_limit;
  
- 	err = audit_netlink_ok(skb, msg_type);
-@@ -721,7 +714,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 			init_audit_ns.pid = new_pid;
- 			rcu_read_unlock();
+-/* Number of outstanding audit_buffers allowed. */
+-static int	audit_backlog_limit = 64;
+ static int	audit_backlog_wait_time = 60 * HZ;
+ static int	audit_backlog_wait_overflow = 0;
  
--			audit_nlk_portid = NETLINK_CB(skb).portid;
-+			init_audit_ns.portid = NETLINK_CB(skb).portid;
- 		}
- 		if (status_get->mask & AUDIT_STATUS_RATE_LIMIT) {
- 			err = audit_set_rate_limit(status_get->rate_limit);
-@@ -944,6 +937,7 @@ static int __init audit_init(void)
- 		audit_sock->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
+@@ -210,15 +208,7 @@ static inline int audit_rate_check(void)
+ 	return retval;
+ }
+ 
+-/**
+- * audit_log_lost - conditionally log lost audit message event
+- * @message: the message stating reason for lost audit message
+- *
+- * Emit at least 1 message per second, even if audit_rate_check is
+- * throttling.
+- * Always increment the lost messages counter.
+-*/
+-void audit_log_lost(const char *message)
++void audit_log_lost_ns(struct audit_namespace *ns, const char *message)
+ {
+ 	static unsigned long	last_msg = 0;
+ 	static DEFINE_SPINLOCK(lock);
+@@ -240,18 +230,31 @@ void audit_log_lost(const char *message)
+ 		spin_unlock_irqrestore(&lock, flags);
+ 	}
+ 
+-	if (print) {
++	if (print && (ns == &init_audit_ns)) {
+ 		if (printk_ratelimit())
+ 			printk(KERN_WARNING
+ 				"audit: audit_lost=%d audit_rate_limit=%d "
+ 				"audit_backlog_limit=%d\n",
+ 				atomic_read(&audit_lost),
+ 				audit_rate_limit,
+-				audit_backlog_limit);
++				ns->backlog_limit);
+ 		audit_panic(message);
+ 	}
+ }
+ 
++/**
++ * audit_log_lost - conditionally log lost audit message event
++ * @message: the message stating reason for lost audit message
++ *
++ * Emit at least 1 message per second, even if audit_rate_check is
++ * throttling.
++ * Always increment the lost messages counter.
++*/
++void audit_log_lost(const char *message)
++{
++	return audit_log_lost_ns(&init_audit_ns, message);
++}
++
+ static int audit_log_config_change(struct audit_namespace *ns,
+ 				   char *function_name,
+ 				   int new, int old,
+@@ -308,7 +311,8 @@ static int audit_set_rate_limit(int limit)
+ 
+ static int audit_set_backlog_limit(int limit)
+ {
+-	return audit_do_config_change("audit_backlog_limit", &audit_backlog_limit, limit);
++	return audit_do_config_change("audit_backlog_limit",
++				      &init_audit_ns.backlog_limit, limit);
+ }
+ 
+ static int audit_set_enabled(int state)
+@@ -346,7 +350,7 @@ static int audit_set_failure(int state)
+ static void audit_hold_skb(struct audit_namespace *ns, struct sk_buff *skb)
+ {
+ 	if (audit_default &&
+-	    skb_queue_len(&ns->hold_queue) < audit_backlog_limit)
++	    skb_queue_len(&ns->hold_queue) < ns->backlog_limit)
+ 		skb_queue_tail(&ns->hold_queue, skb);
+ 	else
+ 		kfree_skb(skb);
+@@ -675,7 +679,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		status_set.failure	 = audit_failure;
+ 		status_set.pid		 = ns->pid;
+ 		status_set.rate_limit	 = audit_rate_limit;
+-		status_set.backlog_limit = audit_backlog_limit;
++		status_set.backlog_limit = ns->backlog_limit;
+ 		status_set.lost		 = atomic_read(&audit_lost);
+ 		status_set.backlog	 = skb_queue_len(&ns->queue);
+ 
+@@ -971,6 +975,7 @@ static int __init audit_init(void)
  
  	init_audit_ns.pid = 0;
-+	init_audit_ns.portid = 0;
+ 	init_audit_ns.portid = 0;
++	init_audit_ns.backlog_limit = 64;
  	init_audit_ns.kauditd_task = NULL;
  	skb_queue_head_init(&init_audit_ns.queue);
  	skb_queue_head_init(&init_audit_ns.hold_queue);
+@@ -1129,8 +1134,8 @@ static void wait_for_auditd(struct audit_namespace *ns,
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+ 	add_wait_queue(&ns->backlog_wait, &wait);
+ 
+-	if (audit_backlog_limit &&
+-	    skb_queue_len(&ns->queue) > audit_backlog_limit)
++	if (ns->backlog_limit &&
++	    skb_queue_len(&ns->queue) > ns->backlog_limit)
+ 		schedule_timeout(sleep_time);
+ 
+ 	__set_current_state(TASK_RUNNING);
+@@ -1167,8 +1172,8 @@ audit_log_start_ns(struct audit_namespace *ns,
+ 		reserve = 5; /* Allow atomic callers to go up to five
+ 				entries over the normal backlog limit */
+ 
+-	while (audit_backlog_limit
+-	       && skb_queue_len(&ns->queue) > audit_backlog_limit + reserve) {
++	while (ns->backlog_limit
++	       && skb_queue_len(&ns->queue) > ns->backlog_limit + reserve) {
+ 		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
+ 			unsigned long sleep_time;
+ 
+@@ -1184,7 +1189,7 @@ audit_log_start_ns(struct audit_namespace *ns,
+ 			       "audit: audit_backlog=%d > "
+ 			       "audit_backlog_limit=%d\n",
+ 			       skb_queue_len(&ns->queue),
+-			       audit_backlog_limit);
++			       ns->backlog_limit);
+ 		audit_log_lost("backlog limit exceeded");
+ 		audit_backlog_wait_time = audit_backlog_wait_overflow;
+ 		wake_up(&init_audit_ns.backlog_wait);
 -- 
 1.8.3.1
 
