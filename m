@@ -1,187 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3JXJ26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:28:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36717 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab3JXJ0P (ORCPT
+	id S1754822Ab3JXJ3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:29:53 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46105 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3JXJ3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:26:15 -0400
-From: Jens Axboe <axboe@kernel.dk>
-To: linux-kernel@vger.kernel.org
-Cc: hch@infradead.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 03/11] block: make rq->cmd_flags be 64-bit
-Date: Thu, 24 Oct 2013 10:25:56 +0100
-Message-Id: <1382606764-8309-4-git-send-email-axboe@kernel.dk>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
-References: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
+	Thu, 24 Oct 2013 05:29:51 -0400
+Message-ID: <5268E888.7060608@linux.vnet.ibm.com>
+Date: Thu, 24 Oct 2013 17:29:44 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 10/15] KVM: MMU: allocate shadow pages from slab
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131024091905.GB5289@redhat.com>
+In-Reply-To: <20131024091905.GB5289@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102409-3568-0000-0000-00000473CE99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have officially run out of flags in a 32-bit space. Extend it
-to 64-bit even on 32-bit archs.
+On 10/24/2013 05:19 PM, Gleb Natapov wrote:
 
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
----
- block/blk-core.c          |  4 +--
- drivers/block/floppy.c    |  4 +--
- drivers/scsi/sd.c         |  2 +-
- include/linux/blk_types.h | 66 +++++++++++++++++++++++------------------------
- include/linux/blkdev.h    |  4 +--
- 5 files changed, 40 insertions(+), 40 deletions(-)
+>> @@ -946,7 +947,7 @@ static inline struct kvm_mmu_page *page_header(hpa_t shadow_page)
+>>  {
+>>  	struct page *page = pfn_to_page(shadow_page >> PAGE_SHIFT);
+>>  
+>> -	return (struct kvm_mmu_page *)page_private(page);
+>> +	return (struct kvm_mmu_page *)(page->mapping);
+> Why?
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 0a00e4e..213e9f0 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -174,9 +174,9 @@ void blk_dump_rq_flags(struct request *rq, char *msg)
- {
- 	int bit;
- 
--	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
-+	printk(KERN_INFO "%s: dev %s: type=%x, flags=%llx\n", msg,
- 		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
--		rq->cmd_flags);
-+		(unsigned long long) rq->cmd_flags);
- 
- 	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
- 	       (unsigned long long)blk_rq_pos(rq),
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 04ceb7e..000abe2 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -2886,9 +2886,9 @@ static void do_fd_request(struct request_queue *q)
- 		return;
- 
- 	if (WARN(atomic_read(&usage_count) == 0,
--		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%x\n",
-+		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%llx\n",
- 		 current_req, (long)blk_rq_pos(current_req), current_req->cmd_type,
--		 current_req->cmd_flags))
-+		 (unsigned long long) current_req->cmd_flags))
- 		return;
- 
- 	if (test_and_set_bit(0, &fdc_busy)) {
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e62d17d..dae6133 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1002,7 +1002,7 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 		SCpnt->cmnd[0] = READ_6;
- 		SCpnt->sc_data_direction = DMA_FROM_DEVICE;
- 	} else {
--		scmd_printk(KERN_ERR, SCpnt, "Unknown command %x\n", rq->cmd_flags);
-+		scmd_printk(KERN_ERR, SCpnt, "Unknown command %llx\n", (unsigned long long) rq->cmd_flags);
- 		goto out;
- 	}
- 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index fa1abeb..c26801e 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -181,16 +181,16 @@ enum rq_flag_bits {
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
--#define REQ_WRITE		(1 << __REQ_WRITE)
--#define REQ_FAILFAST_DEV	(1 << __REQ_FAILFAST_DEV)
--#define REQ_FAILFAST_TRANSPORT	(1 << __REQ_FAILFAST_TRANSPORT)
--#define REQ_FAILFAST_DRIVER	(1 << __REQ_FAILFAST_DRIVER)
--#define REQ_SYNC		(1 << __REQ_SYNC)
--#define REQ_META		(1 << __REQ_META)
--#define REQ_PRIO		(1 << __REQ_PRIO)
--#define REQ_DISCARD		(1 << __REQ_DISCARD)
--#define REQ_WRITE_SAME		(1 << __REQ_WRITE_SAME)
--#define REQ_NOIDLE		(1 << __REQ_NOIDLE)
-+#define REQ_WRITE		(1ULL << __REQ_WRITE)
-+#define REQ_FAILFAST_DEV	(1ULL << __REQ_FAILFAST_DEV)
-+#define REQ_FAILFAST_TRANSPORT	(1ULL << __REQ_FAILFAST_TRANSPORT)
-+#define REQ_FAILFAST_DRIVER	(1ULL << __REQ_FAILFAST_DRIVER)
-+#define REQ_SYNC		(1ULL << __REQ_SYNC)
-+#define REQ_META		(1ULL << __REQ_META)
-+#define REQ_PRIO		(1ULL << __REQ_PRIO)
-+#define REQ_DISCARD		(1ULL << __REQ_DISCARD)
-+#define REQ_WRITE_SAME		(1ULL << __REQ_WRITE_SAME)
-+#define REQ_NOIDLE		(1ULL << __REQ_NOIDLE)
- 
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
-@@ -206,28 +206,28 @@ enum rq_flag_bits {
- #define REQ_NOMERGE_FLAGS \
- 	(REQ_NOMERGE | REQ_STARTED | REQ_SOFTBARRIER | REQ_FLUSH | REQ_FUA)
- 
--#define REQ_RAHEAD		(1 << __REQ_RAHEAD)
--#define REQ_THROTTLED		(1 << __REQ_THROTTLED)
--
--#define REQ_SORTED		(1 << __REQ_SORTED)
--#define REQ_SOFTBARRIER		(1 << __REQ_SOFTBARRIER)
--#define REQ_FUA			(1 << __REQ_FUA)
--#define REQ_NOMERGE		(1 << __REQ_NOMERGE)
--#define REQ_STARTED		(1 << __REQ_STARTED)
--#define REQ_DONTPREP		(1 << __REQ_DONTPREP)
--#define REQ_QUEUED		(1 << __REQ_QUEUED)
--#define REQ_ELVPRIV		(1 << __REQ_ELVPRIV)
--#define REQ_FAILED		(1 << __REQ_FAILED)
--#define REQ_QUIET		(1 << __REQ_QUIET)
--#define REQ_PREEMPT		(1 << __REQ_PREEMPT)
--#define REQ_ALLOCED		(1 << __REQ_ALLOCED)
--#define REQ_COPY_USER		(1 << __REQ_COPY_USER)
--#define REQ_FLUSH		(1 << __REQ_FLUSH)
--#define REQ_FLUSH_SEQ		(1 << __REQ_FLUSH_SEQ)
--#define REQ_IO_STAT		(1 << __REQ_IO_STAT)
--#define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
--#define REQ_SECURE		(1 << __REQ_SECURE)
--#define REQ_KERNEL		(1 << __REQ_KERNEL)
--#define REQ_PM			(1 << __REQ_PM)
-+#define REQ_RAHEAD		(1ULL << __REQ_RAHEAD)
-+#define REQ_THROTTLED		(1ULL << __REQ_THROTTLED)
-+
-+#define REQ_SORTED		(1ULL << __REQ_SORTED)
-+#define REQ_SOFTBARRIER		(1ULL << __REQ_SOFTBARRIER)
-+#define REQ_FUA			(1ULL << __REQ_FUA)
-+#define REQ_NOMERGE		(1ULL << __REQ_NOMERGE)
-+#define REQ_STARTED		(1ULL << __REQ_STARTED)
-+#define REQ_DONTPREP		(1ULL << __REQ_DONTPREP)
-+#define REQ_QUEUED		(1ULL << __REQ_QUEUED)
-+#define REQ_ELVPRIV		(1ULL << __REQ_ELVPRIV)
-+#define REQ_FAILED		(1ULL << __REQ_FAILED)
-+#define REQ_QUIET		(1ULL << __REQ_QUIET)
-+#define REQ_PREEMPT		(1ULL << __REQ_PREEMPT)
-+#define REQ_ALLOCED		(1ULL << __REQ_ALLOCED)
-+#define REQ_COPY_USER		(1ULL << __REQ_COPY_USER)
-+#define REQ_FLUSH		(1ULL << __REQ_FLUSH)
-+#define REQ_FLUSH_SEQ		(1ULL << __REQ_FLUSH_SEQ)
-+#define REQ_IO_STAT		(1ULL << __REQ_IO_STAT)
-+#define REQ_MIXED_MERGE		(1ULL << __REQ_MIXED_MERGE)
-+#define REQ_SECURE		(1ULL << __REQ_SECURE)
-+#define REQ_KERNEL		(1ULL << __REQ_KERNEL)
-+#define REQ_PM			(1ULL << __REQ_PM)
- 
- #endif /* __LINUX_BLK_TYPES_H */
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 0e6f765..f5c7596 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -99,7 +99,7 @@ struct request {
- 
- 	struct request_queue *q;
- 
--	unsigned int cmd_flags;
-+	u64 cmd_flags;
- 	enum rq_cmd_type_bits cmd_type;
- 	unsigned long atomic_flags;
- 
-@@ -570,7 +570,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- 
- #define list_entry_rq(ptr)	list_entry((ptr), struct request, queuelist)
- 
--#define rq_data_dir(rq)		((rq)->cmd_flags & 1)
-+#define rq_data_dir(rq)		(((rq)->cmd_flags & 1) != 0)
- 
- static inline unsigned int blk_queue_cluster(struct request_queue *q)
- {
--- 
-1.8.1.2
+That's because page->private has been used by slab:
+
+	/* Remainder is not double word aligned */
+	union {
+		unsigned long private;		/* Mapping-private opaque data:
+					 	 * usually used for buffer_heads
+						 * if PagePrivate set; used for
+						 * swp_entry_t if PageSwapCache;
+						 * indicates order in the buddy
+						 * system if PG_buddy is set.
+						 */
+#if USE_SPLIT_PTLOCKS
+		spinlock_t ptl;
+#endif
+		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
+		struct page *first_page;	/* Compound tail pages */
+	};
 
