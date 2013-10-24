@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab3JXKkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:40:15 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:62568 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab3JXKkN (ORCPT
+	id S1754931Ab3JXKmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:42:50 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:34508 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab3JXKmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:40:13 -0400
+	Thu, 24 Oct 2013 06:42:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131023235448.4de21b8d.m.chehab@samsung.com>
-References: <1382534520-15688-1-git-send-email-dianders@chromium.org>
-	<52680380.7020204@gmail.com>
-	<20131023235448.4de21b8d.m.chehab@samsung.com>
-Date: Thu, 24 Oct 2013 05:40:12 -0500
-Message-ID: <CAL_JsqJgtr_Z9H9Z3OJGnbD9asqYKdeziFKP--VRxh=7Qi3bVQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Don't send to devicetree list for "arch/*/boot/dts"
-From: Rob Herring <robherring2@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <526844E6.1080307@codeaurora.org>
+References: <526844E6.1080307@codeaurora.org>
+Date: Thu, 24 Oct 2013 18:42:48 +0800
+Message-ID: <CAL1ERfOSmgo=j4YHHREY8uzyh+nbRrsFdBZ86FhMXxP5GEHQkQ@mail.gmail.com>
+Subject: Re: zram/zsmalloc issues in very low memory conditions
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Olav Haugan <ohaugan@codeaurora.org>
+Cc: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, semenzato@google.com,
+        bob.liu@oracle.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 5:54 PM, Mauro Carvalho Chehab
-<m.chehab@samsung.com> wrote:
-> Em Wed, 23 Oct 2013 12:12:32 -0500
-> Rob Herring <robherring2@gmail.com> escreveu:
->
->> On 10/23/2013 08:22 AM, Doug Anderson wrote:
->> > As discussed in the ARM kernel summit, people on the devicetree list
->> > would no longer like to receive emails about all dts changes.  Remove
->> > from MAINTAINERS.
->>
->> We need to make sure platform maintainers are copied though. That may be
->> hard since we don't have standard layout/naming of dts files.
->>
->> We might also want to drop these:
->> K:      of_get_property
->> K:      of_match_table
->>
->> They are at least on the wrong maintainer list now as they should be
->> associated with the binding maintainers and not DT core code if we do
->> keep them.
->>
->> Also based on the discussion, we need to add
->> Documentation/devicetree/bindings/* to appropriate subsystem
->> maintainers, but that should probably wait until after Friday at least.
->
-> /me is confused. What's the procedure for the DT patches for the devices
-> supported by the subsystem I maintain, e. g. patches for
-> /drivers/media/platform?
->
-> Should I just apply them, if I think that it is needed by the hardware?
-> Are there any criteria to be followed? If so, what criteria?
->
-> /me hopes that all those questions will be discussed/answered at KS on
-> Friday's discussions ;)
+On Thu, Oct 24, 2013 at 5:51 AM, Olav Haugan <ohaugan@codeaurora.org> wrote:
+> I am trying to use zram in very low memory conditions and I am having
+> some issues. zram is in the reclaim path. So if the system is very low
+> on memory the system is trying to reclaim pages by swapping out (in this
+> case to zram). However, since we are very low on memory zram fails to
+> get a page from zsmalloc and thus zram fails to store the page. We get
+> into a cycle where the system is low on memory so it tries to swap out
+> to get more memory but swap out fails because there is not enough memory
+> in the system! The major problem I am seeing is that there does not seem
+> to be a way for zram to tell the upper layers to stop swapping out
+> because the swap device is essentially "full" (since there is no more
+> memory available for zram pages). Has anyone thought about this issue
+> already and have ideas how to solve this or am I missing something and I
+> should not be seeing this issue?
 
-Yes, it should all become clear at the DT slot on Fri.
+I agree with Luigi and Bob.
 
-> In any case, my suggestion is that this patch should be a way more verbose,
-> and should come together with a patch adding something at Documentation
-> (SubmittingPatches, or maybe SubmitingDTPatches) in order to be sure that
-> both developers and subsystem maintainers will do the right thing.
+zram's size is based on how many free memory you expect to use for zram.
+In my test, the compression ratio is about 1:4, of course the working
+sets may be
+different with yours.
 
-A binding howto/best practices doc is planned which should help in this area.
+Further more, may be you can modify vm_swap_full() to let kernel free swap_entry
+aggressively.
 
-Rob
+
+> I am also seeing a couple other issues that I was wondering whether
+> folks have already thought about:
+>
+> 1) The size of a swap device is statically computed when the swap device
+> is turned on (nr_swap_pages). The size of zram swap device is dynamic
+> since we are compressing the pages and thus the swap subsystem thinks
+> that the zram swap device is full when it is not really full. Any
+> plans/thoughts about the possibility of being able to update the size
+> and/or the # of available pages in a swap device on the fly?
+>
+> 2) zsmalloc fails when the page allocated is at physical address 0 (pfn
+> = 0) since the handle returned from zsmalloc is encoded as (<PFN>,
+> <obj_idx>) and thus the resulting handle will be 0 (since obj_idx starts
+> at 0). zs_malloc returns the handle but does not distinguish between a
+> valid handle of 0 and a failure to allocate. A possible solution to this
+> would be to start the obj_idx at 1. Is this feasible?
+>
+> Thanks,
+>
+> Olav Haugan
+>
+> --
+> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
