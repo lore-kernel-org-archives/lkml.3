@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab3JXHay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:30:54 -0400
-Received: from smtprelay0132.hostedemail.com ([216.40.44.132]:42305 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752712Ab3JXHax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:30:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,3,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:4321:4605:5007:7652:7903:10012:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:2:0
-X-HE-Tag: wash90_7be0bf114e734
-X-Filterd-Recvd-Size: 1767
-Message-ID: <1382599849.22433.51.camel@joe-AO722>
-Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
-From: Joe Perches <joe@perches.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: mmarek@suse.cz, yann.morin.1998@free.fr, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 Oct 2013 00:30:49 -0700
-In-Reply-To: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754178Ab3JXHbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:31:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52617 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754065Ab3JXHbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:31:06 -0400
+X-IronPort-AV: E=Sophos;i="4.93,560,1378828800"; 
+   d="scan'208";a="8847748"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Cc: containers@lists.linux-foundation.org, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
+        toshi.okajima@jp.fujitsu.com, Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH 07/20] aduit: make audit_nlk_portid per audit namespace
+Date: Thu, 24 Oct 2013 15:31:52 +0800
+Message-Id: <1382599925-25143-8-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/24 15:28:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/24 15:28:29,
+	Serialize complete at 2013/10/24 15:28:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-24 at 07:23 +0200, Michael Opdenacker wrote:
-> This is the first version of a script to look for
-> Kconfig parameters which are still defined but no longer
-> used in the kernel source code.
-[]
-> diff --git a/scripts/checkkconfig.py b/scripts/checkkconfig.py
-[]
-> +def count_param(param):
-> +
-> +    global source_file, bad_params_in_file
-> +
-> +    if os.path.isdir('.git'):
-> +       # Use git grep when available
-> +       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
-> +    else:
-> +       # Fallback to regular grep
-> +       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
+We should use audit_nlk_portid to decide to send
+audit netlink message to which auditd processes.
+it should be per audit namespace too.
 
-Doesn't the grep need -w?
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ include/linux/audit_namespace.h |  2 ++
+ kernel/audit.c                  | 14 ++++----------
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
-Also, the regular grep could probably use something like
-'grep -R -w --max-count=2 --include="*.[chS]"'
+diff --git a/include/linux/audit_namespace.h b/include/linux/audit_namespace.h
+index 2c0eede..a9e6a40 100644
+--- a/include/linux/audit_namespace.h
++++ b/include/linux/audit_namespace.h
+@@ -11,6 +11,8 @@ struct audit_namespace {
+ 	atomic_t count;
+ 	/* pid of the auditd process */
+ 	int pid;
++	/* portid of the auditd process's netlink socket */
++	int portid;
+ 	struct user_namespace *user_ns;
+ 	struct sk_buff_head queue;
+ 	/* queue of skbs to send to auditd when/if it comes back */
+diff --git a/kernel/audit.c b/kernel/audit.c
+index ceb1cbd..37375fb 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -89,13 +89,6 @@ static int	audit_default;
+ /* If auditing cannot proceed, audit_failure selects what happens. */
+ static int	audit_failure = AUDIT_FAIL_PRINTK;
+ 
+-/*
+- * If audit records are to be written to the netlink socket, audit_pid
+- * contains the pid of the auditd process and audit_nlk_portid contains
+- * the portid to use to send netlink messages to that process.
+- */
+-static int	audit_nlk_portid;
+-
+ /* If audit_rate_limit is non-zero, limit the rate of sending audit records
+  * to that number per second.  This prevents DoS attacks, but results in
+  * audit records being dropped. */
+@@ -381,7 +374,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
+ 	int err;
+ 	/* take a reference in case we can't send it and we want to hold it */
+ 	skb_get(skb);
+-	err = netlink_unicast(audit_sock, skb, audit_nlk_portid, 0);
++	err = netlink_unicast(audit_sock, skb, init_audit_ns.portid, 0);
+ 	if (err < 0) {
+ 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
+ 		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", init_audit_ns.pid);
+@@ -645,7 +638,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	u16			msg_type = nlh->nlmsg_type;
+ 	struct audit_sig_info   *sig_data;
+ 	char			*ctx = NULL;
+-	struct audit_namespace	*ns = current_audit_ns();
++	struct audit_namespace	*ns = current->nsproxy->audit_ns;
+ 	u32			len;
+ 
+ 	err = audit_netlink_ok(skb, msg_type);
+@@ -721,7 +714,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 			init_audit_ns.pid = new_pid;
+ 			rcu_read_unlock();
+ 
+-			audit_nlk_portid = NETLINK_CB(skb).portid;
++			init_audit_ns.portid = NETLINK_CB(skb).portid;
+ 		}
+ 		if (status_get->mask & AUDIT_STATUS_RATE_LIMIT) {
+ 			err = audit_set_rate_limit(status_get->rate_limit);
+@@ -944,6 +937,7 @@ static int __init audit_init(void)
+ 		audit_sock->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
+ 
+ 	init_audit_ns.pid = 0;
++	init_audit_ns.portid = 0;
+ 	init_audit_ns.kauditd_task = NULL;
+ 	skb_queue_head_init(&init_audit_ns.queue);
+ 	skb_queue_head_init(&init_audit_ns.hold_queue);
+-- 
+1.8.3.1
 
