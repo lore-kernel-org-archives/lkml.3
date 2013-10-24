@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3JXOET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:04:19 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55915 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab3JXOES (ORCPT
+	id S1755402Ab3JXOG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:06:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42401 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab3JXOG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:04:18 -0400
-Message-ID: <52692896.70901@ahsoftware.de>
-Date: Thu, 24 Oct 2013 16:03:02 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+	Thu, 24 Oct 2013 10:06:26 -0400
+Date: Thu, 24 Oct 2013 16:06:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
+        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131024140618.GD19466@laptop.lan>
+References: <20131017160439.GP227855@redhat.com>
+ <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+ <20131023204838.GB19466@laptop.lan>
+ <20131024105206.GM2490@laptop.programming.kicks-ass.net>
+ <20131024134706.GN227855@redhat.com>
 MIME-Version: 1.0
-To: Aldo Iljazi <me@aldo.io>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal for menuconfig removal
-References: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
-In-Reply-To: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131024134706.GN227855@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.10.2013 13:56, schrieb Aldo Iljazi:
-> Since nconfig is there, menuconfig is redundant.
+On Thu, Oct 24, 2013 at 09:47:06AM -0400, Don Zickus wrote:
+> > Don, can you give this stuff a spin on your system?
 > 
-> I am proposing to remove it from the kernel.
-> 
+> I'll try to grab the machine I was testing with and see what this patch
+> does.  Thanks!  I assume this can go on top of the other patch that was
+> committed to -tip last week?
 
-Looks like nconfig depends on F-keys, which unfortunately do disappear
-more and more on modern keyboards, so I wouldn't call that a very good idea.
-
-Regards,
-
-Alexander Holler
+Yeah, I had that patch in my tree so it should apply fine.
