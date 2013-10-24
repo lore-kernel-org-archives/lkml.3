@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3JXHIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:08:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8385 "EHLO mga03.intel.com"
+	id S1753894Ab3JXHIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:08:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43804 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3JXHIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:08:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="379204374"
-Subject: drm/i915: Avoid accessing the stolen address when it is unavailable
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: daniel.vetter@ffwll.ch, airlied@linux.ie
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        fei.li@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Oct 2013 00:33:47 +0800
-Message-ID: <1382632427.26153.94.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753775Ab3JXHIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:08:15 -0400
+Date: Thu, 24 Oct 2013 08:08:10 +0100 (BST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Egbert Eich <eich@suse.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Egbert Eich <eich@suse.de>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: HPD flood warning since b8f102e8b
+In-Reply-To: <21093.23168.424554.698941@linux-qknr.site>
+Message-ID: <alpine.LNX.2.00.1310240806370.30926@pobox.suse.cz>
+References: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz> <CAKMK7uEbGZ3_tHTCqOT7H4eViBnYmkPTS210jOvfweSf3gQ_fg@mail.gmail.com> <alpine.LNX.2.00.1310031632320.29701@pobox.suse.cz> <21093.23168.424554.698941@linux-qknr.site>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 21 Oct 2013, Egbert Eich wrote:
 
-In our platform, we hit the the stolen region initialization failure case,
-such as below log:
-[drm:i915_stolen_to_physical] *ERROR* conflict detected with stolen region: [0x7b000000]
+>  > On Thu, 3 Oct 2013, Daniel Vetter wrote:
+>  > 
+>  > > Can you please attach full dmesg from boot up to the first WARN with
+>  > > drm.debug=0xe? This really shouldn't happen and indicates a bug
+>  > > somewhere ...
+>  > 
+>  > A bit difficult ... I originally thought that it was reliably 
+>  > reproducible, but now I didn't get it after 10 suspend/resume cycles. Will 
+>  > keep following it, and once it appears, will send you the dmesg.
+>  > 
+> Could you check if you get any messages regarding HPD storms after 
+> suspend/resume ie messages like:
+> "[drm] HPD interrupt storm detected on connector HDMI-A-1"
+> but without the annouing warn messages?
 
-And it causes the dev_priv->mm.stolen_base is NULL, in this case, we should
-avoid accessing it any more.
+I have this:
 
-Here is possible call trace:
-intel_enable_gt_powersave -- >
-valleyview_enable_rps -- >
-valleyview_setup_pctx
+[357128.184113] [drm] HPD interrupt storm detected on connector DP-3: switching from hotplug detection to polling
 
-Cc: Li Fei <fei.li@intel.com>
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/gpu/drm/i915/intel_pm.c |    3 +++
- 1 file changed, 3 insertions(+)
+It appeared in the log approximately 5 seconds after resume has been 
+completed.
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index 26c2ea3..1069b24 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3735,6 +3735,9 @@ static void valleyview_setup_pctx(struct drm_device *dev)
- 	u32 pcbr;
- 	int pctx_size = 24*1024;
- 
-+	if (!dev_priv->mm.stolen_base)
-+		return;
-+
- 	pcbr = I915_READ(VLV_PCBR);
- 	if (pcbr) {
- 		/* BIOS set it up already, grab the pre-alloc'd space */
+Thanks,
+
 -- 
-1.7.9.5
-
-
-
+Jiri Kosina
+SUSE Labs
