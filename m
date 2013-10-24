@@ -1,225 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab3JXJRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:17:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32097 "EHLO mx1.redhat.com"
+	id S1754405Ab3JXJTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:19:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63688 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab3JXJRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:17:39 -0400
-Date: Thu, 24 Oct 2013 12:17:32 +0300
+	id S1754051Ab3JXJTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 05:19:12 -0400
+Date: Thu, 24 Oct 2013 12:19:05 +0300
 From: Gleb Natapov <gleb@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 13/15] KVM: MMU: locklessly write-protect the page
-Message-ID: <20131024091732.GA5289@redhat.com>
+Subject: Re: [PATCH v3 10/15] KVM: MMU: allocate shadow pages from slab
+Message-ID: <20131024091905.GB5289@redhat.com>
 References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-14-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382534973-13197-14-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1382534973-13197-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 09:29:31PM +0800, Xiao Guangrong wrote:
-> Currently, when mark memslot dirty logged or get dirty page, we need to
-> write-protect large guest memory, it is the heavy work, especially, we
-> need to hold mmu-lock which is also required by vcpu to fix its page table
-> fault and mmu-notifier when host page is being changed. In the extreme
-> cpu / memory used guest, it becomes a scalability issue
-> 
-> This patch introduces a way to locklessly write-protect guest memory
-> 
-> Now, lockless rmap walk, lockless shadow page table access and lockless
-> spte wirte-protection are ready, it is the time to implements page
-> write-protection out of mmu-lock
+On Wed, Oct 23, 2013 at 09:29:28PM +0800, Xiao Guangrong wrote:
+> Allocate shadow pages from slab instead of page-allocator, frequent
+> shadow page allocation and free can be hit in the slab cache, it is
+> very useful for shadow mmu
 > 
 > Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > ---
->  arch/x86/include/asm/kvm_host.h |  4 ---
->  arch/x86/kvm/mmu.c              | 59 ++++++++++++++++++++++++++++++-----------
->  arch/x86/kvm/mmu.h              |  6 +++++
->  arch/x86/kvm/x86.c              | 11 ++++----
->  4 files changed, 55 insertions(+), 25 deletions(-)
+>  arch/x86/include/asm/kvm_host.h |  3 ++-
+>  arch/x86/kvm/mmu.c              | 46 ++++++++++++++++++++++++++++++++++-------
+>  2 files changed, 41 insertions(+), 8 deletions(-)
 > 
 > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index df9ae10..cdb6f29 100644
+> index 5cbf316..df9ae10 100644
 > --- a/arch/x86/include/asm/kvm_host.h
 > +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -793,10 +793,6 @@ void kvm_mmu_set_mask_ptes(u64 user_mask, u64 accessed_mask,
->  		u64 dirty_mask, u64 nx_mask, u64 x_mask);
+> @@ -389,6 +389,7 @@ struct kvm_vcpu_arch {
+>  	struct kvm_mmu *walk_mmu;
 >  
->  void kvm_mmu_reset_context(struct kvm_vcpu *vcpu);
-> -void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
-> -void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
-> -				     struct kvm_memory_slot *slot,
-> -				     gfn_t gfn_offset, unsigned long mask);
->  void kvm_mmu_zap_all(struct kvm *kvm);
->  void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm);
->  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+>  	struct kvm_mmu_memory_cache mmu_pte_list_desc_cache;
+> +	struct kvm_mmu_memory_cache mmu_shadow_page_cache;
+>  	struct kvm_mmu_memory_cache mmu_page_cache;
+>  	struct kvm_mmu_memory_cache mmu_page_header_cache;
+>  
+> @@ -946,7 +947,7 @@ static inline struct kvm_mmu_page *page_header(hpa_t shadow_page)
+>  {
+>  	struct page *page = pfn_to_page(shadow_page >> PAGE_SHIFT);
+>  
+> -	return (struct kvm_mmu_page *)page_private(page);
+> +	return (struct kvm_mmu_page *)(page->mapping);
+Why?
+
+>  }
+>  
+>  static inline u16 kvm_read_ldt(void)
 > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 8b96d96..d82bbec 100644
+> index f3ae74e6..1bcc8c8 100644
 > --- a/arch/x86/kvm/mmu.c
 > +++ b/arch/x86/kvm/mmu.c
-> @@ -1386,8 +1386,37 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
->  	return flush;
+> @@ -178,6 +178,7 @@ struct kvm_shadow_walk_iterator {
+>  	     __shadow_walk_next(&(_walker), spte))
+>  
+>  static struct kmem_cache *pte_list_desc_cache;
+> +static struct kmem_cache *mmu_shadow_page_cache;
+>  static struct kmem_cache *mmu_page_header_cache;
+>  static struct percpu_counter kvm_total_used_mmu_pages;
+>  
+> @@ -746,7 +747,14 @@ static int mmu_topup_memory_caches(struct kvm_vcpu *vcpu)
+>  				   GFP_KERNEL);
+>  	if (r)
+>  		goto out;
+> -	r = mmu_topup_memory_cache_page(&vcpu->arch.mmu_page_cache, 8);
+> +
+> +	r = mmu_topup_memory_cache(&vcpu->arch.mmu_shadow_page_cache,
+> +				   mmu_shadow_page_cache, 4,
+> +				   GFP_KERNEL);
+> +	if (r)
+> +		goto out;
+> +
+> +	r = mmu_topup_memory_cache_page(&vcpu->arch.mmu_page_cache, 4);
+>  	if (r)
+>  		goto out;
+>  	r = mmu_topup_memory_cache(&vcpu->arch.mmu_page_header_cache,
+> @@ -760,6 +768,8 @@ static void mmu_free_memory_caches(struct kvm_vcpu *vcpu)
+>  {
+>  	mmu_free_memory_cache(&vcpu->arch.mmu_pte_list_desc_cache,
+>  				pte_list_desc_cache);
+> +	mmu_free_memory_cache(&vcpu->arch.mmu_pte_list_desc_cache,
+> +				mmu_shadow_page_cache);
+>  	mmu_free_memory_cache_page(&vcpu->arch.mmu_page_cache);
+>  	mmu_free_memory_cache(&vcpu->arch.mmu_page_header_cache,
+>  				mmu_page_header_cache);
+> @@ -1675,12 +1685,28 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>  	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
 >  }
 >  
-> -/**
-> - * kvm_mmu_write_protect_pt_masked - write protect selected PT level pages
-> +static void __rmap_write_protect_lockless(u64 *sptep)
+> +static void set_page_header(struct kvm_mmu_page *sp)
 > +{
-> +	u64 spte;
+> +	struct page *page = virt_to_page(sp->spt);
 > +
-> +retry:
-> +	/*
-> +	 * Note we may partly read the sptep on 32bit host, however, we
-> +	 * allow this case because:
-> +	 * - we do not access the page got from the sptep.
-> +	 * - cmpxchg64 can detect that case and avoid setting a wrong value
-> +	 *   to the sptep.
-> +	 */
-> +	spte = *rcu_dereference(sptep);
-> +	if (unlikely(!is_last_spte(spte) || !is_writable_pte(spte)))
-is_last_spte gets two parameters.
-
-> +		return;
-> +
-> +	if (likely(cmpxchg64(sptep, spte, spte & ~PT_WRITABLE_MASK) == spte))
-> +		return;
-> +
-> +	goto retry;
+> +	WARN_ON(page->mapping);
+> +	page->mapping = (struct address_space *)sp;
 > +}
 > +
-> +static void rmap_write_protect_lockless(unsigned long *rmapp)
+> +static void clear_page_header(struct kvm_mmu_page *sp)
 > +{
-> +	pte_list_walk_lockless(rmapp, __rmap_write_protect_lockless);
+> +	struct page *page = virt_to_page(sp->spt);
+> +
+> +	page->mapping = NULL;
 > +}
 > +
-> +/*
-> + * kvm_mmu_write_protect_pt_masked_lockless - write protect selected PT level
-> + * pages out of mmu-lock.
-> + *
->   * @kvm: kvm instance
->   * @slot: slot to protect
->   * @gfn_offset: start of the BITS_PER_LONG pages we care about
-> @@ -1396,16 +1425,17 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
->   * Used when we do not need to care about huge page mappings: e.g. during dirty
->   * logging we do not have any such mappings.
->   */
-> -void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
-> -				     struct kvm_memory_slot *slot,
-> -				     gfn_t gfn_offset, unsigned long mask)
-> +void
-> +kvm_mmu_write_protect_pt_masked_lockless(struct kvm *kvm,
-> +					 struct kvm_memory_slot *slot,
-> +					 gfn_t gfn_offset, unsigned long mask)
+>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
 >  {
->  	unsigned long *rmapp;
+>  	ASSERT(is_empty_shadow_page(sp->spt));
+>  	hlist_del(&sp->hash_link);
+>  	list_del(&sp->link);
+> -	free_page((unsigned long)sp->spt);
+> +	clear_page_header(sp);
+> +	kmem_cache_free(mmu_shadow_page_cache, sp->spt);
+>  	if (!sp->role.direct)
+>  		free_page((unsigned long)sp->gfns);
+>  	kmem_cache_free(mmu_page_header_cache, sp);
+> @@ -1719,10 +1745,10 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+>  	struct kvm_mmu_page *sp;
 >  
->  	while (mask) {
->  		rmapp = __gfn_to_rmap(slot->base_gfn + gfn_offset + __ffs(mask),
->  				      PT_PAGE_TABLE_LEVEL, slot);
-> -		__rmap_write_protect(kvm, rmapp, false);
-> +		rmap_write_protect_lockless(rmapp);
->  
->  		/* clear the first set bit */
->  		mask &= mask - 1;
-> @@ -4477,7 +4507,7 @@ void kvm_mmu_setup(struct kvm_vcpu *vcpu)
->  	init_kvm_mmu(vcpu);
->  }
->  
-> -void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
-> +void kvm_mmu_slot_remove_write_access_lockless(struct kvm *kvm, int slot)
->  {
->  	struct kvm_memory_slot *memslot;
->  	gfn_t last_gfn;
-> @@ -4486,8 +4516,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
->  	memslot = id_to_memslot(kvm->memslots, slot);
->  	last_gfn = memslot->base_gfn + memslot->npages - 1;
->  
-> -	spin_lock(&kvm->mmu_lock);
-> -
-> +	rcu_read_lock();
->  	for (i = PT_PAGE_TABLE_LEVEL;
->  	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
->  		unsigned long *rmapp;
-> @@ -4497,15 +4526,15 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
->  		last_index = gfn_to_index(last_gfn, memslot->base_gfn, i);
->  
->  		for (index = 0; index <= last_index; ++index, ++rmapp) {
-> -			if (*rmapp)
-> -				__rmap_write_protect(kvm, rmapp, false);
-> +			rmap_write_protect_lockless(rmapp);
->  
-> -			if (need_resched() || spin_needbreak(&kvm->mmu_lock))
-> -				cond_resched_lock(&kvm->mmu_lock);
-> +			if (need_resched()) {
-> +				rcu_read_lock();
-> +				rcu_read_unlock();
-> +			}
->  		}
->  	}
-> -
-> -	spin_unlock(&kvm->mmu_lock);
-> +	rcu_read_unlock();
+>  	sp = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_header_cache);
+> -	sp->spt = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache);
+> +	sp->spt = mmu_memory_cache_alloc(&vcpu->arch.mmu_shadow_page_cache);
+>  	if (!direct)
+>  		sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache);
+> -	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+> +	set_page_header(sp);
 >  
 >  	/*
->  	 * We can flush all the TLBs out of the mmu lock without TLB
-> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-> index 2926152..33f313b 100644
-> --- a/arch/x86/kvm/mmu.h
-> +++ b/arch/x86/kvm/mmu.h
-> @@ -117,4 +117,10 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+>  	 * The active_mmu_pages list is the FIFO list, do not move the
+> @@ -2046,12 +2072,13 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
+>  	}
 >  }
 >  
->  void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm);
+> -static void init_shadow_page_table(struct kvm_mmu_page *sp)
+> +static void init_shadow_page_table(void *p)
+>  {
+> +	u64 *sptp = (u64 *)p;
+>  	int i;
+>  
+>  	for (i = 0; i < PT64_ENT_PER_PAGE; ++i)
+> -		sp->spt[i] = 0ull;
+> +		sptp[i] = 0ull;
+>  }
+>  
+>  static void __clear_sp_write_flooding_count(struct kvm_mmu_page *sp)
+> @@ -2137,7 +2164,6 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  		account_shadowed(vcpu->kvm, gfn);
+>  	}
+>  	sp->mmu_valid_gen = vcpu->kvm->arch.mmu_valid_gen;
+> -	init_shadow_page_table(sp);
+>  	trace_kvm_mmu_get_page(sp, true);
+>  	return sp;
+>  }
+> @@ -4683,6 +4709,12 @@ int kvm_mmu_module_init(void)
+>  	if (!pte_list_desc_cache)
+>  		goto nomem;
+>  
+> +	mmu_shadow_page_cache = kmem_cache_create("mmu_shadow_page_cache",
+> +						  PAGE_SIZE, PAGE_SIZE, 0,
+> +						  init_shadow_page_table);
+> +	if (!mmu_shadow_page_cache)
+> +		goto nomem;
 > +
-> +void kvm_mmu_slot_remove_write_access_lockless(struct kvm *kvm, int slot);
-> +void
-> +kvm_mmu_write_protect_pt_masked_lockless(struct kvm *kvm,
-> +					 struct kvm_memory_slot *slot,
-> +					 gfn_t gfn_offset, unsigned long mask);
->  #endif
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4ac3a27..c6233e1 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3554,8 +3554,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
->  	dirty_bitmap_buffer = dirty_bitmap + n / sizeof(long);
->  	memset(dirty_bitmap_buffer, 0, n);
->  
-> -	spin_lock(&kvm->mmu_lock);
-> -
-> +	rcu_read_lock();
->  	for (i = 0; i < n / sizeof(long); i++) {
->  		unsigned long mask;
->  		gfn_t offset;
-> @@ -3579,10 +3578,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
->  		dirty_bitmap_buffer[i] = mask;
->  
->  		offset = i * BITS_PER_LONG;
-> -		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
-> +		kvm_mmu_write_protect_pt_masked_lockless(kvm, memslot,
-> +							 offset, mask);
->  	}
-> -
-> -	spin_unlock(&kvm->mmu_lock);
-> +	rcu_read_unlock();
->  
->  	/*
->  	 * All the TLBs can be flushed out of mmu lock, see the comments in
-> @@ -7246,7 +7245,7 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
->  	 * See the comments in fast_page_fault().
->  	 */
->  	if ((change != KVM_MR_DELETE) && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
-> -		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> +		kvm_mmu_slot_remove_write_access_lockless(kvm, mem->slot);
->  }
->  
->  void kvm_arch_flush_shadow_all(struct kvm *kvm)
+>  	mmu_page_header_cache = kmem_cache_create("kvm_mmu_page_header",
+>  						  sizeof(struct kvm_mmu_page),
+>  						  0, 0, NULL);
 > -- 
 > 1.8.1.4
 
