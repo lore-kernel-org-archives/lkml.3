@@ -1,134 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3JXHvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:51:04 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:60306 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab3JXHvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:51:01 -0400
-Date: Thu, 24 Oct 2013 09:50:58 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Usage of for_each_child_of_node()
-Message-ID: <20131024075058.GD9403@ulmo.nvidia.com>
-References: <5259B6F8.3070701@roeck-us.net>
- <CAL_Jsq+wBGV6KGo4Ngrxr4_aZ=0eWPTbt0n4bhhrpERB55bQyg@mail.gmail.com>
- <20131023071006.GA7708@ulmo.nvidia.com>
- <20131023161644.GB20675@roeck-us.net>
+	id S1754082Ab3JXHyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:54:19 -0400
+Received: from smtp0.epfl.ch ([128.178.224.218]:58930 "EHLO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab3JXHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:54:17 -0400
+Message-ID: <5268D095.3060302@epfl.ch>
+Date: Thu, 24 Oct 2013 09:47:33 +0200
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mJm6k4Vb/yFcL9ZU"
-Content-Disposition: inline
-In-Reply-To: <20131023161644.GB20675@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv4 1/3] Input: twl4030-pwrbutton - add device tree support
+References: <1382550852-11508-1-git-send-email-sre@debian.org> <1382550852-11508-2-git-send-email-sre@debian.org>
+In-Reply-To: <1382550852-11508-2-git-send-email-sre@debian.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Sebastian,
 
---mJm6k4Vb/yFcL9ZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/23/2013 07:54 PM, Sebastian Reichel wrote:
+> Add device tree support for twl4030 power button driver.
+> 
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  .../devicetree/bindings/input/twl4030-pwrbutton.txt      | 13 +++++++++++++
+>  drivers/input/misc/twl4030-pwrbutton.c                   | 16 ++++++++++++----
+>  2 files changed, 25 insertions(+), 4 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+> new file mode 100644
+> index 0000000..945ec74
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+> @@ -0,0 +1,13 @@
+> +* TWL4030's pwrbutton device tree bindings
+> +
+> +Required SoC Specific Properties:
+> +- compatible: should be one of the following
+> +   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
+> +- interrupt: should be one of the following
+> +   - <8>: For controllers compatible with twl4030
 
-On Wed, Oct 23, 2013 at 09:16:44AM -0700, Guenter Roeck wrote:
-> On Wed, Oct 23, 2013 at 09:10:07AM +0200, Thierry Reding wrote:
-> > On Sat, Oct 12, 2013 at 10:15:03PM -0500, Rob Herring wrote:
-> > > On Sat, Oct 12, 2013 at 3:54 PM, Guenter Roeck <linux@roeck-us.net> w=
-rote:
-> > > > Hi all,
-> > > >
-> > > > for_each_child_of_node() and similar functions increase the refcount
-> > > > on each returned node and expect the caller to release the node by
-> > > > calling of_node_put() when done.
-> > > >
-> > > > Looking through the kernel code, it appears this is hardly ever don=
-e,
-> > > > if at all. Some code even calls of_node_get() on returned nodes aga=
-in.
-> > > >
-> > > > I guess this doesn't matter in cases where devicetree is a static e=
-ntity.
-> > > > However, this is not (or no longer) the case with devicetree overla=
-ys,
-> > > > or more generically in cases where devicetree nodes are added and
-> > > > removed dynamically.
-> > > >
-> > > > Fundamental question: Would patches to fix this problem be accepted=
- upstream
-> > > > ?
-> > >=20
-> > > Certainly.
-> > >=20
-> > > > Or, of course, stepping a bit back: Am I missing something essentia=
-l ?
-> > >=20
-> > > No. I think this is frequently wrong since it typically doesn't matter
-> > > for static entries as you mention.
-> >=20
-> > Actually, I think it actually happens to be correct most of the time.
-> > The reason is that for_each_child_of_node() internally calls the
-> > of_get_next_child() to iterate over all children. And that function
-> > already calls of_node_put() on the "previous" node. So if all the code
-> > does is to iterate over all nodes to query them, then all should be
-> > fine.
-> >=20
-> Good, that reduces the scope of the problem significantly.
->=20
-> > The only case where you actually need to drop the reference on a node is
-> > if you break out of the loop (so that of_get_next_child() will not be
-> > called). But that's usually the case when you need to perform some
-> > operation on the node, in which case it is the right thing to hold on to
-> > a reference until you're done with the node.
-> >=20
-> Unfortunately, there are many cases with code such as
->=20
-> 	if (error)
-> 		return;	/* or break; */
+This is <8> for your particular case, but it will depend on your SoC,
+won't it?
+Moreover, this property will be most likely inherited from the root twl
+node,
+so I do not see the need to document it here. See:
 
-Well, a break isn't necessarily bad, since you could be using the node
-subsequently. I imagine that depending on the exact block following the
-if statement the node could also be assigned to some field within a
-structure or similar, in which case this might still be valid. So it
-really needs to be evaluated on a case by case basis.
+Documentation/devicetree/bindings/mfd/twl-familly.txt
 
-If the above is actually verbatim, then yes, that's certainly an error.
+> +
+> +Example:
+> +	twl_pwrbutton: pwrbutton {
+> +		compatible = "ti,twl4030-pwrbutton";
+> +		interrupts = <8>;
+> +	};
 
-> or even
-> 	if (found node)
-> 		return of_node_get(node);
->=20
-> in the loop.
+You are missing the root twl node here, no?
 
-Yeah, I think all of those are probably wrong too.
+> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
+> index b9a05fd..a3a0fe3 100644
+> --- a/drivers/input/misc/twl4030-pwrbutton.c
+> +++ b/drivers/input/misc/twl4030-pwrbutton.c
 
-Thierry
+Missing #include <linux/of.h> ?
 
---mJm6k4Vb/yFcL9ZU
-Content-Type: application/pgp-signature
+> @@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
+> +static int twl4030_pwrbutton_probe(struct platform_device *pdev)
+>  {
+>  	struct input_dev *pwr;
+>  	int irq = platform_get_irq(pdev, 0);
+> @@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#if IS_ENABLED(CONFIG_OF)
+> +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
+> +       { .compatible = "ti,twl4030-pwrbutton" },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
+> +#endif
+> +
+>  static struct platform_driver twl4030_pwrbutton_driver = {
+> +	.probe		= twl4030_pwrbutton_probe,
+>  	.remove		= __exit_p(twl4030_pwrbutton_remove),
+>  	.driver		= {
+>  		.name	= "twl4030_pwrbutton",
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
+>  	},
+>  };
+> -
+> -module_platform_driver_probe(twl4030_pwrbutton_driver,
+> -			twl4030_pwrbutton_probe);
+> +module_platform_driver(twl4030_pwrbutton_driver);
+>  
+>  MODULE_ALIAS("platform:twl4030_pwrbutton");
+>  MODULE_DESCRIPTION("Triton2 Power Button");
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Best regards,
 
-iQIcBAEBAgAGBQJSaNFiAAoJEN0jrNd/PrOhBkMP/j6y3CVAsKmjjoN+vXzdKUSI
-9wqIufhmKio6/45o9vNRoOOIHc0B1sT/V8KzlLMEKrW3qCLuaQuohE5FBVuu8u5y
-VWqSrxo/EeTRNc2eL+MvA8/lkAOtzh5YgfqivWVw8xIKAuislPOD5oh66uwwa0IL
-AjZCXJYhAy9BbQK/k+RabzyEQGz6pyy2da5G6cungeCQ/MJKM/q43JyBKZnZuYGy
-Meydw1w+NpSG901WwBtYp+jrKCQzJtO+S6c3hLeVO2egaCXQz0hOzenAhscome3o
-Uv02g0Pwpil6jWTEc3A0br88GGnTRpHwvWcLQOwJWi7Dxg1dTzFpivrC9E56ckx6
-nruGE5vgYmVTNY7E5ABY3B+8SKFB6qwiV8DyefzPtF3LwB02Gj8dpfTQ7uNnwz4y
-1JVUDi8Y2rVOFe3ETofF17GBkMm9LiKkzelENFk+5pnr80Tf6Nd91q99ittOCp/K
-6cevzeLHdcov3d9o1wZ6CsYgwLfdwipq3gmR4nhemfY+hw/RNnOyYcQnoebJ4eiL
-guhbIXI94fjzrUUBb3DVgSBgmeWQxp3F2tyvIFu7+KCUed43gd9qY+EmjJq0dl2N
-7SNagqXuH4Q5SWQFpXFbDAyZYqkXFNN/2cIX5Gd+PgNwMTW1PjNyPiWZG8YOSjBn
-7izD4h9CzuwMSiMtVDZf
-=34Xy
------END PGP SIGNATURE-----
-
---mJm6k4Vb/yFcL9ZU--
+Florian
