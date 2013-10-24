@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3JXQm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 12:42:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:10846 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755241Ab3JXQm6 (ORCPT
+	id S1755935Ab3JXQn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 12:43:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:35140 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab3JXQn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 12:42:58 -0400
-Date: Thu, 24 Oct 2013 12:42:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.0.101-rt130
-Message-ID: <20131024164256.GA20373@home.goodmis.org>
-References: <1382630335.5283.32.camel@pippen.local.home>
+	Thu, 24 Oct 2013 12:43:57 -0400
+X-IronPort-AV: E=Sophos;i="4.93,563,1378857600"; 
+   d="scan'208";a="64392404"
+Message-ID: <1382633034.22417.121.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
+ guests.
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Julien Grall <julien.grall@linaro.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Date: Thu, 24 Oct 2013 17:43:54 +0100
+In-Reply-To: <52694B3F.5090008@linaro.org>
+References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com>
+	 <5245FD71.3080408@linaro.org> <20130930144513.GM3106@phenom.dumpdata.com>
+	 <5251CD98.70807@linaro.org> <20131023161518.GA28413@phenom.dumpdata.com>
+	 <526848C1.5030705@linaro.org> <20131024144921.GB29944@phenom.dumpdata.com>
+	 <52694B3F.5090008@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382630335.5283.32.camel@pippen.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 11:58:55AM -0400, Steven Rostedt wrote:
-> 
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.0.101-rt130 stable release.
+On Thu, 2013-10-24 at 17:30 +0100, Julien Grall wrote:
 
-As 3.0 has become End-of-Life so has 3.0-rt. This is the last release of the 3.0-rt.
+> I'm sure the solution "move xen call earlier" will come up in few mails, 
+> so there was a discussion for swiotlb few weeks ago 
+> (https://lkml.org/lkml/2013/8/29/609). And the final decision was to 
+> avoid specific Xen call in arch_setup.
 
-Thanks Greg!
+It wasn't so much a hard reject as a preference based on the need
+presented at the time.
 
--- Steve
+Perhaps a generic DT driven mechanism to detect hypervisors, called
+early, would be more acceptable?
+
+> Stefano, Ian, any opinion?
+
+The ifdef approach is a bit ugly, but if the other option doesn't work
+out I suppose we can live with it.
+
+But stepping back how/why is this function called on x86 when not
+running under Xen? Wouldn't the use have to be using console=hvc or
+earlyprintk=xen or something -- which strikes me as user error... IOW
+can we not just nuke the check
+
+Ian.
+
