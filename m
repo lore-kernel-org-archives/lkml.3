@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3JXTOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 15:14:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33273 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab3JXTOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756228Ab3JXTOs (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Oct 2013 15:14:48 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:52991 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab3JXTOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 15:14:46 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH trace-cmd 5/5] build: Use CFLAGS and LDFLAGS when building python bits
-Date: Thu, 24 Oct 2013 14:14:34 -0500
-Message-Id: <1382642074-15567-6-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH trace-cmd 3/5] Add missing libgen.h includes
+Date: Thu, 24 Oct 2013 14:14:32 -0500
+Message-Id: <1382642074-15567-4-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
 References: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
@@ -20,44 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Distro build systems expect all objects to be built with the
-flags they supply, and may complain when they are not.
+This is needed for basname(). Without the include the compiler
+may assume that basename() returns int, which leads to a segfault
+in some cases.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- Makefile | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel-shark.c     | 1 +
+ trace-graph-main.c | 1 +
+ trace-view-main.c  | 1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/Makefile b/Makefile
-index 2423038..1d613c4 100644
---- a/Makefile
-+++ b/Makefile
-@@ -569,13 +569,13 @@ PYGTK_CFLAGS = `pkg-config --cflags pygtk-2.0`
+diff --git a/kernel-shark.c b/kernel-shark.c
+index ee4796a..0201427 100644
+--- a/kernel-shark.c
++++ b/kernel-shark.c
+@@ -28,6 +28,7 @@
+ #include <gtk/gtk.h>
+ #include <errno.h>
+ #include <getopt.h>
++#include <libgen.h>
  
- ctracecmd.so: $(TCMD_LIB_OBJS) ctracecmd.i
- 	swig -Wall -python -noproxy ctracecmd.i
--	$(CC) -fpic -c $(PYTHON_INCLUDES)  ctracecmd_wrap.c
--	$(CC) --shared $(TCMD_LIB_OBJS) ctracecmd_wrap.o -o ctracecmd.so
-+	$(CC) -fpic -c $(CFLAGS) $(PYTHON_INCLUDES)  ctracecmd_wrap.c
-+	$(CC) --shared $(TCMD_LIB_OBJS) $(LDFLAGS) ctracecmd_wrap.o -o ctracecmd.so
+ #include "trace-compat.h"
+ #include "trace-capture.h"
+diff --git a/trace-graph-main.c b/trace-graph-main.c
+index 1bc10c1..3654295 100644
+--- a/trace-graph-main.c
++++ b/trace-graph-main.c
+@@ -23,6 +23,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
  
- ctracecmdgui.so: $(TRACE_VIEW_OBJS) $(LIB_FILE)
- 	swig -Wall -python -noproxy ctracecmdgui.i
- 	$(CC) -fpic -c  $(CFLAGS) $(INCLUDES) $(PYTHON_INCLUDES) $(PYGTK_CFLAGS) ctracecmdgui_wrap.c
--	$(CC) --shared $^ $(LIBS) $(CONFIG_LIBS) ctracecmdgui_wrap.o -o ctracecmdgui.so
-+	$(CC) --shared $^ $(LDFLAGS) $(LIBS) $(CONFIG_LIBS) ctracecmdgui_wrap.o -o ctracecmdgui.so
+ #include "trace-cmd.h"
+ #include "trace-graph.h"
+diff --git a/trace-view-main.c b/trace-view-main.c
+index 73dfa8a..935b8c1 100644
+--- a/trace-view-main.c
++++ b/trace-view-main.c
+@@ -23,6 +23,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
  
- PHONY += python
- python: $(PYTHON)
-@@ -594,7 +594,7 @@ do_compile_python_plugin_obj =			\
- 
- do_python_plugin_build =			\
- 	($(print_plugin_build)			\
--	$(CC) $< -shared $(PYTHON_LDFLAGS) -o $@)
-+	$(CC) $< -shared $(LDFLAGS) $(PYTHON_LDFLAGS) -o $@)
- 
- plugin_python.o: %.o : $(src)/%.c trace_python_dir
- 	$(Q)$(do_compile_python_plugin_obj)
+ #include "trace-cmd.h"
+ #include "trace-view.h"
 -- 
 1.8.3.2
 
