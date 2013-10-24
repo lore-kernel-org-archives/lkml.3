@@ -1,66 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3JXPyB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:54:01 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:41729 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755899Ab3JXPx7 (ORCPT
+	id S1755945Ab3JXPuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:50:10 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:37693 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab3JXPuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:53:59 -0400
-Message-ID: <1382630031.5283.26.camel@pippen.local.home>
-Subject: [ANNOUNCE] 3.8.13.9-rt20
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Thu, 24 Oct 2013 11:53:51 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 24 Oct 2013 11:50:04 -0400
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 15/34] sysfs, kernfs: prepare write path for kernfs
+Date: Thu, 24 Oct 2013 11:49:21 -0400
+Message-Id: <1382629780-10006-16-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
+References: <1382629780-10006-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+rearranges write path so that the kernfs and sysfs parts are separate.
 
-Dear RT Folks,
+kernfs_file_write() handles all boilerplate work including buffer
+management and locking and invokes sysfs_kf_write() or
+sysfs_kf_bin_write() depending on the file type which deals with the
+interaction with kobj store or bin_attribute write method.
 
-I'm pleased to announce the 3.8.13.9-rt20 stable release.
+While this patch changes the order of some operations, it shouldn't
+change any visible behavior.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/file.c | 103 +++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 50 insertions(+), 53 deletions(-)
 
-This release is just an update to the new stable 3.8.13.9 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.8-rt
-  Head SHA1: 492b96082c7baa1f750239d431a2ca38a5c4d5e5
-492b96082c7baa1f750239d431a2ca38a5c4d5e5
-
-
-Or to build 3.8.13.9-rt20 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/stable/patch-3.8.13.9.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13.9-rt20.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 0f93330..2736ea9 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -262,61 +262,50 @@ static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
+ 		return seq_read(file, user_buf, count, ppos);
+ }
+ 
+-/**
+- * flush_write_buffer - push buffer to kobject
+- * @of: open file
+- * @buf: data buffer for file
+- * @off: file offset to write to
+- * @count: number of bytes
+- *
+- * Get the correct pointers for the kobject and the attribute we're dealing
+- * with, then call the store() method for it with @buf.
+- */
+-static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+-			      size_t count)
++/* kernfs write callback for regular sysfs files */
++static ssize_t sysfs_kf_write(struct sysfs_open_file *of, char *buf,
++			      size_t count, loff_t pos)
+ {
++	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
+ 	struct kobject *kobj = of->sd->s_parent->priv;
+-	int rc = 0;
+ 
+-	/*
+-	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
+-	 * nests outside active ref and is just to ensure that the ops
+-	 * aren't called concurrently for the same open file.
+-	 */
+-	mutex_lock(&of->mutex);
+-	if (!sysfs_get_active(of->sd)) {
+-		mutex_unlock(&of->mutex);
+-		return -ENODEV;
+-	}
++	if (!count)
++		return 0;
+ 
+-	if (sysfs_is_bin(of->sd)) {
+-		struct bin_attribute *battr = of->sd->priv;
++	return ops->store(kobj, of->sd->priv, buf, count);
++}
+ 
+-		rc = -EIO;
+-		if (battr->write)
+-			rc = battr->write(of->file, kobj, battr, buf, off,
+-					  count);
+-	} else {
+-		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
++/* kernfs write callback for bin sysfs files */
++static ssize_t sysfs_kf_bin_write(struct sysfs_open_file *of, char *buf,
++				  size_t count, loff_t pos)
++{
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
++	loff_t size = file_inode(of->file)->i_size;
+ 
+-		rc = ops->store(kobj, of->sd->priv, buf, count);
++	if (size) {
++		if (size <= pos)
++			return 0;
++		count = min_t(ssize_t, count, size - pos);
+ 	}
++	if (!count)
++		return 0;
+ 
+-	sysfs_put_active(of->sd);
+-	mutex_unlock(&of->mutex);
++	if (!battr->write)
++		return -EIO;
+ 
+-	return rc;
++	return battr->write(of->file, kobj, battr, buf, pos, count);
+ }
+ 
+ /**
+- * sysfs_write_file - write an attribute
++ * kernfs_file_write - kernfs vfs write callback
+  * @file: file pointer
+  * @user_buf: data to write
+  * @count: number of bytes
+  * @ppos: starting offset
+  *
+- * Copy data in from userland and pass it to the matching
+- * sysfs_ops->store() by invoking flush_write_buffer().
++ * Copy data in from userland and pass it to the matching kernfs write
++ * operation.
+  *
+  * There is no easy way for us to know if userspace is only doing a partial
+  * write, so we don't support them. We expect the entire buffer to come on
+@@ -324,23 +313,13 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+  * modify only the the value you're changing, then write entire buffer
+  * back.
+  */
+-static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+-				size_t count, loff_t *ppos)
++static ssize_t kernfs_file_write(struct file *file, const char __user *user_buf,
++				 size_t count, loff_t *ppos)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+ 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+-	loff_t size = file_inode(file)->i_size;
+ 	char *buf;
+ 
+-	if (sysfs_is_bin(of->sd) && size) {
+-		if (size <= *ppos)
+-			return 0;
+-		len = min_t(ssize_t, len, size - *ppos);
+-	}
+-
+-	if (!len)
+-		return 0;
+-
+ 	buf = kmalloc(len + 1, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+@@ -351,7 +330,25 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ 	}
+ 	buf[len] = '\0';	/* guarantee string termination */
+ 
+-	len = flush_write_buffer(of, buf, *ppos, len);
++	/*
++	 * @of->mutex nests outside active ref and is just to ensure that
++	 * the ops aren't called concurrently for the same open file.
++	 */
++	mutex_lock(&of->mutex);
++	if (!sysfs_get_active(of->sd)) {
++		mutex_unlock(&of->mutex);
++		len = -ENODEV;
++		goto out_free;
++	}
++
++	if (sysfs_is_bin(of->sd))
++		len = sysfs_kf_bin_write(of, buf, len, *ppos);
++	else
++		len = sysfs_kf_write(of, buf, len, *ppos);
++
++	sysfs_put_active(of->sd);
++	mutex_unlock(&of->mutex);
++
+ 	if (len > 0)
+ 		*ppos += len;
+ out_free:
+@@ -856,7 +853,7 @@ EXPORT_SYMBOL_GPL(sysfs_notify);
+ 
+ const struct file_operations sysfs_file_operations = {
+ 	.read		= kernfs_file_read,
+-	.write		= sysfs_write_file,
++	.write		= kernfs_file_write,
+ 	.llseek		= seq_lseek,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+@@ -865,7 +862,7 @@ const struct file_operations sysfs_file_operations = {
+ 
+ const struct file_operations sysfs_bin_operations = {
+ 	.read		= kernfs_file_read,
+-	.write		= sysfs_write_file,
++	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
+ 	.mmap		= sysfs_bin_mmap,
+ 	.open		= sysfs_open_file,
+-- 
+1.8.3.1
 
