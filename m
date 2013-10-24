@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3JXDvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 23:51:14 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25259 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab3JXDvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 23:51:13 -0400
-X-Spam-Score: -100.8
-Message-ID: <526898F1.7010609@asianux.com>
-Date: Thu, 24 Oct 2013 11:50:09 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, jason.wessel@windriver.com,
-        mjonker@synopsys.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: kernel: kgdb: add default implementation for kgdb_roundup_cpus()
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751373Ab3JXEB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 00:01:27 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34840 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab3JXEB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 00:01:26 -0400
+Message-ID: <1382587279.5587.9.camel@fishsauce>
+Subject: Re: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm
+ maintainer
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <PeterHuewe@gmx.de>, Rajiv Andrade <mail@srajiv.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Wed, 23 Oct 2013 23:01:19 -0500
+In-Reply-To: <20131024032736.GC30090@obsidianresearch.com>
+References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
+	 <20131022205205.GA2374@obsidianresearch.com>
+	 <CAEQAOwoFpiVeDKTa6UgjiRoy9aKcUPHT7CYwa1eM1EUVm0gM=Q@mail.gmail.com>
+	 <trinity-2863d941-7421-4bbb-8c72-4bf491937d37-1382569828674@3capp-gmx-bs20>
+	 <20131024032736.GC30090@obsidianresearch.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102404-5806-0000-0000-00002330F78D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arc supports kgdb, but need update -- add function kgdb_roundup_cpus(),
-or can not pass compiling. At present, add the simple generic one just
-like other architectures(e.g. tile, mips ...).
 
-The related error (with allmodconfig):
+> Agreed, there are still lots of patches to go before the subsystem
+> meets the current kernel standard..
+> 
+> Speaking of which, has anyone looked at the rest of my series?? Shall
+> I repost it?
 
-  kernel/built-in.o: In function `kgdb_cpu_enter':
-  kernel/debug/debug_core.c:580: undefined reference to `kgdb_roundup_cpus'
+Jason,
+  Are you referring to the for-tpm branch on github?
+https://github.com/jgunthorpe/linux/commits/for-tpm
+Peter already submitted most of the patches to James from this branch.
+Let us know which series need to be review.
 
+Thanks,
+--Ashley Lai  
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/kernel/kgdb.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arc/kernel/kgdb.c b/arch/arc/kernel/kgdb.c
-index a7698fb..a2ff5c5 100644
---- a/arch/arc/kernel/kgdb.c
-+++ b/arch/arc/kernel/kgdb.c
-@@ -196,6 +196,18 @@ void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long ip)
- 	instruction_pointer(regs) = ip;
- }
- 
-+static void kgdb_call_nmi_hook(void *ignored)
-+{
-+	kgdb_nmicallback(raw_smp_processor_id(), NULL);
-+}
-+
-+void kgdb_roundup_cpus(unsigned long flags)
-+{
-+	local_irq_enable();
-+	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
-+	local_irq_disable();
-+}
-+
- struct kgdb_arch arch_kgdb_ops = {
- 	/* breakpoint instruction: TRAP_S 0x3 */
- #ifdef CONFIG_CPU_BIG_ENDIAN
--- 
-1.7.7.6
