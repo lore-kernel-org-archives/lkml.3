@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab3JXHIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:08:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43804 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab3JXHIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:08:15 -0400
-Date: Thu, 24 Oct 2013 08:08:10 +0100 (BST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Egbert Eich <eich@suse.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Egbert Eich <eich@suse.de>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: HPD flood warning since b8f102e8b
-In-Reply-To: <21093.23168.424554.698941@linux-qknr.site>
-Message-ID: <alpine.LNX.2.00.1310240806370.30926@pobox.suse.cz>
-References: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz> <CAKMK7uEbGZ3_tHTCqOT7H4eViBnYmkPTS210jOvfweSf3gQ_fg@mail.gmail.com> <alpine.LNX.2.00.1310031632320.29701@pobox.suse.cz> <21093.23168.424554.698941@linux-qknr.site>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753957Ab3JXHJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:09:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20802 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab3JXHJV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:09:21 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-05-5268c7a03493
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: remove redundant set_page_dirty from
+ write_compacted_summaries
+Date: Thu, 24 Oct 2013 15:08:28 +0800
+Message-id: <000201ced087$f5433d70$dfc9b850$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7QhA4Q4tVVIka5T+SK0LuwbGg6vQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAd0FxzOCDG5/ZLe4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujCVr/7IV
+	7OOu+N93krmBcQ5nFyMnh4SAicSFA2dYIWwxiQv31rOB2EICixgl+p87Qdg/GCU+ffYAsdkE
+	VCSWd/xnArFFBKQlZn2ax9LFyMXBLDCbUaLnyzNGkISwQJLElq2tYENZBFQlHrfsAWvgFbCU
+	2HPqMZQtKPFj8j2gZg6gZnWJKVNyQcLMAtoST95dgLpHQWLH2deMICUiAnoSF+5qQZSIS2w8
+	cotlAqPALCSDZiEMmoVk0CwkHQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBAfzM+kd
+	jKsaLA4xCnAwKvHwanxIDxJiTSwrrsw9xCjBwawkwutZkREkxJuSWFmVWpQfX1Sak1p8iFGa
+	g0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgVFUZsI1Psktwi7uWSpZOSyCWqcP9cfNtjkf
+	sa5vxWXd3Q+q3DdsFeRZLrI00/mswmf2ef8s9v7N26OWvTrHl/PgtsICV8ldn5pVnl9kkju9
+	cAlXB5deK3fqpwPvr8wzlS5y8d3W+ujCqYALD49Ff/+pb5LbPH2ixAL/ulOaSzRtv6/4N3Pi
+	2TglluKMREMt5qLiRACuGcNUYgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Oct 2013, Egbert Eich wrote:
+Previously, set_page_dirty is called every time after writting one summary info into compacted summary page,
+To avoid redundant set_page_dirty, we only call set_page_dirty before release page.
 
->  > On Thu, 3 Oct 2013, Daniel Vetter wrote:
->  > 
->  > > Can you please attach full dmesg from boot up to the first WARN with
->  > > drm.debug=0xe? This really shouldn't happen and indicates a bug
->  > > somewhere ...
->  > 
->  > A bit difficult ... I originally thought that it was reliably 
->  > reproducible, but now I didn't get it after 10 suspend/resume cycles. Will 
->  > keep following it, and once it appears, will send you the dmesg.
->  > 
-> Could you check if you get any messages regarding HPD storms after 
-> suspend/resume ie messages like:
-> "[drm] HPD interrupt storm detected on connector HDMI-A-1"
-> but without the annouing warn messages?
+Signed-off-by: Yu Chao <chao2.yu@samsung.com>
+---
+ fs/f2fs/segment.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-I have this:
-
-[357128.184113] [drm] HPD interrupt storm detected on connector DP-3: switching from hotplug detection to polling
-
-It appeared in the log approximately 5 seconds after resume has been 
-completed.
-
-Thanks,
-
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 3b20359..bdd53d0 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1128,8 +1128,6 @@ static void write_compacted_summaries(struct f2fs_sb_info *sbi, block_t blkaddr)
+ 						SUM_JOURNAL_SIZE);
+ 	written_size += SUM_JOURNAL_SIZE;
+ 
+-	set_page_dirty(page);
+-
+ 	/* Step 3: write summary entries */
+ 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+ 		unsigned short blkoff;
+@@ -1148,18 +1146,20 @@ static void write_compacted_summaries(struct f2fs_sb_info *sbi, block_t blkaddr)
+ 			summary = (struct f2fs_summary *)(kaddr + written_size);
+ 			*summary = seg_i->sum_blk->entries[j];
+ 			written_size += SUMMARY_SIZE;
+-			set_page_dirty(page);
+ 
+ 			if (written_size + SUMMARY_SIZE <= PAGE_CACHE_SIZE -
+ 							SUM_FOOTER_SIZE)
+ 				continue;
+ 
++			set_page_dirty(page);
+ 			f2fs_put_page(page, 1);
+ 			page = NULL;
+ 		}
+ 	}
+-	if (page)
++	if (page) {
++		set_page_dirty(page);
+ 		f2fs_put_page(page, 1);
++	}
+ }
+ 
+ static void write_normal_summaries(struct f2fs_sb_info *sbi,
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
