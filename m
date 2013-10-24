@@ -1,157 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab3JXLYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 07:24:36 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:2034 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3JXLYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 07:24:34 -0400
-X-Spam-Score: -100.8
-Message-ID: <5269032E.2060400@asianux.com>
-Date: Thu, 24 Oct 2013 19:23:26 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        James Hogan <james.hogan@imgtec.com>,
+	id S1754450Ab3JXLcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 07:32:51 -0400
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:32393
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753872Ab3JXLct convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 07:32:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6hbe9i1155h)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: Kim Phillips <kim.phillips@linaro.org>,
+        Wood Scott-B07421 <B07421@freescale.com>
+CC: Wood Scott-B07421 <B07421@freescale.com>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] arc: kernel: add default extern variable 'screen_info'
- in "setup.c"
-References: <5267AE7D.4080600@asianux.com> <C2D7FE5348E1B147BCA15975FBA23075152B30@IN01WEMBXA.internal.synopsys.com> <52688C42.3030907@asianux.com> <CAMuHMdWD1ENyrBMimnoYQc4hzJ_Zkob-1RQ3F+wXbSktYcO9xQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdWD1ENyrBMimnoYQc4hzJ_Zkob-1RQ3F+wXbSktYcO9xQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: RE: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+ sysfs only
+Thread-Topic: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+ sysfs only
+Thread-Index: AQHOxkr73mEL+MoRyUKqi8VAB5hpg5nv+IwAgAAq64CAE6iG8A==
+Date: Thu, 24 Oct 2013 11:32:42 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071CDC4A@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1381418830.7979.405.camel@snotra.buserror.net>
+	<1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
+	<1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
+	<1381524220.7979.560.camel@snotra.buserror.net>
+ <20131011181717.e4051736cf42c5a647222941@linaro.org>
+In-Reply-To: <20131011181717.e4051736cf42c5a647222941@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.2]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 04:30 PM, Geert Uytterhoeven wrote:
-> On Thu, Oct 24, 2013 at 4:56 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>> NAK.
->>
->> OK, thanks. At least this patch is incorrect.
->>
->>
->>> ARC will never have VGA console. You need to add !ARC to relevant Kconfig. However that approach is frowned upon in general. The current way to doing such things is to define a new Kconfig item which relevant arches can select.
->>
->> Hmm... it seems necessary to discuss about the 2 fixing ways (which
->> already had a long discussion in ARM64):
->>
->>  - add !ARC in related place, just like another (almost 30-40%) architectures done.
->>
->>  - add a new Kconfig item (e.g. HAVE_VGA_CONSOLE), and let the left (almost 50%) architectures which use VGA_CONSOLE to set it.
->>
->> Catalin, Will, Geert (it seems also include you) prefer 2nd way, but I
->> prefer 1st, my reasons are below, please help check:
->>
->>  - 1st way need add some (10-20%) of architectures in one place, which belongs to local wide.
->>    2nd way will let the left (almost 50%) architectures need add HAVE_VGA_CONSOLE in various place, which belongs to arch global wide.
->>
->>  - 1st way will let most (80-90%) of architectures don't care about VGA_CONSOLE (50% need it, 30-40% already mark it in the same place).
->>    2nd way will let 50% architectures care about VGA_CONSOLE (although can let the left 10-20% architectures do nothing -- not care about it).
->>
->>  - 1st way is still easy, sustainable, and clear enough in local wide fixing (although maybe it is not the best, or clearest way).
->>    2nd way is also easy, sustainable and clear enough (maybe the best, or clearest for 10-20% architectures), but it will let the fix in global wide
->>
->> All together, if we can bear and sustainable, I always prefer to fix it
->> in local wide, not lead to arch global (especially 80-90% architectures
->> already followed 1st way).
->>
->>
->> BTW: for me, if less than 20% architectures need XXX, we can trigger
->> defining a new Kconfig item (e.g. HAVE_XXX), or just follow original
->> implementation.
+
+
+> -----Original Message-----
+> From: Kim Phillips [mailto:kim.phillips@linaro.org]
+> Sent: Saturday, October 12, 2013 4:47 AM
+> To: Wood Scott-B07421
+> Cc: Bhushan Bharat-R65777; Wood Scott-B07421; Yoder Stuart-B08248;
+> christoffer.dall@linaro.org; alex.williamson@redhat.com; linux-
+> kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de; Sethi
+> Varun-B16395; peter.maydell@linaro.org; santosh.shukla@linaro.org;
+> kvm@vger.kernel.org; gregkh@linuxfoundation.org
+> Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+> sysfs only
 > 
-> Lot's of negative dependencies are missing for VGA_CONSOLE.
-> I think only alpha, some arm, ia64, some mips, some powerpc, and x86
-> may use it.
+> On Fri, 11 Oct 2013 15:43:40 -0500
+> Scott Wood <scottwood@freescale.com> wrote:
 > 
-
-in "arch" sub-directory, contents 13/30 (43.3%) architectures contents
-VGA_CONSOLE.
-
-  1 alpha/kernel/setup.c:137:struct screen_info screen_info = {
-  2 arm/kernel/setup.c:743:struct screen_info screen_info = {
-  3 cris/kernel/setup.c:28:struct screen_info screen_info;
-  4 ia64/kernel/setup.c:79:struct screen_info screen_info;
-  5 m32r/kernel/setup.c:55:struct screen_info screen_info = {
-  6 mips/kernel/setup.c:43:struct screen_info screen_info;
-  7 powerpc/kernel/setup-common.c:88:struct screen_info screen_info = {
-  8 score/kernel/setup.c:37:struct screen_info screen_info;
-  9 sh/kernel/setup.c:68:struct screen_info screen_info;
- 10 sparc/kernel/setup_64.c:66:struct screen_info screen_info = {
- 11 sparc/kernel/setup_32.c:53:struct screen_info screen_info = {
- 12 tile/kernel/setup.c:54:struct screen_info screen_info;
- 13 x86/kernel/setup.c:220:struct screen_info screen_info;
- 14 xtensa/kernel/setup.c:55:struct screen_info screen_info = { 0, 24, 0, 0, 0, 80, 0, 0, 0, 24, 1, 16};
-
-It seems most of pc and servers support VGA_CONSOLE.
-
-
-> The main reason for introducing HAVE_VGA_CONSOLE is maintainability.
-> The question to ask is: does the logic have to change when adding a new
-> architecture?
->   - If yes, you're better off with the HAVE_xxx scheme.
->   - If no, use the negative dependencies in the common place.
+> > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
+> > > Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
+> > > conflics with other drivers in the event of a hotplug.
+> > >
+> > > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+> > > ---
+> > >  drivers/vfio/pci/vfio_pci.c | 3 +++
+> > >  1 file changed, 3 insertions(+)
+> > >
+> > > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> > > index 6ab71b9..bdd7833 100644
+> > > --- a/drivers/vfio/pci/vfio_pci.c
+> > > +++ b/drivers/vfio/pci/vfio_pci.c
+> > > @@ -901,6 +901,9 @@ static struct pci_driver vfio_pci_driver = {
+> > >  	.probe		= vfio_pci_probe,
+> > >  	.remove		= vfio_pci_remove,
+> > >  	.err_handler	= &vfio_err_handlers,
+> > > +	.driver = {
+> > > +		.sysfs_bind_only = true,
+> > > +	},
+> > >  };
+> > >
+> > >  static void __exit vfio_pci_cleanup(void)
+> >
+> > You also need to add a PCI_ANY_ID match in order to be able to get rid
+> > of the new_id usage.
 > 
-
-Yeah, it sounds reasonable to me, originally I really do not notice
-about it, in my default memory, VGA_CONSOLE is commonly used, so not
-care about this item (my most experience are under pc and server).
-
-> VGA consoles are legacy, and not used on new systems. Witness the
-> list of architectures I gave above. All of them are (at least) 20 years old
-> (except for ia64, but that borrows from PC legacy).
-> So every time when adding a new architecture, you have to add
-> '&& !NEW_ARCH' to the VGA_CONSOLE dependency, which is in a
-> common place (drivers/.../Kconfig).
-> While with the HAVE_xxx scheme, you don't have to change anything.
+> thanks - see below.
 > 
+> Can someone with a PCI bus test this?  Bharat?
 
-Are you sure about it? (especially for a new server or pc comes).
+Hello Kim,
 
-Hmm... at least, I am not quite familiar about it, if really as what
-you said (e.g. acked-by another members), I will support you, too.
+I can test that we can get rid of new_id and use "bind" to bind the device to vfio_pci.
 
-If what you said is correct, could you help to send related patch for
-it? if I send this kind of patches, it will be easily redirected to
-"/dev/null".
+Other thing is generating hotplug, or reorder the driver registration by tweaking Makefile to test sysfs_bind_only way to bind is not yet tested.
 
 
-> Compare this to a shiny new feature that available on all new architectures,
-> but not on a few old one. There it makes sense to have the negative
-> dependencies on the old architectures, that will never have the new feature.
-> While new architectures have enabled it by default.
+Thanks
+-Bharat
+
 > 
-
-Excuse me, my English is not quite well, I do not quite understand your
-meaning, but it seems not quite important for our discussing, so I just
-skip it, now.
-
-If you feel they are necessary contents, please help to repeat again.
-
-thanks.
-
-
-> Gr{oetje,eeting}s,
+> Kim
 > 
->                         Geert
+> From a8d6c12f2ec763c2ac7fd384a3397c370cc1b932 Mon Sep 17 00:00:00 2001
+> From: Kim Phillips <kim.phillips@linaro.org>
+> Date: Thu, 10 Oct 2013 22:16:34 -0500
+> Subject: [PATCH 3/4 v2] VFIO: pci: amend vfio-pci for explicit binding via sysfs
+>  only
 > 
+> Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
+> conflics with other drivers in the event of a hotplug.  Also replace
+> the only dynamic ids assignment with a table with a single PCI_ANY_ID
+> entry since writing the sysfs bind file without having to specify ids
+> via the new_id file first should no longer be necessary.
+> 
+> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+> ---
+>  drivers/vfio/pci/vfio_pci.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index 6ab71b9..c5b434f 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -895,12 +895,22 @@ static struct pci_error_handlers vfio_err_handlers = {
+>  	.error_detected = vfio_pci_aer_err_detected,
+>  };
+> 
+> +static DEFINE_PCI_DEVICE_TABLE(vfio_pci_id_table) = {
+> +        { PCI_DEVICE(PCI_ANY_ID, PCI_ANY_ID) },
+> +        { 0 }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(pci, vfio_pci_id_table);
+> +
+>  static struct pci_driver vfio_pci_driver = {
+>  	.name		= "vfio-pci",
+> -	.id_table	= NULL, /* only dynamic ids */
+> +	.id_table	= vfio_pci_id_table, /* no dynamic ids */
+>  	.probe		= vfio_pci_probe,
+>  	.remove		= vfio_pci_remove,
+>  	.err_handler	= &vfio_err_handlers,
+> +	.driver = {
+> +		.sysfs_bind_only = true, /* bind only via sysfs */
+> +	},
+>  };
+> 
+>  static void __exit vfio_pci_cleanup(void)
 > --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
-> 
+> 1.8.4
 
 
--- 
-Chen Gang
