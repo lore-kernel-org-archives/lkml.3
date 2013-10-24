@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab3JXO3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:29:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754526Ab3JXO3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:29:24 -0400
-Date: Thu, 24 Oct 2013 16:31:08 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*()
- family helpers
-Message-ID: <20131024143108.GB26610@dhcp-26-207.brq.redhat.com>
-References: <cover.1382103786.git.agordeev@redhat.com>
- <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com>
- <20131024105158.GB13159@mtj.dyndns.org>
+	id S1755300Ab3JXOsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:48:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36906 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab3JXOsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:48:45 -0400
+Date: Thu, 24 Oct 2013 16:48:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: linux-kernel@vger.kernel.org, jic23@kernel.org, lars@metafoo.de,
+        gregkh@linuxfoundation.org
+Subject: Re: [RFC PATCH] debugobject: add support for kref
+In-Reply-To: <1382609345-29370-1-git-send-email-bigeasy@linutronix.de>
+Message-ID: <alpine.DEB.2.02.1310241615280.14242@ionos.tec.linutronix.de>
+References: <1382609345-29370-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131024105158.GB13159@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 11:51:58AM +0100, Tejun Heo wrote:
-> I haven't looked into any details but, if the above works for most use
-> cases, it looks really good to me.
+On Thu, 24 Oct 2013, Sebastian Andrzej Siewior wrote:
+>  
+>  struct kref {
+>  	atomic_t refcount;
+> @@ -32,6 +33,9 @@ struct kref {
+>  static inline void kref_init(struct kref *kref)
+>  {
+>  	atomic_set(&kref->refcount, 1);
+> +#ifdef CONFIG_DEBUG_OBJECTS_KREF
+> +	debug_object_init(kref, NULL);
 
-Well, if we reuse Michael's statistics:
+I rather prefer to have a debug_obj_descr handed in. It also should
+activate the object, because then you can catch freeing of an active
+kref as well. With state INIT the free checks are not triggering.
 
- - 58 drivers call pci_enable_msix()
- - 24 try a single allocation and then fallback to MSI/LSI
- - 19 use the loop style allocation
- - 14 try an allocation, and if it fails retry once
+>  /**
+> @@ -70,6 +74,12 @@ static inline int kref_sub(struct kref *kref, unsigned int count,
+>  {
+>  	WARN_ON(release == NULL);
+>  
+> +#ifdef CONFIG_DEBUG_OBJECTS_KREF
+> +	if (!debug_object_is_tracked(kref)) {
+> +		debugobj_kref_splat(kref, release);
+> +		return 0;
 
-...then I expect most of 19/58 (loop style) could be converted to
-pcim_enable_msix() and pcim_enable_msix_range() and all of 14/58
-(single fallback) should be converted to pcim_enable_msix() users.
+Why can't you use debug_object_active_state(kref, descr, 0, 0)? All it
+needs is a return value which tells you whether the object is tracked
+and its state is ACTIVE.
 
-> tejun
+> +	}
+> +#endif
+>  	if (atomic_sub_and_test((int) count, &kref->refcount)) {
+>  		release(kref);
+>  		return 1;
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+What calls debug_object_free() for the kref? You seem to add tracking
+objects without ever releasing them. Are you relying on kfree removing
+the inactive object from the debugobjects tracking list?
+
+Not really a good idea. There might be some different release function
+than kfree. And it relies on DEBUG_OBJECTS_FREE being enabled.
+
+So an explicit call to debug_objects_free() before release(kref) is
+required. Otherwise your new check is going to fail even when the kref
+is gone already.
+
+Thanks,
+
+	tglx
