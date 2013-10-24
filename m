@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab3JXNMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 09:12:33 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:64415 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab3JXNMc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:12:32 -0400
-Message-ID: <52691CBD.7050606@gmail.com>
-Date: Thu, 24 Oct 2013 14:12:29 +0100
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754958Ab3JXNMz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 09:12:55 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:8286 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754894Ab3JXNMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 09:12:53 -0400
+X-IronPort-AV: E=Sophos;i="4.93,562,1378857600"; 
+   d="scan'208";a="64283811"
+Date: Thu, 24 Oct 2013 14:11:48 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v8 13/19] swiotlb-xen: use xen_dma_map/unmap_page,
+ xen_dma_sync_single_for_cpu/device
+In-Reply-To: <alpine.DEB.2.02.1310241133070.26077@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1310241405480.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-13-git-send-email-stefano.stabellini@eu.citrix.com> <20131023140927.GD27771@phenom.dumpdata.com> <alpine.DEB.2.02.1310231816180.26077@kaball.uk.xensource.com>
+ <20131023195154.GB28963@phenom.dumpdata.com> <alpine.DEB.2.02.1310241133070.26077@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnaldo Melo <acme@ghostprotocols.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf session: Add option to copy events when queueing
-References: <1378496221-61525-1-git-send-email-dsahern@gmail.com> <20130914161626.GD1718@localhost.localdomain> <CAFTL4hx=ycrepky0P3DYwoFBgknYumW6+tpW7PygqGD2ZNDFqg@mail.gmail.com> <5268F524.20505@gmail.com> <20131024122748.GC6539@ghostprotocols.net>
-In-Reply-To: <20131024122748.GC6539@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/13 1:27 PM, Arnaldo Melo wrote:
-> Em Thu, Oct 24, 2013 at 11:23:32AM +0100, David Ahern escreveu:
->> On 10/24/13 10:30 AM, Frederic Weisbecker wrote:
->>> Bah, checking that again, there don't seem to be a bug there. Actually
->>> the sample buffer is reset after we pick the last entry. So it looks
->>> all fine. I got confused as usual. Nevermind.
->>
->> Ok. I had not come back to this thread since I decided on a
->> different route for the event copying. I'll take it out of my to-do
->> list.
->
-> Can you elaborate on that?
+On Thu, 24 Oct 2013, Stefano Stabellini wrote:
+> On Wed, 23 Oct 2013, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Oct 23, 2013 at 06:20:25PM +0100, Stefano Stabellini wrote:
+> > > On Wed, 23 Oct 2013, Konrad Rzeszutek Wilk wrote:
+> > > > On Thu, Oct 17, 2013 at 06:43:28PM +0100, Stefano Stabellini wrote:
+> > > > > Call xen_dma_map_page, xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
+> > > > > xen_dma_sync_single_for_device from swiotlb-xen to ensure cpu/device
+> > > > > coherency of the pages used for DMA, including the ones belonging to the
+> > > > > swiotlb buffer.
+> > > > 
+> > > > You lost me.
+> > > > 
+> > > > Isn't it the driver's responsibility to do this?
+> > > > 
+> > > > Looking at what 'xen_dma_map_page()' does for x86 it looks to add an extra
+> > > > call - page_to_phys - and we ignore it here.
+> > > 
+> > > map_page on arm calls the right cache flushes needed to communicate with
+> > > the device. Same with unmap_page.
+> > 
+> > If this is flushing the cache then I think it makes more sense to do
+> > that without this fancy 'dma_map_page'.
+> > 
+> > Just call it 'xen_flush_dma_page' and make it a nop on all platforms
+> > except ARM.
+> 
+> I am OK with making it a nop on x86, it makes sense.
+> However I would like to keep it called xen_dma_map_page: after all it
+> corresponds exactly to the native map_page dma_op. It is part of the same
+> "contract".
 
-The driving use case is my perf-daemon:
-https://github.com/dsahern/linux/blob/perf-sched-timehist-3.11/tools/perf/schedmon.c, 
-line 271.
-
-Rather than have the perf infrastructure manage the allocation and 
-copies I decided to have the daemon do it. The session infrastructure is 
-only used for time sorting.
-
-This works better because the event that pops out of the session 
-ordering is put onto another list and it gives the daemon control of 
-when memory is allocated and freed and the event only has to be copied once.
-
->
-> I had this feeling that perhaps we could defer copying the event till it
-> would be overwritten, something like making a range read only and then
-> when the event would be _really_ consumed the tooling would mark it as
-> so... Have to think about it more tho :-\
-
-The above does not solve the problem for live tools where the event 
-actually lies in the ring buffer and could be overwritten while it sits 
-in the session ordered samples queue. The kvm-stat-live tool for nested 
-virtualization is a stress test for this case. I need to come back to 
-that problem, it just has not bubbled up to the top.
-
-David
+for example we can turn xen_dma_map_page into a function that returns
+void, this way we can remove the page_to_phys on x86
