@@ -1,562 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab3JXOAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:00:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34259 "EHLO mga14.intel.com"
+	id S1755466Ab3JXOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:02:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34597 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab3JXN7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:59:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,562,1378882800"; 
-   d="scan'208";a="416506284"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v11 2/7] tracing: Add 'traceon' and 'traceoff' event trigger commands
-Date: Thu, 24 Oct 2013 08:59:25 -0500
-Message-Id: <00a52816703b98d2072947478dd6e2d70cde5197.1382622043.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1382622043.git.tom.zanussi@linux.intel.com>
-References: <cover.1382622043.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1382622043.git.tom.zanussi@linux.intel.com>
-References: <cover.1382622043.git.tom.zanussi@linux.intel.com>
+	id S1755004Ab3JXOCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:02:15 -0400
+Date: Thu, 24 Oct 2013 15:02:07 +0100 (BST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Egbert Eich <eich@suse.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Egbert Eich <eich@suse.de>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: HPD flood warning since b8f102e8b
+In-Reply-To: <21097.9092.222306.970168@linux-qknr.site>
+Message-ID: <alpine.LNX.2.00.1310241501350.30926@pobox.suse.cz>
+References: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz> <CAKMK7uEbGZ3_tHTCqOT7H4eViBnYmkPTS210jOvfweSf3gQ_fg@mail.gmail.com> <alpine.LNX.2.00.1310031632320.29701@pobox.suse.cz> <21093.23168.424554.698941@linux-qknr.site> <alpine.LNX.2.00.1310240806370.30926@pobox.suse.cz>
+ <21097.9092.222306.970168@linux-qknr.site>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'traceon' and 'traceoff' event_command commands.  traceon and
-traceoff event triggers are added by the user via these commands in a
-similar way and using practically the same syntax as the analagous
-'traceon' and 'traceoff' ftrace function commands, but instead of
-writing to the set_ftrace_filter file, the traceon and traceoff
-triggers are written to the per-event 'trigger' files:
+On Thu, 24 Oct 2013, Egbert Eich wrote:
 
-    echo 'traceon' > .../tracing/events/somesys/someevent/trigger
-    echo 'traceoff' > .../tracing/events/somesys/someevent/trigger
+>  > >  > > Can you please attach full dmesg from boot up to the first WARN with
+>  > >  > > drm.debug=0xe? This really shouldn't happen and indicates a bug
+>  > >  > > somewhere ...
+>  > >  > 
+>  > >  > A bit difficult ... I originally thought that it was reliably 
+>  > >  > reproducible, but now I didn't get it after 10 suspend/resume cycles. Will 
+>  > >  > keep following it, and once it appears, will send you the dmesg.
+>  > >  > 
+>  > > Could you check if you get any messages regarding HPD storms after 
+>  > > suspend/resume ie messages like:
+>  > > "[drm] HPD interrupt storm detected on connector HDMI-A-1"
+>  > > but without the annouing warn messages?
+>  > 
+>  > I have this:
+>  > 
+>  > [357128.184113] [drm] HPD interrupt storm detected on connector DP-3: switching from hotplug detection to polling
+>  > 
+>  > It appeared in the log approximately 5 seconds after resume has been 
+>  > completed.
+>  > 
+> 
+> :( You seem to get this on different connector.
+> 
+> Any chance for a 'lspci -n' output?
 
-The above command will turn tracing on or off whenever someevent is
-hit.
+00:00.0 0600: 8086:2a40 (rev 07)
+00:02.0 0300: 8086:2a42 (rev 07)
+00:02.1 0380: 8086:2a43 (rev 07)
+00:03.0 0780: 8086:2a44 (rev 07)
+00:03.2 0101: 8086:2a46 (rev 07)
+00:03.3 0700: 8086:2a47 (rev 07)
+00:19.0 0200: 8086:10f5 (rev 03)
+00:1a.0 0c03: 8086:2937 (rev 03)
+00:1a.1 0c03: 8086:2938 (rev 03)
+00:1a.2 0c03: 8086:2939 (rev 03)
+00:1a.7 0c03: 8086:293c (rev 03)
+00:1b.0 0403: 8086:293e (rev 03)
+00:1c.0 0604: 8086:2940 (rev 03)
+00:1c.1 0604: 8086:2942 (rev 03)
+00:1c.3 0604: 8086:2946 (rev 03)
+00:1d.0 0c03: 8086:2934 (rev 03)
+00:1d.1 0c03: 8086:2935 (rev 03)
+00:1d.2 0c03: 8086:2936 (rev 03)
+00:1d.7 0c03: 8086:293a (rev 03)
+00:1e.0 0604: 8086:2448 (rev 93)
+00:1f.0 0601: 8086:2917 (rev 03)
+00:1f.2 0106: 8086:2929 (rev 03)
+00:1f.3 0c05: 8086:2930 (rev 03)
+03:00.0 0280: 8086:4237
 
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
+I (and the computer in question) am in Edinburgh till friday, in case 
+someone wants to have a look.
 
-    echo 'traceon:N' > .../tracing/events/somesys/someevent/trigger
-    echo 'traceoff:N' > .../tracing/events/somesys/someevent/trigger
-
-Where N is the number of times the command will be invoked.
-
-The above commands will will turn tracing on or off whenever someevent
-is hit, but only N times.
-
-Some common register/unregister_trigger() implementations of the
-event_command reg()/unreg() callbacks are also provided, which add and
-remove trigger instances to the per-event list of triggers, and
-arm/disarm them as appropriate.  event_trigger_callback() is a
-general-purpose event_command func() implementation that orchestrates
-command parsing and registration for most normal commands.
-
-Most event commands will use these, but some will override and
-possibly reuse them.
-
-The event_trigger_init(), event_trigger_free(), and
-event_trigger_print() functions are meant to be common implementations
-of the event_trigger_ops init(), free(), and print() ops,
-respectively.
-
-Most trigger_ops implementations will use these, but some will
-override and possibly reuse them.
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- include/linux/ftrace_event.h        |   1 +
- kernel/trace/trace_events_trigger.c | 446 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 447 insertions(+)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 6aed212..061205b 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -329,6 +329,7 @@ struct ftrace_event_file {
- 
- enum event_trigger_type {
- 	ETT_NONE		= (0),
-+	ETT_TRACE_ONOFF		= (1 << 0),
- };
- 
- extern void destroy_preds(struct ftrace_event_file *file);
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 60a6a6d..4ea72ee 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -28,6 +28,13 @@
- static LIST_HEAD(trigger_commands);
- static DEFINE_MUTEX(trigger_cmd_mutex);
- 
-+static void
-+trigger_data_free(struct event_trigger_data *data)
-+{
-+	synchronize_sched(); /* make sure current triggers exit before free */
-+	kfree(data);
-+}
-+
- /**
-  * event_triggers_call - Call triggers associated with a trace event
-  * @file: The ftrace_event_file associated with the event
-@@ -224,6 +231,129 @@ const struct file_operations event_trigger_fops = {
- 	.release = event_trigger_release,
- };
- 
-+/*
-+ * Currently we only register event commands from __init, so mark this
-+ * __init too.
-+ */
-+static __init int register_event_command(struct event_command *cmd)
-+{
-+	struct event_command *p;
-+	int ret = 0;
-+
-+	mutex_lock(&trigger_cmd_mutex);
-+	list_for_each_entry(p, &trigger_commands, list) {
-+		if (strcmp(cmd->name, p->name) == 0) {
-+			ret = -EBUSY;
-+			goto out_unlock;
-+		}
-+	}
-+	list_add(&cmd->list, &trigger_commands);
-+ out_unlock:
-+	mutex_unlock(&trigger_cmd_mutex);
-+
-+	return ret;
-+}
-+
-+/*
-+ * Currently we only unregister event commands from __init, so mark
-+ * this __init too.
-+ */
-+static __init int unregister_event_command(struct event_command *cmd)
-+{
-+	struct event_command *p, *n;
-+	int ret = -ENODEV;
-+
-+	mutex_lock(&trigger_cmd_mutex);
-+	list_for_each_entry_safe(p, n, &trigger_commands, list) {
-+		if (strcmp(cmd->name, p->name) == 0) {
-+			ret = 0;
-+			list_del_init(&p->list);
-+			goto out_unlock;
-+		}
-+	}
-+ out_unlock:
-+	mutex_unlock(&trigger_cmd_mutex);
-+
-+	return ret;
-+}
-+
-+/**
-+ * event_trigger_print - Generic event_trigger_ops @print implementation
-+ * @name: The name of the event trigger
-+ * @m: The seq_file being printed to
-+ * @data: Trigger-specific data
-+ * @filter_str: filter_str to print, if present
-+ *
-+ * Common implementation for event triggers to print themselves.
-+ *
-+ * Usually wrapped by a function that simply sets the @name of the
-+ * trigger command and then invokes this.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_print(const char *name, struct seq_file *m,
-+		    void *data, char *filter_str)
-+{
-+	long count = (long)data;
-+
-+	seq_printf(m, "%s", name);
-+
-+	if (count == -1)
-+		seq_puts(m, ":unlimited");
-+	else
-+		seq_printf(m, ":count=%ld", count);
-+
-+	if (filter_str)
-+		seq_printf(m, " if %s\n", filter_str);
-+	else
-+		seq_puts(m, "\n");
-+
-+	return 0;
-+}
-+
-+/**
-+ * event_trigger_init - Generic event_trigger_ops @init implementation
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data
-+ *
-+ * Common implementation of event trigger initialization.
-+ *
-+ * Usually used directly as the @init method in event trigger
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_init(struct event_trigger_ops *ops,
-+		   struct event_trigger_data *data)
-+{
-+	data->ref++;
-+	return 0;
-+}
-+
-+/**
-+ * event_trigger_free - Generic event_trigger_ops @free implementation
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data
-+ *
-+ * Common implementation of event trigger de-initialization.
-+ *
-+ * Usually used directly as the @free method in event trigger
-+ * implementations.
-+ */
-+static void
-+event_trigger_free(struct event_trigger_ops *ops,
-+		   struct event_trigger_data *data)
-+{
-+	if (WARN_ON_ONCE(data->ref <= 0))
-+		return;
-+
-+	data->ref--;
-+	if (!data->ref)
-+		trigger_data_free(data);
-+}
-+
- static int trace_event_trigger_enable_disable(struct ftrace_event_file *file,
- 					      int trigger_enable)
- {
-@@ -272,7 +402,323 @@ clear_event_triggers(struct trace_array *tr)
- 	}
- }
- 
-+/**
-+ * register_trigger - Generic event_command @reg implementation
-+ * @glob: The raw string used to register the trigger
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data to associate with the trigger
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * Common implementation for event trigger registration.
-+ *
-+ * Usually used directly as the @reg method in event command
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int register_trigger(char *glob, struct event_trigger_ops *ops,
-+			    struct event_trigger_data *data,
-+			    struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *test;
-+	int ret = 0;
-+
-+	list_for_each_entry_rcu(test, &file->triggers, list) {
-+		if (test->cmd_ops->trigger_type == data->cmd_ops->trigger_type) {
-+			ret = -EEXIST;
-+			goto out;
-+		}
-+	}
-+
-+	if (data->ops->init) {
-+		ret = data->ops->init(data->ops, data);
-+		if (ret < 0)
-+			goto out;
-+	}
-+
-+	list_add_rcu(&data->list, &file->triggers);
-+	ret++;
-+
-+	if (trace_event_trigger_enable_disable(file, 1) < 0) {
-+		list_del_rcu(&data->list);
-+		ret--;
-+	}
-+out:
-+	return ret;
-+}
-+
-+/**
-+ * unregister_trigger - Generic event_command @unreg implementation
-+ * @glob: The raw string used to register the trigger
-+ * @ops: The trigger ops associated with the trigger
-+ * @test: Trigger-specific data used to find the trigger to remove
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * Common implementation for event trigger unregistration.
-+ *
-+ * Usually used directly as the @unreg method in event command
-+ * implementations.
-+ */
-+static void unregister_trigger(char *glob, struct event_trigger_ops *ops,
-+			       struct event_trigger_data *test,
-+			       struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *data;
-+	bool unregistered = false;
-+
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (data->cmd_ops->trigger_type == test->cmd_ops->trigger_type) {
-+			unregistered = true;
-+			list_del_rcu(&data->list);
-+			trace_event_trigger_enable_disable(file, 0);
-+			break;
-+		}
-+	}
-+
-+	if (unregistered && data->ops->free)
-+		data->ops->free(data->ops, data);
-+}
-+
-+/**
-+ * event_trigger_callback - Generic event_command @func implementation
-+ * @cmd_ops: The command ops, used for trigger registration
-+ * @file: The ftrace_event_file associated with the event
-+ * @glob: The raw string used to register the trigger
-+ * @cmd: The cmd portion of the string used to register the trigger
-+ * @param: The params portion of the string used to register the trigger
-+ *
-+ * Common implementation for event command parsing and trigger
-+ * instantiation.
-+ *
-+ * Usually used directly as the @func method in event command
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_callback(struct event_command *cmd_ops,
-+		       struct ftrace_event_file *file,
-+		       char *glob, char *cmd, char *param)
-+{
-+	struct event_trigger_data *trigger_data;
-+	struct event_trigger_ops *trigger_ops;
-+	char *trigger = NULL;
-+	char *number;
-+	int ret;
-+
-+	/* separate the trigger from the filter (t:n [if filter]) */
-+	if (param && isdigit(param[0]))
-+		trigger = strsep(&param, " \t");
-+
-+	trigger_ops = cmd_ops->get_trigger_ops(cmd, trigger);
-+
-+	ret = -ENOMEM;
-+	trigger_data = kzalloc(sizeof(*trigger_data), GFP_KERNEL);
-+	if (!trigger_data)
-+		goto out;
-+
-+	trigger_data->count = -1;
-+	trigger_data->ops = trigger_ops;
-+	trigger_data->cmd_ops = cmd_ops;
-+	INIT_LIST_HEAD(&trigger_data->list);
-+
-+	if (glob[0] == '!') {
-+		cmd_ops->unreg(glob+1, trigger_ops, trigger_data, file);
-+		kfree(trigger_data);
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	if (trigger) {
-+		number = strsep(&trigger, ":");
-+
-+		ret = -EINVAL;
-+		if (!strlen(number))
-+			goto out_free;
-+
-+		/*
-+		 * We use the callback data field (which is a pointer)
-+		 * as our counter.
-+		 */
-+		ret = kstrtoul(number, 0, &trigger_data->count);
-+		if (ret)
-+			goto out_free;
-+	}
-+
-+	if (!param) /* if param is non-empty, it's supposed to be a filter */
-+		goto out_reg;
-+
-+	if (!cmd_ops->set_filter)
-+		goto out_reg;
-+
-+	ret = cmd_ops->set_filter(param, trigger_data, file);
-+	if (ret < 0)
-+		goto out_free;
-+
-+ out_reg:
-+	ret = cmd_ops->reg(glob, trigger_ops, trigger_data, file);
-+	/*
-+	 * The above returns on success the # of functions enabled,
-+	 * but if it didn't find any functions it returns zero.
-+	 * Consider no functions a failure too.
-+	 */
-+	if (!ret) {
-+		ret = -ENOENT;
-+		goto out_free;
-+	} else if (ret < 0)
-+		goto out_free;
-+	ret = 0;
-+ out:
-+	return ret;
-+
-+ out_free:
-+	kfree(trigger_data);
-+	goto out;
-+}
-+
-+static void
-+traceon_trigger(struct event_trigger_data *data)
-+{
-+	if (tracing_is_on())
-+		return;
-+
-+	tracing_on();
-+}
-+
-+static void
-+traceon_count_trigger(struct event_trigger_data *data)
-+{
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	traceon_trigger(data);
-+}
-+
-+static void
-+traceoff_trigger(struct event_trigger_data *data)
-+{
-+	if (!tracing_is_on())
-+		return;
-+
-+	tracing_off();
-+}
-+
-+static void
-+traceoff_count_trigger(struct event_trigger_data *data)
-+{
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	traceoff_trigger(data);
-+}
-+
-+static int
-+traceon_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		      struct event_trigger_data *data)
-+{
-+	return event_trigger_print("traceon", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static int
-+traceoff_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		       struct event_trigger_data *data)
-+{
-+	return event_trigger_print("traceoff", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static struct event_trigger_ops traceon_trigger_ops = {
-+	.func			= traceon_trigger,
-+	.print			= traceon_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceon_count_trigger_ops = {
-+	.func			= traceon_count_trigger,
-+	.print			= traceon_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceoff_trigger_ops = {
-+	.func			= traceoff_trigger,
-+	.print			= traceoff_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceoff_count_trigger_ops = {
-+	.func			= traceoff_count_trigger,
-+	.print			= traceoff_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops *
-+onoff_get_trigger_ops(char *cmd, char *param)
-+{
-+	struct event_trigger_ops *ops;
-+
-+	/* we register both traceon and traceoff to this callback */
-+	if (strcmp(cmd, "traceon") == 0)
-+		ops = param ? &traceon_count_trigger_ops :
-+			&traceon_trigger_ops;
-+	else
-+		ops = param ? &traceoff_count_trigger_ops :
-+			&traceoff_trigger_ops;
-+
-+	return ops;
-+}
-+
-+static struct event_command trigger_traceon_cmd = {
-+	.name			= "traceon",
-+	.trigger_type		= ETT_TRACE_ONOFF,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= onoff_get_trigger_ops,
-+};
-+
-+static struct event_command trigger_traceoff_cmd = {
-+	.name			= "traceoff",
-+	.trigger_type		= ETT_TRACE_ONOFF,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= onoff_get_trigger_ops,
-+};
-+
-+static __init void unregister_trigger_traceon_traceoff_cmds(void)
-+{
-+	unregister_event_command(&trigger_traceon_cmd);
-+	unregister_event_command(&trigger_traceoff_cmd);
-+}
-+
-+static __init int register_trigger_traceon_traceoff_cmds(void)
-+{
-+	int ret;
-+
-+	ret = register_event_command(&trigger_traceon_cmd);
-+	if (WARN_ON(ret < 0))
-+		return ret;
-+	ret = register_event_command(&trigger_traceoff_cmd);
-+	if (WARN_ON(ret < 0))
-+		unregister_trigger_traceon_traceoff_cmds();
-+
-+	return ret;
-+}
-+
- __init int register_trigger_cmds(void)
- {
-+	register_trigger_traceon_traceoff_cmds();
-+
- 	return 0;
- }
 -- 
-1.8.3.1
-
+Jiri Kosina
+SUSE Labs
