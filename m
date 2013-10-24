@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3JXOCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:02:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34597 "EHLO mx2.suse.de"
+	id S1755492Ab3JXODW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:03:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15555 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab3JXOCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:02:15 -0400
-Date: Thu, 24 Oct 2013 15:02:07 +0100 (BST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Egbert Eich <eich@suse.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Egbert Eich <eich@suse.de>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: HPD flood warning since b8f102e8b
-In-Reply-To: <21097.9092.222306.970168@linux-qknr.site>
-Message-ID: <alpine.LNX.2.00.1310241501350.30926@pobox.suse.cz>
-References: <alpine.LNX.2.00.1310031141260.29701@pobox.suse.cz> <CAKMK7uEbGZ3_tHTCqOT7H4eViBnYmkPTS210jOvfweSf3gQ_fg@mail.gmail.com> <alpine.LNX.2.00.1310031632320.29701@pobox.suse.cz> <21093.23168.424554.698941@linux-qknr.site> <alpine.LNX.2.00.1310240806370.30926@pobox.suse.cz>
- <21097.9092.222306.970168@linux-qknr.site>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755088Ab3JXODV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:03:21 -0400
+Date: Thu, 24 Oct 2013 10:02:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
+ first, then try below 4G, then MAXMEM
+Message-ID: <20131024140241.GA2322@redhat.com>
+References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
+ <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
+ <20131015144810.GI31215@redhat.com>
+ <CAE9FiQXVCx__SuhAdO9_CNaRncW2HB2tv3UjZrQcbsTV35QWow@mail.gmail.com>
+ <20131018123837.GB2277@redhat.com>
+ <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
+ <20131021151643.GA20669@redhat.com>
+ <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Oct 2013, Egbert Eich wrote:
-
->  > >  > > Can you please attach full dmesg from boot up to the first WARN with
->  > >  > > drm.debug=0xe? This really shouldn't happen and indicates a bug
->  > >  > > somewhere ...
->  > >  > 
->  > >  > A bit difficult ... I originally thought that it was reliably 
->  > >  > reproducible, but now I didn't get it after 10 suspend/resume cycles. Will 
->  > >  > keep following it, and once it appears, will send you the dmesg.
->  > >  > 
->  > > Could you check if you get any messages regarding HPD storms after 
->  > > suspend/resume ie messages like:
->  > > "[drm] HPD interrupt storm detected on connector HDMI-A-1"
->  > > but without the annouing warn messages?
->  > 
->  > I have this:
->  > 
->  > [357128.184113] [drm] HPD interrupt storm detected on connector DP-3: switching from hotplug detection to polling
->  > 
->  > It appeared in the log approximately 5 seconds after resume has been 
->  > completed.
->  > 
+On Wed, Oct 23, 2013 at 11:11:51PM -0700, Yinghai Lu wrote:
+> On Mon, Oct 21, 2013 at 8:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Oct 18, 2013 at 10:45:43PM -0700, Yinghai Lu wrote:
+> >
+> >
+> > IIUC, you are trying to say that with new kernel old kexec-tools will fail
+> > at a different failure point. I don't see why that is a problem. It still
+> > fails.
 > 
-> :( You seem to get this on different connector.
+> Yes, that could cause confusion.
 > 
-> Any chance for a 'lspci -n' output?
+> We already knew it would fail possible at most later, we should make
+> it skip allocation during first kernel booting.
 
-00:00.0 0600: 8086:2a40 (rev 07)
-00:02.0 0300: 8086:2a42 (rev 07)
-00:02.1 0380: 8086:2a43 (rev 07)
-00:03.0 0780: 8086:2a44 (rev 07)
-00:03.2 0101: 8086:2a46 (rev 07)
-00:03.3 0700: 8086:2a47 (rev 07)
-00:19.0 0200: 8086:10f5 (rev 03)
-00:1a.0 0c03: 8086:2937 (rev 03)
-00:1a.1 0c03: 8086:2938 (rev 03)
-00:1a.2 0c03: 8086:2939 (rev 03)
-00:1a.7 0c03: 8086:293c (rev 03)
-00:1b.0 0403: 8086:293e (rev 03)
-00:1c.0 0604: 8086:2940 (rev 03)
-00:1c.1 0604: 8086:2942 (rev 03)
-00:1c.3 0604: 8086:2946 (rev 03)
-00:1d.0 0c03: 8086:2934 (rev 03)
-00:1d.1 0c03: 8086:2935 (rev 03)
-00:1d.2 0c03: 8086:2936 (rev 03)
-00:1d.7 0c03: 8086:293a (rev 03)
-00:1e.0 0604: 8086:2448 (rev 93)
-00:1f.0 0601: 8086:2917 (rev 03)
-00:1f.2 0106: 8086:2929 (rev 03)
-00:1f.3 0c05: 8086:2930 (rev 03)
-03:00.0 0280: 8086:4237
+One could upgrade kexec-tools later. So Kernel does not know whether
+user space is able to handle higher memory regions or not. So forcing
+kernel to skip memory allocation does not sound right to me.
 
-I (and the computer in question) am in Edinburgh till friday, in case 
-someone wants to have a look.
+Also even with memory reserved high, old kexec-tools which can't deal
+with it will fail anyway. So I don't agree that it is a problem.
 
--- 
-Jiri Kosina
-SUSE Labs
+[..]
+> > No, it is not that simple. Think from a distribution's perspective also.
+> > We have the logic to scale reserved memory based on physical memory
+> > present in the system. Now we are seeing bigger memory systems (which
+> > would not have worked in the past). We still want to retain the existing
+> > logic and not switch to crashkernel=x,high. One does not have to. It
+> > makes life simpler.
+> 
+> distribution should go with ",high" for 64 bit kernel and new kexec-tools.
+> for 32bit kernel, you still can have ",high" or not, as ",high" is ignored.
+
+Just because we have the facility to allocate memory starting from top, does
+not mean that we should kill other options and force user to use this
+option.
+
+With crashkernel=X,high, a low memory will be reserved for swiotlb. And
+I don't want that extra memory reservation. I am more than happy to
+reserve memory below 4G and not do low memory reservation.
+
+
+[..]
+> Even we want to extend crashkernel=XM, then i would like to have
+> it identical to crashkernel=XM,high instead.
+
+You are assuming that crashkernel=xM,high is always good. I am arguing
+that because it requires low memory reservation for swiotlb, when IOMMU
+is not around, it will end up reserving more memory. So it is not
+necessarily better than reserving memory below 4G.
+
+Hence both crashkernel=xM and crashkernel=XM,high have their own usage.
+We have been using crashkernel=xM and we know it works. So extending it
+to be able to allocate memory from higher regions, if sufficient memory
+is not available in lower regions makes sense. Memory reservation below
+4G is more efficient due to not requiring swiotlb. And crashkernel=xM
+has been working for us and users are familiar with it.
+
+So I don't see a point that why would you try to block any move to
+extend crashkernel=xM semantics.
+
+Thanks
+Vivek
