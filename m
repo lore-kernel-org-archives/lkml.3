@@ -1,102 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3JXPXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:23:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52874 "EHLO
+	id S1755200Ab3JXPXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:23:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52873 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab3JXPXP (ORCPT
+	with ESMTP id S1753793Ab3JXPXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Oct 2013 11:23:15 -0400
-Message-Id: <20131024152314.028154051@bombadil.infradead.org>
+Message-Id: <20131024152314.371500897@bombadil.infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 24 Oct 2013 08:19:26 -0700
+Date: Thu, 24 Oct 2013 08:19:28 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] llists: move llist_reverse_order from raid5 to llist.c
+Subject: [PATCH 7/7] blk-mq: use __smp_call_function_single directly
 References: <20131024151921.537751910@bombadil.infradead.org>
-Content-Disposition: inline; filename=0005-llists-move-llist_reverse_order-from-raid5-to-llist..patch
+Content-Disposition: inline; filename=0007-blk-mq-use-__smp_call_function_single-directly.patch
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make this useful helper available for other users.
+Now that __smp_call_function_single is available for all builds and
+uses llists to queue up items without taking a lock or disabling
+interrupts there is no need to wrap around it in the block code.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/raid5.c    |   14 --------------
- include/linux/llist.h |    2 ++
- lib/llist.c           |   22 ++++++++++++++++++++++
- 3 files changed, 24 insertions(+), 14 deletions(-)
+ block/blk-mq-cpu.c |   31 ------------------------
+ block/blk-mq.c     |   68 +++++++++-------------------------------------------
+ block/blk-mq.h     |    1 -
+ 3 files changed, 11 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 7ff4f25..046f1a9 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -293,20 +293,6 @@ static void __release_stripe(struct r5conf *conf, struct stripe_head *sh)
- 		do_release_stripe(conf, sh);
+diff --git a/block/blk-mq-cpu.c b/block/blk-mq-cpu.c
+index f8ea39d..4f0c352 100644
+--- a/block/blk-mq-cpu.c
++++ b/block/blk-mq-cpu.c
+@@ -28,32 +28,6 @@ static int __cpuinit blk_mq_main_cpu_notify(struct notifier_block *self,
+ 	return NOTIFY_OK;
  }
  
--static struct llist_node *llist_reverse_order(struct llist_node *head)
+-static void __cpuinit blk_mq_cpu_notify(void *data, unsigned long action,
+-					unsigned int cpu)
 -{
--	struct llist_node *new_head = NULL;
+-	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN) {
+-		/*
+-		 * If the CPU goes away, ensure that we run any pending
+-		 * completions.
+-		 */
+-		struct llist_node *node;
+-		struct request *rq;
 -
--	while (head) {
--		struct llist_node *tmp = head;
--		head = head->next;
--		tmp->next = new_head;
--		new_head = tmp;
+-		local_irq_disable();
+-
+-		node = llist_del_all(&per_cpu(ipi_lists, cpu));
+-		while (node) {
+-			struct llist_node *next = node->next;
+-
+-			rq = llist_entry(node, struct request, ll_list);
+-			__blk_mq_end_io(rq, rq->errors);
+-			node = next;
+-		}
+-
+-		local_irq_enable();
 -	}
--
--	return new_head;
 -}
 -
- /* should hold conf->device_lock already */
- static int release_stripe_list(struct r5conf *conf)
- {
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-index 8828a78..fbf10a0 100644
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -195,4 +195,6 @@ static inline struct llist_node *llist_del_all(struct llist_head *head)
- 
- extern struct llist_node *llist_del_first(struct llist_head *head);
- 
-+struct llist_node *llist_reverse_order(struct llist_node *head);
-+
- #endif /* LLIST_H */
-diff --git a/lib/llist.c b/lib/llist.c
-index 4a70d12..ef48b87 100644
---- a/lib/llist.c
-+++ b/lib/llist.c
-@@ -81,3 +81,25 @@ struct llist_node *llist_del_first(struct llist_head *head)
- 	return entry;
+ static struct notifier_block __cpuinitdata blk_mq_main_cpu_notifier = {
+ 	.notifier_call	= blk_mq_main_cpu_notify,
+ };
+@@ -82,12 +56,7 @@ void blk_mq_init_cpu_notifier(struct blk_mq_cpu_notifier *notifier,
+ 	notifier->data = data;
  }
- EXPORT_SYMBOL_GPL(llist_del_first);
-+
-+/**
-+ * llist_reverse_order - reverse order of a llist chain
-+ * @head:	first item of the list to be reversed
-+ *
-+ * Reverse the oder of a chain of llist entries and return the
-+ * new first entry.
-+ */
-+struct llist_node *llist_reverse_order(struct llist_node *head)
-+{
-+	struct llist_node *new_head = NULL;
-+
-+	while (head) {
-+		struct llist_node *tmp = head;
-+		head = head->next;
-+		tmp->next = new_head;
-+		new_head = tmp;
+ 
+-static struct blk_mq_cpu_notifier __cpuinitdata cpu_notifier = {
+-	.notify = blk_mq_cpu_notify,
+-};
+-
+ void __init blk_mq_cpu_init(void)
+ {
+ 	register_hotcpu_notifier(&blk_mq_main_cpu_notifier);
+-	blk_mq_register_cpu_notifier(&cpu_notifier);
+ }
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index d43a7e8..0b2b487 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -27,8 +27,6 @@ static LIST_HEAD(all_q_list);
+ 
+ static void __blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx);
+ 
+-DEFINE_PER_CPU(struct llist_head, ipi_lists);
+-
+ static struct blk_mq_ctx *__blk_mq_get_ctx(struct request_queue *q,
+ 					   unsigned int cpu)
+ {
+@@ -318,55 +316,12 @@ void __blk_mq_end_io(struct request *rq, int error)
+ 		blk_mq_complete_request(rq, error);
+ }
+ 
+-#if defined(CONFIG_SMP)
+-
+-/*
+- * Called with interrupts disabled.
+- */
+-static void ipi_end_io(void *data)
++static void blk_mq_end_io_remote(void *data)
+ {
+-	struct llist_head *list = &per_cpu(ipi_lists, smp_processor_id());
+-	struct llist_node *entry, *next;
+-	struct request *rq;
+-
+-	entry = llist_del_all(list);
+-
+-	while (entry) {
+-		next = entry->next;
+-		rq = llist_entry(entry, struct request, ll_list);
+-		__blk_mq_end_io(rq, rq->errors);
+-		entry = next;
+-	}
+-}
+-
+-static int ipi_remote_cpu(struct blk_mq_ctx *ctx, const int cpu,
+-			  struct request *rq, const int error)
+-{
+-	struct call_single_data *data = &rq->csd;
+-
+-	rq->errors = error;
+-	rq->ll_list.next = NULL;
+-
+-	/*
+-	 * If the list is non-empty, an existing IPI must already
+-	 * be "in flight". If that is the case, we need not schedule
+-	 * a new one.
+-	 */
+-	if (llist_add(&rq->ll_list, &per_cpu(ipi_lists, ctx->cpu))) {
+-		data->func = ipi_end_io;
+-		data->flags = 0;
+-		__smp_call_function_single(ctx->cpu, data, 0);
+-	}
++	struct request *rq = data;
+ 
+-	return true;
++	__blk_mq_end_io(rq, rq->errors);
+ }
+-#else /* CONFIG_SMP */
+-static int ipi_remote_cpu(struct blk_mq_ctx *ctx, const int cpu,
+-			  struct request *rq, const int error)
+-{
+-	return false;
+-}
+-#endif
+ 
+ /*
+  * End IO on this request on a multiqueue enabled driver. We'll either do
+@@ -382,11 +337,15 @@ void blk_mq_end_io(struct request *rq, int error)
+ 		return __blk_mq_end_io(rq, error);
+ 
+ 	cpu = get_cpu();
+-
+-	if (cpu == ctx->cpu || !cpu_online(ctx->cpu) ||
+-	    !ipi_remote_cpu(ctx, cpu, rq, error))
++	if (cpu != ctx->cpu && cpu_online(ctx->cpu)) {
++		rq->errors = error;
++		rq->csd.func = blk_mq_end_io_remote;
++		rq->csd.info = rq;
++		rq->csd.flags = 0;
++		__smp_call_function_single(ctx->cpu, &rq->csd, 0);
++	} else {
+ 		__blk_mq_end_io(rq, error);
+-
 +	}
-+
-+	return new_head;
-+}
-+EXPORT_SYMBOL_GPL(llist_reverse_order);
+ 	put_cpu();
+ }
+ EXPORT_SYMBOL(blk_mq_end_io);
+@@ -1465,11 +1424,6 @@ static int __cpuinit blk_mq_queue_reinit_notify(struct notifier_block *nb,
+ 
+ static int __init blk_mq_init(void)
+ {
+-	unsigned int i;
+-
+-	for_each_possible_cpu(i)
+-		init_llist_head(&per_cpu(ipi_lists, i));
+-
+ 	blk_mq_cpu_init();
+ 
+ 	/* Must be called after percpu_counter_hotcpu_callback() */
+diff --git a/block/blk-mq.h b/block/blk-mq.h
+index 52bf1f9..5761eed 100644
+--- a/block/blk-mq.h
++++ b/block/blk-mq.h
+@@ -38,7 +38,6 @@ void blk_mq_init_cpu_notifier(struct blk_mq_cpu_notifier *notifier,
+ void blk_mq_register_cpu_notifier(struct blk_mq_cpu_notifier *notifier);
+ void blk_mq_unregister_cpu_notifier(struct blk_mq_cpu_notifier *notifier);
+ void blk_mq_cpu_init(void);
+-DECLARE_PER_CPU(struct llist_head, ipi_lists);
+ 
+ /*
+  * CPU -> queue mappings
 -- 
 1.7.10.4
 
