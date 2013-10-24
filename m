@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3JXLjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 07:39:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40594 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab3JXLjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 07:39:43 -0400
-Date: Thu, 24 Oct 2013 13:41:33 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*()
- family helpers
-Message-ID: <20131024114133.GA26610@dhcp-26-207.brq.redhat.com>
-References: <cover.1382103786.git.agordeev@redhat.com>
- <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com>
- <20131024105158.GB13159@mtj.dyndns.org>
- <AE90C24D6B3A694183C094C60CF0A2F6026B73AA@saturn3.aculab.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B73AA@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754586Ab3JXLom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 07:44:42 -0400
+Received: from www84.your-server.de ([213.133.104.84]:52656 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3JXLol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 07:44:41 -0400
+Message-ID: <1382615080.2236.19.camel@wall-e.seibold.net>
+Subject: Re: [PATCH] add new prctl for a per process wide close on exec
+From: Stefani Seibold <stefani@seibold.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, peterz@infradead.org
+Date: Thu, 24 Oct 2013 13:44:40 +0200
+In-Reply-To: <20131022194836.GZ13318@ZenIV.linux.org.uk>
+References: <1382470038-1220-1-git-send-email-stefani@seibold.net>
+	 <20131022194836.GZ13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 11:57:40AM +0100, David Laight wrote:
-> The one case it doesn't work is where the driver either
-> wants the full number or the minimum number - but not
-> a value in between.
+Am Dienstag, den 22.10.2013, 20:48 +0100 schrieb Al Viro:
+> On Tue, Oct 22, 2013 at 09:27:18PM +0200, Stefani Seibold wrote:
 > 
-> Might be worth adding an extra parameter so that this
-> (and maybe other) odd requirements can be met.
-
-IMHO its not worth it, since it is not possible to generalize
-all odd requirements out there. I do not think we should blow
-the API in this case.
-
-Having said that, the min-or-max interface is probably the only
-worth considering. But again, I would prefer to put its semantics
-to function name rather than to extra parameters, i.e.
-
-pcim_enable_msix_min_max(struct pci_dev *dev, struct msix_entry *entries,
-			 unsigned int minvec, unsigned int maxvec);
-
-> Some static inline functions could be used for the common cases.
+> > This patch will increase security since no developers can review all libraries
+> > which there are using. Also in a team of developers it is not always possible
+> > to have a full survey over the code which is produced. Or the output of a code
+> > generators and so one. This patch allows a kind of preventive measures.
+> > 
+> > It can also prevent resource occupation. Imagine a long running process (a
+> > daemon) is execute from the application after open some file desciptors. For
+> > example libpcsclite.so will not open the socket with SOCK_CLOEXEC. Or a device
+> > driver which alows only a single open. In both cases the resource cannot
+> > reopened after a close. Sigh!
+> > 
+> > What do you think?
 > 
-> 	David
+> That it's a bad idea.  Not to mention anything else, the same unreviewed
+> libraries can get buggered if the program sets that "global close-on-exec"
+> and it's not at all obvious whether the breakage from that change will be less
+> or more dangerous than leaking opened files to children.
+> 
+> Al, fully expecting the Linux S-M crowd to jump on that one and come up with
+> yet another one-shot LSM... ;-/
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+You are right, but only in a perfect world ;-)
+
+It is not always possible to review a library, f.e. on my current gentoo
+system currently 20853 libraries installed. And what is with binary only
+libraries or closed source code?
+
+And that a library is using the new PR_CLOEXEC is IMHO very constructed.
+But if this will happen (what i not believe), this should be very easy
+to be locate and fixed.
+
+I think you compare pears with apples, a simple prctl is not a LSM. A
+lot of developer asked for this kind of global CLOEXEC functionality.
+Try google... Tt adds only about 200 bytes to the current Linux code. 
+
+Linux must cope with the UNIX legacy, but 99,9999 percent of programs
+does not depend on the inheritance of file descriptors other than STDIO.
+The UNIX default behaviour passing all fd's to the child is still
+stupid. I think this is a nice solution for a long standing legacy
+issue.
+
+A lot of legacy UNIX issues was addressed and fixed by the linux kernel
+with new system-calls or special behaviour. Why not this?
+
+Greetings,
+Stefani
+
+
