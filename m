@@ -1,38 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3JXLxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 07:53:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39267 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab3JXLxJ (ORCPT
+	id S1754508Ab3JXL4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 07:56:38 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37114 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3JXL4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 07:53:09 -0400
-Date: Thu, 24 Oct 2013 12:53:04 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Ramprasad Chinthekindi <Ramprasad.Chinthekindi@hgst.com>
-Cc: Akhil Bhansali <Akhil.Bhansali@hgst.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Phansalkar <Amit.Phansalkar@hgst.com>
-Subject: Re: [PATCH] skd: Replaced custom debug PRINTKs with pr_debug
-Message-ID: <20131024115304.GW14598@kernel.dk>
-References: <24CA9A5C93173F48A9E3313B866A7C280F344E@MYMBX3.stec-inc.ad>
+	Thu, 24 Oct 2013 07:56:37 -0400
+X-Originating-IP: 10.58.1.142
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <24CA9A5C93173F48A9E3313B866A7C280F344E@MYMBX3.stec-inc.ad>
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 24 Oct 2013 14:56:33 +0300
+From: Aldo Iljazi <me@aldo.io>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Proposal for menuconfig removal
+Message-ID: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
+User-Agent: Roundcube Webmail/0.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24 2013, Ramprasad Chinthekindi wrote:
-> Hi Jens,
-> 
-> I'm resending the patch to replace custom debug macros with
-> pr_debug(). Kindly please review and apply the patch.  Thanking you.
+Since nconfig is there, menuconfig is redundant.
 
-Thanks, that's a nice improvement. Applied.
+I am proposing to remove it from the kernel.
 
 -- 
-Jens Axboe
-
+http://aldo.io
