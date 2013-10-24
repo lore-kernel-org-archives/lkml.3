@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3JXHcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:32:35 -0400
+	id S1754111Ab3JXHbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:31:07 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:2387 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754115Ab3JXHbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:31:08 -0400
+	id S1753867Ab3JXHbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:31:02 -0400
 X-IronPort-AV: E=Sophos;i="4.93,560,1378828800"; 
-   d="scan'208";a="8847754"
+   d="scan'208";a="8847740"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-audit@redhat.com
 Cc: containers@lists.linux-foundation.org, ebiederm@xmission.com,
         serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
         toshi.okajima@jp.fujitsu.com, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 16/20] audit: allow GET,SET,USER MSG operations in audit namespace
-Date: Thu, 24 Oct 2013 15:32:01 +0800
-Message-Id: <1382599925-25143-17-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+Date: Thu, 24 Oct 2013 15:31:45 +0800
+Message-Id: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/24 15:28:23,
+ 2013/10/24 15:28:22,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/24 15:28:30,
-	Serialize complete at 2013/10/24 15:28:30
+ 2013/10/24 15:28:28,
+	Serialize complete at 2013/10/24 15:28:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1, remove the permission check of pid namespace. it's no reason
-   to deny un-init pid namespace to operate audit subsystem.
+Here is the v1 patchset: http://lwn.net/Articles/549546/
 
-2, only allow init user namespace and init audit namespace to
-   operate list/add/del rule, tty set, trim, make equiv operations.
+The main target of this patchset is allowing user in audit
+namespace to generate the USER_MSG type of audit message,
+some userspace tools need to generate audit message, or
+these tools will broken.
 
-3, allow audit namespace to get/set audit configuration, send
-   userspace audit message.
+And the login process in container may want to setup
+/proc/<pid>/loginuid, right now this value is unalterable
+once it being set. this will also broke the login problem
+in container. After this patchset, we can reset this loginuid
+to zero if task is running in a new audit namespace.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- kernel/audit.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Same with v1 patchset, in this patchset, only the privileged
+user in init_audit_ns and init_user_ns has rights to
+add/del audit rules. and these rules are gloabl. all
+audit namespace will comply with the rules.
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 095f54d..c4d4291 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -573,11 +573,7 @@ out:
- static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- {
- 	int err = 0;
--
--	/* Only support the initial namespaces for now. */
--	if ((current_user_ns() != &init_user_ns) ||
--	    (task_active_pid_ns(current) != &init_pid_ns))
--		return -EPERM;
-+	struct audit_namespace *ns = current->nsproxy->audit_ns;
- 
- 	switch (msg_type) {
- 	case AUDIT_LIST:
-@@ -586,6 +582,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- 		return -EOPNOTSUPP;
- 	case AUDIT_GET:
- 	case AUDIT_SET:
-+		break;
- 	case AUDIT_LIST_RULES:
- 	case AUDIT_ADD_RULE:
- 	case AUDIT_DEL_RULE:
-@@ -594,13 +591,15 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- 	case AUDIT_TTY_SET:
- 	case AUDIT_TRIM:
- 	case AUDIT_MAKE_EQUIV:
--		if (!capable(CAP_AUDIT_CONTROL))
-+		if ((current_user_ns() != &init_user_ns) ||
-+		    (ns != &init_audit_ns) ||
-+		    !capable(CAP_AUDIT_CONTROL))
- 			err = -EPERM;
- 		break;
- 	case AUDIT_USER:
- 	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
- 	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
--		if (!capable(CAP_AUDIT_WRITE))
-+		if (!ns_capable(ns->user_ns, CAP_AUDIT_WRITE))
- 			err = -EPERM;
- 		break;
- 	default:  /* bad msg */
+Compared with v1, v2 patch has some big changes.
+1, the audit namespace is not assigned to user namespace.
+   since there is no available bit of flags for clone, we
+   create audit namespace through netlink, patch[18/20]
+   introduces a new audit netlink type AUDIT_CREATE_NS.
+   the privileged user in userns has rights to create a
+   audit namespace, it means the unprivileged user can
+   create auditns through create userns first. In order
+   to prevent them from doing harm to host, the default
+   audit_backlog_limit of un-init-audit-ns is zero(means
+   audit is unavailable in audit namespace). and it can't
+   be changed in auditns through netlink.
+
+2, introduce /proc/<pid>/audit_log_limit
+   this interface is used to setup log_limit of audit
+   namespace.  we need this interface to make audit
+   available in un-init-audit-ns. Only the privileged user
+   has right to set this value, it means only the root user
+   of host can change it.
+
+3, make audit namespace don't depend on net namespace.
+   patch[1/20] add a compare function audit_compare for
+   audit netlink, it always return true, it means the
+   netlink subsystem will find out the netlink socket
+   only through portid and netlink type. So we needn't
+   to create kernel side audit netlink socket for per
+   net namespace, all userspace audit netlink socket
+   can find out the audit_sock, and audit_sock can
+   communicate with them through the proper portid.
+   it's just like the behavior we don't have net
+   namespace before.
+
+
+This patchset still need some work, such as allow changing
+audit_enabled in audit namespace, auditd wants this feature.
+
+I send this patchset now in order to get more comments, so
+I can keep on improving namespace support for audit.
+
+Gao feng (20):
+  Audit: make audit netlink socket net namespace unaware
+  audit: introduce configure option CONFIG_AUDIT_NS
+  audit: make audit_skb_queue per audit namespace
+  audit: make audit_skb_hold_queue per audit namespace
+  audit: make audit_pid per audit namespace
+  audit: make kauditd_task per audit namespace
+  aduit: make audit_nlk_portid per audit namespace
+  audit: make kaudit_wait queue per audit namespace
+  audit: make audit_backlog_wait per audit namespace
+  audit: allow un-init audit ns to change pid and portid only
+  audit: use proper audit namespace in audit_receive_msg
+  audit: use proper audit_namespace in kauditd_thread
+  audit: introduce new audit logging interface for audit namespace
+  audit: pass proper audit namespace to audit_log_common_recv_msg
+  audit: Log audit pid config change in audit namespace
+  audit: allow GET,SET,USER MSG operations in audit namespace
+  nsproxy: don't make create_new_namespaces static
+  audit: add new message type AUDIT_CREATE_NS
+  audit: make audit_backlog_limit per audit namespace
+  audit: introduce /proc/<pid>/audit_backlog_limit
+
+ fs/proc/base.c                  |  53 ++++++
+ include/linux/audit.h           |  26 ++-
+ include/linux/audit_namespace.h |  92 ++++++++++
+ include/linux/nsproxy.h         |  15 +-
+ include/uapi/linux/audit.h      |   1 +
+ init/Kconfig                    |  10 ++
+ kernel/Makefile                 |   2 +-
+ kernel/audit.c                  | 364 +++++++++++++++++++++++++---------------
+ kernel/audit.h                  |   5 +-
+ kernel/audit_namespace.c        | 123 ++++++++++++++
+ kernel/auditsc.c                |   6 +-
+ kernel/nsproxy.c                |  18 +-
+ 12 files changed, 561 insertions(+), 154 deletions(-)
+ create mode 100644 include/linux/audit_namespace.h
+ create mode 100644 kernel/audit_namespace.c
+
 -- 
 1.8.3.1
 
