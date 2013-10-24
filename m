@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3JXKhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:37:19 -0400
-Received: from cyclops.biessmann.org ([134.0.25.77]:38259 "EHLO
+	id S1754862Ab3JXKhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:37:18 -0400
+Received: from cyclops.biessmann.org ([134.0.25.77]:38258 "EHLO
 	cyclops.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab3JXKhQ (ORCPT
+	with ESMTP id S1754449Ab3JXKhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Oct 2013 06:37:16 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Oct 2013 06:37:16 EDT
 From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
 To: linux-kernel@vger.kernel.org
 Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
         Haavard Skinnemoen <hskinnemoen@gmail.com>,
         Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH 2/2] avr32: fix out-of-range jump in large kernels
-Date: Thu, 24 Oct 2013 12:31:04 +0200
-Message-Id: <1382610664-1195-2-git-send-email-andreas@biessmann.de>
+Subject: [PATCH 1/2] avr32: setup crt for early panic()
+Date: Thu, 24 Oct 2013 12:31:03 +0200
+Message-Id: <1382610664-1195-1-git-send-email-andreas@biessmann.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1382610664-1195-1-git-send-email-andreas@biessmann.de>
-References: <1382610664-1195-1-git-send-email-andreas@biessmann.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,64 +24,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes following error (for big kernels):
+Before the CRT was (fully) set up in kernel_entry (bss cleared before in
+_start, but also not before jump to panic() in no_tag_table case).
 
----8<---
-arch/avr32/boot/u-boot/head.o: In function `no_tag_table':
-(.init.text+0x44): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
-arch/avr32/kernel/built-in.o: In function `bad_return':
-(.ex.text+0x236): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
---->8---
-
-It comes up when the kernel increases and 'panic()' is too far away to fit in
-the +/- 2MiB range. Which in turn issues from the 21-bit displacement in
-'br{cond4}' mnemonic which is one of the two ways to do jumps (rjmp has just
-10-bit displacement and therefore a way smaller range). This fact was stated
-before in 8d29b7b9f81d6b83d869ff054e6c189d6da73f1f.
-One solution to solve this is to add a local storage for the symbol address
-and just load the $pc with that value.
+This patch fixes this up to have a fully working CRT when branching to panic()
+in no_tag_table.
 
 Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
 Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 ---
- arch/avr32/boot/u-boot/head.S    |    5 ++++-
- arch/avr32/kernel/entry-avr32b.S |    3 ++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ arch/avr32/boot/u-boot/head.S |   30 +++++++++++++++++++++++++-----
+ arch/avr32/kernel/head.S      |   20 --------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
 diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
-index d36d865..2ffc298 100644
+index 4488fa2..d36d865 100644
 --- a/arch/avr32/boot/u-boot/head.S
 +++ b/arch/avr32/boot/u-boot/head.S
-@@ -73,8 +73,11 @@ init_sr:
- 	.long	0x007f0000	/* Supervisor mode, everything masked */
- stack_addr:
- 	.long	init_thread_union
-+panic_addr:
-+	.long	panic
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
+  */
+ #include <asm/setup.h>
++#include <asm/thread_info.h>
++#include <asm/sysreg.h>
+ 
+ 	/*
+ 	 * The kernel is loaded where we want it to be and all caches
+@@ -20,11 +22,6 @@
+ 	.section .init.text,"ax"
+ 	.global _start
+ _start:
+-	/* Check if the boot loader actually provided a tag table */
+-	lddpc	r0, magic_number
+-	cp.w	r12, r0
+-	brne	no_tag_table
+-
+ 	/* Initialize .bss */
+ 	lddpc	r2, bss_start_addr
+ 	lddpc   r3, end_addr
+@@ -34,6 +31,25 @@ _start:
+ 	cp      r2, r3
+ 	brlo    1b
+ 
++	/* Initialize status register */
++	lddpc	r0, init_sr
++	mtsr	SYSREG_SR, r0
++
++	/* Set initial stack pointer */
++	lddpc	sp, stack_addr
++	sub	sp, -THREAD_SIZE
++
++#ifdef CONFIG_FRAME_POINTER
++	/* Mark last stack frame */
++	mov	lr, 0
++	mov	r7, 0
++#endif
++
++	/* Check if the boot loader actually provided a tag table */
++	lddpc	r0, magic_number
++	cp.w	r12, r0
++	brne	no_tag_table
++
+ 	/*
+ 	 * Save the tag table address for later use. This must be done
+ 	 * _after_ .bss has been initialized...
+@@ -53,6 +69,10 @@ bss_start_addr:
+ 	.long   __bss_start
+ end_addr:
+ 	.long   _end
++init_sr:
++	.long	0x007f0000	/* Supervisor mode, everything masked */
++stack_addr:
++	.long	init_thread_union
  
  no_tag_table:
  	sub	r12, pc, (. - 2f)
--	bral	panic
-+	/* branch to panic() which can be far away with that construct */
-+	lddpc	pc, panic_addr
- 2:	.asciz	"Boot loader didn't provide correct magic number\n"
-diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
-index 9899d3c..7301f48 100644
---- a/arch/avr32/kernel/entry-avr32b.S
-+++ b/arch/avr32/kernel/entry-avr32b.S
-@@ -401,9 +401,10 @@ handle_critical:
- 	/* We should never get here... */
- bad_return:
- 	sub	r12, pc, (. - 1f)
--	bral	panic
-+	lddpc	pc, 2f
- 	.align	2
- 1:	.asciz	"Return from critical exception!"
-+2:	.long	panic
+diff --git a/arch/avr32/kernel/head.S b/arch/avr32/kernel/head.S
+index 6163bd0..59eae6d 100644
+--- a/arch/avr32/kernel/head.S
++++ b/arch/avr32/kernel/head.S
+@@ -10,33 +10,13 @@
+ #include <linux/linkage.h>
  
- 	.align	1
- do_bus_error_write:
+ #include <asm/page.h>
+-#include <asm/thread_info.h>
+-#include <asm/sysreg.h>
+ 
+ 	.section .init.text,"ax"
+ 	.global kernel_entry
+ kernel_entry:
+-	/* Initialize status register */
+-	lddpc   r0, init_sr
+-	mtsr	SYSREG_SR, r0
+-
+-	/* Set initial stack pointer */
+-	lddpc   sp, stack_addr
+-	sub	sp, -THREAD_SIZE
+-
+-#ifdef CONFIG_FRAME_POINTER
+-	/* Mark last stack frame */
+-	mov	lr, 0
+-	mov	r7, 0
+-#endif
+-
+ 	/* Start the show */
+ 	lddpc   pc, kernel_start_addr
+ 
+ 	.align  2
+-init_sr:
+-	.long   0x007f0000	/* Supervisor mode, everything masked */
+-stack_addr:
+-	.long   init_thread_union
+ kernel_start_addr:
+ 	.long   start_kernel
 -- 
 1.7.10.4
 
