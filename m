@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab3JXNOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 09:14:42 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:63329 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab3JXNOl (ORCPT
+	id S1754814Ab3JXNZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 09:25:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53113 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab3JXNZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:14:41 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] dma: edma: Fix memory leak
-Date: Thu, 24 Oct 2013 16:14:22 +0300
-Message-Id: <1382620462-9799-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 24 Oct 2013 09:25:49 -0400
+From: Russ Dill <Russ.Dill@ti.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Pavel Machek <pavel@ucw.cz>,
+        Russ Dill <Russ.Dill@ti.com>
+Subject: [PATCH] PM / hibernate: Move software_resume to late_initcall_sync
+Date: Thu, 24 Oct 2013 14:25:26 +0100
+Message-Id: <1382621126-24090-1-git-send-email-Russ.Dill@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When it fails to allocate a slot, edesc should be free'd before return;
+software_resume is being called after deferred_probe_initcall in
+drivers base. If the probing of the device that contains the resume
+image is deferred, and the system has been instructed to wait for
+it to show up, this wait will occur in software_resume. This causes
+a deadlock.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+Move software_resume into late_initcall_sync so that it happens
+after all the other late_initcalls.
+
+Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 ---
- drivers/dma/edma.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/power/hibernate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 098a8da..79ebac6 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -305,6 +305,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
- 						EDMA_SLOT_ANY);
- 			if (echan->slot[i] < 0) {
-+				kfree(edesc);
- 				dev_err(dev, "Failed to allocate slot\n");
- 				return NULL;
- 			}
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index c9c759d..0121dab 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -846,7 +846,7 @@ static int software_resume(void)
+ 	goto Finish;
+ }
+ 
+-late_initcall(software_resume);
++late_initcall_sync(software_resume);
+ 
+ 
+ static const char * const hibernation_modes[] = {
 -- 
-1.8.1.2
+1.8.3.2
 
