@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab3JXPzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:55:46 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:61999 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab3JXPuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755926Ab3JXPuI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Oct 2013 11:50:08 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:54805 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab3JXPuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 11:50:05 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/34] sysfs, kernfs: move sysfs_open_file to include/linux/kernfs.h
-Date: Thu, 24 Oct 2013 11:49:25 -0400
-Message-Id: <1382629780-10006-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 16/34] sysfs, kernfs: prepare llseek path for kernfs
+Date: Thu, 24 Oct 2013 11:49:22 -0400
+Message-Id: <1382629780-10006-17-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,75 +21,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs_open_file will be used as the primary handle for kernfs methods.
-Move its definition from fs/sysfs/file.c to include/linux/kernfs.h and
-mark the public and private fields.
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+introduces kernfs_file_llseek() which invokes either
+generic_file_llseek() or seq_lseek() depending on the file type so
+that both regular and bin files eventually can use the same
+file_operations, which is necessary to separate out kernfs.
 
-This is pure relocation.
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 11 -----------
- include/linux/kernfs.h | 18 ++++++++++++++++++
- 2 files changed, 18 insertions(+), 11 deletions(-)
+ fs/sysfs/file.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index e9aea35..7a33634 100644
+index 2736ea9..4f99da5 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -47,17 +47,6 @@ struct sysfs_open_dirent {
- 	struct list_head	files; /* goes through sysfs_open_file.list */
- };
+@@ -356,6 +356,16 @@ out_free:
+ 	return len;
+ }
  
--struct sysfs_open_file {
--	struct sysfs_dirent	*sd;
--	struct file		*file;
--	struct mutex		mutex;
--	int			event;
--	struct list_head	list;
--
--	bool			mmapped;
--	const struct vm_operations_struct *vm_ops;
--};
--
- static bool sysfs_is_bin(struct sysfs_dirent *sd)
++static loff_t kernfs_file_llseek(struct file *file, loff_t off, int whence)
++{
++	struct sysfs_open_file *of = sysfs_of(file);
++
++	if (sysfs_is_bin(of->sd))
++		return generic_file_llseek(file, off, whence);
++	else
++		return seq_lseek(file, off, whence);
++}
++
+ static void sysfs_bin_vma_open(struct vm_area_struct *vma)
  {
- 	return sysfs_type(sd) == SYSFS_KOBJ_BIN_ATTR;
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index fab2597..6fbd226 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -8,12 +8,30 @@
- #define __LINUX_KERNFS_H
- 
- #include <linux/kernel.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
- 
- struct file;
- struct iattr;
-+struct seq_file;
-+struct vm_area_struct;
- 
- struct sysfs_dirent;
- 
-+struct sysfs_open_file {
-+	/* published fields */
-+	struct sysfs_dirent	*sd;
-+	struct file		*file;
-+
-+	/* private fields, do not use outside kernfs proper */
-+	struct mutex		mutex;
-+	int			event;
-+	struct list_head	list;
-+
-+	bool			mmapped;
-+	const struct vm_operations_struct *vm_ops;
-+};
-+
- #ifdef CONFIG_SYSFS
- 
- struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
+ 	struct file *file = vma->vm_file;
+@@ -854,7 +864,7 @@ EXPORT_SYMBOL_GPL(sysfs_notify);
+ const struct file_operations sysfs_file_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+-	.llseek		= seq_lseek,
++	.llseek		= kernfs_file_llseek,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+ 	.poll		= sysfs_poll,
+@@ -863,7 +873,7 @@ const struct file_operations sysfs_file_operations = {
+ const struct file_operations sysfs_bin_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+-	.llseek		= generic_file_llseek,
++	.llseek		= kernfs_file_llseek,
+ 	.mmap		= sysfs_bin_mmap,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
 -- 
 1.8.3.1
 
