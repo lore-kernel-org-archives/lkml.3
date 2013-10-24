@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3JXQYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 12:24:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23408 "EHLO mga02.intel.com"
+	id S1755684Ab3JXQZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 12:25:48 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40005 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042Ab3JXQYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 12:24:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="424214323"
-Subject: Re: [PATCH v4 1/3] qrwlock: A queue read/write lock implementation
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, walken@google.com,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-In-Reply-To: <52692AE7.3060701@hp.com>
-References: <1380722946-30468-1-git-send-email-Waiman.Long@hp.com>
-	 <1380722946-30468-2-git-send-email-Waiman.Long@hp.com>
-	 <20131023120004.GD2862@localhost> <52680022.1020200@hp.com>
-	 <alpine.DEB.2.02.1310241207500.4983@ionos.tec.linutronix.de>
-	 <52692AE7.3060701@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Oct 2013 09:24:49 -0700
-Message-ID: <1382631889.11046.208.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755143Ab3JXQZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 12:25:47 -0400
+Date: Thu, 24 Oct 2013 09:25:39 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 1/2] lkdtm: adjust recursion size to avoid warnings
+Message-ID: <20131024162539.GA24331@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-24 at 10:12 -0400, Waiman Long wrote:
-> On 10/24/2013 06:14 AM, Thomas Gleixner wrote:
-> > On Wed, 23 Oct 2013, Waiman Long wrote:
-> >> On 10/23/2013 08:00 AM, walken@google.com wrote:
-> >>>> +	/*
-> >>>> +	 * Wait until the next one in queue set up the next field
-> >>>> +	 */
-> >>>> +	while (likely(!(next = ACCESS_ONCE(node->next))))
-> >>>> +		cpu_relax();
-> >>>> +	/*
-> >>>> +	 * The next one in queue is now at the head
-> >>>> +	 */
-> >>>> +notify_next:
-> >>>> +	barrier();
-> >>>> +	ACCESS_ONCE(next->wait) = false;
-> >>>> +	smp_wmb();
-> >>>> +}
-> >>> I believe this could be unified with mspin_lock() / mspin_unlock() in
-> >>> kernel/mutex.c ? (there is already talk of extending these functions
-> >>> to be used by rwsem for adaptive spinning as well...)
-> >> It probably can, but the unification can wait until the code are in.
-> > The unification has to be done as a part of this series. Cleanups are
-> > part of the development process of new code and not an optional
-> > feature.
-> >
-> > Thanks,
-> >
-> > 	tglx
-> >
-> 
-> There is an outstanding rwsem patch series that is doing the 
-> unification. I am waiting for that patch series to be at least in a tip 
-> or linux-next branch before doing the unification. Otherwise, it will 
-> cause merge conflict.
+When CONFIG_FRAME_WARN is set low (e.g. some ARM builds), the hard-coded
+stack buffer size used for kernel stack over run testing triggers build
+warnings. Instead, avoid the warning by recalcuating the buffer size and
+recursion count needed to trigger the test. Also uses the recursion counter
+indirectly to avoid changing the parameter during the test.
 
-We can merge the 3 MCS patches of the rwsem patch series first
-while we continue to work on other rwsem patches. These 3 
-patches are independent of the other rwsem patches.
-They separate out the MCS locking into its own file and clean up
-the code.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/misc/lkdtm.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-MCS Lock: Restructure the MCS lock defines and locking
-https://lkml.org/lkml/2013/10/2/647
-MCS Lock: optimizations and extra comments
-https://lkml.org/lkml/2013/10/2/644
-MCS Lock: Barrier corrections
-https://lkml.org/lkml/2013/10/2/650
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index 2fc0586ce3bb..9cc89b1f5caa 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -49,8 +49,19 @@
+ #include <linux/ide.h>
+ #endif
+ 
++/*
++ * Make sure our attempts to over run the kernel stack doesn't trigger
++ * a compiler warning when CONFIG_FRAME_WARN is set. Then make sure we
++ * recurse past the end of THREAD_SIZE by default.
++ */
++#if defined(CONFIG_FRAME_WARN) && (CONFIG_FRAME_WARN > 0)
++#define REC_STACK_SIZE (CONFIG_FRAME_WARN / 2)
++#else
++#define REC_STACK_SIZE (THREAD_SIZE / 8)
++#endif
++#define REC_NUM_DEFAULT ((THREAD_SIZE / REC_STACK_SIZE) * 2)
++
+ #define DEFAULT_COUNT 10
+-#define REC_NUM_DEFAULT 10
+ #define EXEC_SIZE 64
+ 
+ enum cname {
+@@ -140,8 +151,7 @@ static DEFINE_SPINLOCK(lock_me_up);
+ static u8 data_area[EXEC_SIZE];
+ 
+ module_param(recur_count, int, 0644);
+-MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+-				 "default is 10");
++MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test");
+ module_param(cpoint_name, charp, 0444);
+ MODULE_PARM_DESC(cpoint_name, " Crash Point, where kernel is to be crashed");
+ module_param(cpoint_type, charp, 0444);
+@@ -280,16 +290,16 @@ static int lkdtm_parse_commandline(void)
+ 	return -EINVAL;
+ }
+ 
+-static int recursive_loop(int a)
++static int recursive_loop(int remaining)
+ {
+-	char buf[1024];
++	char buf[REC_STACK_SIZE];
+ 
+-	memset(buf,0xFF,1024);
+-	recur_count--;
+-	if (!recur_count)
++	/* Make sure compiler does not optimize this away. */
++	memset(buf, (remaining & 0xff) | 0x1, REC_STACK_SIZE);
++	if (!remaining)
+ 		return 0;
+ 	else
+-        	return recursive_loop(a);
++		return recursive_loop(remaining - 1);
+ }
+ 
+ static void do_nothing(void)
+@@ -325,7 +335,7 @@ static void lkdtm_do_action(enum ctype which)
+ 			;
+ 		break;
+ 	case CT_OVERFLOW:
+-		(void) recursive_loop(0);
++		(void) recursive_loop(recur_count);
+ 		break;
+ 	case CT_CORRUPT_STACK: {
+ 		/* Make sure the compiler creates and uses an 8 char array. */
+-- 
+1.7.9.5
 
-Thanks.
 
-Tim
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
