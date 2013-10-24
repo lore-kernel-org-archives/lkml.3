@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3JXUGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 16:06:07 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:47066 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3JXUGD (ORCPT
+	id S1756240Ab3JXUHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 16:07:41 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:34963 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab3JXUHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 16:06:03 -0400
-From: "Aaro Koskinen" <aaro@musicnaut.iki.fi>
-Date: Thu, 24 Oct 2013 23:05:52 +0300
+	Thu, 24 Oct 2013 16:07:40 -0400
+Date: Thu, 24 Oct 2013 23:07:30 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Subject: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-Message-ID: <20131024200552.GA17447@blackmetal.musicnaut.iki.fi>
+Message-ID: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
