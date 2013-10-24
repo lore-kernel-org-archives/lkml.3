@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3JXPuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:50:12 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:63349 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab3JXPuG (ORCPT
+	id S1756213Ab3JXPxo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:53:44 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:58946 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab3JXPuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:50:06 -0400
+	Thu, 24 Oct 2013 11:50:13 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 17/34] sysfs, kernfs: prepare mmap path for kernfs
-Date: Thu, 24 Oct 2013 11:49:23 -0400
-Message-Id: <1382629780-10006-18-git-send-email-tj@kernel.org>
+Subject: [PATCH 23/34] sysfs, kernfs: introduce kernfs_create_file[_ns]()
+Date: Thu, 24 Oct 2013 11:49:29 -0400
+Message-Id: <1382629780-10006-24-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,190 +21,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're in the process of separating out core sysfs functionality into
-kernfs which will deal with sysfs_dirents directly.  This patch
-rearranges mmap path so that the kernfs and sysfs parts are separate.
+Introduce kernfs interface to create a file which takes and returns
+sysfs_dirents.
 
-sysfs_kf_bin_mmap() which handles the interaction with bin_attribute
-mmap method is factored out of sysfs_bin_mmap(), which is renamed to
-kernfs_file_mmap().  All vma ops are renamed accordingly.
+The actual file creation part is separated out from
+sysfs_add_file_mode_ns() into kernfs_create_file_ns().  The former now
+only decides the kernfs_ops to use and the file's size and invokes the
+latter.
 
-sysfs_bin_mmap() is updated such that it can be used for both file
-types.  This will eventually allow using the same file_operations for
-both file types, which is necessary to separate out kernfs.
-
-This patch doesn't introduce any behavior changes.
+This patch doesn't introduce behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c | 70 ++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 39 insertions(+), 31 deletions(-)
+ fs/sysfs/file.c        | 53 +++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/kernfs.h | 18 +++++++++++++++++
+ 2 files changed, 60 insertions(+), 11 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 4f99da5..0fdc543 100644
+index efa547d..62d620a 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -366,7 +366,19 @@ static loff_t kernfs_file_llseek(struct file *file, loff_t off, int whence)
- 		return seq_lseek(file, off, whence);
- }
+@@ -900,14 +900,11 @@ static const struct kernfs_ops sysfs_bin_kfops_rw = {
  
--static void sysfs_bin_vma_open(struct vm_area_struct *vma)
-+static int sysfs_kf_bin_mmap(struct sysfs_open_file *of,
-+			     struct vm_area_struct *vma)
-+{
-+	struct bin_attribute *battr = of->sd->priv;
-+	struct kobject *kobj = of->sd->s_parent->priv;
-+
-+	if (!battr->mmap)
-+		return -EINVAL;		/* should be -ENODEV */
-+
-+	return battr->mmap(of->file, kobj, battr, vma);
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 			   const struct attribute *attr, bool is_bin,
+-			   umode_t amode, const void *ns)
++			   umode_t mode, const void *ns)
+ {
+-	umode_t mode = (amode & S_IALLUGO) | S_IFREG;
+ 	const struct kernfs_ops *ops;
+-	struct sysfs_addrm_cxt acxt;
+ 	struct sysfs_dirent *sd;
+ 	loff_t size;
+-	int rc;
+ 
+ 	if (!is_bin) {
+ 		struct kobject *kobj = dir_sd->priv;
+@@ -944,14 +941,47 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		size = battr->size;
+ 	}
+ 
+-	sd = sysfs_new_dirent(attr->name, mode, SYSFS_KOBJ_ATTR);
++	sd = kernfs_create_file_ns(dir_sd, attr->name, mode, size,
++				   ops, (void *)attr, ns);
++	if (IS_ERR(sd)) {
++		if (PTR_ERR(sd) == -EEXIST)
++			sysfs_warn_dup(dir_sd, attr->name);
++		return PTR_ERR(sd);
++	}
++	return 0;
 +}
 +
-+static void kernfs_vma_open(struct vm_area_struct *vma)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -383,7 +395,7 @@ static void sysfs_bin_vma_open(struct vm_area_struct *vma)
- 	sysfs_put_active(of->sd);
- }
++/**
++ * kernfs_create_file_ns - create a file
++ * @parent: directory to create the file in
++ * @name: name of the file
++ * @mode: mode of the file
++ * @size: size of the file
++ * @ops: kernfs operations for the file
++ * @priv: private data for the file
++ * @ns: optional namespace tag of the file
++ *
++ * Returns the created node on success, ERR_PTR() value on error.
++ */
++struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
++					   const char *name,
++					   umode_t mode, loff_t size,
++					   const struct kernfs_ops *ops,
++					   void *priv, const void *ns)
++{
++	struct sysfs_addrm_cxt acxt;
++	struct sysfs_dirent *sd;
++	int rc;
++
++	sd = sysfs_new_dirent(name, (mode & S_IALLUGO) | S_IFREG,
++			      SYSFS_KOBJ_ATTR);
+ 	if (!sd)
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
  
--static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+static int kernfs_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -403,8 +415,8 @@ static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	return ret;
- }
+ 	sd->s_attr.ops = ops;
+ 	sd->s_attr.size = size;
+ 	sd->s_ns = ns;
+-	sd->priv = (void *)attr;
++	sd->priv = priv;
+ 	sysfs_dirent_init_lockdep(sd);
  
--static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
--				  struct vm_fault *vmf)
-+static int kernfs_vma_page_mkwrite(struct vm_area_struct *vma,
-+				   struct vm_fault *vmf)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -426,8 +438,8 @@ static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
- 	return ret;
- }
+ 	/*
+@@ -965,13 +995,14 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
  
--static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
--			    void *buf, int len, int write)
-+static int kernfs_vma_access(struct vm_area_struct *vma, unsigned long addr,
-+			     void *buf, int len, int write)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -448,8 +460,8 @@ static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
- }
+ 	sysfs_addrm_start(&acxt);
+-	rc = sysfs_add_one(&acxt, sd, dir_sd);
++	rc = __sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
  
- #ifdef CONFIG_NUMA
--static int sysfs_bin_set_policy(struct vm_area_struct *vma,
--				struct mempolicy *new)
-+static int kernfs_vma_set_policy(struct vm_area_struct *vma,
-+				 struct mempolicy *new)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -469,8 +481,8 @@ static int sysfs_bin_set_policy(struct vm_area_struct *vma,
- 	return ret;
- }
- 
--static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
--					      unsigned long addr)
-+static struct mempolicy *kernfs_vma_get_policy(struct vm_area_struct *vma,
-+					       unsigned long addr)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -490,8 +502,9 @@ static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
- 	return pol;
- }
- 
--static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
--			     const nodemask_t *to, unsigned long flags)
-+static int kernfs_vma_migrate(struct vm_area_struct *vma,
-+			      const nodemask_t *from, const nodemask_t *to,
-+			      unsigned long flags)
- {
- 	struct file *file = vma->vm_file;
- 	struct sysfs_open_file *of = sysfs_of(file);
-@@ -512,37 +525,31 @@ static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
- }
- #endif
- 
--static const struct vm_operations_struct sysfs_bin_vm_ops = {
--	.open		= sysfs_bin_vma_open,
--	.fault		= sysfs_bin_fault,
--	.page_mkwrite	= sysfs_bin_page_mkwrite,
--	.access		= sysfs_bin_access,
-+static const struct vm_operations_struct kernfs_vm_ops = {
-+	.open		= kernfs_vma_open,
-+	.fault		= kernfs_vma_fault,
-+	.page_mkwrite	= kernfs_vma_page_mkwrite,
-+	.access		= kernfs_vma_access,
- #ifdef CONFIG_NUMA
--	.set_policy	= sysfs_bin_set_policy,
--	.get_policy	= sysfs_bin_get_policy,
--	.migrate	= sysfs_bin_migrate,
-+	.set_policy	= kernfs_vma_set_policy,
-+	.get_policy	= kernfs_vma_get_policy,
-+	.migrate	= kernfs_vma_migrate,
- #endif
- };
- 
--static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
-+static int kernfs_file_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	struct sysfs_open_file *of = sysfs_of(file);
--	struct bin_attribute *battr = of->sd->priv;
--	struct kobject *kobj = of->sd->s_parent->priv;
- 	int rc;
- 
- 	mutex_lock(&of->mutex);
- 
--	/* need of->sd for battr, its parent for kobj */
- 	rc = -ENODEV;
- 	if (!sysfs_get_active(of->sd))
- 		goto out_unlock;
- 
--	rc = -EINVAL;
--	if (!battr->mmap)
--		goto out_put;
+-	if (rc)
++	if (rc) {
+ 		sysfs_put(sd);
 -
--	rc = battr->mmap(file, kobj, battr, vma);
-+	if (sysfs_is_bin(of->sd))
-+		rc = sysfs_kf_bin_mmap(of, vma);
- 	if (rc)
- 		goto out_put;
+-	return rc;
++		return ERR_PTR(rc);
++	}
++	return sd;
+ }
  
-@@ -569,7 +576,7 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
- 	rc = 0;
- 	of->mmapped = 1;
- 	of->vm_ops = vma->vm_ops;
--	vma->vm_ops = &sysfs_bin_vm_ops;
-+	vma->vm_ops = &kernfs_vm_ops;
- out_put:
- 	sysfs_put_active(of->sd);
- out_unlock:
-@@ -865,6 +872,7 @@ const struct file_operations sysfs_file_operations = {
- 	.read		= kernfs_file_read,
- 	.write		= kernfs_file_write,
- 	.llseek		= kernfs_file_llseek,
-+	.mmap		= kernfs_file_mmap,
- 	.open		= sysfs_open_file,
- 	.release	= sysfs_release,
- 	.poll		= sysfs_poll,
-@@ -874,7 +882,7 @@ const struct file_operations sysfs_bin_operations = {
- 	.read		= kernfs_file_read,
- 	.write		= kernfs_file_write,
- 	.llseek		= kernfs_file_llseek,
--	.mmap		= sysfs_bin_mmap,
-+	.mmap		= kernfs_file_mmap,
- 	.open		= sysfs_open_file,
- 	.release	= sysfs_release,
- 	.poll		= sysfs_poll,
+ int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index ecf2d57..a1b94b7 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -63,6 +63,11 @@ struct kernfs_ops {
+ struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
+ 					  const char *name, void *priv,
+ 					  const void *ns);
++struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
++					   const char *name,
++					   umode_t mode, loff_t size,
++					   const struct kernfs_ops *ops,
++					   void *priv, const void *ns);
+ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 					const char *name,
+ 					struct sysfs_dirent *target);
+@@ -81,6 +86,12 @@ kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
+ { return NULL; }
+ 
+ static inline struct sysfs_dirent *
++kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
++		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
++		      void *priv, const void *ns)
++{ return NULL; }
++
++static inline struct sysfs_dirent *
+ kernfs_create_link(struct sysfs_dirent *parent, const char *name,
+ 		   struct sysfs_dirent *target)
+ { return NULL; }
+@@ -108,6 +119,13 @@ kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
+ 	return kernfs_create_dir_ns(parent, name, priv, NULL);
+ }
+ 
++static inline struct sysfs_dirent *
++kernfs_create_file(struct sysfs_dirent *parent, const char *name, umode_t mode,
++		   loff_t size, const struct kernfs_ops *ops, void *priv)
++{
++	return kernfs_create_file_ns(parent, name, mode, size, ops, priv, NULL);
++}
++
+ static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
+ 					const char *name)
+ {
 -- 
 1.8.3.1
 
