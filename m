@@ -1,83 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3JXKo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:44:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56491 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754531Ab3JXKo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:44:57 -0400
-Message-ID: <5268FA00.1010902@ti.com>
-Date: Thu, 24 Oct 2013 16:14:16 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1754695Ab3JXKwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:52:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38479 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab3JXKwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 06:52:17 -0400
+Date: Thu, 24 Oct 2013 12:52:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        dave.hansen@linux.intel.com, Stephane Eranian <eranian@google.com>,
+        jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131024105206.GM2490@laptop.programming.kicks-ass.net>
+References: <20131017094145.GE3364@laptop.programming.kicks-ass.net>
+ <20131017160034.GO227855@redhat.com>
+ <20131017160439.GP227855@redhat.com>
+ <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+ <20131023204838.GB19466@laptop.lan>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <tglx@linutronix.de>,
-        <linus.walleij@linaro.org>, <santosh.shilimkar@ti.com>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <mark.rutland@arm.com>
-Subject: Re: [RFC PATCH 1/6] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable
- irqs
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-2-git-send-email-r.sricharan@ti.com> <D170CC15-C746-412F-A683-E8A73EFB8133@codeaurora.org>
-In-Reply-To: <D170CC15-C746-412F-A683-E8A73EFB8133@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131023204838.GB19466@laptop.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 October 2013 03:08 PM, Kumar Gala wrote:
-> On Sep 30, 2013, at 8:59 AM, Sricharan R wrote:
->
->> In some socs the gic can be preceded by a crossbar IP which
->> routes the peripheral interrupts to the gic inputs. The peripheral
->> interrupts are associated with a fixed crossbar input line and the
->> crossbar routes that to one of the free gic input line.
->>
->> The DT entries for peripherals provides the fixed crossbar input line
->> as its interrupt number and the mapping code should associate this with
->> a free gic input line. This patch adds the support inside the gic irqchip
->> to handle such routable irqs. The routable irqs are registered in a linear
->> domain. The registered routable domain's callback should be implemented
->> to get a free irq and to configure the IP to route it.
->>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Marc Zyngier <marc.zyngier@arm.com>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->> ---
->> Documentation/devicetree/bindings/arm/gic.txt |    5 +++
->> arch/arm/boot/dts/dra7.dtsi                   |    1 +
->> drivers/irqchip/irq-gic.c                     |   57 +++++++++++++++++++++----
->> include/linux/irqchip/arm-gic.h               |    8 +++-
->> 4 files changed, 61 insertions(+), 10 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
->> index 3dfb0c0..2d8c680 100644
->> --- a/Documentation/devicetree/bindings/arm/gic.txt
->> +++ b/Documentation/devicetree/bindings/arm/gic.txt
->> @@ -49,6 +49,11 @@ Optional
->>   regions, used when the GIC doesn't have banked registers. The offset is
->>   cpu-offset * cpu-nr.
->>
->> +- routable-irqs	: Total number of gic irq inputs which are not directly
->> +		  connected from the peripherals, but are routed dynamically
->> +		  by a crossbar/multiplexer preceding the GIC. The GIC irq
->> +		  input line is assigned dynamically when the corresponding
->> +		  peripheral's crossbar line is mapped.
-> arm,routable-irqs
- ok will change here as well.
+On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
+> I'll also make sure to test we actually hit the fault path
+> by concurrently running something like:
+> 
+>  while :; echo 1 > /proc/sys/vm/drop_caches ; done
+> 
+> while doing perf top or so.. 
 
- Thanks for reviewing.
+So the below appears to work; I've ran:
 
-Regards,
- Sricharan
+  while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
+  while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
+
+And verified that the if (in_nmi()) trace_printk() was visible in the
+trace output verifying we indeed took the fault from the NMI code.
+
+I've had this running for ~ 30 minutes or so and the machine is still
+healthy.
+
+Don, can you give this stuff a spin on your system?
+
+---
+ arch/x86/lib/usercopy.c | 43 +++++++++++++++----------------------------
+ arch/x86/mm/fault.c     | 43 +++++++++++++++++++++++--------------------
+ 2 files changed, 38 insertions(+), 48 deletions(-)
+
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+index 4f74d94c8d97..5465b8613944 100644
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -11,39 +11,26 @@
+ #include <linux/sched.h>
+ 
+ /*
+- * best effort, GUP based copy_from_user() that is NMI-safe
++ * We rely on the nested NMI work to allow atomic faults from the NMI path; the
++ * nested NMI paths are careful to preserve CR2.
+  */
+ unsigned long
+ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ {
+-	unsigned long offset, addr = (unsigned long)from;
+-	unsigned long size, len = 0;
+-	struct page *page;
+-	void *map;
+-	int ret;
++	unsigned long ret;
+ 
+ 	if (__range_not_ok(from, n, TASK_SIZE))
+-		return len;
+-
+-	do {
+-		ret = __get_user_pages_fast(addr, 1, 0, &page);
+-		if (!ret)
+-			break;
+-
+-		offset = addr & (PAGE_SIZE - 1);
+-		size = min(PAGE_SIZE - offset, n - len);
+-
+-		map = kmap_atomic(page);
+-		memcpy(to, map+offset, size);
+-		kunmap_atomic(map);
+-		put_page(page);
+-
+-		len  += size;
+-		to   += size;
+-		addr += size;
+-
+-	} while (len < n);
+-
+-	return len;
++		return 0;
++
++	/*
++	 * Even though this function is typically called from NMI/IRQ context
++	 * disable pagefaults so that its behaviour is consistent even when
++	 * called form other contexts.
++	 */
++	pagefault_disable();
++	ret = __copy_from_user_inatomic(to, from, n);
++	pagefault_enable();
++
++	return n - ret;
+ }
+ EXPORT_SYMBOL_GPL(copy_from_user_nmi);
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 3aaeffcfd67a..506564b13ba7 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -51,7 +51,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
+ 	return 0;
+ }
+ 
+-static inline int __kprobes notify_page_fault(struct pt_regs *regs)
++static inline int __kprobes kprobes_fault(struct pt_regs *regs)
+ {
+ 	int ret = 0;
+ 
+@@ -1048,7 +1048,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 			return;
+ 
+ 		/* kprobes don't want to hook the spurious faults: */
+-		if (notify_page_fault(regs))
++		if (kprobes_fault(regs))
+ 			return;
+ 		/*
+ 		 * Don't take the mm semaphore here. If we fixup a prefetch
+@@ -1060,23 +1060,8 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	}
+ 
+ 	/* kprobes don't want to hook the spurious faults: */
+-	if (unlikely(notify_page_fault(regs)))
++	if (unlikely(kprobes_fault(regs)))
+ 		return;
+-	/*
+-	 * It's safe to allow irq's after cr2 has been saved and the
+-	 * vmalloc fault has been handled.
+-	 *
+-	 * User-mode registers count as a user access even for any
+-	 * potential system fault or CPU buglet:
+-	 */
+-	if (user_mode_vm(regs)) {
+-		local_irq_enable();
+-		error_code |= PF_USER;
+-		flags |= FAULT_FLAG_USER;
+-	} else {
+-		if (regs->flags & X86_EFLAGS_IF)
+-			local_irq_enable();
+-	}
+ 
+ 	if (unlikely(error_code & PF_RSVD))
+ 		pgtable_bad(regs, error_code, address);
+@@ -1088,17 +1073,35 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 		}
+ 	}
+ 
+-	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+-
+ 	/*
+ 	 * If we're in an interrupt, have no user context or are running
+ 	 * in an atomic region then we must not take the fault:
+ 	 */
+ 	if (unlikely(in_atomic() || !mm)) {
++		if (in_nmi())
++			trace_printk("YIPEE!!!\n");
+ 		bad_area_nosemaphore(regs, error_code, address);
+ 		return;
+ 	}
+ 
++	/*
++	 * It's safe to allow irq's after cr2 has been saved and the
++	 * vmalloc fault has been handled.
++	 *
++	 * User-mode registers count as a user access even for any
++	 * potential system fault or CPU buglet:
++	 */
++	if (user_mode_vm(regs)) {
++		local_irq_enable();
++		error_code |= PF_USER;
++		flags |= FAULT_FLAG_USER;
++	} else {
++		if (regs->flags & X86_EFLAGS_IF)
++			local_irq_enable();
++	}
++
++	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
++
+ 	if (error_code & PF_WRITE)
+ 		flags |= FAULT_FLAG_WRITE;
+ 
