@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab3JXMH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:07:56 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47935 "EHLO
+	id S1755437Ab3JXMI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:08:27 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47888 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3JXMFa (ORCPT
+	with ESMTP id S1754982Ab3JXMFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:30 -0400
+	Thu, 24 Oct 2013 08:05:24 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, Dave Chinner <dchinner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v11 12/15] memcg: allow kmem limit to be resized down
-Date: Thu, 24 Oct 2013 16:05:03 +0400
-Message-ID: <458dc248ec1a9b815231b8b5fbd1517db479e483.1382603434.git.vdavydov@parallels.com>
+Subject: [PATCH v11 03/15] vmscan: also shrink slab in memcg pressure
+Date: Thu, 24 Oct 2013 16:04:54 +0400
+Message-ID: <084beda24a5c03fc81a6100ccdc6f78af7b13cf3.1382603434.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
 References: <cover.1382603434.git.vdavydov@parallels.com>
@@ -29,104 +31,232 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@openvz.org>
 
-The userspace memory limit can be freely resized down. Upon attempt,
-reclaim will be called to flush the pages away until we either reach the
-limit we want or give up.
+Without the surrounding infrastructure, this patch is a bit of a hammer:
+it will basically shrink objects from all memcgs under memcg pressure.
+At least, however, we will keep the scan limited to the shrinkers marked
+as per-memcg.
 
-It wasn't possible so far with the kmem limit, since we had no way to
-shrink the kmem buffers other than using the big hammer of shrink_slab,
-that effectively frees data around the whole system.
-
-The situation flips now that we have a per-memcg shrinker
-infrastructure. We will proceed analogously to our user memory
-counterpart and try to shrink our buffers until we either reach the
-limit we want or give up.
+Future patches will implement the in-shrinker logic to filter objects
+based on its memcg association.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
 Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |   43 ++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 38 insertions(+), 5 deletions(-)
+ include/linux/memcontrol.h |   17 +++++++++++++++
+ include/linux/shrinker.h   |    6 +++++-
+ mm/memcontrol.c            |   16 +++++++++++++-
+ mm/vmscan.c                |   50 +++++++++++++++++++++++++++++++++++++++-----
+ 4 files changed, 82 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index b3e7a66..d16ba51 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -231,6 +231,9 @@ void mem_cgroup_split_huge_fixup(struct page *head);
+ bool mem_cgroup_bad_page_check(struct page *page);
+ void mem_cgroup_print_bad_page(struct page *page);
+ #endif
++
++unsigned long
++memcg_zone_reclaimable_pages(struct mem_cgroup *memcg, struct zone *zone);
+ #else /* CONFIG_MEMCG */
+ struct mem_cgroup;
+ 
+@@ -427,6 +430,12 @@ static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 				struct page *newpage)
+ {
+ }
++
++static inline unsigned long
++memcg_zone_reclaimable_pages(struct mem_cgroup *memcg, struct zone *zone)
++{
++	return 0;
++}
+ #endif /* CONFIG_MEMCG */
+ 
+ #if !defined(CONFIG_MEMCG) || !defined(CONFIG_DEBUG_VM)
+@@ -479,6 +488,8 @@ static inline bool memcg_kmem_enabled(void)
+ 	return static_key_false(&memcg_kmem_enabled_key);
+ }
+ 
++bool memcg_kmem_is_active(struct mem_cgroup *memcg);
++
+ /*
+  * In general, we'll do everything in our power to not incur in any overhead
+  * for non-memcg users for the kmem functions. Not even a function call, if we
+@@ -612,6 +623,12 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+ 	return __memcg_kmem_get_cache(cachep, gfp);
+ }
+ #else
++
++static inline bool memcg_kmem_is_active(struct mem_cgroup *memcg)
++{
++	return false;
++}
++
+ #define for_each_memcg_cache_index(_idx)	\
+ 	for (; NULL; )
+ 
+diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
+index 68c0970..7d462b1 100644
+--- a/include/linux/shrinker.h
++++ b/include/linux/shrinker.h
+@@ -22,6 +22,9 @@ struct shrink_control {
+ 	nodemask_t nodes_to_scan;
+ 	/* current node being shrunk (for NUMA aware shrinkers) */
+ 	int nid;
++
++	/* reclaim from this memcg only (if not NULL) */
++	struct mem_cgroup *target_mem_cgroup;
+ };
+ 
+ #define SHRINK_STOP (~0UL)
+@@ -63,7 +66,8 @@ struct shrinker {
+ #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
+ 
+ /* Flags */
+-#define SHRINKER_NUMA_AWARE (1 << 0)
++#define SHRINKER_NUMA_AWARE	(1 << 0)
++#define SHRINKER_MEMCG_AWARE	(1 << 1)
+ 
+ extern int register_shrinker(struct shrinker *);
+ extern void unregister_shrinker(struct shrinker *);
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 03178d0..7bf4dc7 100644
+index 0a5cc30..41c216a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -5574,10 +5574,39 @@ static ssize_t mem_cgroup_read(struct cgroup_subsys_state *css,
- 	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+@@ -356,7 +356,7 @@ static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
+ 	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
  }
  
-+#ifdef CONFIG_MEMCG_KMEM
+-static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
++bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+ {
+ 	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
+ }
+@@ -938,6 +938,20 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+ 	return ret;
+ }
+ 
++unsigned long
++memcg_zone_reclaimable_pages(struct mem_cgroup *memcg, struct zone *zone)
++{
++	int nid = zone_to_nid(zone);
++	int zid = zone_idx(zone);
++	unsigned long val;
++
++	val = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid, LRU_ALL_FILE);
++	if (do_swap_account)
++		val += mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
++						    LRU_ALL_ANON);
++	return val;
++}
++
+ static unsigned long
+ mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
+ 			int nid, unsigned int lru_mask)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eea668d..652dfa3 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -140,11 +140,41 @@ static bool global_reclaim(struct scan_control *sc)
+ {
+ 	return !sc->target_mem_cgroup;
+ }
++
 +/*
-+ * This is slightly different than res or memsw reclaim.  We already have
-+ * vmscan behind us to drive the reclaim, so we can basically keep trying until
-+ * all buffers that can be flushed are flushed. We have a very clear signal
-+ * about it in the form of the return value of try_to_free_mem_cgroup_kmem.
++ * kmem reclaim should usually not be triggered when we are doing targetted
++ * reclaim. It is only valid when global reclaim is triggered, or when the
++ * underlying memcg has kmem objects.
 + */
-+static int mem_cgroup_resize_kmem_limit(struct mem_cgroup *memcg,
-+					unsigned long long val)
++static bool has_kmem_reclaim(struct scan_control *sc)
 +{
-+	int ret = -EBUSY;
-+
-+	for (;;) {
-+		if (signal_pending(current)) {
-+			ret = -EINTR;
-+			break;
-+		}
-+
-+		ret = res_counter_set_limit(&memcg->kmem, val);
-+		if (!ret)
-+			break;
-+
-+		/* Can't free anything, pointless to continue */
-+		if (!try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL))
-+			break;
-+	}
-+
-+	return ret;
++	return !sc->target_mem_cgroup ||
++		memcg_kmem_is_active(sc->target_mem_cgroup);
 +}
 +
- static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
++static unsigned long
++zone_nr_reclaimable_pages(struct scan_control *sc, struct zone *zone)
++{
++	if (global_reclaim(sc))
++		return zone_reclaimable_pages(zone);
++	return memcg_zone_reclaimable_pages(sc->target_mem_cgroup, zone);
++}
+ #else
+ static bool global_reclaim(struct scan_control *sc)
  {
- 	int ret = -EINVAL;
--#ifdef CONFIG_MEMCG_KMEM
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	/*
- 	 * For simplicity, we won't allow this to be disabled.  It also can't
-@@ -5612,16 +5641,15 @@ static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
- 		 * starts accounting before all call sites are patched
+ 	return true;
+ }
++
++static bool has_kmem_reclaim(struct scan_control *sc)
++{
++	return true;
++}
++
++static unsigned long
++zone_nr_reclaimable_pages(struct scan_control *sc, struct zone *zone)
++{
++	return zone_reclaimable_pages(zone);
++}
+ #endif
+ 
+ unsigned long zone_reclaimable_pages(struct zone *zone)
+@@ -352,6 +382,15 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+ 	}
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
++		/*
++		 * If we don't have a target mem cgroup, we scan them all.
++		 * Otherwise we will limit our scan to shrinkers marked as
++		 * memcg aware
++		 */
++		if (shrinkctl->target_mem_cgroup &&
++		    !(shrinker->flags & SHRINKER_MEMCG_AWARE))
++			continue;
++
+ 		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+ 			if (!node_online(shrinkctl->nid))
+ 				continue;
+@@ -2399,11 +2438,11 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from over limit
+-		 * cgroups but do shrink slab at least once when aborting
+-		 * reclaim for compaction to avoid unevenly scanning file/anon
+-		 * LRU pages over slab pages.
++		 * cgroups unless we know they have kmem objects. But do shrink
++		 * slab at least once when aborting reclaim for compaction to
++		 * avoid unevenly scanning file/anon LRU pages over slab pages.
  		 */
- 		memcg_kmem_set_active(memcg);
--	} else
--		ret = res_counter_set_limit(&memcg->kmem, val);
-+	} else {
-+		ret = mem_cgroup_resize_kmem_limit(memcg, val);
-+	}
- out:
- 	mutex_unlock(&set_limit_mutex);
- 	mutex_unlock(&memcg_create_mutex);
--#endif
- 	return ret;
- }
+-		if (global_reclaim(sc)) {
++		if (has_kmem_reclaim(sc)) {
+ 			unsigned long lru_pages = 0;
  
--#ifdef CONFIG_MEMCG_KMEM
- static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- {
- 	int ret = 0;
-@@ -5658,6 +5686,11 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- out:
- 	return ret;
- }
-+#else
-+static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
-+{
-+	return -EINVAL;
-+}
- #endif /* CONFIG_MEMCG_KMEM */
+ 			nodes_clear(shrink->nodes_to_scan);
+@@ -2412,7 +2451,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 					continue;
  
- /*
+-				lru_pages += zone_reclaimable_pages(zone);
++				lru_pages += zone_nr_reclaimable_pages(sc, zone);
+ 				node_set(zone_to_nid(zone),
+ 					 shrink->nodes_to_scan);
+ 			}
+@@ -2669,6 +2708,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+ 	};
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc.gfp_mask,
++		.target_mem_cgroup = memcg,
+ 	};
+ 
+ 	/*
 -- 
 1.7.10.4
 
