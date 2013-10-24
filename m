@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3JXHaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:30:05 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58975 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab3JXHaC (ORCPT
+	id S1754013Ab3JXHay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:30:54 -0400
+Received: from smtprelay0132.hostedemail.com ([216.40.44.132]:42305 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752712Ab3JXHax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:30:02 -0400
-Message-ID: <5268DAB6.3080608@kernel.org>
-Date: Thu, 24 Oct 2013 09:30:46 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 7/8] staging: Remove OOM message after input_allocate_device
-References: <cover.1382555436.git.joe@perches.com> <607933414008a7de55bcd88348d525cbec238ed1.1382555436.git.joe@perches.com>
-In-Reply-To: <607933414008a7de55bcd88348d525cbec238ed1.1382555436.git.joe@perches.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Oct 2013 03:30:53 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,3,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:4321:4605:5007:7652:7903:10012:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:2:0
+X-HE-Tag: wash90_7be0bf114e734
+X-Filterd-Recvd-Size: 1767
+Message-ID: <1382599849.22433.51.camel@joe-AO722>
+Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
+From: Joe Perches <joe@perches.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: mmarek@suse.cz, yann.morin.1998@free.fr, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 24 Oct 2013 00:30:49 -0700
+In-Reply-To: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/13 20:14, Joe Perches wrote:
-> Emitting an OOM message isn't necessary after input_allocate_device
-> as there's a generic OOM and a dump_stack already done.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-(for iio driver)
+On Thu, 2013-10-24 at 07:23 +0200, Michael Opdenacker wrote:
+> This is the first version of a script to look for
+> Kconfig parameters which are still defined but no longer
+> used in the kernel source code.
+[]
+> diff --git a/scripts/checkkconfig.py b/scripts/checkkconfig.py
+[]
+> +def count_param(param):
+> +
+> +    global source_file, bad_params_in_file
+> +
+> +    if os.path.isdir('.git'):
+> +       # Use git grep when available
+> +       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
+> +    else:
+> +       # Fallback to regular grep
+> +       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
 
-> ---
->  drivers/staging/cptm1217/clearpad_tm1217.c    | 2 --
->  drivers/staging/iio/adc/mxs-lradc.c           | 4 +---
->  drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c | 2 --
->  3 files changed, 1 insertion(+), 7 deletions(-)
-> 
-> diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
-> index 42a5f5c..ca4c2c6 100644
-> --- a/drivers/staging/cptm1217/clearpad_tm1217.c
-> +++ b/drivers/staging/cptm1217/clearpad_tm1217.c
-> @@ -457,8 +457,6 @@ static int cp_tm1217_probe(struct i2c_client *client,
->  	for (i = 0; i < TOUCH_SUPPORTED; i++) {
->  		input_dev = input_allocate_device();
->  		if (input_dev == NULL) {
-> -			dev_err(ts->dev,
-> -				"cp_tm1217:Input Device Struct alloc failed\n");
->  			retval = -ENOMEM;
->  			goto fail;
->  		}
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index 9da64bf..696fbb3 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -529,10 +529,8 @@ static int mxs_lradc_ts_register(struct mxs_lradc *lradc)
->  		return 0;
->  
->  	input = input_allocate_device();
-> -	if (!input) {
-> -		dev_err(dev, "Failed to allocate TS device!\n");
-> +	if (!input)
->  		return -ENOMEM;
-> -	}
->  
->  	input->name = DRIVER_NAME;
->  	input->id.bustype = BUS_HOST;
-> diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-> index 386362c..28b3930 100644
-> --- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-> +++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-> @@ -911,8 +911,6 @@ static int synaptics_rmi4_probe
->  
->  	rmi4_data->input_dev = input_allocate_device();
->  	if (rmi4_data->input_dev == NULL) {
-> -		dev_err(&client->dev, "%s:input device alloc failed\n",
-> -						__func__);
->  		retval = -ENOMEM;
->  		goto err_input;
->  	}
-> 
+Doesn't the grep need -w?
+
+Also, the regular grep could probably use something like
+'grep -R -w --max-count=2 --include="*.[chS]"'
+
