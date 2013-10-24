@@ -1,132 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab3JXNab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 09:30:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51198 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab3JXNa3 convert rfc822-to-8bit (ORCPT
+	id S1755084Ab3JXNba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 09:31:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61445 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3JXNb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:30:29 -0400
-Subject: Re: [RFC PATCH 2/6] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <5268F9C5.3090106@ti.com>
-Date: Thu, 24 Oct 2013 06:00:02 -0500
-Cc: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <tglx@linutronix.de>,
-        <linus.walleij@linaro.org>, <santosh.shilimkar@ti.com>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <mark.rutland@arm.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <202C69F5-3DEB-4735-9CE3-13B38126BD68@codeaurora.org>
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-3-git-send-email-r.sricharan@ti.com> <2FD881B8-1A59-418E-AF9C-EF5B9C5D0623@codeaurora.org> <5268F9C5.3090106@ti.com>
-To: Sricharan R <r.sricharan@ti.com>
-X-Mailer: Apple Mail (2.1283)
+	Thu, 24 Oct 2013 09:31:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52692129.3070207@roeck-us.net>
+Date: Thu, 24 Oct 2013 06:31:21 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Usage of for_each_child_of_node()
+References: <5259B6F8.3070701@roeck-us.net> <CAL_Jsq+wBGV6KGo4Ngrxr4_aZ=0eWPTbt0n4bhhrpERB55bQyg@mail.gmail.com> <20131023071006.GA7708@ulmo.nvidia.com> <20131023161644.GB20675@roeck-us.net> <20131024075058.GD9403@ulmo.nvidia.com>
+In-Reply-To: <20131024075058.GD9403@ulmo.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/24/2013 12:50 AM, Thierry Reding wrote:
+> On Wed, Oct 23, 2013 at 09:16:44AM -0700, Guenter Roeck wrote:
+>> On Wed, Oct 23, 2013 at 09:10:07AM +0200, Thierry Reding wrote:
+>>> On Sat, Oct 12, 2013 at 10:15:03PM -0500, Rob Herring wrote:
+>>>> On Sat, Oct 12, 2013 at 3:54 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> for_each_child_of_node() and similar functions increase the refcount
+>>>>> on each returned node and expect the caller to release the node by
+>>>>> calling of_node_put() when done.
+>>>>>
+>>>>> Looking through the kernel code, it appears this is hardly ever done,
+>>>>> if at all. Some code even calls of_node_get() on returned nodes again.
+>>>>>
+>>>>> I guess this doesn't matter in cases where devicetree is a static entity.
+>>>>> However, this is not (or no longer) the case with devicetree overlays,
+>>>>> or more generically in cases where devicetree nodes are added and
+>>>>> removed dynamically.
+>>>>>
+>>>>> Fundamental question: Would patches to fix this problem be accepted upstream
+>>>>> ?
+>>>>
+>>>> Certainly.
+>>>>
+>>>>> Or, of course, stepping a bit back: Am I missing something essential ?
+>>>>
+>>>> No. I think this is frequently wrong since it typically doesn't matter
+>>>> for static entries as you mention.
+>>>
+>>> Actually, I think it actually happens to be correct most of the time.
+>>> The reason is that for_each_child_of_node() internally calls the
+>>> of_get_next_child() to iterate over all children. And that function
+>>> already calls of_node_put() on the "previous" node. So if all the code
+>>> does is to iterate over all nodes to query them, then all should be
+>>> fine.
+>>>
+>> Good, that reduces the scope of the problem significantly.
+>>
+>>> The only case where you actually need to drop the reference on a node is
+>>> if you break out of the loop (so that of_get_next_child() will not be
+>>> called). But that's usually the case when you need to perform some
+>>> operation on the node, in which case it is the right thing to hold on to
+>>> a reference until you're done with the node.
+>>>
+>> Unfortunately, there are many cases with code such as
+>>
+>> 	if (error)
+>> 		return;	/* or break; */
+>
+> Well, a break isn't necessarily bad, since you could be using the node
+> subsequently. I imagine that depending on the exact block following the
 
-On Oct 24, 2013, at 5:43 AM, Sricharan R wrote:
+Correct, but I meant the error case. Randomly looking through several
+drivers, most of them get error return handling wrong. "Winner" so far
+is of_regulator_match(), which doesn't release the node on error return,
+but does not acquire references for use afterwards either.
 
-> Hi Kumar,
-> 
-> On Thursday 24 October 2013 03:03 PM, Kumar Gala wrote:
->> On Sep 30, 2013, at 8:59 AM, Sricharan R wrote:
->> 
->>> Some socs have a large number of interrupts requests to service
->>> the needs of its many peripherals and subsystems. All of the
->>> interrupt lines from the subsystems are not needed at the same
->>> time, so they have to be muxed to the irq-controller appropriately.
->>> In such places a interrupt controllers are preceded by an CROSSBAR
->>> that provides flexibility in muxing the device requests to the controller
->>> inputs.
->>> 
->>> This driver takes care a allocating a free irq and then configuring the
->>> crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
->>> be called right before the irqchip_init, so that it is setup to handle the
->>> irqchip callbacks.
->>> 
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: Linus Walleij <linus.walleij@linaro.org>
->>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Cc: Tony Lindgren <tony@atomide.com>
->>> Cc: Rajendra Nayak <rnayak@ti.com>
->>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>> Cc: Grant Likely <grant.likely@linaro.org>
->>> Cc: Rob Herring <rob.herring@calxeda.com>
->>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->>> ---
->>> .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
->>> drivers/irqchip/Kconfig                            |    8 +
->>> drivers/irqchip/Makefile                           |    1 +
->>> drivers/irqchip/irq-crossbar.c                     |  195 ++++++++++++++++++++
->>> include/linux/irqchip/irq-crossbar.h               |   11 ++
->>> 5 files changed, 242 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>> create mode 100644 drivers/irqchip/irq-crossbar.c
->>> create mode 100644 include/linux/irqchip/irq-crossbar.h
->>> 
->>> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>> new file mode 100644
->>> index 0000000..cdec2cd
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>> @@ -0,0 +1,27 @@
->>> +Some socs have a large number of interrupts requests to service
->>> +the needs of its many peripherals and subsystems. All of the
->>> +interrupt lines from the subsystems are not needed at the same
->>> +time, so they have to be muxed to the irq-controller appropriately.
->>> +In such places a interrupt controllers are preceded by an CROSSBAR
->>> +that provides flexibility in muxing the device requests to the controller
->>> +inputs.
->>> +
->>> +Required properties:
->>> +- compatible : Should be "ti,irq-crossbar"
->>> +- reg: Base address and the size of the crossbar registers.
->>> +- max-irqs: Total number of irqs available at the interrupt controller.
->> Should be 'ti,max-irqs
-> Ok, will correct.
->>> +- reg-size: Size of a individual register in bytes. Every individual
->>> +	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
->> Is this something that really needs to be encoded in the dts?
->> 
->> If we keep it should be ti,reg-size
-> Currently, this is the only IP with a fixed register-size.
-> So this can be in the driver also. I thought keeping it
-> DT will avoid any hard-coding in driver.
+Something to do with my non-existing free time ;-).
 
-I'd go with less in the DT at this point, if in the future you need this you can always add it later.
-
->>> +- irqs-reserved: List of the reserved irq lines that are not muxed using
->>> +		 crossbar. These interrupt lines are reserved in the soc,
->>> +		 so crossbar bar driver should not consider them as free
->>> +		 lines.
->>> +
->> ti,irqs-reserved
-> Ok, will correct
->>> +Examples:
->>> +		crossbar_mpu: @4a020000 {
->> Did you mean for there to be a label and no node name?
->> 
-> ya, name is missing. Will add.
->>> +			compatible = "ti,irq-crossbar";
->>> +			reg = <0x4a002a48 0x130>;
->>> +			max-irqs = <160>;
->>> +			reg-size = <2>;
->>> +			irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
->>> +		};
-> 
-> Regards,
-> Sricharan
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Guenter
 
