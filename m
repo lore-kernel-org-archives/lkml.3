@@ -1,65 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab3JXP6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:58:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:58713 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756150Ab3JXP55 (ORCPT
+	id S1756404Ab3JXP6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:58:35 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:62246 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755780Ab3JXPtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:57:57 -0400
-Message-ID: <1382630272.5283.31.camel@pippen.local.home>
-Subject: [ANNOUNCE] 3.4.67-rt83
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Thu, 24 Oct 2013 11:57:52 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 24 Oct 2013 11:49:53 -0400
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/34] sysfs, kernfs: add skeletons for kernfs
+Date: Thu, 24 Oct 2013 11:49:13 -0400
+Message-Id: <1382629780-10006-8-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
+References: <1382629780-10006-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Core sysfs implementation will be separated into kernfs so that it can
+be used by other non-kobject users.
 
+This patch creates fs/kernfs/ directory and makes boilerplate changes.
+kernfs interface will be directly based on sysfs_dirent and its
+forward declaration is moved to include/linux/kernfs.h which is
+included from include/linux/sysfs.h.  sysfs core implementation will
+be gradually separated out and moved to kernfs.
 
-Dear RT Folks,
+This patch doesn't introduce any functional changes.
 
-I'm pleased to announce the 3.4.67-rt83 stable release.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/Makefile            |  2 +-
+ fs/kernfs/Makefile     |  5 +++++
+ fs/kernfs/dir.c        |  9 +++++++++
+ fs/kernfs/file.c       |  9 +++++++++
+ fs/kernfs/inode.c      |  9 +++++++++
+ fs/kernfs/symlink.c    |  9 +++++++++
+ include/linux/kernfs.h | 12 ++++++++++++
+ include/linux/sysfs.h  |  3 +--
+ 8 files changed, 55 insertions(+), 3 deletions(-)
+ create mode 100644 fs/kernfs/Makefile
+ create mode 100644 fs/kernfs/dir.c
+ create mode 100644 fs/kernfs/file.c
+ create mode 100644 fs/kernfs/inode.c
+ create mode 100644 fs/kernfs/symlink.c
+ create mode 100644 include/linux/kernfs.h
 
-
-This release is just an update to the new stable 3.4.67 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.4-rt
-  Head SHA1: 22d48e16f6a4b433261f57639d141e414f95ae7a
-22d48e16f6a4b433261f57639d141e414f95ae7a
-
-
-Or to build 3.4.67-rt83 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.67.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.67-rt83.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/fs/Makefile b/fs/Makefile
+index 4fe6df3..39a824f 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -53,7 +53,7 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
+ obj-y				+= quota/
+ 
+ obj-$(CONFIG_PROC_FS)		+= proc/
+-obj-$(CONFIG_SYSFS)		+= sysfs/
++obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
+ obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
+ obj-y				+= devpts/
+ 
+diff --git a/fs/kernfs/Makefile b/fs/kernfs/Makefile
+new file mode 100644
+index 0000000..768c24c
+--- /dev/null
++++ b/fs/kernfs/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for the kernfs pseudo filesystem
++#
++
++obj-y		:= inode.o dir.o file.o symlink.o
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+new file mode 100644
+index 0000000..1061602
+--- /dev/null
++++ b/fs/kernfs/dir.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/dir.c - kernfs directory implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+new file mode 100644
+index 0000000..90b1e88
+--- /dev/null
++++ b/fs/kernfs/file.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/file.c - kernfs file implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
+new file mode 100644
+index 0000000..86bfeea
+--- /dev/null
++++ b/fs/kernfs/inode.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/inode.c - kernfs inode implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+new file mode 100644
+index 0000000..2578715
+--- /dev/null
++++ b/fs/kernfs/symlink.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/symlink.c - kernfs symlink implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+new file mode 100644
+index 0000000..254b9e8
+--- /dev/null
++++ b/include/linux/kernfs.h
+@@ -0,0 +1,12 @@
++/*
++ * kernfs.h - pseudo filesystem decoupled from vfs locking
++ *
++ * This file is released under the GPLv2.
++ */
++
++#ifndef __LINUX_KERNFS_H
++#define __LINUX_KERNFS_H
++
++struct sysfs_dirent;
++
++#endif	/* __LINUX_KERNFS_H */
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 6695040..2bc735d 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -12,6 +12,7 @@
+ #ifndef _SYSFS_H_
+ #define _SYSFS_H_
+ 
++#include <linux/kernfs.h>
+ #include <linux/compiler.h>
+ #include <linux/errno.h>
+ #include <linux/list.h>
+@@ -175,8 +176,6 @@ struct sysfs_ops {
+ 	ssize_t	(*store)(struct kobject *, struct attribute *, const char *, size_t);
+ };
+ 
+-struct sysfs_dirent;
+-
+ #ifdef CONFIG_SYSFS
+ 
+ int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+-- 
+1.8.3.1
 
