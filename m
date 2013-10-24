@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3JXGyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 02:54:04 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:34568 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3JXGyC (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Thu, 24 Oct 2013 02:54:02 -0400
-Message-Id: <5268D21502000078000A577A@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 24 Oct 2013 07:53:57 +0100
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <phcoder@gmail.com>, <grub-devel@gnu.org>
-Cc: <ian.campbell@citrix.com>, <ross.philipson@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <david.woodhouse@intel.com>,
-        <richard.l.maliszewski@intel.com>, <xen-devel@lists.xen.org>,
-        <boris.ostrovsky@oracle.com>, <daniel.kiper@oracle.com>,
-        <konrad.wilk@oracle.com>, <mjg59@srcf.ucam.org>,
-        <linux-kernel@vger.kernel.org>, <keir@xen.org>
-Subject: Re: [Xen-devel] EFI and multiboot2 devlopment work for Xen
-References: <20131021185758.GD3626@debian70-amd64.local.net-space.pl>
- <1382433990.1657.66.camel@hastur.hellion.org.uk>
- <5266620602000078000FCA48@nat28.tlf.novell.com>
- <1382435127.1657.70.camel@hastur.hellion.org.uk>
- <526668A502000078000FCA7B@nat28.tlf.novell.com>
- <20131022134252.GA27302@phenom.dumpdata.com>
- <1382449985.18283.12.camel@hastur.hellion.org.uk>
- <20131022140947.GA17829@phenom.dumpdata.com>
- <1382451868.18283.21.camel@hastur.hellion.org.uk>
- <1382455358.18283.31.camel@hastur.hellion.org.uk>
- <20131022162632.GB19189@phenom.dumpdata.com>
- <1382517150.22417.21.camel@hastur.hellion.org.uk>
- <526803E902000078000A56D3@nat28.tlf.novell.com> <52680103.50601@gmail.com>
-In-Reply-To: <52680103.50601@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1753881Ab3JXHAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:00:30 -0400
+Received: from asix.com.tw ([210.243.224.51]:23817 "EHLO freebsd2.asix.com.tw"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751554Ab3JXHA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:00:28 -0400
+From: freddy@asix.com.tw
+To: davem@davemloft.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        allan@asix.com.tw, louis@asix.com.tw
+Cc: Freddy Xin <freddy@asix.com.tw>
+Subject: [PATCH 1/1] ax88179_178a: Remove AX_MEDIUM_ALWAYS_ONE bit in AX_MEDIUM_STATUS_MODE register to avoid TX throttling
+Date: Thu, 24 Oct 2013 14:58:25 +0800
+Message-Id: <1382597905-2393-1-git-send-email-freddy@asix.com.tw>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Vladimir 'φ-coder/phcoder' Serbinenko<phcoder@gmail.com> 10/23/13 7:02 PM >>>
->> GrUB - which iiuc stays in memory
->> after transferring control - could export its file system support to its
->> descendants).
->
->Xen shouldn't need to load any file after multiboot2 entry point. The
->needed files would already be in memory with pointers to them passed.
+From: Freddy Xin <freddy@asix.com.tw>
 
-I should have said "to its chainloaded descendants".
+Remove AX_MEDIUM_ALWAYS_ONE in AX_MEDIUM_STATUS_MODE register.
+Setting this bit may cause TX throttling in Half-Duplex mode.
 
->If you insist on being able to load directly from EFI, then IMO the best
->way is to have a PE executable with one of sections containing Xen and
->code which would load remaining files to memory and call common entry point.
+Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+---
+ drivers/net/usb/ax88179_178a.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-I think you've been told before - this is what has been working already for quite
-some time.
-
-Jan
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 846cc19..8e8d0fc 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -78,7 +78,6 @@
+ #define AX_MEDIUM_STATUS_MODE			0x22
+ 	#define AX_MEDIUM_GIGAMODE	0x01
+ 	#define AX_MEDIUM_FULL_DUPLEX	0x02
+-	#define AX_MEDIUM_ALWAYS_ONE	0x04
+ 	#define AX_MEDIUM_EN_125MHZ	0x08
+ 	#define AX_MEDIUM_RXFLOW_CTRLEN	0x10
+ 	#define AX_MEDIUM_TXFLOW_CTRLEN	0x20
+@@ -1065,8 +1064,8 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ 	/* Configure default medium type => giga */
+ 	*tmp16 = AX_MEDIUM_RECEIVE_EN | AX_MEDIUM_TXFLOW_CTRLEN |
+-		 AX_MEDIUM_RXFLOW_CTRLEN | AX_MEDIUM_ALWAYS_ONE |
+-		 AX_MEDIUM_FULL_DUPLEX | AX_MEDIUM_GIGAMODE;
++		 AX_MEDIUM_RXFLOW_CTRLEN | AX_MEDIUM_FULL_DUPLEX |
++		 AX_MEDIUM_GIGAMODE;
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_MEDIUM_STATUS_MODE,
+ 			  2, 2, tmp16);
+ 
+@@ -1225,7 +1224,7 @@ static int ax88179_link_reset(struct usbnet *dev)
+ 	}
+ 
+ 	mode = AX_MEDIUM_RECEIVE_EN | AX_MEDIUM_TXFLOW_CTRLEN |
+-	       AX_MEDIUM_RXFLOW_CTRLEN | AX_MEDIUM_ALWAYS_ONE;
++	       AX_MEDIUM_RXFLOW_CTRLEN;
+ 
+ 	ax88179_read_cmd(dev, AX_ACCESS_MAC, PHYSICAL_LINK_STATUS,
+ 			 1, 1, &link_sts);
+@@ -1339,8 +1338,8 @@ static int ax88179_reset(struct usbnet *dev)
+ 
+ 	/* Configure default medium type => giga */
+ 	*tmp16 = AX_MEDIUM_RECEIVE_EN | AX_MEDIUM_TXFLOW_CTRLEN |
+-		 AX_MEDIUM_RXFLOW_CTRLEN | AX_MEDIUM_ALWAYS_ONE |
+-		 AX_MEDIUM_FULL_DUPLEX | AX_MEDIUM_GIGAMODE;
++		 AX_MEDIUM_RXFLOW_CTRLEN | AX_MEDIUM_FULL_DUPLEX |
++		 AX_MEDIUM_GIGAMODE;
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_MEDIUM_STATUS_MODE,
+ 			  2, 2, tmp16);
+ 
+-- 
+1.7.10.4
 
