@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3JXJ0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:26:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36716 "EHLO
+	id S1754800Ab3JXJ26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:28:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36717 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab3JXJ0P (ORCPT
+	with ESMTP id S1754339Ab3JXJ0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Oct 2013 05:26:15 -0400
 From: Jens Axboe <axboe@kernel.dk>
 To: linux-kernel@vger.kernel.org
-Cc: hch@infradead.org, Jens Axboe <axboe@kernel.dk>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 02/11] smp: don't warn about csd->flags having CSD_FLAG_LOCK cleared for !wait
-Date: Thu, 24 Oct 2013 10:25:55 +0100
-Message-Id: <1382606764-8309-3-git-send-email-axboe@kernel.dk>
+Cc: hch@infradead.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 03/11] block: make rq->cmd_flags be 64-bit
+Date: Thu, 24 Oct 2013 10:25:56 +0100
+Message-Id: <1382606764-8309-4-git-send-email-axboe@kernel.dk>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
 References: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
@@ -21,50 +20,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk-mq reuses the request potentially immediately, since the most
-cache hot is always given out first. This means that rq->csd could
-be reused between csd->func() being called and csd_unlock() being
-called. This isn't a problem, since we never use wait == 1 for
-the smp call function. Add CSD_FLAG_WAIT to be able to tell the
-difference, retaining the warning for other cases.
+We have officially run out of flags in a 32-bit space. Extend it
+to 64-bit even on 32-bit archs.
 
-Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 ---
- kernel/smp.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ block/blk-core.c          |  4 +--
+ drivers/block/floppy.c    |  4 +--
+ drivers/scsi/sd.c         |  2 +-
+ include/linux/blk_types.h | 66 +++++++++++++++++++++++------------------------
+ include/linux/blkdev.h    |  4 +--
+ 5 files changed, 40 insertions(+), 40 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 9de461e..069d20b 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -18,6 +18,7 @@
- #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
- enum {
- 	CSD_FLAG_LOCK		= 0x01,
-+	CSD_FLAG_WAIT		= 0x02,
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 0a00e4e..213e9f0 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -174,9 +174,9 @@ void blk_dump_rq_flags(struct request *rq, char *msg)
+ {
+ 	int bit;
+ 
+-	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
++	printk(KERN_INFO "%s: dev %s: type=%x, flags=%llx\n", msg,
+ 		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
+-		rq->cmd_flags);
++		(unsigned long long) rq->cmd_flags);
+ 
+ 	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
+ 	       (unsigned long long)blk_rq_pos(rq),
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 04ceb7e..000abe2 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -2886,9 +2886,9 @@ static void do_fd_request(struct request_queue *q)
+ 		return;
+ 
+ 	if (WARN(atomic_read(&usage_count) == 0,
+-		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%x\n",
++		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%llx\n",
+ 		 current_req, (long)blk_rq_pos(current_req), current_req->cmd_type,
+-		 current_req->cmd_flags))
++		 (unsigned long long) current_req->cmd_flags))
+ 		return;
+ 
+ 	if (test_and_set_bit(0, &fdc_busy)) {
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index e62d17d..dae6133 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1002,7 +1002,7 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+ 		SCpnt->cmnd[0] = READ_6;
+ 		SCpnt->sc_data_direction = DMA_FROM_DEVICE;
+ 	} else {
+-		scmd_printk(KERN_ERR, SCpnt, "Unknown command %x\n", rq->cmd_flags);
++		scmd_printk(KERN_ERR, SCpnt, "Unknown command %llx\n", (unsigned long long) rq->cmd_flags);
+ 		goto out;
+ 	}
+ 
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index fa1abeb..c26801e 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -181,16 +181,16 @@ enum rq_flag_bits {
+ 	__REQ_NR_BITS,		/* stops here */
  };
  
- struct call_function_data {
-@@ -124,7 +125,7 @@ static void csd_lock(struct call_single_data *csd)
+-#define REQ_WRITE		(1 << __REQ_WRITE)
+-#define REQ_FAILFAST_DEV	(1 << __REQ_FAILFAST_DEV)
+-#define REQ_FAILFAST_TRANSPORT	(1 << __REQ_FAILFAST_TRANSPORT)
+-#define REQ_FAILFAST_DRIVER	(1 << __REQ_FAILFAST_DRIVER)
+-#define REQ_SYNC		(1 << __REQ_SYNC)
+-#define REQ_META		(1 << __REQ_META)
+-#define REQ_PRIO		(1 << __REQ_PRIO)
+-#define REQ_DISCARD		(1 << __REQ_DISCARD)
+-#define REQ_WRITE_SAME		(1 << __REQ_WRITE_SAME)
+-#define REQ_NOIDLE		(1 << __REQ_NOIDLE)
++#define REQ_WRITE		(1ULL << __REQ_WRITE)
++#define REQ_FAILFAST_DEV	(1ULL << __REQ_FAILFAST_DEV)
++#define REQ_FAILFAST_TRANSPORT	(1ULL << __REQ_FAILFAST_TRANSPORT)
++#define REQ_FAILFAST_DRIVER	(1ULL << __REQ_FAILFAST_DRIVER)
++#define REQ_SYNC		(1ULL << __REQ_SYNC)
++#define REQ_META		(1ULL << __REQ_META)
++#define REQ_PRIO		(1ULL << __REQ_PRIO)
++#define REQ_DISCARD		(1ULL << __REQ_DISCARD)
++#define REQ_WRITE_SAME		(1ULL << __REQ_WRITE_SAME)
++#define REQ_NOIDLE		(1ULL << __REQ_NOIDLE)
  
- static void csd_unlock(struct call_single_data *csd)
- {
--	WARN_ON(!(csd->flags & CSD_FLAG_LOCK));
-+	WARN_ON((csd->flags & CSD_FLAG_WAIT) && !(csd->flags & CSD_FLAG_LOCK));
+ #define REQ_FAILFAST_MASK \
+ 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+@@ -206,28 +206,28 @@ enum rq_flag_bits {
+ #define REQ_NOMERGE_FLAGS \
+ 	(REQ_NOMERGE | REQ_STARTED | REQ_SOFTBARRIER | REQ_FLUSH | REQ_FUA)
  
- 	/*
- 	 * ensure we're all done before releasing data:
-@@ -146,6 +147,9 @@ void generic_exec_single(int cpu, struct call_single_data *csd, int wait)
- 	unsigned long flags;
- 	int ipi;
- 
-+	if (wait)
-+		csd->flags |= CSD_FLAG_WAIT;
+-#define REQ_RAHEAD		(1 << __REQ_RAHEAD)
+-#define REQ_THROTTLED		(1 << __REQ_THROTTLED)
+-
+-#define REQ_SORTED		(1 << __REQ_SORTED)
+-#define REQ_SOFTBARRIER		(1 << __REQ_SOFTBARRIER)
+-#define REQ_FUA			(1 << __REQ_FUA)
+-#define REQ_NOMERGE		(1 << __REQ_NOMERGE)
+-#define REQ_STARTED		(1 << __REQ_STARTED)
+-#define REQ_DONTPREP		(1 << __REQ_DONTPREP)
+-#define REQ_QUEUED		(1 << __REQ_QUEUED)
+-#define REQ_ELVPRIV		(1 << __REQ_ELVPRIV)
+-#define REQ_FAILED		(1 << __REQ_FAILED)
+-#define REQ_QUIET		(1 << __REQ_QUIET)
+-#define REQ_PREEMPT		(1 << __REQ_PREEMPT)
+-#define REQ_ALLOCED		(1 << __REQ_ALLOCED)
+-#define REQ_COPY_USER		(1 << __REQ_COPY_USER)
+-#define REQ_FLUSH		(1 << __REQ_FLUSH)
+-#define REQ_FLUSH_SEQ		(1 << __REQ_FLUSH_SEQ)
+-#define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+-#define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+-#define REQ_SECURE		(1 << __REQ_SECURE)
+-#define REQ_KERNEL		(1 << __REQ_KERNEL)
+-#define REQ_PM			(1 << __REQ_PM)
++#define REQ_RAHEAD		(1ULL << __REQ_RAHEAD)
++#define REQ_THROTTLED		(1ULL << __REQ_THROTTLED)
 +
- 	raw_spin_lock_irqsave(&dst->lock, flags);
- 	ipi = list_empty(&dst->list);
- 	list_add_tail(&csd->list, &dst->list);
++#define REQ_SORTED		(1ULL << __REQ_SORTED)
++#define REQ_SOFTBARRIER		(1ULL << __REQ_SOFTBARRIER)
++#define REQ_FUA			(1ULL << __REQ_FUA)
++#define REQ_NOMERGE		(1ULL << __REQ_NOMERGE)
++#define REQ_STARTED		(1ULL << __REQ_STARTED)
++#define REQ_DONTPREP		(1ULL << __REQ_DONTPREP)
++#define REQ_QUEUED		(1ULL << __REQ_QUEUED)
++#define REQ_ELVPRIV		(1ULL << __REQ_ELVPRIV)
++#define REQ_FAILED		(1ULL << __REQ_FAILED)
++#define REQ_QUIET		(1ULL << __REQ_QUIET)
++#define REQ_PREEMPT		(1ULL << __REQ_PREEMPT)
++#define REQ_ALLOCED		(1ULL << __REQ_ALLOCED)
++#define REQ_COPY_USER		(1ULL << __REQ_COPY_USER)
++#define REQ_FLUSH		(1ULL << __REQ_FLUSH)
++#define REQ_FLUSH_SEQ		(1ULL << __REQ_FLUSH_SEQ)
++#define REQ_IO_STAT		(1ULL << __REQ_IO_STAT)
++#define REQ_MIXED_MERGE		(1ULL << __REQ_MIXED_MERGE)
++#define REQ_SECURE		(1ULL << __REQ_SECURE)
++#define REQ_KERNEL		(1ULL << __REQ_KERNEL)
++#define REQ_PM			(1ULL << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 0e6f765..f5c7596 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -99,7 +99,7 @@ struct request {
+ 
+ 	struct request_queue *q;
+ 
+-	unsigned int cmd_flags;
++	u64 cmd_flags;
+ 	enum rq_cmd_type_bits cmd_type;
+ 	unsigned long atomic_flags;
+ 
+@@ -570,7 +570,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+ 
+ #define list_entry_rq(ptr)	list_entry((ptr), struct request, queuelist)
+ 
+-#define rq_data_dir(rq)		((rq)->cmd_flags & 1)
++#define rq_data_dir(rq)		(((rq)->cmd_flags & 1) != 0)
+ 
+ static inline unsigned int blk_queue_cluster(struct request_queue *q)
+ {
 -- 
 1.8.1.2
 
