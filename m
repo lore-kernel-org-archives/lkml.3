@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab3JXMFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:05:36 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47948 "EHLO
+	id S1755138Ab3JXMFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:05:42 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48003 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab3JXMFc (ORCPT
+	with ESMTP id S1755093Ab3JXMFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:32 -0400
+	Thu, 24 Oct 2013 08:05:39 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Dave Chinner <dchinner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v11 07/15] memcg: scan cache objects hierarchically
-Date: Thu, 24 Oct 2013 16:04:58 +0400
-Message-ID: <1906bf1f9832370d5695f84b7d47ed0b5c5f42ac.1382603434.git.vdavydov@parallels.com>
+        <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        "John Stultz" <john.stultz@linaro.org>, Michal Hocko <mhocko@suse.cz>,
+        "Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH v11 14/15] memcg: reap dead memcgs upon global memory pressure
+Date: Thu, 24 Oct 2013 16:05:05 +0400
+Message-ID: <241d5b4bde7cb5b96e459f48f7423f63974e9ad1.1382603434.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
 References: <cover.1382603434.git.vdavydov@parallels.com>
@@ -31,177 +30,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@openvz.org>
 
-When reaching shrink_slab, we should descent in children memcg searching
-for objects that could be shrunk. This is true even if the memcg does
-not have kmem limits on, since the kmem res_counter will also be billed
-against the user res_counter of the parent.
+When we delete kmem-enabled memcgs, they can still be zombieing
+around for a while. The reason is that the objects may still be alive,
+and we won't be able to delete them at destruction time.
 
-It is possible that we will free objects and not free any pages, that
-will just harm the child groups without helping the parent group at all.
-But at this point, we basically are prepared to pay the price.
+The only entry point for that, though, are the shrinkers. The
+shrinker interface, however, is not exactly tailored to our needs. It
+could be a little bit better by using the API Dave Chinner proposed, but
+it is still not ideal since we aren't really a count-and-scan event, but
+more a one-off flush-all-you-can event that would have to abuse that
+somehow.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: John Stultz <john.stultz@linaro.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/memcontrol.h |    6 ++++
- mm/memcontrol.c            |   13 +++++++++
- mm/vmscan.c                |   65 ++++++++++++++++++++++++++++++++++++--------
- 3 files changed, 73 insertions(+), 11 deletions(-)
+ mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 77 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index d16ba51..a513fad 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -488,6 +488,7 @@ static inline bool memcg_kmem_enabled(void)
- 	return static_key_false(&memcg_kmem_enabled_key);
- }
- 
-+bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg);
- bool memcg_kmem_is_active(struct mem_cgroup *memcg);
- 
- /*
-@@ -624,6 +625,11 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- }
- #else
- 
-+static inline bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
-+{
-+	return false;
-+}
-+
- static inline bool memcg_kmem_is_active(struct mem_cgroup *memcg)
- {
- 	return false;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f5b9921..2f5a777 100644
+index 7bf4dc7..628ea0d 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2972,6 +2972,19 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+@@ -285,8 +285,16 @@ struct mem_cgroup {
+ 	/* thresholds for mem+swap usage. RCU-protected */
+ 	struct mem_cgroup_thresholds memsw_thresholds;
+ 
+-	/* For oom notifier event fd */
+-	struct list_head oom_notify;
++	union {
++		/* For oom notifier event fd */
++		struct list_head oom_notify;
++		/*
++		 * we can only trigger an oom event if the memcg is alive.
++		 * so we will reuse this field to hook the memcg in the list
++		 * of dead memcgs.
++		 */
++		struct list_head dead;
++	};
+ 
+ 	/*
+ 	 * Should we move charges of a task when a task is moved into this
+@@ -336,6 +344,29 @@ struct mem_cgroup {
+ 	/* WARNING: nodeinfo must be the last member here */
+ };
+ 
++#if defined(CONFIG_MEMCG_KMEM) || defined(CONFIG_MEMCG_SWAP)
++static LIST_HEAD(dangling_memcgs);
++static DEFINE_MUTEX(dangling_memcgs_mutex);
++
++static inline void memcg_dangling_del(struct mem_cgroup *memcg)
++{
++	mutex_lock(&dangling_memcgs_mutex);
++	list_del(&memcg->dead);
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++
++static inline void memcg_dangling_add(struct mem_cgroup *memcg)
++{
++	INIT_LIST_HEAD(&memcg->dead);
++	mutex_lock(&dangling_memcgs_mutex);
++	list_add(&memcg->dead, &dangling_memcgs);
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++#else
++static inline void memcg_dangling_free(struct mem_cgroup *memcg) {}
++static inline void memcg_dangling_add(struct mem_cgroup *memcg) {}
++#endif
++
+ static size_t memcg_size(void)
+ {
+ 	return sizeof(struct mem_cgroup) +
+@@ -6352,6 +6383,41 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
  }
  
  #ifdef CONFIG_MEMCG_KMEM
-+bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
++static void memcg_vmpressure_shrink_dead(void)
 +{
-+	struct mem_cgroup *iter;
++	struct memcg_cache_params *params, *tmp;
++	struct kmem_cache *cachep;
++	struct mem_cgroup *memcg;
 +
-+	for_each_mem_cgroup_tree(iter, memcg) {
-+		if (memcg_kmem_is_active(iter)) {
-+			mem_cgroup_iter_break(memcg, iter);
-+			return true;
++	mutex_lock(&dangling_memcgs_mutex);
++	list_for_each_entry(memcg, &dangling_memcgs, dead) {
++		mutex_lock(&memcg->slab_caches_mutex);
++		/* The element may go away as an indirect result of shrink */
++		list_for_each_entry_safe(params, tmp,
++					 &memcg->memcg_slab_caches, list) {
++			cachep = memcg_params_to_cache(params);
++			/*
++			 * the cpu_hotplug lock is taken in kmem_cache_create
++			 * outside the slab_caches_mutex manipulation. It will
++			 * be taken by kmem_cache_shrink to flush the cache.
++			 * So we need to drop the lock. It is all right because
++			 * the lock only protects elements moving in and out the
++			 * list.
++			 */
++			mutex_unlock(&memcg->slab_caches_mutex);
++			kmem_cache_shrink(cachep);
++			mutex_lock(&memcg->slab_caches_mutex);
 +		}
++		mutex_unlock(&memcg->slab_caches_mutex);
 +	}
-+	return false;
++	mutex_unlock(&dangling_memcgs_mutex);
 +}
 +
- static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
++static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
++{
++	vmpressure_register_kernel_event(css, memcg_vmpressure_shrink_dead);
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
  {
- 	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index cdfc364..36fc133 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -149,7 +149,7 @@ static bool global_reclaim(struct scan_control *sc)
- static bool has_kmem_reclaim(struct scan_control *sc)
+ 	int ret;
+@@ -6409,6 +6475,10 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ 		css_put(&memcg->css);
+ }
+ #else
++static inline void memcg_register_kmem_events(struct cgroup *cont)
++{
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
  {
- 	return !sc->target_mem_cgroup ||
--		memcg_kmem_is_active(sc->target_mem_cgroup);
-+		memcg_kmem_should_reclaim(sc->target_mem_cgroup);
+ 	return 0;
+@@ -6745,8 +6815,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
+ 	int error = 0;
+ 
+-	if (!parent)
++	if (!parent) {
++		memcg_register_kmem_events(css);
+ 		return 0;
++	}
+ 
+ 	mutex_lock(&memcg_create_mutex);
+ 
+@@ -6808,6 +6880,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
++	memcg_dangling_add(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
  }
  
- static unsigned long
-@@ -360,12 +360,35 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-  *
-  * Returns the number of slab objects which we shrunk.
-  */
-+static unsigned long
-+shrink_slab_one(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-+		unsigned long nr_pages_scanned, unsigned long lru_pages)
-+{
-+	unsigned long freed = 0;
-+
-+	for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-+		if (!node_online(shrinkctl->nid))
-+			continue;
-+
-+		if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
-+		    (shrinkctl->nid != 0))
-+			break;
-+
-+		freed += shrink_slab_node(shrinkctl, shrinker,
-+			 nr_pages_scanned, lru_pages);
-+
-+	}
-+
-+	return freed;
-+}
-+
- unsigned long shrink_slab(struct shrink_control *shrinkctl,
- 			  unsigned long nr_pages_scanned,
- 			  unsigned long lru_pages)
- {
- 	struct shrinker *shrinker;
- 	unsigned long freed = 0;
-+	struct mem_cgroup *root = shrinkctl->target_mem_cgroup;
+@@ -6816,6 +6889,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
  
- 	if (nr_pages_scanned == 0)
- 		nr_pages_scanned = SWAP_CLUSTER_MAX;
-@@ -390,19 +413,39 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
- 		if (shrinkctl->target_mem_cgroup &&
- 		    !(shrinker->flags & SHRINKER_MEMCG_AWARE))
- 			continue;
-+		/*
-+		 * In a hierarchical chain, it might be that not all memcgs are
-+		 * kmem active. kmemcg design mandates that when one memcg is
-+		 * active, its children will be active as well. But it is
-+		 * perfectly possible that its parent is not.
-+		 *
-+		 * We also need to make sure we scan at least once, for the
-+		 * global case. So if we don't have a target memcg (saved in
-+		 * root), we proceed normally and expect to break in the next
-+		 * round.
-+		 */
-+		do {
-+			struct mem_cgroup *memcg = shrinkctl->target_mem_cgroup;
+ 	memcg_destroy_kmem(memcg);
++	memcg_dangling_del(memcg);
+ 	__mem_cgroup_free(memcg);
+ }
  
--		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
--			if (!node_online(shrinkctl->nid))
--				continue;
--
--			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
--			    (shrinkctl->nid != 0))
-+			if (!memcg || memcg_kmem_is_active(memcg))
-+				freed += shrink_slab_one(shrinkctl, shrinker,
-+					 nr_pages_scanned, lru_pages);
-+			/*
-+			 * For non-memcg aware shrinkers, we will arrive here
-+			 * at first pass because we need to scan the root
-+			 * memcg.  We need to bail out, since exactly because
-+			 * they are not memcg aware, instead of noticing they
-+			 * have nothing to shrink, they will just shrink again,
-+			 * and deplete too many objects.
-+			 */
-+			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE))
- 				break;
-+			shrinkctl->target_mem_cgroup =
-+				mem_cgroup_iter(root, memcg, NULL);
-+		} while (shrinkctl->target_mem_cgroup);
- 
--			freed += shrink_slab_node(shrinkctl, shrinker,
--				 nr_pages_scanned, lru_pages);
--
--		}
-+		/* restore original state */
-+		shrinkctl->target_mem_cgroup = root;
- 	}
- 	up_read(&shrinker_rwsem);
- out:
 -- 
 1.7.10.4
 
