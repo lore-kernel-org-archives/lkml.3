@@ -1,217 +1,685 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab3JXNrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 09:47:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12498 "EHLO mx1.redhat.com"
+	id S1755091Ab3JXN7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 09:59:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44468 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754526Ab3JXNri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:47:38 -0400
-Date: Thu, 24 Oct 2013 09:47:06 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
-        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131024134706.GN227855@redhat.com>
-References: <20131017160034.GO227855@redhat.com>
- <20131017160439.GP227855@redhat.com>
- <20131017163039.GR10651@twins.programming.kicks-ass.net>
- <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
- <20131017220156.GB10651@twins.programming.kicks-ass.net>
- <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
- <20131022211237.GH2490@laptop.programming.kicks-ass.net>
- <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
- <20131023204838.GB19466@laptop.lan>
- <20131024105206.GM2490@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131024105206.GM2490@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754709Ab3JXN7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 09:59:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="312182221"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: rostedt@goodmis.org
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH v11 0/7] tracing: trace event triggers
+Date: Thu, 24 Oct 2013 08:59:23 -0500
+Message-Id: <cover.1382622043.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 12:52:06PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
-> > I'll also make sure to test we actually hit the fault path
-> > by concurrently running something like:
-> > 
-> >  while :; echo 1 > /proc/sys/vm/drop_caches ; done
-> > 
-> > while doing perf top or so.. 
-> 
-> So the below appears to work; I've ran:
-> 
->   while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
->   while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
-> 
-> And verified that the if (in_nmi()) trace_printk() was visible in the
-> trace output verifying we indeed took the fault from the NMI code.
-> 
-> I've had this running for ~ 30 minutes or so and the machine is still
-> healthy.
-> 
-> Don, can you give this stuff a spin on your system?
+Hi,
 
-I'll try to grab the machine I was testing with and see what this patch
-does.  Thanks!  I assume this can go on top of the other patch that was
-committed to -tip last week?
+This is v11 of the trace event triggers patchset.  Prompted by
+Masami's mentioning of splitting out independent patches, I split out
+3 of the patches into an independent patchset, posted earlier as
+'tracing: add support for multibuffer event filters', which this
+patchset depends on and should be applied on top of.
 
-Cheers,
-Don
+Moving things around meant fixing up some conflicts, but functionally
+nothing changed.
 
-> 
-> ---
->  arch/x86/lib/usercopy.c | 43 +++++++++++++++----------------------------
->  arch/x86/mm/fault.c     | 43 +++++++++++++++++++++++--------------------
->  2 files changed, 38 insertions(+), 48 deletions(-)
-> 
-> diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-> index 4f74d94c8d97..5465b8613944 100644
-> --- a/arch/x86/lib/usercopy.c
-> +++ b/arch/x86/lib/usercopy.c
-> @@ -11,39 +11,26 @@
->  #include <linux/sched.h>
->  
->  /*
-> - * best effort, GUP based copy_from_user() that is NMI-safe
-> + * We rely on the nested NMI work to allow atomic faults from the NMI path; the
-> + * nested NMI paths are careful to preserve CR2.
->   */
->  unsigned long
->  copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
->  {
-> -	unsigned long offset, addr = (unsigned long)from;
-> -	unsigned long size, len = 0;
-> -	struct page *page;
-> -	void *map;
-> -	int ret;
-> +	unsigned long ret;
->  
->  	if (__range_not_ok(from, n, TASK_SIZE))
-> -		return len;
-> -
-> -	do {
-> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
-> -		if (!ret)
-> -			break;
-> -
-> -		offset = addr & (PAGE_SIZE - 1);
-> -		size = min(PAGE_SIZE - offset, n - len);
-> -
-> -		map = kmap_atomic(page);
-> -		memcpy(to, map+offset, size);
-> -		kunmap_atomic(map);
-> -		put_page(page);
-> -
-> -		len  += size;
-> -		to   += size;
-> -		addr += size;
-> -
-> -	} while (len < n);
-> -
-> -	return len;
-> +		return 0;
-> +
-> +	/*
-> +	 * Even though this function is typically called from NMI/IRQ context
-> +	 * disable pagefaults so that its behaviour is consistent even when
-> +	 * called form other contexts.
-> +	 */
-> +	pagefault_disable();
-> +	ret = __copy_from_user_inatomic(to, from, n);
-> +	pagefault_enable();
-> +
-> +	return n - ret;
->  }
->  EXPORT_SYMBOL_GPL(copy_from_user_nmi);
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 3aaeffcfd67a..506564b13ba7 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -51,7 +51,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
->  	return 0;
->  }
->  
-> -static inline int __kprobes notify_page_fault(struct pt_regs *regs)
-> +static inline int __kprobes kprobes_fault(struct pt_regs *regs)
->  {
->  	int ret = 0;
->  
-> @@ -1048,7 +1048,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  			return;
->  
->  		/* kprobes don't want to hook the spurious faults: */
-> -		if (notify_page_fault(regs))
-> +		if (kprobes_fault(regs))
->  			return;
->  		/*
->  		 * Don't take the mm semaphore here. If we fixup a prefetch
-> @@ -1060,23 +1060,8 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  	}
->  
->  	/* kprobes don't want to hook the spurious faults: */
-> -	if (unlikely(notify_page_fault(regs)))
-> +	if (unlikely(kprobes_fault(regs)))
->  		return;
-> -	/*
-> -	 * It's safe to allow irq's after cr2 has been saved and the
-> -	 * vmalloc fault has been handled.
-> -	 *
-> -	 * User-mode registers count as a user access even for any
-> -	 * potential system fault or CPU buglet:
-> -	 */
-> -	if (user_mode_vm(regs)) {
-> -		local_irq_enable();
-> -		error_code |= PF_USER;
-> -		flags |= FAULT_FLAG_USER;
-> -	} else {
-> -		if (regs->flags & X86_EFLAGS_IF)
-> -			local_irq_enable();
-> -	}
->  
->  	if (unlikely(error_code & PF_RSVD))
->  		pgtable_bad(regs, error_code, address);
-> @@ -1088,17 +1073,35 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		}
->  	}
->  
-> -	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
-> -
->  	/*
->  	 * If we're in an interrupt, have no user context or are running
->  	 * in an atomic region then we must not take the fault:
->  	 */
->  	if (unlikely(in_atomic() || !mm)) {
-> +		if (in_nmi())
-> +			trace_printk("YIPEE!!!\n");
->  		bad_area_nosemaphore(regs, error_code, address);
->  		return;
->  	}
->  
-> +	/*
-> +	 * It's safe to allow irq's after cr2 has been saved and the
-> +	 * vmalloc fault has been handled.
-> +	 *
-> +	 * User-mode registers count as a user access even for any
-> +	 * potential system fault or CPU buglet:
-> +	 */
-> +	if (user_mode_vm(regs)) {
-> +		local_irq_enable();
-> +		error_code |= PF_USER;
-> +		flags |= FAULT_FLAG_USER;
-> +	} else {
-> +		if (regs->flags & X86_EFLAGS_IF)
-> +			local_irq_enable();
-> +	}
-> +
-> +	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
-> +
->  	if (error_code & PF_WRITE)
->  		flags |= FAULT_FLAG_WRITE;
->  
+v11:
+ - moved 'Update event filters for multibuffer' patch to the 'add
+   support for multibuffer event filters' patchset.
+ - moved 'Make register/unregister_ftrace_command __init' to the 'add
+   support for multibuffer event filters' patchset.
+ - moved ' Add support for SOFT_DISABLE to syscall' to the 'add
+   support for multibuffer event filters' patchset.
+ - removed 'define trace_dump_stack() if !CONFIG_STACKTRACE' patch
+ (not necessary)
+ - removed 'fix tracing_snapshot kerneldoc' patch (queued for 3.13)
+
+v10:
+ - ifdef'ed out both the snapshot and stacktrace triggers if the
+   corresponding config options aren't defined.
+ - added a new tracing_alloc_snapshot() function instead of the
+   ftrace_alloc_snapshot() of the previous patches.  This seems more
+   in line with usage and what's already there.  Though the name of
+   the new function is similar to the existing tracing_snapshot_alloc(),
+   they're semantically different and documented as such -
+   tracing_snapshot_alloc() means take a snapshot, allocating a
+   snapshot buffer if needed, while tracing_alloc_snapshot() is just a
+   standalone snapshot allocation function, and in fact is called by
+   tracing_snapshot_alloc() underneath to allocate the snapshot.
+ - changed the STACK_SKIP to 3, since 4 is one too many.
+ - changed the overall trigger registration to not unregister all the
+   triggers if one fails.
+ - fixed the tracing_snapshot_alloc() kerneldoc from the incorrect
+   trace_snapshot_alloc(). (new patch)
+ - added a do-nothing trace_dump_stack() stub after getting link
+   errors when building with CONFIG_STACKTRACE turned off. (new patch)
+
+v9:
+ - changed the comments in ftrace_syscall_enter/exit to reflect that
+   the tracepoint handlers are inside rcu_read_lock_sched() rather
+   than just rcu_read_lock() and changed rcu_dereference() calls just
+   below them to rcu_dereference_sched() to match.
+ - removed the unnecessary preempt_disable calls from
+   event_triggers_call() and event_triggers_post_call().
+ - changed register/unregister_event_command() to directly use
+   trigger_cmd_mutex and trigger_commands instead of having them
+   passed in, removing those params and fixing up callers.
+ - removed the 'enabled' param on the event_command func() callback
+   function and all callers and implementations after noticing it was
+   pointless while documenting the params.
+ - added kernel-doc comments for event_triggers_call() and
+   event_triggers_post_call().
+ - fixed up all the other kernel-doc comments to be compliant and
+   complete.
+ - fixed small typos mentioned.
+
+v8:
+ - changed rcu_dereference_raw() to rcu_dereference() and moved
+   synchronize_sched() out from under the syscall_trace_lock mutex.
+ - got rid of the various void ** usages in the basic framework and
+   individual trigger patches.  Since triggers always expect an
+   event_trigger_data instance, there's not even any reason to make it
+   a void *, so those along with the void * usages were changed to use
+   event_trigger_data * directly.  To allow for trigger-specific data,
+   a new void * field named private_data was added to
+   event_trigger_data; this is made use of by the enable/disable_event
+   triggers.
+ - fixed various style nitpicks.
+ - added a new TRIGGER_COND flag to ftrace_file - this flag basically
+   tracks whether or not an event has any triggers that have a
+   condition associated with them that requires looking at the data
+   being logged (or that would be in the case of soft-disable) for the
+   current event.  If TRIGGER_COND is not set, then the triggers can
+   be invoked immediately without forcing the ineffeciency of actually
+   generating the log event when not necessary.
+ - patch 8 removed the obsolete filter_current_check_discard() and
+   replaced it with filter_check_discard() but accidentally made the
+   new function static inline, which is obviously not what was
+   intended.  That and the new call_filter_check_discard() functions
+   are now normal functions as filter_current_check_discard() was.
+ - isolated all the ugly 'if (USE_CALL_FILTER) else' usages in patch 8
+   which significantly cleaned up that patch as a result.
+
+v7:
+ - moved find_event_file() extern declartion to patch 06.
+ - moved helper functions from patch 02 to 03, where they're first
+   used.
+ - removed copies of cmd_ops fields from trigger_data and changed to
+   use cmd_ops diretly instead.
+ - renamed trigger_mode to trigger_type to avoid confusion with the
+   FTRACE_EVENT_FL_TRIGGER_MODE_BIT bitflag, and fixed up
+   usage/documentation, etc.
+
+v6:
+ - fixed up the conflicts in trace_events.c related to the actual
+   creation of the per-event 'trigger' files.
+
+v5:
+ - got rid of the trigger_iterator, a vestige of the first patchset,
+   which attempted to abstract the ftrace_iterator for triggers, and
+   cleaned up related code simplified as a result.
+ - replaced the void *cmd_data everywhere with ftrace_event_file *,
+   another vestige of the initial patchset.
+ - updated the patchset to use event_file_data() to grab the i_private
+   ftrace_event_files where appropriate (this was a separate patch in
+   the previous patchset, but was merged into the basic framework
+   patch as suggested by Masami.  The only interesting part about this
+   is that it moved event_file_data() from kernel/trace/trace_events.c
+   to kernel/trace/trace.h so it can be used in
+   e.g. trace_events_trigger.c as well.)
+ - add missing grab of event_mutex in event_trigger_regex_write().
+ - realized when making the above changes that the trigger filters
+   weren't being freed when the trigger was freed, so added a
+   trigger_data_free() to do that.  It also ensures that trigger_data
+   won't be freed until nothing is using it.
+ - added clear_event_triggers(), which clears all triggers in a trace
+   array (and soft-disable associated with event_enable/disable
+   events).
+ - added a comment to ftrace_syscall_enter/exit to document the use of
+   rcu_dereference_raw() there.
+
+v4:
+ - made some changes to the soft-disable for syscall patch, according
+   to Masami's suggestions.  Actually, since there's now an array of
+   ftrace_files for syscalls that can serve the same purpose, the
+   enabled_enter/exit_syscalls bit arrays became redundant and were
+   removed.
+ - moved all the remaining common functions out of the
+   traceon/traceoff patch and into the basic trigger framework patch
+   and added comments to all the common functions.
+ - extensively commented the event_trigger_ops and event_command ops.
+ - made the register/unregister_command functions __init.  Since that
+   code was originally inspired by similar ftrace code, a new patch
+   was added to do the same thing for the register/unregister of the
+   ftrace commands (patch 10/11).
+ - fixed the event_trigger_regex_open i_private problem noted by
+   Masami that's currently being addressed by Oleg Nesterov's fixes
+   for this.  Note that that patchset also affects patch 8/11 (update
+   filters for multi-buffer, since it touches event filters as well).
+   Patch 11/11 depends on that patchset and also moves
+   event_file_data() to trace.h.b
+
+v3:
+ - added a new patch to the series (patch 8/9 - update event filters
+   for multibuffer) to bring the event filters up-to-date wrt the
+   multibuffer changes - without this patch, the same filter is
+   applied to all buffers regardless of which instance sets it; this
+   patch allows you to set per-instance filters as you'd expect.  The
+   one exception to this is the 'ftrace subsystem' events, which are
+   special and retain their current behavior.
+ - changed the syscall soft enabling to keep a per-trace-array array
+   of trace_event_files alongside the 'enabled' bitmaps there.  This
+   keeps them in a place where they're only allocated for tracing
+   and which I think addresses all the previous comments for that
+   patch.
+
+v2:
+ - removed all changes to __ftrace_event_enable_disable() (except
+   for patch 04/11 which clears the soft_disabled bit as discussed)
+   and created a separate trace_event_trigger_enable_disable() that
+   calls it after setting/clearing the TRIGGER_MODE_BIT.
+ - added a trigger_mode enum for future patches that break up the
+   trigger calls for filtering, but that's also now used as a command
+   id for registering/unregistering commands.
+ - removed the enter_file/exit_file members that were added to
+   syscall_metadata after realizing that they were unnecessary if
+   ftrace_syscall_enter/exit() were modified to receive a pointer
+   to the ftrace_file instead of the pointer to the trace_array in
+   the ftrace_file.
+ - broke up the trigger invocation into two parts so that triggers
+   like 'stacktrace' that themselves log into the trace buffer can
+   defer the actual trigger invocation until after the current
+   record is closed, which is needed for the filter check that
+   in turn determines whether the trigger gets invoked.
+ - other minor cleanup
+
+
+This patchset implements 'trace event triggers', which are similar to
+the function triggers implemented for 'ftrace filter commands' (see
+'Filter commands' in Documentation/trace/ftrace.txt), but instead of
+being invoked from function calls are invoked by trace events.
+Basically the patchset allows 'commands' to be triggered whenever a
+given trace event is hit.  The set of commands implemented by this
+patchset are:
+
+ - enable/disable_event - enable or disable another event whenever
+   the trigger event is hit
+
+ - stacktrace - dump a stacktrace to the trace buffer whenever the
+   trigger event is hit
+
+ - snapshot - create a snapshot of the current trace buffer whenever
+   the trigger event is hit
+
+ - traceon/traceoff - turn tracing on or off whenever the trigger
+   event is hit
+
+Triggers can also be conditionally invoked by associating a standard
+trace event filter with them - if the given event passes the filter,
+the trigger is invoked, otherwise it's not. (see 'Event filtering' in
+Documentation/trace/events.txt for info on event filters).
+
+See the last patch in the series for more complete documention on
+event triggers and the available trigger commands, and below for some
+simple examples of each of the above commands along with conditional
+filtering.
+
+The first four patches are bugfix patches or minor improvements which
+can be applied regardless; the rest contain the basic framework and
+implementations for each command.
+
+This patchset was based on some ideas from Steve Rostedt, which he
+outlined during a couple discussions at ELC and follow-on e-mails.
+Code- and interface-wise, it's also partially based on the existing
+function triggers implementation and essentially works on top of the
+SOFT_DISABLE mode introduced for that.  Both Steve and Masami
+Hiramatsu took a look at a couple early versions of this patchset, and
+offered some very useful suggestions reflected in this patchset -
+thanks to them both for the ideas and for taking the time to do some
+basic sanity reviews!
+
+Below are a few concrete examples demonstrating each of the available
+commands.
+
+The first example attempts to capture all the kmalloc events that
+happen as a result of reading a particular file.
+
+The first part of the set of commands below adds a kmalloc
+'enable_event' trigger to the sys_enter_read trace event - as a
+result, when the sys_enter_read event occurs, kmalloc events are
+enabled, resulting in those kmalloc events getting logged into the
+trace buffer.  The :1 at the end of the kmalloc enable_event specifies
+that the enabling of kmalloc events on sys_enter_read will only happen
+once - subsequent reads won't trigger the kmalloc logging.  The next
+part of the example reads a test file, which triggers the
+sys_enter_read tracepoint and thus turns on the kmalloc events, and
+once done, adds a trigger to sys_exit_read that disables kmalloc
+events.  The disable_event doesn't have a :1 appended, which means it
+happens on every sys_exit_read.
+
+# echo 'enable_event:kmem:kmalloc:1' > \
+  /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger; \
+  cat ~/junk.txt > /dev/null; \
+  echo 'disable_event:kmem:kmalloc' > \
+  /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
+
+Just to show a bit of what happens under the covers, if we display the
+kmalloc 'enable' file, we see that it's 'soft disabled' (the asterisk
+after the enable flag).  This means that it's actually enabled but is
+in the SOFT_DISABLED state, and is essentially held back from actually
+logging anything to the trace buffer, but can be made to log into the
+buffer by simply flipping a bit :
+
+# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
+0*
+
+If we look at the 'enable' file for the triggering sys_enter_read
+trace event, we can see that it also has the 'soft disable' flag set.
+This is because in the case of the triggering event, we also need to
+have the trace event invoked regardless of whether or not its actually
+being logged, so we can process the triggers.  This functionality is
+also built on top of the SOFT_DISABLE flag and is reflected in the
+enable state as well:
+
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
+0*
+
+To find out which triggers are set for a particular event, we can look
+at the 'trigger' file for the event.  Here's what the 'trigger' file
+for the sys_enter_read event looks like:
+
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
+enable_event:kmem:kmalloc:count=0
+
+The 'count=0' field at the end shows that this trigger has no more
+triggering ability left - it's essentially fired all its shots - if
+it was still active, it would have a non-zero count.
+
+Looking at the sys_exit_read, we see that since we didn't specify a
+number at the end, the number of times it can fire is unlimited:
+
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
+disable_event:kmem:kmalloc:unlimited
+
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/enable
+0*
+
+Finally, let's look at the results of the above set of commands by
+cat'ing the 'trace' file:
+
+# cat /sys/kernel/debug/tracing/trace
+
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 85/85   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+             cat-2596  [001] ....   374.518849: kmalloc: call_site=ffffffff812de707 ptr=ffff8800306b9290 bytes_req=2 bytes_alloc=8 gfp_flags=GFP_KERNEL|GFP_ZERO
+             cat-2596  [001] ....   374.518956: kmalloc: call_site=ffffffff81182a12 ptr=ffff88010c8e1500 bytes_req=256 bytes_alloc=256 gfp_flags=GFP_KERNEL|GFP_ZERO
+             cat-2596  [001] ....   374.518959: kmalloc: call_site=ffffffff812d8e49 ptr=ffff88003002a200 bytes_req=32 bytes_alloc=32 gfp_flags=GFP_KERNEL|GFP_ZERO
+             cat-2596  [001] ....   374.518960: kmalloc: call_site=ffffffff812de707 ptr=ffff8800306b9088 bytes_req=2 bytes_alloc=8 gfp_flags=GFP_KERNEL|GFP_ZERO
+             cat-2596  [003] ....   374.519063: kmalloc: call_site=ffffffff812d9f50 ptr=ffff8800b793fd00 bytes_req=256 bytes_alloc=256 gfp_flags=GFP_KERNEL
+             cat-2596  [003] ....   374.519119: kmalloc: call_site=ffffffff811cc3bc ptr=ffff8800b7918900 bytes_req=128 bytes_alloc=128 gfp_flags=GFP_KERNEL
+             cat-2596  [003] ....   374.519122: kmalloc: call_site=ffffffff811cc4d2 ptr=ffff880030404800 bytes_req=504 bytes_alloc=512 gfp_flags=GFP_KERNEL
+             cat-2596  [003] ....   374.519125: kmalloc: call_site=ffffffff811cc64e ptr=ffff88003039d8a0 bytes_req=28 bytes_alloc=32 gfp_flags=GFP_KERNEL
+.
+.
+.
+            Xorg-1194  [000] ....   374.543956: kmalloc: call_site=ffffffffa03a8599 ptr=ffff8800ba23b700 bytes_req=112 bytes_alloc=128 gfp_flags=GFP_TEMPORARY|GFP_NOWARN|GFP_NORETRY
+            Xorg-1194  [000] ....   374.543961: kmalloc: call_site=ffffffffa03a7639 ptr=ffff8800b7905b40 bytes_req=56 bytes_alloc=64 gfp_flags=GFP_TEMPORARY|GFP_ZERO
+            Xorg-1194  [000] ....   374.543973: kmalloc: call_site=ffffffffa039f716 ptr=ffff8800b7905ac0 bytes_req=64 bytes_alloc=64 gfp_flags=GFP_KERNEL
+.
+.
+.
+          compiz-1769  [002] ....   374.547586: kmalloc: call_site=ffffffffa03a8599 ptr=ffff8800ba320400 bytes_req=952 bytes_alloc=1024 gfp_flags=GFP_TEMPORARY|GFP_NOWARN|GFP_NORETRY
+          compiz-1769  [002] ....   374.547592: kmalloc: call_site=ffffffffa03a7639 ptr=ffff8800bd5f7400 bytes_req=280 bytes_alloc=512 gfp_flags=GFP_TEMPORARY|GFP_ZERO
+          compiz-1769  [002] ....   374.547623: kmalloc: call_site=ffffffffa039f716 ptr=ffff8800b792d580 bytes_req=64 bytes_alloc=64 gfp_flags=GFP_KERNEL
+.
+.
+.
+             cat-2596  [000] ....   374.646019: kmalloc: call_site=ffffffff8123df9f ptr=ffff8800ba2f2900 bytes_req=96 bytes_alloc=96 gfp_flags=GFP_NOFS|GFP_ZERO
+             cat-2596  [000] ....   374.648263: kmalloc: call_site=ffffffff8123df9f ptr=ffff8800ba2f2900 bytes_req=96 bytes_alloc=96 gfp_flags=GFP_NOFS|GFP_ZERO
+             cat-2596  [000] ....   374.650503: kmalloc: call_site=ffffffff8123df9f ptr=ffff8800ba2f2900 bytes_req=96 bytes_alloc=96 gfp_flags=GFP_NOFS|GFP_ZERO
+.
+.
+.
+            bash-2425  [002] ....   374.654923: kmalloc: call_site=ffffffff8123df9f ptr=ffff8800b7a28780 bytes_req=96 bytes_alloc=96 gfp_flags=GFP_NOFS|GFP_ZERO
+        rsyslogd-974   [002] ....   374.655163: kmalloc: call_site=ffffffff81046ae6 ptr=ffff8800ba320400 bytes_req=1024 bytes_alloc=1024 gfp_flags=GFP_KERNEL
+
+As you can see, we captured all the kmallocs from our 'cat' reads, but
+also any other kmallocs that happened for other processes between the
+time we turned on kmalloc events and turned them off.  Future work
+should add a way to screen out unwanted events e.g. the abilitiy to
+capture the triggering pid in a simple variable and use that variable
+in event filters to screen out other pids.
+
+To turn off the events we turned on, simply reinvoke the commands
+prefixed by '!':
+
+# echo '!enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
+# echo '!disable_event:kmem:kmalloc' > /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
+
+You can verify that the events have been turned off by again examining
+the 'enable' and 'trigger' files:
+
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
+# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
+0
+# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
+0
+
+
+The next example shows how to use the 'stacktrace' command.  To have a
+stacktrace logged every time a particular event occurs, simply echo
+'stacktrace' into the 'trigger' file for that event:
+
+# echo 'stacktrace' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+stacktrace:unlimited
+
+Looking at the 'trace' output, we indeed see stack traces for every
+kmalloc:
+
+# cat /sys/kernel/debug/tracing/trace
+
+          compiz-1769  [003] ....  2422.614630: <stack trace>
+ => i915_add_request
+ => i915_gem_do_execbuffer.isra.15
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+            Xorg-1194  [002] ....  2422.619076: <stack trace>
+ => drm_wait_vblank
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+            Xorg-1194  [000] ....  2422.625823: <stack trace>
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+.
+.
+.
+            bash-2842  [001] ....  2423.002059: <stack trace>
+ => __tracing_open
+ => tracing_open
+ => do_dentry_open
+ => finish_open
+ => do_last
+ => path_openat
+ => do_filp_open
+ => do_sys_open
+ => SyS_open
+ => system_call_fastpath
+            bash-2842  [001] ....  2423.002070: <stack trace>
+ => __tracing_open
+ => tracing_open
+ => do_dentry_open
+ => finish_open
+ => do_last
+ => path_openat
+ => do_filp_open
+ => do_sys_open
+ => SyS_open
+ => system_call_fastpath
+
+For an event like kmalloc, however, we don't typically want to see a
+stack trace for every single event, since the amount of data produced
+is overwhelming.  What we'd typically want to do is only log a stack
+trace for particular events of interest.  We can accomplish that by
+appending an 'event filter' to the trigger.  The event filters used to
+filter triggers are exactly the same as those implemented for the
+existing trace event 'filter' files - see the trace event
+documentation for details.
+
+First, let's turn off the existing stacktrace event, and clear the
+trace buffer:
+
+# echo '!stacktrace' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+# echo > /sys/kernel/debug/tracing/trace
+
+Now, we can add a new stacktrace trigger which will fire 5 times, but
+only if the number of bytes requested by the caller was greater than
+or equal to 512:
+
+# echo 'stacktrace:5 if bytes_req >= 512' > \
+     /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+stacktrace:count=0 if bytes_req >= 512
+
+>From looking at the trigger, we can see the event fired 5 times
+(count=0) and looking at the 'trace' file, we can verify that:
+
+# cat trace
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 5/5   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+        rsyslogd-974   [000] ....  1796.412997: <stack trace>
+ => kmem_cache_alloc_trace
+ => do_syslog
+ => kmsg_read
+ => proc_reg_read
+ => vfs_read
+ => SyS_read
+ => system_call_fastpath
+          compiz-1769  [000] ....  1796.427342: <stack trace>
+ => __kmalloc
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+            Xorg-1194  [003] ....  1796.441251: <stack trace>
+ => __kmalloc
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+            Xorg-1194  [003] ....  1796.441392: <stack trace>
+ => __kmalloc
+ => sg_kmalloc
+ => __sg_alloc_table
+ => sg_alloc_table
+ => i915_gem_object_get_pages_gtt
+ => i915_gem_object_get_pages
+ => i915_gem_object_pin
+ => i915_gem_execbuffer_reserve_object.isra.11
+ => i915_gem_execbuffer_reserve
+ => i915_gem_do_execbuffer.isra.15
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+            Xorg-1194  [003] ....  1796.441672: <stack trace>
+ => __kmalloc
+ => i915_gem_execbuffer2
+ => drm_ioctl
+ => do_vfs_ioctl
+ => SyS_ioctl
+ => system_call_fastpath
+
+So the trace output shows exactly 5 stacktraces, as expected.
+
+Just for comparison, let's look at an event that's harder to trigger,
+to see a count that isn't 0 in the trigger description:
+
+# echo 'stacktrace:5 if bytes_req >= 65536' > \
+     /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+stacktrace:count=5 if bytes_req >= 65536
+
+
+The next example shows how to use the 'snapshot' command to capture a
+snapshot of the trace buffer when an 'interesting' event occurs.
+
+In this case, we'll first start the entire block subsystem tracing:
+
+# echo 1 > /sys/kernel/debug/tracing/events/block/enable
+
+Next, we add a 'snapshot' trigger that will take a snapshot of all the
+events leading up to the particular event we're interested in, which
+is a block queue unplug with a depth > 1.  In this case we're
+interested in capturing the snapshot just one time, the first time it
+occurs:
+
+# echo 'snapshot:1 if nr_rq > 1' > \
+     /sys/kernel/debug/tracing/events/block/block_unplug/trigger
+
+It may take awhile for the condition to occur, but once it does, we
+can see the entire sequence of block events leading up to in in the
+'snapshot' file:
+
+# cat /sys/kernel/debug/tracing/snapshot
+
+     jbd2/sdb1-8-278   [001] ....   382.075012: block_bio_queue: 8,16 WS 629429976 + 8 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [001] ....   382.075012: block_bio_backmerge: 8,16 WS 629429976 + 8 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [001] d...   382.075015: block_rq_insert: 8,16 WS 0 () 629429912 + 72 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [001] d...   382.075030: block_rq_issue: 8,16 WS 0 () 629429912 + 72 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [001] d...   382.075044: block_unplug: [jbd2/sdb1-8] 1
+          <idle>-0     [000] ..s.   382.075310: block_rq_complete: 8,16 WS () 629429912 + 72 [0]
+     jbd2/sdb1-8-278   [000] ....   382.075407: block_touch_buffer: 8,17 sector=78678492 size=4096
+     jbd2/sdb1-8-278   [000] ....   382.075413: block_bio_remap: 8,16 FWFS 629429984 + 8 <- (8,17) 629427936
+     jbd2/sdb1-8-278   [000] ....   382.075415: block_bio_queue: 8,16 FWFS 629429984 + 8 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [000] ....   382.075418: block_getrq: 8,16 FWFS 629429984 + 8 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [000] d...   382.075421: block_rq_insert: 8,16 FWFS 0 () 629429984 + 8 [jbd2/sdb1-8]
+     jbd2/sdb1-8-278   [000] d...   382.075424: block_rq_issue: 8,16 FWS 0 () 18446744073709551615 + 0 [jbd2/sdb1-8]
+          <idle>-0     [000] dNs.   382.115912: block_rq_issue: 8,16 WS 0 () 629429984 + 8 [swapper/0]
+          <idle>-0     [000] ..s.   382.116059: block_rq_complete: 8,16 WS () 629429984 + 8 [0]
+          <idle>-0     [000] dNs.   382.116079: block_rq_issue: 8,16 FWS 0 () 18446744073709551615 + 0 [swapper/0]
+          <idle>-0     [000] d.s.   382.131030: block_rq_complete: 8,16 WS () 629429984 + 0 [0]
+     jbd2/sdb1-8-278   [000] ....   382.131106: block_dirty_buffer: 8,17 sector=26 size=4096
+     jbd2/sdb1-8-278   [000] ....   382.131111: block_dirty_buffer: 8,17 sector=106954757 size=4096
+.
+.
+.
+   kworker/u16:3-66    [002] ....   387.144505: block_bio_remap: 8,16 WM 2208 + 8 <- (8,17) 160
+   kworker/u16:3-66    [002] ....   387.144512: block_bio_queue: 8,16 WM 2208 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] ....   387.144522: block_getrq: 8,16 WM 2208 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] ....   387.144525: block_plug: [kworker/u16:3]
+   kworker/u16:3-66    [002] ....   387.144530: block_bio_remap: 8,16 WM 2216 + 8 <- (8,17) 168
+   kworker/u16:3-66    [002] ....   387.144531: block_bio_queue: 8,16 WM 2216 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] ....   387.144533: block_bio_backmerge: 8,16 WM 2216 + 8 [kworker/u16:3]
+.
+.
+.
+   kworker/u16:3-66    [002] d...   387.144631: block_rq_insert: 8,16 WM 0 () 2208 + 16 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144636: block_rq_insert: 8,16 WM 0 () 2256 + 16 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144638: block_rq_insert: 8,16 WM 0 () 662702080 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144640: block_rq_insert: 8,16 WM 0 () 683673680 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144641: block_rq_insert: 8,16 WM 0 () 729812344 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144642: block_rq_insert: 8,16 WM 0 () 729828896 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144643: block_rq_insert: 8,16 WM 0 () 730599480 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144644: block_rq_insert: 8,16 WM 0 () 855640104 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144645: block_rq_insert: 8,16 WM 0 () 880805984 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144646: block_rq_insert: 8,16 WM 0 () 1186990400 + 8 [kworker/u16:3]
+   kworker/u16:3-66    [002] d...   387.144649: block_unplug: [kworker/u16:3] 10
+
+
+The final example shows something very similer but using the
+'traceoff' command to stop tracing when an 'interesting' event occurs.
+The traceon and traceoff commands can be used together to toggle
+tracing on and off in creative ways to capture different traces in the
+'trace' buffer, but this example just shows essentially the same use
+case as the previous example but using 'traceoff' to capture trace
+data of interest in the standard 'trace' buffer.
+
+Again, we'll start the entire block subsystem tracing:
+
+# echo 1 > /sys/kernel/debug/tracing/events/block/enable
+
+# echo 'traceoff:1 if nr_rq > 1' > \
+     /sys/kernel/debug/tracing/events/block/block_unplug/trigger
+
+# cat /sys/kernel/debug/tracing/trace
+
+   kworker/u16:4-67    [000] ....   803.003670: block_bio_remap: 8,16 WM 2208 + 8 <- (8,17) 160
+   kworker/u16:4-67    [000] ....   803.003670: block_bio_queue: 8,16 WM 2208 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] ....   803.003672: block_getrq: 8,16 WM 2208 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] ....   803.003674: block_bio_remap: 8,16 WM 2216 + 8 <- (8,17) 168
+   kworker/u16:4-67    [000] ....   803.003675: block_bio_queue: 8,16 WM 2216 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] ....   803.003676: block_bio_backmerge: 8,16 WM 2216 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] ....   803.003678: block_bio_remap: 8,16 WM 2232 + 8 <- (8,17) 184
+   kworker/u16:4-67    [000] ....   803.003678: block_bio_queue: 8,16 WM 2232 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] ....   803.003680: block_getrq: 8,16 WM 2232 + 8 [kworker/u16:4]
+.
+.
+.
+   kworker/u16:4-67    [000] d...   803.003720: block_rq_insert: 8,16 WM 0 () 285223776 + 16 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003721: block_rq_insert: 8,16 WM 0 () 662702080 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003722: block_rq_insert: 8,16 WM 0 () 683673680 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003723: block_rq_insert: 8,16 WM 0 () 730599480 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003724: block_rq_insert: 8,16 WM 0 () 763365384 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003725: block_rq_insert: 8,16 WM 0 () 880805984 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003726: block_rq_insert: 8,16 WM 0 () 1186990872 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003727: block_rq_insert: 8,16 WM 0 () 1187057608 + 8 [kworker/u16:4]
+   kworker/u16:4-67    [000] d...   803.003729: block_unplug: [kworker/u16:4] 14
+
+
+The following changes since commit 6e72b566e85d8df8042f133efbc6c30e21fb017e:
+
+  tracing: Add support for SOFT_DISABLE to syscall events (2013-10-23 20:34:15 -0500)
+
+are available in the git repository at:
+
+  git://git.yoctoproject.org/linux-yocto-contrib.git tzanussi/event-triggers-v11
+  http://git.yoctoproject.org/cgit/cgit.cgi/linux-yocto-contrib/log/?h=tzanussi/event-triggers-v11
+
+Tom Zanussi (7):
+  tracing: Add basic event trigger framework
+  tracing: Add 'traceon' and 'traceoff' event trigger commands
+  tracing: Add 'snapshot' event trigger command
+  tracing: Add 'stacktrace' event trigger command
+  tracing: Add 'enable_event' and 'disable_event' event trigger commands
+  tracing: Add and use generic set_trigger_filter() implementation
+  tracing: Add documentation for trace event triggers
+
+ Documentation/trace/events.txt      |  207 +++++
+ include/linux/ftrace_event.h        |   22 +
+ include/linux/kernel.h              |    2 +
+ include/trace/ftrace.h              |   44 +-
+ kernel/trace/Makefile               |    1 +
+ kernel/trace/trace.c                |   33 +-
+ kernel/trace/trace.h                |  190 +++++
+ kernel/trace/trace_events.c         |   23 +-
+ kernel/trace/trace_events_filter.c  |   12 +
+ kernel/trace/trace_events_trigger.c | 1409 +++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_syscalls.c       |   42 +-
+ 11 files changed, 1962 insertions(+), 23 deletions(-)
+ create mode 100644 kernel/trace/trace_events_trigger.c
+
+-- 
+1.8.3.1
+
