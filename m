@@ -1,122 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab3JXHyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:54:19 -0400
-Received: from smtp0.epfl.ch ([128.178.224.218]:58930 "EHLO smtp0.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab3JXHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:54:17 -0400
-Message-ID: <5268D095.3060302@epfl.ch>
-Date: Thu, 24 Oct 2013 09:47:33 +0200
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754065Ab3JXH6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:58:18 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:46180 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab3JXH6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:58:17 -0400
+Date: Thu, 24 Oct 2013 09:58:13 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: jovi.zhangwei@huawei.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: ktap inclusion in drivers/staging/?
+Message-ID: <20131024075813.GA26929@gmail.com>
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv4 1/3] Input: twl4030-pwrbutton - add device tree support
-References: <1382550852-11508-1-git-send-email-sre@debian.org> <1382550852-11508-2-git-send-email-sre@debian.org>
-In-Reply-To: <1382550852-11508-2-git-send-email-sre@debian.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sebastian,
 
-On 10/23/2013 07:54 PM, Sebastian Reichel wrote:
-> Add device tree support for twl4030 power button driver.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  .../devicetree/bindings/input/twl4030-pwrbutton.txt      | 13 +++++++++++++
->  drivers/input/misc/twl4030-pwrbutton.c                   | 16 ++++++++++++----
->  2 files changed, 25 insertions(+), 4 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> new file mode 100644
-> index 0000000..945ec74
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
-> @@ -0,0 +1,13 @@
-> +* TWL4030's pwrbutton device tree bindings
-> +
-> +Required SoC Specific Properties:
-> +- compatible: should be one of the following
-> +   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
-> +- interrupt: should be one of the following
-> +   - <8>: For controllers compatible with twl4030
+Greg,
 
-This is <8> for your particular case, but it will depend on your SoC,
-won't it?
-Moreover, this property will be most likely inherited from the root twl
-node,
-so I do not see the need to document it here. See:
+I was surprised to see 'ktap' appear in the staging tree silently, 
+via these commits that are visible in today's staging-next:
 
-Documentation/devicetree/bindings/mfd/twl-familly.txt
+ 2c856b9e3e06 staging: ktap: remove unused <asm/syscall.h> header file
+ 687b63a3bfd5 staging: ktap: update email name in MAINTAINERS
+ c63a164271f8 staging: ktap: add to the kernel tree
 
-> +
-> +Example:
-> +	twl_pwrbutton: pwrbutton {
-> +		compatible = "ti,twl4030-pwrbutton";
-> +		interrupts = <8>;
-> +	};
+ktap is pretty fresh instrumentation code, announced on lkml a 
+couple of months ago, and so far I haven't seen much technical 
+discussion of integrating ktap upstream, mostly I suspect because 
+not a _single_ patch was sent to linux-kernel for review. (!)
 
-You are missing the root twl node here, no?
+An announcement of a Git tree was made (which Git tree is not very 
+structured), and some very minimal discussion ensued, but no actual 
+patches were sent with an intent to merge, no technical arguments 
+were made in favor of merging and nothing conclusive was achieved.
 
-> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-> index b9a05fd..a3a0fe3 100644
-> --- a/drivers/input/misc/twl4030-pwrbutton.c
-> +++ b/drivers/input/misc/twl4030-pwrbutton.c
+A couple of very quick (and incomplete) technical objections:
 
-Missing #include <linux/of.h> ?
+ - The Git commits in staging an absolutely unstructured, 
+   unreviewable mess, due to a single commit adding 16 KLOCs (!) of 
+   code:
 
-> @@ -52,7 +52,7 @@ static irqreturn_t powerbutton_irq(int irq, void *_pwr)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int __init twl4030_pwrbutton_probe(struct platform_device *pdev)
-> +static int twl4030_pwrbutton_probe(struct platform_device *pdev)
->  {
->  	struct input_dev *pwr;
->  	int irq = platform_get_irq(pdev, 0);
-> @@ -106,16 +106,24 @@ static int __exit twl4030_pwrbutton_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] = {
-> +       { .compatible = "ti,twl4030-pwrbutton" },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
-> +#endif
-> +
->  static struct platform_driver twl4030_pwrbutton_driver = {
-> +	.probe		= twl4030_pwrbutton_probe,
->  	.remove		= __exit_p(twl4030_pwrbutton_remove),
->  	.driver		= {
->  		.name	= "twl4030_pwrbutton",
->  		.owner	= THIS_MODULE,
-> +		.of_match_table = of_match_ptr(twl4030_pwrbutton_dt_match_table),
->  	},
->  };
-> -
-> -module_platform_driver_probe(twl4030_pwrbutton_driver,
-> -			twl4030_pwrbutton_probe);
-> +module_platform_driver(twl4030_pwrbutton_driver);
->  
->  MODULE_ALIAS("platform:twl4030_pwrbutton");
->  MODULE_DESCRIPTION("Triton2 Power Button");
-> 
+      80 files changed, 16376 insertions(+)
 
-Best regards,
+   (I looked at the ktap Git tree as well, it's not much better.)
 
-Florian
+ - Most of the kernel code comes with near zero explanations in the 
+   code itself. I looked at the kernel code in 
+   drivers/staging/ktap/interpreter/.  I have not found a _single_ 
+   substantial in-code comment about design details and 
+   implementational considerations. (!!)
+
+ - From the little I've been able to decode I get the impression 
+   that the design should be much more integrated into the rest of 
+   instrumentation: the in-kernel Lua bytecode interpreter looks
+   interesting, it could be an intelligent upgrade (or even outright
+   replacement) for the current 'filter' interpreter concept we have
+   for tracepoints - instead of putting a parallel interpreter
+   implementation into the kernel.
+
+ - In a similar fashion, it would be nice to see it integrated with 
+   'perf probe' or 'perf ktap', so that users can create probes from 
+   a single place, with coherent syntax and integrated analysis
+   capabilities. I.e. there's no reason to not make this a
+   relatively pain-less yet very useful transition.
+
+ - In a similar vein, it creates Yet Another Debugfs ABI, instead of 
+   trying to extend existing instrumentation.
+
+Despite my criticism, I'm actually a big proponent of safe kernel 
+probing concepts and this code does have many of the qualities that 
+I always wanted the tracepoint filter code to have in the long run.
+
+So it does look potentially useful, but _please_ don't merge ktap 
+via the staging tree yet, until the code becomes reviewable, until 
+it gets a proper review and until the instrumentation guys (I tried 
+to Cc: folks who might be interested in it) ack it.
+
+Kernel instrumentation code should follow established procedures to 
+gain Acks from interested kernel maintainers.
+
+Just because we've made it easy to create instrumentation callbacks 
+and made it possible to hide it all in a separate driver doesn't 
+mean the whole thing should explode into zillions of disjunct, 
+incoherent approaches. It's not like kernel instrumentation is an 
+under-maintained subsystem!
+
+So until it's all cleared up:
+
+  Nacked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
