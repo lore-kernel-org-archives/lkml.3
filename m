@@ -1,134 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3JXNnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 09:43:13 -0400
-Received: from ring0.de ([91.143.88.219]:46523 "EHLO smtp.ring0.de"
+	id S1755002Ab3JXNrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 09:47:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709Ab3JXNnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 09:43:10 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Thu, 24 Oct 2013 15:43:00 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Brenner - TAOS <jbrenner@taosinc.com>
-Subject: Re: [PATCH] iio:light:tsl2563: Add DT support
-Message-ID: <20131024134259.GB3681@earth.universe>
-Mail-Followup-To: Jonathan Cameron <jic23@kernel.org>,
-	linux-iio@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-	Peter Meerwald <pmeerw@pmeerw.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Bill Pemberton <wfp5p@virginia.edu>,
-	Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Jon Brenner - TAOS <jbrenner@taosinc.com>
-References: <1382565063-17083-1-git-send-email-sre@debian.org>
- <5268DA76.6060503@kernel.org>
+	id S1754526Ab3JXNri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 09:47:38 -0400
+Date: Thu, 24 Oct 2013 09:47:06 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
+        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131024134706.GN227855@redhat.com>
+References: <20131017160034.GO227855@redhat.com>
+ <20131017160439.GP227855@redhat.com>
+ <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+ <20131023204838.GB19466@laptop.lan>
+ <20131024105206.GM2490@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5268DA76.6060503@kernel.org>
+In-Reply-To: <20131024105206.GM2490@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 24, 2013 at 12:52:06PM +0200, Peter Zijlstra wrote:
+> On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
+> > I'll also make sure to test we actually hit the fault path
+> > by concurrently running something like:
+> > 
+> >  while :; echo 1 > /proc/sys/vm/drop_caches ; done
+> > 
+> > while doing perf top or so.. 
+> 
+> So the below appears to work; I've ran:
+> 
+>   while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
+>   while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
+> 
+> And verified that the if (in_nmi()) trace_printk() was visible in the
+> trace output verifying we indeed took the fault from the NMI code.
+> 
+> I've had this running for ~ 30 minutes or so and the machine is still
+> healthy.
+> 
+> Don, can you give this stuff a spin on your system?
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'll try to grab the machine I was testing with and see what this patch
+does.  Thanks!  I assume this can go on top of the other patch that was
+committed to -tip last week?
 
-On Thu, Oct 24, 2013 at 09:29:42AM +0100, Jonathan Cameron wrote:
-> On 10/23/13 22:51, Sebastian Reichel wrote:
-> > Add Device Tree support for the TSL2563 driver
-> > and document the binding.
-> >=20
-> > Signed-off-by: Sebastian Reichel <sre@debian.org>
-> > ---
-> >  .../devicetree/bindings/iio/light/tsl2563.txt         | 19 +++++++++++=
-++++++++
-> >  drivers/iio/light/tsl2563.c                           |  4 ++++
-> >  2 files changed, 23 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/iio/light/tsl2563=
-=2Etxt
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/iio/light/tsl2563.txt b/=
-Documentation/devicetree/bindings/iio/light/tsl2563.txt
-> > new file mode 100644
-> > index 0000000..b52cf4b
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/iio/light/tsl2563.txt
-> > @@ -0,0 +1,19 @@
-> > +* TAOS TSL2563 ambient light sensor
-> > +
-> > +Required properties:
-> > +
-> > +  - compatible : should be "taos,tsl2563"
-> > +  - reg : the I2C address of the sensor
-> > +
-> > +Optional properties:
-> > +
-> So two options for this one.  Either pitch it as a possible general param=
-eter, or
-> mark it with a vendor prefix.  It seems like something fairly general, bu=
-t in that case it
-> probably needs a more detailed proposal and explanation of exactly what i=
-t is.
+Cheers,
+Don
 
-OK, I will add a vendor prefix in a PATCHv2. When I converted the driver
-to DT I had a look how this is used and I don't think it's "fairly general".
-
-> Also, is taos listed in vendor-prefixes.txt?  Jon, is that the right vend=
-or prefix to use?
-> I'm guessing you have some non mainline bindings out there already so it =
-would be good
-> to match those...
-
-taos is currently not listed in the vendor-prefixes.txt file. Also
-it seems that "TAOS Inc." has been absorbed by "ams AG" in 2011.
-So how to proceed with the patch?
-
--- Sebastian
-
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSaSPjAAoJENju1/PIO/qaqqkP/RkWc6EDdRaKNkNRtahjKtQz
-/vBR1C5oaM9TkAT61aXNNcC4ggIUXHS/GmyebntVVIaNcQkVEpf95C5nalPc9qMZ
-kHIHouvwNgv8UCZGxhp47Io4lZfzaqkNTmfJEjVnuKMYZuUvIx31UjTXWI6OaB3U
-p84EtPOUozc+9OtNq/v30UXjVmR+b+kuoppmjZUni1kovAzVFDr9uNA7r229YOK+
-YrWPKeCdwRDSHvJAuAqyMb+QiCwE/EZsVr23mGEOwU8U2/9IsqEK7/emWFTg1gZW
-OlD+QYup8XCDEKstssmZRbj0Mlt8zqAt3PluDgwyUYgArfjkpV2DJBo8MWgUbsZn
-zmPJ5PZOz3whPAOsK+6uI1JZ5saye1IJ1ByMId/Hzff0EZwR27yhPDVxYLnOMGQ0
-W08bBJkQqyH4SIzq2jx0sm0C0HFtDWn18bCpZTuKewwPSplxg4U9eVfMrqCEYjIf
-9Ha7t+B59JNvNKZ/l9GbNZM1o2uNcpSndQvJndeSXHu7I3ezYVFi9o2wLerK7Ulk
-dJSPlSy3DYLTkQemSWh4EEwMaUOF4pcXIlNsJwy9lwO8gZgamtO/azlFjSToU7RB
-U/t6MDfnPh/uwThJd7gIPYYbL/beBOF2m4fEli6LTzCOvIqyYXvDn78N7bml0y3N
-cCtbtICayHI8ROz7WESX
-=e1tl
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
+> 
+> ---
+>  arch/x86/lib/usercopy.c | 43 +++++++++++++++----------------------------
+>  arch/x86/mm/fault.c     | 43 +++++++++++++++++++++++--------------------
+>  2 files changed, 38 insertions(+), 48 deletions(-)
+> 
+> diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+> index 4f74d94c8d97..5465b8613944 100644
+> --- a/arch/x86/lib/usercopy.c
+> +++ b/arch/x86/lib/usercopy.c
+> @@ -11,39 +11,26 @@
+>  #include <linux/sched.h>
+>  
+>  /*
+> - * best effort, GUP based copy_from_user() that is NMI-safe
+> + * We rely on the nested NMI work to allow atomic faults from the NMI path; the
+> + * nested NMI paths are careful to preserve CR2.
+>   */
+>  unsigned long
+>  copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+>  {
+> -	unsigned long offset, addr = (unsigned long)from;
+> -	unsigned long size, len = 0;
+> -	struct page *page;
+> -	void *map;
+> -	int ret;
+> +	unsigned long ret;
+>  
+>  	if (__range_not_ok(from, n, TASK_SIZE))
+> -		return len;
+> -
+> -	do {
+> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
+> -		if (!ret)
+> -			break;
+> -
+> -		offset = addr & (PAGE_SIZE - 1);
+> -		size = min(PAGE_SIZE - offset, n - len);
+> -
+> -		map = kmap_atomic(page);
+> -		memcpy(to, map+offset, size);
+> -		kunmap_atomic(map);
+> -		put_page(page);
+> -
+> -		len  += size;
+> -		to   += size;
+> -		addr += size;
+> -
+> -	} while (len < n);
+> -
+> -	return len;
+> +		return 0;
+> +
+> +	/*
+> +	 * Even though this function is typically called from NMI/IRQ context
+> +	 * disable pagefaults so that its behaviour is consistent even when
+> +	 * called form other contexts.
+> +	 */
+> +	pagefault_disable();
+> +	ret = __copy_from_user_inatomic(to, from, n);
+> +	pagefault_enable();
+> +
+> +	return n - ret;
+>  }
+>  EXPORT_SYMBOL_GPL(copy_from_user_nmi);
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 3aaeffcfd67a..506564b13ba7 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -51,7 +51,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
+>  	return 0;
+>  }
+>  
+> -static inline int __kprobes notify_page_fault(struct pt_regs *regs)
+> +static inline int __kprobes kprobes_fault(struct pt_regs *regs)
+>  {
+>  	int ret = 0;
+>  
+> @@ -1048,7 +1048,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  			return;
+>  
+>  		/* kprobes don't want to hook the spurious faults: */
+> -		if (notify_page_fault(regs))
+> +		if (kprobes_fault(regs))
+>  			return;
+>  		/*
+>  		 * Don't take the mm semaphore here. If we fixup a prefetch
+> @@ -1060,23 +1060,8 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  	}
+>  
+>  	/* kprobes don't want to hook the spurious faults: */
+> -	if (unlikely(notify_page_fault(regs)))
+> +	if (unlikely(kprobes_fault(regs)))
+>  		return;
+> -	/*
+> -	 * It's safe to allow irq's after cr2 has been saved and the
+> -	 * vmalloc fault has been handled.
+> -	 *
+> -	 * User-mode registers count as a user access even for any
+> -	 * potential system fault or CPU buglet:
+> -	 */
+> -	if (user_mode_vm(regs)) {
+> -		local_irq_enable();
+> -		error_code |= PF_USER;
+> -		flags |= FAULT_FLAG_USER;
+> -	} else {
+> -		if (regs->flags & X86_EFLAGS_IF)
+> -			local_irq_enable();
+> -	}
+>  
+>  	if (unlikely(error_code & PF_RSVD))
+>  		pgtable_bad(regs, error_code, address);
+> @@ -1088,17 +1073,35 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		}
+>  	}
+>  
+> -	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+> -
+>  	/*
+>  	 * If we're in an interrupt, have no user context or are running
+>  	 * in an atomic region then we must not take the fault:
+>  	 */
+>  	if (unlikely(in_atomic() || !mm)) {
+> +		if (in_nmi())
+> +			trace_printk("YIPEE!!!\n");
+>  		bad_area_nosemaphore(regs, error_code, address);
+>  		return;
+>  	}
+>  
+> +	/*
+> +	 * It's safe to allow irq's after cr2 has been saved and the
+> +	 * vmalloc fault has been handled.
+> +	 *
+> +	 * User-mode registers count as a user access even for any
+> +	 * potential system fault or CPU buglet:
+> +	 */
+> +	if (user_mode_vm(regs)) {
+> +		local_irq_enable();
+> +		error_code |= PF_USER;
+> +		flags |= FAULT_FLAG_USER;
+> +	} else {
+> +		if (regs->flags & X86_EFLAGS_IF)
+> +			local_irq_enable();
+> +	}
+> +
+> +	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+> +
+>  	if (error_code & PF_WRITE)
+>  		flags |= FAULT_FLAG_WRITE;
+>  
