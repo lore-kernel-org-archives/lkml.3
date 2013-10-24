@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab3JXH23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:28:29 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:39150 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab3JXH21 (ORCPT
+	id S1753969Ab3JXH3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:29:03 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58955 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab3JXH3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:28:27 -0400
+	Thu, 24 Oct 2013 03:29:01 -0400
+Message-ID: <5268DA76.6060503@kernel.org>
+Date: Thu, 24 Oct 2013 09:29:42 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <001701cecfe2$9831eb90$c895c2b0$%jun@samsung.com>
-References: <1381876762-10892-1-git-send-email-dianders@chromium.org>
-	<1381876762-10892-2-git-send-email-dianders@chromium.org>
-	<52610273.3080005@samsung.com>
-	<CAD=FV=UiUxoqbAeq+3iUChqksHd_NpJs2rM83=ng3fprMj0E-A@mail.gmail.com>
-	<001701cecfe2$9831eb90$c895c2b0$%jun@samsung.com>
-Date: Thu, 24 Oct 2013 08:28:26 +0100
-X-Google-Sender-Auth: 5GvOzCo1oJXXkmYD-43cMvwkm3o
-Message-ID: <CAD=FV=WL0K4qiRGsQxG7vfp41dV9fp=7d6d6i5qomJd7jbLEPg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: dw_mmc: Cleanup disable of low power mode w/
- SDIO interrupts
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        linux-iio@vger.kernel.org
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jon Brenner - TAOS <jbrenner@taosinc.com>
+Subject: Re: [PATCH] iio:light:tsl2563: Add DT support
+References: <1382565063-17083-1-git-send-email-sre@debian.org>
+In-Reply-To: <1382565063-17083-1-git-send-email-sre@debian.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seungwon,
+On 10/23/13 22:51, Sebastian Reichel wrote:
+> Add Device Tree support for the TSL2563 driver
+> and document the binding.
+> 
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  .../devicetree/bindings/iio/light/tsl2563.txt         | 19 +++++++++++++++++++
+>  drivers/iio/light/tsl2563.c                           |  4 ++++
+>  2 files changed, 23 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/light/tsl2563.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/light/tsl2563.txt b/Documentation/devicetree/bindings/iio/light/tsl2563.txt
+> new file mode 100644
+> index 0000000..b52cf4b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/light/tsl2563.txt
+> @@ -0,0 +1,19 @@
+> +* TAOS TSL2563 ambient light sensor
+> +
+> +Required properties:
+> +
+> +  - compatible : should be "taos,tsl2563"
+> +  - reg : the I2C address of the sensor
+> +
+> +Optional properties:
+> +
+So two options for this one.  Either pitch it as a possible general parameter, or
+mark it with a vendor prefix.  It seems like something fairly general, but in that case it
+probably needs a more detailed proposal and explanation of exactly what it is.
 
-On Wed, Oct 23, 2013 at 12:25 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
->> >> +             if (card->type == MMC_TYPE_SDIO ||
->> >> +                 card->type == MMC_TYPE_SD_COMBO) {
-> && card->quirks & MMC_QUIRK_BROKEN_CLK_GATING
-> How about considering MMC_QUIRK_BROKEN_CLK_GATING?
-> Some sdio device can work with gating clock.
-> For this, mmc_fixup_device() should be called prior to init_card() in core(sdio.c).
-> I guess you found that.
+Also, is taos listed in vendor-prefixes.txt?  Jon, is that the right vendor prefix to use?
+I'm guessing you have some non mainline bindings out there already so it would be good
+to match those...
 
-By SDIO devices, are you referring to actual SDIO cards or some
-implementations of dw_mmc?
-
-As far as I understand in the CLKENA description in the generic
-documentation from Synopsys it say that for SDIO cards you must not
-stop the clock if interrupts must be detected.  To me, that means that
-all dw_mmc implementations require this change if they support SDIO
-interrupts (hence checking for MMC_CAP_SDIO_IRQ).
-
-I guess I did make the assumption in this change that all (reasonable)
-SDIO cards would be using SDIO interrupts if they are available.  If
-we could find out ahead of time if a given SDIO driver was planning to
-use interrupts we could do better.  The old solution did better in
-this way and we could probably make it work (and still fix the
-read-modify-write race) if we thought this was really important.  The
-code gets a little more twisted to try to avoid holding the IRQ-safe
-spinlock while updating the clock, but I could attempt it...
-
-
-NOTE: We've recently found that there are still occasions when we lose
-SDIO interrupts with dw_mmc and our Marvell WiFi driver, especially
-when those interrupts happen back-to-back.  That problem appears
-unrelated to this one (it's what Bing was investigating when he found
-the original race).  Anyone that has any thoughts, please let me
-know...
-
--Doug
+> +  - cover-comp-gain : integer used as multiplier for gain
+> +                      compensation (default = 1)
+> +
+> +Example:
+> +
+> +tsl2563@29 {
+> +	compatible = "taos,tsl2563";
+> +	reg = <0x29>;
+> +	cover-comp-gain = <16>;
+> +};
+> diff --git a/drivers/iio/light/tsl2563.c b/drivers/iio/light/tsl2563.c
+> index ebb962c..bd30b1d 100644
+> --- a/drivers/iio/light/tsl2563.c
+> +++ b/drivers/iio/light/tsl2563.c
+> @@ -699,6 +699,7 @@ static int tsl2563_probe(struct i2c_client *client,
+>  	struct iio_dev *indio_dev;
+>  	struct tsl2563_chip *chip;
+>  	struct tsl2563_platform_data *pdata = client->dev.platform_data;
+> +	struct device_node *np = client->dev.of_node;
+>  	int err = 0;
+>  	u8 id = 0;
+>  
+> @@ -735,6 +736,9 @@ static int tsl2563_probe(struct i2c_client *client,
+>  
+>  	if (pdata)
+>  		chip->cover_comp_gain = pdata->cover_comp_gain;
+> +	else if (np)
+> +		of_property_read_u32_index(np, "cover-comp-gain", 0,
+> +							&chip->cover_comp_gain);
+>  	else
+>  		chip->cover_comp_gain = 1;
+>  
+> 
