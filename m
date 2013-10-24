@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab3JXQbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 12:31:35 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:54352 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab3JXQbd (ORCPT
+	id S1755800Ab3JXQdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 12:33:09 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:35433 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755507Ab3JXQdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 12:31:33 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>
-Subject: linux-next: Tree for Oct 24
-Date: Thu, 24 Oct 2013 18:31:29 +0200
-Message-Id: <1382632289-18523-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
+	Thu, 24 Oct 2013 12:33:07 -0400
+X-Sasl-enc: xKPauElCVXViQR1idZB+kclxGGgV+SU8gQ1M1dSFftlb 1382632385
+Date: Thu, 24 Oct 2013 14:33:02 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thinkpad_acpi: Fix build error when CONFIG_SND_MAX_CARDS
+ > 32
+Message-ID: <20131024163302.GA3851@khazad-dum.debian.net>
+References: <1382623592-31690-1-git-send-email-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382623592-31690-1-git-send-email-tiwai@suse.de>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 24 Oct 2013, Takashi Iwai wrote:
+> SNDRV_CARDS can be specified via Kconfig since 3.11 kernel, so this
+> can be over 32bit integer range, which leads to a build error.
+> 
+> Cc: <stable@vger.kernel.org> [v3.11+]
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-I've uploaded today's linux-next tree to the master branch of the
-repository below:
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-        git://gitorious.org/thierryreding/linux-next.git
-
-A next-20131024 tag is also provided for convenience.
-
-Quite a few new conflicts. Some of them non-trivial. I've fixed another
-set of build failures, so 32-bit and 64-bit allmodconfigs build fine on
-x86. ARM and x86 default configurations also build fine. PowerPC is in
-pretty bad shape, mostly due to some OF header rework going on.
-
-I'm somewhat short on time today, so I probably won't manage to send out
-detailed conflict reports out today. I'll try to do that tomorrow,
-though.
-
-Thierry
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
