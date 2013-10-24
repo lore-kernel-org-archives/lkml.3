@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3JXHBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:01:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43528 "EHLO mx2.suse.de"
+	id S1754008Ab3JXHBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:01:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39589 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359Ab3JXHA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:00:58 -0400
-From: NeilBrown <neilb@suse.de>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
-Date: Thu, 24 Oct 2013 17:57:40 +1100
-Subject: [PATCH 1/2] ARM: OMAP2+: dmtimer: allow counter to be set at any
- time.
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Belisko Marek <marek.belisko@gmail.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Message-ID: <20131024065740.16889.96134.stgit@notabene.brown>
-In-Reply-To: <20131024065536.16889.49902.stgit@notabene.brown>
-References: <20131024065536.16889.49902.stgit@notabene.brown>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751359Ab3JXHBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 03:01:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,560,1378882800"; 
+   d="scan'208";a="416191202"
+From: tianyu.lan@intel.com
+To: mingo@kernel.org, hpa@zytor.com, x86@kernel.org, holt@sgi.com,
+        davej@fedoraproject.org, lenb@kernel.org, rjw@rjwysocki.net,
+        awilliam@redhat.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci" default
+Date: Thu, 24 Oct 2013 14:49:37 +0800
+Message-Id: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is perfectly appropriate to set the counter register
-when the timer isn't running.  The value set will be where
-the counter starts counting from.
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
+This patch is to add them machines to quirk table and set pci reboot
+default.
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
+Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- arch/arm/plat-omap/dmtimer.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index 869254c..d80d2c4 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -752,15 +752,16 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_read_counter);
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 7e920bf..083ade7 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -382,6 +382,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on Sony Vaio Z1 series*/
++		.callback = set_pci_reboot,
++		.ident = "Sony Vaio Z1",
++		.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ1"),
++		},
++	},
+ 	{ }
+ };
  
- int omap_dm_timer_write_counter(struct omap_dm_timer *timer, unsigned int value)
- {
--	if (unlikely(!timer || pm_runtime_suspended(&timer->pdev->dev))) {
--		pr_err("%s: timer not available or enabled.\n", __func__);
-+	if (unlikely(!timer))
- 		return -EINVAL;
--	}
-+
-+	omap_dm_timer_enable(timer);
- 
- 	omap_dm_timer_write_reg(timer, OMAP_TIMER_COUNTER_REG, value);
- 
- 	/* Save the context */
- 	timer->context.tcrr = value;
-+	omap_dm_timer_disable(timer);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_write_counter);
-
+-- 
+1.7.9.5
 
