@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3JXJkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:40:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51770 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab3JXJkC (ORCPT
+	id S1754643Ab3JXJmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:42:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56076 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754173Ab3JXJmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:40:02 -0400
-Date: Thu, 24 Oct 2013 02:40:02 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org
-Subject: Re: [PATCH 03/11] block: make rq->cmd_flags be 64-bit
-Message-ID: <20131024094002.GB9433@infradead.org>
-References: <1382606764-8309-1-git-send-email-axboe@kernel.dk>
- <1382606764-8309-4-git-send-email-axboe@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382606764-8309-4-git-send-email-axboe@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 24 Oct 2013 05:42:03 -0400
+Message-ID: <1382607720.2559.17.camel@dabdike.quadriga.com>
+Subject: TAB election results [was Re: Linux Foundation Technical Advisory
+ Board Elections and Nomination process]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
+Cc: ksummit-2013-discuss@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Oct 2013 10:42:00 +0100
+In-Reply-To: <1381773716.3752.4.camel@dabdike.lan>
+References: <1381773716.3752.4.camel@dabdike.lan>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 10:25:56AM +0100, Jens Axboe wrote:
-> We have officially run out of flags in a 32-bit space. Extend it
-> to 64-bit even on 32-bit archs.
-> 
-> Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Elected to the TAB for a two year term at the National Museum of
+Scotland event were:
 
-Looks good,
+Greg KH <greg@kroah.com>
+Thomas Gleixner <tglx@linutronix.de>
+Jonathan Corbet <corbet@lwn.net>
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Matthew Garrett <mjg59@srcf.ucam.org>
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+James
+
+
