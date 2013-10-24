@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab3JXBye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 21:54:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52323 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3JXByd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 21:54:33 -0400
+	id S1753673Ab3JXCap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 22:30:45 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:49859 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753025Ab3JXCan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 22:30:43 -0400
+X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 22:30:43 EDT
+In-Reply-To: <OF77F96D5F.776C09BF-ON48257BFE.00106C94-48257BFE.0020EF59@LocalDomain>
+References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>	 <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
+	 <OFFC4F71E6.FCD3279D-ON48257BF3.000E2A58-48257BF3.00251AFA@zte.com.cn> <1380295947.32071.69.camel@dvhart-mobl4.amr.corp.intel.com> <OF77F96D5F.776C09BF-ON48257BFE.00106C94-48257BFE.0020EF59@LocalDomain>
+Subject: Re: Re: Re: Re: [PATCH] futex: Remove the owner check when waking task in
+ handle_futex_death
+X-KeepSent: B158B42B:9D58FA32-48257C0E:000BF4D4;
+ type=4; name=$KeepSent
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFB158B42B.9D58FA32-ON48257C0E.000BF4D4-48257C0E.000C48E8@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Thu, 24 Oct 2013 10:13:56 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-10-24 10:14:02
 MIME-Version: 1.0
-In-Reply-To: <5267D85D.5030505@redhat.com>
-References: <1382304926-1641-1-git-send-email-prarit@redhat.com>
-	<1382304926-1641-2-git-send-email-prarit@redhat.com>
-	<CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com>
-	<5265A9A4.2000100@redhat.com>
-	<CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com>
-	<526706FC.2070105@redhat.com>
-	<CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com>
-	<5267A6CA.1000505@redhat.com>
-	<5267BAE7.2090300@redhat.com>
-	<CACVXFVPSyNu6rUuDrqT2YZVucSgyeDN_toS-Y+WoT7Ye15iGRA@mail.gmail.com>
-	<5267D85D.5030505@redhat.com>
-Date: Thu, 24 Oct 2013 09:54:30 +0800
-Message-ID: <CACVXFVOESiUpwNY1iQk3pWw0CFqG9qoF0o44KyL5u5VqK1JMvg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
- no uevent
-From: Ming Lei <ming.lei@canonical.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        tigran@aivazian.fsnet.co.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-type: text/plain; charset=US-ASCII
+X-MAIL: mse02.zte.com.cn r9O2E7Mb084196
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 10:08 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+
+
+Zhang Yi <zhang.yi20@zte.com.cn> wrote on 2013/10/08 13:59:36:
+
+> Re: Re: Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
 >
+> Darren Hart <dvhart@linux.intel.com> wrote on 2013/09/27 23:32:27:
+
+> >
+> > Re: Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
+> >
+> > >
+> > > The earlier patch cannot solve another problem:
+> > > The owner wakes the next waiter through normal unlocking which make the
+> > > futex value as zero, the waked task exits before actually locking the mutex.
+> > > In this case, the owner doesn't call handle_futex_death() and the waked task
+> > > doesn't call futex_wake() when they are dying. The rest waiters will still
+> > > block as the same.
+> > >
+> > > This is also the reason that I drop the owner and FUTEX_WAITERS check,
+> > > because the futex value can be zero at that time.
+> > >
+> >
+> > If the FUTEX_WAITERS bit is not set, there are no waiters, and thus no
+> > need to wake. I understand why you dropped the OWNER check, but I'm not
+> > following this one. Where would the futex word be set from having
+> > waiters to zero when there might still be waiters pending?
+> >
+> >
+> > --
+> > Darren Hart
+> > Intel Open Source Technology Center
+> > Yocto Project - Linux Kernel
+> >
+> >
+
+> I have drawn a diagram as below:
 >
-> On 10/23/2013 09:21 AM, Ming Lei wrote:
->> On Wed, Oct 23, 2013 at 8:02 PM, Prarit Bhargava <prarit@redhat.com> wrote:
->>
->>>
->>> After all this I completely forgot the problem I'm trying to solve here.  The
->>> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
->>> is not found (that is the file is not found on disk), then EACH cpu waits 1
->>> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
->>>
->>> Which is terrible... so HOTPLUG doesn't work here.
->>>
->>> Let me back up Ming and see if you have a better solution for me.  I have a
->>> system that does not have the x86 microcode loaded on disk.  I use the microcode
->>> module which calls request_firmware_nowait() to load the microcode image and I
->>> want it done as fast as possible.  The microcode loader does not have a uevent
->>> so I'm not waiting on userspace for completion.
->>>
->>> How do I avoid the 60 second delay/cpu introduced in the microcode path?  I
->>> don't see one.  If I use HOTPLUG I'm waiting 60 seconds.  If I use NOHOTPLUG
->>> AFAICT the loading function never will return.  AFAICT the same issue arises
->>> with the dell_rbu code -- it appears to never load the dell_rbu firmware.
->>
->> As I said, the 60 second delay is from udev, so that is the root cause.
+>                process1                     |      process2
+>    -------------------------------------------------------------
+>   |       thread1       |      thread2      |      thread3
+>    -------------------------------------------------------------
+> t1|pthread_mutex_lock:  |                   |
+>   |  __lock=self        |                   |
+>   |                     |                   |
+> t2|                     |pthread_mutex_lock:|
+>   |                     |__lock|=FUTEX_WAITERS
+>   |                     | syscall futex_wait|
+>   |                     |                   |
+> t3|                     |                   |pthrea_mutex_lock:
+>   |                     |                   |__lock|=FUTEX_WAITERS
+>   |                     |                   | syscall futex_wait
+>   |                     |                   |
+> t4|pthread_mutex_unlock:|                   |
+>   |  __lock=0           |                   |
+>   |  syscall futex_wake | waked             |
+>   |                     |                   |
+> t5| exit                |exit:              |
+>   |                     | handle_futex_death|
+> ---------------------------------------------------------------
+> t6|                     |pthread_mutex_lock:|
+>   |                     |__lock=self|FUTEX_WAITERS
 >
-> Okay, so then my other option is to use NOHOTPLUG.  I've correctly modified it
-> to return and not wait for a NULL uevent.  The synchronization between the cont
-> function return and the actual application of the firmware is done in the driver
-> (in my 2/2 patch) where I've used a completion struct.  ... Am I still missing
-> something at this point?
-
-If you plan to use NOHOTPLUG to stop sending uevent to user space, you
-need to make sure all distributions(include old ones) do not require
-the notification previously, and you'd better to explain the microcode
-upgrading principle in a bit detail so that we can make sure it won't
-break the loading protocol between kernel and user space, at least
-current code is using request_fimrware() and the uevent is surely
-sent to userspace, right?
-
+> 1, At time t4, in the unlocking process of glibc, it clears the FUTEX_WAITERS bit before
+> calling futex_wake syscall.
 >
-> I also have to make that change to the dell_rbu code because it too, is broken
-> the same way.  That is, I can load the dell_rbu module and it just hangs without
-> applying the firmware.
-
-Because userspace does not handle the request and write fw data to driver,
-how can you expect the driver to apply firmware?
-
-Anyway, you need Cc dell_rbu guys to make sure the change.
-
-> I'll submit a new version of these patches and we can continue from there.
+> 2, At time t5, thread2 cannot know if the FUTEX_WAITERS bit was set.
 >
-> P.
->>
->> There are some workarounds for your reference:
->>
->
-> These are workarounds for an issue that arises in the kernel.
+> 3, Time t6 is expected but can never be true.
 
-Sorry, I don't understand, the root cause is surely from udev.
+Are there any questions?
 
-Thanks,
---
-Ming Lei
