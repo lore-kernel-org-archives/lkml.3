@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3JWXx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 19:53:58 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53640 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3JWXx4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 19:53:56 -0400
+	id S1753511Ab3JXAVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 20:21:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784Ab3JXAVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 20:21:51 -0400
+References: <87r4bcdok1.fsf@redhat.com> <CA+8MBb+0wruR-T8Rkk_WQ6Try4ct2ZCm8o=js4eO8s7cogcs+g@mail.gmail.com>
+User-agent: mu4e 0.9.9.5; emacs 24.3.1
+From: Madper Xie <cxie@redhat.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Madper Xie <cxie@redhat.com>, Anton Vorontsov <anton@enomsg.org>,
+        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        =?utf-8?B?5oiQ6aqPIOiwog==?= <bbboson@gmail.com>
+Subject: Re: [PATCH] pstore: avoid incorrectly mark entry as duplicate
+In-reply-to: <CA+8MBb+0wruR-T8Rkk_WQ6Try4ct2ZCm8o=js4eO8s7cogcs+g@mail.gmail.com>
+Date: Thu, 24 Oct 2013 08:21:40 +0800
+Message-ID: <87k3h35xij.fsf@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
-References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
- <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
- <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com> <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 23 Oct 2013 17:53:34 -0600
-Message-ID: <CAErSpo7x7ym=Lp=UmsQ=JM7QaALoouShnv366EthRTwr=eAMYg@mail.gmail.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17, 2013 at 7:59 AM, Andreas Noever
-<andreas.noever@gmail.com> wrote:
-> On Wed, Oct 16, 2013 at 10:21 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Oct 15, 2013 at 03:44:52AM +0100, Matthew Garrett wrote:
->>> On Mon, Oct 14, 2013 at 05:50:38PM -0600, Bjorn Helgaas wrote:
->>> > [+cc Rafael, Mika, Kirill, linux-pci]
->>> >
->>> > On Mon, Oct 14, 2013 at 4:47 PM, Andreas Noever
->>> > <andreas.noever@gmail.com> wrote:
->>> > > When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
->>> > > crashes a few seconds later. Using
->>> > > echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
->>> > > to remove a bridge two levels above the device triggers the fault immediately:
->>> >
->>> > There have been significant changes in acpiphp related to Thunderbolt
->>> > since v3.11.
->>>
->>> Apple don't expose Thunderbolt via ACPI, so it appears as native PCIe.
->>> I'd be surprised if acpiphp makes a difference here.
->>
->> Yeah, you're right; I wasn't paying attention.
->>
->> We save a pci_dev pointer in the pci_pme_list, which of course has a
->> longer lifetime than the pci_dev itself, but we don't acquire a reference
->> on it, so I suspect the pci_dev got released before we got around to
->> doing the pci_pme_list_scan().
->>
->> Andreas, can you try the patch below?  It's against v3.12-rc2, but it
->> should apply to v3.11, too.
+
+tony.luck@gmail.com writes:
+
+> On Wed, Oct 23, 2013 at 7:55 AM, Madper Xie <cxie@redhat.com> wrote:
+>> The "duplicate" entries won't appear in pstorefs. And a complain will be
+>> print -- pstore: failed to load 76 record(s) from 'efi'
 >
-> I have tested your patch against 3.11 where it solves the problem. Thanks!
+> Maybe I don't quite get this - but it sounds like you have a whole lot
+> of entries using up space in efivars that have similar names - differing
+> just in the timestamp - that won't show up in the pstore filesystem - because
+> we'd try to name them all the same thing.
+>
+Maybe I misunderstand you...
 
-Hi Andreas, sorry for the delay here.  I'm still trying to understand
-exactly why my patch fixes the problem, since I don't see a relevant
-refcounting change between v3.11 and v3.12-rc5.  And I don't actually
-see the hole yet from inspection.  It seems like we should be safe
-even without my patch.
+Sure pstore try to name them all the same thing, but it's another
+issue. and it doesn't prevent entries showing up in pstore fs.
 
-But maybe it's a case of releasing the pci_bus before releasing a
-pci_dev on the bus.  I thought we recently fixed a hole there, but
-maybe not.  I'll look more carefully at that path.
+Consider the following case: (after efi-pstore support append mode, it
+always like this case):
 
-Can I trouble you to collect a complete dmesg log from v3.11 without
-my patch?  Maybe if I stare long enough at that and the lspci you
-supplied, I can figure out what's going on.  If you were really
-gung-ho, you could add instrumentation to print out the pci_dev and
-pci_bus pointers as we enumerate them.  My guess is that we'd see one
-of those pointers in the GPF register dump.
+I choose four dumped efivars from my DELL XPS:
+dump-type0-9-1-1380441690-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+dump-type0-9-1-1380448560-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+dump-type0-9-1-1380460890-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+dump-type0-9-1-1382496073-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+         ^        ^       [              ^                   ]
+         !        !                      !
+       type    timestamp                GUID
 
-Bjorn
+When pstore load them from efivars, pstore incorrectly assuming that
+efivars with the same TYPE, ID and GUID are duplicate.
+
+list_for_each_entry(pos, &allpstore, list) {
+	if (pos->type == type &&    /---
+	    pos->id == id &&     <-| as I said, it only check type,id,psi
+	    pos->psi == psi) {      \---
+		rc = -EEXIST;    <- then set -EEXIST, and ignore *dup* entry
+		break;
+	}
+}
+You can see the code above, for those four entries, only one could be
+showed in pstorefs, all others will get a -EEXIST. So I add a timestamp
+check here, it's the only different part.
+
+> How did all those things end up in efivars?
+before the patch I can see 
+dmesg-efi-1   dmesg-efi-11  dmesg-efi-3  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-10  dmesg-efi-2   dmesg-efi-4  dmesg-efi-6  dmesg-efi-8
+after apply the patch:
+[root@dhcp-13-41 vars]# ls /dev/pstore/
+dmesg-efi-1  dmesg-efi-1   dmesg-efi-11  dmesg-efi-2  dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-11  dmesg-efi-2  dmesg-efi-3  dmesg-efi-5  dmesg-efi-7  dmesg-efi-8
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-12  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-8
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-13  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-14  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-15  dmesg-efi-2  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-16  dmesg-efi-3  dmesg-efi-4  dmesg-efi-5  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-7  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-10  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-4  dmesg-efi-6  dmesg-efi-8  dmesg-efi-9
+dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
+dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
+dmesg-efi-1  dmesg-efi-11  dmesg-efi-2   dmesg-efi-3  dmesg-efi-5  dmesg-efi-6  dmesg-efi-8
+
+>
+> Wouldn't the right fix be to make pstore allow them all to appear (using the
+> timestamp to differentiate names?) so that we could see them, log them,
+> and then remove them from pstore (in turn freeing up efivars space - which
+> people keep telling me is in short supply).
+>
+Yeah, many file have the same name, just like my case above. But it not
+really block the file shows up and should be solved in another
+patch. And I'm trying fix it.
+> -Tony
+
+-- 
+Best,
+Madper Xie.
