@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3JXOvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:51:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18449 "EHLO mx1.redhat.com"
+	id S1755464Ab3JXOyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:54:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12275 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab3JXOvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:51:06 -0400
-Date: Thu, 24 Oct 2013 16:50:25 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, Arnaldo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH 2/2] ARM64: perf: wire up perf_regs and unwind support
-Message-ID: <20131024145025.GA1493@krava.redhat.com>
-References: <1382108078-8807-1-git-send-email-jean.pihet@linaro.org>
- <1382108078-8807-3-git-send-email-jean.pihet@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382108078-8807-3-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755291Ab3JXOyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 10:54:45 -0400
+Message-ID: <1382626457.1768.80.camel@deneb.redhat.com>
+Subject: [PATCH v2] arm64: allow ioremap_cache() to use existing RAM mappings
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Oct 2013 10:54:17 -0400
+In-Reply-To: <20131023143717.GA19317@mbp>
+References: <1382362594-24947-1-git-send-email-msalter@redhat.com>
+	 <1382519898.10408.1.camel@mbp> <1382535972.1768.68.camel@deneb.redhat.com>
+	 <20131023143717.GA19317@mbp>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 04:54:38PM +0200, Jean Pihet wrote:
+Some drivers (ACPI notably) use ioremap_cache() to map an area which could
+either be outside of kernel RAM or in an already mapped reserved area of
+RAM. To avoid aliases with different caching attributes, ioremap() does
+not allow RAM to be remapped. But for ioremap_cache(), the existing kernel
+mapping may be used.
 
-SNIP
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm64/include/asm/io.h |  2 +-
+ arch/arm64/mm/ioremap.c     | 20 ++++++++++++++++++--
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-> +	return -EINVAL;
-> +}
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 75b93d7..15a69a5 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -29,11 +29,17 @@ ifeq ($(ARCH),x86_64)
->    NO_PERF_REGS := 0
->    LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
->  endif
-> +
->  ifeq ($(ARCH),arm)
->    NO_PERF_REGS := 0
->    LIBUNWIND_LIBS = -lunwind -lunwind-arm
->  endif
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 1d12f89..b56e5b5 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -224,6 +224,7 @@ extern void __memset_io(volatile void __iomem *, int, size_t);
+  */
+ extern void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot);
+ extern void __iounmap(volatile void __iomem *addr);
++extern void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size);
+ 
+ #define PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY)
+ #define PROT_DEVICE_nGnRE	(PROT_DEFAULT | PTE_PXN | PTE_UXN | PTE_ATTRINDX(MT_DEVICE_nGnRE))
+@@ -233,7 +234,6 @@ extern void __iounmap(volatile void __iomem *addr);
+ #define ioremap(addr, size)		__ioremap((addr), (size), __pgprot(PROT_DEVICE_nGnRE))
+ #define ioremap_nocache(addr, size)	__ioremap((addr), (size), __pgprot(PROT_DEVICE_nGnRE))
+ #define ioremap_wc(addr, size)		__ioremap((addr), (size), __pgprot(PROT_NORMAL_NC))
+-#define ioremap_cached(addr, size)	__ioremap((addr), (size), __pgprot(PROT_NORMAL))
+ #define iounmap				__iounmap
+ 
+ #define PROT_SECT_DEFAULT	(PMD_TYPE_SECT | PMD_SECT_AF)
+diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
+index 1725cd6..2bb1d58 100644
+--- a/arch/arm64/mm/ioremap.c
++++ b/arch/arm64/mm/ioremap.c
+@@ -77,8 +77,24 @@ EXPORT_SYMBOL(__ioremap);
+ 
+ void __iounmap(volatile void __iomem *io_addr)
+ {
+-	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
++	unsigned long addr = (unsigned long)io_addr & PAGE_MASK;
+ 
+-	vunmap(addr);
++	/*
++	 * We could get an address outside vmalloc range in case
++	 * of ioremap_cache() reusing a RAM mapping.
++	 */
++	if (VMALLOC_START <= addr && addr < VMALLOC_END)
++		vunmap((void *)addr);
+ }
+ EXPORT_SYMBOL(__iounmap);
++
++void __iomem *ioremap_cache(phys_addr_t phys_addr, size_t size)
++{
++	/* For normal memory we already have a cacheable mapping. */
++	if (pfn_valid(__phys_to_pfn(phys_addr)))
++		return (void __iomem *)__phys_to_virt(phys_addr);
++
++	return __ioremap_caller(phys_addr, size, __pgprot(PROT_NORMAL),
++				__builtin_return_address(0));
++}
++EXPORT_SYMBOL(ioremap_cache);
+-- 
+1.8.3.1
 
-I dont see above 'ifeq' in acme's or in tip tree, so hunk
-below fails to apply.. what tree was this based on?
 
-otherwise the change looks good to me
 
-jirka
