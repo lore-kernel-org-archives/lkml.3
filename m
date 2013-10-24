@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab3JXTZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 15:25:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24700 "EHLO mx1.redhat.com"
+	id S1756090Ab3JXT2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 15:28:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55892 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997Ab3JXTZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 15:25:23 -0400
-Date: Thu, 24 Oct 2013 15:24:46 -0400
+	id S1753940Ab3JXT2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 15:28:22 -0400
+Date: Thu, 24 Oct 2013 15:27:52 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -18,46 +18,48 @@ Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
  first, then try below 4G, then MAXMEM
-Message-ID: <20131024192446.GF2322@redhat.com>
-References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
- <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
- <20131015144810.GI31215@redhat.com>
+Message-ID: <20131024192752.GG2322@redhat.com>
+References: <20131015144810.GI31215@redhat.com>
  <CAE9FiQXVCx__SuhAdO9_CNaRncW2HB2tv3UjZrQcbsTV35QWow@mail.gmail.com>
  <20131018123837.GB2277@redhat.com>
  <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
  <20131021151643.GA20669@redhat.com>
  <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
- <20131024110117.GB3033@dhcp16-109.nay.redhat.com>
- <CAE9FiQW=WLvBKgdWkKNaka=ZC1FLxYAtXc2W2zqNEKhHR2VSNQ@mail.gmail.com>
+ <20131024140241.GA2322@redhat.com>
+ <CAE9FiQUu0WwMgNpog4TKch+MT2i7_DsNvqZxbyQusS4AFxdhQQ@mail.gmail.com>
+ <20131024191821.GE2322@redhat.com>
+ <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQW=WLvBKgdWkKNaka=ZC1FLxYAtXc2W2zqNEKhHR2VSNQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 12:13:41PM -0700, Yinghai Lu wrote:
+On Thu, Oct 24, 2013 at 12:24:57PM -0700, Yinghai Lu wrote:
+> On Thu, Oct 24, 2013 at 12:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Oct 24, 2013 at 12:15:25PM -0700, Yinghai Lu wrote:
+> >
+> > Also keeping things simple by not trying to *impose* a new crashkernel=
+> > syntax on existing crashkernel=xM users.
+> 
+> Existing user that have crashkernel=xM working with their old kernel
+> and old kexec-tools, they still could keep their old command line and
+> old kexec-tools
+> with new updated kernel.
+> We should not change semantics to surprise them.
 
-[..]
-> old kexec-tools could work cross 892M in some case.
-> That will confuse the user,
+Old users will get reservation still below 896MB.
 
-If it could work beyong 892MB, then why are you limiting user to 896MB
-only. That sounds wrong.
+It will go above 896MB only if memory could not be allocated below 896MB.
 
-> as it works some time on some setup, but does
-> not work on other setup.
+In the past reservation will fail and kexec-tools will fail.
+Now reservation will succeed but kexec-tools will fail.
 
-If it can work above 896MB, then those other setup should be fixed.
-
-All the existing users of crashkernel=xM *will not* be affected by this
-change. Memory reservation will still be below 892MB.
-
-Memory reservation will gove above 896MB, only if user chooses to reserve
-more memory. If kexec works in that case, its a win-win situation. If it
-does not and fails, then it is status quo is maintained.
+So end result a user sees is that kexec-tools fails. So I don't see how
+we are breaking existing installations or user setups.
 
 Thanks
 Vivek
