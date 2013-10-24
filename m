@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3JXKPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:15:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35215 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab3JXKPN (ORCPT
+	id S1754815Ab3JXKPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:15:31 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51517 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab3JXKP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:15:13 -0400
-Date: Thu, 24 Oct 2013 12:14:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <waiman.long@hp.com>
-cc: walken@google.com, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v4 1/3] qrwlock: A queue read/write lock implementation
-In-Reply-To: <52680022.1020200@hp.com>
-Message-ID: <alpine.DEB.2.02.1310241207500.4983@ionos.tec.linutronix.de>
-References: <1380722946-30468-1-git-send-email-Waiman.Long@hp.com> <1380722946-30468-2-git-send-email-Waiman.Long@hp.com> <20131023120004.GD2862@localhost> <52680022.1020200@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 24 Oct 2013 06:15:27 -0400
+Date: Thu, 24 Oct 2013 11:15:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: lgirdwood@gmail.com, sbkim73@samsung.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20131024101501.GA17157@sirena.org.uk>
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 178.105.202.101
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to
+ parse data related to ramp
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Oct 2013, Waiman Long wrote:
-> On 10/23/2013 08:00 AM, walken@google.com wrote:
-> > > +	/*
-> > > +	 * Wait until the next one in queue set up the next field
-> > > +	 */
-> > > +	while (likely(!(next = ACCESS_ONCE(node->next))))
-> > > +		cpu_relax();
-> > > +	/*
-> > > +	 * The next one in queue is now at the head
-> > > +	 */
-> > > +notify_next:
-> > > +	barrier();
-> > > +	ACCESS_ONCE(next->wait) = false;
-> > > +	smp_wmb();
-> > > +}
-> > I believe this could be unified with mspin_lock() / mspin_unlock() in
-> > kernel/mutex.c ? (there is already talk of extending these functions
-> > to be used by rwsem for adaptive spinning as well...)
-> 
-> It probably can, but the unification can wait until the code are in.
 
-The unification has to be done as a part of this series. Cleanups are
-part of the development process of new code and not an optional
-feature.
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
+On Thu, Oct 10, 2013 at 10:41:35AM +0900, Chanwoo Choi wrote:
+> This patch parse 'buck[2-4]_ramp_enable and buck_ramp_delay' platform data
+> from dts file.
 
-	tglx
+Applied both, thanks.  Please submit a followup patch to use
+of_property_read_bool() as noted by Mark.
 
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSaPMiAAoJELSic+t+oim9BaYQAI3xdZTxgyXZb4fzquPMQPk2
+4zH7NoBsGOtxCiMjy+I+o6h2mFdDkeMqg8Iy8e2fTRH5c9mlg+pixv94kzG3W0J1
+ZszjYiOYg6j6Ri4pkasv4+H+XiWtCwrzvWYM05glS0JwzzpjlxmDWQveR7X42I2v
+YJs/VUby47A8S21V7hc7MFiurIuiol/pbcA3yToFwUjX6fVjFi7ikhLEYrAf2SK0
+I4VtP6jjAnnezzkyJAqzs3+Rlwr3tUHjln4deAYq3DcI8AliO8lQIdvLoci59499
+VPI6QpL2VjibPewLDxLMgVkWNaa0cNd+M6qjKZ3aZEFGuJ3xmLMoKG3W69Lxhqr2
+jINp8ZwMtvv7Aa5Fz+Pnv2uD/l7qgKlXeEwKiDeu0o+hoHTUn9ywLAdmDiRYkfQ8
+3iy2aGIduSy19pSzj0t8dTwzLIZ5xL9M4ZQZefYb6wkG+/K84i1Tnb9+ZkXXmGu3
+wF53uwbUx9eCKvSXoxcuz+TLeh+l4GfbT543mDwAtdF8k28ZxFrA3to4EAO2di+Z
+I0OmddkF8BlrtXs8vAHJF+bvObHKvbdd+L9MTSIRcj41u0TQlCtCzcXrjalQ+Xkk
+aJgrYok8G+v149WIRGX+ypKxO8I7bUHhttwz53iwz0ALuKtc0rBZi2LkfX8QyIps
+X7gJm/097vNOODRfRDqE
+=NlR+
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
