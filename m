@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab3JXKdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:33:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:20801 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754531Ab3JXKdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:33:32 -0400
-X-IronPort-AV: E=Sophos;i="4.93,561,1378857600"; 
-   d="scan'208";a="66880050"
-Date: Thu, 24 Oct 2013 11:32:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v8 18/19] swiotlb-xen: no need to do execute two bus_to_phys
- translations in a row
-In-Reply-To: <20131023195335.GC28963@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1310241129230.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310171833520.26077@kaball.uk.xensource.com> <1382031814-8782-18-git-send-email-stefano.stabellini@eu.citrix.com> <20131023140150.GB27771@phenom.dumpdata.com> <alpine.DEB.2.02.1310231833560.26077@kaball.uk.xensource.com>
- <20131023195335.GC28963@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754878Ab3JXKhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:37:19 -0400
+Received: from cyclops.biessmann.org ([134.0.25.77]:38259 "EHLO
+	cyclops.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab3JXKhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 06:37:16 -0400
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH 2/2] avr32: fix out-of-range jump in large kernels
+Date: Thu, 24 Oct 2013 12:31:04 +0200
+Message-Id: <1382610664-1195-2-git-send-email-andreas@biessmann.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1382610664-1195-1-git-send-email-andreas@biessmann.de>
+References: <1382610664-1195-1-git-send-email-andreas@biessmann.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Oct 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, Oct 23, 2013 at 06:34:13PM +0100, Stefano Stabellini wrote:
-> > > On Thu, Oct 17, 2013 at 06:43:33PM +0100, Stefano Stabellini wrote:
-> > > > xen_unmap_single calls xen_bus_to_phys, then passes dev_addr to
-> > > > is_xen_swiotlb_buffer that calls xen_bus_to_phys again.
-> > > 
-> > > It does?
-> > > 
-> > > I see it call mfn_to_local_pfn which calls pfn_to_mfn and
-> > > get_phys_to_machine (which I presume is going to be a slow
-> > > operation on ARM).
-> > 
-> > Yeah, I am trying to reduce the number of pfn_to_mfn and mfn_to_pfn
-> > translations.
-> > That said, this patch is not needed to have a fully functional
-> > swiotlb-xen on arm and I would OK with postponing it.
-> 
-> OK, lets do that as it requires some hard thinking.
+This patch fixes following error (for big kernels):
 
-OK.
+---8<---
+arch/avr32/boot/u-boot/head.o: In function `no_tag_table':
+(.init.text+0x44): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
+arch/avr32/kernel/built-in.o: In function `bad_return':
+(.ex.text+0x236): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
+--->8---
 
+It comes up when the kernel increases and 'panic()' is too far away to fit in
+the +/- 2MiB range. Which in turn issues from the 21-bit displacement in
+'br{cond4}' mnemonic which is one of the two ways to do jumps (rjmp has just
+10-bit displacement and therefore a way smaller range). This fact was stated
+before in 8d29b7b9f81d6b83d869ff054e6c189d6da73f1f.
+One solution to solve this is to add a local storage for the symbol address
+and just load the $pc with that value.
 
-> > > I am bit uncomfortable with this - I recall when developing this
-> > > that I had hit some odd cases of doing DMA of a page to a guest
-> > > and it not always working. It was the case of not detecting whether
-> > > the pfn was foreign or not. Sadly I can't recall the details.
-> > > 
-> > > I would think that this problem would also be present with ARM?
-> > > But perhaps all the new changes in the pfn_to_mfn that had lately
-> > > been done have fixed this?
-> > 
-> > No, because on ARM the guest is autotranslate so the pfn returned by
-> > mfn_to_pfn is always "local".
-> > However thanks to the m2p_override now we should get the "local" pfn
-> > from mfn_to_pfn on x86 too.
-> > I'll test this case though.
-> 
-> Right, so maybe the pfn_to_mfn_local test is useless nowadays?
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+---
+ arch/avr32/boot/u-boot/head.S    |    5 ++++-
+ arch/avr32/kernel/entry-avr32b.S |    3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Yes, I think so. This might be better handled by removing
-mfn_to_local_pfn altogether.
+diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
+index d36d865..2ffc298 100644
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -73,8 +73,11 @@ init_sr:
+ 	.long	0x007f0000	/* Supervisor mode, everything masked */
+ stack_addr:
+ 	.long	init_thread_union
++panic_addr:
++	.long	panic
+ 
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+-	bral	panic
++	/* branch to panic() which can be far away with that construct */
++	lddpc	pc, panic_addr
+ 2:	.asciz	"Boot loader didn't provide correct magic number\n"
+diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
+index 9899d3c..7301f48 100644
+--- a/arch/avr32/kernel/entry-avr32b.S
++++ b/arch/avr32/kernel/entry-avr32b.S
+@@ -401,9 +401,10 @@ handle_critical:
+ 	/* We should never get here... */
+ bad_return:
+ 	sub	r12, pc, (. - 1f)
+-	bral	panic
++	lddpc	pc, 2f
+ 	.align	2
+ 1:	.asciz	"Return from critical exception!"
++2:	.long	panic
+ 
+ 	.align	1
+ do_bus_error_write:
+-- 
+1.7.10.4
+
