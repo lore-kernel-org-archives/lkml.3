@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab3JXJfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:35:11 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47104 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3JXJfJ (ORCPT
+	id S1754359Ab3JXJiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:38:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35439 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3JXJiU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:35:09 -0400
-Message-ID: <5268E73C.7030302@linux.vnet.ibm.com>
-Date: Thu, 24 Oct 2013 17:24:12 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 13/15] KVM: MMU: locklessly write-protect the page
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-14-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131024091732.GA5289@redhat.com>
-In-Reply-To: <20131024091732.GA5289@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102409-0260-0000-0000-000003D8CAAF
+	Thu, 24 Oct 2013 05:38:20 -0400
+Subject: Re: [RFC PATCH 1/6] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+Date: Thu, 24 Oct 2013 04:38:23 -0500
+Cc: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tglx@linutronix.de>,
+        <linus.walleij@linaro.org>, <santosh.shilimkar@ti.com>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <mark.rutland@arm.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D170CC15-C746-412F-A683-E8A73EFB8133@codeaurora.org>
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-2-git-send-email-r.sricharan@ti.com>
+To: Sricharan R <r.sricharan@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 05:17 PM, Gleb Natapov wrote:
 
->>  
->> -/**
->> - * kvm_mmu_write_protect_pt_masked - write protect selected PT level pages
->> +static void __rmap_write_protect_lockless(u64 *sptep)
->> +{
->> +	u64 spte;
->> +
->> +retry:
->> +	/*
->> +	 * Note we may partly read the sptep on 32bit host, however, we
->> +	 * allow this case because:
->> +	 * - we do not access the page got from the sptep.
->> +	 * - cmpxchg64 can detect that case and avoid setting a wrong value
->> +	 *   to the sptep.
->> +	 */
->> +	spte = *rcu_dereference(sptep);
->> +	if (unlikely(!is_last_spte(spte) || !is_writable_pte(spte)))
-> is_last_spte gets two parameters.
+On Sep 30, 2013, at 8:59 AM, Sricharan R wrote:
 
-In patch [PATCH v3 12/15] KVM: MMU: check last spte with unawareness of mapping level,
-we have removed the 'level' from the parameter list.
+> In some socs the gic can be preceded by a crossbar IP which
+> routes the peripheral interrupts to the gic inputs. The peripheral
+> interrupts are associated with a fixed crossbar input line and the
+> crossbar routes that to one of the free gic input line.
+> 
+> The DT entries for peripherals provides the fixed crossbar input line
+> as its interrupt number and the mapping code should associate this with
+> a free gic input line. This patch adds the support inside the gic irqchip
+> to handle such routable irqs. The routable irqs are registered in a linear
+> domain. The registered routable domain's callback should be implemented
+> to get a free irq and to configure the IP to route it.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+> Documentation/devicetree/bindings/arm/gic.txt |    5 +++
+> arch/arm/boot/dts/dra7.dtsi                   |    1 +
+> drivers/irqchip/irq-gic.c                     |   57 +++++++++++++++++++++----
+> include/linux/irqchip/arm-gic.h               |    8 +++-
+> 4 files changed, 61 insertions(+), 10 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index 3dfb0c0..2d8c680 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -49,6 +49,11 @@ Optional
+>   regions, used when the GIC doesn't have banked registers. The offset is
+>   cpu-offset * cpu-nr.
+> 
+> +- routable-irqs	: Total number of gic irq inputs which are not directly
+> +		  connected from the peripherals, but are routed dynamically
+> +		  by a crossbar/multiplexer preceding the GIC. The GIC irq
+> +		  input line is assigned dynamically when the corresponding
+> +		  peripheral's crossbar line is mapped.
+
+arm,routable-irqs
+
+> Example:
+> 
+> 	intc: interrupt-controller@fff11000 {
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
