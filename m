@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3JXKaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:30:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52303 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab3JXKaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:30:12 -0400
-Message-ID: <1382610609.1559.12.camel@linux-fkkt.site>
-Subject: Re: [PATCH v2] Input: add regulator haptic driver
-From: Oliver Neukum <oneukum@suse.de>
-To: "hyunhee.kim" <hyunhee.kim@samsung.com>
-Cc: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
-        broonie@opensource.wolfsonmicro.com, peter.ujfalusi@ti.com,
-        wfp5p@virginia.edu, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kyungmin.park@samsung.com,
-        "'Aristeu Sergio Rozanski Filho'" <aris@ruivo.org>
-Date: Thu, 24 Oct 2013 12:30:09 +0200
-In-Reply-To: <028401ced09b$1f6564d0$5e302e70$%kim@samsung.com>
-References: <000a01cec629$3cf34de0$b6d9e9a0$%kim@samsung.com>
-	 <20131021155558.GA4255@core.coreip.homeip.net>
-	 <025101ced083$35f2a270$a1d7e750$%kim@samsung.com>
-	 <1382603886.1559.11.camel@linux-fkkt.site>
-	 <028401ced09b$1f6564d0$5e302e70$%kim@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754807Ab3JXKbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:31:46 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:50586 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3JXKbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 06:31:45 -0400
+Date: Thu, 24 Oct 2013 11:31:38 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@karo-electronics.de>
+Subject: Re: [PATCH next] sysfs: fix sysfs_write_file for bin file
+Message-ID: <20131024103138.GA13159@mtj.dyndns.org>
+References: <1382535893-20543-1-git-send-email-ming.lei@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382535893-20543-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-24 at 18:26 +0900, hyunhee.kim wrote:
-> Hi, 
+On Wed, Oct 23, 2013 at 09:44:53PM +0800, Ming Lei wrote:
+> Before patch(sysfs: prepare path write for unified regular / bin
+> file handling), when size of bin file is zero, writting still can
+> continue, but this patch changes the behaviour.
 > 
-> Thanks for your review.
-> I resent patch v3 after removing wrong wrapping.
+> The worse thing is that firmware loader is broken by this patch,
+> and user space application can't write to firmware bin file any more
+> because both firmware loader and drivers can't know at advance how
+> large the firmware file is and have to set its initialized size as
+> zero.
 > 
-> I made one toggle function because enable/disable functions have redundant codes and another reviewer suggested it.
-> Is it better to separate it into two functions?
+> This patch fixes the problem and keeps behaviour of writting to bin
+> as before.
+> 
+> Reported-and-tested-by: Lothar Waﬂmann <LW@karo-electronics.de>
+> Cc: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
 
-Linus doesn't like parameters affecting behavior.
+Oops, sorry about missing that.
 
-	Regards
-		Oliver
+  Acked-by: Tejun Heo <tj@kernel.org>
 
+Thanks!
 
+-- 
+tejun
