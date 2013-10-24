@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab3JXM1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:27:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57443 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab3JXM1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:27:30 -0400
-Date: Thu, 24 Oct 2013 13:26:46 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Tom Weber <l_linux-kernel@mail2news.4t2.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Automatic NUMA balancing patches for tip-urgent/stable
-Message-ID: <20131024122646.GB2402@suse.de>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+	id S1755019Ab3JXM1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:27:55 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:44741 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab3JXM1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 08:27:54 -0400
+Date: Thu, 24 Oct 2013 09:27:48 -0300
+From: Arnaldo Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf session: Add option to copy events when queueing
+Message-ID: <20131024122748.GC6539@ghostprotocols.net>
+References: <1378496221-61525-1-git-send-email-dsahern@gmail.com>
+ <20130914161626.GD1718@localhost.localdomain>
+ <CAFTL4hx=ycrepky0P3DYwoFBgknYumW6+tpW7PygqGD2ZNDFqg@mail.gmail.com>
+ <5268F524.20505@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <5268F524.20505@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 11:28:38AM +0100, Mel Gorman wrote:
-> This series has roughly the same goals as previous versions despite the
-> size. It reduces overhead of automatic balancing through scan rate reduction
-> and the avoidance of TLB flushes. It selects a preferred node and moves tasks
-> towards their memory as well as moving memory toward their task. It handles
-> shared pages and groups related tasks together. Some problems such as shared
-> page interleaving and properly dealing with processes that are larger than
-> a node are being deferred. This version should be ready for wider testing
-> in -tip.
+Em Thu, Oct 24, 2013 at 11:23:32AM +0100, David Ahern escreveu:
+> On 10/24/13 10:30 AM, Frederic Weisbecker wrote:
+> >Bah, checking that again, there don't seem to be a bug there. Actually
+> >the sample buffer is reset after we pick the last entry. So it looks
+> >all fine. I got confused as usual. Nevermind.
 > 
+> Ok. I had not come back to this thread since I decided on a
+> different route for the event copying. I'll take it out of my to-do
+> list.
 
-Hi Ingo,
+Can you elaborate on that?
 
-Off-list we talked with Peter about the fact that automatic NUMA
-balancing as merged in 3.10, 3.11 and 3.12 shortly may corrupt
-userspace memory. There is one LKML report on this that I'm aware of --
-https://lkml.org/lkml/2013/7/31/647 which I prompt forgot to follow up
-properly on . The user-visible effect is that pages get filled with zeros
-with results such as null pointer exceptions in JVMs. It is fairly difficult
-to trigger but it became much easier to trigger during the development of
-the series "Basic scheduler support for automatic NUMA balancing" which
-is how it was discovered and finally fixed.
+I had this feeling that perhaps we could defer copying the event till it
+would be overwritten, something like making a range read only and then
+when the event would be _really_ consumed the tooling would mark it as
+so... Have to think about it more tho :-\
 
-In that series I tagged patches 2-9 for -stable as these patches addressed
-the problem for me. I did not call it out as clearly as I should have
-and did not realise the cc: stable tags were stripped. Worse, as it was
-close to the release and the bug is relatively old I was ok with waiting
-until 3.12 came out and then treat it as a -stable backport. It has been
-highlighted that this is the wrong attitude and we should consider merging
-the fixes now and backporting to -stable sooner rather than later.
-
-The most important patches are 
-
-mm: Wait for THP migrations to complete during NUMA hinting fault
-mm: Prevent parallel splits during THP migration
-mm: Close races between THP migration and PMD numa clearing
-
-but on their own they will cause conflicts with tricky fixups and -stable
-would differ from mainline in annoying ways. Patches 2-9 have been heavily
-tested in isolation so I'm reasonably confident they fix the problem and are
--stable material. While strictly speaking not all the patches are required
-for the fix, the -stable kernels would then be directly comparable with
-3.13 when the full NUMA balancing series is applied. If I rework them at
-this point then I'll also have to retest delaying things until next week.
-
-Please consider queueing patches 2-9 for 3.12 via -urgent if it is not
-too late and preserve the cc: stable tags so Greg will pick them up
-automatically.
-
-Thanks
-
--- 
-Mel Gorman
-SUSE Labs
+- Arnaldo
