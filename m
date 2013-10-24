@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3JXKmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 06:42:50 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:34508 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab3JXKmt (ORCPT
+	id S1754859Ab3JXKoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 06:44:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56534 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab3JXKoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 06:42:49 -0400
+	Thu, 24 Oct 2013 06:44:03 -0400
+Message-ID: <5268F9C5.3090106@ti.com>
+Date: Thu, 24 Oct 2013 16:13:17 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <526844E6.1080307@codeaurora.org>
-References: <526844E6.1080307@codeaurora.org>
-Date: Thu, 24 Oct 2013 18:42:48 +0800
-Message-ID: <CAL1ERfOSmgo=j4YHHREY8uzyh+nbRrsFdBZ86FhMXxP5GEHQkQ@mail.gmail.com>
-Subject: Re: zram/zsmalloc issues in very low memory conditions
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Olav Haugan <ohaugan@codeaurora.org>
-Cc: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, semenzato@google.com,
-        bob.liu@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kumar Gala <galak@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tglx@linutronix.de>,
+        <linus.walleij@linaro.org>, <santosh.shilimkar@ti.com>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <mark.rutland@arm.com>
+Subject: Re: [RFC PATCH 2/6] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
+ IP
+References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <1380549564-31045-3-git-send-email-r.sricharan@ti.com> <2FD881B8-1A59-418E-AF9C-EF5B9C5D0623@codeaurora.org>
+In-Reply-To: <2FD881B8-1A59-418E-AF9C-EF5B9C5D0623@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 5:51 AM, Olav Haugan <ohaugan@codeaurora.org> wrote:
-> I am trying to use zram in very low memory conditions and I am having
-> some issues. zram is in the reclaim path. So if the system is very low
-> on memory the system is trying to reclaim pages by swapping out (in this
-> case to zram). However, since we are very low on memory zram fails to
-> get a page from zsmalloc and thus zram fails to store the page. We get
-> into a cycle where the system is low on memory so it tries to swap out
-> to get more memory but swap out fails because there is not enough memory
-> in the system! The major problem I am seeing is that there does not seem
-> to be a way for zram to tell the upper layers to stop swapping out
-> because the swap device is essentially "full" (since there is no more
-> memory available for zram pages). Has anyone thought about this issue
-> already and have ideas how to solve this or am I missing something and I
-> should not be seeing this issue?
+Hi Kumar,
 
-I agree with Luigi and Bob.
+On Thursday 24 October 2013 03:03 PM, Kumar Gala wrote:
+> On Sep 30, 2013, at 8:59 AM, Sricharan R wrote:
+>
+>> Some socs have a large number of interrupts requests to service
+>> the needs of its many peripherals and subsystems. All of the
+>> interrupt lines from the subsystems are not needed at the same
+>> time, so they have to be muxed to the irq-controller appropriately.
+>> In such places a interrupt controllers are preceded by an CROSSBAR
+>> that provides flexibility in muxing the device requests to the controller
+>> inputs.
+>>
+>> This driver takes care a allocating a free irq and then configuring the
+>> crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
+>> be called right before the irqchip_init, so that it is setup to handle the
+>> irqchip callbacks.
+>>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>> Cc: Marc Zyngier <marc.zyngier@arm.com>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+>> ---
+>> .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
+>> drivers/irqchip/Kconfig                            |    8 +
+>> drivers/irqchip/Makefile                           |    1 +
+>> drivers/irqchip/irq-crossbar.c                     |  195 ++++++++++++++++++++
+>> include/linux/irqchip/irq-crossbar.h               |   11 ++
+>> 5 files changed, 242 insertions(+)
+>> create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>> create mode 100644 drivers/irqchip/irq-crossbar.c
+>> create mode 100644 include/linux/irqchip/irq-crossbar.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>> new file mode 100644
+>> index 0000000..cdec2cd
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>> @@ -0,0 +1,27 @@
+>> +Some socs have a large number of interrupts requests to service
+>> +the needs of its many peripherals and subsystems. All of the
+>> +interrupt lines from the subsystems are not needed at the same
+>> +time, so they have to be muxed to the irq-controller appropriately.
+>> +In such places a interrupt controllers are preceded by an CROSSBAR
+>> +that provides flexibility in muxing the device requests to the controller
+>> +inputs.
+>> +
+>> +Required properties:
+>> +- compatible : Should be "ti,irq-crossbar"
+>> +- reg: Base address and the size of the crossbar registers.
+>> +- max-irqs: Total number of irqs available at the interrupt controller.
+> Should be 'ti,max-irqs
+ Ok, will correct.
+>> +- reg-size: Size of a individual register in bytes. Every individual
+>> +	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
+> Is this something that really needs to be encoded in the dts?
+>
+> If we keep it should be ti,reg-size
+Currently, this is the only IP with a fixed register-size.
+ So this can be in the driver also. I thought keeping it
+DT will avoid any hard-coding in driver.
+>> +- irqs-reserved: List of the reserved irq lines that are not muxed using
+>> +		 crossbar. These interrupt lines are reserved in the soc,
+>> +		 so crossbar bar driver should not consider them as free
+>> +		 lines.
+>> +
+> ti,irqs-reserved
+Ok, will correct
+>> +Examples:
+>> +		crossbar_mpu: @4a020000 {
+> Did you mean for there to be a label and no node name?
+>
+ ya, name is missing. Will add.
+>> +			compatible = "ti,irq-crossbar";
+>> +			reg = <0x4a002a48 0x130>;
+>> +			max-irqs = <160>;
+>> +			reg-size = <2>;
+>> +			irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
+>> +		};
 
-zram's size is based on how many free memory you expect to use for zram.
-In my test, the compression ratio is about 1:4, of course the working
-sets may be
-different with yours.
-
-Further more, may be you can modify vm_swap_full() to let kernel free swap_entry
-aggressively.
-
-
-> I am also seeing a couple other issues that I was wondering whether
-> folks have already thought about:
->
-> 1) The size of a swap device is statically computed when the swap device
-> is turned on (nr_swap_pages). The size of zram swap device is dynamic
-> since we are compressing the pages and thus the swap subsystem thinks
-> that the zram swap device is full when it is not really full. Any
-> plans/thoughts about the possibility of being able to update the size
-> and/or the # of available pages in a swap device on the fly?
->
-> 2) zsmalloc fails when the page allocated is at physical address 0 (pfn
-> = 0) since the handle returned from zsmalloc is encoded as (<PFN>,
-> <obj_idx>) and thus the resulting handle will be 0 (since obj_idx starts
-> at 0). zs_malloc returns the handle but does not distinguish between a
-> valid handle of 0 and a failure to allocate. A possible solution to this
-> would be to start the obj_idx at 1. Is this feasible?
->
-> Thanks,
->
-> Olav Haugan
->
-> --
-> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+ Sricharan
