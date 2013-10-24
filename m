@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3JXRNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 13:13:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46805 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab3JXRNq (ORCPT
+	id S1755543Ab3JXRVC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 13:21:02 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:63676 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab3JXRVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 13:13:46 -0400
-Message-ID: <52695547.6010706@infradead.org>
-Date: Thu, 24 Oct 2013 10:13:43 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 24 Oct 2013 13:21:00 -0400
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: Aldo Iljazi <me@aldo.io>, linux-kernel@vger.kernel.org
-Subject: Re: Proposal for menuconfig removal
-References: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io> <52692896.70901@ahsoftware.de> <e0a7d6b725f97abf03b4bcf1a4238658@aldo.io> <52693E48.6000905@ahsoftware.de> <52694D54.8040404@infradead.org> <52694E37.3020803@ahsoftware.de> <526952DC.8040208@infradead.org> <52695495.1090007@ahsoftware.de>
-In-Reply-To: <52695495.1090007@ahsoftware.de>
+In-Reply-To: <F901C6708ADD5241BD39AFE3DD266906013746E21BDC@seldmbx01.corpusers.net>
+References: <1381273137-14680-1-git-send-email-tim.bird@sonymobile.com>
+	<000001419e9e3e33-67807dca-e435-43ee-88bc-3ead54a83762-000000@email.amazonses.com>
+	<F901C6708ADD5241BD39AFE3DD266906013746E21BDC@seldmbx01.corpusers.net>
+Date: Thu, 24 Oct 2013 20:20:58 +0300
+X-Google-Sender-Auth: q9e_JIvsuwQZbCSXHBIdzJZPDw4
+Message-ID: <CAOJsxLG9_YZKq1Z4tdjmWKjNL3L1E7nXBhzPHNorUNF1U9q7mA@mail.gmail.com>
+Subject: Re: [PATCH] slub: proper kmemleak tracking if CONFIG_SLUB_DEBUG disabled
+From: Pekka Enberg <penberg@kernel.org>
+To: "Bobniev, Roman" <Roman.Bobniev@sonymobile.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "frowand.list@gmail.com" <frowand.list@gmail.com>,
+        =?ISO-8859-1?Q?Andersson=2C_Bj=F6rn?= 
+	<Bjorn.Andersson@sonymobile.com>,
+        "tbird20d@gmail.com" <tbird20d@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>, "cl@linux.com" <cl@linux.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/13 10:10, Alexander Holler wrote:
-> Am 24.10.2013 19:03, schrieb Randy Dunlap:
->> On 10/24/13 09:43, Alexander Holler wrote:
->>> Am 24.10.2013 18:39, schrieb Randy Dunlap:
->>>
->>>> nconfig supports use of <Fn> or just numeric <n> key for the same functions.
->>>
->>> Ah, that isn't mentioned in the global help.
+On Wed, Oct 23, 2013 at 2:52 PM, Bobniev, Roman
+<Roman.Bobniev@sonymobile.com> wrote:
+>> On Tue, 8 Oct 2013, Tim Bird wrote:
 >>
->> I found it there (in global help):
+>> > It also fixes a bug where kmemleak was only partially enabled in some
+>> > configurations.
 >>
->> Unless in a data entry window, key <1> may be used instead of <F1>,
->> <2> instead of <F2>, etc.
->>
->> but if you don't have Function keys, you may not be able to read the
->> global help text.
-> 
-> Oh, yes, there it is. I've read the help twice, but haven't seen it. ;)
-> Maybe moving that paragraph to the top will help. I don't know why I haven't seen it.
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>
+> Could you help me, who the maintainer is that
+> puts this patch in a tree and pushes it to mainline?
+> Do we wait on some additional Ack from someone?
 
-I agree, it should be less hidden.
+That would be me - sorry for the delay!
 
-
--- 
-~Randy
+Applied, thanks!
