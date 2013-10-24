@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3JXP3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:29:40 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:62416 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab3JXP3j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:29:39 -0400
+	id S1755598Ab3JXPbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:31:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40002 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754380Ab3JXPbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 11:31:39 -0400
+Date: Thu, 24 Oct 2013 10:31:29 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <gregkh@linuxfoundation.org>, <inki.dae@samsung.com>,
+        <dh09.lee@samsung.com>, <kyungmin.park@samsung.com>,
+        <plagnioj@jcrosoft.com>, <tomi.valkeinen@ti.com>,
+        <kgene.kim@samsung.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH] drivers: video: exynos: Fix compiler Warning
+Message-ID: <20131024153129.GH2834@gimli>
+Reply-To: <balbi@ti.com>
+References: <CAOesGMhwotSY-1WQmt+wtsrsH2m30VE=j-MwyhpYU3mt_PSPPw@mail.gmail.com>
+ <1382628454-11951-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <5268B0B1.9050009@asianux.com>
-References: <523FD9E7.3050303@asianux.com>
-	<523FDBD7.4040602@asianux.com>
-	<C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>
-	<523FE578.5060801@asianux.com>
-	<52672DAC.1030307@asianux.com>
-	<CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com>
-	<52673E41.6040606@asianux.com>
-	<5267AF98.1010800@asianux.com>
-	<5268B0B1.9050009@asianux.com>
-Date: Thu, 24 Oct 2013 08:29:37 -0700
-X-Google-Sender-Auth: TYCdYoHfqEa_Zr_J-KPPpY6P1F8
-Message-ID: <CA+5PVA6N0c_ych96bC0nPw=hSqFtO-zhFFHzPW96yK8k=Z3fPg@mail.gmail.com>
-Subject: Re: [PATCH] kernel/modsign_certificate.S: use real contents instead
- of macro GLOBAL()
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UthUFkbMtH2ceUK2"
+Content-Disposition: inline
+In-Reply-To: <1382628454-11951-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 10:31 PM, Chen Gang <gang.chen@asianux.com> wrote:
-> For some architectures, tool chain is not smart enough to recognize the
-> macro with multiple lines (e.g. arc tool chain), and for common ".S"
-> file, this kind of macro is also rarely used.
->
-> So expand the related contents of macro to let it pass compiling (can
-> use "arc-elf32-objdump -x" to know about it).
->
-> The related error (allmodconfig for arc):
->
->     LD      init/built-in.o
->   kernel/built-in.o: In function `load_module_signing_keys':
->   kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
->   kernel/modsign_pubkey.c:71: undefined reference to `modsign_certificate_list_end'
->   kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
->
-> The related tool chain information:
->
->   [root@gchenlinux linux-next]# arc-elf32-as -v
->   GNU assembler version 2.23.2 (arc-elf32) using BFD version (GNU Binutils) 2.23.2
->   [root@gchenlinux linux-next]# arc-elf32-ld -v
->   GNU ld (GNU Binutils) 2.23.2
->   [root@gchenlinux linux-next]# arc-elf32-gcc -v
->   Using built-in specs.
->   COLLECT_GCC=arc-elf32-gcc
->   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/arc-elf32/4.8.0/lto-wrapper
->   Target: arc-elf32
->   Configured with: ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 --disable-multilib --with-headers=../newlib/newlib/libc/include
->   Thread model: single
->   gcc version 4.8.0 (GCC)
+--UthUFkbMtH2ceUK2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is this only an issue with using multi-line macro definitions in .S
-files?  The practice of using multi-line macro definitions isn't rare.
- Look at e.g. include/linux/module.h, and a number of other header
-files.
+On Thu, Oct 24, 2013 at 08:57:34PM +0530, Kishon Vijay Abraham I wrote:
+> Fixed the following compilation warning:
+> ../../drivers/video/exynos/exynos_mipi_dsi.c: In function
+> 'exynos_mipi_dsi_blank_mode':
+> ../../drivers/video/exynos/exynos_mipi_dsi.c:144:26: warning: unused
+> variable 'pdev' [-Wunused-variable]
+>   struct platform_device *pdev =3D to_platform_device(dsim->dev);
+>=20
+> Reported-by: Olof Johansson <olof@lixom.net>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-This seems like a toolchain bug that should be fixable if it works for
-other architectures.
+pretty obvious patch:
 
-josh
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--UthUFkbMtH2ceUK2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSaT1RAAoJEIaOsuA1yqREtMAP/17EdIiqHvo3gmNeb02LwVQz
+Fblw1hayYmeoNSix/avOSqjtljBOM+qdqCusH4GoxjY5VphYJjrch/+GpvmlTVYV
+WOWvmdRdRv43CHBkTIexgWaVh9NIUKQUbtNwG5e7bYUcaBe27l4QsuQ41fUvd426
+TfaCHiTYqSXR+mSGBbbXtL4IK8Z1o8JtLg6ETmbYaoEDmQX4cF3Pu8MO7fGWFq0I
+Bnm4WI/E/ngbTGWiyUMyxFOi/HqMkvWiCLWs4wxCo1J8oD3o6DwcVCwlQ0IYdgkH
+JwB1nb0eNwxqRqpygMaAe+BwvvwczQ2O9Q2tKBM8I0qWUXb0UcodMTn20iEy09je
+GTwSNA0F30mX/jnc8tss8u57YIEo5SS46ELiqfhhqEiO42EtX/HRzovxjvrn/jwH
+ei2r1EZQd4z2S4z9LIbSf8BjeEYisVuWK+94yoxnCjyCX4dre4PlcxK6Qmvq9auf
++ZZi83Cap3wc72KvJMEsJ3+uPBDrnR/6t2FWofVzlsIqygghQyPNF2tfncHrbvAj
+khXxfxIh08tbZTB7mD9LxyhZGipMBfZa6eqUxMQ6OSw+sYT+vru1zkDt+krAcBwC
+szFj0Xc2XtetN9dFsW3/4GUmq5v5t4pEwFACCeQ4hnTPZOe6YjMID5djfwqB/2Z8
+0hcIlK/vPaitAnJj8GDY
+=3Wlx
+-----END PGP SIGNATURE-----
+
+--UthUFkbMtH2ceUK2--
