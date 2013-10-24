@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3JXAzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 20:55:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17766 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3JXAzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 20:55:32 -0400
-Message-ID: <52686FF4.5000303@oracle.com>
-Date: Thu, 24 Oct 2013 08:55:16 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753322Ab3JXBD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 21:03:26 -0400
+Received: from nm3-vm8.bullet.mail.ir2.yahoo.com ([212.82.96.97]:43148 "EHLO
+	nm3-vm8.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752302Ab3JXBDY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 21:03:24 -0400
+X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 21:03:24 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 863284.89480.bm@omp1040.mail.ir2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=EQrx8rZKsLK48FaC+RnSprvW9Aa+yp00gQlIzsgmKJeAH+zrzATohg/cFawb5++2piVusFdWvfW2y5JFH2WPdRk3VaiSudexK5KHeuGMWxU0BDY8a+KW3BIzlgqzBk4p8am10i2T7NpoC894bwmIOTCTcGOUBdygRweBslKW+IQ=;
+X-YMail-OSG: WsNdqHEVM1lBBZazyKj7TDzsxHa7APM2mPgbXu5jcE9yKTA
+ IvaYJ.CTcgp.iJWbjAEgGbbxi2ln3aclqaGcSKQI47QunEnn1uAJGaJPY5vY
+ j7eyd9r.9DTFMH7vcGEYkyRZb_BGnVnp_7Pbur2renVCZjRtbbcPyIqVpI77
+ vXlRPk7TbGBbJ6KmmIZlTHJKLDIsjUGVrp95o4DnsSsLkfK6K90.jpXZ0HXX
+ hE2eZLCalUJmbW5HGZ7Qfo8WCJvvSUvr_31J5qC7_bFX_EFUH_6_Z.YrFZLp
+ Wp7uFbK5powy2WO.iFpPstMyrOhGt0mkwDyYy5sofAs6isXY9bRBpcniOHat
+ uMnNrfb5nHEsfMen916S0jopdBo7k1aUbPUtibbBkBOdA_42vuflzeqBIs68
+ vaMkFNPaMTvAkgKDyWrzlEH..Gv5qBVX2zTKPMh7CEdCg8mVkXtjwFOHR6fI
+ JJUART6U7qcdr35azVwTMRcKbQvse3JW_3JjsBkI6HZ79ovF8mCBrlQWJ3U_
+ YPbBbGB1wppWx8j7aCFPEUOHJtgAw1GtpyAzxUMK6vvPJZuWs1eOw5dxFNyc
+ IzQikrgptG0P_XidU1z0WkaR.GLS1qZtj89UkkMA6XHHlF1cjM2hsBkEYPAq
+ S2gmAEWLFjGoMvl1OJ4N0agkdOUfnBRZByF4Utd8EH_fTjdSuoX0x1NkW1yl
+ mieIipvp16DJ_FcNH9ytKScjSNg.L_Th.11_vQjpw5_U1mr5xsZ2b130-
+X-Rocket-MIMEInfo: 002.001,R29vZCBEYXkNCg0KSSBhbSBNci5IYXNoaW0gS2Fib3JlLCBhIHJlZ2lvbmFsIG1hbmFnaW5nIGRpcmVjdG9yIChjb3JpcyBiYW5rIGludCdsKSBvdWFnYWRvdWdvdSBCdXJraW5hIEZhc28sIGluIG15IGRlcGFydG1lbnQgd2UgaGF2ZSBVUyQ5LDUwMC4wMDAwIHVuaXRlZCBzdGF0ZSBEb2xsYXJzLCB0byB0cmFuc2ZlciBpbnRvIHlvdXIgYWNjb3VudCBhcyBhIGRvcm1hbnQgZnVuZC5JZiB5b3UgYXJlIGludGVyZXN0ZWQgdG8gdXNlIHRoaXMgZnVuZCB0byBoZWxwIHRoZSBvcnBoYW5zIGFyb3VuZCB0aGUgd28BMAEBAQE-
+X-RocketYMMF: ucheboy2006
+X-Mailer: YahooMailClassic/356 YahooMailWebService/0.8.160.587
+Message-ID: <1382576222.54779.YahooMailBasic@web172406.mail.ir2.yahoo.com>
+Date: Thu, 24 Oct 2013 01:57:02 +0100 (BST)
+From: Hashim Kabore <hashim.kabore@laposte.net>
+Reply-To: hashim.kabore@laposte.net
+Subject: Best Regards Mr.Hashim Kabore
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Olav Haugan <ohaugan@codeaurora.org>
-CC: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: zram/zsmalloc issues in very low memory conditions
-References: <526844E6.1080307@codeaurora.org>
-In-Reply-To: <526844E6.1080307@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Good Day
 
-On 10/24/2013 05:51 AM, Olav Haugan wrote:
-> I am trying to use zram in very low memory conditions and I am having
-> some issues. zram is in the reclaim path. So if the system is very low
-> on memory the system is trying to reclaim pages by swapping out (in this
-> case to zram). However, since we are very low on memory zram fails to
-> get a page from zsmalloc and thus zram fails to store the page. We get
-> into a cycle where the system is low on memory so it tries to swap out
-> to get more memory but swap out fails because there is not enough memory
-> in the system! The major problem I am seeing is that there does not seem
-> to be a way for zram to tell the upper layers to stop swapping out
-> because the swap device is essentially "full" (since there is no more
-> memory available for zram pages). Has anyone thought about this issue
-> already and have ideas how to solve this or am I missing something and I
-> should not be seeing this issue?
-> 
+I am Mr.Hashim Kabore, a regional managing director (coris bank int'l) ouagadougou Burkina Faso, in my department we have US$9,500.0000 united state Dollars, to transfer into your account as a dormant fund.If you are interested to use this fund to help the orphans around the world contact me and send your Personal information for more detail,
 
-The same question as Luigi "What do you want the system to do at this
-point?"
-
-If swap fails then OOM killer will be triggered, I don't think this will
-be a issue.
-
-By the way, could you take a try with zswap? Which can write pages to
-real swap device if compressed pool is full.
-
-> I am also seeing a couple other issues that I was wondering whether
-> folks have already thought about:
-> 
-> 1) The size of a swap device is statically computed when the swap device
-> is turned on (nr_swap_pages). The size of zram swap device is dynamic
-> since we are compressing the pages and thus the swap subsystem thinks
-> that the zram swap device is full when it is not really full. Any
-> plans/thoughts about the possibility of being able to update the size
-> and/or the # of available pages in a swap device on the fly?
-> 
-> 2) zsmalloc fails when the page allocated is at physical address 0 (pfn
-
-AFAIK, this will never happen.
-
-> = 0) since the handle returned from zsmalloc is encoded as (<PFN>,
-> <obj_idx>) and thus the resulting handle will be 0 (since obj_idx starts
-> at 0). zs_malloc returns the handle but does not distinguish between a
-> valid handle of 0 and a failure to allocate. A possible solution to this
-> would be to start the obj_idx at 1. Is this feasible?
-> 
-> Thanks,
-> 
-> Olav Haugan
-> 
-
--- 
-Regards,
--Bob
+Your full names................
+Your country of origin................
+Your occupation..............
+Your Age.......................
+Your Mobile N°......................
+Best Regards
+Mr.Hashim Kabore
+My number is +226 64 31 02 02
