@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab3JXCap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Oct 2013 22:30:45 -0400
-Received: from mx7.zte.com.cn ([202.103.147.169]:49859 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753025Ab3JXCan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Oct 2013 22:30:43 -0400
-X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Oct 2013 22:30:43 EDT
-In-Reply-To: <OF77F96D5F.776C09BF-ON48257BFE.00106C94-48257BFE.0020EF59@LocalDomain>
-References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>	 <1380219317.32071.6.camel@dvhart-mobl4.amr.corp.intel.com>
-	 <OFFC4F71E6.FCD3279D-ON48257BF3.000E2A58-48257BF3.00251AFA@zte.com.cn> <1380295947.32071.69.camel@dvhart-mobl4.amr.corp.intel.com> <OF77F96D5F.776C09BF-ON48257BFE.00106C94-48257BFE.0020EF59@LocalDomain>
-Subject: Re: Re: Re: Re: [PATCH] futex: Remove the owner check when waking task in
- handle_futex_death
-X-KeepSent: B158B42B:9D58FA32-48257C0E:000BF4D4;
- type=4; name=$KeepSent
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OFB158B42B.9D58FA32-ON48257C0E.000BF4D4-48257C0E.000C48E8@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Thu, 24 Oct 2013 10:13:56 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-10-24 10:14:02
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: mse02.zte.com.cn r9O2E7Mb084196
+	id S1753558Ab3JXCvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Oct 2013 22:51:19 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:39003 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab3JXCvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Oct 2013 22:51:18 -0400
+From: Patrick Palka <patrick@parcs.ath.cx>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf: Fix library detection when building without libelf
+Date: Wed, 23 Oct 2013 22:51:09 -0400
+Message-Id: <1382583069-26121-1-git-send-email-patrick@parcs.ath.cx>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When I attempt to build perf on a system with slang but without libelf,
+'make' would wrongly complain that the slang library could not be found.
 
+It turns out that this was happening because we are not filtering -lelf
+from EXTLIBS early enough.  As a result, the library test for slang
+(ditto for gtk, libaudit, etc) erroneously passes -lelf to try-cc, which
+of course fails on a system without libelf.
 
-Zhang Yi <zhang.yi20@zte.com.cn> wrote on 2013/10/08 13:59:36:
+This patch makes the filtering of -lelf from EXTLIBS occur right after
+testing for libelf support, so that the subsequent library tests will
+not erroneously pass -lelf to try-cc when building without libelf
+support.
 
-> Re: Re: Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
->
-> Darren Hart <dvhart@linux.intel.com> wrote on 2013/09/27 23:32:27:
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+---
+ tools/perf/Makefile        | 2 --
+ tools/perf/config/Makefile | 4 ++++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-> >
-> > Re: Re: [PATCH] futex: Remove the owner check when waking task in handle_futex_death
-> >
-> > >
-> > > The earlier patch cannot solve another problem:
-> > > The owner wakes the next waiter through normal unlocking which make the
-> > > futex value as zero, the waked task exits before actually locking the mutex.
-> > > In this case, the owner doesn't call handle_futex_death() and the waked task
-> > > doesn't call futex_wake() when they are dying. The rest waiters will still
-> > > block as the same.
-> > >
-> > > This is also the reason that I drop the owner and FUTEX_WAITERS check,
-> > > because the futex value can be zero at that time.
-> > >
-> >
-> > If the FUTEX_WAITERS bit is not set, there are no waiters, and thus no
-> > need to wake. I understand why you dropped the OWNER check, but I'm not
-> > following this one. Where would the futex word be set from having
-> > waiters to zero when there might still be waiters pending?
-> >
-> >
-> > --
-> > Darren Hart
-> > Intel Open Source Technology Center
-> > Yocto Project - Linux Kernel
-> >
-> >
-
-> I have drawn a diagram as below:
->
->                process1                     |      process2
->    -------------------------------------------------------------
->   |       thread1       |      thread2      |      thread3
->    -------------------------------------------------------------
-> t1|pthread_mutex_lock:  |                   |
->   |  __lock=self        |                   |
->   |                     |                   |
-> t2|                     |pthread_mutex_lock:|
->   |                     |__lock|=FUTEX_WAITERS
->   |                     | syscall futex_wait|
->   |                     |                   |
-> t3|                     |                   |pthrea_mutex_lock:
->   |                     |                   |__lock|=FUTEX_WAITERS
->   |                     |                   | syscall futex_wait
->   |                     |                   |
-> t4|pthread_mutex_unlock:|                   |
->   |  __lock=0           |                   |
->   |  syscall futex_wake | waked             |
->   |                     |                   |
-> t5| exit                |exit:              |
->   |                     | handle_futex_death|
-> ---------------------------------------------------------------
-> t6|                     |pthread_mutex_lock:|
->   |                     |__lock=self|FUTEX_WAITERS
->
-> 1, At time t4, in the unlocking process of glibc, it clears the FUTEX_WAITERS bit before
-> calling futex_wake syscall.
->
-> 2, At time t5, thread2 cannot know if the FUTEX_WAITERS bit was set.
->
-> 3, Time t6 is expected but can never be true.
-
-Are there any questions?
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 64c043b..94635c8 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -443,8 +443,6 @@ ifneq ($(OUTPUT),)
+ endif
+ 
+ ifdef NO_LIBELF
+-EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+-
+ # Remove ELF/DWARF dependent codes
+ LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+ LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5f6f9b3..1748767 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -174,6 +174,10 @@ else
+ endif # SOURCE_LIBELF
+ endif # NO_LIBELF
+ 
++ifdef NO_LIBELF
++EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
++endif
++
+ ifndef NO_LIBELF
+ CFLAGS += -DLIBELF_SUPPORT
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-- 
+1.8.4.rc3
 
