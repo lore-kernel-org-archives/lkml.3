@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3JXMGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:06:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab3JXMGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:06:14 -0400
-Message-ID: <52690D1E.6060400@redhat.com>
-Date: Thu, 24 Oct 2013 08:05:50 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1755107Ab3JXMFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:05:39 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47988 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab3JXMFg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 08:05:36 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v11 15/15] memcg: flush memcg items upon memcg destruction
+Date: Thu, 24 Oct 2013 16:05:06 +0400
+Message-ID: <d5a0fce2a7812cbfccd8950e5b0cc72b99b5160c.1382603434.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
+References: <cover.1382603434.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        tigran@aivazian.fsnet.co.uk
-Subject: Re: [PATCH 1/2] firmware, fix request_firmware_nowait() freeze with
- no uevent
-References: <1382304926-1641-1-git-send-email-prarit@redhat.com> <1382304926-1641-2-git-send-email-prarit@redhat.com> <CACVXFVO_bbYsRRgZ+MfVKf5=VRNy=O3VUg0mh2fumEi7cObuiw@mail.gmail.com> <5265A9A4.2000100@redhat.com> <CACVXFVM7eKA2m+ten5-1EYNdJkc5SuZy2cimpH9j94OOdsb9Uw@mail.gmail.com> <526706FC.2070105@redhat.com> <CACVXFVMmp3gOpfEtjQ-fO62=RY+7_ZJ11UW89GXDPNKE61+keg@mail.gmail.com> <5267A6CA.1000505@redhat.com> <5267BAE7.2090300@redhat.com> <20131024111737.GC24862@khazad-dum.debian.net>
-In-Reply-To: <20131024111737.GC24862@khazad-dum.debian.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.30.22.194]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Glauber Costa <glommer@openvz.org>
 
+When a memcg is destroyed, it won't be imediately released until all
+objects are gone. This means that if a memcg is restarted with the very
+same workload - a very common case, the objects already cached won't be
+billed to the new memcg. This is mostly undesirable since a container
+can exploit this by restarting itself every time it reaches its limit,
+and then coming up again with a fresh new limit.
 
-On 10/24/2013 07:17 AM, Henrique de Moraes Holschuh wrote:
-> On Wed, 23 Oct 2013, Prarit Bhargava wrote:
->> After all this I completely forgot the problem I'm trying to solve here.  The
->> issue is that with HOTPLUG & request_microcode_nowait(), if the microcode image
->> is not found (that is the file is not found on disk), then EACH cpu waits 1
->> minute and it takes 2 hours for a 120 cpu box to load the microcode module.
-> 
-> The proper fix seems to be teaching the concept of negative caching to the
-> microcode core/drivers, as it was pointed out elsewhere in the thread.
-> Negative caching should have a lifetime of "the current update-all-cores
-> request".
-> 
+Since now we have targeted reclaim, I sustain that we should assume that
+a memcg that is destroyed should be flushed away. It makes perfect sense
+if we assume that a memcg that goes away most likely indicates an
+isolated workload that is terminated.
 
-Yes, I'm implementing v2 to do this already; caching the microcode is obvious.
-I was actually looking at the code to see if there was a reason that each
-processor needs to do a load request but cannot see one.  I'm modifying the
-microcode driver to do this, as I said, in v2.
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-> This would fix the absurd compound timeout delays, as on most systems it
-> will result in just one timeout (the first one).
-> 
-> That first timeout can be fixed by the user if they disable the userspace
-> firmware loader helper.  IMHO that might well be the best choice, as it is
-> already the way forward.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 628ea0d..6dadbbe 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6441,12 +6441,29 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
+ 
+ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ {
++	int ret;
+ 	if (!memcg_kmem_is_active(memcg))
+ 		return;
+ 
+ 	cancel_work_sync(&memcg->kmemcg_shrink_work);
+ 
+ 	/*
++	 * When a memcg is destroyed, it won't be imediately released until all
++	 * objects are gone. This means that if a memcg is restarted with the
++	 * very same workload - a very common case, the objects already cached
++	 * won't be billed to the new memcg. This is mostly undesirable since a
++	 * container can exploit this by restarting itself every time it
++	 * reaches its limit, and then coming up again with a fresh new limit.
++	 *
++	 * Therefore a memcg that is destroyed should be flushed away. It makes
++	 * perfect sense if we assume that a memcg that goes away indicates an
++	 * isolated workload that is terminated.
++	 */
++	do {
++		ret = try_to_free_mem_cgroup_kmem(memcg, GFP_KERNEL);
++	} while (ret);
++
++	/*
+ 	 * kmem charges can outlive the cgroup. In the case of slab
+ 	 * pages, for instance, a page contain objects from various
+ 	 * processes. As we prevent from taking a reference for every
+-- 
+1.7.10.4
 
-The problem with that is I may have a configuration which depends on having the
-userspace firmware loader helper for a device, but not the processors so IMO it
-isn't a complete solution.
-
-I've also toyed with the idea that there should be a request_firmware_timeout()
-in which a timeout for HOTPLUG can be specified.
-
-P.
