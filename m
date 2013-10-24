@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab3JXVmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 17:42:36 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:55012 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3JXVmf (ORCPT
+	id S1755261Ab3JXWNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 18:13:42 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3551 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553Ab3JXWNl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 17:42:35 -0400
-Subject: [PATCH] device: Make dev_WARN/dev_WARN_ONCE print device as well as
- driver name
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Date: Thu, 24 Oct 2013 15:42:33 -0600
-Message-ID: <20131024214233.12347.95711.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Thu, 24 Oct 2013 18:13:41 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Ray Jui" <rjui@broadcom.com>
+To: "Chris Ball" <cjb@laptop.org>, "Seungwon Jeon" <tgih.jun@samsung.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: fix host release issue after discard operation
+Thread-Topic: [PATCH] mmc: fix host release issue after discard
+ operation
+Thread-Index: Ac7RBfyzY93ANZCAT8mBR0aq+1TZbA==
+Date: Thu, 24 Oct 2013 22:13:33 +0000
+Message-ID: <1C995FCD38EDD646A035D3E5892E8C7C04C189A8@SJEXCHMB13.corp.ad.broadcom.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 7E77440E4RS1233588-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_WARN() and dev_WARN_ONCE() are annoying because (1) they include
-only the driver name, not the device name, and (2) they print a spurious
-newline in the middle.  This results in messages like this that are less
-useful than they should be:
+Under function mmc_blk_issue_rq, after an MMC discard operation,
+the MMC request data structure may be freed in memory. Later in
+the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
+is dangerous and invalid. It causes the MMC host not being released
+when it should
 
-  [   40.094995] Device pcieport
-  disabling already-disabled device
+This patch fixes the issue by marking the special request down before
+the discard/flush operation
 
-This patch makes them work more like dev_printk().
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
+Signed-off-by: Ray Jui <rjui@broadcom.com>
 ---
- include/linux/device.h |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/mmc/card/block.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 2a9d6ed..7136a5c 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -1149,16 +1149,15 @@ do {									\
- #endif
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 1a3163f..9e8e970 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1954,7 +1954,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
  
- /*
-- * dev_WARN*() acts like dev_printk(), but with the key difference
-- * of using a WARN/WARN_ON to get the message out, including the
-- * file/line information and a backtrace.
-+ * dev_WARN*() acts like dev_printk(), but with the key difference of
-+ * using WARN/WARN_ONCE to include file/line information and a backtrace.
-  */
- #define dev_WARN(dev, format, arg...) \
--	WARN(1, "Device: %s\n" format, dev_driver_string(dev), ## arg);
-+	WARN(1, "%s %s: " format, dev_driver_string(dev), dev_name(dev), ## arg);
+ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ {
+-	int ret;
++	int ret, req_is_special = 0;
+ 	struct mmc_blk_data *md = mq->data;
+ 	struct mmc_card *card = md->queue.card;
+ 	struct mmc_host *host = card->host;
+@@ -1973,6 +1973,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 		goto out;
+ 	}
  
- #define dev_WARN_ONCE(dev, condition, format, arg...) \
--	WARN_ONCE(condition, "Device %s\n" format, \
--			dev_driver_string(dev), ## arg)
-+	WARN_ONCE(condition, "%s %s: " format, \
-+			dev_driver_string(dev), dev_name(dev), ## arg)
++	/* mark special request here since req may be freed later */
++	if (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK))
++		req_is_special = 1;
++
+ 	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
+ 	if (req && req->cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+@@ -1999,7 +2003,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
  
- /* Create alias, so I can be autoloaded. */
- #define MODULE_ALIAS_CHARDEV(major,minor) \
+ out:
+ 	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
+-	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
++	     req_is_special)
+ 		/*
+ 		 * Release host when there are no more requests
+ 		 * and after special request(discard, flush) is done.
+-- 
+1.7.9.5
 
