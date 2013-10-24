@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3JXPw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:52:57 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:63105 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab3JXPuR (ORCPT
+	id S1755984Ab3JXPuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:50:15 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:38145 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab3JXPuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:50:17 -0400
+	Thu, 24 Oct 2013 11:50:12 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 26/34] sysfs, kernfs: introduce kernfs_notify()
-Date: Thu, 24 Oct 2013 11:49:32 -0400
-Message-Id: <1382629780-10006-27-git-send-email-tj@kernel.org>
+Subject: [PATCH 22/34] sysfs, kernfs: remove SYSFS_KOBJ_BIN_ATTR
+Date: Thu, 24 Oct 2013 11:49:28 -0400
+Message-Id: <1382629780-10006-23-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,134 +21,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce kernfs interface to wake up poll(2) which takes and returns
-sysfs_dirents.
+After kernfs_ops and sysfs_dirent->s_attr.size addition, the
+distinction between SYSFS_KOBJ_BIN_ATTR and SYSFS_KOBJ_ATTR is only
+necessary while creating files to decide which kernfs_ops to use.
+Afterwards, they behave exactly the same.
 
-sysfs_notify_dirent() is renamed to kernfs_notify() and sysfs_notify()
-is updated so that it doesn't directly grab sysfs_mutex but acquires
-the target sysfs_dirents using sysfs_get_dirent().
-sysfs_notify_dirent() is reimplemented as a dumb inline wrapper around
-kernfs_notify().
+This patch removes SYSFS_KOBJ_BIN_ATTR along with sysfs_is_bin().
+sysfs_add_file[_mode_ns]() are updated to take bool @is_bin instead of
+@type.
 
-This patch doesn't introduce any behavior changes.
+This patch doesn't introduce any behavior changes.  This completely
+isolates the distinction between the two sysfs file types in the sysfs
+layer proper.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 33 ++++++++++++++++++++++-----------
- include/linux/kernfs.h |  3 +++
- include/linux/sysfs.h  |  9 +++++----
- 3 files changed, 30 insertions(+), 15 deletions(-)
+ fs/sysfs/file.c  | 23 ++++++++---------------
+ fs/sysfs/group.c |  5 ++---
+ fs/sysfs/inode.c |  1 -
+ fs/sysfs/sysfs.h | 11 ++++-------
+ 4 files changed, 14 insertions(+), 26 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 89134fc..9271180 100644
+index 8dd2d96..efa547d 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -837,7 +837,13 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
- 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
- }
+@@ -47,11 +47,6 @@ struct sysfs_open_dirent {
+ 	struct list_head	files; /* goes through sysfs_open_file.list */
+ };
  
--void sysfs_notify_dirent(struct sysfs_dirent *sd)
-+/**
-+ * kernfs_notify - notify a kernfs file
-+ * @sd: file to notify
-+ *
-+ * Notify @sd such that poll(2) on @sd wakes up.
-+ */
-+void kernfs_notify(struct sysfs_dirent *sd)
- {
- 	struct sysfs_open_dirent *od;
- 	unsigned long flags;
-@@ -854,22 +860,27 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
- 
- 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
- }
--EXPORT_SYMBOL_GPL(sysfs_notify_dirent);
-+EXPORT_SYMBOL_GPL(kernfs_notify);
- 
- void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
- {
--	struct sysfs_dirent *sd = k->sd;
--
--	mutex_lock(&sysfs_mutex);
-+	struct sysfs_dirent *sd = k->sd, *tmp;
- 
- 	if (sd && dir)
--		sd = sysfs_find_dirent(sd, dir, NULL);
--	if (sd && attr)
--		sd = sysfs_find_dirent(sd, attr, NULL);
--	if (sd)
--		sysfs_notify_dirent(sd);
-+		sd = sysfs_get_dirent(sd, dir);
-+	else
-+		sysfs_get(sd);
- 
--	mutex_unlock(&sysfs_mutex);
-+	if (sd && attr) {
-+		tmp = sysfs_get_dirent(sd, attr);
-+		sysfs_put(sd);
-+		sd = tmp;
-+	}
-+
-+	if (sd) {
-+		kernfs_notify(sd);
-+		sysfs_put(sd);
-+	}
- }
- EXPORT_SYMBOL_GPL(sysfs_notify);
- 
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 222040c..89993ad 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -82,6 +82,7 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
- int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
- 		     const char *new_name, const void *new_ns);
- int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
-+void kernfs_notify(struct sysfs_dirent *sd);
- 
- #else	/* CONFIG_SYSFS */
- 
-@@ -116,6 +117,8 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
- 				 const struct iattr *iattr)
- { return 0; }
- 
-+static inline void kernfs_notify(struct sysfs_dirent *sd) { }
-+
- #endif	/* CONFIG_SYSFS */
- 
- static inline struct sysfs_dirent *
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 2bc735d..0ab2b02 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -243,7 +243,6 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
- 				  const char *link_name);
- 
- void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
--void sysfs_notify_dirent(struct sysfs_dirent *sd);
- struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
- 					 const unsigned char *name,
- 					 const void *ns);
-@@ -418,9 +417,6 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
- 				const char *attr)
- {
- }
--static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+-static bool sysfs_is_bin(struct sysfs_dirent *sd)
 -{
+-	return sysfs_type(sd) == SYSFS_KOBJ_BIN_ATTR;
 -}
- static inline struct sysfs_dirent *
- sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
- 		    const void *ns)
-@@ -466,4 +462,9 @@ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
- 	return sysfs_get_dirent_ns(parent_sd, name, NULL);
+-
+ static struct sysfs_open_file *sysfs_of(struct file *file)
+ {
+ 	return ((struct seq_file *)file->private_data)->private;
+@@ -904,7 +899,7 @@ static const struct kernfs_ops sysfs_bin_kfops_rw = {
+ };
+ 
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+-			   const struct attribute *attr, int type,
++			   const struct attribute *attr, bool is_bin,
+ 			   umode_t amode, const void *ns)
+ {
+ 	umode_t mode = (amode & S_IALLUGO) | S_IFREG;
+@@ -914,7 +909,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 	loff_t size;
+ 	int rc;
+ 
+-	if (type == SYSFS_KOBJ_ATTR) {
++	if (!is_bin) {
+ 		struct kobject *kobj = dir_sd->priv;
+ 		const struct sysfs_ops *sysfs_ops = kobj->ktype->sysfs_ops;
+ 
+@@ -949,7 +944,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		size = battr->size;
+ 	}
+ 
+-	sd = sysfs_new_dirent(attr->name, mode, type);
++	sd = sysfs_new_dirent(attr->name, mode, SYSFS_KOBJ_ATTR);
+ 	if (!sd)
+ 		return -ENOMEM;
+ 
+@@ -979,11 +974,10 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 	return rc;
  }
  
-+static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
-+{
-+	kernfs_notify(sd);
-+}
-+
- #endif /* _SYSFS_H_ */
+-
+ int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
+-		   int type)
++		   bool is_bin)
+ {
+-	return sysfs_add_file_mode_ns(dir_sd, attr, type, attr->mode, NULL);
++	return sysfs_add_file_mode_ns(dir_sd, attr, is_bin, attr->mode, NULL);
+ }
+ 
+ /**
+@@ -997,8 +991,7 @@ int sysfs_create_file_ns(struct kobject *kobj, const struct attribute *attr,
+ {
+ 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 
+-	return sysfs_add_file_mode_ns(kobj->sd, attr, SYSFS_KOBJ_ATTR,
+-				      attr->mode, ns);
++	return sysfs_add_file_mode_ns(kobj->sd, attr, false, attr->mode, ns);
+ 
+ }
+ EXPORT_SYMBOL_GPL(sysfs_create_file_ns);
+@@ -1037,7 +1030,7 @@ int sysfs_add_file_to_group(struct kobject *kobj,
+ 	if (!dir_sd)
+ 		return -ENOENT;
+ 
+-	error = sysfs_add_file(dir_sd, attr, SYSFS_KOBJ_ATTR);
++	error = sysfs_add_file(dir_sd, attr, false);
+ 	sysfs_put(dir_sd);
+ 
+ 	return error;
+@@ -1129,7 +1122,7 @@ int sysfs_create_bin_file(struct kobject *kobj,
+ {
+ 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 
+-	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
++	return sysfs_add_file(kobj->sd, &attr->attr, true);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
+ 
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 065689d..9f65cd9 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -55,8 +55,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 				if (!mode)
+ 					continue;
+ 			}
+-			error = sysfs_add_file_mode_ns(dir_sd, *attr,
+-						       SYSFS_KOBJ_ATTR,
++			error = sysfs_add_file_mode_ns(dir_sd, *attr, false,
+ 						       (*attr)->mode | mode,
+ 						       NULL);
+ 			if (unlikely(error))
+@@ -269,7 +268,7 @@ int sysfs_merge_group(struct kobject *kobj,
+ 		return -ENOENT;
+ 
+ 	for ((i = 0, attr = grp->attrs); *attr && !error; (++i, ++attr))
+-		error = sysfs_add_file(dir_sd, *attr, SYSFS_KOBJ_ATTR);
++		error = sysfs_add_file(dir_sd, *attr, false);
+ 	if (error) {
+ 		while (--i >= 0)
+ 			kernfs_remove_by_name(dir_sd, (*--attr)->name);
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index 037a892..b3c717a 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -269,7 +269,6 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
+ 		inode->i_fop = &sysfs_dir_operations;
+ 		break;
+ 	case SYSFS_KOBJ_ATTR:
+-	case SYSFS_KOBJ_BIN_ATTR:
+ 		inode->i_size = sd->s_attr.size;
+ 		inode->i_fop = &kernfs_file_operations;
+ 		break;
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index bf5685e..d1102c0 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -83,10 +83,9 @@ struct sysfs_dirent {
+ #define SYSFS_TYPE_MASK			0x00ff
+ #define SYSFS_DIR			0x0001
+ #define SYSFS_KOBJ_ATTR			0x0002
+-#define SYSFS_KOBJ_BIN_ATTR		0x0004
+ #define SYSFS_KOBJ_LINK			0x0008
+ #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
+-#define SYSFS_ACTIVE_REF		(SYSFS_KOBJ_ATTR | SYSFS_KOBJ_BIN_ATTR)
++#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
+ 
+ #define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
+ #define SYSFS_FLAG_HAS_NS		0x01000
+@@ -115,10 +114,8 @@ do {								\
+ static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
+ {
+ 	struct attribute *attr = sd->priv;
+-	int type = sysfs_type(sd);
+ 
+-	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
+-		attr->ignore_lockdep;
++	return sysfs_type(sd) == SYSFS_KOBJ_ATTR && attr->ignore_lockdep;
+ }
+ 
+ #else
+@@ -219,10 +216,10 @@ int sysfs_inode_init(void);
+ extern const struct file_operations kernfs_file_operations;
+ 
+ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+-		   const struct attribute *attr, int type);
++		   const struct attribute *attr, bool is_bin);
+ 
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+-			   const struct attribute *attr, int type,
++			   const struct attribute *attr, bool is_bin,
+ 			   umode_t amode, const void *ns);
+ void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
+ 
 -- 
 1.8.3.1
 
