@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3JXOG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 10:06:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42401 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab3JXOG0 (ORCPT
+	id S1755425Ab3JXOHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 10:07:39 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:50239 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab3JXOHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 10:06:26 -0400
-Date: Thu, 24 Oct 2013 16:06:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
-        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131024140618.GD19466@laptop.lan>
-References: <20131017160439.GP227855@redhat.com>
- <20131017163039.GR10651@twins.programming.kicks-ass.net>
- <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
- <20131017220156.GB10651@twins.programming.kicks-ass.net>
- <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
- <20131022211237.GH2490@laptop.programming.kicks-ass.net>
- <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
- <20131023204838.GB19466@laptop.lan>
- <20131024105206.GM2490@laptop.programming.kicks-ass.net>
- <20131024134706.GN227855@redhat.com>
+	Thu, 24 Oct 2013 10:07:37 -0400
+Date: Thu, 24 Oct 2013 11:07:31 -0300
+From: Arnaldo Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf session: Add option to copy events when queueing
+Message-ID: <20131024140731.GD6539@ghostprotocols.net>
+References: <1378496221-61525-1-git-send-email-dsahern@gmail.com>
+ <20130914161626.GD1718@localhost.localdomain>
+ <CAFTL4hx=ycrepky0P3DYwoFBgknYumW6+tpW7PygqGD2ZNDFqg@mail.gmail.com>
+ <5268F524.20505@gmail.com>
+ <20131024122748.GC6539@ghostprotocols.net>
+ <52691CBD.7050606@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131024134706.GN227855@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52691CBD.7050606@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 09:47:06AM -0400, Don Zickus wrote:
-> > Don, can you give this stuff a spin on your system?
-> 
-> I'll try to grab the machine I was testing with and see what this patch
-> does.  Thanks!  I assume this can go on top of the other patch that was
-> committed to -tip last week?
+Em Thu, Oct 24, 2013 at 02:12:29PM +0100, David Ahern escreveu:
+> On 10/24/13 1:27 PM, Arnaldo Melo wrote:
 
-Yeah, I had that patch in my tree so it should apply fine.
+> The driving use case is my perf-daemon:
+> https://github.com/dsahern/linux/blob/perf-sched-timehist-3.11/tools/perf/schedmon.c,
+> line 271.
+> 
+> Rather than have the perf infrastructure manage the allocation and
+> copies I decided to have the daemon do it. The session
+> infrastructure is only used for time sorting.
+> 
+> This works better because the event that pops out of the session
+> ordering is put onto another list and it gives the daemon control of
+> when memory is allocated and freed and the event only has to be
+> copied once.
+
+Ok, I see, but that could be useful for other tools, so at some point
+what ends up being the best for your tool can be submitted upstream 8-)
+ 
+> >
+> >I had this feeling that perhaps we could defer copying the event till it
+> >would be overwritten, something like making a range read only and then
+> >when the event would be _really_ consumed the tooling would mark it as
+> >so... Have to think about it more tho :-\
+> 
+> The above does not solve the problem for live tools where the event
+> actually lies in the ring buffer and could be overwritten while it
+> sits in the session ordered samples queue. The kvm-stat-live tool
+> for nested virtualization is a stress test for this case. I need to
+> come back to that problem, it just has not bubbled up to the top.
+
+What I thought was since we have to allocate memory _somewhere_ we could
+size the ring buffer in such a way that it would be big enough for us to
+leave those referenced entries there, not consumed, till we actually
+consume them when reordering the events, and if we run out of space, the
+kernel would just use LOST records, and not overwrite anything.
+
+- Arnaldo
