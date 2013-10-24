@@ -1,144 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab3JXFWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 01:22:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59580 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab3JXFWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 01:22:46 -0400
-Message-ID: <5268AE67.8060902@ti.com>
-Date: Thu, 24 Oct 2013 10:51:43 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Matt Porter <matt.porter@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>, Matthijs Kooijman <matthijs@stdin.nl>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
-References: <20131018141221.GH2721@beef> <5264F37E.9060307@ti.com> <20131022104829.GF15425@login.drsnuggles.stderr.nl> <20131022112520.GE29341@beef> <5266F06C.2080701@gmail.com> <20131023144242.GI29341@beef>
-In-Reply-To: <20131023144242.GI29341@beef>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752658Ab3JXFXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 01:23:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48347 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751893Ab3JXFXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 01:23:34 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: mmarek@suse.cz, yann.morin.1998@free.fr, akpm@linux-foundation.org,
+        joe@perches.com
+Cc: linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
+Date: Thu, 24 Oct 2013 07:23:29 +0200
+Message-Id: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is the first version of a script to look for
+Kconfig parameters which are still defined but no longer
+used in the kernel source code.
 
-On Wednesday 23 October 2013 08:12 PM, Matt Porter wrote:
-> On Tue, Oct 22, 2013 at 04:38:52PM -0500, Rob Herring wrote:
->> On 10/22/2013 06:25 AM, Matt Porter wrote:
->>> On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
->>>> Hi Kishon,
->>>>
->>>> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
->>>>> I think it makes sense to keep the data width property in the dwc2 node itself.
->>>>> I mean it describes how the dwc2 IP is configured in that particular SoC (given
->>>>> that it can be either <8> or <16>).
->>>> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
->>>> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
->>>> and 16 supported" would make sense as a property of dwc2 (though this
->>>> value should be autodetectable through GHWCFG4), while the actual 8 or
->>>> 16 supported by the PHY would make sense as property of a phy.
->>>
->>> There would be no value in adding a property for an already detectable
->>> value to dwc2's binding. To be honest, it's pretty much useless
->>> information due to the existence of the "8 and 16" option.
->>>
->>>> Note sure if this is really useful in practice as well, or if just
->>>> setting the actual width to use on dwc2 makes more sense...
->>>
->>> The GHWCFG4 information itself is not useful in practice, as described
->>> in the original thread: https://lkml.org/lkml/2013/10/10/477
->>>
->>> It's certainly useful in practice to have this width property in either
->>> the dwc2 or the phy binding. One can make a case for either. As I
->>> mentioned in the original post, if we put it in the phy binding we'll be
->>> updating the generic phy binding. We'll then need an api added into the
->>> generic phy framework to fetch the width of a phy.
->>>
->>> Both cases are doable and trivial, we just need the canonical decision
->>> from a DT maintainer as to where the property belongs. Given that they
->>> are in ARM ksummit, I'm not expecting to hear anything right this
->>> moment. :)
->>
->> The host can support both, so it is not a property of the host and is a
->> property of the phy. It is no different than what mode a SPI slave
->> requires or whether an i2c slave supports 8 or 10-bit addressing. Those
->> examples are all 1 to many rather than 1 to 1 where it doesn't really
->> matter, but the same logic applies.
-> 
-> Makes good sense, thanks.
-> 
-> In this case, given the PHY ownership of width, we can completely avoid
-> any DT properties. The generic phy compliant BCM Kona phy driver can
-> report via the generic phy framework that it is 8-bit wide. There's no
-> support for this type of thing now but it's pretty trivial to add.
-> 
-> I went ahead and did a quick proof-of-concept that adds a free-form
-> phy attributes struct for the generic phy. Given that generic phys can
-> be for any transmission technology this could be filled with a jumble
-> unrelated and often unpopulated attributes over time. In any case, the
-> below patch allows the phy provider to choose to specify utmi_width and
-> a controller driver that cares can use phy_get_attrs() to fetch the
-> optional phy attributes and use the utmi_width field if applicable.
-> 
-> Kishon: I'll start a separate thread to discuss what approach you'd like
-> to see in the generic phy framework to manage this.
-> 
-> -Matt
-> 
-> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> index 6d72269..b763d7b 100644
-> --- a/include/linux/phy/phy.h
-> +++ b/include/linux/phy/phy.h
-> @@ -38,6 +38,14 @@ struct phy_ops {
->  };
-> 
->  /**
-> + * struct phy_attrs - represents phy attributes
-> + * @utmi_width: Data path width implemented by UTMI PHY
-> + */
-> +struct phy_attrs {
-> +	int			utmi_width;
-> +};
-> +
-> +/**
->   * struct phy - represents the phy device
->   * @dev: phy device
->   * @id: id of the phy device
-> @@ -51,6 +59,7 @@ struct phy {
->  	struct device		dev;
->  	int			id;
->  	const struct phy_ops	*ops;
-> +	struct phy_attrs	*attrs;
->  	struct phy_init_data	*init_data;
->  	struct mutex		mutex;
->  	int			init_count;
-> @@ -127,6 +136,9 @@ int phy_init(struct phy *phy);
->  int phy_exit(struct phy *phy);
->  int phy_power_on(struct phy *phy);
->  int phy_power_off(struct phy *phy);
-> +static inline struct phy_attrs *phy_get_attrs(struct phy *phy) {
-> +	return phy->attrs;
-> +};
+The script may be extended in the future to perform
+more checks. This explains why a rather generic name was chosen.
 
-I'd prefer to have phy_set_bus_width and phy_get_bus_width instead.
+Several issues have already been reported and fixed
+thanks to the use of this script. It is time to share it now!
 
-Thanks
-Kishon
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ scripts/checkkconfig.py | 131 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 131 insertions(+)
+ create mode 100755 scripts/checkkconfig.py
 
->  struct phy *phy_get(struct device *dev, const char *string);
->  struct phy *devm_phy_get(struct device *dev, const char *string);
->  void phy_put(struct phy *phy);
-> 
+diff --git a/scripts/checkkconfig.py b/scripts/checkkconfig.py
+new file mode 100755
+index 0000000..4155656
+--- /dev/null
++++ b/scripts/checkkconfig.py
+@@ -0,0 +1,131 @@
++#!/usr/bin/env python
++#
++# Copyright 2013 Free Electrons
++# Michael Opdenacker <michael.opdenacker@free-electrons.com>
++#
++# Look for issues in Kconfig files
++#
++# This first version supports:
++# - Looking for unused Kconfig parameters
++#
++# Usage: scripts/checkkconfig.py
++#
++# Licensed under the terms of the GNU GPL License version 2
++
++import fnmatch
++import os
++import subprocess
++
++########################################################
++# Parse Kconfig files
++########################################################
++
++def parse_kconfig(file):
++
++    global has_select, choice_type, source_file
++
++    current_param = ''
++    in_choice = False
++
++    with open(file, 'r') as f:
++         for line in f:
++	     words = line.split()
++
++	     if len(words) != 0:
++	        key = words[0]
++
++	        if len(words) == 1:
++
++		   if key == 'choice':
++		      in_choice = True
++		   elif key == 'endchoice':
++		      in_choice = False
++
++	        elif len(words) > 1:
++
++	           if key == 'config' or key == 'menuconfig':
++		      current_param = words[1]
++
++		      has_select[current_param] = False
++		      choice_type[current_param] = in_choice
++		      source_file[current_param] = file
++
++		   elif key == 'select' and words[1] != '':
++
++		      has_select[current_param] = True
++
++########################################################
++# Find occurrences of a parameter
++########################################################
++
++def count_param(param):
++
++    global source_file, bad_params_in_file
++
++    if os.path.isdir('.git'):
++       # Use git grep when available
++       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
++    else:
++       # Fallback to regular grep
++       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
++
++    num = int(count.strip())
++
++    if num == 1:
++       'WARNING: parameter ' + param + ' is used nowhere'
++
++       file=source_file[param]
++
++       if bad_params_in_file.has_key(file):
++          bad_params_in_file[file].append(param)
++       else:
++	  bad_params_in_file[file]=[param]
++
++
++########################################################
++# Main program
++########################################################
++
++global has_select, choice_type, source_file, bad_params_in_file
++
++has_select = dict()
++choice_type = dict()
++source_file = dict()
++bad_params_in_file = dict()
++
++kconfig_files = []
++
++for root, dirnames, filenames in os.walk('.'):
++    for filename in fnmatch.filter(filenames, 'Kconfig*'):
++      	kconfig_files.append(os.path.join(root, filename))
++
++print 'INFO: processing Kconfig files...'
++
++for f in kconfig_files:
++    parse_kconfig(f)
++
++total = len(has_select)
++count = 0
++old_percentage = -1
++
++for param in has_select.keys():
++
++    # Progress information... running the script can take hours!
++
++    count += 1
++    percentage = int((100*count)/total)
++
++    if percentage > old_percentage:
++       print 'INFO: checking kconfig parameter %d / %d (%d %%)' % (count, total, percentage)
++       old_percentage = percentage
++
++    # Ignore parameters with select dependencies
++    # Also ignore parameters inside 'choice ... endchoice'
++    # All of them are valid, even if they have only one instance
++
++    if not(has_select[param]) and not(choice_type[param]):
++       count_param(param)
++
++for file in bad_params_in_file.keys():
++    print 'File: ' + file
++    print bad_params_in_file[file]
+-- 
+1.8.1.2
 
