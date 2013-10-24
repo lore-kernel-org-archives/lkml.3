@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3JXPxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:53:20 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45380 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab3JXPuO (ORCPT
+	id S1755963Ab3JXPuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:50:12 -0400
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:63349 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab3JXPuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:50:14 -0400
+	Thu, 24 Oct 2013 11:50:06 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 24/34] sysfs, kernfs: remove sysfs_add_one()
-Date: Thu, 24 Oct 2013 11:49:30 -0400
-Message-Id: <1382629780-10006-25-git-send-email-tj@kernel.org>
+Subject: [PATCH 17/34] sysfs, kernfs: prepare mmap path for kernfs
+Date: Thu, 24 Oct 2013 11:49:23 -0400
+Message-Id: <1382629780-10006-18-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
 References: <1382629780-10006-1-git-send-email-tj@kernel.org>
@@ -21,135 +21,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs_add_one() is a wrapper around __sysfs_add_one() which prints out
-duplicate name warning if __sysfs_add_one() fails with -EEXIST.  The
-previous kernfs conversions moved all dup warnings to sysfs interface
-functions and sysfs_add_one() doesn't have any user left.
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+rearranges mmap path so that the kernfs and sysfs parts are separate.
 
-Remove sysfs_add_one() and update __sysfs_add_one() to take its name.
+sysfs_kf_bin_mmap() which handles the interaction with bin_attribute
+mmap method is factored out of sysfs_bin_mmap(), which is renamed to
+kernfs_file_mmap().  All vma ops are renamed accordingly.
 
-This patch doesn't make any functional changes.
+sysfs_bin_mmap() is updated such that it can be used for both file
+types.  This will eventually allow using the same file_operations for
+both file types, which is necessary to separate out kernfs.
+
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/dir.c     | 41 ++++-------------------------------------
- fs/sysfs/file.c    |  2 +-
- fs/sysfs/symlink.c |  2 +-
- fs/sysfs/sysfs.h   |  2 --
- 4 files changed, 6 insertions(+), 41 deletions(-)
+ fs/sysfs/file.c | 70 ++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 39 insertions(+), 31 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 0a1e1da..312e0d6 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -406,7 +406,7 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
- }
- 
- /**
-- *	__sysfs_add_one - add sysfs_dirent to parent without warning
-+ *	sysfs_add_one - add sysfs_dirent to parent without warning
-  *	@acxt: addrm context to use
-  *	@sd: sysfs_dirent to be added
-  *	@parent_sd: the parent sysfs_dirent to add @sd to
-@@ -426,8 +426,8 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
-  *	0 on success, -EEXIST if entry with the given name already
-  *	exists.
-  */
--int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
--		    struct sysfs_dirent *parent_sd)
-+int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
-+		  struct sysfs_dirent *parent_sd)
- {
- 	struct sysfs_inode_attrs *ps_iattr;
- 	int ret;
-@@ -491,39 +491,6 @@ void sysfs_warn_dup(struct sysfs_dirent *parent, const char *name)
- }
- 
- /**
-- *	sysfs_add_one - add sysfs_dirent to parent
-- *	@acxt: addrm context to use
-- *	@sd: sysfs_dirent to be added
-- *	@parent_sd: the parent sysfs_dirent to add @sd to
-- *
-- *	Get @parent_sd and set @sd->s_parent to it and increment nlink of
-- *	the parent inode if @sd is a directory and link into the children
-- *	list of the parent.
-- *
-- *	This function should be called between calls to
-- *	sysfs_addrm_start() and sysfs_addrm_finish() and should be
-- *	passed the same @acxt as passed to sysfs_addrm_start().
-- *
-- *	LOCKING:
-- *	Determined by sysfs_addrm_start().
-- *
-- *	RETURNS:
-- *	0 on success, -EEXIST if entry with the given name already
-- *	exists.
-- */
--int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
--		  struct sysfs_dirent *parent_sd)
--{
--	int ret;
--
--	ret = __sysfs_add_one(acxt, sd, parent_sd);
--
--	if (ret == -EEXIST)
--		sysfs_warn_dup(parent_sd, sd->s_name);
--	return ret;
--}
--
--/**
-  *	sysfs_remove_one - remove sysfs_dirent from parent
-  *	@acxt: addrm context to use
-  *	@sd: sysfs_dirent to be removed
-@@ -689,7 +656,7 @@ struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
- 
- 	/* link in */
- 	sysfs_addrm_start(&acxt);
--	rc = __sysfs_add_one(&acxt, sd, parent);
-+	rc = sysfs_add_one(&acxt, sd, parent);
- 	sysfs_addrm_finish(&acxt);
- 
- 	if (!rc)
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 62d620a..fa4d63d 100644
+index 4f99da5..0fdc543 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -995,7 +995,7 @@ struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
- 		sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
+@@ -366,7 +366,19 @@ static loff_t kernfs_file_llseek(struct file *file, loff_t off, int whence)
+ 		return seq_lseek(file, off, whence);
+ }
  
- 	sysfs_addrm_start(&acxt);
--	rc = __sysfs_add_one(&acxt, sd, parent);
-+	rc = sysfs_add_one(&acxt, sd, parent);
- 	sysfs_addrm_finish(&acxt);
+-static void sysfs_bin_vma_open(struct vm_area_struct *vma)
++static int sysfs_kf_bin_mmap(struct sysfs_open_file *of,
++			     struct vm_area_struct *vma)
++{
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
++
++	if (!battr->mmap)
++		return -EINVAL;		/* should be -ENODEV */
++
++	return battr->mmap(of->file, kobj, battr, vma);
++}
++
++static void kernfs_vma_open(struct vm_area_struct *vma)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -383,7 +395,7 @@ static void sysfs_bin_vma_open(struct vm_area_struct *vma)
+ 	sysfs_put_active(of->sd);
+ }
  
- 	if (rc) {
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index b44d2ce..5600560 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -46,7 +46,7 @@ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
- 	sysfs_get(target);	/* ref owned by symlink */
+-static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++static int kernfs_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -403,8 +415,8 @@ static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	return ret;
+ }
  
- 	sysfs_addrm_start(&acxt);
--	error = __sysfs_add_one(&acxt, sd, parent);
-+	error = sysfs_add_one(&acxt, sd, parent);
- 	sysfs_addrm_finish(&acxt);
+-static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
+-				  struct vm_fault *vmf)
++static int kernfs_vma_page_mkwrite(struct vm_area_struct *vma,
++				   struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -426,8 +438,8 @@ static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
+ 	return ret;
+ }
  
- 	if (!error)
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index d1102c0..dce319c 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -167,8 +167,6 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd);
- void sysfs_put_active(struct sysfs_dirent *sd);
- void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt);
- void sysfs_warn_dup(struct sysfs_dirent *parent, const char *name);
--int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
--		    struct sysfs_dirent *parent_sd);
- int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
- 		  struct sysfs_dirent *parent_sd);
- void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
+-static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
+-			    void *buf, int len, int write)
++static int kernfs_vma_access(struct vm_area_struct *vma, unsigned long addr,
++			     void *buf, int len, int write)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -448,8 +460,8 @@ static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
+ }
+ 
+ #ifdef CONFIG_NUMA
+-static int sysfs_bin_set_policy(struct vm_area_struct *vma,
+-				struct mempolicy *new)
++static int kernfs_vma_set_policy(struct vm_area_struct *vma,
++				 struct mempolicy *new)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -469,8 +481,8 @@ static int sysfs_bin_set_policy(struct vm_area_struct *vma,
+ 	return ret;
+ }
+ 
+-static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
+-					      unsigned long addr)
++static struct mempolicy *kernfs_vma_get_policy(struct vm_area_struct *vma,
++					       unsigned long addr)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -490,8 +502,9 @@ static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
+ 	return pol;
+ }
+ 
+-static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
+-			     const nodemask_t *to, unsigned long flags)
++static int kernfs_vma_migrate(struct vm_area_struct *vma,
++			      const nodemask_t *from, const nodemask_t *to,
++			      unsigned long flags)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -512,37 +525,31 @@ static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
+ }
+ #endif
+ 
+-static const struct vm_operations_struct sysfs_bin_vm_ops = {
+-	.open		= sysfs_bin_vma_open,
+-	.fault		= sysfs_bin_fault,
+-	.page_mkwrite	= sysfs_bin_page_mkwrite,
+-	.access		= sysfs_bin_access,
++static const struct vm_operations_struct kernfs_vm_ops = {
++	.open		= kernfs_vma_open,
++	.fault		= kernfs_vma_fault,
++	.page_mkwrite	= kernfs_vma_page_mkwrite,
++	.access		= kernfs_vma_access,
+ #ifdef CONFIG_NUMA
+-	.set_policy	= sysfs_bin_set_policy,
+-	.get_policy	= sysfs_bin_get_policy,
+-	.migrate	= sysfs_bin_migrate,
++	.set_policy	= kernfs_vma_set_policy,
++	.get_policy	= kernfs_vma_get_policy,
++	.migrate	= kernfs_vma_migrate,
+ #endif
+ };
+ 
+-static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
++static int kernfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+-	struct bin_attribute *battr = of->sd->priv;
+-	struct kobject *kobj = of->sd->s_parent->priv;
+ 	int rc;
+ 
+ 	mutex_lock(&of->mutex);
+ 
+-	/* need of->sd for battr, its parent for kobj */
+ 	rc = -ENODEV;
+ 	if (!sysfs_get_active(of->sd))
+ 		goto out_unlock;
+ 
+-	rc = -EINVAL;
+-	if (!battr->mmap)
+-		goto out_put;
+-
+-	rc = battr->mmap(file, kobj, battr, vma);
++	if (sysfs_is_bin(of->sd))
++		rc = sysfs_kf_bin_mmap(of, vma);
+ 	if (rc)
+ 		goto out_put;
+ 
+@@ -569,7 +576,7 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	rc = 0;
+ 	of->mmapped = 1;
+ 	of->vm_ops = vma->vm_ops;
+-	vma->vm_ops = &sysfs_bin_vm_ops;
++	vma->vm_ops = &kernfs_vm_ops;
+ out_put:
+ 	sysfs_put_active(of->sd);
+ out_unlock:
+@@ -865,6 +872,7 @@ const struct file_operations sysfs_file_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+ 	.llseek		= kernfs_file_llseek,
++	.mmap		= kernfs_file_mmap,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+ 	.poll		= sysfs_poll,
+@@ -874,7 +882,7 @@ const struct file_operations sysfs_bin_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+ 	.llseek		= kernfs_file_llseek,
+-	.mmap		= sysfs_bin_mmap,
++	.mmap		= kernfs_file_mmap,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+ 	.poll		= sysfs_poll,
 -- 
 1.8.3.1
 
