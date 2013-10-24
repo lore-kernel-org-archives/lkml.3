@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3JXMFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:05:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47805 "EHLO
+	id S1755463Ab3JXMI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:08:59 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47834 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab3JXMFM (ORCPT
+	with ESMTP id S1754905Ab3JXMFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:12 -0400
+	Thu, 24 Oct 2013 08:05:17 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v11 02/15] memcg: consolidate callers of memcg_cache_id
-Date: Thu, 24 Oct 2013 16:04:53 +0400
-Message-ID: <e163eb4f0f4123f3839617666f81e85ee7fbe804.1382603434.git.vdavydov@parallels.com>
+Subject: [PATCH v11 05/15] memcg: move stop and resume accounting functions
+Date: Thu, 24 Oct 2013 16:04:56 +0400
+Message-ID: <11b30773c2108333a34b2e869201953bad38a733.1382603434.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
 References: <cover.1382603434.git.vdavydov@parallels.com>
@@ -29,117 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Glauber Costa <glommer@openvz.org>
 
-Each caller of memcg_cache_id ends up sanitizing its parameters in its own way.
-Now that the memcg_cache_id itself is more robust, we can consolidate this.
-
-Also, as suggested by Michal, a special helper memcg_cache_idx is used when the
-result is expected to be used directly as an array index to make sure we never
-accesses in a negative index.
+I need to move this up a bit, and I am doing it in a separate patch just to
+reduce churn in the patch that needs it.
 
 Signed-off-by: Glauber Costa <glommer@openvz.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
 Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |   49 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 29 insertions(+), 20 deletions(-)
+ mm/memcontrol.c |   62 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0712277..0a5cc30 100644
+index 5104d1f..bb38596 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2937,6 +2937,30 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+@@ -2987,6 +2987,37 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+ 	return cachep->memcg_params->memcg_caches[memcg_cache_idx(p->memcg)];
  }
  
- /*
-+ * helper for acessing a memcg's index. It will be used as an index in the
-+ * child cache array in kmem_cache, and also to derive its name. This function
-+ * will return -1 when this is not a kmem-limited memcg.
++/*
++ * During the creation a new cache, we need to disable our accounting mechanism
++ * altogether. This is true even if we are not creating, but rather just
++ * enqueing new caches to be created.
++ *
++ * This is because that process will trigger allocations; some visible, like
++ * explicit kmallocs to auxiliary data structures, name strings and internal
++ * cache structures; some well concealed, like INIT_WORK() that can allocate
++ * objects during debug.
++ *
++ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
++ * to it. This may not be a bounded recursion: since the first cache creation
++ * failed to complete (waiting on the allocation), we'll just try to create the
++ * cache again, failing at the same point.
++ *
++ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
++ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
++ * inside the following two functions.
 + */
-+int memcg_cache_id(struct mem_cgroup *memcg)
++static inline void memcg_stop_kmem_account(void)
 +{
-+	if (!memcg || !memcg_can_account_kmem(memcg))
-+		return -1;
-+	return memcg->kmemcg_id;
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account++;
 +}
 +
-+/*
-+ * This helper around memcg_cache_id is not intented for use outside memcg
-+ * core. It is meant for places where the cache id is used directly as an array
-+ * index
-+ */
-+static int memcg_cache_idx(struct mem_cgroup *memcg)
++static inline void memcg_resume_kmem_account(void)
 +{
-+	int ret = memcg_cache_id(memcg);
-+	BUG_ON(ret < 0);
-+	return ret;
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account--;
 +}
 +
-+/*
-  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-  * in the memcg_cache_params struct.
-  */
-@@ -2946,7 +2970,7 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
- 
- 	VM_BUG_ON(p->is_root_cache);
- 	cachep = p->root_cache;
--	return cachep->memcg_params->memcg_caches[memcg_cache_id(p->memcg)];
-+	return cachep->memcg_params->memcg_caches[memcg_cache_idx(p->memcg)];
- }
- 
  #ifdef CONFIG_SLABINFO
-@@ -3051,18 +3075,6 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+ static int mem_cgroup_slabinfo_read(struct cgroup_subsys_state *css,
+ 				    struct cftype *cft, struct seq_file *m)
+@@ -3262,37 +3293,6 @@ out:
+ 	kfree(s->memcg_params);
  }
  
- /*
-- * helper for acessing a memcg's index. It will be used as an index in the
-- * child cache array in kmem_cache, and also to derive its name. This function
-- * will return -1 when this is not a kmem-limited memcg.
+-/*
+- * During the creation a new cache, we need to disable our accounting mechanism
+- * altogether. This is true even if we are not creating, but rather just
+- * enqueing new caches to be created.
+- *
+- * This is because that process will trigger allocations; some visible, like
+- * explicit kmallocs to auxiliary data structures, name strings and internal
+- * cache structures; some well concealed, like INIT_WORK() that can allocate
+- * objects during debug.
+- *
+- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
+- * to it. This may not be a bounded recursion: since the first cache creation
+- * failed to complete (waiting on the allocation), we'll just try to create the
+- * cache again, failing at the same point.
+- *
+- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
+- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
+- * inside the following two functions.
 - */
--int memcg_cache_id(struct mem_cgroup *memcg)
+-static inline void memcg_stop_kmem_account(void)
 -{
--	if (!memcg || !memcg_can_account_kmem(memcg))
--		return -1;
--	return memcg->kmemcg_id;
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account++;
 -}
 -
--/*
-  * This ends up being protected by the set_limit mutex, during normal
-  * operation, because that is its main call site.
-  *
-@@ -3224,7 +3236,7 @@ void memcg_release_cache(struct kmem_cache *s)
- 		goto out;
- 
- 	memcg = s->memcg_params->memcg;
--	id  = memcg_cache_id(memcg);
-+	id = memcg_cache_idx(memcg);
- 
- 	root = s->memcg_params->root_cache;
- 	root->memcg_params->memcg_caches[id] = NULL;
-@@ -3387,9 +3399,7 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 	struct kmem_cache *new_cachep;
- 	int idx;
- 
--	BUG_ON(!memcg_can_account_kmem(memcg));
+-static inline void memcg_resume_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account--;
+-}
 -
--	idx = memcg_cache_id(memcg);
-+	idx = memcg_cache_idx(memcg);
- 
- 	mutex_lock(&memcg_cache_mutex);
- 	new_cachep = cachep->memcg_params->memcg_caches[idx];
-@@ -3562,10 +3572,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	rcu_read_lock();
- 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
- 
--	if (!memcg_can_account_kmem(memcg))
--		goto out;
--
- 	idx = memcg_cache_id(memcg);
-+	if (idx < 0)
-+		return cachep;
- 
- 	/*
- 	 * barrier to mare sure we're always seeing the up to date value.  The
+ static void kmem_cache_destroy_work_func(struct work_struct *w)
+ {
+ 	struct kmem_cache *cachep;
 -- 
 1.7.10.4
 
