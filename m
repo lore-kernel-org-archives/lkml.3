@@ -1,72 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab3JXFmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 01:42:18 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:35690 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3JXFmQ (ORCPT
+	id S1753501Ab3JXFpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 01:45:31 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35837 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3JXFpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 01:42:16 -0400
+	Thu, 24 Oct 2013 01:45:30 -0400
+Message-ID: <5268B3EE.5060603@hitachi.com>
+Date: Thu, 24 Oct 2013 14:45:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <87eh7bfoq9.fsf@rustcorp.com.au>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-	<87eh7bfoq9.fsf@rustcorp.com.au>
-Date: Thu, 24 Oct 2013 13:42:14 +0800
-Message-ID: <CACVXFVOA+VOWcbaiG=RSR+WVRK70UcX3cnucO-W0GtPezHzA0w@mail.gmail.com>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-From: Ming Lei <tom.leiming@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Chen Gang <gang.chen@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora>
+In-Reply-To: <20131023050502.1886.15779.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 9:21 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Ming Lei <tom.leiming@gmail.com> writes:
->> Address of non-module kernel symbol should always be located
->> from CONFIG_PAGE_OFFSET on, so only show these legal kernel
->> symbols in /proc/kallsyms.
->>
->> On ARM, some symbols(see below) may drop in relocatable code, so
->> perf can't parse kernel symbols any more from /proc/kallsyms, this
->> patch fixes the problem.
->>
->>       00000000 t __vectors_start
->>       00000020 A cpu_v7_suspend_size
->>       00001000 t __stubs_start
->>       00001004 t vector_rst
->>       00001020 t vector_irq
->>       000010a0 t vector_dabt
->>       00001120 t vector_pabt
->>       000011a0 t vector_und
->>       00001220 t vector_addrexcptn
->>       00001224 t vector_fiq
->>       00001224 T vector_fiq_offset
->>
->> The issue can be fixed in scripts/kallsyms.c too, but looks this
->> approach is easier.
->
-> This fix looks hacky; if these symbols are not available, don't just
-> remove them from /proc/kallsyms, but don't put them in the kernel at
-> all.
->
-> That way, they won't interfere with other kallsyms uses (eg. backtrace).
+(2013/10/23 14:05), Hemant Kumar wrote:
+> This allows perf to probe into the sdt markers/notes present in
+> the libraries and executables. We try to find the associated location
+> and handle prelinking (since, stapsdt notes section is not allocated
+> during runtime). Prelinking is handled with the help of base
+> section which is allocated during runtime. This address can be compared
+> with the address retrieved from the notes' description. If its different,
+> we can take this difference and then add to the note's location.
+> 
+> We can use existing '-a/--add' option to add events for sdt markers.
+> Also, we can add multiple events at once using the same '-a' option.
+> 
+> Usage:
+> perf probe -x /lib64/libc.so.6 -a 'my_event=%libc:setjmp'
+> 
+> Output:
+> Added new event:
+>   libc:my_event        (on 0x35981)
+> 
+> You can now use it in all perf tools, such as:
+> 
+>     perf record -e libc:my_event -aR sleep 1
+> 
+> 
+> Signed-off-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
 
-Yes, I agree.
-
-> Or, better, figure out a smart way of excluding them by knowing why
-> these symbol addresses are wrong.
-
-Actually the problem is caused by commit b9b32bf70f2(ARM: use linker
-magic for vectors and vector stubs), maybe Russell can figure out a smart
-way to exclude these symbols.
+Almost! please check below comments :)
 
 
-Thanks,
+>  static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  					  struct probe_trace_event **tevs,
+>  					  int max_tevs, const char *target)
+> @@ -1916,11 +1975,23 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  	struct symbol *sym;
+>  	int ret = 0, i;
+>  	struct probe_trace_event *tev;
+> +	char *buf;
+> +	unsigned long long addr;
+>  
+> -	/* Convert perf_probe_event with debuginfo */
+> -	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+> -	if (ret != 0)
+> -		return ret;	/* Found in debuginfo or got an error */
+> +	if (pev->sdt) {
+> +		ret = -EBADF;
+> +		if (pev->uprobes)
+> +			ret = try_to_find_sdt_notes(pev, target);
+> +		if (ret)
+> +			return ret;
+> +	} else {
+> +		/* Convert perf_probe_event with debuginfo */
+> +		ret = try_to_find_probe_trace_events(pev, tevs, max_tevs,
+> +						     target);
+> +		/* Found in debuginfo or got an error */
+> +		if (ret != 0)
+> +			return ret;
+
+These "ret != 0" checkers can be merged.
+
+[...]
+> +int search_sdt_note(struct sdt_note *key, const char *target)
+> +{
+> +	Elf *elf;
+> +	int fd, ret;
+> +	bool found = false;
+> +	struct sdt_note *pos = NULL;
+> +	LIST_HEAD(sdt_notes);
+> +
+> +	fd = open(target, O_RDONLY);
+> +	if (fd < 0) {
+> +		pr_err("%s : %s\n", target, strerror(errno));
+> +		return -errno;
+> +	}
+> +
+> +	symbol__elf_init();
+> +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+> +	if (!elf) {
+> +		ret = -EBADF;
+> +		pr_debug("Can't read the elf of %s\n", target);
+> +		goto out_close;
+> +	}
+> +
+> +	ret = construct_sdt_notes_list(elf, &sdt_notes);
+> +	if (ret)
+> +		goto out_end;
+> +
+> +	/* Iterate through the notes and retrieve the required note */
+> +	list_for_each_entry(pos, &sdt_notes, note_list) {
+> +		if (!strcmp(key->name, pos->name) &&
+> +		    !strcmp(key->provider, pos->provider)) {
+> +			adjust_note_addr(pos, key, elf);
+> +			found = true;
+> +			break;
+> +		}
+> +	}
+> +	if (!found) {
+> +		printf("%%%s:%s not found in %s!\n", key->provider, key->name,
+> +		       target);
+> +		return -ENOENT;
+
+Here, you skipped the closing process. maybe ret = -ENOENT is enough here.
+
+> +	}
+> +
+> +out_end:
+> +	elf_end(elf);
+> +out_close:
+> +	close(fd);
+> +	ret = sdt_err(ret, target);
+
+It seems the sdt_err is only for the return value of contruct_sdt_notes_list(),
+thus it is better to integrate it.
+
+> +	if (!ret && list_empty(&sdt_notes))
+> +		ret = -ENOENT;
+
+I think this can be removed, because it always be false (caught by previous !found).
+
+> +	cleanup_sdt_note_list(&sdt_notes);
+> +	return ret;
+> +}
+
+Thank you,
+
+
+
 -- 
-Ming Lei
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
