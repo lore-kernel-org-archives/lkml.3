@@ -1,127 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3JXMI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:08:59 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47834 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab3JXMFR (ORCPT
+	id S1755135Ab3JXMLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:11:38 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:54146 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab3JXMLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:05:17 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <glommer@openvz.org>, <khorenko@parallels.com>, <devel@openvz.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v11 05/15] memcg: move stop and resume accounting functions
-Date: Thu, 24 Oct 2013 16:04:56 +0400
-Message-ID: <11b30773c2108333a34b2e869201953bad38a733.1382603434.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1382603434.git.vdavydov@parallels.com>
-References: <cover.1382603434.git.vdavydov@parallels.com>
+	Thu, 24 Oct 2013 08:11:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.22.194]
+In-Reply-To: <1382604360.5283.9.camel@pippen.local.home>
+References: <20131024075813.GA26929@gmail.com>
+	<1382604360.5283.9.camel@pippen.local.home>
+Date: Thu, 24 Oct 2013 20:11:36 +0800
+Message-ID: <CAGdX0WG1gmC-ZXn5BFRMD5FM2r5d3oxvDU61-xFrT90badv3tg@mail.gmail.com>
+Subject: Re: ktap inclusion in drivers/staging/?
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+On Thu, Oct 24, 2013 at 4:46 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2013-10-24 at 09:58 +0200, Ingo Molnar wrote:
+>> Greg,
+>>
+>> I was surprised to see 'ktap' appear in the staging tree silently,
+>> via these commits that are visible in today's staging-next:
+>>
+>>  2c856b9e3e06 staging: ktap: remove unused <asm/syscall.h> header file
+>>  687b63a3bfd5 staging: ktap: update email name in MAINTAINERS
+>>  c63a164271f8 staging: ktap: add to the kernel tree
+>>
+>> ktap is pretty fresh instrumentation code, announced on lkml a
+>> couple of months ago, and so far I haven't seen much technical
+>> discussion of integrating ktap upstream, mostly I suspect because
+>> not a _single_ patch was sent to linux-kernel for review. (!)
+>
+> I feel I'm partially to blame. Jovi has sent us several emails to look
+> at his tree and I told him I would when I get time. What I should have
+> done was told him to break up the changes and send them out as a patch
+> series.
+>
+Steven, it's my fault, I'm really sorry for this.
 
-I need to move this up a bit, and I am doing it in a separate patch just to
-reduce churn in the patch that needs it.
+When Greg kindly tried to help merge this into staging tree, I should
+talk to you guys firstly, at that time I thought drivers/staging would
+be a proper place to cleanup code or integrate with other subsystem,
+I'm wrong on this, entirely my fault.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- mm/memcontrol.c |   62 +++++++++++++++++++++++++++----------------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+>
+>>
+>> An announcement of a Git tree was made (which Git tree is not very
+>> structured), and some very minimal discussion ensued, but no actual
+>> patches were sent with an intent to merge, no technical arguments
+>> were made in favor of merging and nothing conclusive was achieved.
+>
+> Again, this may be partially our fault. We should have told Jovi to send
+> out the patches and a pointer to a git tree is not acceptable. Then we
+> could have had the necessary discussions required for this.
+>
+> But I agree, this should not be just dumped into the staging tree until
+> the patches themselves have been posted and reviewed.
+>
+> I'll have to NAK it too.
+>
+Accept, also with Ingo's.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5104d1f..bb38596 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2987,6 +2987,37 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
- 	return cachep->memcg_params->memcg_caches[memcg_cache_idx(p->memcg)];
- }
- 
-+/*
-+ * During the creation a new cache, we need to disable our accounting mechanism
-+ * altogether. This is true even if we are not creating, but rather just
-+ * enqueing new caches to be created.
-+ *
-+ * This is because that process will trigger allocations; some visible, like
-+ * explicit kmallocs to auxiliary data structures, name strings and internal
-+ * cache structures; some well concealed, like INIT_WORK() that can allocate
-+ * objects during debug.
-+ *
-+ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-+ * to it. This may not be a bounded recursion: since the first cache creation
-+ * failed to complete (waiting on the allocation), we'll just try to create the
-+ * cache again, failing at the same point.
-+ *
-+ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-+ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-+ * inside the following two functions.
-+ */
-+static inline void memcg_stop_kmem_account(void)
-+{
-+	VM_BUG_ON(!current->mm);
-+	current->memcg_kmem_skip_account++;
-+}
-+
-+static inline void memcg_resume_kmem_account(void)
-+{
-+	VM_BUG_ON(!current->mm);
-+	current->memcg_kmem_skip_account--;
-+}
-+
- #ifdef CONFIG_SLABINFO
- static int mem_cgroup_slabinfo_read(struct cgroup_subsys_state *css,
- 				    struct cftype *cft, struct seq_file *m)
-@@ -3262,37 +3293,6 @@ out:
- 	kfree(s->memcg_params);
- }
- 
--/*
-- * During the creation a new cache, we need to disable our accounting mechanism
-- * altogether. This is true even if we are not creating, but rather just
-- * enqueing new caches to be created.
-- *
-- * This is because that process will trigger allocations; some visible, like
-- * explicit kmallocs to auxiliary data structures, name strings and internal
-- * cache structures; some well concealed, like INIT_WORK() that can allocate
-- * objects during debug.
-- *
-- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-- * to it. This may not be a bounded recursion: since the first cache creation
-- * failed to complete (waiting on the allocation), we'll just try to create the
-- * cache again, failing at the same point.
-- *
-- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-- * inside the following two functions.
-- */
--static inline void memcg_stop_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account++;
--}
--
--static inline void memcg_resume_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account--;
--}
--
- static void kmem_cache_destroy_work_func(struct work_struct *w)
- {
- 	struct kmem_cache *cachep;
--- 
-1.7.10.4
+I admit there have many places need to cleanup in ktap code, and there
+also have a long todo list, I will finish it before start review process.
 
+Again, really sorry for this, please forgive me this mistake.
+
+Jovi.
