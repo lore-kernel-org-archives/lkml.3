@@ -1,87 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3JXMc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 08:32:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49441 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754052Ab3JXMc0 (ORCPT
+	id S1754891Ab3JXMcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 08:32:42 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:50670 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3JXMck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 08:32:26 -0400
-Message-ID: <1382617925.21018.0.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 000/149] 3.2.52-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Date: Thu, 24 Oct 2013 13:32:05 +0100
-In-Reply-To: <20131021152554.GA18317@roeck-us.net>
-References: <lsq.1382345187.199780875@decadent.org.uk>
-	 <20131021152554.GA18317@roeck-us.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-o8+kNWciq8rD/fHlzY92"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 77.221.165.98
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 24 Oct 2013 08:32:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131024075813.GA26929@gmail.com>
+References: <20131024075813.GA26929@gmail.com>
+Date: Thu, 24 Oct 2013 20:32:38 +0800
+Message-ID: <CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com>
+Subject: Re: ktap inclusion in drivers/staging/?
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo,
 
---=-o8+kNWciq8rD/fHlzY92
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 24, 2013 at 3:58 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Greg,
+>
+> I was surprised to see 'ktap' appear in the staging tree silently,
+> via these commits that are visible in today's staging-next:
+>
+>  2c856b9e3e06 staging: ktap: remove unused <asm/syscall.h> header file
+>  687b63a3bfd5 staging: ktap: update email name in MAINTAINERS
+>  c63a164271f8 staging: ktap: add to the kernel tree
+>
+> ktap is pretty fresh instrumentation code, announced on lkml a
+> couple of months ago, and so far I haven't seen much technical
+> discussion of integrating ktap upstream, mostly I suspect because
+> not a _single_ patch was sent to linux-kernel for review. (!)
+>
+I accept Greg revert this in staging-next tree, It's entirely my fault, sorry.
 
-On Mon, 2013-10-21 at 08:25 -0700, Guenter Roeck wrote:
-> On Mon, Oct 21, 2013 at 09:46:27AM +0100, Ben Hutchings wrote:
-> > This is the start of the stable review cycle for the 3.2.52 release.
-> > There are 149 patches in this series, which will be posted as responses
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >=20
-> > Responses should be made by Fri Oct 25 08:00:00 UTC 2013.
-> > Anything received after that time might be too late.
-> >=20
-> > A combined patch relative to 3.2.51 will be posted as an additional
-> > response to this.  A shortlog and diffstat can be found below.
-> >=20
-> Build results look good:
-> 	total: 100 pass: 78 skipped: 14 fail: 8
->=20
-> which is four less failures than with 3.2.51 (m68k-nommu builds now all p=
-ass).
->=20
-> qemu build and load tests all pass.
+> An announcement of a Git tree was made (which Git tree is not very
+> structured), and some very minimal discussion ensued, but no actual
+> patches were sent with an intent to merge, no technical arguments
+> were made in favor of merging and nothing conclusive was achieved.
+>
+> A couple of very quick (and incomplete) technical objections:
+>
+>  - The Git commits in staging an absolutely unstructured,
+>    unreviewable mess, due to a single commit adding 16 KLOCs (!) of
+>    code:
+>
+>       80 files changed, 16376 insertions(+)
+>
+>    (I looked at the ktap Git tree as well, it's not much better.)
+>
+>  - Most of the kernel code comes with near zero explanations in the
+>    code itself. I looked at the kernel code in
+>    drivers/staging/ktap/interpreter/.  I have not found a _single_
+>    substantial in-code comment about design details and
+>    implementational considerations. (!!)
+>
+I will add more comments for it, also will draft a design detail in
+doc/ directory.
 
-Thanks for testing.
+>  - From the little I've been able to decode I get the impression
+>    that the design should be much more integrated into the rest of
+>    instrumentation: the in-kernel Lua bytecode interpreter looks
+>    interesting, it could be an intelligent upgrade (or even outright
+>    replacement) for the current 'filter' interpreter concept we have
+>    for tracepoints - instead of putting a parallel interpreter
+>    implementation into the kernel.
+>
+>  - In a similar fashion, it would be nice to see it integrated with
+>    'perf probe' or 'perf ktap', so that users can create probes from
+>    a single place, with coherent syntax and integrated analysis
+>    capabilities. I.e. there's no reason to not make this a
+>    relatively pain-less yet very useful transition.
+>
+Yes, I also mentioned this in my RFC email post before, that's the
+reason why I use perf-like interface in ktap as much as I can, like
+perf-tracepoints and perf-probe, also ktap can reuse perf debuginfo
+handling code in future, we are on the same page at this technical point.
 
-Ben.
+>  - In a similar vein, it creates Yet Another Debugfs ABI, instead of
+>    trying to extend existing instrumentation.
+>
+Yes.
+I tried to create file in /sys/kernel/debug/tracing/ktap or use perf syscall,
+that's looks more reasonable, but need some patches for kernel, so
+independent debugfs interface was chosen in "initial stage".
 
---=20
-Ben Hutchings
-Teamwork is essential - it allows you to blame someone else.
+> Despite my criticism, I'm actually a big proponent of safe kernel
+> probing concepts and this code does have many of the qualities that
+> I always wanted the tracepoint filter code to have in the long run.
+>
+Thanks, I'm glad to hear more and more people says ktap is useful,
+of course the code is still need to improve.
 
---=-o8+kNWciq8rD/fHlzY92
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> So it does look potentially useful, but _please_ don't merge ktap
+> via the staging tree yet, until the code becomes reviewable, until
+> it gets a proper review and until the instrumentation guys (I tried
+> to Cc: folks who might be interested in it) ack it.
+>
+> Kernel instrumentation code should follow established procedures to
+> gain Acks from interested kernel maintainers.
+>
+> Just because we've made it easy to create instrumentation callbacks
+> and made it possible to hide it all in a separate driver doesn't
+> mean the whole thing should explode into zillions of disjunct,
+> incoherent approaches. It's not like kernel instrumentation is an
+> under-maintained subsystem!
+>
+> So until it's all cleared up:
+>
+>   Nacked-by: Ingo Molnar <mingo@kernel.org>
+>
+Accept, really sorry about this mistake action, entirely my fault.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUmkTRee/yOyVhhEJAQqwlA//Ynd8Ur89mDWLNzoxQ+YSkhOb3/xx2B/L
-3ALlmHMZ6PR4HEptMfPtRjXukQj76kpCSsT1lVAwTHK1W+EcuW9cYyBzhQ3GrSw9
-JCWSt+OaT2aRGRzsdVNWLiYUJUr28MP5sJEqqkb+SeXaPp0HPy00lEG2nAlyIqrQ
-hL48F4FYOh2KjH/7usWJ8mHv4Cm9XQZWBKroJ7qhi1udHVpa8n7CEPvjKoyuMYsh
-IXBN3gQtRWvHl6CBOLardF83/47QQu3+ri5mnVLLDHOZdTfeiHgeVu6imS9G9aVs
-Nk9NKUcgvjsLXexZNIRylOj25YtlyMuVJ8nmNqxdfrYazONmJmkAi5uUwXDmM4XX
-l81JjjVs1whuE/bqDy4oFX72hTj3tEN4wRGWi26nEdLQtGGDg2TBLXwHySDGAzvq
-g394DQFdsUFbscBE1cu17daCyISI39g1BV54EEAEMvaCW+jI9zgRdoB1xgVs1/lV
-72bX12m15YdAtdnxv5vo/KPtydLpyWRcm+D7TvdyGDW10xuE5TfuN+Zx4QLetwSY
-LNRU90M5Py3nUcane5ypaqL2yvfkAu9buScs4uWRhzEX63Vj+Xacn5f8qLmNW8Fy
-3Py0k0p9rIYY7A+vZHsDiidWI6OMUpag0k0boNZBnMtrsV0Go0nxML6u2qvlTfPW
-gS6ZtQGufmY=
-=Do6J
------END PGP SIGNATURE-----
-
---=-o8+kNWciq8rD/fHlzY92--
+Jovi
