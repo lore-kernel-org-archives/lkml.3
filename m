@@ -1,294 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3JXPwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 11:52:19 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:45143 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab3JXPuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 11:50:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 28/34] sysfs, kernfs: revamp sysfs_dirent active_ref lockdep annotation
-Date: Thu, 24 Oct 2013 11:49:34 -0400
-Message-Id: <1382629780-10006-29-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1382629780-10006-1-git-send-email-tj@kernel.org>
-References: <1382629780-10006-1-git-send-email-tj@kernel.org>
+	id S1756159Ab3JXPwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 11:52:36 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36487 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756133Ab3JXPwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 11:52:34 -0400
+Message-ID: <52694238.7050607@ti.com>
+Date: Thu, 24 Oct 2013 21:22:24 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+CC: <devicetree@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <sw0312.kim@samsung.com>, <inki.dae@samsung.com>,
+        <rahul.sharma@samsung.com>, <kgene.kim@samsung.com>,
+        <s.nawrocki@samsung.com>, <thomas.abraham@linaro.org>,
+        <mturquette@linaro.org>
+Subject: Re: [RFC 04/12] phy: Add simple-phy driver
+References: <1382365111-6533-1-git-send-email-t.stanislaws@samsung.com> <1382365111-6533-5-git-send-email-t.stanislaws@samsung.com>
+In-Reply-To: <1382365111-6533-5-git-send-email-t.stanislaws@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, sysfs_dirent active_ref lockdep annotation uses
-attribute->[s]key as the lockdep key, which forces
-kernfs_create_file_ns() to assume that sysfs_dirent->priv is pointing
-to a struct attribute which may not be true for non-sysfs users.  This
-patch restructures the lockdep annotation such that
+Hi,
 
-* kernfs_ops contains lockdep_key which is used by default for files
-  created kernfs_create_file_ns().
+On Monday 21 October 2013 07:48 PM, Tomasz Stanislawski wrote:
+> Add simple-phy driver to support a single register
+> PHY interfaces present on Exynos4 SoC.
 
-* kernfs_create_file_ns_key() is introduced which takes an extra @key
-  argument.  The created file will use the specified key for
-  active_ref lockdep annotation.  If NULL is specified, lockdep for
-  the file is disabled.
+How are these PHY interfaces modelled in the SoC? Where does the register
+actually reside?
+> 
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> ---
+>  drivers/phy/Kconfig      |    5 ++
+>  drivers/phy/Makefile     |    1 +
+>  drivers/phy/phy-simple.c |  128 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 134 insertions(+)
+>  create mode 100644 drivers/phy/phy-simple.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index ac239ac..619c657 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -38,4 +38,9 @@ config TWL4030_USB
+>  	  This transceiver supports high and full speed devices plus,
+>  	  in host mode, low speed.
+>  
+> +config PHY_SIMPLE
+> +	tristate "Simple PHY driver"
 
-* sysfs_add_file_mode_ns() is updated to use
-  kernfs_create_file_ns_key() with the appropriate key from the
-  attribute or NULL if ignore_lockdep is set.
+This is too generic a name to be used. Lets name it something specific to what
+it is used for (EXYNOS/HDMI.. ?).
+> +	help
+> +	  Support for PHY controllers configured using single register.
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index 0dd8a98..3d68e19 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -5,3 +5,4 @@
+>  obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
+>  obj-$(CONFIG_OMAP_USB2)		+= phy-omap-usb2.o
+>  obj-$(CONFIG_TWL4030_USB)	+= phy-twl4030-usb.o
+> +obj-$(CONFIG_PHY_SIMPLE)	+= phy-simple.o
+> diff --git a/drivers/phy/phy-simple.c b/drivers/phy/phy-simple.c
+> new file mode 100644
+> index 0000000..4a28af7
+> --- /dev/null
+> +++ b/drivers/phy/phy-simple.c
+> @@ -0,0 +1,128 @@
+> +/*
+> + * Simple PHY driver
+> + *
+> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+> + * Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +
+> +struct simple_phy {
+> +	spinlock_t slock;
+> +	u32 on_value;
+> +	u32 off_value;
+> +	u32 mask;
+> +	void __iomem *regs;
+> +};
+> +
+> +static int sphy_set(struct simple_phy *sphy, bool on)
+> +{
+> +	u32 reg;
+> +
+> +	spin_lock(&sphy->slock);
 
-This makes the lockdep annotation properly contained in kernfs while
-allowing sysfs to cleanly keep its current behavior.  This patch
-doesn't introduce any behavior differences.
+Lets add spin_lock only when it is absolutely necessary. When your PHY provider
+implements only a single PHY, it is not needed. phy_power_on and phy_power_off
+is already protected by the framework.
+> +
+> +	reg = readl(sphy->regs);
+> +	reg &= ~sphy->mask;
+> +	reg |= sphy->mask & (on ? sphy->on_value : sphy->off_value);
+> +	writel(reg, sphy->regs);
+> +
+> +	spin_unlock(&sphy->slock);
+> +
+> +	return 0;
+> +}
+> +
+> +static int simple_phy_power_on(struct phy *phy)
+> +{
+> +	return sphy_set(phy_get_drvdata(phy), 1);
+> +}
+> +
+> +static int simple_phy_power_off(struct phy *phy)
+> +{
+> +	return sphy_set(phy_get_drvdata(phy), 0);
+> +}
+> +
+> +static struct phy_ops simple_phy_ops = {
+> +	.power_on	= simple_phy_power_on,
+> +	.power_off	= simple_phy_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static int simple_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct simple_phy *sphy;
+> +	struct resource *res;
+> +	struct phy_provider *phy_provider;
+> +	struct phy *phy;
+> +
+> +	sphy = devm_kzalloc(dev, sizeof(*sphy), GFP_KERNEL);
+> +	if (!sphy)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +	sphy->regs = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(sphy->regs)) {
+> +		dev_err(dev, "failed to ioremap registers\n");
+> +		return PTR_ERR(sphy->regs);
+> +	}
+> +
+> +	spin_lock_init(&sphy->slock);
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev, NULL);
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/dir.c         |  4 ++--
- fs/sysfs/file.c        | 35 ++++++++++++++++++++++++-----------
- fs/sysfs/sysfs.h       | 32 +-------------------------------
- include/linux/kernfs.h | 37 +++++++++++++++++++++++++++++--------
- 4 files changed, 56 insertions(+), 52 deletions(-)
+pass 'of_phy_simple_xlate' instead of NULL.
+> +	if (IS_ERR(phy_provider)) {
+> +		dev_err(dev, "failed to register PHY provider\n");
+> +		return PTR_ERR(phy_provider);
+> +	}
+> +
+> +	phy = devm_phy_create(dev, &simple_phy_ops, NULL);
+> +	if (IS_ERR(phy)) {
+> +		dev_err(dev, "failed to create PHY\n");
+> +		return PTR_ERR(phy);
+> +	}
+> +
+> +	sphy->mask = 1;
+> +	sphy->on_value = ~0;
+> +	sphy->off_value = 0;
+> +
+> +	of_property_read_u32(dev->of_node, "mask", &sphy->mask);
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 312e0d6..f541efa 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -162,7 +162,7 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
- 	if (!atomic_inc_unless_negative(&sd->s_active))
- 		return NULL;
- 
--	if (likely(!sysfs_ignore_lockdep(sd)))
-+	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
- 		rwsem_acquire_read(&sd->dep_map, 0, 1, _RET_IP_);
- 	return sd;
- }
-@@ -181,7 +181,7 @@ void sysfs_put_active(struct sysfs_dirent *sd)
- 	if (unlikely(!sd))
- 		return;
- 
--	if (likely(!sysfs_ignore_lockdep(sd)))
-+	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
- 		rwsem_release(&sd->dep_map, 1, _RET_IP_);
- 	v = atomic_dec_return(&sd->s_active);
- 	if (likely(v != SD_DEACTIVATED_BIAS))
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 9271180..fc58883 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -58,7 +58,7 @@ static struct sysfs_open_file *sysfs_of(struct file *file)
-  */
- static const struct kernfs_ops *kernfs_ops(struct sysfs_dirent *sd)
- {
--	if (!sysfs_ignore_lockdep(sd))
-+	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
- 		lockdep_assert_held(sd);
- 	return sd->s_attr.ops;
- }
-@@ -71,7 +71,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
- {
- 	struct kobject *kobj = sd->s_parent->priv;
- 
--	if (!sysfs_ignore_lockdep(sd))
-+	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
- 		lockdep_assert_held(sd);
- 	return kobj->ktype ? kobj->ktype->sysfs_ops : NULL;
- }
-@@ -928,6 +928,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 			   const struct attribute *attr, bool is_bin,
- 			   umode_t mode, const void *ns)
- {
-+	struct lock_class_key *key = NULL;
- 	const struct kernfs_ops *ops;
- 	struct sysfs_dirent *sd;
- 	loff_t size;
-@@ -967,8 +968,12 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		size = battr->size;
- 	}
- 
--	sd = kernfs_create_file_ns(dir_sd, attr->name, mode, size,
--				   ops, (void *)attr, ns);
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	if (!attr->ignore_lockdep)
-+		key = attr->key ?: (struct lock_class_key *)&attr->skey;
-+#endif
-+	sd = kernfs_create_file_ns_key(dir_sd, attr->name, mode, size,
-+				       ops, (void *)attr, ns, key);
- 	if (IS_ERR(sd)) {
- 		if (PTR_ERR(sd) == -EEXIST)
- 			sysfs_warn_dup(dir_sd, attr->name);
-@@ -978,7 +983,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- }
- 
- /**
-- * kernfs_create_file_ns - create a file
-+ * kernfs_create_file_ns_key - create a file
-  * @parent: directory to create the file in
-  * @name: name of the file
-  * @mode: mode of the file
-@@ -986,14 +991,16 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
-  * @ops: kernfs operations for the file
-  * @priv: private data for the file
-  * @ns: optional namespace tag of the file
-+ * @key: lockdep key for the file's active_ref, %NULL to disable lockdep
-  *
-  * Returns the created node on success, ERR_PTR() value on error.
-  */
--struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
--					   const char *name,
--					   umode_t mode, loff_t size,
--					   const struct kernfs_ops *ops,
--					   void *priv, const void *ns)
-+struct sysfs_dirent *kernfs_create_file_ns_key(struct sysfs_dirent *parent,
-+					       const char *name,
-+					       umode_t mode, loff_t size,
-+					       const struct kernfs_ops *ops,
-+					       void *priv, const void *ns,
-+					       struct lock_class_key *key)
- {
- 	struct sysfs_addrm_cxt acxt;
- 	struct sysfs_dirent *sd;
-@@ -1008,7 +1015,13 @@ struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
- 	sd->s_attr.size = size;
- 	sd->s_ns = ns;
- 	sd->priv = priv;
--	sysfs_dirent_init_lockdep(sd);
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	if (key) {
-+		lockdep_init_map(&sd->dep_map, "s_active", key, 0);
-+		sd->s_flags |= SYSFS_FLAG_LOCKDEP;
-+	}
-+#endif
- 
- 	/*
- 	 * sd->s_attr.ops is accesible only while holding active ref.  We
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 3c7d0e6..fdfc603 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -92,43 +92,13 @@ struct sysfs_dirent {
- #define SYSFS_FLAG_HAS_NS		0x0020
- #define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
- #define SYSFS_FLAG_HAS_MMAP		0x0080
-+#define SYSFS_FLAG_LOCKDEP		0x0100
- 
- static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
- {
- 	return sd->s_flags & SYSFS_TYPE_MASK;
- }
- 
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--
--#define sysfs_dirent_init_lockdep(sd)				\
--do {								\
--	struct attribute *attr = sd->priv;			\
--	struct lock_class_key *key = attr->key;			\
--	if (!key)						\
--		key = &attr->skey;				\
--								\
--	lockdep_init_map(&sd->dep_map, "s_active", key, 0);	\
--} while (0)
--
--/* Test for attributes that want to ignore lockdep for read-locking */
--static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
--{
--	struct attribute *attr = sd->priv;
--
--	return sysfs_type(sd) == SYSFS_KOBJ_ATTR && attr->ignore_lockdep;
--}
--
--#else
--
--#define sysfs_dirent_init_lockdep(sd) do {} while (0)
--
--static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
--{
--	return true;
--}
--
--#endif
--
- /*
-  * Context structure to be used while adding/removing nodes.
-  */
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 89993ad..69f95b3 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -10,6 +10,7 @@
- #include <linux/kernel.h>
- #include <linux/list.h>
- #include <linux/mutex.h>
-+#include <linux/lockdep.h>
- 
- struct file;
- struct iattr;
-@@ -61,6 +62,10 @@ struct kernfs_ops {
- 			 loff_t off);
- 
- 	int (*mmap)(struct sysfs_open_file *of, struct vm_area_struct *vma);
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lock_class_key	lockdep_key;
-+#endif
- };
- 
- #ifdef CONFIG_SYSFS
-@@ -68,11 +73,12 @@ struct kernfs_ops {
- struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
- 					  const char *name, void *priv,
- 					  const void *ns);
--struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
--					   const char *name,
--					   umode_t mode, loff_t size,
--					   const struct kernfs_ops *ops,
--					   void *priv, const void *ns);
-+struct sysfs_dirent *kernfs_create_file_ns_key(struct sysfs_dirent *parent,
-+					       const char *name,
-+					       umode_t mode, loff_t size,
-+					       const struct kernfs_ops *ops,
-+					       void *priv, const void *ns,
-+					       struct lock_class_key *key);
- struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
- 					const char *name,
- 					struct sysfs_dirent *target);
-@@ -92,9 +98,10 @@ kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
- { return NULL; }
- 
- static inline struct sysfs_dirent *
--kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
--		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
--		      void *priv, const void *ns)
-+kernfs_create_file_ns_key(struct sysfs_dirent *parent, const char *name,
-+			  umode_t mode, loff_t size,
-+			  const struct kernfs_ops *ops, void *priv,
-+			  const void *ns, struct lock_class_key *key)
- { return NULL; }
- 
- static inline struct sysfs_dirent *
-@@ -128,6 +135,20 @@ kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
- }
- 
- static inline struct sysfs_dirent *
-+kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
-+		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
-+		      void *priv, const void *ns)
-+{
-+	struct lock_class_key *key = NULL;
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	key = (struct lock_class_key *)&ops->lockdep_key;
-+#endif
-+	return kernfs_create_file_ns_key(parent, name, mode, size, ops, priv,
-+					 ns, key);
-+}
-+
-+static inline struct sysfs_dirent *
- kernfs_create_file(struct sysfs_dirent *parent, const char *name, umode_t mode,
- 		   loff_t size, const struct kernfs_ops *ops, void *priv)
- {
--- 
-1.8.3.1
+This means your driver will depend on dt data to describe how the register
+should look like. Not a good idea.
+> +	of_property_read_u32(dev->of_node, "on-value", &sphy->on_value);
+> +	of_property_read_u32(dev->of_node, "off-value", &sphy->off_value);
+> +
+> +	phy_set_drvdata(phy, sphy);
+> +
+> +	dev_info(dev, "probe successful\n");
+Lets not make the boot noisy.
 
+Thanks
+Kishon
