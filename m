@@ -1,65 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3JXT2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 15:28:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55892 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753940Ab3JXT2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 15:28:22 -0400
-Date: Thu, 24 Oct 2013 15:27:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-Message-ID: <20131024192752.GG2322@redhat.com>
-References: <20131015144810.GI31215@redhat.com>
- <CAE9FiQXVCx__SuhAdO9_CNaRncW2HB2tv3UjZrQcbsTV35QWow@mail.gmail.com>
- <20131018123837.GB2277@redhat.com>
- <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
- <20131021151643.GA20669@redhat.com>
- <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
- <20131024140241.GA2322@redhat.com>
- <CAE9FiQUu0WwMgNpog4TKch+MT2i7_DsNvqZxbyQusS4AFxdhQQ@mail.gmail.com>
- <20131024191821.GE2322@redhat.com>
- <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
+	id S1756192Ab3JXT2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 15:28:41 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:46197 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756147Ab3JXT2g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 15:28:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <8761snb44l.fsf@xmission.com>
+References: <1381960919-4542-1-git-send-email-jlieb@panasas.com>
+ <1381960919-4542-2-git-send-email-jlieb@panasas.com> <20131016224248.GQ13318@ZenIV.linux.org.uk>
+ <87ppr4lmp3.fsf@xmission.com> <20131017012050.GR13318@ZenIV.linux.org.uk>
+ <87hacgk0yt.fsf@xmission.com> <52687468.3060206@mit.edu> <8761snb44l.fsf@xmission.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 24 Oct 2013 12:28:15 -0700
+Message-ID: <CALCETrV3LHQWPJj30ptyoPzwgN6OWcaUP=Fc8YGG35b4xgPL8w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] switch_creds: Syscall to switch creds for file server ops
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jim Lieb <jlieb@panasas.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bfields@redhat.com, Jeff Layton <jlayton@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 12:24:57PM -0700, Yinghai Lu wrote:
-> On Thu, Oct 24, 2013 at 12:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Oct 24, 2013 at 12:15:25PM -0700, Yinghai Lu wrote:
-> >
-> > Also keeping things simple by not trying to *impose* a new crashkernel=
-> > syntax on existing crashkernel=xM users.
-> 
-> Existing user that have crashkernel=xM working with their old kernel
-> and old kexec-tools, they still could keep their old command line and
-> old kexec-tools
-> with new updated kernel.
-> We should not change semantics to surprise them.
+On Wed, Oct 23, 2013 at 10:59 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On 10/16/2013 08:52 PM, Eric W. Biederman wrote:
+>>> Al Viro <viro@ZenIV.linux.org.uk> writes:
+>>>
+>>>> On Wed, Oct 16, 2013 at 06:18:16PM -0700, Eric W. Biederman wrote:
+>>>>
+>>>>> That doesn't look bad but it does need capable(CAP_SETUID) &&
+>>>>> capable(CAP_SETGID) or possibly something a little more refined.
+>>>>
+>>>> D'oh
+>>>>
+>>>>> I don't think we want file descriptor passing to all of a sudden become
+>>>>> a grant of privilege, beyond what the passed fd can do.
+>>>>
+>>>> Definitely.  And an extra ) to make it compile wouldn't hurt either...
+>>>
+>>> There also appears to need to be a check that we don't gain any
+>>> capabilities.
+>>>
+>>> We also need a check so that you don't gain any capabilities, and
+>>> possibly a few other things.
+>>
+>> Why?  I like the user_ns part, but I'm not immediately seeing the issue
+>> with capabilities.
+>
+> My reasoning was instead of making this syscall as generic as possible
+> start it out by only allowing the cases Jim cares about and working with
+> a model where you can't gain any permissions you couldn't gain
+> otherwise.
+>
+> Although the fd -1 trick to revert to your other existing cred seems
+> reasonable.
+>
+>>> So I suspect we want a check something like:
+>>>
+>>> if ((new_cred->securebits != current_cred->securebits)  ||
+>>>     (new_cred->cap_inheritable != current_cred->cap_inheritable) ||
+>>>     (new_cred->cap_permitted != current_cred->cap_permitted) ||
+>>>     (new_cred->cap_effective != current_cred->cap_effective) ||
+>>>     (new_cred->cap_bset != current_cred->cap_bset) ||
+>>>     (new_cred->jit_keyring != current_cred->jit_keyring) ||
+>>>     (new_cred->session_keyring != current_cred->session_keyring) ||
+>>>     (new_cred->process_keyring != current_cred->process_keyring) ||
+>>>     (new_cred->thread_keyring != current_cred->thread_keyring) ||
+>>>     (new_cred->request_keyring != current_cred->request_keyring) ||
+>>>     (new_cred->security != current_cred->security) ||
+>>>     (new_cred->user_ns != current_cred->user_ns)) {
+>>>      return -EPERM;
+>>> }
+>>>
+>>
+>> I *really* don't like the idea of being able to use any old file
+>> descriptor.  I barely care what rights the caller needs to have to
+>> invoke this -- if you're going to pass an fd that grants a capability
+>> (in the non-Linux sense of the work), please make sure that the sender
+>> actually wants that behavior.
+>>
+>> IOW, have a syscall to generate a special fd for this purpose.  It's
+>> only a couple lines of code, and I think we'll really regret it if we
+>> fsck this up.
+>>
+>> (I will take it as a personal challenge to find at least one exploitable
+>> privilege escalation in this if an arbitrary fd works.)
+>
+> If you can't switch to a uid or a gid you couldn't switch to otherwise
+> then the worst that can happen is an information leak.  And information
+> leaks are rarely directly exploitable.
 
-Old users will get reservation still below 896MB.
+Here's the attack:
 
-It will go above 896MB only if memory could not be allocated below 896MB.
+Suppose there's a daemon that uses this in conjunction with
+SCM_RIGHTS.  The daemon is effectively root (under the current
+proposal, it has to be).  So a client connects, sends a credential fd,
+and the daemon impersonates those credentials.
 
-In the past reservation will fail and kexec-tools will fail.
-Now reservation will succeed but kexec-tools will fail.
+Now a malicious user obtains *any* fd opened by root.  It sends that
+fd to the daemon.  The daemon then impersonates root.  We lose.  (It
+can't possibly be hard to obtain an fd with highly privileged f_cred
+-- I bet that most console programs have stdin like that, for example.
+ There are probably many setuid programs that will happily open
+/dev/null for you, too.)
 
-So end result a user sees is that kexec-tools fails. So I don't see how
-we are breaking existing installations or user setups.
+>
+>> Also... real_cred looks confusing.  AFAICS it is used *only* for knfsd
+>> and faccessat.  That is, current userspace can't see it.  But now you'll
+>> expose various oddities.  For example, AFAICS a capability-less process
+>> that's a userns owner can always use setuid.  This will *overwrite*
+>> real_cred.  Then you're screwed, especially if this happens by
+>> accident.
+>
+> And doing in userland what faccessat, and knfsd do in the kernel is
+> exactly what is desired here.  But maybe there are issues with that.
+>
+>> That being said, Windows has had functions like this for a long time.
+>> Processes have a primary token and possibly an impersonation token.  Any
+>> process can call ImpersonateLoggedOnUser (no privilege required) to
+>> impersonate the credentials of a token (which is special kind of fd).
+>> Similarly, any process can call RevertToSelf to undo it.
+>>
+>> Is there any actual problem with allowing completely unprivileged tasks
+>> to switch to one of these magic cred fds?  That would avoid needing a
+>> "revert" operation.
+>
+> If the permission model is this switching of credentials doesn't get you
+> anything you couldn't get some other way.  That would seem to totally
+> rules out unprivileged processes switching these things.
 
-Thanks
-Vivek
+IMO, there are two reasonable models that involve fds carrying some
+kind of credential.
+
+1. The fd actually carries the ability to use the credentials.  You
+need to be very careful whom you send these to.  The security
+implications are obvious (which is good) and the receiver doesn't need
+privilege (which is good, as long as the receiver is careful).
+
+2. The fd is for identification only.  But this means that the fd
+carries the ability to identify as a user.  So you *still* have to be
+very careful about whom you send it to.  What you need is an operation
+that allows you to identify using the fd without transitively granting
+the recipient the same ability.  On networks, this is done by signing
+some kind of challenge.  The kernel could work the same way, or there
+could be a new CMSG_IDENTITY that you need an identity fd to send but
+that does not copy that fd to the recipient.
+
+>
+>> Another note: I think that there may be issues if the creator of a token
+>> has no_new_privs set and the user doesn't.  Imagine a daemon that
+>> accepts one of these fds, impersonates it, and calls exec.  This could
+>> be used to escape from no_new_privs land.
+>
+> Which is why I was suggesting that we don't allow changing any field in
+> the cred except for uids and gids.
+
+If the daemon impersonates and execs, we still lose.
+
+
+--Andy
