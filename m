@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3JXJIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 05:08:39 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:34648 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3JXJIh (ORCPT
+	id S1754393Ab3JXJKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 05:10:44 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47385 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3JXJKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 05:08:37 -0400
-X-Originating-IP: 77.221.165.98
-Date: Thu, 24 Oct 2013 10:08:30 +0100
-From: Josh Triplett <josh@joshtriplett.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Landley <rob@landley.net>, Tao Ma <boyu.mt@taobao.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] Documentation/ABI: Document the non-ABI status of
- Kconfig and symbols
-Message-ID: <20131024090825.GA3217@leaf>
-References: <20131024084104.GA2861@leaf>
- <CAFLxGvzqoJFHjXJ=WMR6Dyjg804=x0CkqHV2gXSfKUBgx2ktVA@mail.gmail.com>
+	Thu, 24 Oct 2013 05:10:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvzqoJFHjXJ=WMR6Dyjg804=x0CkqHV2gXSfKUBgx2ktVA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131024084559.GD16735@n2100.arm.linux.org.uk>
+References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
+	<87eh7bfoq9.fsf@rustcorp.com.au>
+	<20131024084559.GD16735@n2100.arm.linux.org.uk>
+Date: Thu, 24 Oct 2013 17:10:42 +0800
+Message-ID: <CACVXFVOXhKE3w0658ztum5E5C-TK=wA4A9Gx7Bn2aRKzEt=OZQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chen Gang <gang.chen@asianux.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 10:57:11AM +0200, Richard Weinberger wrote:
-> On Thu, Oct 24, 2013 at 10:41 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > Discussion at Kernel Summit made it clear that the presence or absence
-> > of specific Kconfig symbols are not considered ABI, and that no
-> > userspace (or bootloader, etc) should rely on them.
-> >
-> > In addition, kernel-internal symbols are well established as non-ABI,
-> > per Documentation/stable_api_nonsense.txt.
-> >
-> > Document both of these in Documentation/ABI/README, in a new section for
-> > notable bits of non-ABI.
-> >
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> >  Documentation/ABI/README | 13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
-> >
-> > diff --git a/Documentation/ABI/README b/Documentation/ABI/README
-> > index 1006982..1fafc4b 100644
-> > --- a/Documentation/ABI/README
-> > +++ b/Documentation/ABI/README
-> > @@ -72,3 +72,16 @@ kernel tree without going through the obsolete state first.
-> >
-> >  It's up to the developer to place their interfaces in the category they
-> >  wish for it to start out in.
-> > +
-> > +
-> > +Notable bits of non-ABI, which should not under any circumstances be considered
-> > +stable:
-> > +
-> > +- Kconfig.  Userspace should not rely on the presence or absence of any
-> > +  particular Kconfig symbol, in /proc/config.gz, in the copy of .config
-> > +  commonly installed to /boot, or in any invocation of the kernel build
-> > +  process.
-> > +
-> > +- Kernel-internal symbols.  Do not rely on the presence, absence, location, or
-> > +  type of any kernel symbol, either in System.map files or the kernel binary
-> > +  itself.  See Documentation/stable_api_nonsense.txt.
-> 
-> And what about the kernel make "interface", is it considered also as non-ABI?
-> 
-> E.g.
-> Before ffee0de (x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT)
-> "make defconfig ARCH=x86" produced a i386 defconfig. Now it produces a
-> x86_64 defconfig.
-> I'm sure some build scripted failed badly.
+On Thu, Oct 24, 2013 at 4:45 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Oct 24, 2013 at 11:51:18AM +1030, Rusty Russell wrote:
+>> Ming Lei <tom.leiming@gmail.com> writes:
+>> > Address of non-module kernel symbol should always be located
+>> > from CONFIG_PAGE_OFFSET on, so only show these legal kernel
+>> > symbols in /proc/kallsyms.
+>> >
+>> > On ARM, some symbols(see below) may drop in relocatable code, so
+>> > perf can't parse kernel symbols any more from /proc/kallsyms, this
+>> > patch fixes the problem.
+>> >
+>> >     00000000 t __vectors_start
+>> >     00000020 A cpu_v7_suspend_size
+>> >     00001000 t __stubs_start
+>> >     00001004 t vector_rst
+>> >     00001020 t vector_irq
+>> >     000010a0 t vector_dabt
+>> >     00001120 t vector_pabt
+>> >     000011a0 t vector_und
+>> >     00001220 t vector_addrexcptn
+>> >     00001224 t vector_fiq
+>> >     00001224 T vector_fiq_offset
+>> >
+>> > The issue can be fixed in scripts/kallsyms.c too, but looks this
+>> > approach is easier.
+>>
+>> This fix looks hacky; if these symbols are not available, don't just
+>> remove them from /proc/kallsyms, but don't put them in the kernel at
+>> all.
+>
+> How do you "don't put them in the kernel at all" when they're used by
+> the kernel internally as offsets?
+>
+> If you mean, just get rid of them, shall I just add these as magic
+> numbers instead based on the values in this email?  Is that really a
+> sane solution?
+>
+> No, we have to keep these symbols IMHO.
 
-I seriously considered including that, but I could imagine that some
-parts of that interface might be considered more stable than others (the
-names of targets, for instance), and I wanted to stick to completely
-uncontroversial items.  If there's consensus that part or all of the
-invocation of "make" to build the kernel is non-ABI, we can easily
-enough add that to the non-ABI list, but let's start with Kconfig and
-symbols.
+If so, looks we have to hide them to userspace, so the patch
+should be OK because the approach is correct and no obvious
+side-effect.
 
-- Josh Triplett
+
+Thanks,
+-- 
+Ming Lei
