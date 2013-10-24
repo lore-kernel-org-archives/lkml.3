@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3JXH60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 03:58:26 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57007 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3JXH6W (ORCPT
+	id S1754240Ab3JXH6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 03:58:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:32513 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab3JXH6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 03:58:22 -0400
-X-AuditID: cbfee68e-b7f416d0000020d6-89-5268d31c6de8
+	Thu, 24 Oct 2013 03:58:25 -0400
+X-AuditID: cbfee68f-b7f836d000001b39-ac-5268d31c2411
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
         Changman Lee <cm224.lee@samsung.com>
-Subject: [PATCH 1/3] f2fs: reclaim prefree segments periodically
-Date: Thu, 24 Oct 2013 16:57:40 +0900
-Message-id: <1382601462-7989-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 2/3] f2fs: introduce f2fs_balance_fs_bg for some background jobs
+Date: Thu, 24 Oct 2013 16:57:41 +0900
+Message-id: <1382601462-7989-2-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t8zY12ZyxlBBsuP6Fpc29fIZHF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXRv/BBywF
-	XbIV2yauYWxgnCLRxcjJISFgIvHs2T0WCFtM4sK99WxdjFwcQgLLGCVWnJ7MBlM0/e4TZojE
-	dEaJ240/GEESQgLNTBInLyV1MXJwsAloS2zebwASFhFgllgw9TwjSD2zwA5GiVMT9zCC1AgL
-	OEh8WiwDUsMioCpx7eZ0sPm8Am4SV/asYoXYpS2x7flEsF4JgddsEsvvnWWBaBCQ+Db5EAvI
-	HAkBWYlNB5gh6iUlDq64wTKBUXABI8MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJBQ7NvB
-	ePOA9SHGZKBxE5mlRJPzgaGcVxJvaGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC6YklqdmpqQWp
-	RfFFpTmpxYcYmTg4pRoYnQ7c3JD57+vlwONVR+ZEnL1+ct1P/veGvJfO5TAuOi1Vpp1TlJyf
-	YfxSf2n7viTG0nkqPKuPbznp4XP5htayL6t/ZN4seMkefvT3zMJnVSZJizvyX8g5VVpnvH24
-	uEyV6dzbUuM8BeYV9Q+OTX/j86hyZ/a8sM3S/VXLNn5fLufWdej+sZZ6aSWW4oxEQy3mouJE
-	AI7u0nRbAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQV2ZyxlBBg2n1C2u7Wtksri+6y+T
-	xaVF7hZ79p5ksbi8aw6bA6vH7gWfmTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMaP/4AOWgi7Zim0T1zA2ME6R6GLk5JAQMJGYfvcJM4QtJnHh3nq2
-	LkYuDiGB6YwStxt/MIIkhASamSROXkrqYuTgYBPQlti83wAkLCLALLFg6nlGkHpmgR2MEqcm
-	7mEEqREWcJD4tFgGpIZFQFXi2s3pbCA2r4CbxJU9q1ghdmlLbHs+kXECI/cCRoZVjKKpBckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGMGB/kx6B+OqBotDjAIcjEo8vBof0oOEWBPLiitzDzFKcDAr
-	ifB6VmQECfGmJFZWpRblxxeV5qQWH2JMBto+kVlKNDkfGIV5JfGGxiZmRpZGZhZGJubmpAkr
-	ifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDYrLJHcFG3qUdT6Om6lv28KU3uuzdtmJ74MHKV
-	mg1vpv/nGr9/V8/tkFi09Or2txtn+lpGLmKPcGtYeVF785mKPbcZ2v52ZYtarQiUOGoptcgw
-	/pEOZ9JGc8MCJznJyhyH11u4NYVdG/0WrS90vWLScr3t02f330czWO6IiLWu7+Y8o/9uiqQS
-	S3FGoqEWc1FxIgD3HbCSuAIAAA==
+In-reply-to: <1382601462-7989-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1382601462-7989-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t8zQ12ZyxlBBjdem1pc29fIZHF9118m
+	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxsfpzSwF
+	NyUrZr9cxtjAuEW0i5GTQ0LAROLOr+fsELaYxIV769m6GLk4hASWMUo8P7aTDaboxP8PrBCJ
+	6YwSradnMIIkhASamSROXkrqYuTgYBPQlti83wAkLCLALLFg6nlGkHpmgR2MEqcm7gGrFxYI
+	kJhxfD4LiM0ioCrx9c4LdpBeXgE3iU99URC7tCW2PZ8IVs4p4C4xdd42ZohVbhLHPk1iAZkp
+	IdDMLrHn6nxGiDkCEt8mH2IBmSMhICux6QAzxBxJiYMrbrBMYBRewMiwilE0tSC5oDgpvchY
+	rzgxt7g0L10vOT93EyMkdPt3MN49YH2IMRlo3ERmKdHkfGDo55XEGxqbGVmYmpgaG5lbmpEm
+	rCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxqY1S4XL+ZZ2yOjbyNmc9Zn7Mjxp
+	3eHgKTJnjH+/niqm9eJK5T859bLXbd+fLFoj9TRsz5egma/iI9o4HmpsWXc4jk3n88ajhr/v
+	KKn96r1oY1B9V+t83F47N7kHps3NO14/kW5bJTVF/PQu3+Wel0xOKKtvemJyN1x/+73J91gW
+	Bb24/O/21+dKLMUZiYZazEXFiQBX93OKcwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t9jQV2ZyxlBBi+uG1hc29fIZHF9118m
+	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8bH6c0sBTclK2a/XMbYwLhFtIuRk0NCwETixP8PrBC2mMSFe+vZ
+	uhi5OIQEpjNKtJ6ewQiSEBJoZpI4eSmpi5GDg01AW2LzfgOQsIgAs8SCqecZQeqZBXYwSpya
+	uAesXlggQGLG8fksIDaLgKrE1zsv2EF6eQXcJD71RUHs0pbY9nwiWDmngLvE1HnbmCFWuUkc
+	+zSJZQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZHxTGoH48oGi0OMAhyMSjy8
+	Gh/Sg4RYE8uKK3MPMUpwMCuJ8HpWZAQJ8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4wavNK
+	4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgbGzn4W785CNpLGm
+	0zcxZ5Oq+RcXMqU7/c28/TZutoVK+Ias6Pgt5Rd/mR25J22llrb0jLvdpNIVXkcOytd77OGu
+	vdo3p1Kz78WxSPd33IELf1+Ue6ks9fDrp5f6vSnvpt3jLXwn/u/k9ujoRVn+ay9fe9+Vt2jb
+	k9fTvl/kXyYXFMfFNe3b2jQlluKMREMt5qLiRAAl9I+E0AIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -47,108 +49,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, f2fs postpones reclaiming prefree segments into free segments
-as much as possible.
-However, if user writes and deletes a bunch of data without any sync or fsync
-calls, some flash storages can suffer from garbage collections.
-
-So, this patch adds the reclaiming codes to f2fs_write_node_pages and background
-GC thread.
-
-If there are a lot of prefree segments, let's do checkpoint so that f2fs
-submits discard commands for the prefree regions to the flash storage.
+This patch merges some background jobs into this new function.
 
 Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/f2fs.h    | 3 +++
- fs/f2fs/gc.c      | 5 +++++
- fs/f2fs/node.c    | 3 ++-
- fs/f2fs/segment.c | 1 +
- fs/f2fs/segment.h | 7 +++++++
- 5 files changed, 18 insertions(+), 1 deletion(-)
+ fs/f2fs/f2fs.h    |  2 ++
+ fs/f2fs/gc.c      |  5 ++---
+ fs/f2fs/node.c    | 10 +++-------
+ fs/f2fs/segment.c |  8 ++++++++
+ 4 files changed, 15 insertions(+), 10 deletions(-)
 
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 590a09e..3c95d35 100644
+index 3c95d35..602a41d 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -299,6 +299,9 @@ struct f2fs_sm_info {
- 	unsigned int main_segments;	/* # of segments in main area */
- 	unsigned int reserved_segments;	/* # of reserved segments */
- 	unsigned int ovp_segments;	/* # of overprovision segments */
-+
-+	/* a threshold to reclaim prefree segments */
-+	unsigned int rec_prefree_segments;
- };
- 
- /*
+@@ -965,6 +965,7 @@ long f2fs_compat_ioctl(struct file *, unsigned int, unsigned long);
+  */
+ void f2fs_set_inode_flags(struct inode *);
+ struct inode *f2fs_iget(struct super_block *, unsigned long);
++int try_to_free_nats(struct f2fs_sb_info *, int);
+ void update_inode(struct inode *, struct page *);
+ int update_inode_page(struct inode *);
+ int f2fs_write_inode(struct inode *, struct writeback_control *);
+@@ -1045,6 +1046,7 @@ void destroy_node_manager_caches(void);
+  * segment.c
+  */
+ void f2fs_balance_fs(struct f2fs_sb_info *);
++void f2fs_balance_fs_bg(struct f2fs_sb_info *);
+ void invalidate_blocks(struct f2fs_sb_info *, block_t);
+ void clear_prefree_segments(struct f2fs_sb_info *);
+ int npages_for_summary_flush(struct f2fs_sb_info *);
 diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index cb286d7..783c6cc 100644
+index 783c6cc..b7ad1ec 100644
 --- a/fs/f2fs/gc.c
 +++ b/fs/f2fs/gc.c
-@@ -82,6 +82,11 @@ static int gc_thread_func(void *data)
- 		/* if return value is not zero, no victim was selected */
+@@ -83,9 +83,8 @@ static int gc_thread_func(void *data)
  		if (f2fs_gc(sbi))
  			wait_ms = gc_th->no_gc_sleep_time;
-+
-+		/* balancing prefree segments */
-+		if (excess_prefree_segs(sbi))
-+			f2fs_sync_fs(sbi->sb, true);
-+
+ 
+-		/* balancing prefree segments */
+-		if (excess_prefree_segs(sbi))
+-			f2fs_sync_fs(sbi->sb, true);
++		/* balancing f2fs's metadata periodically */
++		f2fs_balance_fs_bg(sbi);
+ 
  	} while (!kthread_should_stop());
  	return 0;
- }
 diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index cc119b6..89dd8a5 100644
+index 89dd8a5..7bac481 100644
 --- a/fs/f2fs/node.c
 +++ b/fs/f2fs/node.c
-@@ -1206,7 +1206,8 @@ static int f2fs_write_node_pages(struct address_space *mapping,
- 	long nr_to_write = wbc->nr_to_write;
- 
- 	/* First check balancing cached NAT entries */
--	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK)) {
-+	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
-+				excess_prefree_segs(sbi)) {
- 		f2fs_sync_fs(sbi->sb, true);
- 		return 0;
- 	}
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index c9c276e..43ee91e 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1645,6 +1645,7 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
- 	sm_info->ovp_segments = le32_to_cpu(ckpt->overprov_segment_count);
- 	sm_info->main_segments = le32_to_cpu(raw_super->segment_count_main);
- 	sm_info->ssa_blkaddr = le32_to_cpu(raw_super->ssa_blkaddr);
-+	sm_info->rec_prefree_segments = DEF_RECLAIM_PREFREE_SEGMENTS;
- 
- 	err = build_sit_info(sbi);
- 	if (err)
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 7f94d78..abe7094 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -14,6 +14,8 @@
- #define NULL_SEGNO			((unsigned int)(~0))
- #define NULL_SECNO			((unsigned int)(~0))
- 
-+#define DEF_RECLAIM_PREFREE_SEGMENTS	100	/* 200MB of prefree segments */
-+
- /* L: Logical segment # in volume, R: Relative segment # in main area */
- #define GET_L2R_SEGNO(free_i, segno)	(segno - free_i->start_segno)
- #define GET_R2L_SEGNO(free_i, segno)	(segno + free_i->start_segno)
-@@ -472,6 +474,11 @@ static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi, int freed)
- 						reserved_sections(sbi)));
+@@ -240,7 +240,7 @@ retry:
+ 	write_unlock(&nm_i->nat_tree_lock);
  }
  
-+static inline bool excess_prefree_segs(struct f2fs_sb_info *sbi)
+-static int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
++int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
+ {
+ 	struct f2fs_nm_info *nm_i = NM_I(sbi);
+ 
+@@ -1205,12 +1205,8 @@ static int f2fs_write_node_pages(struct address_space *mapping,
+ 	struct f2fs_sb_info *sbi = F2FS_SB(mapping->host->i_sb);
+ 	long nr_to_write = wbc->nr_to_write;
+ 
+-	/* First check balancing cached NAT entries */
+-	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
+-				excess_prefree_segs(sbi)) {
+-		f2fs_sync_fs(sbi->sb, true);
+-		return 0;
+-	}
++	/* balancing f2fs's metadata in background */
++	f2fs_balance_fs_bg(sbi);
+ 
+ 	/* collect a number of dirty node pages and write together */
+ 	if (get_pages(sbi, F2FS_DIRTY_NODES) < COLLECT_DIRTY_NODES)
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 43ee91e..77aee83 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -36,6 +36,14 @@ void f2fs_balance_fs(struct f2fs_sb_info *sbi)
+ 	}
+ }
+ 
++void f2fs_balance_fs_bg(struct f2fs_sb_info *sbi)
 +{
-+	return (prefree_segments(sbi) > SM_I(sbi)->rec_prefree_segments);
++	/* check the # of cached NAT entries and prefree segments */
++	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
++				excess_prefree_segs(sbi))
++		f2fs_sync_fs(sbi->sb, true);
 +}
 +
- static inline int utilization(struct f2fs_sb_info *sbi)
+ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
+ 		enum dirty_type dirty_type)
  {
- 	return div_u64((u64)valid_user_blocks(sbi) * 100, sbi->user_block_count);
 -- 
 1.8.4.474.g128a96c
 
