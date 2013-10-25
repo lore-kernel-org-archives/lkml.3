@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3JYWlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:41:14 -0400
-Received: from [216.32.180.14] ([216.32.180.14]:37779 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751895Ab3JYWlN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:41:13 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
-Date: Fri, 25 Oct 2013 15:39:18 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Aldo Iljazi <me@aldo.io>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal for menuconfig removal
-References: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
+	id S1752430Ab3JYWsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:48:47 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:58655 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3JYWsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:48:45 -0400
+Date: Fri, 25 Oct 2013 15:48:41 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rhyland Klein <rklein@nvidia.com>, David Woodhouse <dwmw2@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Darbha Sriharsha <dsriharsha@nvidia.com>,
+        Manish Badarkha <badarkhe.manish@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [Patch V5] drivers: power: Add support for bq24735 charger
+Message-ID: <20131025224841.GB1157@teo>
+References: <1381526143-20800-1-git-send-email-rklein@nvidia.com>
+ <525C361C.1020703@wwwdotorg.org>
+ <525C376A.3000009@nvidia.com>
+ <525C3A9A.5000207@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
+In-Reply-To: <525C3A9A.5000207@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <f8db164d-0937-4f90-90ce-4543d6a8549d@VA3EHSMHS031.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 02:56:33PM +0300, Aldo Iljazi wrote:
-> Since nconfig is there, menuconfig is redundant.
+On Mon, Oct 14, 2013 at 12:40:26PM -0600, Stephen Warren wrote:
+> >>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+> >>
+> >>> +Optional properties :
+> >>
+> >>> + - ti,ac-detect-gpios : This GPIO is optionally used to read the AC adapter
+> >>> +   presence.
+> >>
+> >> Is that actually a property of the BQ24735 chip itself (i.e. is it an
+> >> output signal from the chip), or part of the board/system?
+> > 
+> > The gpio itself is actually what the IRQ line is tied to from the
+> > bq24735 -> tegra (in this case). In other words this is a Host GPIO that
+> > is configured as an input and connected to the bq24735.
 > 
-> I am proposing to remove it from the kernel.
+> Ok, so this is the ACOK output pin? In that case, it's fine. It might be
+> worth mentioning that explicitly though.
 
-Pleas don't. I never use nconfig (the color scheme always scared me
-away) and only use menuconfig.
-Also, this would break a lot of documentation out there in wikis and
-a hell lot of other places that tell people to configure a kernel using
-'make menuconfig'.
+I added the comment to the documentation and applied the patch with a
+"Thanks-to: Stephen Warren <swarren@wwwdotorg.org>" tag. :)
 
-	Sören
-
-
+Anton
