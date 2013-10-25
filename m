@@ -1,304 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3JYFJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:09:01 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:16720 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751387Ab3JYFI7 (ORCPT
+	id S1751785Ab3JYFKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:10:51 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51570 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3JYFKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:08:59 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Neil Zhang <zhangwm@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Thu, 24 Oct 2013 22:08:48 -0700
-Subject: RE: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-Thread-Topic: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-Thread-Index: Ac7GW1Eq27AdMp+8S66HQxTbZByyBAFjBqRAAVYxqEA=
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE49FD068363@SC-VEXCH4.marvell.com>
-References: <1381479838-7794-1-git-send-email-zhangwm@marvell.com>
- <1381479838-7794-3-git-send-email-zhangwm@marvell.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF788@SC-VEXCH4.marvell.com>
-In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE49FCEFF788@SC-VEXCH4.marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Fri, 25 Oct 2013 01:10:50 -0400
+Message-ID: <5269FD53.6040903@synopsys.com>
+Date: Fri, 25 Oct 2013 10:40:43 +0530
+From: Vineet Gupta <vineetg76@gmail.com>
+Organization: Synopsys
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-25_02:2013-10-24,2013-10-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310240267
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        Chen Gang <gang.chen@asianux.com>,
+        Joern Rennecke <joern.rennecke@embecosm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Joe Perches <joe@perches.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: Portable assmbler code - newline (was Re: [PATCH] kernel/modsign_certificate.S:
+ use real contents instead of macro GLOBAL())
+References: <523FD9E7.3050303@asianux.com>	<523FDBD7.4040602@asianux.com>	<C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>	<523FE578.5060801@asianux.com>	<52672DAC.1030307@asianux.com>	<CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com>	<52673E41.6040606@asianux.com>	<5267AF98.1010800@asianux.com>	<5268B0B1.9050009@asianux.com>	<CAFLxGvzERDqwZhb_5d=bXKmqz6-Yrema_TLMTM7rjyeFeDJG_w@mail.gmail.com>	<526958D8.6030102@synopsys.com> <CAMuHMdURxpuWPYYDTU2Sa4eF8WZTb=0ALQ+irtGk9ERtSKz09Q@mail.gmail.com>
+In-Reply-To: <CAMuHMdURxpuWPYYDTU2Sa4eF8WZTb=0ALQ+irtGk9ERtSKz09Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9P59C2k022666
 
-Haojian,
-
-
-> -----Original Message-----
-> From: Neil Zhang
-> Sent: 2013ƒÍ10‘¬18»’ 17:50
-> To: Neil Zhang; linux-kernel@vger.kernel.org
-> Cc: haojian.zhuang@gmail.com; tglx@linutronix.de
-> Subject: RE: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
+On 10/25/2013 01:11 AM, Geert Uytterhoeven wrote:
+> On Thu, Oct 24, 2013 at 7:28 PM, Vineet Gupta <vineetg76@gmail.com> wrote:
+>> > +CC linux-arch
+>> >
+>> > On 10/24/2013 11:33 AM, Richard Weinberger wrote:
+>>> >> On Thu, Oct 24, 2013 at 7:31 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>> >>> > For some architectures, tool chain is not smart enough to recognize the
+>>>>> >>> > macro with multiple lines (e.g. arc tool chain), and for common ".S"
+>>>>> >>> > file, this kind of macro is also rarely used.
+>>> >> Does not "not smart enough" mean than the said toolchain is broken/buggy
+>>> >> or is the kernel using an unsupported notation?
+>>> >>
+>> >
+>> > IMHO this is not broken - rather the code is not fully portable - given that gas
+>> > ports of arches have differnet notions of what to treat as comment and what newline.
+>> >
+>> > Looking as binutils/gas/config, I can see that avr, cris,...are likely broken in
+>> > the same way as ARC is.
+>> >
+>> > Historically ARC has had ';' as comment char, which Joern relatively recently
+>> > augmented to have '#' as well. However there's legacy codebase which relies on ';'
+>> > being a comment and we can't change that fact.
+>> >
+>> > So can we introduce an ARCH over-ridable newline annotation in linkage.h and other
+>> > places after auditing. Since asm/linkage.h preempts linux/linkage.h by way of
+>> > #include it shd be pretty strightforward.
+>> >
+>> > Something like below. I can send the formal patch if people think the approach is OK.
+> By what are you gonna override __ARCH_NL on ARC?
+> I'm afraid cpp will still turn it into a single line.
 > 
-> Ping ?
-> 
-> > -----Original Message-----
-> > From: Neil Zhang [mailto:zhangwm@marvell.com]
-> > Sent: 2013ƒÍ10‘¬11»’ 16:24
-> > To: linux-kernel@vger.kernel.org
-> > Cc: haojian.zhuang@gmail.com; tglx@linutronix.de; Neil Zhang
-> > Subject: [PATCH 2/2 v2] irqchip: mmp: add dt support for wakeup
-> >
 
-Would you please have a look?
+Eh ! My untested patch was broken but not because of what you mentioned.
 
-> > Some of the Marvell SoCs use GIC as its interrupt controller,and ICU
-> > only used as wakeup logic. When AP subsystem is powered off, GIC will
-> > lose its context, the PMU will need ICU to wakeup the AP subsystem.
-> > So add wakeup entry for such kind of usage.
-> >
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> > ---
-> >  .../devicetree/bindings/arm/mrvl/intc.txt          |   14 ++-
-> >  drivers/irqchip/irq-mmp.c                          |  124
-> > ++++++++++++++++++++
-> >  include/linux/irqchip/mmp.h                        |   13 ++
-> >  3 files changed, 150 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> > b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> > index 8b53273..4180928 100644
-> > --- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> > +++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
-> > @@ -2,7 +2,7 @@
-> >
-> >  Required properties:
-> >  - compatible : Should be "mrvl,mmp-intc", "mrvl,mmp2-intc" or
-> > -  "mrvl,mmp2-mux-intc"
-> > +  "mrvl,mmp2-mux-intc", "mrvl,mmp-intc-wakeupgen"
-> >  - reg : Address and length of the register set of the interrupt controller.
-> >    If the interrupt controller is intc, address and length means the range
-> >    of the whold interrupt controller. If the interrupt controller is
-> > mux-intc, @@
-> > -15,6 +15,9 @@ Required properties:
-> >  - interrupt-controller : Identifies the node as an interrupt controller.
-> >  - #interrupt-cells : Specifies the number of cells needed to encode an
-> >    interrupt source.
-> > +- mrvl,intc-gbl-mask : Specifies the address and value for global
-> > +mask in the
-> > +  interrupt controller.
-> > +- mrvl,intc-for-cp : Specifies the irqs that will be routed to cp
-> >  - mrvl,intc-nr-irqs : Specifies the number of interrupts in the interrupt
-> >    controller.
-> >  - mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear MFP
-> > edge @@
-> > -39,6 +42,15 @@ Example:
-> >  		mrvl,intc-nr-irqs = <2>;
-> >  	};
-> >
-> > +     intc: wakeupgen@d4282000 {
-> > +		compatible = "mrvl,mmp-intc-wakeupgen";
-> > +		reg = <0xd4282000 0x1000>;
-> > +		mrvl,intc-nr-irqs = <64>;
-> > +		mrvl,intc-gbl-mask = <0x114 0x3
-> > +		                      0x144 0x3>;
-> > +		mrvl,intc-for-cp = <0 31 32>;
-> > +     };
-> > +
-> >  * Marvell Orion Interrupt controller
-> >
-> >  Required properties
-> > diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c
-> > index 470c5de..445a00c 100644
-> > --- a/drivers/irqchip/irq-mmp.c
-> > +++ b/drivers/irqchip/irq-mmp.c
-> > @@ -16,6 +16,8 @@
-> >  #include <linux/init.h>
-> >  #include <linux/irq.h>
-> >  #include <linux/irqdomain.h>
-> > +#include <linux/irqchip/mmp.h>
-> > +#include <linux/irqchip/arm-gic.h>
-> >  #include <linux/io.h>
-> >  #include <linux/ioport.h>
-> >  #include <linux/of_address.h>
-> > @@ -58,6 +60,8 @@ struct mmp_intc_conf {  static void __iomem
-> > *mmp_icu_base;  static struct icu_chip_data icu_data[MAX_ICU_NR];
-> > static int max_icu_nr;
-> > +static u32 irq_for_cp[64];
-> > +static u32 irq_for_cp_nr;	/* How many irqs will be routed to cp */
-> >
-> >  extern void mmp2_clear_pmic_int(void);
-> >
-> > @@ -123,6 +127,50 @@ static void icu_unmask_irq(struct irq_data *d)
-> >  	}
-> >  }
-> >
-> > +static int irq_ignore_wakeup(struct icu_chip_data *data, int hwirq) {
-> > +	int i;
-> > +
-> > +	if (hwirq < 0 || hwirq >= data->nr_irqs)
-> > +		return 1;
-> > +
-> > +	for (i = 0; i < irq_for_cp_nr; i++)
-> > +		if (irq_for_cp[i] == hwirq)
-> > +			return 1;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void icu_mask_irq_wakeup(struct irq_data *d) {
-> > +	struct icu_chip_data *data = &icu_data[0];
-> > +	int hwirq = d->hwirq - data->virq_base;
-> > +	u32 r;
-> > +
-> > +	if (irq_ignore_wakeup(data, hwirq))
-> > +		return;
-> > +
-> > +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
-> > +	r &= ~data->conf_mask;
-> > +	r |= data->conf_disable;
-> > +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
-> > +
-> > +static void icu_unmask_irq_wakeup(struct irq_data *d) {
-> > +	struct icu_chip_data *data = &icu_data[0];
-> > +	int hwirq = d->irq - data->virq_base;
-> > +	u32 r;
-> > +
-> > +	if (irq_ignore_wakeup(data, hwirq))
-> > +		return;
-> > +
-> > +	r = readl_relaxed(mmp_icu_base + (hwirq << 2));
-> > +	r &= ~data->conf_mask;
-> > +	r |= data->conf_enable;
-> > +	writel_relaxed(r, mmp_icu_base + (hwirq << 2)); }
-> > +
-> >  struct irq_chip icu_irq_chip = {
-> >  	.name		= "icu_irq",
-> >  	.irq_mask	= icu_mask_irq,
-> > @@ -491,5 +539,81 @@ err:
-> >  	irq_domain_remove(icu_data[i].domain);
-> >  	return -EINVAL;
-> >  }
-> > +
-> > +void __init mmp_of_wakeup_init(void)
-> > +{
-> > +	struct device_node *node;
-> > +	const __be32 *wakeup_reg;
-> > +	const __be32 *cp_irq_reg;
-> > +	int ret, nr_irqs;
-> > +	int size, i = 0;
-> > +	int irq;
-> > +
-> > +	node = of_find_compatible_node(NULL, NULL,
-> > "mrvl,mmp-intc-wakeupgen");
-> > +	if (!node) {
-> > +		pr_err("Failed to find interrupt controller in arch-mmp\n");
-> > +		return;
-> > +	}
-> > +
-> > +	mmp_icu_base = of_iomap(node, 0);
-> > +	if (!mmp_icu_base) {
-> > +		pr_err("Failed to get interrupt controller register\n");
-> > +		return;
-> > +	}
-> > +
-> > +	ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
-> > +	if (ret) {
-> > +		pr_err("Not found mrvl,intc-nr-irqs property\n");
-> > +		return;
-> > +	}
-> > +
-> > +	/*
-> > +	 * Config all the interrupt source be able to interrupt the cpu 0,
-> > +	 * in IRQ mode, with priority 0 as masked by default.
-> > +	 */
-> > +	for (irq = 0; irq < nr_irqs; irq++)
-> > +		__raw_writel(ICU_IRQ_CPU0_MASKED, mmp_icu_base + (irq << 2));
-> > +
-> > +	/* ICU is only used as wake up logic
-> > +	  * disable the global irq/fiq in icu for all cores.
-> > +	  */
-> > +	wakeup_reg = of_get_property(node, "mrvl,intc-gbl-mask", &size);
-> > +	if (!wakeup_reg) {
-> > +		pr_err("Not found mrvl,intc-gbl-mask property\n");
-> > +		return;
-> > +	}
-> > +
-> > +	size /= sizeof(*wakeup_reg);
-> > +	while (i < size) {
-> > +		unsigned offset, val;
-> > +
-> > +		offset = be32_to_cpup(wakeup_reg + i++);
-> > +		val = be32_to_cpup(wakeup_reg + i++);
-> > +		writel_relaxed(val, mmp_icu_base + offset);
-> > +	}
-> > +
-> > +	/* Get the irq lines and ignore irqs */
-> > +	cp_irq_reg = of_get_property(node, "mrvl,intc-for-cp", &size);
-> > +	if (!cp_irq_reg)
-> > +		return;
-> > +
-> > +	irq_for_cp_nr = size / sizeof(*cp_irq_reg);
-> > +	for (i = 0; i < irq_for_cp_nr; i++) {
-> > +		irq_for_cp[i] = be32_to_cpup(cp_irq_reg + i);
-> > +		__raw_writel(ICU_CONF_SEAGULL, mmp_icu_base + (irq_for_cp[i]
-> > << 2));
-> > +	}
-> > +
-> > +	icu_data[0].conf_enable = mmp_conf.conf_enable;
-> > +	icu_data[0].conf_disable = mmp_conf.conf_disable;
-> > +	icu_data[0].conf_mask = mmp_conf.conf_mask;
-> > +	icu_data[0].nr_irqs = nr_irqs;
-> > +	icu_data[0].virq_base = 32;
-> > +
-> > +	gic_arch_extn.irq_mask = icu_mask_irq_wakeup;
-> > +	gic_arch_extn.irq_unmask = icu_unmask_irq_wakeup;
-> > +
-> > +	return;
-> > +}
-> > +
-> >  IRQCHIP_DECLARE(mmp2_mux_intc, "mrvl,mmp2-mux-intc",
-> > mmp2_mux_of_init);  #endif diff --git a/include/linux/irqchip/mmp.h
-> > b/include/linux/irqchip/mmp.h index c78a892..93b05ad 100644
-> > --- a/include/linux/irqchip/mmp.h
-> > +++ b/include/linux/irqchip/mmp.h
-> > @@ -1,6 +1,19 @@
-> >  #ifndef	__IRQCHIP_MMP_H
-> >  #define	__IRQCHIP_MMP_H
-> >
-> > +#define ICU_CONF_CPU3      (1 << 9)
-> > +#define ICU_CONF_CPU2      (1 << 8)
-> > +#define ICU_CONF_CPU1      (1 << 7)
-> > +#define ICU_CONF_CPU0      (1 << 6)
-> > +#define ICU_CONF_AP(n)     (1 << (6 + (n & 0x3)))
-> > +#define ICU_CONF_AP_MASK   (0xF << 6)
-> > +#define ICU_CONF_SEAGULL   (1 << 5)
-> > +#define ICU_CONF_IRQ_FIQ   (1 << 4)
-> > +#define ICU_CONF_PRIO(n)   (n & 0xF)
-> > +
-> > +#define ICU_IRQ_CPU0_MASKED    (ICU_CONF_IRQ_FIQ |
-> > ICU_CONF_CPU0)
-> > +
-> >  extern struct irq_chip icu_irq_chip;
-> >
-> > +extern void __init mmp_of_wakeup_init(void);
-> >  #endif	/* __IRQCHIP_MMP_H */
-> > --
-> > 1.7.9.5
-> 
-> Best Regards,
-> Neil Zhang
+For ARC, the ; negating the newline annotation. So the following works (backquote
+is new line for ARC)
+
+diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
+index 0283e9e44e0d..b3eea2999322 100644
+--- a/arch/arc/include/asm/linkage.h
++++ b/arch/arc/include/asm/linkage.h
+@@ -9,6 +9,8 @@
+ #ifndef __ASM_LINKAGE_H
+ #define __ASM_LINKAGE_H
+
++#define __ARCH_NL      `
++
+ #ifdef __ASSEMBLY__
 
 
-Best Regards,
-Neil Zhang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+index d3e8ad23a8e0..969e70ad231a 100644
+--- a/include/linux/linkage.h
++++ b/include/linux/linkage.h
+@@ -6,6 +6,10 @@
+ #include <linux/export.h>
+ #include <asm/linkage.h>
+
++#ifndef __ARCH_NL
++#define __ARCH_NL      ;
++#endif
++
+ #ifdef __cplusplus
+ #define CPP_ASMLINKAGE extern "C"
+ #else
+@@ -75,7 +79,7 @@
+
+ #ifndef ENTRY
+ #define ENTRY(name) \
+-  .globl name; \
++  .globl name __ARCH_NL \
+   ALIGN; \
+   name:
+ #endif
+
+
