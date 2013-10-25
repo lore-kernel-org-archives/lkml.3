@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3JYMkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 08:40:41 -0400
-Received: from smtp4.epfl.ch ([128.178.224.219]:59244 "EHLO smtp4.epfl.ch"
+	id S1753592Ab3JYMoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 08:44:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62954 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963Ab3JYMkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 08:40:39 -0400
-Message-ID: <526A66C0.1040402@epfl.ch>
-Date: Fri, 25 Oct 2013 14:40:32 +0200
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751379Ab3JYMoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 08:44:30 -0400
+Date: Fri, 25 Oct 2013 08:44:02 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tianyu.lan@intel.com, Matthew Garrett <mjg@redhat.com>, hpa@zytor.com,
+        x86@kernel.org, holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
+        rjw@rjwysocki.net, awilliam@redhat.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
+ default
+Message-ID: <20131025124402.GA7089@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>, tianyu.lan@intel.com,
+	Matthew Garrett <mjg@redhat.com>, hpa@zytor.com, x86@kernel.org,
+	holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
+	rjw@rjwysocki.net, awilliam@redhat.com, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+ <20131025105352.GA5419@gmail.com>
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
-References: <1382626126-12565-1-git-send-email-sre@debian.org> <1382626126-12565-2-git-send-email-sre@debian.org>
-In-Reply-To: <1382626126-12565-2-git-send-email-sre@debian.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025105352.GA5419@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Oct 25, 2013 at 12:53:52PM +0200, Ingo Molnar wrote:
 
-On 10/24/2013 04:48 PM, Sebastian Reichel wrote:
-> Add device tree support for twl4030 power button driver.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
+ > > Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
+ > > This patch is to add them machines to quirk table and set pci reboot
+ > > default.
+ > > 
+ > > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
+ > > Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
+ > > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+ > > ---
+ > >  arch/x86/kernel/reboot.c |    8 ++++++++
+ > >  1 file changed, 8 insertions(+)
+ > 
+ > This is becoming somewhat endemic - do we know _why_ the ACPI reboot 
+ > method does not work?
+ > 
+ > We reworked the x86 reboot sequence 2.5 years agom, in:
+ > 
+ >  commit 660e34cebf0a11d54f2d5dd8838607452355f321
+ >  Author: Matthew Garrett <mjg@redhat.com>
+ >  Date:   Mon Apr 4 13:55:05 2011 -0400
+ > 
+ >     x86: Reorder reboot method preferences
+ >     [...]
+ > 
+ > Do we know why reboot apparently works quickly enough on Windows on 
+ > this laptop, but not under Linux? Does Windows use the ACPI reboot 
+ > method? If yes, does it use a different pattern?
+ > 
+ > Is it all perhaps virtualization or IRQ routing related?
+ > 
+ > I.e. we really need a real analysis here, not just a quirk!
 
-I tested on my OMAP3 board, the button event works as expected. So for
-the DT boot, feel free to add my:
+I have a few machines at home that have the same problem.
+There does seem to be a number of vendor wide issues here. Pretty much
+every vaio and every Dell seems to need working around.
 
-Tested-by: Florian Vaussard <florian.vaussard@epfl.ch>
+I'd point at the acpi dumps, but they're currently switched off and not
+responding to wake-on-lan for some reason.
+I'll send them when I get back from kernel summit.
 
-Best regards,
+	Dave
 
-Florian
