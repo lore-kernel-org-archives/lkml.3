@@ -1,50 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab3JYJHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:07:22 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:50811 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3JYJHU (ORCPT
+	id S1752561Ab3JYJIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:08:17 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33410 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3JYJIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:07:20 -0400
+	Fri, 25 Oct 2013 05:08:15 -0400
+Date: Fri, 25 Oct 2013 02:08:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        cpufreq@vger.kernel.org, rusty@rustcorp.com.au
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+Message-ID: <20131025090809.GZ4118@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <525BD08C.2080101@t-online.de>
+ <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+ <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
+ <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 25 Oct 2013 17:07:18 +0800
-Message-ID: <CAPgLHd8m+fq1WDdxkoVPRRDGBDD8ExVz8Nj9Z6W+DjQehp1YZA@mail.gmail.com>
-Subject: [PATCH] staging: drm/imx: fix return value check in imx_drm_init()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org, s.hauer@pengutronix.de, airlied@redhat.com,
-        daniel.vetter@ffwll.ch, p.zabel@pengutronix.de
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102509-3532-0000-0000-0000027562A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Oct 25, 2013 at 10:02:22AM +0100, Linus Torvalds wrote:
+> Adding more people, so quoting the whole email for them.
+> 
+> We definitely have some module unload issues. Guys, try the following
+> a few times to unload modules:
+> 
+>     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
+> 
+> (a few times because unloading one module will then potentially make
+> other modules unloadable).
 
-In case of error, the function platform_device_register_simple() returns
-ERR_PTR() and never returns NULL. The NULL test in the return value check
-should be replaced with IS_ERR().
+Isn't it still the user's responsibility to ensure that a module will
+no longer being used before rmmod-ing it?  Or were all those race
+conditions fixed?
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/imx-drm/imx-drm-core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+							Thanx, Paul
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index a2e52a0..835a1b1 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -837,8 +837,8 @@ static int __init imx_drm_init(void)
- 	INIT_LIST_HEAD(&imx_drm_device->encoder_list);
- 
- 	imx_drm_pdev = platform_device_register_simple("imx-drm", -1, NULL, 0);
--	if (!imx_drm_pdev) {
--		ret = -EINVAL;
-+	if (IS_ERR(imx_drm_pdev)) {
-+		ret = PTR_ERR(imx_drm_pdev);
- 		goto err_pdev;
- 	}
- 
+> On my machine, I can trigger this, for example:
+> 
+>   ------------[ cut here ]------------
+>   WARNING: CPU: 0 PID: 3217 at fs/sysfs/file.c:498 sysfs_attr_ns+0x91/0xa0()
+>   sysfs: kobject (null) without dirent
+>   Modules linked in: fuse nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_$
+>   CPU: 0 PID: 3217 Comm: rmmod Not tainted 3.12.0-rc6-00284-ge6036c0b8896 #19
+>   Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
+>    0000000000000009 ffff8800aca35df8 ffffffff8160aab5 ffff8800aca35e40
+>    ffff8800aca35e30 ffffffff810514b8 ffffffffa013f080 ffff8801194a6040
+>    0000000000000800 0000000000000000 0000000000c5b3e0 ffff8800aca35e90
+>   Call Trace:
+>    [<ffffffff8160aab5>] dump_stack+0x45/0x56
+>    [<ffffffff810514b8>] warn_slowpath_common+0x78/0xa0
+>    [<ffffffff81051527>] warn_slowpath_fmt+0x47/0x50
+>    [<ffffffff810b5960>] ? module_refcount+0xb0/0xb0
+>    [<ffffffff811e5c61>] sysfs_attr_ns+0x91/0xa0
+>    [<ffffffff811e5d2a>] sysfs_remove_file+0x1a/0x50
+>    [<ffffffff814c88a3>] cpufreq_sysfs_remove_file+0x13/0x30
+>    [<ffffffffa013d350>] acpi_cpufreq_exit+0x2e/0xcde [acpi_cpufreq]
+>    [<ffffffff810b7d1d>] SyS_delete_module+0x15d/0x2c0
+>    [<ffffffff81002929>] ? do_notify_resume+0x59/0x90
+>    [<ffffffff81618f62>] system_call_fastpath+0x16/0x1b
+>   ---[ end trace f887112caaa5c4ab ]---
+> 
+> so at least we have a cpufreq/sysfs interaction bug. There may be others.
+> 
+> This particular cpufreq issue may be triggered by the fact that
+> acpi-cpufreq isn't actually in use (pstate is). Or it might be some
+> generic cpufreq/sysfs bug. Rafael, Greg, ideas?
+> 
+> I don't see that this particular one would be the one that causes the
+> timer issues, but it's an example of the fact that module unload tends
+> to be special and not necessarily well tested.
+> 
+>                    Linus
+> 
+> On Fri, Oct 25, 2013 at 9:38 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Hmm.. I just got a run_timer_softirq oops on my own laptop, slightly
+> > different. That was not during shutdown, although there was a "yum
+> > upgrade" finishing when that happened, so it's quite likely that there
+> > was a service shutdown (and then restart).
+> >
+> > I think it's related. But my oops has almost no information: the IP
+> > that was jumped to was bogus, and the callchain is just CPU idle
+> > followed by the softirq -> run_timers_softirq handling, so there's no
+> > real way to see *what* triggered it.
+> >
+> > The bad rip was ffffffffa051e250, which is not a valid code address.
+> > It *might* be a module address, though. So this might be triggered by
+> > rmmod on some module that doesn't remove all its timers...
+> >
+> > Ideas?
+> >
+> >                  Linus
+> 
 
