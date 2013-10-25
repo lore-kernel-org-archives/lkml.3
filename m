@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3JYK6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:58:52 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62070 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752765Ab3JYK6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:58:51 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during shutdown
-Date: Fri, 25 Oct 2013 13:10:51 +0200
-Message-ID: <1529148.xq0P7G6L83@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+55aFy3dFGsN_Ckaq8egmaEi_JV_qAVOjR6h3gojyBWwA-jpA@mail.gmail.com>
-References: <525BD08C.2080101@t-online.de> <3005031.0yf0g1BPEE@vostro.rjw.lan> <CA+55aFy3dFGsN_Ckaq8egmaEi_JV_qAVOjR6h3gojyBWwA-jpA@mail.gmail.com>
+	id S1752921Ab3JYLFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:05:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:37727 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab3JYLFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:05:20 -0400
+X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
+   d="scan'208";a="67327256"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v9 16/18] arm,arm64: do not always merge biovec if we are running on Xen
+Date: Fri, 25 Oct 2013 11:51:51 +0100
+Message-ID: <1382698313-13161-16-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 25, 2013 11:07:40 AM Linus Torvalds wrote:
-> On Fri, Oct 25, 2013 at 11:10 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Friday, October 25, 2013 11:51:40 AM Rafael J. Wysocki wrote:
-> >
-> >         /* don't keep reloading if cpufreq_driver exists */
-> >         if (cpufreq_get_current_driver())
-> > -               return 0;
-> > +               return -EEXIST;
-> >
-> >         if (acpi_disabled)
-> > -               return 0;
-> > +               return -ENODEV;
-> >
-> >         pr_debug("acpi_cpufreq_init\n");
-> 
-> I think:
-> 
->  - EBUSY is a better error return than EEXIST here/
+This is similar to what it is done on X86: biovecs are prevented from merging
+otherwise every dma requests would be forced to bounce on the swiotlb buffer.
 
-My concern about using -EBUSY here was that it might be interpreted as
-"try again" by things like udev (which is not what I want to happen).
-
->   - do the ENODEV case first, because claiming something is busy when
-> you couldn't have used it anyway is kind of stupid)
-
-Agreed.
-
-> but yeah, this looks like the right thing. Let's make sure there
-> aren't any annoying error messages etc printed out as a result of
-> this, though.
-
-Updated patch is appended.
-
-Rafael
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
 
+Changes in v7:
+- remove the extra autotranslate check in biomerge.c.
 ---
- drivers/cpufreq/acpi-cpufreq.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/io.h   |    8 ++++++++
+ arch/arm64/include/asm/io.h |    9 +++++++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
 
-Index: linux-pm/drivers/cpufreq/acpi-cpufreq.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/acpi-cpufreq.c
-+++ linux-pm/drivers/cpufreq/acpi-cpufreq.c
-@@ -986,12 +986,12 @@ static int __init acpi_cpufreq_init(void
- {
- 	int ret;
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index d070741..c45effc 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -24,9 +24,11 @@
+ #ifdef __KERNEL__
  
-+	if (acpi_disabled)
-+		return -ENODEV;
+ #include <linux/types.h>
++#include <linux/blk_types.h>
+ #include <asm/byteorder.h>
+ #include <asm/memory.h>
+ #include <asm-generic/pci_iomap.h>
++#include <xen/xen.h>
+ 
+ /*
+  * ISA I/O bus memory addresses are 1:1 with the physical address.
+@@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
+ #define BIOVEC_MERGEABLE(vec1, vec2)	\
+ 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
+ 
++extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++				      const struct bio_vec *vec2);
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
 +
- 	/* don't keep reloading if cpufreq_driver exists */
- 	if (cpufreq_get_current_driver())
--		return 0;
--
--	if (acpi_disabled)
--		return 0;
-+		return -EEXIST;
+ #ifdef CONFIG_MMU
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+ extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 1d12f89..c163287b 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -22,11 +22,14 @@
+ #ifdef __KERNEL__
  
- 	pr_debug("acpi_cpufreq_init\n");
+ #include <linux/types.h>
++#include <linux/blk_types.h>
  
+ #include <asm/byteorder.h>
+ #include <asm/barrier.h>
+ #include <asm/pgtable.h>
+ 
++#include <xen/xen.h>
++
+ /*
+  * Generic IO read/write.  These perform native-endian accesses.
+  */
+@@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
+  */
+ #define xlate_dev_kmem_ptr(p)	p
+ 
++extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++				      const struct bio_vec *vec2);
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
++
+ #endif	/* __KERNEL__ */
+ #endif	/* __ASM_IO_H */
+-- 
+1.7.2.5
 
