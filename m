@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3JYXKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:10:14 -0400
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:34665 "EHLO
-	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab3JYXKM (ORCPT
+	id S1752662Ab3JYXUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:20:21 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:55783 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3JYXUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:10:12 -0400
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 19:10:12 EDT
-Message-ID: <526AF842.4070006@jolla.com>
-Date: Sat, 26 Oct 2013 02:01:22 +0300
-From: Philippe De Swert <philippe.deswert@jolla.com>
-Reply-To: philippe.deswert@jolla.com
-Organization: Jolla Oy
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Anton Vorontsov <anton@enomsg.org>,
-        Philippe De Swert <philippe.deswert@jollamobile.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power:power_supply_syfs : Treat PROP_TYPE as a regular
- attribute first
-References: <1376521798-16985-1-git-send-email-philippe.deswert@jollamobile.com> <20131025221504.GA31842@teo>
-In-Reply-To: <20131025221504.GA31842@teo>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Oct 2013 19:20:20 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] dmaengine: msm_bam_dma: Add device tree binding
+To: Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Andy Gross <agross@codeaurora.org>
+In-Reply-To: <1382732643-8184-3-git-send-email-agross@codeaurora.org>
+References: <1382732643-8184-1-git-send-email-agross@codeaurora.org> <1382732643-8184-3-git-send-email-agross@codeaurora.org>
+Date: Sat, 26 Oct 2013 00:20:15 +0100
+Message-Id: <20131025232015.9082FC403B6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 25 Oct 2013 15:24:03 -0500, Andy Gross <agross@codeaurora.org> wrote:
+> Add device tree probe support for the MSM BAM DMA driver.
+> 
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  .../devicetree/bindings/dma/msm_bam_dma.txt        |   49 ++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/msm_bam_dma.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/msm_bam_dma.txt b/Documentation/devicetree/bindings/dma/msm_bam_dma.txt
+> new file mode 100644
+> index 0000000..fe3ed8f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/msm_bam_dma.txt
+> @@ -0,0 +1,49 @@
+> +MSM BAM DMA controller
+> +
+> +Required properties:
+> +- compatible: Should be "qcom,bam"
 
-On 26/10/13 01:15, Anton Vorontsov wrote:
-> On Thu, Aug 15, 2013 at 02:09:58AM +0300, Philippe De Swert wrote:
->> These days we often have USB powered devices. This means that often the
->> type is variable. Common examples are smartphones which can be charged
->> through a normal USB port on a PC/laptop, a dedicated charger, etc...
- >
-> I would guess that a lot of userland code assumes that the type is fixed.
-> We can't break this assumption. Plus I don't think we really need the
-> changing types.
+Really should be more specific than this. "qcom,bam" doesn't clarify
+what SoC this hardware is implemented on.
 
-That is a fair assumption, but that does not work anymore with 
-smartphones, GPS devices, tablets etc.. Moreover why is it the only 
-property that would be fixed? Also we have the power supply name to 
-identify it, and I expect most userland code uses that.
+Otherwise the binding looks fine.
 
->> Userspace sometimes needs to behave differently based on the type of charger
->> connected to such devices.
->
-> A system with several charger should either:
->
-> 1. Register all of them (mains, usb, etc.) as a separate power supply
-> device, and then use PROP_ONLINE to specify whether something is connected
-> to the port or not.
-> 2. Register only the charger type that is currently connected to the
-> system.
+g.
 
-I think I did not make myself very clear. Well there are actually no 
-different chargers here. It is one USB charger input, however its 
-properties are different depending on the actual connected "charger 
-device/type". It is the same charging controller however when a usb 
-cable is connected and power comes from a PC it is very different
-from when it is a dedicated USB charger.
-
-Constantly register/unregister the current "charger type" makes it very 
-difficult to monitor. Having a separate power_supply device per possible 
-connected charger type is pretty tedious. We are talking USB_DCP, 
-USB_ACA, USB_CDP, USB already, and new ones probably in the future. Not 
-to mention that at some point we would have to deal with OTG also were 
-we might actually supply power. In any case a lot harder than having a 
-changing type property.
-
-One of the main reasons to monitor this is to have the device react 
-differently depending on what gets plugged in. Pure charging when 
-charger gets connected or mass-storage gadget mode, mtp, ... when a 
-cable is connected. Or eventually switch to a totally different device 
-mode to support things like terminal mode (in cars).
-
-> This is how we've been doing things from the very start.
-
-Well a number of upstream charging drivers and non-upstreamed android 
-drivers already change the charger type  like for example the isp1704. 
-The patch I proposed just changes the inconsistency with the charger 
-type property as it is the only one that gets treated differently, to
-avoid confusion with it.
-
-But I am sure open to better ideas for handling this.
-
-Thanks,
-
-Philippe
+> +- reg: Address range for DMA registers
+> +- interrupts: single interrupt for this controller
+> +- #dma-cells: must be <3>
+> +- clocks: required clock
+> +- clock-names: name of clock
+> +
+> +Example:
+> +
+> +	dma0: dma@f9984000 = {
+> +		compatible = "qcom,bam";
+> +		reg = <0xf9984000 0x15000>;
+> +		interrupts = <0 94 0>;
+> +		clocks = <&bam_dma_ahb_cxc>;
+> +		clock-names = "bam_clk";
+> +		#dma-cells = <3>;
+> +	};
+> +
+> +Client:
+> +Required properties:
+> +- dmas: List of dma channel requests
+> +- dma-names: Names of aforementioned requested channels
+> +
+> +Clients must use the format described in the dma.txt file, using a four cell
+> +specifier for each channel.
+> +
+> +The four cells in order are:
+> +  1. A phandle pointing to the DMA controller
+> +  2. The channel number
+> +  3. The execution environment value for this channel.
+> +  4. Direction of the fixed unidirectional channel
+> +     0 - Memory to Device
+> +     1 - Device to Memory
+> +
+> +Example:
+> +	serial@f991e000 {
+> +		compatible = "qcom,msm-uart";
+> +		reg = <0xf991e000 0x1000>
+> +			<0xf9944000 0x19000>;
+> +		interrupts = <0 108 0>;
+> +		clocks = <&blsp1_uart2_apps_cxc>, <&blsp1_ahb_cxc>;
+> +		clock-names = "gsbi_uart_clk", "gsbi_pclk";
+> +
+> +		dmas = <&dma0 0 0 1>, <&dma0 1 0 0>;
+> +		dma-names = "rx", "tx";
+> +	};
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
