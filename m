@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3JYXZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:25:56 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63947 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab3JYXZz (ORCPT
+	id S1753284Ab3JYX1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:27:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36187 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab3JYX1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:25:55 -0400
-Date: Fri, 25 Oct 2013 16:25:52 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] bq2415x_charger: fix max battery regulation voltage
-Message-ID: <20131025232552.GA13859@teo>
-References: <1381932511-31719-1-git-send-email-alexandre.belloni@free-electrons.com>
- <525E9E24.3090401@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <525E9E24.3090401@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Oct 2013 19:27:12 -0400
+Date: Fri, 25 Oct 2013 19:27:10 -0400 (EDT)
+Message-Id: <20131025.192710.1258412532222424226.davem@davemloft.net>
+To: sebastian@breakpoint.cc
+Cc: andi@firstfloor.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: wan: sbni: remove assembly crc32 code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131022183625.GA4382@breakpoint.cc>
+References: <1382458346-24811-12-git-send-email-andi@firstfloor.org>
+	<20131022.135928.2040131908206663695.davem@davemloft.net>
+	<20131022183625.GA4382@breakpoint.cc>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 25 Oct 2013 16:27:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 04:09:40PM +0200, Alexandre Belloni wrote:
-> I forgot to add this is a v2 and I just added a comment.
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Tue, 22 Oct 2013 20:36:25 +0200
+
+> There is also a C function doing the same thing. Unless the asm code is
+> 110% faster we could stick to the C function.
 > 
-> On 16/10/2013 16:08, Alexandre Belloni wrote:
-> > As per the datasheets, maximum battery regulation voltage is 4440mV.
-> >
-> > The formula is (voltage - offset) / step, so the maximum value is:
-> > (4440 - 3500) / 20 = 47
-> >
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
-Applied, thanks!
-
-Anton
+Applied.
