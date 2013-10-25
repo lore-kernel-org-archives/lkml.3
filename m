@@ -1,161 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab3JYFgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:36:03 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:62964 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3JYFfy (ORCPT
+	id S1751284Ab3JYFsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:48:31 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:59328 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab3JYFsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:35:54 -0400
-X-AuditID: cbfee690-b7f3d6d000001c4a-0a-526a032954dd
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: add tracepoint for set_page_dirty
-Date: Fri, 25 Oct 2013 14:34:58 +0900
-Message-id: <1382679299-18250-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ11N5qwgg1VHOS2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyvi36CJrwS/JipnH
-	57A3MM4X7WLk5JAQMJH4POEFI4QtJnHh3nq2LkYuDiGBZYwSV0+2scAUnbu9gBUisYhR4tn7
-	l1BVzUwSt67MYe9i5OBgE9CW2LzfAKRBRIBZYsHU84wgNcwCExgl/i96DzZJWMBG4vK6v2wg
-	9SwCqhLbn4LV8wq4S3ROXMkOsUxbYtvziWC9EgL32SQutrWBJVgEBCS+TT7EAtIrISArsekA
-	M0S9pMTBFTdYJjAKLmBkWMUomlqQXFCclF5kolecmFtcmpeul5yfu4kREoITdjDeO2B9iDEZ
-	aNxEZinR5HxgCOeVxBsamxlZmJqYGhuZW5qRJqwkzqv2KClISCA9sSQ1OzW1ILUovqg0J7X4
-	ECMTB6dUA2PjK8HYOEWVrq3fz3yZ3XNcfUp6X1en6IK0jlfBf+7INHabmgebvoxZ2isczn9Z
-	rLvwV1S4++UJZ7Pu2O1cOFOwKeJRoeHCE54vPi1hWHBVIjH1jtAcLi7LkNfaHM2TyiP06uRi
-	ZBvE+J5uVhG8mHvORtJ6gk7uMpUL0f/538h8LZP6WSFer8RSnJFoqMVcVJwIAOYXCDVXAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAV1N5qwgg94VrBbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWb8W3SRteCXZMXM43PYGxjni3YxcnJICJhInLu9gBXCFpO4cG89WxcjF4eQ
-	wCJGiWfvX0I5zUwSt67MYe9i5OBgE9CW2LzfAKRBRIBZYsHU84wgNcwCExgl/i96zwKSEBaw
-	kbi87i8bSD2LgKrE9qdg9bwC7hKdE1eyQyzTltj2fCLjBEbuBYwMqxhFUwuSC4qT0nON9IoT
-	c4tL89L1kvNzNzGCA/yZ9A7GVQ0WhxgFOBiVeHgTZmQGCbEmlhVX5h5ilOBgVhLhrTkNFOJN
-	SaysSi3Kjy8qzUktPsSYDLR8IrOUaHI+MPrySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQ
-	nliSmp2aWpBaBLOFiYNTqoHRVrT/2EI/6UkHxWedbGOsXhPlO73tpiL70x6O+yaH9PWtL/eL
-	y+1WWCh5Ty5m4+XZB24oclxifR9cd8Ul7Cvn2WXMkTqx7yLy+9cz5Sf9+Z4k1L3UJE+tycvt
-	fLPEfrsPnxyqs+vSz1jaX1mee8RLdsnXby9v+HuorDnJfDleWdX0yc1bG38psRRnJBpqMRcV
-	JwIA9uAUbbQCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 25 Oct 2013 01:48:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131024192752.GG2322@redhat.com>
+References: <20131015144810.GI31215@redhat.com>
+	<CAE9FiQXVCx__SuhAdO9_CNaRncW2HB2tv3UjZrQcbsTV35QWow@mail.gmail.com>
+	<20131018123837.GB2277@redhat.com>
+	<CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
+	<20131021151643.GA20669@redhat.com>
+	<CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
+	<20131024140241.GA2322@redhat.com>
+	<CAE9FiQUu0WwMgNpog4TKch+MT2i7_DsNvqZxbyQusS4AFxdhQQ@mail.gmail.com>
+	<20131024191821.GE2322@redhat.com>
+	<CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
+	<20131024192752.GG2322@redhat.com>
+Date: Thu, 24 Oct 2013 22:48:29 -0700
+X-Google-Sender-Auth: K7DhOsR87K-eFWj-Bu7aY2jEbe0
+Message-ID: <CAE9FiQUw6REg2TXnSXtNZK8XY9vnorvi8oDbUn_5WdNZ6yiRtQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
+ first, then try below 4G, then MAXMEM
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a tracepoint for set_page_dirty.
+On Thu, Oct 24, 2013 at 12:27 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Oct 24, 2013 at 12:24:57PM -0700, Yinghai Lu wrote:
+>> On Thu, Oct 24, 2013 at 12:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Thu, Oct 24, 2013 at 12:15:25PM -0700, Yinghai Lu wrote:
+>> >
+>> > Also keeping things simple by not trying to *impose* a new crashkernel=
+>> > syntax on existing crashkernel=xM users.
+>>
+>> Existing user that have crashkernel=xM working with their old kernel
+>> and old kexec-tools, they still could keep their old command line and
+>> old kexec-tools
+>> with new updated kernel.
+>> We should not change semantics to surprise them.
+>
+> Old users will get reservation still below 896MB.
+>
+> It will go above 896MB only if memory could not be allocated below 896MB.
+>
+> In the past reservation will fail and kexec-tools will fail.
+> Now reservation will succeed but kexec-tools will fail.
+>
+> So end result a user sees is that kexec-tools fails. So I don't see how
+> we are breaking existing installations or user setups.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/checkpoint.c        |  2 ++
- fs/f2fs/data.c              |  2 ++
- fs/f2fs/node.c              |  2 ++
- include/trace/events/f2fs.h | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 50 insertions(+)
+case could be: if user add more memory and put more pcie cards, and
+second kernel will need more ram and OOM there.
+so user could just increase crashkernel=512M to crashkernel=1G.
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 5649a9d..6526f50 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -167,6 +167,8 @@ static int f2fs_set_meta_page_dirty(struct page *page)
- 	struct address_space *mapping = page->mapping;
- 	struct f2fs_sb_info *sbi = F2FS_SB(mapping->host->i_sb);
- 
-+	trace_f2fs_set_page_dirty(page, META);
-+
- 	SetPageUptodate(page);
- 	if (!PageDirty(page)) {
- 		__set_page_dirty_nobuffers(page);
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 4d4718f..be47eae 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -756,6 +756,8 @@ static int f2fs_set_data_page_dirty(struct page *page)
- 	struct address_space *mapping = page->mapping;
- 	struct inode *inode = mapping->host;
- 
-+	trace_f2fs_set_page_dirty(page, DATA);
-+
- 	SetPageUptodate(page);
- 	if (!PageDirty(page)) {
- 		__set_page_dirty_nobuffers(page);
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 7bac481..304d5ce 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1225,6 +1225,8 @@ static int f2fs_set_node_page_dirty(struct page *page)
- 	struct address_space *mapping = page->mapping;
- 	struct f2fs_sb_info *sbi = F2FS_SB(mapping->host->i_sb);
- 
-+	trace_f2fs_set_page_dirty(page, NODE);
-+
- 	SetPageUptodate(page);
- 	if (!PageDirty(page)) {
- 		__set_page_dirty_nobuffers(page);
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 52ae548..ebde3af 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -36,6 +36,11 @@
- 		{ CURSEG_COLD_NODE, 	"Cold NODE" },			\
- 		{ NO_CHECK_TYPE, 	"No TYPE" })
- 
-+#define show_file_type(type)						\
-+	__print_symbolic(type,						\
-+		{ 0,		"FILE" },				\
-+		{ 1,		"DIR" })
-+
- #define show_gc_type(type)						\
- 	__print_symbolic(type,						\
- 		{ FG_GC,	"Foreground GC" },			\
-@@ -623,6 +628,45 @@ TRACE_EVENT(f2fs_do_submit_bio,
- 		__entry->size)
- );
- 
-+DECLARE_EVENT_CLASS(f2fs__page,
-+
-+	TP_PROTO(struct page *page, int type),
-+
-+	TP_ARGS(page, type),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(int, type)
-+		__field(int, dir)
-+		__field(pgoff_t, index)
-+		__field(int, dirty)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= page->mapping->host->i_sb->s_dev;
-+		__entry->ino	= page->mapping->host->i_ino;
-+		__entry->type	= type;
-+		__entry->dir	= S_ISDIR(page->mapping->host->i_mode);
-+		__entry->index	= page->index;
-+		__entry->dirty	= PageDirty(page);
-+	),
-+
-+	TP_printk("dev = (%d,%d), ino = %lu, %s, %s, index = %lu, dirty = %d",
-+		show_dev_ino(__entry),
-+		show_block_type(__entry->type),
-+		show_file_type(__entry->dir),
-+		(unsigned long)__entry->index,
-+		__entry->dirty)
-+);
-+
-+DEFINE_EVENT(f2fs__page, f2fs_set_page_dirty,
-+
-+	TP_PROTO(struct page *page, int type),
-+
-+	TP_ARGS(page, type)
-+);
-+
- TRACE_EVENT(f2fs_submit_write_page,
- 
- 	TP_PROTO(struct page *page, block_t blk_addr, int type),
--- 
-1.8.4.474.g128a96c
+without Cong's patch, kernel will fail to reserve, and user would dig
+to change it
+to crashkernel=1G,high, and update kexec-tools.
 
+with Cong's patch, kernel will reserve other range like between 896
+and 4G, old kexec-tools either
+fail to load second kernel or hang in purgatory or early stage of
+second kernel, or other unknown behavior.
+
+I would think first path is much clear and predicted.
+
+If my memory is right, HPA did not like idea that we try below 896M,
+and then under 4G and then above 4G.
+and want us to have ",high" solution. Not sure if he would change his mind.
+Also you will need and #ifdef CONFIG_X86_64 for 896M/4G searching code
+so it will not confuse the
+32bit arch.
+
+Thanks
+
+Yinghai
