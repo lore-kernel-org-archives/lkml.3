@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3JYQov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 12:44:51 -0400
-Received: from nm49.bullet.mail.ne1.yahoo.com ([98.138.120.56]:22921 "EHLO
-	nm49.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752139Ab3JYQou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 12:44:50 -0400
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 442846.85120.bm@omp1023.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=14vnmZvFgjuf4+4URrqo1q/nt/8zJ+bJbtf7D9FnJndt52NOSBXK480YB1M+zK4BVeGb3JRa/cE7YO4m+GhkLC0ETKhveqYrULTPZw7nnaFUG+B+LsYoQ0Xp8bwB0NJ6v/ekYyNOSogrk/fEK/FJ5RzxafrSGwfB3VM5b0TY4DU=;
-X-YMail-OSG: pGD2vRoVM1ldeULPc5yUlbzkoPhkSb9FTBC1FkfWgVEkem5
- Z0EA9NIGZ_0pf8s0CLpl86BwcncQUme0AOvmU_4ydc0vRMG.94w--
-X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQsDQoNCkkgYW0gd29ya2luZyB3aXRoIG9uZSBvZiB0aGUgcHJpbWUgYmFuayBoZXJlIGluIEJ1cmtpbmEgRmFzbywgY2FuIHlvdSBoZWxwIG1lIHJlcGF0cmlhdGUNCnRoZSBzdW4gb2YgMTQuM21pbGxpb24gZG9sbGFycyB0byB5b3VyIG92ZXJzZWEgYWNjb3VudCBiYXNlZCBvbiBwZXJjZW50YWdlLg0KDQooMSkgQ2FuIHlvdSBoYW5kbGUgdGhpcyBwcm9qZWN0Pw0KKDIpIENhbiBJIGdpdmUgeW91IHRoaXMgdHJ1c3Q_DQooMykgV2hhdCB3aWxsIGJlIHlvdXIgY29tbWlzc2lvbj8NCkkgZXgBMAEBAQE-
-X-RocketYMMF: mamuda1975diallo
-X-Mailer: YahooMailClassic/357 YahooMailWebService/0.8.160.587
-Message-ID: <1382719475.93612.YahooMailBasic@web160302.mail.bf1.yahoo.com>
-Date: Fri, 25 Oct 2013 09:44:35 -0700 (PDT)
-From: mamuda diallo <mamudadiallo19665@gmail.com>
-Reply-To: mamuda_diallo2010@voila.fr
-Subject: Dear Friend,
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753520Ab3JYQsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 12:48:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788Ab3JYQsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 12:48:10 -0400
+Message-ID: <1382719652.2445.1.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
+ default
+From: Adam Williamson <awilliam@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tianyu.lan@intel.com, Matthew Garrett <mjg@redhat.com>, hpa@zytor.com,
+        x86@kernel.org, holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
+        rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 25 Oct 2013 09:47:32 -0700
+In-Reply-To: <20131025105352.GA5419@gmail.com>
+References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+	 <20131025105352.GA5419@gmail.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+On Fri, 2013-10-25 at 12:53 +0200, Ingo Molnar wrote:
+> * tianyu.lan@intel.com <tianyu.lan@intel.com> wrote:
+> 
+> > From: Lan Tianyu <tianyu.lan@intel.com>
+> > 
+> > Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
+> > This patch is to add them machines to quirk table and set pci reboot
+> > default.
+> > 
+> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
+> > Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
+> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> > ---
+> >  arch/x86/kernel/reboot.c |    8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> > 
+> > diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> > index 7e920bf..083ade7 100644
+> > --- a/arch/x86/kernel/reboot.c
+> > +++ b/arch/x86/kernel/reboot.c
+> > @@ -382,6 +382,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+> >  			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+> >  		},
+> >  	},
+> > +	{	/* Handle problems with rebooting on Sony Vaio Z1 series*/
+> > +		.callback = set_pci_reboot,
+> > +		.ident = "Sony Vaio Z1",
+> > +		.matches = {
+> > +		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+> > +		DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ1"),
+> > +		},
+> > +	},
+> 
+> This is becoming somewhat endemic - do we know _why_ the ACPI reboot 
+> method does not work?
 
-I am working with one of the prime bank here in Burkina Faso, can you help me repatriate
-the sun of 14.3million dollars to your oversea account based on percentage.
+I don't, but one comment I could add is that reboot _used_ to work okay
+on the Z1. And I _think_ it's worked OK since the April 2011 commit you
+mention (so the introduction of that didn't break it), but I can't
+absolutely swear to it.
 
-(1) Can you handle this project?
-(2) Can I give you this trust?
-(3) What will be your commission?
-I expect your urgent response if you can handle this project.
-Best Regard's,
+(And yes, of course, reboot from stock-installed, fully-updated Windows
+- IIRC, Win7 - on the same system works OK.)
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-Please kindly reply to my alternative email address below(mamuda_diallo2010@voila.fr)
-Mr.mamuda diallo.
