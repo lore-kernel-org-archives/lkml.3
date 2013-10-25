@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3JYLHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:07:40 -0400
-Received: from mo4.mail-out.ovh.net ([178.32.228.4]:38129 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab3JYLHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:07:38 -0400
-Date: Fri, 25 Oct 2013 13:09:28 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 2/9] backlight: atmel-pwm-bl: fix gpio polarity in remove
-Message-ID: <20131025110928.GR18477@ns203013.ovh.net>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
- <1382522143-32072-3-git-send-email-jhovold@gmail.com>
+	id S1753987Ab3JYLJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:09:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:59044 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab3JYLJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:09:33 -0400
+X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
+   d="scan'208";a="67329763"
+Date: Fri, 25 Oct 2013 12:08:26 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
+        <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
+In-Reply-To: <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382522143-32072-3-git-send-email-jhovold@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 5833005943052086094
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:55 Wed 23 Oct     , Johan Hovold wrote:
-> Make sure to honour gpio polarity also at remove so that the backlight
-> is actually disabled on boards with active-low enable pin.
+Russell,
+this is the only patch that needs an ack at the moment.
+As you commented on it before and I have already addressed your comments
+few versions ago, unless you have any complaints I am going to add it to
+linux-next and I am thinking of merging it during the next merge window.
+
+On Fri, 25 Oct 2013, Stefano Stabellini wrote:
+> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> provided by lib/iommu_helper.c.
 > 
-> Cc: stable@vger.kernel.org
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> CC: will.deacon@arm.com
+> CC: linux@arm.linux.org.uk
+> 
+> 
+> Changes in v8:
+> - use __phys_to_pfn and __pfn_to_phys.
+> 
+> Changes in v7:
+> - dma_mark_clean: empty implementation;
+> - in dma_capable use coherent_dma_mask if dma_mask hasn't been
+>   allocated.
+> 
+> Changes in v6:
+> - check for dev->dma_mask being NULL in dma_capable.
+> 
+> Changes in v5:
+> - implement dma_mark_clean using dmac_flush_range.
+> 
+> Changes in v3:
+> - dma_capable: do not treat dma_mask as a limit;
+> - remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
 > ---
->  drivers/video/backlight/atmel-pwm-bl.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+>  arch/arm/Kconfig                   |    6 +++++
+>  arch/arm/include/asm/dma-mapping.h |   37 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-> index 8aac273..3cb0094 100644
-> --- a/drivers/video/backlight/atmel-pwm-bl.c
-> +++ b/drivers/video/backlight/atmel-pwm-bl.c
-> @@ -205,8 +205,10 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
->  {
->  	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6..b08374f 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
+>  	  neutralized via a kernel panic.
+>  	  This feature requires gcc version 4.2 or above.
 >  
-> -	if (pwmbl->gpio_on != -1)
-> -		gpio_set_value(pwmbl->gpio_on, 0);
-> +	if (pwmbl->gpio_on != -1) {
-here we need to use gpio_is_valid
-> +		gpio_set_value(pwmbl->gpio_on,
-> +					0 ^ pwmbl->pdata->on_active_low);
-> +	}
->  	pwm_channel_disable(&pwmbl->pwmc);
->  	pwm_channel_free(&pwmbl->pwmc);
+> +config SWIOTLB
+> +	def_bool y
+> +
+> +config IOMMU_HELPER
+> +	def_bool SWIOTLB
+> +
+>  config XEN_DOM0
+>  	def_bool y
+>  	depends on XEN
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 5b579b9..01b5a3d 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -10,6 +10,7 @@
 >  
+>  #include <asm-generic/dma-coherent.h>
+>  #include <asm/memory.h>
+> +#include <asm/cacheflush.h>
+>  
+>  #define DMA_ERROR_CODE	(~0)
+>  extern struct dma_map_ops arm_dma_ops;
+> @@ -86,6 +87,42 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+>  }
+>  #endif
+>  
+> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	unsigned int offset = paddr & ~PAGE_MASK;
+> +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> +}
+> +
+> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> +{
+> +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> +}
+> +
+> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> +{
+> +	u64 limit, mask;
+> +	
+> +	if (dev->dma_mask)
+> +		mask = *dev->dma_mask;
+> +	else 
+> +		mask = dev->coherent_dma_mask;
+> +
+> +	if (mask == 0)
+> +		return 0;
+> +
+> +	limit = (mask + 1) & ~mask;
+> +	if (limit && size > limit)
+> +		return 0;
+> +
+> +	if ((addr | (addr + size - 1)) & ~mask)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> +static inline void dma_mark_clean(void *addr, size_t size) { }
+> +
+>  /*
+>   * DMA errors are defined by all-bits-set in the DMA address.
+>   */
 > -- 
-> 1.8.4
+> 1.7.2.5
 > 
