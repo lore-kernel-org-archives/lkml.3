@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3JYLfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:35:38 -0400
-Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:34265 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752821Ab3JYLfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:35:36 -0400
-Date: Fri, 25 Oct 2013 13:12:18 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] backlight: atmel-pwm-bl: clean up get_intensity
-Message-ID: <20131025111218.GT18477@ns203013.ovh.net>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
- <1382522143-32072-6-git-send-email-jhovold@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382522143-32072-6-git-send-email-jhovold@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 5880856689295600462
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1752573Ab3JYLjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab3JYLjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:39:16 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf hists: Add color overhead for stdio output buffer
+Date: Fri, 25 Oct 2013 13:24:53 +0200
+Message-Id: <1382700293-1803-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:55 Wed 23 Oct     , Johan Hovold wrote:
-> Clean up get_intensity to increase readability.
-> 
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Following commit tightened up the buffer size for output
+to strict width of used format columns:
+  99cf666 perf hists: Fix formatting of long symbol names
 
-this ok
-> ---
->  drivers/video/backlight/atmel-pwm-bl.c | 13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-> index 52a8134..504061c 100644
-> --- a/drivers/video/backlight/atmel-pwm-bl.c
-> +++ b/drivers/video/backlight/atmel-pwm-bl.c
-> @@ -70,15 +70,14 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
->  static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
->  {
->  	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
-> +	u32 cdty;
->  	u32 intensity;
->  
-> -	if (pwmbl->pdata->pwm_active_low) {
-> -		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
-> -			pwmbl->pdata->pwm_duty_min;
-> -	} else {
-> -		intensity = pwmbl->pdata->pwm_duty_max -
-> -			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
-> -	}
-> +	cdty = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
-> +	if (pwmbl->pdata->pwm_active_low)
-> +		intensity = cdty - pwmbl->pdata->pwm_duty_min;
-> +	else
-> +		intensity = pwmbl->pdata->pwm_duty_max - cdty;
->  
->  	return (u16)intensity;
->  }
-> -- 
-> 1.8.4
-> 
+This works fine until you hit color overhead output which
+places extra bytes into output buffer. We need to account
+for color overhead in the output buffer. Adding maximum
+color byte size to the output buffer size.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/stdio/hist.c |  9 ++++-----
+ tools/perf/util/hist.h     | 13 +++++++++++++
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 194e2f4..6c15268 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -315,8 +315,7 @@ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+ }
+ 
+ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+-				       struct hist_entry *he,
+-				       bool color)
++				       struct hist_entry *he)
+ {
+ 	const char *sep = symbol_conf.field_sep;
+ 	struct perf_hpp_fmt *fmt;
+@@ -338,7 +337,7 @@ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+ 		} else
+ 			first = false;
+ 
+-		if (color && fmt->color)
++		if (perf_hpp__use_color() && fmt->color)
+ 			ret = fmt->color(fmt, hpp, he);
+ 		else
+ 			ret = fmt->entry(fmt, hpp, he);
+@@ -358,12 +357,11 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 		.buf		= bf,
+ 		.size		= size,
+ 	};
+-	bool color = !symbol_conf.field_sep;
+ 
+ 	if (size == 0 || size > bfsz)
+ 		size = hpp.size = bfsz;
+ 
+-	ret = hist_entry__period_snprintf(&hpp, he, color);
++	ret = hist_entry__period_snprintf(&hpp, he);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+ 
+ 	ret = fprintf(fp, "%s\n", bf);
+@@ -482,6 +480,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 
+ print_entries:
+ 	linesz = hists__sort_list_width(hists) + 3 + 1;
++	linesz += perf_hpp__color_overhead();
+ 	line = malloc(linesz);
+ 	if (line == NULL) {
+ 		ret = -1;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 0c7ce8b..9d2d022 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -5,6 +5,7 @@
+ #include <pthread.h>
+ #include "callchain.h"
+ #include "header.h"
++#include "color.h"
+ #include "ui/progress.h"
+ 
+ extern struct callchain_param callchain_param;
+@@ -180,6 +181,18 @@ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
+ 
++static inline size_t perf_hpp__use_color(void)
++{
++	return !symbol_conf.field_sep;
++}
++
++static inline size_t perf_hpp__color_overhead(void)
++{
++	return perf_hpp__use_color() ?
++	       (COLOR_MAXLEN + sizeof(PERF_COLOR_RESET)) * PERF_HPP__MAX_INDEX
++	       : 0;
++}
++
+ struct perf_evlist;
+ 
+ struct hist_browser_timer {
+-- 
+1.7.11.7
+
