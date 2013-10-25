@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3JYKxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:53:55 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:28424 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3JYKxI (ORCPT
+	id S1753973Ab3JYKx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:53:59 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:64321 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3JYKx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:53:08 -0400
-X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="64684016"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: [PATCH v9 08/18] arm/xen: get_dma_ops: return xen_dma_ops if we are running as xen_initial_domain
-Date: Fri, 25 Oct 2013 11:51:43 +0100
-Message-ID: <1382698313-13161-8-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+	Fri, 25 Oct 2013 06:53:56 -0400
+Date: Fri, 25 Oct 2013 12:53:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: tianyu.lan@intel.com, Matthew Garrett <mjg@redhat.com>
+Cc: hpa@zytor.com, x86@kernel.org, holt@sgi.com, davej@fedoraproject.org,
+        lenb@kernel.org, rjw@rjwysocki.net, awilliam@redhat.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
+ default
+Message-ID: <20131025105352.GA5419@gmail.com>
+References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't simply override arm_dma_ops with xen_dma_ops because devices
-are allowed to have their own dma_ops and they take precedence over
-arm_dma_ops. When running on Xen as initial domain, we always want
-xen_dma_ops to be the one in use.
 
-We introduce __generic_dma_ops to allow xen_dma_ops functions to call
-back to the native implementation.
+* tianyu.lan@intel.com <tianyu.lan@intel.com> wrote:
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Suggested-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-CC: will.deacon@arm.com
-CC: linux@arm.linux.org.uk
+> From: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
+> This patch is to add them machines to quirk table and set pci reboot
+> default.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
+> Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  arch/x86/kernel/reboot.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> index 7e920bf..083ade7 100644
+> --- a/arch/x86/kernel/reboot.c
+> +++ b/arch/x86/kernel/reboot.c
+> @@ -382,6 +382,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+>  			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
+>  		},
+>  	},
+> +	{	/* Handle problems with rebooting on Sony Vaio Z1 series*/
+> +		.callback = set_pci_reboot,
+> +		.ident = "Sony Vaio Z1",
+> +		.matches = {
+> +		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+> +		DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ1"),
+> +		},
+> +	},
 
-Changes in v7:
-- return xen_dma_ops only if we are the initial domain;
-- rename __get_dma_ops to __generic_dma_ops.
----
- arch/arm/include/asm/dma-mapping.h |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+This is becoming somewhat endemic - do we know _why_ the ACPI reboot 
+method does not work?
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 01b5a3d..f5945d4 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -12,17 +12,28 @@
- #include <asm/memory.h>
- #include <asm/cacheflush.h>
- 
-+#include <xen/xen.h>
-+#include <asm/xen/hypervisor.h>
-+
- #define DMA_ERROR_CODE	(~0)
- extern struct dma_map_ops arm_dma_ops;
- extern struct dma_map_ops arm_coherent_dma_ops;
- 
--static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
- {
- 	if (dev && dev->archdata.dma_ops)
- 		return dev->archdata.dma_ops;
- 	return &arm_dma_ops;
- }
- 
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	if (xen_initial_domain())
-+		return xen_dma_ops;
-+	else
-+		return __generic_dma_ops(dev);
-+}
-+
- static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
- {
- 	BUG_ON(!dev);
--- 
-1.7.2.5
+We reworked the x86 reboot sequence 2.5 years agom, in:
 
+ commit 660e34cebf0a11d54f2d5dd8838607452355f321
+ Author: Matthew Garrett <mjg@redhat.com>
+ Date:   Mon Apr 4 13:55:05 2011 -0400
+
+    x86: Reorder reboot method preferences
+    
+    We have a never ending stream of 'reboot quirks' for new boxes
+    that will not reboot properly under Linux (they will hang on
+    reboot).
+    
+    The reason is widespread 'Windows compatible' assumption of modern
+    x86 hardware, which expects the following reboot sequence:
+    
+     - hitting the ACPI reboot vector (if available)
+     - trying the keyboard controller
+     - hitting the ACPI reboot vector again
+     - then giving the keyboard controller one last go
+
+    This sequence expectation gets more and more embedded in modern
+    hardware, which often lacks a keyboard controller and may even
+    lock up if the legacy io ports are hit - and which hardware is
+    often not tested with Linux during development.
+    
+    The end result is that reboot works under Windows-alike OSs but not
+    under Linux.
+    
+    Rework our reboot process to meet this hardware externality a little
+    better and match this assumption of newer x86 hardware.
+    
+    In addition to the ACPI,kbd,ACPI,kbd sequence we'll still fall
+    through to attempting a legacy triple fault if nothing else
+    works - and keep trying that and the kbd reset.
+
+    [...]
+
+Do we know why reboot apparently works quickly enough on Windows on 
+this laptop, but not under Linux? Does Windows use the ACPI reboot 
+method? If yes, does it use a different pattern?
+
+Is it all perhaps virtualization or IRQ routing related?
+
+I.e. we really need a real analysis here, not just a quirk!
+
+Thanks,
+
+	Ingo
