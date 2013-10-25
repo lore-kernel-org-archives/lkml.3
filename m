@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3JYQsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 12:48:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13698 "EHLO mx1.redhat.com"
+	id S1754221Ab3JYQtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 12:49:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6983 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab3JYQsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 12:48:10 -0400
-Message-ID: <1382719652.2445.1.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
- default
-From: Adam Williamson <awilliam@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: tianyu.lan@intel.com, Matthew Garrett <mjg@redhat.com>, hpa@zytor.com,
-        x86@kernel.org, holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 25 Oct 2013 09:47:32 -0700
-In-Reply-To: <20131025105352.GA5419@gmail.com>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
-	 <20131025105352.GA5419@gmail.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752610Ab3JYQtl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 12:49:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="312746083"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Anton Vorontsov" <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: RE: [PATCH 0/7] power_supply: Introduce Power Supply Charging
+ Framework
+Thread-Topic: [PATCH 0/7] power_supply: Introduce Power Supply Charging
+ Framework
+Thread-Index: AQHOuEUek7OFtQpcKUS59NhXm/gFvpoF049A
+Date: Fri, 25 Oct 2013 16:49:28 +0000
+Message-ID: <20ADAB092842284E95860F279283C5640AA96A13@BGSMSX104.gar.corp.intel.com>
+References: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
+In-Reply-To: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-25 at 12:53 +0200, Ingo Molnar wrote:
-> * tianyu.lan@intel.com <tianyu.lan@intel.com> wrote:
-> 
-> > From: Lan Tianyu <tianyu.lan@intel.com>
-> > 
-> > Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
-> > This patch is to add them machines to quirk table and set pci reboot
-> > default.
-> > 
-> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
-> > Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
-> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> > ---
-> >  arch/x86/kernel/reboot.c |    8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> > 
-> > diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-> > index 7e920bf..083ade7 100644
-> > --- a/arch/x86/kernel/reboot.c
-> > +++ b/arch/x86/kernel/reboot.c
-> > @@ -382,6 +382,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
-> >  			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-> >  		},
-> >  	},
-> > +	{	/* Handle problems with rebooting on Sony Vaio Z1 series*/
-> > +		.callback = set_pci_reboot,
-> > +		.ident = "Sony Vaio Z1",
-> > +		.matches = {
-> > +		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-> > +		DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ1"),
-> > +		},
-> > +	},
-> 
-> This is becoming somewhat endemic - do we know _why_ the ACPI reboot 
-> method does not work?
+Anton,
 
-I don't, but one comment I could add is that reboot _used_ to work okay
-on the Z1. And I _think_ it's worked OK since the April 2011 commit you
-mention (so the introduction of that didn't break it), but I can't
-absolutely swear to it.
+Could you please review these patches?
 
-(And yes, of course, reboot from stock-installed, fully-updated Windows
-- IIRC, Win7 - on the same system works OK.)
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
+-Jenny
+
+> -----Original Message-----
+> From: Tc, Jenny
+> Sent: Monday, September 23, 2013 11:34 PM
+> To: linux-kernel@vger.kernel.org; Anton Vorontsov; Anton Vorontsov
+> Cc: Tc, Jenny
+> Subject: [PATCH 0/7] power_supply: Introduce Power Supply Charging Framework
+> 
+> The Power Supply charging framework connects multiple subsystems to do charging in a
+> generic way. The framework makes use of different new features - Battery Identification
+> framework, pluggable charging algorithms, charger cable arbitrations. PSE compliant
+> charging algorithm also enabled as part of this patch set.
+> 
+> With this framework the charging logic can be kept outside the charger driver.The charger
+> driver just need to expose th get_property and set_property functions to get and set a
+> specific set of power supply properties. The driver can convert these values to the
+> hardware configurations to setup charging.
+> 
+> 
+> Jenny TC (7):
+>   power_supply: Add charger control properties
+>   power_supply : add charger cable properties
+>   power_supply: add throttle state
+>   power_supply: Add power_supply notifier
+>   power_supply : Introduce battery identification framework
+>   power_supply: Introduce Power Supply charging framework
+>   power_supply: Introduce PSE compliant algorithm
+> 
+>  Documentation/power/power_supply_class.txt |  202 ++++++
+>  drivers/power/Kconfig                      |   30 +
+>  drivers/power/Makefile                     |    3 +
+>  drivers/power/battery_id.c                 |   87 +++
+>  drivers/power/charging_algo_pse.c          |  202 ++++++
+>  drivers/power/power_supply.h               |   21 +
+>  drivers/power/power_supply_charger.c       | 1011 ++++++++++++++++++++++++++++
+>  drivers/power/power_supply_charger.h       |  130 ++++
+>  drivers/power/power_supply_core.c          |   38 ++
+>  drivers/power/power_supply_sysfs.c         |    8 +
+>  include/linux/power/battery_id.h           |  100 +++
+>  include/linux/power_supply.h               |  335 +++++++++
+>  12 files changed, 2167 insertions(+)
+>  create mode 100644 drivers/power/battery_id.c  create mode 100644
+> drivers/power/charging_algo_pse.c  create mode 100644
+> drivers/power/power_supply_charger.c
+>  create mode 100644 drivers/power/power_supply_charger.h
+>  create mode 100644 include/linux/power/battery_id.h
+> 
+> --
+> 1.7.9.5
 
