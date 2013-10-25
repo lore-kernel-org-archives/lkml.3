@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab3JYJ7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:59:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab3JYJ7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:59:14 -0400
-Date: Fri, 25 Oct 2013 12:01:04 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Mark Lord <kernel@start.ca>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*()
- family helpers
-Message-ID: <20131025100103.GA317@dhcp-26-207.brq.redhat.com>
-References: <cover.1382103786.git.agordeev@redhat.com>
- <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com>
- <20131024105158.GB13159@mtj.dyndns.org>
- <AE90C24D6B3A694183C094C60CF0A2F6026B73AA@saturn3.aculab.com>
- <20131024114133.GA26610@dhcp-26-207.brq.redhat.com>
- <5269D5D1.60103@start.ca>
- <AE90C24D6B3A694183C094C60CF0A2F6026B73B0@saturn3.aculab.com>
+	id S1752891Ab3JYKAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:00:36 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:41736 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3JYKAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 06:00:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B73B0@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3005031.0yf0g1BPEE@vostro.rjw.lan>
+References: <525BD08C.2080101@t-online.de>
+	<2582195.phiuskXt0x@vostro.rjw.lan>
+	<1483174.NsuFf8aJk6@vostro.rjw.lan>
+	<3005031.0yf0g1BPEE@vostro.rjw.lan>
+Date: Fri, 25 Oct 2013 15:30:33 +0530
+Message-ID: <CAKohpokrmKV02PaDRUT7pxL=S1E4k_5QtDGBJd=QsrqcDS1+fg@mail.gmail.com>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 10:10:02AM +0100, David Laight wrote:
-> What this doesn't resolve is a driver requesting a lot of interrupts
-> early on and leaving none for later drivers.
+On 25 October 2013 15:40, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> And in my opinion acpi_cpufreq_init() should just return an error code if it
+> can't register the driver, like in the (untested) patch below.
+>
+> Rafael
+>
+>
+> ---
+>  drivers/cpufreq/acpi-cpufreq.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux-pm/drivers/cpufreq/acpi-cpufreq.c
+> ===================================================================
+> --- linux-pm.orig/drivers/cpufreq/acpi-cpufreq.c
+> +++ linux-pm/drivers/cpufreq/acpi-cpufreq.c
+> @@ -988,10 +988,10 @@ static int __init acpi_cpufreq_init(void
+>
+>         /* don't keep reloading if cpufreq_driver exists */
+>         if (cpufreq_get_current_driver())
+> -               return 0;
+> +               return -EEXIST;
+>
+>         if (acpi_disabled)
+> -               return 0;
+> +               return -ENODEV;
+>
+>         pr_debug("acpi_cpufreq_init\n");
 
-If this problem really exists anywhere besides pSeries?
+Much better.. And probably the first return has caused the bug
+Linus faced..
 
-I can imagine x86 hitting lack of vectors in interrupt table when
-number of CPUs exceeds hundreds, but do we have this problem now?
-
-> Really the system needs to allocate the minimum number to all
-> drivers before giving out any extra ones - I've NFI how this
-> would be arranged!
-
-Do not know. The pSeries quota approach seems more reasonable to me.
-
-> 	David
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
