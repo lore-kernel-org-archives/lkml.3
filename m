@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3JYKUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:20:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33349 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3JYKUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:20:40 -0400
-Date: Fri, 25 Oct 2013 19:20:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: akpm@linux-foundation.org, sjennings@variantweb.net, bob.liu@oracle.com,
-        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/2] mm/zswap: refoctor the get/put routines
-Message-ID: <20131025102032.GE6612@gmail.com>
-References: <000101ced09e$fed90a10$fc8b1e30$%yang@samsung.com>
+	id S1753224Ab3JYKVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:21:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:27308 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753169Ab3JYKVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 06:21:01 -0400
+X-IronPort-AV: E=Sophos;i="4.93,569,1378828800"; 
+   d="scan'208";a="8859481"
+Message-ID: <526A44AA.8050804@cn.fujitsu.com>
+Date: Fri, 25 Oct 2013 18:15:06 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000101ced09e$fed90a10$fc8b1e30$%yang@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiaxing Wang <hello.wjx@gmail.com>
+Subject: [PATCH] seq_file: always update file->f_pos in seq_lseek()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/25 18:18:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/25 18:18:25,
+	Serialize complete at 2013/10/25 18:18:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 05:53:32PM +0800, Weijie Yang wrote:
-> The refcount routine was not fit the kernel get/put semantic exactly,
-> There were too many judgement statements on refcount and it could be minus.
-> 
-> This patch does the following:
-> 
-> - move refcount judgement to zswap_entry_put() to hide resource free function.
-> 
-> - add a new function zswap_entry_find_get(), so that callers can use easily
-> in the following pattern:
-> 
->    zswap_entry_find_get
->    .../* do something */
->    zswap_entry_put
-> 
-> - to eliminate compile error, move some functions declaration
-> 
-> This patch is based on Minchan Kim <minchan@kernel.org> 's idea and suggestion.
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> Cc: Seth Jennings <sjennings@variantweb.net>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Bob Liu <bob.liu@oracle.com>
+This issue was first pointed out by Jiaxing Wang several months ago, but no
+further comments:
+https://lkml.org/lkml/2013/6/29/41
 
+As we know pread() does not change f_pos, so after pread(), file->f_pos
+and m->read_pos become different. And seq_lseek() does not update file->f_pos
+if offset equals to m->read_pos, so after pread() and seq_lseek()(lseek to
+m->read_pos), then a subsequent read may read from a wrong position, the
+following program produces the problem:
 
-I remember Bob had a idea to remove a look up and I think it's doable.
-Anyway, I don't mind you send it with fix or not.
+    char str1[32] = { 0 };
+    char str2[32] = { 0 };
+    int poffset = 10;
+    int count = 20;
 
-Thanks for handling this, Weijie!
+    /*open any seq file*/
+    int fd = open("/proc/modules", O_RDONLY);
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+    pread(fd, str1, count, poffset);
+    printf("pread:%s\n", str1);
 
+    /*seek to where m->read_pos is*/
+    lseek(fd, poffset+count, SEEK_SET);
+
+    /*supposed to read from poffset+count, but this read from position 0*/
+    read(fd, str2, count);
+    printf("read:%s\n", str2);
+
+out put:
+pread:
+ ck_netbios_ns 12665
+read:
+ nf_conntrack_netbios
+
+/proc/modules:
+nf_conntrack_netbios_ns 12665 0 - Live 0xffffffffa038b000
+nf_conntrack_broadcast 12589 1 nf_conntrack_netbios_ns, Live 0xffffffffa0386000
+
+So we always update file->f_pos to offset in seq_lseek() to fix this issue.
+
+Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/seq_file.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 3135c25..a290157 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -328,6 +328,8 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
+ 				m->read_pos = offset;
+ 				retval = file->f_pos = offset;
+ 			}
++		} else {
++			file->f_pos = offset;
+ 		}
+ 	}
+ 	file->f_version = m->version;
 -- 
-Kind regards,
-Minchan Kim
+1.7.7
+
