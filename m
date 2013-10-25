@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3JYPlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:41:44 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36078 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3JYPlm convert rfc822-to-8bit (ORCPT
+	id S1753693Ab3JYPmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:42:10 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:51871 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3JYPmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:41:42 -0400
-Date: Fri, 25 Oct 2013 08:41:34 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/3] vxlan: silence one build warning
-Message-ID: <20131025084134.6cfa153a@samsung-9>
-In-Reply-To: <1382687360-27794-1-git-send-email-zwu.kernel@gmail.com>
-References: <1382687360-27794-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Oct 2013 11:42:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381814135-16252-1-git-send-email-ch.naveen@samsung.com>
+References: <1381479821-17276-1-git-send-email-ch.naveen@samsung.com>
+	<1381814135-16252-1-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 25 Oct 2013 08:42:05 -0700
+X-Google-Sender-Auth: ueQkGjXtzJXRhvl-zkWGf9q_KR0
+Message-ID: <CAD=FV=XgpivoeAPfh+_G_bmbsdmADK73C9wdMALTr7+wt-AR=g@mail.gmail.com>
+Subject: Re: [PATCH v4] iio: exynos_adc: use wait_for_completion_timeout
+ instead of interruptible
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Grundler <grundler@chromium.org>
+Cc: linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Oct 2013 15:49:18 +0800
-Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+Naveen,
 
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> drivers/net/vxlan.c: In function ‘vxlan_sock_add’:
-> drivers/net/vxlan.c:2298:11: warning: ‘sock’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-> drivers/net/vxlan.c:2275:17: note: ‘sock’ was declared here
->   LD      drivers/net/built-in.o
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, Oct 14, 2013 at 10:15 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> This patch does the following
+> 1. The irq routine is so simple (just one register read) shouldn't be long
+>    Hence, reduce the timeout to 100milli secs,
+> 2. With 100ms of wait time, interruptible is very much unnecessary.
+>    Hence, use wait_for_completion_timeout instead of
+>    wait_for_completion_interruptible_timeout
+> 3. Reset software if a timeout happens.
+> 4. Add INIT_COMPLETION before the wait_for_completion_timeout in raw_read()
+>
+> Note: submitted for review at https://patchwork.kernel.org/patch/2279591/
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Cc: Doug Anderson <dianders@chromium.org>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
 > ---
->  drivers/net/vxlan.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-> index 2ef5b62..e15f1af 100644
-> --- a/drivers/net/vxlan.c
-> +++ b/drivers/net/vxlan.c
-> @@ -2272,7 +2272,7 @@ static struct vxlan_sock *vxlan_socket_create(struct net *net, __be16 port,
->  {
->  	struct vxlan_net *vn = net_generic(net, vxlan_net_id);
->  	struct vxlan_sock *vs;
-> -	struct socket *sock;
-> +	struct socket *sock = NULL;
->  	struct sock *sk;
->  	int rc = 0;
->  	unsigned int h;
+> Changes since v1:
+> As per discussion at
+> http://marc.info/?l=linux-kernel&m=136517637228869&w=3
+>
+> Changes since v2:
+> None.
+> Rebased and reposting.
+>
+> Changes since v3:
+> 1. commit message change and
+> 2. removed an unncessary assignment
+>
+>  drivers/iio/adc/exynos_adc.c |   69 +++++++++++++++++++++++-------------------
+>  1 file changed, 38 insertions(+), 31 deletions(-)
 
-This only happens with certain versions of Gcc which have buggy dependency
-analysis. It doesn't happen with Gcc 4.7, think it only shows up in 4.4.
-I would rather not fix the warning this way since it risks masking later bugs if this code ever changes.
+Please spin to match the changes that Grant requested on our gerrit at
+<https://chromium-review.googlesource.com/172724>.  Thanks!  :)
+
+-Doug
