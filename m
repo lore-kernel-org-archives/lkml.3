@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab3JYHZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 03:25:17 -0400
-Received: from smtprelay0046.b.hostedemail.com ([64.98.42.46]:41950 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751182Ab3JYHZQ (ORCPT
+	id S1751985Ab3JYHZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 03:25:59 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:45921 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab3JYHZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 03:25:16 -0400
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::,RULES_HIT:41:152:355:379:582:966:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2525:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3308:3352:3421:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4361:4385:5007:6119:6261:6630:6691:7875:7903:8603:9025:9040:9108:10004:10400:10450:10455:10848:11658:11914:12043:12517:12519:12555:12663:12698:12737:13069:13071:13160:13161:13166:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: story63_85045af207225
-X-Filterd-Recvd-Size: 2073
-Date: Fri, 25 Oct 2013 07:25:13 +0000 (UTC)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        axboe@kernel.dk, linux-mm@kvack.org
-Message-ID: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
-Subject: Disabling in-memory write cache for x86-64 in Linux II
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.147.29.47]
+	Fri, 25 Oct 2013 03:25:58 -0400
+From: Cong Ding <dinggnu@gmail.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] uio: fix memory leak
+Date: Fri, 25 Oct 2013 00:25:53 -0700
+Message-Id: <1382685953-19413-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+we have to call kobject_put() to clean up the kobject after function
+kobject_init(), kobject_add(), or kobject_uevent() is called.
 
-On my x86-64 PC (Intel Core i5 2500, 16GB RAM), I have the same 3.11 kernel
-built for the i686 (with PAE) and x86-64 architectures. What's really troubling me
-is that the x86-64 kernel has the following problem:
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/uio/uio.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-When I copy large files to any storage device, be it my HDD with ext4 partitions
-or flash drive with FAT32 partitions, the kernel first caches them in memory entirely
-then flushes them some time later (quite unpredictably though) or immediately upon
-invoking "sync".
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 11d4e0a..539d148 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -288,13 +288,13 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 		}
+ 		map = kzalloc(sizeof(*map), GFP_KERNEL);
+ 		if (!map)
+-			goto err_map;
++			goto err_map_kobj;
+ 		kobject_init(&map->kobj, &map_attr_type);
+ 		map->mem = mem;
+ 		mem->map = map;
+ 		ret = kobject_add(&map->kobj, idev->map_dir, "map%d", mi);
+ 		if (ret)
+-			goto err_map;
++			goto err_map_kobj;
+ 		ret = kobject_uevent(&map->kobj, KOBJ_ADD);
+ 		if (ret)
+ 			goto err_map;
+@@ -313,14 +313,14 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 		}
+ 		portio = kzalloc(sizeof(*portio), GFP_KERNEL);
+ 		if (!portio)
+-			goto err_portio;
++			goto err_portio_kobj;
+ 		kobject_init(&portio->kobj, &portio_attr_type);
+ 		portio->port = port;
+ 		port->portio = portio;
+ 		ret = kobject_add(&portio->kobj, idev->portio_dir,
+ 							"port%d", pi);
+ 		if (ret)
+-			goto err_portio;
++			goto err_portio_kobj;
+ 		ret = kobject_uevent(&portio->kobj, KOBJ_ADD);
+ 		if (ret)
+ 			goto err_portio;
+@@ -329,14 +329,18 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 	return 0;
+ 
+ err_portio:
+-	for (pi--; pi >= 0; pi--) {
++	pi--;
++err_portio_kobj:
++	for (; pi >= 0; pi--) {
+ 		port = &idev->info->port[pi];
+ 		portio = port->portio;
+ 		kobject_put(&portio->kobj);
+ 	}
+ 	kobject_put(idev->portio_dir);
+ err_map:
+-	for (mi--; mi>=0; mi--) {
++	mi--;
++err_map_kobj:
++	for (; mi >= 0; mi--) {
+ 		mem = &idev->info->mem[mi];
+ 		map = mem->map;
+ 		kobject_put(&map->kobj);
+-- 
+1.7.9.5
 
-How can I disable this memory cache altogether (or at least minimize caching)? When
-running the i686 kernel with the same configuration I don't observe this effect - files get
-written out almost immediately (for instance "sync" takes less than a second, whereas
-on x86-64 it can take a dozen of _minutes_ depending on a file size and storage
-performance).
-
-I'm _not_ talking about disabling write cache on my storage itself (hdparm -W 0 /dev/XXX)
-- firstly this command is detrimental to the performance of my PC, secondly, it won't help
-in this instance.
-
-Swap is totally disabled, usually my memory is entirely free.
-
-My kernel configuration can be fetched here: https://bugzilla.kernel.org/show_bug.cgi?id=63531
-
-Please, advise.
-
-Best regards,
-
-Artem 
