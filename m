@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3JYTKC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 15:10:02 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:63314 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3JYTKA (ORCPT
+	id S1754082Ab3JYTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 15:22:09 -0400
+Received: from 87-127-191-49.static.enta.net ([87.127.191.49]:45104 "EHLO
+	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab3JYTWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 15:10:00 -0400
-Date: Fri, 25 Oct 2013 16:09:51 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: RFP: Fixing "-ga -ag -g fp -g dwarf" was Re: [PATCHSET 0/8] perf
- tools: Fix scalability problem on callchain merging (v5)
-Message-ID: <20131025190951.GC1853@ghostprotocols.net>
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
- <20131011055829.GA4975@gmail.com>
- <20131011073448.GA11064@krava.redhat.com>
- <52581511.2010909@gmail.com>
- <52581737.8090309@gmail.com>
- <20131012165319.GB15116@gmail.com>
- <5259A63B.5050406@gmail.com>
- <20131013052328.GA22563@gmail.com>
+	Fri, 25 Oct 2013 15:22:07 -0400
+Date: Fri, 25 Oct 2013 20:22:05 +0100
+From: Nick Warne <nick@linicks.net>
+To: linux-kernel@vger.kernel.org
+Subject: [RFC] Rollback FS
+Message-ID: <20131025192205.GA15583@sauron>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131013052328.GA22563@gmail.com>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Oct 13, 2013 at 07:23:28AM +0200, Ingo Molnar escreveu:
-> * David Ahern <dsahern@gmail.com> wrote:
-> > On 10/12/13 10:53 AM, Ingo Molnar wrote:
-> > >* David Ahern <dsahern@gmail.com> wrote:
-> > >>On 10/11/13 9:11 AM, David Ahern wrote:
-> > >>>It would be nice to fix the callchain arg handler to not attempt to
-> > >>>process the next argument if it is not fp or dwarf.
+Hi,
 
-> > >>Specifically, something like this which maintains syntax and default
-> > >>fp option:
+> Recently, I just do some stupid stuffs as follows.
+>
+> # mv /lib/x86_64-linux-gnu/libc.so.6  /tmp
+>
+> After move "/lib/x86_64-linux-gnu/libc.so.6" away, you could not run lots
+> of commands, which show you some errors like this.
+>
+> # ls
+> ls: error while loading shared libraries: libc.so.6: cannot open
+> shared object file: No such file or directory
+> # mv
+> mv: error while loading shared libraries: libc.so.6: cannot open
+> shared object file: No such file or directory
 
-> > >Lets not maintain a broken syntax please - breaking the very simple -ga
-> > >was the primary regression to begin with, so lets fix that.
+Well we all do stupid things sometimes... I done similar to you once, but copied (and overwrote) a different version trying to fix something...
 
-> > I think I did with the second follow up patch: -ga -ag -g fp -g
-> > dwarf should all work properly with fp the default for -g.
+/sbin/sln is your friend (if you don't panic when it happens).  No need for a large vfs to monitor user errors like this.
 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+/sbin/sln is a statically built ln, so you can symlink back the file to get userspace going, then copy the file (fix it) back properly.
 
-Can I have this one submitted?
-
-I guess I found it but it was malformed, didn't apply.
-
-- Arnaldo
+Nick
+-- 
+FSF Associate Member 5508
+http://linicks.net/
