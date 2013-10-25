@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab3JYJ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:28:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40176 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab3JYJ2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:28:15 -0400
-Date: Fri, 25 Oct 2013 10:28:11 +0100 (BST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Anders_F=2E_U=2E_Ki=E6r?= <ablacksheep@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Added Holtek USB ID 04d9:a072 LEETGION Hellion
- Gaming Mouse 
-In-Reply-To: <1382391742-31335-1-git-send-email-ablacksheep@gmail.com>
-Message-ID: <alpine.LNX.2.00.1310251028010.30926@pobox.suse.cz>
-References: <1382391742-31335-1-git-send-email-ablacksheep@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752658Ab3JYJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:28:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49964 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3JYJ2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 05:28:40 -0400
+Date: Fri, 25 Oct 2013 02:29:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, torvalds@linux-foundation.org,
+        fengguang.wu@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-Id: <20131025022937.12623dcd.akpm@linux-foundation.org>
+In-Reply-To: <20131025091842.GA28681@thunk.org>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+	<CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+	<1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+	<20131025091842.GA28681@thunk.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Oct 2013, Anders F. U. Kiær wrote:
+On Fri, 25 Oct 2013 05:18:42 -0400 "Theodore Ts'o" <tytso@mit.edu> wrote:
 
->  Added id, bindings and comments for Holtek USB ID 04d9:a072
->  LEETGION Hellion Gaming mouse to use the same corrections of the report
->  descriptor as Holtek 04d9:a067. As the mouse exceed HID_MAX_USAGES at the
->  same offsets in the reported descriptor.
->  Tested on the hardware.
-> 
-> Signed-off-by: Anders F. U. Kiær <ablacksheep@gmail.com>
+> What I think would make sense is to dynamically measure the speed of
+> writeback, so that we can set these limits as a function of the device
+> speed.
 
-Applied, thanks.
+We attempt to do this now - have a look through struct backing_dev_info.
 
--- 
-Jiri Kosina
-SUSE Labs
+Apparently all this stuff isn't working as desired (and perhaps as designed)
+in this case.  Will take a look after a return to normalcy ;)
