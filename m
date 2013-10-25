@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3JYMoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 08:44:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62954 "EHLO mx1.redhat.com"
+	id S1753726Ab3JYMoz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 08:44:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54119 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab3JYMoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 08:44:30 -0400
-Date: Fri, 25 Oct 2013 08:44:02 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: tianyu.lan@intel.com, Matthew Garrett <mjg@redhat.com>, hpa@zytor.com,
-        x86@kernel.org, holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
-        rjw@rjwysocki.net, awilliam@redhat.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
- default
-Message-ID: <20131025124402.GA7089@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ingo Molnar <mingo@kernel.org>, tianyu.lan@intel.com,
-	Matthew Garrett <mjg@redhat.com>, hpa@zytor.com, x86@kernel.org,
-	holt@sgi.com, davej@fedoraproject.org, lenb@kernel.org,
-	rjw@rjwysocki.net, awilliam@redhat.com, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
- <20131025105352.GA5419@gmail.com>
+	id S1751284Ab3JYMoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 08:44:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 Resend 00/34] CPUFreq Cleanup Part III
+Date: Fri, 25 Oct 2013 14:56:53 +0200
+Message-ID: <14730355.7hm7UiW5IU@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <cover.1382104514.git.viresh.kumar@linaro.org>
+References: <cover.1382104514.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131025105352.GA5419@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 12:53:52PM +0200, Ingo Molnar wrote:
+On Friday, October 18, 2013 07:29:23 PM Viresh Kumar wrote:
+> As Part II is already in your linux-next branch, I am sending Part III for
+> inclusion in bleeding-edge.
+> 
+> This is oriented around a light weight ->target_index() routine. CPUFreq
+> notifications would be moved to CPUFreq core in the next patchset that I will
+> send, as you suggested not to merge multiple series together.. Although both of
+> them are oriented towards a light weight ->target_index() routine.
+> 
+> This is rebased over your bleeding-edge branch + "cpufreq: create per policy
+> rwsem instead of per CPU cpu_policy_rwsem"..
 
- > > Sony Vaio Z1 series require "reboot=pci" for reboot and power off.
- > > This patch is to add them machines to quirk table and set pci reboot
- > > default.
- > > 
- > > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=61721
- > > Reported-and-tested-by: Adam Williamson <awilliam@redhat.com>
- > > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
- > > ---
- > >  arch/x86/kernel/reboot.c |    8 ++++++++
- > >  1 file changed, 8 insertions(+)
- > 
- > This is becoming somewhat endemic - do we know _why_ the ACPI reboot 
- > method does not work?
- > 
- > We reworked the x86 reboot sequence 2.5 years agom, in:
- > 
- >  commit 660e34cebf0a11d54f2d5dd8838607452355f321
- >  Author: Matthew Garrett <mjg@redhat.com>
- >  Date:   Mon Apr 4 13:55:05 2011 -0400
- > 
- >     x86: Reorder reboot method preferences
- >     [...]
- > 
- > Do we know why reboot apparently works quickly enough on Windows on 
- > this laptop, but not under Linux? Does Windows use the ACPI reboot 
- > method? If yes, does it use a different pattern?
- > 
- > Is it all perhaps virtualization or IRQ routing related?
- > 
- > I.e. we really need a real analysis here, not just a quirk!
+Having considered that a bit I think that I'd prefer one patch doing all of
+these changes in one go (and with all applicable ACKs collected), one of the
+reasons being that if it is necessary to revert that stuff, whatever the
+reason, it will be much easier to do that with just one commit than with
+34 of them.
 
-I have a few machines at home that have the same problem.
-There does seem to be a number of vendor wide issues here. Pretty much
-every vaio and every Dell seems to need working around.
+Thanks!
 
-I'd point at the acpi dumps, but they're currently switched off and not
-responding to wake-on-lan for some reason.
-I'll send them when I get back from kernel summit.
-
-	Dave
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
