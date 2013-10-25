@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3JYNma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:42:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44232 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753416Ab3JYNm3 (ORCPT
+	id S1753646Ab3JYNnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:43:55 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:39518 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab3JYNnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:42:29 -0400
-Message-ID: <1382708539.18659.5.camel@pippen.local.home>
-Subject: Re: [PATCH trace-cmd 2/5] build: Install data files without execute
- permissions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 25 Oct 2013 09:42:19 -0400
-In-Reply-To: <20131025130534.GA24608@thinkpad-t410>
-References: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
-	 <1382642074-15567-3-git-send-email-seth.forshee@canonical.com>
-	 <1382689893.8356.2.camel@pippen.local.home>
-	 <20131025130534.GA24608@thinkpad-t410>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 25 Oct 2013 09:43:53 -0400
+MIME-Version: 1.0
+X-Originating-IP: [77.221.165.98]
+In-Reply-To: <20131025133512.GA1551@ulmo.nvidia.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+	<5269FB5E.6010901@roeck-us.net>
+	<20131025083525.GF19622@ulmo.nvidia.com>
+	<CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
+	<20131025133512.GA1551@ulmo.nvidia.com>
+Date: Fri, 25 Oct 2013 06:43:53 -0700
+Message-ID: <CAOesGMh=VLEuFgZuwrJnPsbxnr1Y528CVUdq313Ey5SVUb-jsw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 24
+From: Olof Johansson <olof@lixom.net>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-25 at 08:05 -0500, Seth Forshee wrote:
+On Fri, Oct 25, 2013 at 6:35 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Fri, Oct 25, 2013 at 06:16:02AM -0700, Olof Johansson wrote:
+>> On Fri, Oct 25, 2013 at 1:35 AM, Thierry Reding
+>> <thierry.reding@gmail.com> wrote:
+>> > On Thu, Oct 24, 2013 at 10:02:22PM -0700, Guenter Roeck wrote:
+>> >> On 10/24/2013 09:31 AM, Thierry Reding wrote:
+>> >> >Hi all,
+>> >> >
+>> >> >I've uploaded today's linux-next tree to the master branch of the
+>> >> >repository below:
+>> >> >
+>> >> >         git://gitorious.org/thierryreding/linux-next.git
+>> >> >
+>> >> >A next-20131024 tag is also provided for convenience.
+>> >> >
+>> >> >Quite a few new conflicts. Some of them non-trivial. I've fixed another
+>> >> >set of build failures, so 32-bit and 64-bit allmodconfigs build fine on
+>> >> >x86. ARM and x86 default configurations also build fine. PowerPC is in
+>> >> >pretty bad shape, mostly due to some OF header rework going on.
+>> >> >
+>> >>
+>> >> Hmm ... I see
+>> >>
+>> >> Building arm:defconfig ... failed
+>> >> --------------
+>> >> Error log:
+>> >> drivers/built-in.o: In function `mmc_gpio_request_cd':
+>> >> clkdev.c:(.text+0x74cf8): undefined reference to `devm_gpio_request_one'
+>> >> make: *** [vmlinux] Error 1
+>> >>
+>> >> Otherwise pretty much the same as yesterday, with a build log of
+>> >>       total: 110 pass: 88 skipped: 4 fail: 18
+>> >>
+>> >> This is with "v3.12-rc5-7941-g765f88c".
+>> >
+>> > Yeah, I saw the devm_gpio_request_one() errors too. They happened for 3
+>> > boards on ARM I think. Must have forgotten to update the summary email.
+>> > I'll see if I can come up with a patch to fix the GPIO related build
+>> > failures, or at least report it to LinusW or Alexandre.
+>>
+>> Hmm.
+>>
+>> Please don't apply fixes like these directly to your tree, keep the
+>> broken parts (or drop the tree that introduced it). It makes the
+>> process of getting the fixes in where they really have to go much more
+>> error prone, since there's no way to track whether they have landed in
+>> the right place yet or not.
+>
+> I've found that fixing one build error often subsequent build failures,
+> which would go unnoticed if I dropped the trees or let the breakage
+> unfixed.
 
-> 
-> If you disagree, it won't hurt my feelings if you drop those changes, so
-> long as you keep the ones which makes sure things like .png files aren't
-> executable ;-)
+Yeah, that's what happened with the GPIO subsystem on this release --
+there are two build errors but your fix resolves one of them such at
+the other one is exposed. It makes it confusing to bisect down to root
+cause. I'd almost rather have your tree just being broken, but patches
+submitted and sent in to the maintainer in question if you want to get
+it fixed ASAP.
 
-I pretty much don't care. I'll pull in the patches as is. I also had
-Johannes Berg sitting next to me when I was reading your patch that
-touched the python part of the build, and since him and Darren Hart were
-the ones to add that, I had him give me a verbal "Reviewed-by".
-
--- Steve
+In particular, the gpio fix in the tree right now has no description, etc.
 
 
+-Olof
