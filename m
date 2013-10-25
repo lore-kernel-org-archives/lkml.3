@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab3JYNKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:10:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54947 "EHLO
+	id S1754814Ab3JYNKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:10:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54922 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754822Ab3JYNKH (ORCPT
+	with ESMTP id S1754041Ab3JYNKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:10:07 -0400
+	Fri, 25 Oct 2013 09:10:04 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: daniel.lezcano@linaro.org, tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,10 +14,12 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 0/5] Allwinner SoCs High Speed Timer support
-Date: Fri, 25 Oct 2013 14:07:38 +0100
-Message-Id: <1382706463-3892-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 2/5] clocksource: Add Allwinner SoCs HS timers driver
+Date: Fri, 25 Oct 2013 14:07:40 +0100
+Message-Id: <1382706463-3892-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382706463-3892-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1382706463-3892-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,53 +27,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Most of the Allwinner SoCs (at this time, all but the A10) also have a
+High Speed timers that are not using the 24MHz oscillator as a source
+but rather the AHB clock running much faster.
 
-Here is a few patches adding support for the High Speed Timers running on the
-Allwinner SoCs.
+The IP is slightly different between the A10s/A13 and the one used in
+the A20/A31, since the latter have 4 timers available, while the former
+have only 2 of them.
 
-These timers are 64 bits timers running at a much higher speed than the timers
-used for now on these SoCs, since they are no longer wired to the 24MHz
-oscillator, but to the AHB clock.
-
-This HS timers are actually found in all the supported SoCs but the A10.
-However, the A20 and A31 come with 4 of these high speed timers, while the A10s
-and A13 only have two, hence why we introduce two different compatibles.
-
-The A31 is not using these for now, as its timers are asserted in reset by a
-reset controller that first need to gain some support in the kernel first, but
-that's for another patchset.
-
-Thanks,
-Maxime
-
-Changes from v1:
-  - Reported correctly the minimum ticks we can set
-  - No longer use the HS timers as the default timers in the system
-  - Removed the IRQF_DISABLED interrupt flag
-  - Filled the irq clock_event_device field
-  - Changed the cpumask to cpu_possible_mask
-
-Maxime Ripard (5):
-  clocksource: sun4i: Increase a bit the clock event and sources rating
-  clocksource: Add Allwinner SoCs HS timers driver
-  ARM: sun5i: a10s: Add support for the High Speed Timers
-  ARM: sun5i: a13: Add support for the High Speed Timers
-  ARM: sun7i: a20: Add support for the High Speed Timers
-
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Tested-by: Emilio López <emilio@elopez.com.ar>
+---
  .../bindings/timer/allwinner,sun5i-a13-hstimer.txt |  22 +++
- arch/arm/boot/dts/sun5i-a10s.dtsi                  |   7 +
- arch/arm/boot/dts/sun5i-a13.dtsi                   |   7 +
- arch/arm/boot/dts/sun7i-a20.dtsi                   |  10 ++
  arch/arm/mach-sunxi/Kconfig                        |   1 +
  drivers/clocksource/Kconfig                        |   4 +
  drivers/clocksource/Makefile                       |   1 +
- drivers/clocksource/sun4i_timer.c                  |   4 +-
  drivers/clocksource/timer-sun5i.c                  | 192 +++++++++++++++++++++
- 9 files changed, 246 insertions(+), 2 deletions(-)
+ 5 files changed, 220 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
  create mode 100644 drivers/clocksource/timer-sun5i.c
 
+diff --git a/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
+new file mode 100644
+index 0000000..7c26154
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
+@@ -0,0 +1,22 @@
++Allwinner SoCs High Speed Timer Controller
++
++Required properties:
++
++- compatible :	should be "allwinner,sun5i-a13-hstimer" or
++		"allwinner,sun7i-a20-hstimer"
++- reg : Specifies base physical address and size of the registers.
++- interrupts :	The interrupts of these timers (2 for the sun5i IP, 4 for the sun7i
++		one)
++- clocks: phandle to the source clock (usually the AHB clock)
++
++Example:
++
++timer@01c60000 {
++	compatible = "allwinner,sun7i-a20-hstimer";
++	reg = <0x01c60000 0x1000>;
++	interrupts = <0 51 1>,
++		     <0 52 1>,
++		     <0 53 1>,
++		     <0 54 1>;
++	clocks = <&ahb1_gates 19>;
++};
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index c9e72c8..bce0d42 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -12,3 +12,4 @@ config ARCH_SUNXI
+ 	select PINCTRL_SUNXI
+ 	select SPARSE_IRQ
+ 	select SUN4I_TIMER
++	select SUN5I_HSTIMER
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index bdb953e..884eeff 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -37,6 +37,10 @@ config SUN4I_TIMER
+ 	select CLKSRC_MMIO
+ 	bool
+ 
++config SUN5I_HSTIMER
++	select CLKSRC_MMIO
++	bool
++
+ config VT8500_TIMER
+ 	bool
+ 
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 33621ef..358358d 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
++obj-$(CONFIG_SUN5I_HSTIMER)	+= timer-sun5i.o
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+ obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
+diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
+new file mode 100644
+index 0000000..bddc522
+--- /dev/null
++++ b/drivers/clocksource/timer-sun5i.c
+@@ -0,0 +1,192 @@
++/*
++ * Allwinner SoCs hstimer driver.
++ *
++ * Copyright (C) 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clockchips.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/irqreturn.h>
++#include <linux/sched_clock.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++
++#define TIMER_IRQ_EN_REG		0x00
++#define TIMER_IRQ_EN(val)			BIT(val)
++#define TIMER_IRQ_ST_REG		0x04
++#define TIMER_CTL_REG(val)		(0x20 * (val) + 0x10)
++#define TIMER_CTL_ENABLE			BIT(0)
++#define TIMER_CTL_RELOAD			BIT(1)
++#define TIMER_CTL_CLK_PRES(val)			(((val) & 0x7) << 4)
++#define TIMER_CTL_ONESHOT			BIT(7)
++#define TIMER_INTVAL_LO_REG(val)	(0x20 * (val) + 0x14)
++#define TIMER_INTVAL_HI_REG(val)	(0x20 * (val) + 0x18)
++#define TIMER_CNTVAL_LO_REG(val)	(0x20 * (val) + 0x1c)
++#define TIMER_CNTVAL_HI_REG(val)	(0x20 * (val) + 0x20)
++
++#define TIMER_SYNC_TICKS	3
++
++static void __iomem *timer_base;
++static u32 ticks_per_jiffy;
++
++/*
++ * When we disable a timer, we need to wait at least for 2 cycles of
++ * the timer source clock. We will use for that the clocksource timer
++ * that is already setup and runs at the same frequency than the other
++ * timers, and we never will be disabled.
++ */
++static void sun5i_clkevt_sync(void)
++{
++	u32 old = readl(timer_base + TIMER_CNTVAL_LO_REG(1));
++
++	while ((old - readl(timer_base + TIMER_CNTVAL_LO_REG(1))) < TIMER_SYNC_TICKS)
++		cpu_relax();
++}
++
++static void sun5i_clkevt_time_stop(u8 timer)
++{
++	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
++	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(timer));
++
++	sun5i_clkevt_sync();
++}
++
++static void sun5i_clkevt_time_setup(u8 timer, u32 delay)
++{
++	writel(delay, timer_base + TIMER_INTVAL_LO_REG(timer));
++}
++
++static void sun5i_clkevt_time_start(u8 timer, bool periodic)
++{
++	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
++
++	if (periodic)
++		val &= ~TIMER_CTL_ONESHOT;
++	else
++		val |= TIMER_CTL_ONESHOT;
++
++	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
++	       timer_base + TIMER_CTL_REG(timer));
++}
++
++static void sun5i_clkevt_mode(enum clock_event_mode mode,
++			      struct clock_event_device *clk)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		sun5i_clkevt_time_stop(0);
++		sun5i_clkevt_time_setup(0, ticks_per_jiffy);
++		sun5i_clkevt_time_start(0, true);
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++		sun5i_clkevt_time_stop(0);
++		sun5i_clkevt_time_start(0, false);
++		break;
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	default:
++		sun5i_clkevt_time_stop(0);
++		break;
++	}
++}
++
++static int sun5i_clkevt_next_event(unsigned long evt,
++				   struct clock_event_device *unused)
++{
++	sun5i_clkevt_time_stop(0);
++	sun5i_clkevt_time_setup(0, evt - TIMER_SYNC_TICKS);
++	sun5i_clkevt_time_start(0, false);
++
++	return 0;
++}
++
++static struct clock_event_device sun5i_clockevent = {
++	.name = "sun5i_tick",
++	.rating = 340,
++	.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_mode = sun5i_clkevt_mode,
++	.set_next_event = sun5i_clkevt_next_event,
++};
++
++
++static irqreturn_t sun5i_timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
++
++	writel(0x1, timer_base + TIMER_IRQ_ST_REG);
++	evt->event_handler(evt);
++
++	return IRQ_HANDLED;
++}
++
++static struct irqaction sun5i_timer_irq = {
++	.name = "sun5i_timer0",
++	.flags = IRQF_TIMER | IRQF_IRQPOLL,
++	.handler = sun5i_timer_interrupt,
++	.dev_id = &sun5i_clockevent,
++};
++
++static u32 sun5i_timer_sched_read(void)
++{
++	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
++}
++
++static void __init sun5i_timer_init(struct device_node *node)
++{
++	unsigned long rate;
++	struct clk *clk;
++	int ret, irq;
++	u32 val;
++
++	timer_base = of_iomap(node, 0);
++	if (!timer_base)
++		panic("Can't map registers");
++
++	irq = irq_of_parse_and_map(node, 0);
++	if (irq <= 0)
++		panic("Can't parse IRQ");
++
++	clk = of_clk_get(node, 0);
++	if (IS_ERR(clk))
++		panic("Can't get timer clock");
++	clk_prepare_enable(clk);
++	rate = clk_get_rate(clk);
++
++	writel(~0, timer_base + TIMER_INTVAL_LO_REG(1));
++	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
++	       timer_base + TIMER_CTL_REG(1));
++
++	setup_sched_clock(sun5i_timer_sched_read, 32, rate);
++	clocksource_mmio_init(timer_base + TIMER_CNTVAL_LO_REG(1), node->name,
++			      rate, 340, 32, clocksource_mmio_readl_down);
++
++	ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
++
++	ret = setup_irq(irq, &sun5i_timer_irq);
++	if (ret)
++		pr_warn("failed to setup irq %d\n", irq);
++
++	/* Enable timer0 interrupt */
++	val = readl(timer_base + TIMER_IRQ_EN_REG);
++	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
++
++	sun5i_clockevent.cpumask = cpu_possible_mask;
++	sun5i_clockevent.irq = irq;
++
++	clockevents_config_and_register(&sun5i_clockevent, rate,
++					TIMER_SYNC_TICKS, 0xffffffff);
++}
++CLOCKSOURCE_OF_DECLARE(sun5i_a13, "allwinner,sun5i-a13-hstimer",
++		       sun5i_timer_init);
++CLOCKSOURCE_OF_DECLARE(sun7i_a20, "allwinner,sun7i-a20-hstimer",
++		       sun5i_timer_init);
 -- 
 1.8.4
 
