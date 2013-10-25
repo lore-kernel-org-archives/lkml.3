@@ -1,59 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3JYVBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 17:01:40 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48914 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab3JYVBi (ORCPT
+	id S1755463Ab3JYVBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 17:01:50 -0400
+Received: from mail-pb0-f74.google.com ([209.85.160.74]:48038 "EHLO
+	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364Ab3JYVBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 17:01:38 -0400
-Date: Fri, 25 Oct 2013 14:01:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: linux-next: Tree for Oct 25
-Message-ID: <20131025210130.GA31451@roeck-us.net>
-References: <1382713426-2680-1-git-send-email-treding@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382713426-2680-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Oct 2013 17:01:48 -0400
+From: Aditya Kali <adityakali@google.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tytso@mit.edu, tj@kernel.org,
+        axboe@kernel.dk
+Cc: Aditya Kali <adityakali@google.com>
+Subject: [PATCH] vfs: avoid sb->s_umount write lock while changing bind-mount flags
+Date: Fri, 25 Oct 2013 14:00:59 -0700
+Message-Id: <1382734859-8115-1-git-send-email-adityakali@google.com>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 05:03:45PM +0200, Thierry Reding wrote:
-> Hi all,
-> 
-> I've uploaded today's linux-next tree to the master branch of the
-> repository below:
-> 
->         git://gitorious.org/thierryreding/linux-next.git
-> 
-> A next-20131025 tag is also provided for convenience.
-> 
-> One new trivial conflicts and a new build failure caused by an incorrect
-> use of the genpool allocator.
-> 
-> Upon a request from Olof Johansson I've only included fixes for build
-> breakage as a result of interactions between the various trees. But
-> since I've fixed many of the other build failures already, I've pushed
-> those to a separate tag (next-20131025-fixes). That builds fine on x86
-> 32-bit and 64-bit allmodconfigs as well as ARM and x86 default
-> configurations. Most of the PowerPC build errors have also been fixed.
-> 
-Hi Thierry,
+During remount of a bind mount (mount -o remount,bind,ro,... /mnt/mntpt),
+we currently take down_write(&sb->s_umount). This causes the remount
+operation to get blocked behind writes occuring on device (possibly
+mounted somewhere else). We have observed that simply trying to change
+the bind-mount from read-write to read-only can take several seconds
+becuase writeback is in progress (which takes read-lock on sb->s_umount).
+Since we are not modifying the superblock during MS_BIND remount, it
+should be enough to take a read-lock on sb->s_umount instead of the
+write-lock to protect against parallel unmounts and (in conjunction with
+vfsmount_lock) parallel remounts.
+This patch fixes the locking so that the MS_BIND remount changes happen
+only under down_read(&sb->s_umount).
 
-You are making a good point for your previous approach, but maybe it is
-necessary to show people the real status of the -next tree.
+Changes from RFC:
+  Instead of completely removing the locking in MS_BIND case, take
+  read-lock on sb->s_umount to protect against parallel unmount.
 
-	total: 110 pass: 4 skipped: 4 fail: 102
+Signed-off-by: Aditya Kali <adityakali@google.com>
+---
+ fs/namespace.c | 42 ++++++++++++++++++++++++++++--------------
+ 1 file changed, 28 insertions(+), 14 deletions(-)
 
-All ten qemu tests fail as well, though I didn't check if all are build failures
-or if there are some runtime failures.
+diff --git a/fs/namespace.c b/fs/namespace.c
+index da5c494..cf74920 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -454,11 +454,13 @@ void mnt_drop_write_file(struct file *file)
+ }
+ EXPORT_SYMBOL(mnt_drop_write_file);
+ 
++/*
++ * Must be called under br_write_lock(&vfsmount_lock).
++ */
+ static int mnt_make_readonly(struct mount *mnt)
+ {
+ 	int ret = 0;
+ 
+-	br_write_lock(&vfsmount_lock);
+ 	mnt->mnt.mnt_flags |= MNT_WRITE_HOLD;
+ 	/*
+ 	 * After storing MNT_WRITE_HOLD, we'll read the counters. This store
+@@ -492,15 +494,15 @@ static int mnt_make_readonly(struct mount *mnt)
+ 	 */
+ 	smp_wmb();
+ 	mnt->mnt.mnt_flags &= ~MNT_WRITE_HOLD;
+-	br_write_unlock(&vfsmount_lock);
+ 	return ret;
+ }
+ 
++/*
++ * Must be called under br_write_lock(&vfsmount_lock).
++ */
+ static void __mnt_unmake_readonly(struct mount *mnt)
+ {
+-	br_write_lock(&vfsmount_lock);
+ 	mnt->mnt.mnt_flags &= ~MNT_READONLY;
+-	br_write_unlock(&vfsmount_lock);
+ }
+ 
+ int sb_prepare_remount_readonly(struct super_block *sb)
+@@ -1796,6 +1798,9 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Must be called under br_write_lock(&vfsmount_lock).
++ */
+ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
+ {
+ 	int error = 0;
+@@ -1838,20 +1843,29 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+ 	if (err)
+ 		return err;
+ 
+-	down_write(&sb->s_umount);
+-	if (flags & MS_BIND)
++	if (flags & MS_BIND) {
++		down_read(&sb->s_umount);
++		br_write_lock(&vfsmount_lock);
+ 		err = change_mount_flags(path->mnt, flags);
+-	else if (!capable(CAP_SYS_ADMIN))
++		if (!err) {
++			mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
++			mnt->mnt.mnt_flags = mnt_flags;
++		}
++		br_write_unlock(&vfsmount_lock);
++		up_read(&sb->s_umount);
++	} else if (!capable(CAP_SYS_ADMIN))
+ 		err = -EPERM;
+-	else
++	else {
++		down_write(&sb->s_umount);
+ 		err = do_remount_sb(sb, flags, data, 0);
+-	if (!err) {
+-		br_write_lock(&vfsmount_lock);
+-		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
+-		mnt->mnt.mnt_flags = mnt_flags;
+-		br_write_unlock(&vfsmount_lock);
++		if (!err) {
++			br_write_lock(&vfsmount_lock);
++			mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
++			mnt->mnt.mnt_flags = mnt_flags;
++			br_write_unlock(&vfsmount_lock);
++		}
++		up_write(&sb->s_umount);
+ 	}
+-	up_write(&sb->s_umount);
+ 	if (!err) {
+ 		br_write_lock(&vfsmount_lock);
+ 		touch_mnt_namespace(mnt->mnt_ns);
+-- 
+1.8.4.1
 
-This is with " v3.12-rc5-8053-g9e11bce".
-
-Guenter
