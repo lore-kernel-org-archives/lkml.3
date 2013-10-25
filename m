@@ -1,143 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab3JYJiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:38:19 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:64426 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3JYJiR (ORCPT
+	id S1752610Ab3JYJjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:39:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54331 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751934Ab3JYJjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:38:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131018163740.GA21983@codeaurora.org>
-References: <tip-31c1fc8187158cb80ccd57c19e024c55af901797@git.kernel.org>
-	<20131016121416.GD12773@localhost.localdomain>
-	<20131018163740.GA21983@codeaurora.org>
-Date: Fri, 25 Oct 2013 10:38:14 +0100
-Message-ID: <CAFTL4hxJa=kc0RY_S91tkSHUn3Dep9CV99PuYKADVF7pbC3xow@mail.gmail.com>
-Subject: Re: [tip:timers/core] ARM: Kconfig: allow full nohz CPU accounting
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+	Fri, 25 Oct 2013 05:39:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Kevin Hilman <khilman@linaro.org>, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during shutdown
+Date: Fri, 25 Oct 2013 11:51:40 +0200
+Message-ID: <1483174.NsuFf8aJk6@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2582195.phiuskXt0x@vostro.rjw.lan>
+References: <525BD08C.2080101@t-online.de> <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com> <2582195.phiuskXt0x@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/18 Stephen Boyd <sboyd@codeaurora.org>:
-> On 10/16, Frederic Weisbecker wrote:
->> On Thu, Oct 03, 2013 at 06:58:03AM -0700, tip-bot for Kevin Hilman wrote:
->> > Commit-ID:  31c1fc8187158cb80ccd57c19e024c55af901797
->> > Gitweb:     http://git.kernel.org/tip/31c1fc8187158cb80ccd57c19e024c55af901797
->> > Author:     Kevin Hilman <khilman@linaro.org>
->> > AuthorDate: Mon, 16 Sep 2013 15:28:22 -0700
->> > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
->> > CommitDate: Mon, 30 Sep 2013 15:37:05 +0200
->> >
->> > ARM: Kconfig: allow full nohz CPU accounting
->> >
->> > With the 64-bit requirement removed from VIRT_CPU_ACCOUNTING_GEN,
->> > allow ARM platforms to enable it.  Since VIRT_CPU_ACCOUNTING_GEN is a
->> > dependency for full NO_HZ, this allows ARM platforms to enable full
->> > NO_HZ as well.
->>
->> I realize that arm doesn't implement irq work raise. It hooks on the
->> timer to execute pending irq work. You'll need to implement arch_irq_work_raise()
->> and implement some sort of self IPI to trigger irq work. The full dynticks subsystem
->> relies on that to work correctly. It often use that to re-evaluate and possibly restart
->> the tick after scheduler, posix timer updates, etc...
->>
->> That notwithstanding that if you have no tick, tick based irq work can't
->> work.
->>
->
-> Something like this? The only problem is that this latches on to
-> the SMP support for IPIs. If CONFIG_SMP is disabled we won't get
-> arch_irq_work_raise() but perhaps that isn't so big of a deal? Or
-> we should think about exposing IPI support to UP systems on ARM.
->
-> ----8<-----
->  arch/arm/include/asm/hardirq.h |  2 +-
->  arch/arm/kernel/smp.c          | 18 ++++++++++++++++++
->  2 files changed, 19 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
-> index 2740c2a2..3d7351c 100644
-> --- a/arch/arm/include/asm/hardirq.h
-> +++ b/arch/arm/include/asm/hardirq.h
-> @@ -5,7 +5,7 @@
->  #include <linux/threads.h>
->  #include <asm/irq.h>
->
-> -#define NR_IPI 6
-> +#define NR_IPI 7
->
->  typedef struct {
->         unsigned int __softirq_pending;
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 72024ea..bf9a0d6d 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -25,6 +25,7 @@
->  #include <linux/clockchips.h>
->  #include <linux/completion.h>
->  #include <linux/cpufreq.h>
-> +#include <linux/irq_work.h>
->
->  #include <linux/atomic.h>
->  #include <asm/smp.h>
-> @@ -66,6 +67,7 @@ enum ipi_msg_type {
->         IPI_CALL_FUNC,
->         IPI_CALL_FUNC_SINGLE,
->         IPI_CPU_STOP,
-> +       IPI_IRQ_WORK,
->  };
->
->  static DECLARE_COMPLETION(cpu_running);
-> @@ -448,6 +450,13 @@ void arch_send_call_function_single_ipi(int cpu)
->         smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
->  }
->
-> +#ifdef CONFIG_IRQ_WORK
-> +void arch_irq_work_raise(void)
-> +{
-> +       smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-> +}
-> +#endif
-> +
->  static const char *ipi_types[NR_IPI] = {
->  #define S(x,s) [x] = s
->         S(IPI_WAKEUP, "CPU wakeup interrupts"),
-> @@ -456,6 +465,7 @@ static const char *ipi_types[NR_IPI] = {
->         S(IPI_CALL_FUNC, "Function call interrupts"),
->         S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
->         S(IPI_CPU_STOP, "CPU stop interrupts"),
-> +       S(IPI_IRQ_WORK, "IRQ work interrupts"),
->  };
->
->  void show_ipi_list(struct seq_file *p, int prec)
-> @@ -565,6 +575,14 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->                 irq_exit();
->                 break;
->
-> +#ifdef CONFIG_IRQ_WORK
-> +       case IPI_IRQ_WORK:
-> +               irq_enter();
-> +               irq_work_run();
-> +               irq_exit();
-> +               break;
-> +#endif
-> +
->         default:
->                 printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
->                        cpu, ipinr);
+On Friday, October 25, 2013 11:28:02 AM Rafael J. Wysocki wrote:
+> On Friday, October 25, 2013 10:02:22 AM Linus Torvalds wrote:
+> > Adding more people, so quoting the whole email for them.
+> > 
+> > We definitely have some module unload issues. Guys, try the following
+> > a few times to unload modules:
+> > 
+> >     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
+> > 
+> > (a few times because unloading one module will then potentially make
+> > other modules unloadable).
+> > 
+> > On my machine, I can trigger this, for example:
+> > 
+> >   ------------[ cut here ]------------
+> >   WARNING: CPU: 0 PID: 3217 at fs/sysfs/file.c:498 sysfs_attr_ns+0x91/0xa0()
+> >   sysfs: kobject (null) without dirent
+> >   Modules linked in: fuse nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_$
+> >   CPU: 0 PID: 3217 Comm: rmmod Not tainted 3.12.0-rc6-00284-ge6036c0b8896 #19
+> >   Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
+> >    0000000000000009 ffff8800aca35df8 ffffffff8160aab5 ffff8800aca35e40
+> >    ffff8800aca35e30 ffffffff810514b8 ffffffffa013f080 ffff8801194a6040
+> >    0000000000000800 0000000000000000 0000000000c5b3e0 ffff8800aca35e90
+> >   Call Trace:
+> >    [<ffffffff8160aab5>] dump_stack+0x45/0x56
+> >    [<ffffffff810514b8>] warn_slowpath_common+0x78/0xa0
+> >    [<ffffffff81051527>] warn_slowpath_fmt+0x47/0x50
+> >    [<ffffffff810b5960>] ? module_refcount+0xb0/0xb0
+> >    [<ffffffff811e5c61>] sysfs_attr_ns+0x91/0xa0
+> >    [<ffffffff811e5d2a>] sysfs_remove_file+0x1a/0x50
+> >    [<ffffffff814c88a3>] cpufreq_sysfs_remove_file+0x13/0x30
+> >    [<ffffffffa013d350>] acpi_cpufreq_exit+0x2e/0xcde [acpi_cpufreq]
+> >    [<ffffffff810b7d1d>] SyS_delete_module+0x15d/0x2c0
+> >    [<ffffffff81002929>] ? do_notify_resume+0x59/0x90
+> >    [<ffffffff81618f62>] system_call_fastpath+0x16/0x1b
+> >   ---[ end trace f887112caaa5c4ab ]---
+> > 
+> > so at least we have a cpufreq/sysfs interaction bug. There may be others.
+> > 
+> > This particular cpufreq issue may be triggered by the fact that
+> > acpi-cpufreq isn't actually in use (pstate is). Or it might be some
+> > generic cpufreq/sysfs bug. Rafael, Greg, ideas?
+> 
+> I *think* that this indeed is related to acpi-cpufreq being unused.  That said,
+> we've been fixing sysfs-related bugs in cpufreq recently and we may have
+> overlooked something.
+> 
+> I'll have a deeper look at that.
 
-Yeah that looks good! Indeed it's no big deal if it only support SMP
-for now since full dynticks only works on SMP. It might work on UP one
-day but we are not yet rushing on that :)
+Well, if the ACPI cpufreq driver is not registered, the exit function of the
+module shouldn't try to unregister it, so I have the appended patch (untested)
+to fix that particular thing.
+
+Rafael
+
+
+---
+ drivers/cpufreq/acpi-cpufreq.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+Index: linux-pm/drivers/cpufreq/acpi-cpufreq.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/acpi-cpufreq.c
++++ linux-pm/drivers/cpufreq/acpi-cpufreq.c
+@@ -982,6 +982,8 @@ static void __exit acpi_cpufreq_boost_ex
+ 	}
+ }
+ 
++static bool driver_registered;
++
+ static int __init acpi_cpufreq_init(void)
+ {
+ 	int ret;
+@@ -1021,10 +1023,12 @@ static int __init acpi_cpufreq_init(void
+ #endif
+ 
+ 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
+-	if (ret)
++	if (ret) {
+ 		free_acpi_perf_data();
+-	else
++	} else {
+ 		acpi_cpufreq_boost_init();
++		driver_registered = true;
++	}
+ 
+ 	return ret;
+ }
+@@ -1032,6 +1036,8 @@ static int __init acpi_cpufreq_init(void
+ static void __exit acpi_cpufreq_exit(void)
+ {
+ 	pr_debug("acpi_cpufreq_exit\n");
++	if (!driver_registered)
++		return;
+ 
+ 	acpi_cpufreq_boost_exit();
+ 
+
