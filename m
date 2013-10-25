@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3JYXa2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:30:28 -0400
-Received: from ozlabs.org ([203.10.76.45]:50113 "EHLO ozlabs.org"
+	id S1753230Ab3JYXcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:32:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14622 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935Ab3JYXa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:30:27 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chen Gang <gang.chen@asianux.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-In-Reply-To: <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com> <87eh7bfoq9.fsf@rustcorp.com.au> <20131024084559.GD16735@n2100.arm.linux.org.uk> <87mwlyclng.fsf@rustcorp.com.au> <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com> <87y55h7vcd.fsf@rustcorp.com.au> <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 25 Oct 2013 22:28:29 +1030
-Message-ID: <87sivp7eai.fsf@rustcorp.com.au>
+	id S1751514Ab3JYXce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:32:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,573,1378882800"; 
+   d="scan'208";a="417387682"
+Date: Sat, 26 Oct 2013 00:32:25 +0100
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Diego Calleja <diegocg@gmail.com>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, david@lang.hm, neilb@suse.de,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, linux-mm@kvack.org
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131025233225.GA32051@localhost>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+ <154617470.12445.1382725583671.JavaMail.mail@webmail11>
+ <1999200.Zdacx0scmY@diego-arch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1999200.Zdacx0scmY@diego-arch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> On Fri, Oct 25, 2013 at 1:50 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Ming Lei <tom.leiming@gmail.com> writes:
->>> On Fri, Oct 25, 2013 at 7:08 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>>
->>>> Sorry, I was imprecise.  I was referring to the kernel's kallsyms
->>>> tables produced by scripts/kallsyms.c.  This patch left them in the
->>>> the kallsyms tables and filtered them out from /proc/kallsyms.
->>>
->>> Yes, but it isn't easy to do it by script/kallsyms.c , and IMO, it should
->>> be correct to hide them for user space but keep them in kallsyms table.
->>
->> So they'll appear in backtraces?  And turn up randomly for other symbol
->> dereferences?
->>
->> I don't think you really want this!
->
-> Basically these symbols are only used to generate code, and in
-> kernel mode, CPU won't run into the corresponding addresses
-> because the generate code is copied to other address during booting,
-> so I understand they won't appear in backtraces.
+On Fri, Oct 25, 2013 at 09:40:13PM +0200, Diego Calleja wrote:
+> El Viernes, 25 de octubre de 2013 18:26:23 Artem S. Tashkinov escribió:
+> > Oct 25, 2013 05:26:45 PM, david wrote:
+> > >actually, I think the problem is more the impact of the huge write later
+> > >on.
+> > Exactly. And not being able to use applications which show you IO
+> > performance like Midnight Commander. You might prefer to use "cp -a" but I
+> > cannot imagine my life without being able to see the progress of a copying
+> > operation. With the current dirty cache there's no way to understand how
+> > you storage media actually behaves.
+> 
+> 
+> This is a problem I also have been suffering for a long time. It's not so much 
+> how much and when the systems syncs dirty data, but how unreponsive the 
+> desktop becomes when it happens (usually, with rsync + large files). Most 
+> programs become completely unreponsive, specially if they have a large memory 
+> consumption (ie. the browser). I need to pause rsync and wait until the 
+> systems writes out all dirty data if I want to do simple things like scrolling 
+> or do any action that uses I/O, otherwise I need to wait minutes.
 
-An oops occurs when something went *wrong*.  We look up all kinds of
-stuff.  Are you so sure that *none* of the callers will ever see these
-strange symbols and produce a confusing result?
+That's a problem. And it's kind of independent of the dirty threshold
+-- if you are doing large file copies in the background, it will lead
+to continuous disk writes and stalls anyway -- the large dirty threshold
+merely delays the write IO time.
 
-Cheers,
-Rusty.
+> I have 16 GB of RAM and excluding the browser (which usually uses about half 
+> of a GB) and KDE itself, there are no memory hogs, so it seem like it's 
+> something that shouldn't happen. I can understand that I/O operations are 
+> laggy when there is some other intensive I/O ongoing, but right now the system 
+> becomes completely unreponsive. If I am unlucky and Konsole also becomes 
+> unreponsive, I need to switch to a VT (which also takes time).
+> 
+> I haven't reported it before in part because I didn't know how to do it, "my 
+> browser stalls" is not a very useful description and I didn't know what kind 
+> of data I'm supposed to report.
 
+What's the kernel you are running? And it's writing to a hard disk?
+The stalls are most likely caused by either one of
 
+1) write IO starves read IO
+2) direct page reclaim blocked when
+   - trying to writeout PG_dirty pages
+   - trying to lock PG_writeback pages
 
+Which may be confirmed by running
+
+        ps -eo ppid,pid,user,stat,pcpu,comm,wchan:32
+or
+        echo w > /proc/sysrq-trigger    # and check dmesg
+
+during the stalls. The latter command works more reliably.
+
+Thanks,
+Fengguang
