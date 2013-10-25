@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab3JYIUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 04:20:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35642 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab3JYIUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 04:20:47 -0400
-Date: Fri, 25 Oct 2013 10:20:43 +0200
-From: Jan Kara <jack@suse.cz>
-To: =?utf-8?B?6Z+p56OK?= <bonben1989@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: A thought about IO scheduler in linux kernel for SSD
-Message-ID: <20131025082043.GA1418@quack.suse.cz>
-References: <CAK2Ky6xH9rvmpqQ31bi1QrC=dvt9T_8+ELHUZf_MFZccV6MiAw@mail.gmail.com>
- <20131023105931.GG1275@quack.suse.cz>
- <CAK2Ky6xjz5htYdYp9rpfWt1fyK+3oc+i1nR9GWh_hyULpZ=QMg@mail.gmail.com>
+	id S1752265Ab3JYIWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 04:22:14 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:55643 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3JYIWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 04:22:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK2Ky6xjz5htYdYp9rpfWt1fyK+3oc+i1nR9GWh_hyULpZ=QMg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPM=9tzThUmwO1Pw6PvtUvM7ywDzWGSF23wCEVS=wMa3PVNEPw@mail.gmail.com>
+References: <20131024132734.GB2634@kernel.dk>
+	<CAPM=9tzThUmwO1Pw6PvtUvM7ywDzWGSF23wCEVS=wMa3PVNEPw@mail.gmail.com>
+Date: Fri, 25 Oct 2013 09:22:10 +0100
+Message-ID: <CAPM=9ty+xi=1DFWWy8zzS870TTe7Hny948LoPS_pmDAzMGrqtQ@mail.gmail.com>
+Subject: Re: 3.12-rc6 nouveau oops
+From: Dave Airlie <airlied@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Dave Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-10-13 11:10:22, 韩磊 wrote:
-> 2013/10/23 Jan Kara <jack@suse.cz>:
-> > On Wed 23-10-13 08:47:44, 韩磊 wrote:
-> >> Nowadays,the IO schedulers in linux kernel have four types:
-> >>
-> >> deadline,noop,Anticiptory and CFQ.CFQ is the default scheduler.But CFQ is
-> >> not a good scheduler for SSD,dealine may be a good choice.
-> >
-> >   That doesn't make much sense to me. If there are two bios in flight for
-> > some sector, results are undefined. Thus we usually avoid such situation
-> > (usually we want to have defined contents of the disk :). The exclusion is
-> > usually achieved at higher level using page locking etc. So adding code
-> > speeding up such requests doesn't seem worth it.
-> >
-> >                                                                 Honza
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
-> 
-> Do you mean that the probability of two bios have the same start
-> sector in request list at this level is very low?
-  Yes, that's exactly what I mean. As Ming Lei notes, there are ways how it
-could happen (most notably any direct IO user can generate arbitrary number
-of bios with the same start sectors). But in none of these cases
-performance matters, it is usually a bug in application if that happens.
+On Fri, Oct 25, 2013 at 8:59 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> Booting 3.12-rc6 on my macbook quickly freezes after logging in to X. I
+>> was able to capture this oops. It's 100% consistent. 3.11 works
+>> perfectly fine, as did previous kernels.
+>
+> Can you boot with nouveau.runpm=0 and see if it boots and survives
+> suspend/resume.
+>
 
-							Bye
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Oh also a complete dmesg so we can see the DCB table.
+
+Dave.
