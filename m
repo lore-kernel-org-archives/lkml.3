@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab3JYUK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 16:10:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33405 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab3JYUK1 (ORCPT
+	id S1754464Ab3JYUYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 16:24:55 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38138 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3JYUYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 16:10:27 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Fri, 25 Oct 2013 21:10:00 +0100
-Message-Id: <1382731800-19663-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: as3722: Don't export the regmap config
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 25 Oct 2013 16:24:52 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH 0/2] add MSM BAM dmaengine driver
+Date: Fri, 25 Oct 2013 15:24:01 -0500
+Message-Id: <1382732643-8184-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+This patch set introduces the dmaengine driver for the MSM 8x74 Bus Access
+Manager (BAM) DMA controller.  A number of the on-chip devices have their own
+BAM DMA controller and use it to move data between system memory and peripherals
+or between two peripherals.
 
-It's not used outside this file so can be static.
+The initial version of this driver will only support slave DMA operations
+between system memory and peripherals.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/as3722.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/as3722.c b/drivers/mfd/as3722.c
-index cd8ee59..f161f2e 100644
---- a/drivers/mfd/as3722.c
-+++ b/drivers/mfd/as3722.c
-@@ -314,7 +314,7 @@ static const struct regmap_access_table as3722_volatile_table = {
- 	.n_no_ranges = ARRAY_SIZE(as3722_cacheable_ranges),
- };
- 
--const struct regmap_config as3722_regmap_config = {
-+static const struct regmap_config as3722_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 	.max_register = AS3722_MAX_REGISTER,
+Andy Gross (2):
+  dmaengine: add msm bam dma driver
+  dmaengine: msm_bam_dma: Add device tree binding
+
+ .../devicetree/bindings/dma/msm_bam_dma.txt        |   49 ++
+ drivers/dma/Kconfig                                |    9 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/msm_bam_dma.c                          |  840 ++++++++++++++++++++
+ drivers/dma/msm_bam_dma_priv.h                     |  286 +++++++
+ include/linux/msm_bam_dma.h                        |   27 +
+ 6 files changed, 1212 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/msm_bam_dma.txt
+ create mode 100644 drivers/dma/msm_bam_dma.c
+ create mode 100644 drivers/dma/msm_bam_dma_priv.h
+ create mode 100644 include/linux/msm_bam_dma.h
+
 -- 
-1.8.4.rc3
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
