@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab3JYPUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:20:21 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50763 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab3JYPUR (ORCPT
+	id S1755278Ab3JYPU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:20:58 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4144 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab3JYPU4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:20:17 -0400
-Message-ID: <526A8C2B.7000401@gmail.com>
-Date: Fri, 25 Oct 2013 09:20:11 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 25 Oct 2013 11:20:56 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Dmitry Kravkov" <dmitry@broadcom.com>
+To: "Thierry Reding" <thierry.reding@gmail.com>,
+        "Russell King" <rmk@arm.linux.org.uk>,
+        "Merav Sicron" <meravs@broadcom.com>,
+        "David Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: manual merge of the arm tree
+Thread-Topic: linux-next: manual merge of the arm tree
+Thread-Index: AQHOzzknBPxlf8xjmU+VwcIpa+lrJ5oFi33Q
+Date: Fri, 25 Oct 2013 15:20:40 +0000
+Message-ID: <504C9EFCA2D0054393414C9CB605C37F20DDD3E1@SJEXCHMB06.corp.ad.broadcom.com>
+References: <1382454517-4074-1-git-send-email-treding@nvidia.com>
+ <1382454517-4074-2-git-send-email-treding@nvidia.com>
+In-Reply-To: <1382454517-4074-2-git-send-email-treding@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@iki.fi>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        "hegdevasant@linux.vnet.ibm.com" <hegdevasant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, "anton@redhat.com" <anton@redhat.com>,
-        "systemtap@sourceware.org" <systemtap@sourceware.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "aravinda@linux.vnet.ibm.com" <aravinda@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi>
-In-Reply-To: <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 7E7453BC1SC1544201-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/13 8:20 AM, Pekka Enberg wrote:
->> Technically feasible. But then we would have to parse each of the
->> libraries and executables to list them. Right? I am not sure if such a
->> delay is acceptable.
->
-> You could do it at 'perf list' time or even build time and cache it. And add lazy discovery to 'perf record' and friends.
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-
+> owner@vger.kernel.org] On Behalf Of Thierry Reding
+> Sent: Tuesday, October 22, 2013 6:09 PM
+> To: Russell King; Merav Sicron; David Miller; netdev@vger.kernel.org
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: linux-next: manual merge of the arm tree
+> 
+> Today's linux-next merge of the arm tree got a conflict in
+> 
+> 	drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+> 
+> caused by commits 1bfa2c4 (DMA-API: net: broadcom/bnx2x: replace
+> dma_set_mask()+dma_set_coherent_mask() with new helper) and edd3147
+> (bnx2x: Set NETIF_F_HIGHDMA unconditionally).
+> 
+> I fixed it up (see below). Please verify that the resolution looks good.
+> 
+> Thanks,
+> Thierry
+> ---
+> diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+> index b42f89c,38bf998..767aafb
+> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+> @@@ -12117,12 -12079,9 +12117,8 @@@ static int
+> bnx2x_set_coherency_mask(str
+>   {
+>   	struct device *dev = &bp->pdev->dev;
+> 
+> - 	if (dma_set_mask(dev, DMA_BIT_MASK(64)) == 0) {
+> - 		if (dma_set_coherent_mask(dev, DMA_BIT_MASK(64)) != 0) {
+> - 			dev_err(dev, "dma_set_coherent_mask failed,
+> aborting\n");
+> - 			return -EIO;
+> - 		}
+> - 	} else if (dma_set_mask(dev, DMA_BIT_MASK(32)) != 0) {
+>  -	if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64)) == 0) {
+>  -		bp->flags |= USING_DAC_FLAG;
+>  -	} else if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32)) !=
+> 0) {
+> ++	if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64)) != 0 &&
+> ++	    dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32)) != 0) {
+>   		dev_err(dev, "System does not support DMA, aborting\n");
+>   		return -EIO;
+>   	}
 
-Instead searching all the known files or building a cache, how about 
-just having an option like: perf list <DSO>. perf-record could still do 
-the probe magic behind the scenes.
+The fix is correct. Thanks, Thierry.
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+ 
 
-David
