@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab3JYIhW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 04:37:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54709 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab3JYIhN convert rfc822-to-8bit (ORCPT
+	id S1752548Ab3JYIif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 04:38:35 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:64717 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab3JYIid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 04:37:13 -0400
-Subject: Re: [PATCHv2] iio:light:tsl2563: Add DT support
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20131025082344.GA6425@earth.universe>
-Date: Fri, 25 Oct 2013 03:37:22 -0500
-Cc: linux-iio@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <915C1A7A-6128-4B8B-A594-F2CDDED201DC@codeaurora.org>
-References: <1382565063-17083-1-git-send-email-sre@debian.org> <1382624835-10228-1-git-send-email-sre@debian.org> <35B50A0C-D1F9-4D87-86DD-951BF71F2903@codeaurora.org> <20131025082344.GA6425@earth.universe>
-To: Sebastian Reichel <sre@debian.org>
-X-Mailer: Apple Mail (2.1283)
+	Fri, 25 Oct 2013 04:38:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+References: <525BD08C.2080101@t-online.de>
+	<CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+Date: Fri, 25 Oct 2013 09:38:32 +0100
+X-Google-Sender-Auth: noTzNDWiROGvFhA-7VZxI_0DeTg
+Message-ID: <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 14, 2013 at 6:53 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> And your other oopses do seem to have a similar pattern, even if their
+> actual oops is elsewhere. They oops in run_timer_softirq, also taking
+> a page fault in the 0xf9...... range, so it might well be a vmalloc
+> address there too.
 
-On Oct 25, 2013, at 3:23 AM, Sebastian Reichel wrote:
+Hmm.. I just got a run_timer_softirq oops on my own laptop, slightly
+different. That was not during shutdown, although there was a "yum
+upgrade" finishing when that happened, so it's quite likely that there
+was a service shutdown (and then restart).
 
-> On Thu, Oct 24, 2013 at 10:32:36PM -0500, Kumar Gala wrote:
->> On Oct 24, 2013, at 9:27 AM, Sebastian Reichel wrote:
->>> Add Device Tree support for the TSL2563 driver
->>> and document the binding.
->>> 
->>> Signed-off-by: Sebastian Reichel <sre@debian.org>
->>> ---
->>> .../devicetree/bindings/iio/light/tsl2563.txt         | 19 +++++++++++++++++++
->>> Documentation/devicetree/bindings/vendor-prefixes.txt |  1 +
->>> drivers/iio/light/tsl2563.c                           |  4 ++++
->> 
->> For the Binding, assuming another patch to add amstoas to the vendor list
-> 
-> I embedded the vendor list update into this patch.
-> Should I split this into its own patch?
-> 
-> -- Sebastian
+I think it's related. But my oops has almost no information: the IP
+that was jumped to was bogus, and the callchain is just CPU idle
+followed by the softirq -> run_timers_softirq handling, so there's no
+real way to see *what* triggered it.
 
-Its fine, but do update the commit comment about that.
+The bad rip was ffffffffa051e250, which is not a valid code address.
+It *might* be a module address, though. So this might be triggered by
+rmmod on some module that doesn't remove all its timers...
 
-- k
+Ideas?
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+                 Linus
