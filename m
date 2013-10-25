@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3JYObN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:31:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33470 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab3JYObL (ORCPT
+	id S1754194Ab3JYOds (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:33:48 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:63153 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab3JYOdr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:31:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+X/mc3tXRGlxjjLA3G0SF/
-Date: Fri, 25 Oct 2013 07:31:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: NeilBrown <neilb@suse.de>, Russell King <linux@arm.linux.org.uk>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "Fernandes, Joel" <joelf@ti.com>
-Subject: Re: [PATCH 0/2] ARM: OMAP: dmtimers improvements.
-Message-ID: <20131025143103.GZ15154@atomide.com>
-References: <20131024065536.16889.49902.stgit@notabene.brown>
- <448912EABC71F84BBCADFD3C67C4BE5291DD30@DBDE04.ent.ti.com>
+	Fri, 25 Oct 2013 10:33:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <448912EABC71F84BBCADFD3C67C4BE5291DD30@DBDE04.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131025142547.GE13318@ZenIV.linux.org.uk>
+References: <20131025142547.GE13318@ZenIV.linux.org.uk>
+Date: Fri, 25 Oct 2013 15:33:46 +0100
+X-Google-Sender-Auth: PJmF9J87XIFw5NU_w2acxceiZCk
+Message-ID: <CA+55aFx2XQvf1pbhoRP7EJL=We04d3E0i0-DY3gCfcqv7T76Hg@mail.gmail.com>
+Subject: Re: [git pull] a couple of fixes for rc7
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Shilimkar, Santosh <santosh.shilimkar@ti.com> [131024 11:11]:
-> Sorry for top posting .... Probably we should move the dmtimer to drivers/misc or create drivers/timer/
-> This has been pending for quite some time now....
-> 
-> Tony, what you say ?
+On Fri, Oct 25, 2013 at 3:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> nfsd performance regression fix + seq_file lseek(2) fix.
+> Please, pull from the usual place -
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-Yes that should be done and we should cc Thomas Gleixner to
-see if he has any better ideas for some of those exported
-functions. Things that can be done with hrtimer should be done
-with hrtimer, but at least the coprocessor use of timers and
-PWM need to use timers directly.
+Not acceptable.
 
-Regards,
+fs/file_table.c: In function ‘fput’:
+fs/file_table.c:320:4: warning: passing argument 1 of
+‘schedule_delayed_work’ from incompatible pointer type [enabled by
+default]
+    schedule_delayed_work(&delayed_fput_work, 1);
+    ^
+In file included from include/linux/srcu.h:34:0,
+                 from include/linux/notifier.h:15,
+                 from include/linux/memory_hotplug.h:6,
+                 from include/linux/mmzone.h:797,
+                 from include/linux/gfp.h:4,
+                 from include/linux/slab.h:14,
+                 from fs/file_table.c:9:
+include/linux/workqueue.h:594:60: note: expected ‘struct delayed_work
+*’ but argument is of type ‘struct work_struct *’
+ static inline bool schedule_delayed_work(struct delayed_work *dwork,
 
-Tony
+Plase stop sending me untested crap that doesn't even compile cleanly!
+
+                Linus
