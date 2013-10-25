@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab3JYVBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 17:01:09 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:42645 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab3JYVBG (ORCPT
+	id S1755425Ab3JYVBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 17:01:40 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:48914 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364Ab3JYVBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 17:01:06 -0400
+	Fri, 25 Oct 2013 17:01:38 -0400
+Date: Fri, 25 Oct 2013 14:01:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: linux-next: Tree for Oct 25
+Message-ID: <20131025210130.GA31451@roeck-us.net>
+References: <1382713426-2680-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
-Date: Sat, 26 Oct 2013 01:01:06 +0400
-Message-ID: <CAG5DWoj_5cQmQUtd+784sQNW7RhfXUWivP8cbOpADiS1Li35Fg@mail.gmail.com>
-Subject: kprobe: "BUG: unable to handle kernel paging request"
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: open list <linux-kernel@vger.kernel.org>
-Cc: jovi.zhangwei@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382713426-2680-1-git-send-email-treding@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With some kernel's configuration there is such messages in dmesg in
-different places while using kprobes.
+On Fri, Oct 25, 2013 at 05:03:45PM +0200, Thierry Reding wrote:
+> Hi all,
+> 
+> I've uploaded today's linux-next tree to the master branch of the
+> repository below:
+> 
+>         git://gitorious.org/thierryreding/linux-next.git
+> 
+> A next-20131025 tag is also provided for convenience.
+> 
+> One new trivial conflicts and a new build failure caused by an incorrect
+> use of the genpool allocator.
+> 
+> Upon a request from Olof Johansson I've only included fixes for build
+> breakage as a result of interactions between the various trees. But
+> since I've fixed many of the other build failures already, I've pushed
+> those to a separate tag (next-20131025-fixes). That builds fine on x86
+> 32-bit and 64-bit allmodconfigs as well as ARM and x86 default
+> configurations. Most of the PowerPC build errors have also been fixed.
+> 
+Hi Thierry,
 
-I investigated this and founded that it reproduced with
-https://gist.github.com/azat/7078890#file-config-3-12-0-rc5-deb
-And not reproduced with
-https://gist.github.com/azat/7078890#file-config-3-12-0-rc5-worked-kprobe
+You are making a good point for your previous approach, but maybe it is
+necessary to show people the real status of the -next tree.
 
-I used the next script for testing
-https://gist.github.com/azat/7078890#file-ktap-sh
+	total: 110 pass: 4 skipped: 4 fail: 102
 
-Here is the initial email log with Jovi (ktap author):
-http://www.freelists.org/post/ktap/BUG-unable-to-handle-kernel-paging-request-after-ktap-script-to-trace-SyS-write
+All ten qemu tests fail as well, though I didn't check if all are build failures
+or if there are some runtime failures.
 
-If I can help, please let me know!
-Thanks!
+This is with " v3.12-rc5-8053-g9e11bce".
 
--- 
-Respectfully
-Azat Khuzhin
+Guenter
