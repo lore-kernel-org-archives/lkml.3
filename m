@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3JYJMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:12:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49572 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab3JYJMx (ORCPT
+	id S1752595Ab3JYJP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:15:26 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:32824 "EHLO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3JYJPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:12:53 -0400
-Date: Fri, 25 Oct 2013 10:13:42 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Fri, 25 Oct 2013 05:15:25 -0400
+Date: Fri, 25 Oct 2013 11:15:55 +0200
+From: Karl Kiniger <karl.kiniger@med.ge.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131025091342.GA10037@kroah.com>
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131025091555.GA30895@kipc2.localdomain>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+ <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+ <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-GEHealthcare-MailScanner: Found to be clean
+X-GEHealthcare-MailScanner-From: karl.kiniger@med.ge.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 10:02:22AM +0100, Linus Torvalds wrote:
-> Adding more people, so quoting the whole email for them.
+On Fri 131025, Linus Torvalds wrote:
+> On Fri, Oct 25, 2013 at 9:30 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+> >
+> > My feeling is that vm.dirty_ratio/vm.dirty_background_ratio should _not_ be
+> > percentage based, 'cause for PCs/servers with a lot of memory (say 64GB or
+> > more) this value becomes unrealistic (13GB) and I've already had some
+> > unpleasant effects due to it.
 > 
-> We definitely have some module unload issues. Guys, try the following
-> a few times to unload modules:
+> Right. The percentage notion really goes back to the days when we
+> typically had 8-64 *megabytes* of memory So if you had a 8MB machine
+> you wouldn't want to have more than one megabyte of dirty data, but if
+> you were "Mr Moneybags" and could afford 64MB, you might want to have
+> up to 8MB dirty!!
 > 
->     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
+> Things have changed.
 > 
-> (a few times because unloading one module will then potentially make
-> other modules unloadable).
+> So I would suggest we change the defaults. Or pwehaps make the rule be
+> that "the ratio numbers are 'ratio of memory up to 1GB'", to make the
+> semantics similar across 32-bit HIGHMEM machines and 64-bit machines.
 > 
-> On my machine, I can trigger this, for example:
+> The modern way of expressing the dirty limits are to give the actual
+> absolute byte amounts, but we default to the legacy ratio mode..
 > 
->   ------------[ cut here ]------------
->   WARNING: CPU: 0 PID: 3217 at fs/sysfs/file.c:498 sysfs_attr_ns+0x91/0xa0()
->   sysfs: kobject (null) without dirent
->   Modules linked in: fuse nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_$
->   CPU: 0 PID: 3217 Comm: rmmod Not tainted 3.12.0-rc6-00284-ge6036c0b8896 #19
->   Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
->    0000000000000009 ffff8800aca35df8 ffffffff8160aab5 ffff8800aca35e40
->    ffff8800aca35e30 ffffffff810514b8 ffffffffa013f080 ffff8801194a6040
->    0000000000000800 0000000000000000 0000000000c5b3e0 ffff8800aca35e90
->   Call Trace:
->    [<ffffffff8160aab5>] dump_stack+0x45/0x56
->    [<ffffffff810514b8>] warn_slowpath_common+0x78/0xa0
->    [<ffffffff81051527>] warn_slowpath_fmt+0x47/0x50
->    [<ffffffff810b5960>] ? module_refcount+0xb0/0xb0
->    [<ffffffff811e5c61>] sysfs_attr_ns+0x91/0xa0
->    [<ffffffff811e5d2a>] sysfs_remove_file+0x1a/0x50
->    [<ffffffff814c88a3>] cpufreq_sysfs_remove_file+0x13/0x30
->    [<ffffffffa013d350>] acpi_cpufreq_exit+0x2e/0xcde [acpi_cpufreq]
->    [<ffffffff810b7d1d>] SyS_delete_module+0x15d/0x2c0
->    [<ffffffff81002929>] ? do_notify_resume+0x59/0x90
->    [<ffffffff81618f62>] system_call_fastpath+0x16/0x1b
->   ---[ end trace f887112caaa5c4ab ]---
-> 
-> so at least we have a cpufreq/sysfs interaction bug. There may be others.
-> 
-> This particular cpufreq issue may be triggered by the fact that
-> acpi-cpufreq isn't actually in use (pstate is). Or it might be some
-> generic cpufreq/sysfs bug. Rafael, Greg, ideas?
+>                 Linus
 
-It looks like a cpufreq bug as the sysfs core is telling the driver that
-it tried to delete an attribute file that had already been cleaned up.
-That's usually true if the kobject was deleted previously (which
-recursively removes the files.)
+Is it currently possible to somehow set above values per block device?
 
-In looking at the cpufreq_sysfs code, there's a hack of a reference
-count that is trying to determine if the kobject should be freed or not.
-Using an integer that is not protected by a lock to try to duplicate the
-internal kobject reference count seems like a race condition waiting to
-happen, which I'm guessing is happening here.
+I want default behaviour for almost everything but  DVD drives in DVD+RW
+packet writing mode may easily take several minutes in case of a sync.
 
-I'm slowly working on cleaning up the attribute code in sysfs and the
-driver core and the cpufreq handling of attributes is on my list of
-places that need the rework, so it will get resolved soon.
+Karl
 
-> I don't see that this particular one would be the one that causes the
-> timer issues, but it's an example of the fact that module unload tends
-> to be special and not necessarily well tested.
 
-Yeah, this is a warning that can be safely ignored (the sysfs core
-handles the error just fine), it's a warning to the developer that they
-did something foolish.
-
-thanks,
-
-greg k-h
