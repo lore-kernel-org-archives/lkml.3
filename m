@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3JYOnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:43:18 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:50228 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3JYOmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:42:49 -0400
-From: Matias Bjorling <m@bjorling.me>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, Matias Bjorling <m@bjorling.me>
-Subject: [PATCH 1/2] blk-mq: allow request queues to share tags map
-Date: Fri, 25 Oct 2013 16:42:36 +0200
-Message-Id: <1382712157-28564-2-git-send-email-m@bjorling.me>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382712157-28564-1-git-send-email-m@bjorling.me>
-References: <1382712157-28564-1-git-send-email-m@bjorling.me>
+	id S1754765Ab3JYOo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:44:56 -0400
+Received: from ring0.de ([91.143.88.219]:51611 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab3JYOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 10:44:54 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Fri, 25 Oct 2013 16:44:28 +0200
+From: Sebastian Reichel <sre@debian.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
+Message-ID: <20131025144427.GA14862@earth.universe>
+Mail-Followup-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Sachin Kamat <sachin.kamat@linaro.org>,
+	Florian Vaussard <florian.vaussard@epfl.ch>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+	devicetree@vger.kernel.org
+References: <1382626126-12565-1-git-send-email-sre@debian.org>
+ <1382626126-12565-2-git-send-email-sre@debian.org>
+ <526A680A.8090308@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <526A680A.8090308@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices, such as NVMe, initializes a limited number of queues. These are
-shared by all the block devices. Allow a driver to tap into the tags
-structure and decide if an existing tag structure should be used.
 
-Signed-off-by: Matias Bjorling <m@bjorling.me>
----
- block/blk-mq-tag.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index d64a02f..c7b49d5 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -1,4 +1,5 @@
- #include <linux/kernel.h>
-+#include <linux/kref.h>
- #include <linux/module.h>
- #include <linux/percpu_ida.h>
- 
-@@ -18,6 +19,8 @@ struct blk_mq_tags {
- 
- 	struct percpu_ida free_tags;
- 	struct percpu_ida reserved_tags;
-+
-+	struct kref ref_count;
- };
- 
- void blk_mq_wait_for_tags(struct blk_mq_tags *tags)
-@@ -116,6 +119,12 @@ void blk_mq_tag_busy_iter(struct blk_mq_tags *tags,
- 	kfree(tag_map);
- }
- 
-+void blk_mq_init_tags_shared(struct blk_mq_tags *tags)
-+{
-+	kref_get(&tags->ref_count);
-+}
-+EXPORT_SYMBOL_GPL(blk_mq_init_tags_shared);
-+
- struct blk_mq_tags *blk_mq_init_tags(unsigned int total_tags,
- 				     unsigned int reserved_tags, int node)
- {
-@@ -145,6 +154,8 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int total_tags,
- 	tags->nr_max_cache = nr_cache;
- 	tags->nr_batch_move = max(1u, nr_cache / 2);
- 
-+	kref_init(&tags->ref_count);
-+
- 	ret = __percpu_ida_init(&tags->free_tags, tags->nr_tags -
- 				tags->nr_reserved_tags,
- 				tags->nr_max_cache,
-@@ -171,14 +182,23 @@ err_free_tags:
- 	kfree(tags);
- 	return NULL;
- }
-+EXPORT_SYMBOL_GPL(blk_mq_init_tags);
- 
--void blk_mq_free_tags(struct blk_mq_tags *tags)
-+static void __blk_mq_free_tags(struct kref *kref)
- {
-+	struct blk_mq_tags *tags = container_of(kref, struct blk_mq_tags,
-+								ref_count);
-+
- 	percpu_ida_destroy(&tags->free_tags);
- 	percpu_ida_destroy(&tags->reserved_tags);
- 	kfree(tags);
- }
- 
-+void blk_mq_free_tags(struct blk_mq_tags *tags)
-+{
-+	kref_put(&tags->ref_count, __blk_mq_free_tags);
-+}
-+
- ssize_t blk_mq_tag_sysfs_show(struct blk_mq_tags *tags, char *page)
- {
- 	char *orig_page = page;
--- 
-1.8.3.2
+Hi P=E9ter,
 
+On Fri, Oct 25, 2013 at 03:46:02PM +0300, Peter Ujfalusi wrote:
+> > [...]
+> > +#if IS_ENABLED(CONFIG_OF)
+>=20
+> You don't need to do this.
+
+It's done like this in all the other drivers.
+
+> > +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] =
+=3D {
+> > +       { .compatible =3D "ti,twl4030-pwrbutton" },
+> > +       {},
+> > +};
+> > +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
+> > +#endif
+> > +
+> >  static struct platform_driver twl4030_pwrbutton_driver =3D {
+> > +	.probe		=3D twl4030_pwrbutton_probe,
+> >  	.remove		=3D __exit_p(twl4030_pwrbutton_remove),
+> >  	.driver		=3D {
+> >  		.name	=3D "twl4030_pwrbutton",
+> >  		.owner	=3D THIS_MODULE,
+> > +		.of_match_table =3D of_match_ptr(twl4030_pwrbutton_dt_match_table),
+>=20
+> If you try to compile this driver with config !CONFIG_OF it will not work=
+ in
+> this way.
+
+For !CONFIG_OF of_match_ptr is defined as follows (in "include/linux/of.h"):
+
+#define of_match_ptr(_ptr)  NULL
+
+So the preprocessor will remove the undefined symbol.
+
+-- Sebastian
+
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSaoPLAAoJENju1/PIO/qapscP/1wH218rX6suEps9GQ3nqB/8
+ttufgBcA/qofrMTgTYPSYleEZrGEA1VIW4SGLnQvsHhivnMHlavki2nbw2ib88CA
+99G6tOqaCnKjmy6pJoOyWK4VK2oreI1MGgd55dTxEMApBcyEhNi/Ch1p3xe/gBWw
+3BvlQTg1qo9rc0Bpo4qzHjHUAOOsEbJVqXVwpUHVApZGHo4nwhbiVapkEvA5pTgo
+6617/CZv5Ttoq6uHJeaD9STuQ8c5REzWMSuLtBqaMOQC8CQTcSXjmuNlai/QTFQe
+6dd9q56QDu/Ji93kT03Y3EhXek7L/rOKs4GjatmfQ63nfdCMqz7elUUTC8iuZMfl
+DOpmwhDAXKwlNRwCpMEXDUxrluV7iuavxrGTvb2/61DXtgCrKMMOuAocEscm3vNk
+sv75K8803sb2mZgvkU9jD51VXQBhjcm4oD1yYvpnwSU3/wmxOXxspYfDsas3Ppd/
+LKSZQsEpxEikalnGp5l9dvMgZ7XI00nmaj3h5xhRn/Mv+ArFqUevtF3Yuk6535Zb
+ZGVLnF60ixQEz0s7Q3W9QwCcowVr+tjiohEyUQV3jQLEuqAsJmVmcat34AqF4KIN
+h3P7VS0XAcNtHLE570PcUb4hh7DOSdKcqkMvmnUFUB0ukdtI3uSj8rIENKjJRDNt
+aX9UET3e5q5p73zZSA8F
+=WoCt
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
