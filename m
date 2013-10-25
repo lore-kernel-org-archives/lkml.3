@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3JYLsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:48:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53101 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab3JYLsm (ORCPT
+	id S1753431Ab3JYLtD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:49:03 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36480 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3JYLtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:48:42 -0400
-Date: Fri, 25 Oct 2013 04:48:23 -0700
-From: tip-bot for Lan Tianyu <tipbot@zytor.com>
-Message-ID: <tip-6d9153bbce50d41802ad2e20ce52daf699a3e8ad@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, tianyu.lan@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tianyu.lan@intel.com
-In-Reply-To: <1382598693-29334-1-git-send-email-tianyu.lan@intel.com>
-References: <1382598693-29334-1-git-send-email-tianyu.lan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/reboot] x86/reboot: Correct pr_info()
-  log message in the set_bios/pci/kbd_reboot()
-Git-Commit-ID: 6d9153bbce50d41802ad2e20ce52daf699a3e8ad
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Oct 2013 07:49:01 -0400
+Date: Fri, 25 Oct 2013 13:48:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: remove extra put_online_cpus() inside
+ sched_setaffinity()
+Message-ID: <20131025114857.GB6374@gmail.com>
+References: <52673C57.1050607@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 25 Oct 2013 04:48:30 -0700 (PDT)
+In-Reply-To: <52673C57.1050607@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6d9153bbce50d41802ad2e20ce52daf699a3e8ad
-Gitweb:     http://git.kernel.org/tip/6d9153bbce50d41802ad2e20ce52daf699a3e8ad
-Author:     Lan Tianyu <tianyu.lan@intel.com>
-AuthorDate: Thu, 24 Oct 2013 15:11:33 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 25 Oct 2013 12:45:04 +0200
 
-x86/reboot: Correct pr_info() log message in the set_bios/pci/kbd_reboot()
+* Michael wang <wangyun@linux.vnet.ibm.com> wrote:
 
-commit:
+> commit 6acce3ef84520537f8a09a12c9ddbe814a584dd2
+>         sched: Remove get_online_cpus() usage
+> 
+> has left one extra put_online_cpus() inside sched_setaffinity(), remove it
+> to fix the WARN:
+> 
+> [3165] Watchdog is alive
+> [3159] Started watchdog thread 3165
+> [   58.695502] ------------[ cut here ]------------
+> [   58.697835] WARNING: CPU: 0 PID: 3166 at kernel/cpu.c:84 put_online_cpus+0x43/0x70()
+> [   58.702423] Modules linked in:
+> [   58.704404] CPU: 0 PID: 3166 Comm: trinity-child0 Not tainted 3.12.0-rc5-01882-gf3db366 #1172
+> [   58.708530] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   58.710992]  0000000000000000 ffff88000acfbe50 ffffffff81a24643 0000000000000000
+> [   58.715410]  ffff88000acfbe88 ffffffff810c3e6b ffffffff810c3fef 0000000000000000
+> [   58.719826]  0000000000000000 0000000000006ee0 0000000000000ffc ffff88000acfbe98
+> [   58.724348] Call Trace:
+> [   58.726190]  [<ffffffff81a24643>] dump_stack+0x4d/0x66
+> [   58.728531]  [<ffffffff810c3e6b>] warn_slowpath_common+0x7f/0x98
+> [   58.731069]  [<ffffffff810c3fef>] ? put_online_cpus+0x43/0x70
+> [   58.733664]  [<ffffffff810c3f32>] warn_slowpath_null+0x1a/0x1c
+> [   58.736258]  [<ffffffff810c3fef>] put_online_cpus+0x43/0x70
+> [   58.738686]  [<ffffffff810efd59>] sched_setaffinity+0x7d/0x1f9
+> [   58.741210]  [<ffffffff810efce1>] ? sched_setaffinity+0x5/0x1f9
+> [   58.743775]  [<ffffffff81a2f724>] ? _raw_spin_unlock_irq+0x2c/0x3e
+> [   58.746417]  [<ffffffff810c7012>] ? do_setitimer+0x194/0x1f5
+> [   58.748899]  [<ffffffff810eff37>] SyS_sched_setaffinity+0x62/0x71
+> [   58.751481]  [<ffffffff81a373a9>] system_call_fastpath+0x16/0x1b
+> [   58.754070] ---[ end trace 034818a1f6f06868 ]---
+> [   58.757521] ------------[ cut here ]------------
+> 
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/core.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index c06b8d3..7c61f31 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+>         p = find_process_by_pid(pid);
+>         if (!p) {
+>                 rcu_read_unlock();
+> -               put_online_cpus();
+>                 return -ESRCH;
+>         }
 
-  c767a54ba065 x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
+The patch is whitespace damaged.
 
-broke the log messages in the set_bios/pci/kbd_reboot() functions, by
-putting the reboot method string and quirk entry's ident string in the
-wrong order. This patch fixes it.
+Thanks,
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Cc: holt@sgi.com
-Cc: davej@fedoraproject.org
-Cc: lenb@kernel.org
-Cc: rjw@rjwysocki.net
-Cc: awilliam@redhat.com
-Link: http://lkml.kernel.org/r/1382598693-29334-1-git-send-email-tianyu.lan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/reboot.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 7692520..da1fe1c 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -61,7 +61,7 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
- 	if (reboot_type != BOOT_BIOS) {
- 		reboot_type = BOOT_BIOS;
- 		pr_info("%s series board detected. Selecting %s-method for reboots.\n",
--			"BIOS", d->ident);
-+			d->ident, "BIOS");
- 	}
- 	return 0;
- }
-@@ -117,7 +117,7 @@ static int __init set_pci_reboot(const struct dmi_system_id *d)
- 	if (reboot_type != BOOT_CF9) {
- 		reboot_type = BOOT_CF9;
- 		pr_info("%s series board detected. Selecting %s-method for reboots.\n",
--			"PCI", d->ident);
-+			d->ident, "PCI");
- 	}
- 	return 0;
- }
-@@ -127,7 +127,7 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
- 	if (reboot_type != BOOT_KBD) {
- 		reboot_type = BOOT_KBD;
- 		pr_info("%s series board detected. Selecting %s-method for reboot.\n",
--			"KBD", d->ident);
-+			d->ident, "KBD");
- 	}
- 	return 0;
- }
+	Ingo
