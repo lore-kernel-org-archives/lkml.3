@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3JYBE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 21:04:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:37700 "EHLO ozlabs.org"
+	id S1755397Ab3JYBFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 21:05:55 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46122 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab3JYBE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 21:04:56 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Chen Gang <gang.chen@asianux.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-In-Reply-To: <20131024084559.GD16735@n2100.arm.linux.org.uk>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com> <87eh7bfoq9.fsf@rustcorp.com.au> <20131024084559.GD16735@n2100.arm.linux.org.uk>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 25 Oct 2013 09:38:19 +1030
-Message-ID: <87mwlyclng.fsf@rustcorp.com.au>
+	id S1755314Ab3JYBFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 21:05:53 -0400
+Date: Thu, 24 Oct 2013 18:05:42 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] lkdtm: isolate stack corruption test
+Message-ID: <20131025010542.GA10689@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
-> On Thu, Oct 24, 2013 at 11:51:18AM +1030, Rusty Russell wrote:
->> Ming Lei <tom.leiming@gmail.com> writes:
->> > Address of non-module kernel symbol should always be located
->> > from CONFIG_PAGE_OFFSET on, so only show these legal kernel
->> > symbols in /proc/kallsyms.
->> >
->> > On ARM, some symbols(see below) may drop in relocatable code, so
->> > perf can't parse kernel symbols any more from /proc/kallsyms, this
->> > patch fixes the problem.
->> >
->> > 	00000000 t __vectors_start
->> > 	00000020 A cpu_v7_suspend_size
->> > 	00001000 t __stubs_start
->> > 	00001004 t vector_rst
->> > 	00001020 t vector_irq
->> > 	000010a0 t vector_dabt
->> > 	00001120 t vector_pabt
->> > 	000011a0 t vector_und
->> > 	00001220 t vector_addrexcptn
->> > 	00001224 t vector_fiq
->> > 	00001224 T vector_fiq_offset
->> >
->> > The issue can be fixed in scripts/kallsyms.c too, but looks this
->> > approach is easier.
->> 
->> This fix looks hacky; if these symbols are not available, don't just
->> remove them from /proc/kallsyms, but don't put them in the kernel at
->> all.
->
-> How do you "don't put them in the kernel at all" when they're used by
-> the kernel internally as offsets?
+When tests were added to lkdtm that grew the stack frame, the stack
+corruption test stopped working. This isolates the test in its own
+function, and forces it not to be inlined.
 
-Sorry, I was imprecise.  I was referring to the kernel's kallsyms
-tables produced by scripts/kallsyms.c.  This patch left them in the
-the kallsyms tables and filtered them out from /proc/kallsyms.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Fixes: cc33c537c12f ("lkdtm: add "EXEC_*" triggers")
+---
+This bug was introduced in 3.12, so it'd be nice to get it fixed there too.
+But if misses it, I'm likely the only person to notice. And in that case,
+it should go into stable for 3.12.
+---
+ drivers/misc/lkdtm.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-It's weird that cpu_v7_suspend_size appeared above, since kallsyms
-should filter out 'A' symbols already.
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index 2fc0586ce3bb..9cbd0370ca44 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -297,6 +297,14 @@ static void do_nothing(void)
+ 	return;
+ }
+ 
++static noinline void corrupt_stack(void)
++{
++	/* Use default char array length that triggers stack protection. */
++	char data[8];
++
++	memset((void *)data, 0, 64);
++}
++
+ static void execute_location(void *dst)
+ {
+ 	void (*func)(void) = dst;
+@@ -327,13 +335,9 @@ static void lkdtm_do_action(enum ctype which)
+ 	case CT_OVERFLOW:
+ 		(void) recursive_loop(0);
+ 		break;
+-	case CT_CORRUPT_STACK: {
+-		/* Make sure the compiler creates and uses an 8 char array. */
+-		volatile char data[8];
+-
+-		memset((void *)data, 0, 64);
++	case CT_CORRUPT_STACK:
++		corrupt_stack();
+ 		break;
+-	}
+ 	case CT_UNALIGNED_LOAD_STORE_WRITE: {
+ 		static u8 data[5] __attribute__((aligned(4))) = {1, 2,
+ 				3, 4, 5};
+-- 
+1.7.9.5
 
-> If you mean, just get rid of them, shall I just add these as magic
-> numbers instead based on the values in this email?  Is that really a
-> sane solution?
->
-> No, we have to keep these symbols IMHO.
 
-Can you make them absolute symbols?  That should Just Work for kallsyms.
-
-Cheers,
-Rusty.
+-- 
+Kees Cook
+Chrome OS Security
