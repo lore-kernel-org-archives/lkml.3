@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab3JYFRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:17:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30784 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab3JYFRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:17:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="398371596"
-Date: Fri, 25 Oct 2013 09:53:10 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
- status
-Message-ID: <20131025042310.GC21230@intel.com>
-References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
- <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
- <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
- <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
- <20131017020745.GA14013@intel.com>
- <20131017142755.GA4477@breakpoint.cc>
- <20131017134846.GG14013@intel.com>
- <Pine.LNX.4.64.1310242326500.2900@axis700.grange>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1310242326500.2900@axis700.grange>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751218Ab3JYF1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:27:47 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:40941 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3JYF1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 01:27:46 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: kishon@ti.com, sachin.kamat@linaro.org
+Subject: [PATCH 1/1] drivers: phy: Fix memory leak
+Date: Fri, 25 Oct 2013 10:56:24 +0530
+Message-Id: <1382678784-20191-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 11:28:29PM +0200, Guennadi Liakhovetski wrote:
-> Hi Vinod
-> 
-> On Thu, 17 Oct 2013, Vinod Koul wrote:
-> > Yes i missed it in first place update the patch to fix that
-> 
-> Are you planning to post a fixed version of this patch or you just fix it 
-> internally? Would be good to have it posted to be able to ack it and other 
-> relevant patches.
-looks like you missed it... I had posted updated patch [1] in this thread here
-and I posted 29th patch as removal one [2]
+'phy' was not being freed upon error in one of the cases.
+Adjust the 'goto's to fix this.
 
-Both were pushed to -next after few days
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/phy/phy-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-[1]: http://marc.info/?l=linux-kernel&m=138197886521699&w=2
-[2]: http://marc.info/?l=linux-kernel&m=138197936321767&w=2
-
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 03cf8fb..712b358 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -453,7 +453,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 	if (id < 0) {
+ 		dev_err(dev, "unable to get id\n");
+ 		ret = id;
+-		goto err0;
++		goto err1;
+ 	}
+ 
+ 	device_initialize(&phy->dev);
+@@ -468,11 +468,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 
+ 	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
+ 	if (ret)
+-		goto err1;
++		goto err2;
+ 
+ 	ret = device_add(&phy->dev);
+ 	if (ret)
+-		goto err1;
++		goto err2;
+ 
+ 	if (pm_runtime_enabled(dev)) {
+ 		pm_runtime_enable(&phy->dev);
+@@ -481,11 +481,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 
+ 	return phy;
+ 
+-err1:
++err2:
+ 	ida_remove(&phy_ida, phy->id);
+ 	put_device(&phy->dev);
++err1:
+ 	kfree(phy);
+-
+ err0:
+ 	return ERR_PTR(ret);
+ }
 -- 
-~Vinod
+1.7.9.5
+
