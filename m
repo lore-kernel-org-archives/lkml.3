@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3JYRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 13:03:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39876 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab3JYRDP (ORCPT
+	id S1753658Ab3JYRKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 13:10:32 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:64615 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab3JYRKb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 13:03:15 -0400
-Date: Fri, 25 Oct 2013 19:03:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
-        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131025170306.GF19466@laptop.lan>
-References: <20131017160439.GP227855@redhat.com>
- <20131017163039.GR10651@twins.programming.kicks-ass.net>
- <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
- <20131017220156.GB10651@twins.programming.kicks-ass.net>
- <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
- <20131022211237.GH2490@laptop.programming.kicks-ass.net>
- <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
- <20131023204838.GB19466@laptop.lan>
- <20131024105206.GM2490@laptop.programming.kicks-ass.net>
- <20131025163303.GD108330@redhat.com>
+	Fri, 25 Oct 2013 13:10:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131025163303.GD108330@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <201310251838.32001@pali>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
+ <CAK5ve-KzJa9QXDXWehUsqrs5E_NeSkHsbktfzPrOtfHducyMQw@mail.gmail.com> <201310251838.32001@pali>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 25 Oct 2013 10:10:07 -0700
+Message-ID: <CAK5ve-JrQhpwx9ZG1Kyhuxdc=dqfAaA6YBOMkDWYWrefeoeUxw@mail.gmail.com>
+Subject: Re: [PATCH 00/10] leds: lp5521,5523: restore device attributes for
+ running LED patterns
+To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Milo Kim <woogyom.kim@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 12:33:03PM -0400, Don Zickus wrote:
-> Hi Peter,
-> 
-> I finally had a chance to run this on my machine.  From my testing, it
-> looks good.  Better performance numbers.  I think my longest latency went
-> from 300K cycles down to 150K cycles and very few of those (most are under
-> 100K cycles).
-> 
-> I also don't see perf throttling me down to 1500 samples, it stops around
-> 7000.  So I see progress with this patch. :-)
+On Fri, Oct 25, 2013 at 9:38 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> On Tuesday 13 August 2013 23:04:14 Bryan Wu wrote:
+>> On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
+>> > This patch-set resolves the application conflict by
+>> > restoring sysfs files.
+>> >
+>> > For LP5521
+>> >
+>> >   engine1/2/3_mode
+>> >   engine1/2/3_load
+>> >
+>> > For LP5523
+>> >
+>> >   engine1/2/3_mode
+>> >   engine1/2/3_load
+>> >   engine1/2/3_leds
+>> >
+>> > Those attributes are accessed when LED pattern is run by
+>> > custom application. Those were removed when LED pattern
+>> > interface was changed to generic firmware interface. Please
+>> > refer to commits below.
+>> >
+>> >   git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
+>> >   (leds-lp5521: use generic firmware interface)
+>> >
+>> >   git commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0
+>> >   (leds-lp5523: use generic firmware interface)
+>> >
+>> > Necessary attributes are restored in this patch-set.
+>> >
+>> > (Other changes)
+>> > New data structure is added for handling values from/to an
+>> > application. Few code fixes for reducing writing I2C
+>> > commands.
+>> > Add LP55xx common macros for code refactoring.
+>> > Documentation updates.
+>> >
+>> > You can also pull from the location below
+>> > This branch is based on 'for-next' of linux-leds.
+>> >
+>> >   https://github.com/milokim/lp55xx.git
+>> >   resolve-missing-sysfs
+>>
+>> Thanks, I've already merged the whole patchset in my -devel
+>> branch [1].
+>>
+>> Pali, could you please help to test it on your hardware? Just
+>> grab my -devel branch and build then run.
+>>
+>> Thanks,
+>> -Bryan
+>>
+>
+> Hi, I see that all your patches are part of 3.12-rc5 kernel.
+>
+> Now I tested this example led program:
+>
+>     # Clearing LED-state to be sure
+>     echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
+>     echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
+>     echo 0 > /sys/class/leds/lp5523:r/brightness
+>     echo 0 > /sys/class/leds/lp5523:g/brightness
+>     echo 0 > /sys/class/leds/lp5523:b/brightness
+>
+>     # Setting yellow light pattern and running it
+>     echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
+>     echo "000001100" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds
+>     echo "9d804000427f0d7f7f007f0042000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_load
+>     echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
+>     echo "000000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_leds
+>     echo "9d800000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_load
+>     echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
+>     echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
+>     echo 20 > /sys/class/leds/lp5523:r/led_current
+>     echo 2 > /sys/class/leds/lp5523:g/led_current
+>     echo 0 > /sys/class/leds/lp5523:b/led_current
+>
+> All sysfs entries exists and every echo returned 0.
+>
+> But led does not start blinking that yellow ligh pattern.
+> So it not working on 3.12-rc5 kernel :-(
+>
 
-Awesome.. I'll write up a proper patch when I'm back home.
+
+OK, great! Do you still remember which kernel version works on you system?
+Milo, do you have time to take a look? I bet it's a regression somewhere.
+
+Thanks,
+-Bryan
