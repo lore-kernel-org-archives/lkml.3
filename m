@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3JYL0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:26:52 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39973 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab3JYL0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:26:50 -0400
-Date: Fri, 25 Oct 2013 04:26:37 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: NeilBrown <neilb@suse.de>
-cc: "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        axboe@kernel.dk, linux-mm@kvack.org
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-In-Reply-To: <20131025214952.3eb41201@notabene.brown>
-Message-ID: <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07> <20131025214952.3eb41201@notabene.brown>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753338Ab3JYL2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:28:17 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:42258 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3JYL2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:28:15 -0400
+From: Michal Nazarewicz <mpn@google.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH] crypto: blkcipher: do not read unutialised walk->flags
+Date: Fri, 25 Oct 2013 12:27:35 +0100
+Message-Id: <b83903fdfd4b274d401b2417ca960ab7ff8e0273.1382699979.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Oct 2013, NeilBrown wrote:
+From: Michal Nazarewicz <mina86@mina86.com>
 
-> On Fri, 25 Oct 2013 07:25:13 +0000 (UTC) "Artem S. Tashkinov"
-> <t.artem@lycos.com> wrote:
->
->> Hello!
->>
->> On my x86-64 PC (Intel Core i5 2500, 16GB RAM), I have the same 3.11 kernel
->> built for the i686 (with PAE) and x86-64 architectures. What's really troubling me
->> is that the x86-64 kernel has the following problem:
->>
->> When I copy large files to any storage device, be it my HDD with ext4 partitions
->> or flash drive with FAT32 partitions, the kernel first caches them in memory entirely
->> then flushes them some time later (quite unpredictably though) or immediately upon
->> invoking "sync".
->>
->> How can I disable this memory cache altogether (or at least minimize caching)? When
->> running the i686 kernel with the same configuration I don't observe this effect - files get
->> written out almost immediately (for instance "sync" takes less than a second, whereas
->> on x86-64 it can take a dozen of _minutes_ depending on a file size and storage
->> performance).
->
-> What exactly is bothering you about this?  The amount of memory used or the
-> time until data is flushed?
+blkcipher_walk_virt, blkcipher_walk_virt_block and
+blkcipher_walk_phys functions modify the walk->flags by using
+a binary “&=” or “|=” operator.  This translate to read followed by
+a write.  However, the walk->flags is usually not initialised so the
+read returns garbage.
 
-actually, I think the problem is more the impact of the huge write later on.
+At the same time, those functions call blkcipher_walk_first which
+then calls blkcipher_walk_next function which zeroes all flags
+except for BLKCIPHER_WALK_PHYS.  This means, that the read done in
+the virt, virt_block and phys functions is completely meaningless.
 
-David Lang
+Dropping the read and changing “&=”/“|=” with a plain assignment
+clears the confusion without changing any functionality of the API.
 
-> If the later, then /proc/sys/vm/dirty_expire_centisecs is where you want to
-> look.
-> This defaults to 30 seconds (3000 centisecs).
-> You could make it smaller (providing you also shrink
-> dirty_writeback_centisecs in a similar ratio) and the VM will flush out data
-> more quickly.
->
-> NeilBrown
->
->
->>
->> I'm _not_ talking about disabling write cache on my storage itself (hdparm -W 0 /dev/XXX)
->> - firstly this command is detrimental to the performance of my PC, secondly, it won't help
->> in this instance.
->>
->> Swap is totally disabled, usually my memory is entirely free.
->>
->> My kernel configuration can be fetched here: https://bugzilla.kernel.org/show_bug.cgi?id=63531
->>
->> Please, advise.
->>
->> Best regards,
->>
->> Artem
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+
+ Admittedly, I'm not familiar with the crypto API, but I believe
+ this to be a valid change.  This has actually been prompted by
+ Coverity scan which detects the read of initialised data.
+
+ crypto/blkcipher.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/crypto/blkcipher.c b/crypto/blkcipher.c
+index a79e7e9..3fb99d8 100644
+--- a/crypto/blkcipher.c
++++ b/crypto/blkcipher.c
+@@ -305,7 +305,7 @@ static inline int blkcipher_copy_iv(struct blkcipher_walk *walk,
+ int blkcipher_walk_virt(struct blkcipher_desc *desc,
+ 			struct blkcipher_walk *walk)
+ {
+-	walk->flags &= ~BLKCIPHER_WALK_PHYS;
++	walk->flags = 0;
+ 	walk->blocksize = crypto_blkcipher_blocksize(desc->tfm);
+ 	return blkcipher_walk_first(desc, walk);
+ }
+@@ -314,7 +314,7 @@ EXPORT_SYMBOL_GPL(blkcipher_walk_virt);
+ int blkcipher_walk_phys(struct blkcipher_desc *desc,
+ 			struct blkcipher_walk *walk)
+ {
+-	walk->flags |= BLKCIPHER_WALK_PHYS;
++	walk->flags = BLKCIPHER_WALK_PHYS;
+ 	walk->blocksize = crypto_blkcipher_blocksize(desc->tfm);
+ 	return blkcipher_walk_first(desc, walk);
+ }
+@@ -352,7 +352,7 @@ int blkcipher_walk_virt_block(struct blkcipher_desc *desc,
+ 			      struct blkcipher_walk *walk,
+ 			      unsigned int blocksize)
+ {
+-	walk->flags &= ~BLKCIPHER_WALK_PHYS;
++	walk->flags = 0;
+ 	walk->blocksize = blocksize;
+ 	return blkcipher_walk_first(desc, walk);
+ }
+-- 
+1.8.4
+
