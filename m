@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3JYUcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 16:32:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:37150 "EHLO ozlabs.org"
+	id S1755060Ab3JYUoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 16:44:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37868 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab3JYUcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 16:32:00 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, benh@kernel.crashing.org,
-        anton@samba.org, linux-kernel@vger.kernel.org,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        michael@ellerman.id.au
-Subject: Re: perf events ring buffer memory barrier on powerpc
-In-reply-to: <20131025173749.GG19466@laptop.lan>
-References: <12083.1382486094@ale.ozlabs.ibm.com> <20131023141948.GB3566@localhost.localdomain> <20131025173749.GG19466@laptop.lan>
-Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
-   message dated "Fri, 25 Oct 2013 19:37:49 +0200."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Sat, 26 Oct 2013 07:31:59 +1100
-Message-ID: <24406.1382733119@ale.ozlabs.ibm.com>
+	id S1751619Ab3JYUoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 16:44:08 -0400
+Date: Sat, 26 Oct 2013 07:43:49 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: david@lang.hm, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, linux-mm@kvack.org
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131026074349.0adc9646@notabene.brown>
+In-Reply-To: <154617470.12445.1382725583671.JavaMail.mail@webmail11>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+	<20131025214952.3eb41201@notabene.brown>
+	<alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+	<154617470.12445.1382725583671.JavaMail.mail@webmail11>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Ruxvo/UHlXxrQJ/hv4uQd02"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I would argue for:
-> 
->   READ ->data_tail			READ ->data_head
->   smp_rmb()	(A)			smp_rmb()	(C)
->   WRITE $data				READ $data
->   smp_wmb()	(B)			smp_mb()	(D)
->   STORE ->data_head			WRITE ->data_tail
-> 
-> Where A pairs with D, and B pairs with C.
-> 
-> I don't think A needs to be a full barrier because we won't in fact
-> write data until we see the store from userspace. So we simply don't
-> issue the data WRITE until we observe it.
-> 
-> OTOH, D needs to be a full barrier since it separates the data READ from
-> the tail WRITE.
-> 
-> For B a WMB is sufficient since it separates two WRITEs, and for C an
-> RMB is sufficient since it separates two READs.
+--Sig_/Ruxvo/UHlXxrQJ/hv4uQd02
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-FWIW the testing Victor did confirms WMB is good enough on powerpc.
+On Fri, 25 Oct 2013 18:26:23 +0000 (UTC) "Artem S. Tashkinov"
+<t.artem@lycos.com> wrote:
 
-Thanks,
-Mikey
+> Oct 25, 2013 05:26:45 PM, david wrote:
+> On Fri, 25 Oct 2013, NeilBrown wrote:
+> >
+> >>
+> >> What exactly is bothering you about this?  The amount of memory used o=
+r the
+> >> time until data is flushed?
+> >
+> >actually, I think the problem is more the impact of the huge write later=
+ on.
+>=20
+> Exactly. And not being able to use applications which show you IO perform=
+ance
+> like Midnight Commander. You might prefer to use "cp -a" but I cannot ima=
+gine
+> my life without being able to see the progress of a copying operation. Wi=
+th the current
+> dirty cache there's no way to understand how you storage media actually b=
+ehaves.
 
-> 
-> ---
->  kernel/events/ring_buffer.c | 29 ++++++++++++++++++++++++++---
->  1 file changed, 26 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index cd55144270b5..c91274ef4e23 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -87,10 +87,31 @@ static void perf_output_put_handle(struct perf_output_handle *handle)
->  		goto out;
->  
->  	/*
-> -	 * Publish the known good head. Rely on the full barrier implied
-> -	 * by atomic_dec_and_test() order the rb->head read and this
-> -	 * write.
-> +	 * Since the mmap() consumer (userspace) can run on a different CPU:
-> +	 *
-> +	 *   kernel				user
-> +	 *
-> +	 *   READ ->data_tail			READ ->data_head
-> +	 *   smp_rmb()	(A)			smp_rmb()	(C)
-> +	 *   WRITE $data			READ $data
-> +	 *   smp_wmb()	(B)			smp_mb()	(D)
-> +	 *   STORE ->data_head			WRITE ->data_tail
-> +	 * 
-> +	 * Where A pairs with D, and B pairs with C.
-> +	 * 
-> +	 * I don't think A needs to be a full barrier because we won't in fact
-> +	 * write data until we see the store from userspace. So we simply don't
-> +	 * issue the data WRITE until we observe it.
-> +	 * 
-> +	 * OTOH, D needs to be a full barrier since it separates the data READ
-> +	 * from the tail WRITE.
-> +	 * 
-> +	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-> +	 * an RMB is sufficient since it separates two READs.
-> +	 *
-> +	 * See perf_output_begin().
->  	 */
-> +	smp_wmb();
->  	rb->user_page->data_head = head;
->  
->  	/*
-> @@ -154,6 +175,8 @@ int perf_output_begin(struct perf_output_handle *handle,
->  		 * Userspace could choose to issue a mb() before updating the
->  		 * tail pointer. So that all reads will be completed before the
->  		 * write is issued.
-> +		 *
-> +		 * See perf_output_put_handle().
->  		 */
->  		tail = ACCESS_ONCE(rb->user_page->data_tail);
->  		smp_rmb();
-> 
+So fix Midnight Commander.  If you want the copy to be actually finished wh=
+en
+it says  it is finished, then it needs to call 'fsync()' at the end.
+
+>=20
+> Hopefully this issue won't dissolve into obscurity and someone will actua=
+lly make
+> up a plan (and a patch) how to make dirty write cache behave in a sane ma=
+nner
+> considering the fact that there are devices with very different write spe=
+eds and
+> requirements. It'd be ever better, if I could specify dirty cache as a mo=
+unt option
+> (though sane defaults or semi-automatic values based on runtime estimates
+> won't hurt).
+>=20
+> Per device dirty cache seems like a nice idea, I, for one, would like to =
+disable it
+> altogether or make it an absolute minimum for things like USB flash drive=
+s - because
+> I don't care about multithreaded performance or delayed allocation on suc=
+h devices -
+> I'm interested in my data reaching my USB stick ASAP - because it's how m=
+ost people
+> use them.
+>
+
+As has already been said, you can substantially disable  the cache by tuning
+down various values in /proc/sys/vm/.
+Have you tried?
+
+NeilBrown
+
+--Sig_/Ruxvo/UHlXxrQJ/hv4uQd02
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUmrYBTnsnt1WYoG5AQLuSA/7BMZQHQ0T9U0PVyggS9AeboIxLXlnMjIp
+IXNLZLqvfuSpAwTeSvrc58DCxQsoggkQYIbSrHy3j1mwFAhHFq2z/Q1JvdkLfuA7
+FhXJYI3F05L09+/KxOoStIBkD2MqBYlZYSbWu2UZOzzZIlKOrtb8wTXVt7IrU2oq
++KzvuttIaF1/3QEQL3SocPhUuJGS9Ym1yxlnLaiDPNEgoa61tg5VOAFyJQP+dybT
+3UDvSunL3vFZhrg8oDqcauiQl7DO+hnLw0jew93DBun1svFPaOtjSNc/vWnoXST7
+PnYsMsHC/NBQGGdNe6BG4paShoUNR6Z7rXxrQf/HLmcMAiy+7On1/HIe2Qcfju3k
+T5hoIqSLvG9bHXQxOR8XnMG3P8rNzQ9I9R/5sHFGZJeNuFjBpxk3CxSzTtbjoGPN
+P+PFyXs/n9L5QvjEKsKFk+PT8DYYiY0U9+rklP7verpqOa3mVgvsVQuVLlEyL51T
+BXBOrRXJedOLUzUE6fxNS/QeZ6CF/dner1qlf/G6aEEJLmqs//qVS1IxnB6UiZKJ
+NNjXaRY64idodWP8pOSG41WFP2WSvFXymJ+s6qF6gaJEtiQNeHeukF38h2X2qn7A
+EsyG/NXH6XOt3vP+nQkhrNAe4iZqKIOV29FANIJy11nUHEB0nsE3qH9GYcHl5ZD4
+AxPLr+BkgaE=
+=ZScs
+-----END PGP SIGNATURE-----
+
+--Sig_/Ruxvo/UHlXxrQJ/hv4uQd02--
