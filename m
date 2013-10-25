@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab3JYPVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:21:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776Ab3JYPVn (ORCPT
+	id S1755340Ab3JYPWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:22:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51554 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753478Ab3JYPWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:21:43 -0400
-Date: Fri, 25 Oct 2013 16:23:23 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Joe Perches <joe@perches.com>, Kevin Hilman <khilman@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sangjung Woo <sangjung.woo@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
-Message-ID: <20131025152323.GA27606@kroah.com>
-References: <1381296747.2040.17.camel@joe-AO722>
- <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
- <CAGa+x864VYoGvOxoK0XnxXH9hKNq9WAZ16XHiFawZY7_2WJttw@mail.gmail.com>
- <CAGa+x86aS+C8iEb1P4ZYxPBix=Anjh4JZoAof=R-i9fGw=bq6w@mail.gmail.com>
- <20131018225702.GA13090@kroah.com>
- <8761stu7rl.fsf@linaro.org>
- <20131020025713.GA22344@kroah.com>
- <1382282566.2041.39.camel@joe-AO722>
- <CAOesGMhHPa+Wb6=bEZ1paUN4-Rw_DFc5rtZQ9miQ=Otg9p39Uw@mail.gmail.com>
+	Fri, 25 Oct 2013 11:22:42 -0400
+Date: Fri, 25 Oct 2013 16:22:36 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>
+Subject: Re: [PATCH RFC v4 1/6] arm64: support single-step and breakpoint
+ handler hooks
+Message-ID: <20131025152236.GC10673@mudshark.cambridge.arm.com>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+ <1382008671-4515-2-git-send-email-sandeepa.prabhu@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMhHPa+Wb6=bEZ1paUN4-Rw_DFc5rtZQ9miQ=Otg9p39Uw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1382008671-4515-2-git-send-email-sandeepa.prabhu@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 05:59:56AM -0700, Olof Johansson wrote:
-> On Sun, Oct 20, 2013 at 8:22 AM, Joe Perches <joe@perches.com> wrote:
-> > On Sat, 2013-10-19 at 19:57 -0700, Greg KH wrote:
-> >> On Fri, Oct 18, 2013 at 10:52:46PM -0700, Kevin Hilman wrote:
-> >> > Greg KH <gregkh@linuxfoundation.org> writes:
-> >> >
-> >> > > On Fri, Oct 18, 2013 at 10:04:11AM -0700, Kevin Hilman wrote:
-> >> > >> > A handful of boot panics on ARM platforms were bisected to point at
-> >> > >> > the version of this commit that's in linux-next (commit
-> >> > >> > 64c862a839a8db2c02bbaa88b923d13e1208919d).  Reverting this commit
-> >> > >> > makes things happy again.
-> >> > >> >
-> >> > >> > Upon further digging, it seems that users of devres_alloc() are
-> >> > >> > relying on the previous behavior of having the memory zero'd which is
-> >> > >> > no longer the case after $SUBJECT patch.  The change below on top of
-> >> > >> > -next makes these ARM boards happy again.
-> >> > >>
-> >> > >> Oops, it should've fixed __devres_alloc() also.  Updated patch below.
-> >> > >
-> >> > > Can you send this in a format that I can apply it in?  It was whitespace
-> >> > > damaged.
-> >> >
-> >> > hmm, sorry about that.  This one should work, though I wonder if Andrew
-> >> > should pick this up since I think the patch that causes the breakage
-> >> > came through his tree.
-> >>
-> >> No, the patch is in my tree, not Andrew's.
-> >>
-> >> Joe, can I get a signed-off-by for this?
-> >
-> > If you want.
-> >
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> Acked-by: Olof Johansson <olof@lixom.net>
-> 
-> 
-> Greg, would you mind picking this up? It's still broken in -next and I
-> don't want it to mask other issues that might be introduced.
+Hi Sandeepa,
 
-I picked it up early this morning already, so it will be in the next
--next whenever it gets created...
+This is getting there, thanks for persevering with it. I still have a few
+minor comments though.
 
-thanks,
+On Thu, Oct 17, 2013 at 12:17:46PM +0100, Sandeepa Prabhu wrote:
+> AArch64 Single Steping and Breakpoint debug exceptions will be
+> used by multiple debug framworks like kprobes & kgdb.
+> 
+> This patch implements the hooks for those frameworks to register
+> their own handlers for handling breakpoint and single step events.
+> 
+> Reworked the debug exception handler in entry.S: do_dbg to route
+> software breakpoint (BRK64) exception to do_debug_exception()
+> 
+> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+> Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+> ---
+>  arch/arm64/include/asm/debug-monitors.h | 21 ++++++++
+>  arch/arm64/kernel/debug-monitors.c      | 86 ++++++++++++++++++++++++++++++++-
+>  arch/arm64/kernel/entry.S               |  2 +
+>  3 files changed, 108 insertions(+), 1 deletion(-)
 
-greg k-h
+[...]
+
+> @@ -215,7 +257,10 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+>  		 */
+>  		user_rewind_single_step(current);
+>  	} else {
+> -		/* TODO: route to KGDB */
+> +		/* call registered single step handlers */
+
+Don't bother with this comment (it's crystal clear from the code).
+
+> +		if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
+> +			return 0;
+> +
+>  		pr_warning("Unexpected kernel single-step exception at EL1\n");
+>  		/*
+>  		 * Re-enable stepping since we know that we will be
+> @@ -227,11 +272,50 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+>  	return 0;
+>  }
+>  
+> +
+> +static LIST_HEAD(break_hook);
+> +DEFINE_RWLOCK(break_hook_lock);
+
+This guy can be a plain old spinlock. That way, the readers have less
+overhead but things still work because we only call a single hook function.
+
+Will
