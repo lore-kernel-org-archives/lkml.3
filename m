@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3JYAf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 20:35:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35429 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab3JYAf0 (ORCPT
+	id S1755360Ab3JYAhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 20:37:18 -0400
+Received: from peace.netnation.com ([204.174.223.2]:43340 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab3JYAhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 20:35:26 -0400
-Message-ID: <5269BCCC.6090509@codeaurora.org>
-Date: Thu, 24 Oct 2013 17:35:24 -0700
-From: Olav Haugan <ohaugan@codeaurora.org>
-Organization: Qualcomm Innovation Center, Inc.
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 24 Oct 2013 20:37:16 -0400
+Date: Thu, 24 Oct 2013 17:37:13 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Douglas Gilbert <dgilbert@interlog.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Vaughan Cao <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
+Message-ID: <20131025003713.GA5152@hostway.ca>
+References: <20131022205608.GA6616@hostway.ca>
+ <52671B3E.6070804@interlog.com>
+ <1382514295.2081.32.camel@dabdike.quadriga.com>
+ <5267D8E7.9000806@interlog.com>
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>
-CC: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, semenzato@google.com
-Subject: Re: zram/zsmalloc issues in very low memory conditions
-References: <526844E6.1080307@codeaurora.org> <52686FF4.5000303@oracle.com>
-In-Reply-To: <52686FF4.5000303@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5267D8E7.9000806@interlog.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob, Luigi,
+On Wed, Oct 23, 2013 at 10:10:47AM -0400, Douglas Gilbert wrote:
 
-On 10/23/2013 5:55 PM, Bob Liu wrote:
+> On 13-10-23 03:44 AM, James Bottomley wrote:
+> >On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
+> >>On 13-10-22 04:56 PM, Simon Kirby wrote:
+> >>>Hello!
+> >>>
+> >>>While trying to figure out why the request queue to sda (ext4) was
+> >>>clogging up on one of our btrfs backup boxes, I noticed a megarc process
+> >>>in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+> >>>
+> >>>[  205.372823] ================================================
+> >>>[  205.372901] [ BUG: lock held when returning to user space! ]
+> >>>[  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+> >>>[  205.373055] ------------------------------------------------
+> >>>[  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+> >>>[  205.373212] 1 lock held by megarc.bin/5283:
+> >>>[  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+> >>>
+> >>>Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+> >>>tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+> >>>though I haven't tried with lockdep.
+> >>>
+> >>>This is caused by some of our internal RAID monitoring scripts that run
+> >>>"megarc.bin -dispCfg -a0" (even though that controller isn't present on
+> >>>this server -- a PowerEdge 2950 w/Perc 5).
+> >>>
+> >>>strace output of the program execution that causes the above message is
+> >>>here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
+> >>
+> >>This has been reported. That patch will be reverted or,
+> >>if there is enough time, a fix will (or at least should)
+> >>go in before the release of lk 3.12 .
+> >
+> >I think you've got about a week to prove you can fix it (before 3.12
+> >goes final).  I'll send my current set of fixes to Linus without doing
+> >anything about sg.
 > 
-> On 10/24/2013 05:51 AM, Olav Haugan wrote:
->> I am trying to use zram in very low memory conditions and I am having
->> some issues. zram is in the reclaim path. So if the system is very low
->> on memory the system is trying to reclaim pages by swapping out (in this
->> case to zram). However, since we are very low on memory zram fails to
->> get a page from zsmalloc and thus zram fails to store the page. We get
->> into a cycle where the system is low on memory so it tries to swap out
->> to get more memory but swap out fails because there is not enough memory
->> in the system! The major problem I am seeing is that there does not seem
->> to be a way for zram to tell the upper layers to stop swapping out
->> because the swap device is essentially "full" (since there is no more
->> memory available for zram pages). Has anyone thought about this issue
->> already and have ideas how to solve this or am I missing something and I
->> should not be seeing this issue?
->>
+> "prove" is a big ask, especially coming from a
+> mathematician. I consider it more hacking (in the
+> golf sense) on my part to tweak well-meaning patches
+> to the sg driver that cause collateral damage. Further,
+> I suspect Vaughan's patch was an attempt to fix
+> damage left be a previous sg_open() hacker.
 > 
-> The same question as Luigi "What do you want the system to do at this
-> point?"
-> 
-> If swap fails then OOM killer will be triggered, I don't think this will
-> be a issue.
+> I have asked Simon Kirby to apply the patch:
+>   http://marc.info/?l=linux-scsi&m=138237283432010&w=2
+> and report if it fixes his problems. Further I have
+> written three test programs to test O_EXCL handling on
+> SCSI devices, two of which are in the examples directory
+> of sg3_utils version 1.37 . The latest one (single
+> exclusive writer, multiple readers) can be found in
+> the News section of:
+>    http://sg.danny.cz/sg/
+> These tests don't check all possibilities (e.g. random
+> signals, ml error processing and detached devices) but
+> they are better than nothing. And, as a side issue, they
+> break bsg (cause it ignores O_EXCL) and break the block
+> layer (e.g. /dev/sdb) so perhaps it should be reverted :-)
 
-I definitely don't want OOM killer to run since OOM killer can kill
-critical processes (this is on Android so we have Android LMK to handle
-the killing in a more "safe" way). However, what I am seeing is that
-when I run low on memory zram fails to swap out and returns error but
-the swap subsystem just continues to try to swap out even when this
-error occurs (it tries over and over again very rapidly causing the
-kernel to be filled with error messages [at least two error messages per
-failure btw]).
+Well, this patch works for me in that I see no more lockdep warnings or
+unintended consequences when running the same "megarc.bin -dispCfg -a0"
+command.
 
-What I expected to happen is for the swap subsystem to stop trying to
-swap out until memory is available to swap out. I guess this could be
-handled several ways. Either 1) the swap subsystem, upon encountering an
-error to swap out, backs off from trying to swap out for some time or 2)
-zram informs the swap subsystem that the swap device is full.
-
-Could this be handled by congestion control? However, I found the
-following comment in the code in vmscan.c:
-
-* If the page is swapcache, write it back even if that would
-* block, for some throttling. This happens by accident, because
-* swap_backing_dev_info is bust: it doesn't reflect the
-* congestion state of the swapdevs.  Easy to fix, if needed.
-
-However, how would one update the congested state of zram when it
-becomes un-congested?
-
-> By the way, could you take a try with zswap? Which can write pages to
-> real swap device if compressed pool is full.
-
-zswap might not be feasible in all cases if you only have flash as
-backing storage.
-
->> I am also seeing a couple other issues that I was wondering whether
->> folks have already thought about:
->>
->> 2) zsmalloc fails when the page allocated is at physical address 0 (pfn
-> 
-> AFAIK, this will never happen.
-
-I can easily get this to happen since I have memory starting at physical
-address 0.
-
-Thanks,
-
-Olav Haugan
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Simon-
