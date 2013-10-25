@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3JYW7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:59:03 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54156 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab3JYW7B (ORCPT
+	id S1753084Ab3JYXB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:01:29 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:47368 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab3JYXB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:59:01 -0400
-Message-ID: <526AF79A.3050002@cantab.net>
-Date: Fri, 25 Oct 2013 23:58:34 +0100
-From: David Vrabel <dvrabel@cantab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Fri, 25 Oct 2013 19:01:27 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Santosh.Jodh@citrix.com, JBeulich@suse.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, mukesh.rathor@oracle.com,
-        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
-Subject: Re: [Xen-devel] [PATCH v1] Set 1-1 P2M for PCI BARs and MCFG regions
- - if needed.
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQUPgHtQ-p6R3MR+j=gKiQPcW5F2nqB=FwJdEovFLsuXjA@mail.gmail.com>
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+ <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+ <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com>
+ <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
+ <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com>
+ <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com>
+ <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com> <CAE9FiQUPgHtQ-p6R3MR+j=gKiQPcW5F2nqB=FwJdEovFLsuXjA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 25 Oct 2013 17:01:06 -0600
+Message-ID: <CAErSpo4qv2x1MjB=cW6QNevcQcq7dYtk-wC-HRTq8XEz2Xac-g@mail.gmail.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/10/13 16:03, Konrad Rzeszutek Wilk wrote:
+On Thu, Oct 24, 2013 at 11:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Oct 24, 2013 at 8:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>>>>> Bisection points to 928bea964827d7824b548c1f8e06eccbbc4d0d7d .
+>>>>
+>>>> This is "PCI: Delay enabling bridges until they're needed" by Yinghai.
+>>>
+>>> that double disabling should be addressed by:
+>>>
+>>> https://lkml.org/lkml/2013/4/25/608
+>>>
+>>> [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
+>>
+>> I'll look at that patch again.  I had some questions about it the
+>> first time, but perhaps it makes more sense after 928bea9648 has been
+>> applied.
+>>
+>> Andreas originally reported a GPF oops in pci_pme_list_scan().  I
+>> posted a refcounting patch, which made the problem go away, but I
+>> can't explain why, and I don't want to apply it without understanding
+>> that.  Decoding his oops shows this:
+>>
+>>   24: 0f 1f 00             nopl   (%rax)
+>>   27: 48 8b 50 10           mov    0x10(%rax),%rdx
+>>   2b:* 48 8b 52 38           mov    0x38(%rdx),%rdx <-- trapping instruction
+>>   2f: 48 85 d2             test   %rdx,%rdx
+>>
+>> %rax is the pci_dev pointer, so 0x10(%rax) is the dev->bus pointer,
+>> which we put in %rdx.  The oops says %rdx = 6b6b6b6b6b6b6b6b, which is
+>> POISON_FREE, so I think we loaded dev->bus out of a struct pci_dev
+>> that has already been freed.
+>>
+>> pci_pme_list_scan() holds pci_pme_list_mutex while it traverses
+>> pci_pme_list, and the pci_stop_and_remove_bus_device() path removes
+>> the pci_dev by calling pci_pme_active(), which also holds
+>> pci_pme_list_mutex, so I don't understand how pci_pme_list_scan() can
+>> see a pci_dev that has already been freed.
+>>
+>> If I understand Andreas correctly, 928bea9648 also fixes the crash,
+>> even without my refcounting change.  Can you explain why?
 >
->   2). Assume that INVALID_P2M_ENTRY is considered 1-1. That would require
->      auditing of the code and also making sure that any xen_privcmd_mmap
->      calls use the m2p_add_override.
+> 928bea will make the dev->enable_cnt increase wrongly, as we have
+> pci_enable_device for child
+>    pci_enable_bridge for parent
+>      pci_enable_bridge for grandparent
+>        pci_enable_device for grandparent
+>    pci_enable_device for parent
+>        pci_enable_brdige for grandparent
+>          pci_enable_device for grandparent.
+> ...
+>
+> in that case grandprent will be enabled two times, and will enable_cnt will have
+> extra increase.
+>
+> so later pci_disable_device will not really call do_pci_disable_device
+> do the really work, as enable_cnt still big.
+>
+> solution could be:
+> let pci_enable_bridge call __pci_enable_device.
+> and __pci_enable_device will not call pci_enable_bridge.
 
-I'm not sure I understand the concern about the privcmd driver's foreign 
-mapping ioctls (MMAPBATCH_V2 and friends) as these all deal with MFNs 
-directly and don't use the p2m.
+Sorry, I didn't understand this.  Is this supposed to be an
+explanation of how 928bea fixes the oops that Andreas saw?  If so, can
+you be a little more explicit about when the pci_dev got freed and
+when pci_pme_list_scan() walked the list and accessed the freed area?
 
->      However there are some
->      valid cases in which we need to check for INVALID_P2M_ENTRY -
->      balloon driver - that might be relaxed.
-
-Yes.  And this behaviour will be retained.   I think we only need to do 
-the INVALID_P2M_ENTRY => 1:1 when constructing PTEs so all other callers 
-will see INVALID_P2M_ENTRY as before.
-
-
->      However again the P2M code
->      and the ABI it places are not for the faint of the heart.
-
-I have no fear.
-
-If the above suggestion does work out it will reduce the amount of p2m 
-code /and/ remove a Xen-specific PTE bit.  So I think it is worth pursuing.
-
-In the meantime, the following minimal patch is a likely workaround.
-
-David
-
-8<-------------------------------
-x86/mm: set _PAGE_IOMAP in io_remap_pfn_range().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
-  arch/x86/include/asm/pgtable.h |    3 +++
-  1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 3d19994..d59b22a 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -868,6 +868,9 @@ static inline pte_t pte_swp_clear_soft_dirty(pte_t pte)
-  	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
-  }
-
-+#define io_remap_pfn_range(vma, addr, pfn, size, prot) \
-+  remap_pfn_range(vma, addr, pfn, size, (prot) | _PAGE_IOMAP)
-+
-  #include <asm-generic/pgtable.h>
-  #endif	/* __ASSEMBLY__ */
-
--- 
-1.7.10.4
-
+Bjorn
