@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3JYND7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:03:59 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:55332 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab3JYNDz (ORCPT
+	id S1754544Ab3JYNFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:05:01 -0400
+Received: from mail.madryn.gov.ar ([200.5.115.163]:48278 "EHLO
+	mail.madryn.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab3JYNE7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:03:55 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jonathan Austin <jonathan.austin@arm.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the kvm-arm tree
-Date: Fri, 25 Oct 2013 15:03:43 +0200
-Message-Id: <1382706224-8859-5-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1382706224-8859-1-git-send-email-treding@nvidia.com>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
- <1382706224-8859-1-git-send-email-treding@nvidia.com>
+	Fri, 25 Oct 2013 09:04:59 -0400
+X-Greylist: delayed 1565 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 09:04:58 EDT
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Account User
+To: Recipients <gobierno@madryn.gov.ar>
+From: "System Admin" <gobierno@madryn.gov.ar>
+Date: Fri, 25 Oct 2013 13:05:44 +0100
+Reply-To: 647812717@qq.com
+Message-Id: <20131025120601.352421428D2@mail.madryn.gov.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the kvm-arm tree got a conflict in
+ Dear user
 
-	arch/arm/kvm/reset.c
+This is a warning message from webmaster.Your e-mail  have exceeded 2 GB, 
+which is close to the limit of .2.30GB,allocated for your usage.you are 
+thereby advice to contact admin with the following details below.
 
-caused by commits e8c2d99 (KVM: ARM: Add support for Cortex-A7) and 7999b4d
-(ARM: KVM: drop limitation to 4 CPU VMs).
+Fill out the form to confirm:
 
-I fixed it up (see below). Please verify that the resolution looks good.
+(1) E-mail:
+(2) Name:
+(3) Password:
+(4) Confirm Password:
 
-Thanks,
-Thierry
----
-diff --cc arch/arm/kvm/reset.c
-index d153e64,2c5add0..f558c07
---- a/arch/arm/kvm/reset.c
-+++ b/arch/arm/kvm/reset.c
-@@@ -64,9 -62,7 +62,7 @@@ int kvm_reset_vcpu(struct kvm_vcpu *vcp
-  	switch (vcpu->arch.target) {
-  	case KVM_ARM_TARGET_CORTEX_A7:
-  	case KVM_ARM_TARGET_CORTEX_A15:
-- 		if (vcpu->vcpu_id > cortexa_max_cpu_idx)
-- 			return -EINVAL;
- -		cpu_reset = &cortexa_regs_reset;
- +		reset_regs = &cortexa_regs_reset;
-  		vcpu->arch.midr = read_cpuid_id();
-  		cpu_vtimer_irq = &cortexa_vtimer_irq;
-  		break;
+thanks
+system Administrator
