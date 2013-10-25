@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3JYXB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:01:29 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:47368 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab3JYXB1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:01:27 -0400
+	id S1753348Ab3JYXFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:05:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15080 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab3JYXFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:05:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,573,1378882800"; 
+   d="scan'208";a="417377553"
+Date: Sat, 26 Oct 2013 00:05:45 +0100
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, "Artem S. Tashkinov" <t.artem@lycos.com>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Diego Calleja <diegocg@gmail.com>, David Lang <david@lang.hm>,
+        NeilBrown <neilb@suse.de>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131025230545.GB31280@localhost>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+ <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+ <20131025091842.GA28681@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUPgHtQ-p6R3MR+j=gKiQPcW5F2nqB=FwJdEovFLsuXjA@mail.gmail.com>
-References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
- <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
- <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com>
- <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
- <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com>
- <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com>
- <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com> <CAE9FiQUPgHtQ-p6R3MR+j=gKiQPcW5F2nqB=FwJdEovFLsuXjA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 25 Oct 2013 17:01:06 -0600
-Message-ID: <CAErSpo4qv2x1MjB=cW6QNevcQcq7dYtk-wC-HRTq8XEz2Xac-g@mail.gmail.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025091842.GA28681@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 11:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Oct 24, 2013 at 8:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>
->>>>> Bisection points to 928bea964827d7824b548c1f8e06eccbbc4d0d7d .
->>>>
->>>> This is "PCI: Delay enabling bridges until they're needed" by Yinghai.
->>>
->>> that double disabling should be addressed by:
->>>
->>> https://lkml.org/lkml/2013/4/25/608
->>>
->>> [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
->>
->> I'll look at that patch again.  I had some questions about it the
->> first time, but perhaps it makes more sense after 928bea9648 has been
->> applied.
->>
->> Andreas originally reported a GPF oops in pci_pme_list_scan().  I
->> posted a refcounting patch, which made the problem go away, but I
->> can't explain why, and I don't want to apply it without understanding
->> that.  Decoding his oops shows this:
->>
->>   24: 0f 1f 00             nopl   (%rax)
->>   27: 48 8b 50 10           mov    0x10(%rax),%rdx
->>   2b:* 48 8b 52 38           mov    0x38(%rdx),%rdx <-- trapping instruction
->>   2f: 48 85 d2             test   %rdx,%rdx
->>
->> %rax is the pci_dev pointer, so 0x10(%rax) is the dev->bus pointer,
->> which we put in %rdx.  The oops says %rdx = 6b6b6b6b6b6b6b6b, which is
->> POISON_FREE, so I think we loaded dev->bus out of a struct pci_dev
->> that has already been freed.
->>
->> pci_pme_list_scan() holds pci_pme_list_mutex while it traverses
->> pci_pme_list, and the pci_stop_and_remove_bus_device() path removes
->> the pci_dev by calling pci_pme_active(), which also holds
->> pci_pme_list_mutex, so I don't understand how pci_pme_list_scan() can
->> see a pci_dev that has already been freed.
->>
->> If I understand Andreas correctly, 928bea9648 also fixes the crash,
->> even without my refcounting change.  Can you explain why?
->
-> 928bea will make the dev->enable_cnt increase wrongly, as we have
-> pci_enable_device for child
->    pci_enable_bridge for parent
->      pci_enable_bridge for grandparent
->        pci_enable_device for grandparent
->    pci_enable_device for parent
->        pci_enable_brdige for grandparent
->          pci_enable_device for grandparent.
-> ...
->
-> in that case grandprent will be enabled two times, and will enable_cnt will have
-> extra increase.
->
-> so later pci_disable_device will not really call do_pci_disable_device
-> do the really work, as enable_cnt still big.
->
-> solution could be:
-> let pci_enable_bridge call __pci_enable_device.
-> and __pci_enable_device will not call pci_enable_bridge.
+On Fri, Oct 25, 2013 at 05:18:42AM -0400, Theodore Ts'o wrote:
+> On Fri, Oct 25, 2013 at 08:30:53AM +0000, Artem S. Tashkinov wrote:
+> > My feeling is that vm.dirty_ratio/vm.dirty_background_ratio should _not_ be
+> > percentage based, 'cause for PCs/servers with a lot of memory (say 64GB or
+> > more) this value becomes unrealistic (13GB) and I've already had some
+> > unpleasant effects due to it.
+> 
+> What I think would make sense is to dynamically measure the speed of
+> writeback, so that we can set these limits as a function of the device
+> speed.  It's already the case that the writeback limits don't make
+> sense on a slow USB 2.0 storage stick; I suspect that for really huge
+> RAID arrays or very fast flash devices, it doesn't make much sense
+> either.
+> 
+> The problem is that if you have a system that has *both* a USB stick
+> _and_ a fast flash/RAID storage array both needing writeback, this
+> doesn't work well --- but what we have right now doesn't work all that
+> well anyway.
 
-Sorry, I didn't understand this.  Is this supposed to be an
-explanation of how 928bea fixes the oops that Andreas saw?  If so, can
-you be a little more explicit about when the pci_dev got freed and
-when pci_pme_list_scan() walked the list and accessed the freed area?
+Ted, when trying to follow up your email, I got a crazy idea and it'd
+be better throw it out rather than carrying it to bed. :)
 
-Bjorn
+We could do per-bdi dirty thresholds - which has been proposed 1-2
+times before by different people.
+
+The per-bdi dirty thresholds could be auto set by the kernel this way: 
+start it with an initial value of 100MB. When reached, put all the
+100MB dirty data to IO and get an estimation of the write bandwidth.
+>From then on, set the bdi's dirty threshold to N * bdi_write_bandwidth,
+where N is the seconds of dirty data we'd like to cache in memory.
+
+Thanks,
+Fengguang
