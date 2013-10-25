@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3JYWPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:15:10 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51674 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3JYWPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:15:08 -0400
-Date: Fri, 25 Oct 2013 15:15:05 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Philippe De Swert <philippe.deswert@jollamobile.com>
-Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power:power_supply_syfs : Treat PROP_TYPE as a regular
- attribute first
-Message-ID: <20131025221504.GA31842@teo>
-References: <1376521798-16985-1-git-send-email-philippe.deswert@jollamobile.com>
+	id S1752864Ab3JYWRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:17:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:7871 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab3JYWRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:17:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="312854504"
+Message-ID: <526AEE08.5080706@linux.intel.com>
+Date: Fri, 25 Oct 2013 15:17:44 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1376521798-16985-1-git-send-email-philippe.deswert@jollamobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Mark Brown <broonie@kernel.org>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: linux-next: Tree for Oct 25 (powercap_sys.c)
+References: <1382713426-2680-1-git-send-email-treding@nvidia.com> <526ACA95.9030904@infradead.org>
+In-Reply-To: <526ACA95.9030904@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:09:58AM +0300, Philippe De Swert wrote:
-> These days we often have USB powered devices. This means that often the
-> type is variable. Common examples are smartphones which can be charged
-> through a normal USB port on a PC/laptop, a dedicated charger, etc...
-> Often those chips also have support for other charger types like a
-> mains/DC charger. This means that often there are several psy structures
-> in the driver and makes it impossible to stick to just one type.
 
-I would guess that a lot of userland code assumes that the type is fixed.
-We can't break this assumption. Plus I don't think we really need the
-changing types.
-
-> Userspace sometimes needs to behave differently based on the type of charger
-> connected to such devices.
-
-A system with several charger should either:
-
-1. Register all of them (mains, usb, etc.) as a separate power supply
-device, and then use PROP_ONLINE to specify whether something is connected
-to the port or not.
-
-2. Register only the charger type that is currently connected to the
-system.
-
-This is how we've been doing things from the very start.
+On 10/25/2013 12:46 PM, Randy Dunlap wrote:
+> On 10/25/13 08:03, Thierry Reding wrote:
+>> Hi all,
+>>
+>> I've uploaded today's linux-next tree to the master branch of the
+>> repository below:
+>>
+>>          git://gitorious.org/thierryreding/linux-next.git
+>>
+>> A next-20131025 tag is also provided for convenience.
+>>
+>> One new trivial conflicts and a new build failure caused by an incorrect
+>> use of the genpool allocator.
+>>
+>> Upon a request from Olof Johansson I've only included fixes for build
+>> breakage as a result of interactions between the various trees. But
+>> since I've fixed many of the other build failures already, I've pushed
+>> those to a separate tag (next-20131025-fixes). That builds fine on x86
+>> 32-bit and 64-bit allmodconfigs as well as ARM and x86 default
+>> configurations. Most of the PowerPC build errors have also been fixed.
+> on i386:
+>
+> drivers/powercap/powercap_sys.c:484:2: error: unknown field 'dev_attrs' specified in initializer
+> drivers/powercap/powercap_sys.c:484:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/powercap/powercap_sys.c:484:2: warning: (near initialization for 'powercap_class.suspend') [enabled by default]
+Submitted patch and copied to you all.
 
 Thanks,
+Srinivas
 
-Anton
