@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3JYPqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:46:44 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54977 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab3JYPql (ORCPT
+	id S1754626Ab3JYPqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:46:52 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39067 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3JYPqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:46:41 -0400
+	Fri, 25 Oct 2013 11:46:45 -0400
 From: Robert Jennings <rcj@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
@@ -20,213 +20,69 @@ Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
         Simon Jin <simonjin@linux.vnet.ibm.com>,
         Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH v2 2/2] vmsplice: Add limited zero copy to vmsplice
-Date: Fri, 25 Oct 2013 10:46:24 -0500
-Message-Id: <1382715984-10558-3-git-send-email-rcj@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/2] vmpslice support for zero-copy gifting of pages
+Date: Fri, 25 Oct 2013 10:46:22 -0500
+Message-Id: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
-References: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102515-3864-0000-0000-00000AC0F5E7
+x-cbid: 13102515-8878-0000-0000-0000096EA7F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert C Jennings <rcj@linux.vnet.ibm.com>
 
-It is sometimes useful to move anonymous pages over a pipe rather than
-save/swap them. Check the SPLICE_F_GIFT and SPLICE_F_MOVE flags to see
-if userspace would like to move such pages. This differs from plain
-SPLICE_F_GIFT in that the memory written to the pipe will no longer
-have the same contents as the original -- it effectively faults in new,
-empty anonymous pages.
+This patch set would add the ability to move anonymous user pages from one
+process to another through vmsplice without copying data.  Moving pages
+rather than copying is implemented for a narrow case in this RFC to meet
+the needs of QEMU's usage (below).
 
-On the read side the page written to the pipe will be copied unless
-SPLICE_F_MOVE is used. Otherwise page flipping will be performed and the
-page will be reclaimed. Note that so long as there is a mapping to the
-page copies will be performed instead because rmap will have upped the
-map count for each anonymous mapping; this can happen due to fork(),
-for example. This is necessary because moving the page will usually
-change the anonymous page's nonlinear index and that can only be done
-if it's unmapped.
+Among the restrictions the source address and destination addresses must
+be page aligned, the size argument must be a multiple of page size,
+and by the time the reader calls vmsplice, the page must no longer be
+mapped in the source.  If a move is not possible the code transparently
+falls back to copying data.
 
-Signed-off-by: Matt Helsley <matt.helsley@gmail.com>
-Signed-off-by: Robert C Jennings <rcj@linux.vnet.ibm.com>
----
-Changes since v1:
- - Page flipping in pipe_to_user pulled out into a new function,
-   __pipe_to_user_move
- - Improved documentation in code and patch description
- - Fixed locking issue in flipping code found by sparse
- - Updated vmsplice comments for vmsplice_to_user(), 
+This comes from work in QEMU[1] to migrate a VM from one QEMU instance
+to another with minimal down-time for the VM.  This would allow for an
+update of the QEMU executable under the VM.
+
+New flag usage
+This introduces use of the SPLICE_F_MOVE flag for vmsplice, previously
+unused.  Proposed usage is as follows:
+
+ Writer gifts pages to pipe, can not access original contents after gift:
+    vmsplice(fd, iov, nr_segs, (SPLICE_F_GIFT | SPLICE_F_MOVE);
+ Reader asks kernel to move pages from pipe to memory described by iovec:
+    vmsplice(fd, iov, nr_segs, SPLICE_F_MOVE);
+
+Moving pages rather than copying is implemented for a narrow case in
+this RFC to meet the needs of QEMU's usage.  If a move is not possible
+the code transparently falls back to copying data.
+
+For older kernels the SPLICE_F_MOVE would be ignored and a copy would occur.
+
+[1] QEMU localhost live migration:
+http://lists.gnu.org/archive/html/qemu-devel/2013-10/msg02787.html
+
+Changes from V1:
+ - Cleanup zap coalescing in splice_to_pipe for readability
+ - Field added to struct partial_page in v1 was unnecessary, using
+   private field instead.
+ - Read-side code in pipe_to_user pulled out into a new function
+ - Improved documentation of read-side flipping code
+ - Fixed locking issue in read-size flipping code found by sparse
+ - Updated vmsplice comments for vmsplice_to_user(),
    vmsplice_to_pipe, and vmsplice syscall
----
- fs/splice.c | 121 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 112 insertions(+), 9 deletions(-)
+_______________________________________________________
 
-diff --git a/fs/splice.c b/fs/splice.c
-index c14be6f..955afc0 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -32,6 +32,10 @@
- #include <linux/gfp.h>
- #include <linux/socket.h>
- #include <linux/compat.h>
-+#include <linux/page-flags.h>
-+#include <linux/hugetlb.h>
-+#include <linux/ksm.h>
-+#include <linux/swapops.h>
- #include "internal.h"
- 
- /*
-@@ -1545,12 +1549,108 @@ static int get_iovec_page_array(const struct iovec __user *iov,
- 	return error;
- }
- 
-+/* __pipe_to_user_move - Attempt to move pages into user vma by flipping
-+ *
-+ * Description:
-+ *	This function will try to flip pages in the pipe to the user rather
-+ *	than copying.
-+ */
-+/* Returns:
-+ *  Success, number of bytes flipped
-+ *  Failure, negative error value
-+ */
-+static int __pipe_to_user_move(struct pipe_inode_info *pipe,
-+			     struct pipe_buffer *buf, struct splice_desc *sd)
-+{
-+	int ret = -EFAULT;
-+	struct page *page = buf->page;
-+	struct mm_struct *mm;
-+	struct vm_area_struct *vma;
-+	spinlock_t *ptl;
-+	pte_t *ptep, pte;
-+	unsigned long useraddr;
-+
-+
-+	if (!(buf->flags & PIPE_BUF_FLAG_GIFT) ||
-+			!(sd->flags & SPLICE_F_MOVE) ||
-+			(buf->offset) || (buf->len != PAGE_SIZE))
-+		goto out;
-+
-+	/* Moving pages is done only for a subset of pages.
-+	 * They must be anonymous and unmapped. The anon page's
-+	 * nonlinear index will probably change which can only be
-+	 * done if it is unmapped.
-+	 */
-+	if (!PageAnon(page))
-+		goto out;
-+	if (page_mapped(page))
-+		goto out;
-+
-+	/* Huge pages must be copied as we are not tracking if
-+	 * all of the PAGE_SIZE pipe_buffers which compose the
-+	 * huge page are in the pipe.
-+	 */
-+	if (PageCompound(page))
-+		goto out;
-+	/* TODO: Add support for TransHuge pages */
-+	if (PageHuge(page) || PageTransHuge(page))
-+		goto out;
-+
-+	useraddr = (unsigned long)sd->u.userptr;
-+	mm = current->mm;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, useraddr);
-+	if (IS_ERR_OR_NULL(vma))
-+		goto up_copy;
-+	if (!vma->anon_vma) {
-+		ret = anon_vma_prepare(vma);
-+		if (ret)
-+			goto up_copy;
-+	}
-+	zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
-+	ret = lock_page_killable(page);
-+	if (ret)
-+		goto up_copy;
-+	ptep = get_locked_pte(mm, useraddr, &ptl);
-+	if (!ptep)
-+		goto page_unlock_up_copy;
-+	pte = *ptep;
-+	if (pte_present(pte))
-+		goto pte_unlock_up_copy;
-+	get_page(page);
-+	page_add_anon_rmap(page, vma, useraddr);
-+	pte = mk_pte(page, vma->vm_page_prot);
-+	set_pte_at(mm, useraddr, ptep, pte);
-+	update_mmu_cache(vma, useraddr, ptep);
-+	ret = 0;
-+pte_unlock_up_copy:
-+	pte_unmap_unlock(ptep, ptl);
-+page_unlock_up_copy:
-+	unlock_page(page);
-+up_copy:
-+	up_read(&mm->mmap_sem);
-+	if (!ret) {
-+		ret = sd->len;
-+		goto out;
-+	}
-+	/* else ret < 0 and we should fallback to copying */
-+	VM_BUG_ON(ret > 0);
-+out:
-+	return ret;
-+}
-+
- static int pipe_to_user(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
- 			struct splice_desc *sd)
- {
- 	char *src;
- 	int ret;
- 
-+	/* Attempt to move pages rather than copy */
-+	ret = __pipe_to_user_move(pipe, buf, sd);
-+	if (ret > 0)
-+		goto out;
-+
- 	/*
- 	 * See if we can use the atomic maps, by prefaulting in the
- 	 * pages and doing an atomic copy
-@@ -1583,8 +1683,11 @@ out:
- }
- 
- /*
-- * For lack of a better implementation, implement vmsplice() to userspace
-- * as a simple copy of the pipes pages to the user iov.
-+ * Implement vmsplice() to userspace as a simple copy of the pipe's pages
-+ * to the user iov.
-+ *
-+ * The SPLICE_F_MOVE flag for vmsplice() will cause pipe_to_user() to attempt
-+ * moving pages into the user iov when possible, replacing the current pages.
-  */
- static long vmsplice_to_user(struct file *file, const struct iovec __user *iov,
- 			     unsigned long nr_segs, unsigned int flags)
-@@ -1707,16 +1810,16 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
-  * to a pipe, not the other way around. Splicing from user memory is a simple
-  * operation that can be supported without any funky alignment restrictions
-  * or nasty vm tricks. We simply map in the user memory and fill them into
-- * a pipe. The reverse isn't quite as easy, though. There are two possible
-- * solutions for that:
-+ * a pipe.  The reverse isn't quite as easy, though. There are two paths
-+ * taken:
-  *
-  *	- memcpy() the data internally, at which point we might as well just
-  *	  do a regular read() on the buffer anyway.
-- *	- Lots of nasty vm tricks, that are neither fast nor flexible (it
-- *	  has restriction limitations on both ends of the pipe).
-- *
-- * Currently we punt and implement it as a normal copy, see pipe_to_user().
-- *
-+ *	- Move pages from source to destination when the flags
-+ *	  (SPLICE_F_GIFT | SPLICE_F_MOVE) are present.  Pages are zapped on
-+ *	  the source then moved into the destination process.  This falls
-+ *	  back to memcpy() when necessary. See pipe_to_user() for fall-back
-+ *	  conditions.
-  */
- SYSCALL_DEFINE4(vmsplice, int, fd, const struct iovec __user *, iov,
- 		unsigned long, nr_segs, unsigned int, flags)
+  vmsplice: unmap gifted pages for recipient
+  vmsplice: Add limited zero copy to vmsplice
+
+ fs/splice.c | 159 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 150 insertions(+), 9 deletions(-)
+
 -- 
 1.8.1.2
 
