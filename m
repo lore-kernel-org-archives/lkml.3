@@ -1,172 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3JYReI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 13:34:08 -0400
-Received: from mail.crc.id.au ([203.56.246.92]:36832 "EHLO mail.crc.id.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab3JYReH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 13:34:07 -0400
-X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 13:34:06 EDT
-Message-ID: <526AA96C.8040600@crc.id.au>
-Date: Sat, 26 Oct 2013 04:25:00 +1100
-From: Steven Haigh <netwiz@crc.id.au>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754499Ab3JYRiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 13:38:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40481 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3JYRiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 13:38:10 -0400
+Date: Fri, 25 Oct 2013 19:37:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Michael Neuling <mikey@neuling.org>, benh@kernel.crashing.org,
+        anton@samba.org, linux-kernel@vger.kernel.org,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Victor Kaplansky <VICTORK@il.ibm.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        michael@ellerman.id.au
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131025173749.GG19466@laptop.lan>
+References: <12083.1382486094@ale.ozlabs.ibm.com>
+ <20131023141948.GB3566@localhost.localdomain>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: aac_write: aac_fib_send failed with status: -12
-X-Enigmail-Version: 1.6
-OpenPGP: id=7A7D31DC
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="7mEpD3rE0DMSxn4OM59cHJiC0Jseifqg9"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131023141948.GB3566@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---7mEpD3rE0DMSxn4OM59cHJiC0Jseifqg9
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 23, 2013 at 03:19:51PM +0100, Frederic Weisbecker wrote:
+> On Wed, Oct 23, 2013 at 10:54:54AM +1100, Michael Neuling wrote:
+> > Frederic,
+> > 
+> > The comment says atomic_dec_and_test() but the code is
+> > local_dec_and_test().
+> > 
+> > On powerpc, local_dec_and_test() doesn't have a memory barrier but
+> > atomic_dec_and_test() does.  Is the comment wrong, or is
+> > local_dec_and_test() suppose to imply a memory barrier too and we have
+> > it wrongly implemented in powerpc?
 
-Hi all,
+My bad; I converted from atomic to local without actually thinking it
+seems. Your implementation of the local primitives is fine.
 
-Firstly, please CC me as I'm not subscribed to this list.
+> > diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> > index cd55144..95768c6 100644
+> > --- a/kernel/events/ring_buffer.c
+> > +++ b/kernel/events/ring_buffer.c
+> > @@ -87,10 +87,10 @@ again:
+> >  		goto out;
+> >  
+> >  	/*
+> > -	 * Publish the known good head. Rely on the full barrier implied
+> > -	 * by atomic_dec_and_test() order the rb->head read and this
+> > -	 * write.
+> > +	 * Publish the known good head. We need a memory barrier to order the
+> > +	 * order the rb->head read and this write.
+> >  	 */
+> > +	smp_mb ();
+> >  	rb->user_page->data_head = head;
+> >  
+> >  	/*
 
-I seem to be getting some random filesystem corruption on an IBM server
-that I use as a Xen Dom0.
+Right; so that would indeed be what the comment suggests it should be.
+However I think the comment is now actively wrong too :-)
 
-*** Specs ***
-Vendor: IBM
-Version: -[GGE149AUS-1.19]-
-Product Name: IBM System x3650 -[7979CBM]-
-AAC0: kernel 5.2-0[17003] Jul 25 2011
-AAC0: monitor 5.2-0[17003]
-AAC0: bios 5.2-0[17003]
-AAC0: serial 5AB49E0
-scsi0 : ServeRAID
-scsi 0:0:0:0: Direct-Access     ServeRA  Dom0_RAID6       V1.0 PQ: 0 ANSI=
-: 2
-scsi 0:1:0:0: Direct-Access     IBM-ESXS MAY2073RC        T107 PQ: 0 ANSI=
-: 5
-scsi 0:1:1:0: Direct-Access     IBM-ESXS MAY2073RC        T107 PQ: 0 ANSI=
-: 5
-scsi 0:1:2:0: Direct-Access     IBM-ESXS MBC2073RC        SC06 PQ: 0 ANSI=
-: 5
-scsi 0:1:3:0: Direct-Access     IBM-ESXS ST973402SS       B52B PQ: 0 ANSI=
-: 5
-scsi 0:1:4:0: Direct-Access     IBM-ESXS ST973402SS       B52B PQ: 0 ANSI=
-: 5
-scsi 0:1:5:0: Direct-Access     IBM-ESXS ST973402SS       B52B PQ: 0 ANSI=
-: 5
-scsi 0:1:6:0: Direct-Access     IBM-ESXS ST973402SS       B52B PQ: 0 ANSI=
-: 5
-scsi 0:1:7:0: Direct-Access     IBM-ESXS ST973402SS       B52B PQ: 0 ANSI=
-: 5
-scsi 0:3:0:0: Enclosure         IBM-ESXS VSC7160          1.07 PQ: 0 ANSI=
-: 3
+Since on the kernel side the buffer is strictly per-cpu, we don't need
+memory barriers there.
 
-I'm currently running kernel 3.11.4 and before the filesystem corruption
-seems to happen, I get a load of these:
-aac_write: aac_fib_send failed with status: -12
+> I think we want this ordering:
+> 
+>     Kernel                             User
+> 
+>    READ rb->user_page->data_tail       READ rb->user_page->data_head
+>    smp_mb()                            smp_mb()
+>    WRITE rb data                       READ rb  data
+>    smp_mb()                            smp_mb()
+>    rb->user_page->data_head            WRITE rb->user_page->data_tail
+> 
 
-While this is going on, random things seem to fail. Eventually, I'll
-reboot the system and lots of tools will segfault - tracing it back
-leads to libraries that seem to have been corrupted.
+I would argue for:
 
-I can boot the system from rescue media, reinstall all the corrupted
-libraries / binaries and the system runs fine again for another few
-months before it happens again.
+  READ ->data_tail			READ ->data_head
+  smp_rmb()	(A)			smp_rmb()	(C)
+  WRITE $data				READ $data
+  smp_wmb()	(B)			smp_mb()	(D)
+  STORE ->data_head			WRITE ->data_tail
 
-arcconf shows:
-# arcconf getconfig 1
-Controllers found: 1
-----------------------------------------------------------------------
-Controller information
-----------------------------------------------------------------------
-   Controller Status                        : Okay
-   Channel description                      : SAS/SATA
-   Controller Model                         : IBM ServeRAID 8k
-   Controller Serial Number                 : 5AB49E0
-   Physical Slot                            : 0
-   Installed memory                         : 256 MB
-   Copyback                                 : Disabled
-   Data scrubbing                           : Enabled
-   Defunct disk drive count                 : 0
-   Logical drives/Offline/Critical          : 1/0/0
-   --------------------------------------------------------
-   Controller Version Information
-   --------------------------------------------------------
-   BIOS                                     : 5.2-0 (17003)
-   Firmware                                 : 5.2-0 (17003)
-   Driver                                   : 1.2-0 (30200)
-   Boot Flash                               : 5.1-0 (17002)
-   --------------------------------------------------------
-   Controller Battery Information
-   --------------------------------------------------------
-   Status                                   : Okay
-   Over temperature                         : No
-   Capacity remaining                       : 100 percent
-   Time remaining (at current draw)         : 3 days, 20 hours, 56 minute=
-s
-   --------------------------------------------------------
-   Controller Vital Product Data
-   --------------------------------------------------------
-   VPD Assigned#                            : 39R8875
-   EC Version#                              : J85096
-   Controller FRU#                          : 25R8076
-   Battery FRU#                             : 25R8088
+Where A pairs with D, and B pairs with C.
 
-----------------------------------------------------------------------
-Logical drive information
-----------------------------------------------------------------------
-Logical drive number 1
-   Logical drive name                       : Dom0_RAID6
-   RAID level                               : 6
-   Status of logical drive                  : Okay
-   Size                                     : 419400 MB
-   Read-cache mode                          : Enabled
-   Write-cache mode                         : Enabled (write-back)
-   Write-cache setting                      : Enabled (write-back)
-   Partitioned                              : Yes
-   Number of segments                       : 8
-   Stripe-unit size                         : 256 KB
-   Stripe order (Channel,Device)            : 0,0 0,1 0,2 0,3 0,4 0,5
-0,6 0,7
-   Defunct segments                         : No
-   Defunct stripes                          : No
+I don't think A needs to be a full barrier because we won't in fact
+write data until we see the store from userspace. So we simply don't
+issue the data WRITE until we observe it.
 
-Does anyone have any thoughts on this?
+OTOH, D needs to be a full barrier since it separates the data READ from
+the tail WRITE.
 
---=20
-Steven Haigh
+For B a WMB is sufficient since it separates two WRITEs, and for C an
+RMB is sufficient since it separates two READs.
 
-Email: netwiz@crc.id.au
-Web: https://www.crc.id.au
-Phone: (03) 9001 6090 - 0412 935 897
-Fax: (03) 8338 0299
+---
+ kernel/events/ring_buffer.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-
---7mEpD3rE0DMSxn4OM59cHJiC0Jseifqg9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (MingW32)
-
-iQIcBAEBAgAGBQJSaql4AAoJEEGvNdV6fTHcRrcP/0PVHuuGCM3rGOWxNSO1RaMY
-TCorGDtGPxvVyYfTS5lQIrkZPX08gO6K++OhkM26GqXdyXhJGbt4vRKjaLPYxpSd
-ZYIz3Cn8laZ97IO1RlJDiGindv+xXTPmN1OH5Lam7ewS94pf0srrw90RyQj8uf8F
-wNRa+KYm794ugk6lBSGoURdoGOPYsM2/oZXjSv6rHL8kiMwE+O1tMoCsO7CBw+1K
-Mabi5A1nkf6iSBTNGVixEFxpFOk+JvcBip4Xh5GmtNGIGp8hZOUBeZRXtZC//igE
-Hk0jmbdBjEqVesaDpZllZpbk663qUSmGDvi28QL9m/aB0Yv5ZetMqnByk25QhzDN
-oeqGXGTRh+6syefUp1bRAnu+tqqiUNDIbs8o3m4XUiDq2IXNG+xrTBxzq34BqBiy
-Y3ebkpfXFApnF9kwXuE1wS3+pD2hPe7jzk4GyRWFx0I4R8rcKRMVqEF/YOErP76c
-q40P28CA0I4jfEqvvlDB/XQXfrZZT6o5rw4aRhiw5AaCjC7UiZtZa4Jn1syfbqe4
-sn1gE3O918pB7qKdx4UI7OWRIHOmKALT7SeY6/d3jX1j0Vd8VKQ0x7zAlCmMv9vG
-QR0FYsyi8l2wKAGoIxLok5wumpViyvoH8MXVOinnAjjI1RL6Th5MJ5+UNdUtSYb5
-olK9suoA6/sUOiVVyCK7
-=40pw
------END PGP SIGNATURE-----
-
---7mEpD3rE0DMSxn4OM59cHJiC0Jseifqg9--
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index cd55144270b5..c91274ef4e23 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -87,10 +87,31 @@ static void perf_output_put_handle(struct perf_output_handle *handle)
+ 		goto out;
+ 
+ 	/*
+-	 * Publish the known good head. Rely on the full barrier implied
+-	 * by atomic_dec_and_test() order the rb->head read and this
+-	 * write.
++	 * Since the mmap() consumer (userspace) can run on a different CPU:
++	 *
++	 *   kernel				user
++	 *
++	 *   READ ->data_tail			READ ->data_head
++	 *   smp_rmb()	(A)			smp_rmb()	(C)
++	 *   WRITE $data			READ $data
++	 *   smp_wmb()	(B)			smp_mb()	(D)
++	 *   STORE ->data_head			WRITE ->data_tail
++	 * 
++	 * Where A pairs with D, and B pairs with C.
++	 * 
++	 * I don't think A needs to be a full barrier because we won't in fact
++	 * write data until we see the store from userspace. So we simply don't
++	 * issue the data WRITE until we observe it.
++	 * 
++	 * OTOH, D needs to be a full barrier since it separates the data READ
++	 * from the tail WRITE.
++	 * 
++	 * For B a WMB is sufficient since it separates two WRITEs, and for C
++	 * an RMB is sufficient since it separates two READs.
++	 *
++	 * See perf_output_begin().
+ 	 */
++	smp_wmb();
+ 	rb->user_page->data_head = head;
+ 
+ 	/*
+@@ -154,6 +175,8 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 		 * Userspace could choose to issue a mb() before updating the
+ 		 * tail pointer. So that all reads will be completed before the
+ 		 * write is issued.
++		 *
++		 * See perf_output_put_handle().
+ 		 */
+ 		tail = ACCESS_ONCE(rb->user_page->data_tail);
+ 		smp_rmb();
