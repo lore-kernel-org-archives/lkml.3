@@ -1,264 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab3JYWIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:08:41 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46771 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3JYWIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:08:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com> <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 25 Oct 2013 16:08:19 -0600
-Message-ID: <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
-Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs beyound E820
- and PCI BARs
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xensource.com>, Santosh.Jodh@citrix.com,
-        Jan Beulich <JBeulich@suse.com>, boris.ostrovsky@oracle.com,
-        David Vrabel <david.vrabel@citrix.com>, mukesh.rathor@oracle.com,
-        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751963Ab3JYWLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:11:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40594 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab3JYWLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:11:30 -0400
+Date: Sat, 26 Oct 2013 09:11:12 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: david@lang.hm, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, linux-mm@kvack.org
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131026091112.241da260@notabene.brown>
+In-Reply-To: <476525596.14731.1382735024280.JavaMail.mail@webmail11>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+	<20131025214952.3eb41201@notabene.brown>
+	<alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+	<154617470.12445.1382725583671.JavaMail.mail@webmail11>
+	<20131026074349.0adc9646@notabene.brown>
+	<476525596.14731.1382735024280.JavaMail.mail@webmail11>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/rrWLFApImeDIgsMleg656mr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 9:03 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On bootup the E820 "gaps" or E820_RESV regions are marked as
-> identity regions. Meaning that any lookup done in the P2M
-> will return the same value: pfn_to_mfn(pfn) == pfn.
->
-> This is needed for PCI devices so that drivers can reference
-> the correct bus address. Unfortunatly there are also PCIe
-> devices which setup their MMIO region above the E820. By default
-> we assume in the P2M that any region above the last E820 entry
-> is to be used for ballooning. That is not true - and we don't
-> mark such regions as IDENTIY_FRAME but INVALID_P2M_ENTRY.
-> The result is that any lookup in the P2M (pfn_to_mfn(pfn) == 0)
-> gets us the 0 bus address which is hardly correct.
->
-> A solution that this patch implements is to walk the PCI device
-> BAR regions and mark them as IDENTITY_FRAMEs in the P2M.
-> Naturally some checks are needed such as making sure that the
-> BAR regions are not part of the balloon pages, nor regular RAM.
->
-> We only set them to IDENTITY if the:
->  pfn_to_mfn(pfn) == INVALID_P2M_ENTRY.
->
-> Another solution would be to mark all P2M entries beyond the
-> last E820 entry _and_ not in the balloon regions as IDENTITY.
->
-> If done, that means in worst case we have to reserve MAX_DOMAIN_PAGES
-> pages (so 2MB) of virtual space in case we have to create
-> new P2M leafs. We could be fancy and make the P2M code understand
-> p2m_mid_missing and p2_mid_identity and do the right things.
-> But that is quite complex while this particular patch only
-> gets invoked if there are PCI devices. Another solution (David
-> Vrabel ideas) was to consider INVALID_P2M_ENTRY as 1-1 regions.
-> The author of this patch is not sure of the ramifications
-> as it would require surgery in various P2M codebits.
->
-> Reported-by: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-> Reported-by: Lance Larsh <lance.larsh@oracle.com>
-> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/balloon.c | 19 +++++++++++++
->  drivers/xen/pci.c     | 79 +++++++++++++++++++++++++++++++++++++++++++++++++--
->  include/xen/balloon.h |  1 +
->  3 files changed, 96 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> index b232908..258e3f9 100644
-> --- a/drivers/xen/balloon.c
-> +++ b/drivers/xen/balloon.c
-> @@ -133,6 +133,25 @@ static void balloon_append(struct page *page)
->         adjust_managed_page_count(page, -1);
->  }
->
-> +/*
-> + * Check if any the balloon pages overlap with the supplied
-> + * pfn and its range.
-> + */
-> +bool balloon_pfn(unsigned long pfn, unsigned long nr)
-> +{
-> +       struct page *page;
-> +
-> +       if (list_empty(&ballooned_pages))
-> +               return false;
-> +
-> +       list_for_each_entry(page, &ballooned_pages, lru) {
-> +               unsigned long b_pfn = page_to_pfn(page);
-> +
-> +               if (b_pfn >= pfn && b_pfn < pfn + nr)
-> +                       return true;
-> +       }
-> +       return false;
-> +}
->  /* balloon_retrieve: rescue a page from the balloon, if it is not empty. */
->  static struct page *balloon_retrieve(bool prefer_highmem)
->  {
-> diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
-> index 18fff88..6b86eda 100644
-> --- a/drivers/xen/pci.c
-> +++ b/drivers/xen/pci.c
-> @@ -22,6 +22,9 @@
->  #include <xen/xen.h>
->  #include <xen/interface/physdev.h>
->  #include <xen/interface/xen.h>
-> +#include <xen/interface/memory.h>
-> +#include <xen/page.h>
-> +#include <xen/balloon.h>
->
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
-> @@ -127,6 +130,72 @@ static int xen_add_device(struct device *dev)
->         return r;
->  }
->
-> +static void xen_p2m_add_device(struct device *dev)
-> +{
-> +       int i;
-> +       struct pci_dev *pci_dev = to_pci_dev(dev);
-> +
-> +       /* Verify whether the MMIO BARs are 1-1 in the P2M. */
-> +       for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+--Sig_/rrWLFApImeDIgsMleg656mr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Kudos for avoiding the usual "for_each_pci_dev()" trap (which totally
-ignores hot-added devices).
+On Fri, 25 Oct 2013 21:03:44 +0000 (UTC) "Artem S. Tashkinov"
+<t.artem@lycos.com> wrote:
 
-But this still seems a bit fragile because:
+> Oct 26, 2013 02:44:07 AM, neil wrote:
+> On Fri, 25 Oct 2013 18:26:23 +0000 (UTC) "Artem S. Tashkinov"
+> >>=20
+> >> Exactly. And not being able to use applications which show you IO perf=
+ormance
+> >> like Midnight Commander. You might prefer to use "cp -a" but I cannot =
+imagine
+> >> my life without being able to see the progress of a copying operation.=
+ With the current
+> >> dirty cache there's no way to understand how you storage media actuall=
+y behaves.
+> >
+> >So fix Midnight Commander.  If you want the copy to be actually finished=
+ when
+> >it says  it is finished, then it needs to call 'fsync()' at the end.
+>=20
+> This sounds like a very bad joke. How applications are supposed to show a=
+nd
+> calculate an _average_ write speed if there are no kernel calls/ioctls to=
+ actually
+> make the kernel flush dirty buffers _during_ copying? Actually it's a goo=
+d way to
+> solve this problem in user space - alas, even if such calls are implement=
+ed, user
+> space will start using them only in 2018 if not further from that.
 
-(1) I would guess the same consideration applies to all PCI MMIO
-space, regardless of whether it is actually assigned to a BAR.  So
-maybe you want to do the same thing for currently-unassigned MMIO
-space.
+But there is a way to flush dirty buffers *during* copies. =20
+  man 2 sync_file_range
 
-(2) It will break if PCI ever reassigns device resources.  We
-currently don't reassign anything after we finish the initial
-enumeration and configuration of the device, but it's conceivable that
-we could someday.
+if giving precise feedback is is paramount importance to you, then this wou=
+ld
+be the interface to use.
+>=20
+> >>=20
+> >> Per device dirty cache seems like a nice idea, I, for one, would like =
+to disable it
+> >> altogether or make it an absolute minimum for things like USB flash dr=
+ives - because
+> >> I don't care about multithreaded performance or delayed allocation on =
+such devices -
+> >> I'm interested in my data reaching my USB stick ASAP - because it's ho=
+w most people
+> >> use them.
+> >>
+> >
+> >As has already been said, you can substantially disable  the cache by tu=
+ning
+> >down various values in /proc/sys/vm/.
+> >Have you tried?
+>=20
+> I don't understand who you are replying to. I asked about per device sett=
+ings, you are
+> again referring me to system wide settings - they don't look that good if=
+ we're talking
+> about a 3MB/sec flash drive and 500MB/sec SSD drive. Besides it makes no =
+sense
+> to allocate 20% of physical RAM for things which don't belong to it in th=
+e first place.
 
-If you can look at PCI host bridge apertures instead of BARs, that
-would solve both problems.  Reassigning those apertures is
-theoretically possible but is not even a gleam in our eyes yet.
+Sorry, missed the per-device bit.
+You could try playing with
+  /sys/class/bdi/XX:YY/max_ratio
 
-> +               unsigned long pfn, start, end, ok_pfns;
-> +               char bus_addr[64];
-> +               char *fmt;
-> +
-> +               if (!pci_resource_len(pci_dev, i))
-> +                       continue;
-> +
-> +               if (pci_resource_flags(pci_dev, i) == IORESOURCE_IO)
+where XX:YY is the major/minor number of the device, so 8:0 for /dev/sda.
+Wind it right down for slow devices and you might get something like what y=
+ou
+want.
 
-You probably want:
 
-    if (pci_resource_flags(pci_dev, i) & IORESOURCE_IO)
+>=20
+> I don't know any other OS which has a similar behaviour.
 
-here.  And I don't understand what you're doing below, but my
-impression is you only care about MEM regions, not IO regions, so it
-seems like you might want to skip IO completely.
+I don't know about the internal details of any other OS, so I cannot really
+comment.
 
-> +                       fmt = " (bus address [%#06llx-%#06llx])";
-> +               else
-> +                       fmt = " (bus address [%#010llx-%#010llx])";
-> +
-> +               snprintf(bus_addr, sizeof(bus_addr), fmt,
-> +                        (unsigned long long) (pci_resource_start(pci_dev, i)),
-> +                        (unsigned long long) (pci_resource_end(pci_dev, i)));
-> +
-> +               start = pci_resource_start(pci_dev, i) >> PAGE_SHIFT;
-> +               end = pci_resource_end(pci_dev, i) >> PAGE_SHIFT;
-> +
-> +               /*
-> +                * We don't worry about the balloon scratch page as it has a
-> +                * valid PFN - which means we will catch in the loop below.
-> +                */
-> +               if (balloon_pfn(start, end - start)) {
-> +                       dev_warn(dev, "%s is within balloon pages!\n", bus_addr);
-> +                       continue;
-> +               }
-> +
-> +               for (ok_pfns = 0, pfn = start; pfn < end; pfn++) {
-> +                       unsigned long mfn = pfn_to_mfn(pfn);
-> +
-> +                       if (mfn == pfn) {
-> +                               ok_pfns++;
-> +                               continue;
-> +                       }
-> +                       if (mfn != INVALID_P2M_ENTRY) { /* RAM */
-> +                               dev_warn(dev, "%s is within RAM [%lx] region!\n", bus_addr, pfn);
-> +                               break;
-> +                       }
-> +               }
-> +               if (ok_pfns == end - start) /* All good. */
-> +                       continue;
-> +
-> +               if (pfn != end - 1) /* We broke out of the loop above. */
-> +                       continue;
-> +
-> +               /* This BAR was not detected during E820 parsing. */
-> +               for (pfn = start; pfn < end; pfn++) {
-> +                       if (!set_phys_to_machine(pfn, pfn))
-> +                               break;
-> +               }
-> +               WARN(pfn != end - 1, "Only set %ld instead of %ld PFNs!\n",
-> +                    end - pfn, end - start);
-> +
-> +               dev_info(dev, "%s set %ld page(s) to 1-1 mapping.\n",
-> +                        bus_addr, end - pfn);
-> +       }
-> +}
-> +
->  static int xen_remove_device(struct device *dev)
->  {
->         int r;
-> @@ -164,10 +233,14 @@ static int xen_pci_notifier(struct notifier_block *nb,
->
->         switch (action) {
->         case BUS_NOTIFY_ADD_DEVICE:
-> -               r = xen_add_device(dev);
-> +               if (xen_initial_domain())
-> +                       r = xen_add_device(dev);
-> +               if (r == 0)
-> +                       xen_p2m_add_device(dev);
->                 break;
->         case BUS_NOTIFY_DEL_DEVICE:
-> -               r = xen_remove_device(dev);
-> +               if (xen_initial_domain())
-> +                       r = xen_remove_device(dev);
->                 break;
->         default:
->                 return NOTIFY_DONE;
-> @@ -185,7 +258,7 @@ static struct notifier_block device_nb = {
->
->  static int __init register_xen_pci_notifier(void)
->  {
-> -       if (!xen_initial_domain())
-> +       if (!xen_domain())
->                 return 0;
->
->         return bus_register_notifier(&pci_bus_type, &device_nb);
-> diff --git a/include/xen/balloon.h b/include/xen/balloon.h
-> index a4c1c6a..60ecc50 100644
-> --- a/include/xen/balloon.h
-> +++ b/include/xen/balloon.h
-> @@ -41,3 +41,4 @@ static inline int register_xen_selfballooning(struct device *dev)
->         return -ENOSYS;
->  }
->  #endif
-> +bool balloon_pfn(unsigned long pfn, unsigned long nr);
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>=20
+> And like people (including me) have already mentioned, such a huge dirty =
+cache can
+> stall their PCs/servers for a considerable amount of time.
+
+Yes.  But this is a different issue.
+There are two very different issues that should be kept separate.
+
+One is that when "cp" or similar complete, the data hasn't all be written o=
+ut
+yet.  It typically takes another 30 seconds before the flush will complete.
+You seemed to primarily complain about this, so that is what I originally
+address.  That is where in the "dirty_*_centisecs" values apply.
+
+The other, quite separate, issue is that Linux will cache more dirty data
+than it can write out in a reasonable time.  All the tuning parameters refer
+to the amount of data (whether as a percentage of RAM or as a number of
+bytes), but what people really care about is a number of seconds.
+
+As you might imagine, estimating how long it will take to write out a certa=
+in
+amount of data is highly non-trivial.  The relationship between megabytes a=
+nd
+seconds can be non-linear and can change over time.
+
+Caching nothing at all can hurt a lot of workloads.  Caching too much can
+obviously hurt too.  Caching "5 seconds" worth of data would be ideal, but
+would be incredibly difficult to implement.
+It is possible that keeping a sliding estimate of device throughput for each
+device would be possible, and using that to automatically adjust the
+"max_ratio" value (or some related internal thing) might be a 70% solution.
+
+Certainly it would be an interesting project for someone.
+
+
+>=20
+> Of course, if you don't use Linux on the desktop you don't really care - =
+well, I do. Also
+> not everyone in this world has an UPS - which means such a huge buffer ca=
+n lead to a
+> serious data loss in case of a power blackout.
+
+I don't have a desk (just a lap), but I use Linux on all my computers and
+I've never really noticed the problem.  Maybe I'm just very patient, or may=
+be
+I don't work with large data sets and slow devices.
+
+However I don't think data-loss is really a related issue.  Any process that
+cares about data safety *must* use fsync at appropriate places.  This has
+always been true.
+
+NeilBrown
+
+>=20
+> Regards,
+>=20
+> Artem
+
+
+--Sig_/rrWLFApImeDIgsMleg656mr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUmrsgDnsnt1WYoG5AQJ4BRAAu4vKVv8ecehnzp1wUp6/oN1n1Bqlae4H
+oL9uZdxbmcfrkoq3n/IKkpVqc/Rt9ps0Zcx9LLHcheGmSghQwSOE7fxzUUHtkaXA
+dZlFshh2kbR0qrwa4/ogrmYLbhi6JrT6vQKFDbn6sp4UdeHhauBUHHKhpaxypEHL
+HoSVSsnG9OOWB3H0i8NLe9z19jTdSOKT6SOiZf0M8+OonR/M7oJVuaH0k1Gclcw0
+U4wzrPjaGaAAHB0b6VL8v64OZnasgz9G8MfRGZ5Ff+Ui5UZ2W2u33mx+IvCs/wnu
+MDq55S0pRI6t8dl79FgdYhcxySUY7etynbe2rUBOlLe5fo4LUQjG80wLwODB0N9q
+DPb0sVH6NxmB6NSLSOaTZpXaNQlIG0nAxDgo1rt7uCknpScSlHmz3p4DqeGp892S
+MNP3cxOQFSYT7Y8/DY1ChnwJ/U099NdVWWnGfRco0qSlCZ3R/+Mf3ejere0bl/PL
+QCZSvneQVS6eejyd8G23Ka2WxaTkG6/NzpQlE9QkVQ2uf/I+LYgQPeYoAK5Jdlna
+k8O6QWVlOVsQsCHcMJAhqRJBQKde0g7T4SQjs1aR59cfd/kRY4ts0U0klIWsGwmc
+OCJd8HKLrdMPF2Ufl006QiJ0oTp7a/O9cyWj4jJQoaqZBGISP4kEpH5MGUBSz3lX
+FOsv7ZmhC8s=
+=Hz1y
+-----END PGP SIGNATURE-----
+
+--Sig_/rrWLFApImeDIgsMleg656mr--
