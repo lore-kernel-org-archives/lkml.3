@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596Ab3JYHSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 03:18:39 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:46510 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab3JYHSh (ORCPT
+	id S1751937Ab3JYHUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 03:20:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59052 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751728Ab3JYHUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 03:18:37 -0400
-Date: Fri, 25 Oct 2013 09:18:33 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org
-Subject: Re: [PATCH 03/24] s390: Convert use of typedef ctl_table to struct
- ctl_table
-Message-ID: <20131025071833.GB4136@osiris>
-References: <cover.1382480758.git.joe@perches.com>
- <deafe94275c9ebec32ef09eb6f583b2c5a014dae.1382480758.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <deafe94275c9ebec32ef09eb6f583b2c5a014dae.1382480758.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102507-5024-0000-0000-0000079CD6F6
+	Fri, 25 Oct 2013 03:20:11 -0400
+Message-ID: <1382685605.2559.48.camel@dabdike.quadriga.com>
+Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Douglas Gilbert <dgilbert@interlog.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Vaughan Cao <vaughan.cao@oracle.com>,
+        Madper Xie <cxie@redhat.com>
+Date: Fri, 25 Oct 2013 08:20:05 +0100
+In-Reply-To: <20131025003713.GA5152@hostway.ca>
+References: <20131022205608.GA6616@hostway.ca>
+	 <52671B3E.6070804@interlog.com>
+	 <1382514295.2081.32.camel@dabdike.quadriga.com>
+	 <5267D8E7.9000806@interlog.com> <20131025003713.GA5152@hostway.ca>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 03:29:46PM -0700, Joe Perches wrote:
-> This typedef is unnecessary and should just be removed.
+On Thu, 2013-10-24 at 17:37 -0700, Simon Kirby wrote:
+> On Wed, Oct 23, 2013 at 10:10:47AM -0400, Douglas Gilbert wrote:
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  arch/s390/appldata/appldata_base.c | 10 +++++-----
->  arch/s390/kernel/debug.c           |  2 +-
->  arch/s390/mm/cmm.c                 |  8 ++++----
->  3 files changed, 10 insertions(+), 10 deletions(-)
+> > On 13-10-23 03:44 AM, James Bottomley wrote:
+> > >On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
+> > >>On 13-10-22 04:56 PM, Simon Kirby wrote:
+> > >>>Hello!
+> > >>>
+> > >>>While trying to figure out why the request queue to sda (ext4) was
+> > >>>clogging up on one of our btrfs backup boxes, I noticed a megarc process
+> > >>>in D state, so enabled locking debugging, and got this (on 3.12-rc6):
+> > >>>
+> > >>>[  205.372823] ================================================
+> > >>>[  205.372901] [ BUG: lock held when returning to user space! ]
+> > >>>[  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
+> > >>>[  205.373055] ------------------------------------------------
+> > >>>[  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
+> > >>>[  205.373212] 1 lock held by megarc.bin/5283:
+> > >>>[  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
+> > >>>
+> > >>>Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
+> > >>>tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
+> > >>>though I haven't tried with lockdep.
+> > >>>
+> > >>>This is caused by some of our internal RAID monitoring scripts that run
+> > >>>"megarc.bin -dispCfg -a0" (even though that controller isn't present on
+> > >>>this server -- a PowerEdge 2950 w/Perc 5).
+> > >>>
+> > >>>strace output of the program execution that causes the above message is
+> > >>>here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
+> > >>
+> > >>This has been reported. That patch will be reverted or,
+> > >>if there is enough time, a fix will (or at least should)
+> > >>go in before the release of lk 3.12 .
+> > >
+> > >I think you've got about a week to prove you can fix it (before 3.12
+> > >goes final).  I'll send my current set of fixes to Linus without doing
+> > >anything about sg.
+> > 
+> > "prove" is a big ask, especially coming from a
+> > mathematician. I consider it more hacking (in the
+> > golf sense) on my part to tweak well-meaning patches
+> > to the sg driver that cause collateral damage. Further,
+> > I suspect Vaughan's patch was an attempt to fix
+> > damage left be a previous sg_open() hacker.
+> > 
+> > I have asked Simon Kirby to apply the patch:
+> >   http://marc.info/?l=linux-scsi&m=138237283432010&w=2
+> > and report if it fixes his problems. Further I have
+> > written three test programs to test O_EXCL handling on
+> > SCSI devices, two of which are in the examples directory
+> > of sg3_utils version 1.37 . The latest one (single
+> > exclusive writer, multiple readers) can be found in
+> > the News section of:
+> >    http://sg.danny.cz/sg/
+> > These tests don't check all possibilities (e.g. random
+> > signals, ml error processing and detached devices) but
+> > they are better than nothing. And, as a side issue, they
+> > break bsg (cause it ignores O_EXCL) and break the block
+> > layer (e.g. /dev/sdb) so perhaps it should be reverted :-)
+> 
+> Well, this patch works for me in that I see no more lockdep warnings or
+> unintended consequences when running the same "megarc.bin -dispCfg -a0"
+> command.
 
-Applied, thanks.
+OK, I thought about this some more and I just don't see the problem as
+being so urgent that we do a fixup patch on the eve of the merge window.
+Lets just do the revert and then, Doug, do your patch from the revert
+and I'll put it in in the merge window.
+
+James
+
 
