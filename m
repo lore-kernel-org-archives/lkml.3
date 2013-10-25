@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3JYLFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:05:51 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:53742 "EHLO
+	id S1753560Ab3JYLF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:05:59 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:56380 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab3JYLFt (ORCPT
+	with ESMTP id S1753467Ab3JYLF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:05:49 -0400
+	Fri, 25 Oct 2013 07:05:57 -0400
 X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="64688080"
+   d="scan'208";a="64688109"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 17/18] grant-table: call set_phys_to_machine after mapping grant refs
-Date: Fri, 25 Oct 2013 11:51:52 +0100
-Message-ID: <1382698313-13161-17-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v9 18/18] swiotlb-xen: static inline xen_phys_to_bus, xen_bus_to_phys, xen_virt_to_bus and range_straddles_page_boundary
+Date: Fri, 25 Oct 2013 11:51:53 +0100
+Message-ID: <1382698313-13161-18-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mapping/unmapping grant refs, call
-set_phys_to_machine to update the P2M with the new mappings for
-autotranslate guests.
-This is (almost) a nop on x86.
+This functions are small and called frequently. Static inline them.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-Changes in v9:
-- add in-code comments.
 ---
- drivers/xen/grant-table.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index c4d2298..62ccf54 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -49,6 +49,7 @@
- #include <xen/grant_table.h>
- #include <xen/interface/memory.h>
- #include <xen/hvc-console.h>
-+#include <xen/swiotlb-xen.h>
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 4d50058..100962d 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -72,17 +72,17 @@ static unsigned long xen_io_tlb_nslabs;
  
-@@ -898,8 +899,16 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 			gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, map_ops + i,
- 						&map_ops[i].status, __func__);
+ static u64 start_dma_addr;
  
--	if (xen_feature(XENFEAT_auto_translated_physmap))
-+	/* this is basically a nop on x86 */
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		for (i = 0; i < count; i++) {
-+			if (map_ops[i].status)
-+				continue;
-+			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
-+					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
-+		}
- 		return ret;
-+	}
+-static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
++static inline dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+ {
+ 	return phys_to_machine(XPADDR(paddr)).maddr;
+ }
  
- 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
- 		arch_enter_lazy_mmu_mode();
-@@ -942,8 +951,14 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	if (ret)
- 		return ret;
+-static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
++static inline phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+ {
+ 	return machine_to_phys(XMADDR(baddr)).paddr;
+ }
  
--	if (xen_feature(XENFEAT_auto_translated_physmap))
-+	/* this is basically a nop on x86 */
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		for (i = 0; i < count; i++) {
-+			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
-+					INVALID_P2M_ENTRY);
-+		}
- 		return ret;
-+	}
+-static dma_addr_t xen_virt_to_bus(void *address)
++static inline dma_addr_t xen_virt_to_bus(void *address)
+ {
+ 	return xen_phys_to_bus(virt_to_phys(address));
+ }
+@@ -105,7 +105,7 @@ static int check_pages_physically_contiguous(unsigned long pfn,
+ 	return 1;
+ }
  
- 	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
- 		arch_enter_lazy_mmu_mode();
+-static int range_straddles_page_boundary(phys_addr_t p, size_t size)
++static inline int range_straddles_page_boundary(phys_addr_t p, size_t size)
+ {
+ 	unsigned long pfn = PFN_DOWN(p);
+ 	unsigned int offset = p & ~PAGE_MASK;
 -- 
 1.7.2.5
 
