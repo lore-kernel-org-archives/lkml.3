@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3JYXFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:05:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15080 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364Ab3JYXFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:05:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,573,1378882800"; 
-   d="scan'208";a="417377553"
-Date: Sat, 26 Oct 2013 00:05:45 +0100
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, "Artem S. Tashkinov" <t.artem@lycos.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: Diego Calleja <diegocg@gmail.com>, David Lang <david@lang.hm>,
-        NeilBrown <neilb@suse.de>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131025230545.GB31280@localhost>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <20131025091842.GA28681@thunk.org>
+	id S1753169Ab3JYXIz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:08:55 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50863 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3JYXIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:08:53 -0400
+Date: Fri, 25 Oct 2013 16:08:50 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Manish Badarkhe <badarkhe.manish@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH] tps65090-charger: Use "IS_ENABLED(CONFIG_OF)" for DT
+ code.
+Message-ID: <20131025230850.GA9015@teo>
+References: <1380342744-4227-1-git-send-email-badarkhe.manish@gmail.com>
+ <5249A0DC.9030206@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131025091842.GA28681@thunk.org>
+In-Reply-To: <5249A0DC.9030206@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 05:18:42AM -0400, Theodore Ts'o wrote:
-> On Fri, Oct 25, 2013 at 08:30:53AM +0000, Artem S. Tashkinov wrote:
-> > My feeling is that vm.dirty_ratio/vm.dirty_background_ratio should _not_ be
-> > percentage based, 'cause for PCs/servers with a lot of memory (say 64GB or
-> > more) this value becomes unrealistic (13GB) and I've already had some
-> > unpleasant effects due to it.
-> 
-> What I think would make sense is to dynamically measure the speed of
-> writeback, so that we can set these limits as a function of the device
-> speed.  It's already the case that the writeback limits don't make
-> sense on a slow USB 2.0 storage stick; I suspect that for really huge
-> RAID arrays or very fast flash devices, it doesn't make much sense
-> either.
-> 
-> The problem is that if you have a system that has *both* a USB stick
-> _and_ a fast flash/RAID storage array both needing writeback, this
-> doesn't work well --- but what we have right now doesn't work all that
-> well anyway.
+On Mon, Sep 30, 2013 at 12:03:40PM -0400, Rhyland Klein wrote:
+> On 9/28/2013 12:32 AM, Manish Badarkhe wrote:
+> > Instead of "#if defined(CONFIG_OF)" use "IS_ENABLED(CONFIG_OF)" option
+> > for DT code to avoid if-deffery in code.
+> > Also, arranged header files in alphabetically.
+> > 
+> > Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+> > ---
+> > :100644 100644 bdd7b9b... 8b9c406... M	drivers/power/tps65090-charger.c
+> >  drivers/power/tps65090-charger.c |   19 +++++--------------
+> >  1 file changed, 5 insertions(+), 14 deletions(-)
+> LGTM
+> Acked-by: Rhyland Klein <rklein@nvidia.com>
 
-Ted, when trying to follow up your email, I got a crazy idea and it'd
-be better throw it out rather than carrying it to bed. :)
+Applied, thanks!
 
-We could do per-bdi dirty thresholds - which has been proposed 1-2
-times before by different people.
-
-The per-bdi dirty thresholds could be auto set by the kernel this way: 
-start it with an initial value of 100MB. When reached, put all the
-100MB dirty data to IO and get an estimation of the write bandwidth.
->From then on, set the bdi's dirty threshold to N * bdi_write_bandwidth,
-where N is the seconds of dirty data we'd like to cache in memory.
-
-Thanks,
-Fengguang
+Anton
