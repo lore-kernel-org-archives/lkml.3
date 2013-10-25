@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab3JYKzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:55:53 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:26713 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab3JYKxH (ORCPT
+	id S1754186Ab3JYK4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:56:34 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:55351 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110Ab3JYK4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:53:07 -0400
-X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="64684013"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 05/18] xen: make xen_create_contiguous_region return the dma address
-Date: Fri, 25 Oct 2013 11:51:40 +0100
-Message-ID: <1382698313-13161-5-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+	Fri, 25 Oct 2013 06:56:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+In-Reply-To: <1381468543-25334-7-git-send-email-namhyung@kernel.org>
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+	<1381468543-25334-7-git-send-email-namhyung@kernel.org>
+Date: Fri, 25 Oct 2013 11:56:31 +0100
+Message-ID: <CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
+Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify xen_create_contiguous_region to return the dma address of the
-newly contiguous buffer.
+2013/10/11 Namhyung Kim <namhyung@kernel.org>:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+>
+> This new comm infrastructure provides two features:
+>
+> 1) It keeps track of all comms lifecycle for a given thread. This
+> way we can associate a timeframe to any thread comm, as long as
+> PERF_SAMPLE_TIME samples are joined to comm and fork events.
+>
+> As a result we should have more precise comm sorted hists with
+> seperated entries for pre and post exec time after a fork.
+>
+> 2) It also makes sure that a given comm string is not duplicated
+> but rather shared among the threads that refer to it. This way the
+> threads comm can be compared against pointer values from the sort
+> infrastructure.
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Link: http://lkml.kernel.org/n/tip-hwjf70b2wve9m2kosxiq8bb3@git.kernel.org
+> [ Rename some accessor functions ]
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> [ Fixed up minor const pointer issues and removed 'self' usage ]
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Hi,
 
+I was wondering about the fate of these patches. I can resend these or
+do any rebase if you need to.
 
-Changes in v4:
-- use virt_to_machine instead of virt_to_bus.
----
- arch/x86/xen/mmu.c        |    4 +++-
- drivers/xen/swiotlb-xen.c |    6 +++---
- include/xen/xen-ops.h     |    3 ++-
- 3 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index fdc3ba2..6c34d7c 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2329,7 +2329,8 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
- }
- 
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				 unsigned int address_bits)
-+				 unsigned int address_bits,
-+				 dma_addr_t *dma_handle)
- {
- 	unsigned long *in_frames = discontig_frames, out_frame;
- 	unsigned long  flags;
-@@ -2368,6 +2369,7 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- 
- 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
-+	*dma_handle = virt_to_machine(vstart).maddr;
- 	return success ? 0 : -ENOMEM;
- }
- EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 1b2277c..b72f31c 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -126,6 +126,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- {
- 	int i, rc;
- 	int dma_bits;
-+	dma_addr_t dma_handle;
- 
- 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
- 
-@@ -137,7 +138,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- 			rc = xen_create_contiguous_region(
- 				(unsigned long)buf + (i << IO_TLB_SHIFT),
- 				get_order(slabs << IO_TLB_SHIFT),
--				dma_bits);
-+				dma_bits, &dma_handle);
- 		} while (rc && dma_bits++ < max_dma_bits);
- 		if (rc)
- 			return rc;
-@@ -294,11 +295,10 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		*dma_handle = dev_addr;
- 	else {
- 		if (xen_create_contiguous_region(vstart, order,
--						 fls64(dma_mask)) != 0) {
-+						 fls64(dma_mask), dma_handle) != 0) {
- 			free_pages(vstart, order);
- 			return NULL;
- 		}
--		*dma_handle = virt_to_machine(ret).maddr;
- 	}
- 	memset(ret, 0, size);
- 	return ret;
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index d6fe062..9ef704d 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -20,7 +20,8 @@ int xen_setup_shutdown_event(void);
- 
- extern unsigned long *xen_contiguous_bitmap;
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				unsigned int address_bits);
-+				unsigned int address_bits,
-+				dma_addr_t *dma_handle);
- 
- void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
- 
--- 
-1.7.2.5
-
+Thanks.
