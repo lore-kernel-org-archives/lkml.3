@@ -1,204 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3JYKwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:52:40 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:48996 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab3JYKwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:52:38 -0400
+	id S1753578Ab3JYKxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:53:11 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28424 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab3JYKxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 06:53:07 -0400
 X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="67323345"
-Date: Fri, 25 Oct 2013 11:51:31 +0100
+   d="scan'208";a="64684012"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH v9 0/18] enable swiotlb-xen on arm and arm64
-Message-ID: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v9 04/18] xen/x86: allow __set_phys_to_machine for autotranslate guests
+Date: Fri, 25 Oct 2013 11:51:39 +0100
+Message-ID: <1382698313-13161-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series enables xen-swiotlb on arm and arm64.
+Allow __set_phys_to_machine to be called for autotranslate guests.
+It can be used to keep track of phys_to_machine changes, however we
+don't do anything with the information at the moment.
 
-It has been heavily reworked compared to the previous versions in order
-to achieve better performances and to address review comments.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/xen/p2m.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-We are not using dma_mark_clean to ensure coherency anymore. We call the
-platform implementation of map_page and unmap_page.
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index a61c7d5..2ae8699 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -799,10 +799,10 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ {
+ 	unsigned topidx, mididx, idx;
+ 
+-	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
+-		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
++	/* don't track P2M changes in autotranslate guests */
++	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
+ 		return true;
+-	}
++
+ 	if (unlikely(pfn >= MAX_P2M_PFN)) {
+ 		BUG_ON(mfn != INVALID_P2M_ENTRY);
+ 		return true;
+-- 
+1.7.2.5
 
-We assume that dom0 has been mapped 1:1 (physical address ==
-machine address), that is what Xen on ARM currently does.
-As a consequence we only use the swiotlb to handle dma
-requests involving pages corresponding to grant refs. Obviously these
-pages cannot be part of the 1:1 because they belong to another domain.
-
-To improve code readability this version of the series introduces a
-"p2m" for arm and arm64, implemented using two red-black trees.  The p2m
-tracks physical to machine and machine to physical mappings. Given that
-we assume a 1:1 mapping in dom0, the only entries in both trees are
-grant refs that have been mapped in dom0.
-
-Another consequence of the new approach is that the hypercalls we were
-previously introducing (XENMEM_exchange_and_pin, XENMEM_pin,
-XENMEM_unpin) are not needed anymore.
-
-Cheers,
-
-Stefano
-
-
-Changes in v9:
-- drop "no need to do execute two bus_to_phys translations in a row";
-- add in-code comments in gnttab_map_refs and gnttab_unmap_refs;
-- return void from xen_dma_map_page, no page_to_phys calls on x86.
-
-Changes in v8:
-- use __phys_to_pfn and __pfn_to_phys in phys_to_dma and dma_to_phys;
-- cast 0 to dma_addr_t in the definition of DMA_ERROR_CODE;
-- move pfn_to_mfn and mfn_to_pfn to page.h as static inline functions;
-- no need to walk the two p2m trees if phys_to_mach.rb_node is NULL;
-- correctly handle multipage p2m entries;
-- substitute the p2m spin_lock with a rwlock;
-- assume dom0 is mapped 1:1, no need to call XENMEM_exchange in
-xen_create_contiguous_region;
-- add two simple performance improvements for swiotlb-xen.
-
-Changes in v7:
-- dma_mark_clean: switch to an empty implementation (we are going to use
-  the platform map_page and unmap_page to ensure coherency);
-- dma_capable: use coherent_dma_mask if dma_mask hasn't been
-  allocated;
-- introduce a p2m for xen on arm and arm64;
-- call __set_phys_to_machine_multi from xen_create_contiguous_region to
-  update the p2m;
-- remove XENMEM_unpin and XENMEM_exchange_and_pin;
-- set nr_exchanged to 0 before calling the hypercall;
-- return xen_dma_ops only if we are the initial domain;
-- rename __get_dma_ops to __generic_dma_ops;
-- call __generic_dma_ops(hwdev)->alloc/free on arm64 too;
-- introduce xen_dma_map/unmap_page and xen_dma_sync_single_for_cpu/device;
-- use xen_dma_map/unmap_page, xen_dma_sync_single_for_cpu/device in
-  swiotlb-xen;
-- use dev_warn instead of pr_warn;
-- remove the extra autotranslate check in biomerge.c;
-- call set_phys_to_machine after mapping grant refs in gnttab_map_refs;
-- call set_phys_to_machine after unmapping grant refs in gnttab_unmap_refs;
-- allow __set_phys_to_machine to be called for autotranslate guests on
-  x86.
-
-Changes in v6:
-- check for dev->dma_mask being NULL in dma_capable;
-- update the comments and the hypercalls structures;
-- add a xen_dma_info entry to the rbtree in xen_swiotlb_alloc_coherent
-to keep track of the new mapping. Free the entry in xen_swiotlb_free_coherent;
-- rename xen_dma_seg to dma_info in xen_swiotlb_alloc/free_coherent to
-avoid confusions;
-- introduce and export xen_dma_ops;
-- call xen_mm_init from as arch_initcall;
-- call __get_dma_ops to get the native dma_ops pointer on arm;
-- do not merge biovecs;
-- add single page optimization: pin the page rather than bouncing.
-
-Changes in v5:
-- dropped the first two patches, already in the Xen tree;
-- implement dma_mark_clean using dmac_flush_range on arm;
-- add "arm64: define DMA_ERROR_CODE"
-- better comment for XENMEM_exchange_and_pin return codes;
-- fix xen_dma_add_entry error path;
-- remove the spin_lock: the red-black tree is not modified at run time;
-- add "swiotlb-xen: introduce xen_swiotlb_set_dma_mask";
-- add "xen: introduce xen_alloc/free_coherent_pages";
-- add "swiotlb-xen: use xen_alloc/free_coherent_pages";
-- add "swiotlb: don't assume that io_tlb_start-io_tlb_end is coherent".
-
-Changes in v4:
-- rename XENMEM_get_dma_buf to XENMEM_exchange_and_pin;
-- rename XENMEM_put_dma_buf to XENMEM_unpin;
-- improve the documentation of the new hypercalls;
-- add a note about out.address_bits for XENMEM_exchange;
-- code style fixes;
-- add err_out label in xen_dma_add_entry;
-- remove INVALID_ADDRESS, use DMA_ERROR_CODE instead;
-- add in-code comments regarding the usage of xen_dma_seg[0].dma_addr.
-
-Changes in v3:
-- add a patch to compile SWIOTLB without CONFIG_NEED_SG_DMA_LENGTH;
-- add a patch to compile SWIOTLB_XEN without CONFIG_NEED_SG_DMA_LENGTH;
-- arm/dma_capable: do not treat dma_mask as a limit;
-- arm/dmabounce: keep using arm_dma_ops;
-- add missing __init in xen_early_init declaration;
-- many code style and name changes in swiotlb-xen.c;
-- improve error checks in xen_dma_add_entry;
-- warn on XENMEM_put_dma_buf failures.
-
-Changes in v2:
-- fixed a couple of errors in xen_bus_to_phys, xen_phys_to_bus and
-xen_swiotlb_fixup.
-
-
-Julien Grall (1):
-      ASoC: Samsung: Rename dma_ops by samsung_dma_ops
-
-Stefano Stabellini (17):
-      arm: make SWIOTLB available
-      arm64: define DMA_ERROR_CODE
-      arm/xen,arm64/xen: introduce p2m
-      xen/x86: allow __set_phys_to_machine for autotranslate guests
-      xen: make xen_create_contiguous_region return the dma address
-      xen/arm,arm64: enable SWIOTLB_XEN
-      swiotlb-xen: introduce xen_swiotlb_set_dma_mask
-      arm/xen: get_dma_ops: return xen_dma_ops if we are running as xen_initial_domain
-      arm64/xen: get_dma_ops: return xen_dma_ops if we are running as xen_initial_domain
-      xen: introduce xen_alloc/free_coherent_pages
-      swiotlb-xen: use xen_alloc/free_coherent_pages
-      xen: introduce xen_dma_map/unmap_page and xen_dma_sync_single_for_cpu/device
-      swiotlb-xen: use xen_dma_map/unmap_page, xen_dma_sync_single_for_cpu/device
-      swiotlb: print a warning when the swiotlb is full
-      arm,arm64: do not always merge biovec if we are running on Xen
-      grant-table: call set_phys_to_machine after mapping grant refs
-      swiotlb-xen: static inline xen_phys_to_bus, xen_bus_to_phys, xen_virt_to_bus and range_straddles_page_boundary
-
- arch/arm/Kconfig                           |    7 +
- arch/arm/include/asm/dma-mapping.h         |   50 +++++++-
- arch/arm/include/asm/io.h                  |    8 +
- arch/arm/include/asm/xen/hypervisor.h      |    2 +
- arch/arm/include/asm/xen/page-coherent.h   |   50 +++++++
- arch/arm/include/asm/xen/page.h            |   50 ++++++-
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/mm.c                          |   65 +++++++++
- arch/arm/xen/p2m.c                         |  208 ++++++++++++++++++++++++++++
- arch/arm64/Kconfig                         |    1 +
- arch/arm64/include/asm/dma-mapping.h       |   14 ++-
- arch/arm64/include/asm/io.h                |    9 ++
- arch/arm64/include/asm/xen/page-coherent.h |   47 +++++++
- arch/arm64/xen/Makefile                    |    2 +-
- arch/ia64/include/asm/xen/page-coherent.h  |   38 +++++
- arch/x86/include/asm/xen/page-coherent.h   |   38 +++++
- arch/x86/xen/mmu.c                         |   11 +-
- arch/x86/xen/p2m.c                         |    6 +-
- drivers/xen/Kconfig                        |    1 -
- drivers/xen/grant-table.c                  |   19 +++-
- drivers/xen/swiotlb-xen.c                  |  112 ++++++++++++----
- include/xen/swiotlb-xen.h                  |    2 +
- include/xen/xen-ops.h                      |    7 +-
- lib/swiotlb.c                              |    1 +
- sound/soc/samsung/dma.c                    |    4 +-
- 25 files changed, 704 insertions(+), 50 deletions(-)
- create mode 100644 arch/arm/include/asm/xen/page-coherent.h
- create mode 100644 arch/arm/xen/mm.c
- create mode 100644 arch/arm/xen/p2m.c
- create mode 100644 arch/arm64/include/asm/xen/page-coherent.h
- create mode 100644 arch/ia64/include/asm/xen/page-coherent.h
- create mode 100644 arch/x86/include/asm/xen/page-coherent.h
-
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git swiotlb-xen-9
