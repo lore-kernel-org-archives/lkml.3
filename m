@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3JYNP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:15:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48877 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751548Ab3JYNPZ (ORCPT
+	id S1754365Ab3JYNQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:16:05 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:49812 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab3JYNQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:15:25 -0400
-Date: Fri, 25 Oct 2013 14:14:41 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH 1/2] ARM64: perf: add support for perf registers API
-Message-ID: <20131025131441.GC9999@mudshark.cambridge.arm.com>
-References: <1382108078-8807-1-git-send-email-jean.pihet@linaro.org>
- <1382108078-8807-2-git-send-email-jean.pihet@linaro.org>
+	Fri, 25 Oct 2013 09:16:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382108078-8807-2-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [77.221.165.98]
+In-Reply-To: <20131025083525.GF19622@ulmo.nvidia.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+	<5269FB5E.6010901@roeck-us.net>
+	<20131025083525.GF19622@ulmo.nvidia.com>
+Date: Fri, 25 Oct 2013 06:16:02 -0700
+Message-ID: <CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 24
+From: Olof Johansson <olof@lixom.net>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 03:54:37PM +0100, Jean Pihet wrote:
-> From: Jean Pihet <jean.pihet@newoldbits.com>
-> 
-> This patch implements the functions required for the perf registers API,
-> allowing the perf tool to interface kernel register dumps with libunwind
-> in order to provide userspace backtracing.
-> Only the general purpose user space registers are exported, i.e.:
->  PERF_REG_ARM_X0,
->  ...
->  PERF_REG_ARM_X28,
->  PERF_REG_ARM_FP,
->  PERF_REG_ARM_LR,
->  PERF_REG_ARM_SP,
->  PERF_REG_ARM_PC
-> and not the PERF_REG_ARM_V* registers.
+On Fri, Oct 25, 2013 at 1:35 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Thu, Oct 24, 2013 at 10:02:22PM -0700, Guenter Roeck wrote:
+>> On 10/24/2013 09:31 AM, Thierry Reding wrote:
+>> >Hi all,
+>> >
+>> >I've uploaded today's linux-next tree to the master branch of the
+>> >repository below:
+>> >
+>> >         git://gitorious.org/thierryreding/linux-next.git
+>> >
+>> >A next-20131024 tag is also provided for convenience.
+>> >
+>> >Quite a few new conflicts. Some of them non-trivial. I've fixed another
+>> >set of build failures, so 32-bit and 64-bit allmodconfigs build fine on
+>> >x86. ARM and x86 default configurations also build fine. PowerPC is in
+>> >pretty bad shape, mostly due to some OF header rework going on.
+>> >
+>>
+>> Hmm ... I see
+>>
+>> Building arm:defconfig ... failed
+>> --------------
+>> Error log:
+>> drivers/built-in.o: In function `mmc_gpio_request_cd':
+>> clkdev.c:(.text+0x74cf8): undefined reference to `devm_gpio_request_one'
+>> make: *** [vmlinux] Error 1
+>>
+>> Otherwise pretty much the same as yesterday, with a build log of
+>>       total: 110 pass: 88 skipped: 4 fail: 18
+>>
+>> This is with "v3.12-rc5-7941-g765f88c".
+>
+> Yeah, I saw the devm_gpio_request_one() errors too. They happened for 3
+> boards on ARM I think. Must have forgotten to update the summary email.
+> I'll see if I can come up with a patch to fix the GPIO related build
+> failures, or at least report it to LinusW or Alexandre.
 
-[...]
+Hmm.
 
-> diff --git a/arch/arm64/kernel/perf_regs.c b/arch/arm64/kernel/perf_regs.c
-> new file mode 100644
-> index 0000000..bbcf63c
-> --- /dev/null
-> +++ b/arch/arm64/kernel/perf_regs.c
-> @@ -0,0 +1,29 @@
-> +#include <linux/errno.h>
-> +#include <linux/kernel.h>
-> +#include <linux/perf_event.h>
-> +#include <linux/bug.h>
-> +#include <asm/perf_regs.h>
-> +#include <asm/ptrace.h>
-> +
-> +u64 perf_reg_value(struct pt_regs *regs, int idx)
-> +{
-> +	if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM_MAX))
-> +		return 0;
-> +
-> +	return regs->regs[idx];
-> +}
-> +
-> +#define REG_RESERVED (~((1ULL << PERF_REG_ARM_MAX) - 1))
-> +
-> +int perf_reg_validate(u64 mask)
-> +{
-> +	if (!mask || mask & REG_RESERVED)
-> +		return -EINVAL;
-> +
-> +	return 0;
-> +}
-> +
-> +u64 perf_reg_abi(struct task_struct *task)
-> +{
-> +	return PERF_SAMPLE_REGS_ABI_64;
-> +}
+Please don't apply fixes like these directly to your tree, keep the
+broken parts (or drop the tree that introduced it). It makes the
+process of getting the fixes in where they really have to go much more
+error prone, since there's no way to track whether they have landed in
+the right place yet or not.
 
-You need to deal with compat (AArch32) tasks here too, which means providing
-something compatible with what we do on arch/arm/ depending on the thread
-flags.
 
-Will
+-Olof
