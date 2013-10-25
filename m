@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3JYSZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 14:25:17 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53360 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3JYSZP (ORCPT
+	id S1754948Ab3JYS02 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 14:26:28 -0400
+Received: from smtprelay0123.b.hostedemail.com ([64.98.42.123]:56249 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752703Ab3JYS01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 14:25:15 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lf-virt <virtualization@lists.linux-foundation.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] vhost/scsi: Fix incorrect usage of get_user_pages_fast write parameter
-Date: Fri, 25 Oct 2013 18:07:16 +0000
-Message-Id: <1382724436-28478-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 25 Oct 2013 14:26:27 -0400
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::,RULES_HIT:41:152:355:379:582:599:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2690:2692:2693:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4361:5007:6261:7875:7903:8526:8957:10004:10400:10450:10455:10848:11232:11658:11914:12517:12519:12663:12740:13069:13160:13229:13311:13357:13869:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: jar43_54f05e920e923
+X-Filterd-Recvd-Size: 2404
+Date: Fri, 25 Oct 2013 18:26:23 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: david@lang.hm
+Cc: neilb@suse.de, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, linux-mm@kvack.org
+Message-ID: <154617470.12445.1382725583671.JavaMail.mail@webmail11>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <20131025214952.3eb41201@notabene.brown><alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.147.29.47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Oct 25, 2013 05:26:45 PM, david wrote:
+On Fri, 25 Oct 2013, NeilBrown wrote:
+>
+>>
+>> What exactly is bothering you about this?  The amount of memory used or the
+>> time until data is flushed?
+>
+>actually, I think the problem is more the impact of the huge write later on.
 
-This patch addresses a long-standing bug where the get_user_pages_fast()
-write parameter used for setting the underlying page table entry permission
-bits was incorrectly set to write=1 for data_direction=DMA_TO_DEVICE, and
-passed into get_user_pages_fast() via vhost_scsi_map_iov_to_sgl().
+Exactly. And not being able to use applications which show you IO performance
+like Midnight Commander. You might prefer to use "cp -a" but I cannot imagine
+my life without being able to see the progress of a copying operation. With the current
+dirty cache there's no way to understand how you storage media actually behaves.
 
-However, this parameter is intended to signal WRITEs to pinned userspace
-PTEs for the virtio-scsi DMA_FROM_DEVICE -> READ payload case, and *not*
-for the virtio-scsi DMA_TO_DEVICE -> WRITE payload case.
+Hopefully this issue won't dissolve into obscurity and someone will actually make
+up a plan (and a patch) how to make dirty write cache behave in a sane manner
+considering the fact that there are devices with very different write speeds and
+requirements. It'd be ever better, if I could specify dirty cache as a mount option
+(though sane defaults or semi-automatic values based on runtime estimates
+won't hurt).
 
-This bug would manifest itself as random process segmentation faults on
-KVM host after repeated vhost starts + stops and/or with lots of vhost
-endpoints + LUNs.
+Per device dirty cache seems like a nice idea, I, for one, would like to disable it
+altogether or make it an absolute minimum for things like USB flash drives - because
+I don't care about multithreaded performance or delayed allocation on such devices -
+I'm interested in my data reaching my USB stick ASAP - because it's how most people
+use them.
 
-Cc: Stefan Hajnoczi <stefanha@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Cc: <stable@vger.kernel.org> # 3.6+
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/vhost/scsi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index ce5221f..e663921 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -1056,7 +1056,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
- 		if (data_direction != DMA_NONE) {
- 			ret = vhost_scsi_map_iov_to_sgl(cmd,
- 					&vq->iov[data_first], data_num,
--					data_direction == DMA_TO_DEVICE);
-+					data_direction == DMA_FROM_DEVICE);
- 			if (unlikely(ret)) {
- 				vq_err(vq, "Failed to map iov to sgl\n");
- 				goto err_free;
--- 
-1.7.2.5
-
+Artem
