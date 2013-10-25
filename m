@@ -1,112 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3JYOo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:44:56 -0400
-Received: from ring0.de ([91.143.88.219]:51611 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab3JYOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:44:54 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Fri, 25 Oct 2013 16:44:28 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
-Message-ID: <20131025144427.GA14862@earth.universe>
-Mail-Followup-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Grant Likely <grant.likely@linaro.org>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Sachin Kamat <sachin.kamat@linaro.org>,
-	Florian Vaussard <florian.vaussard@epfl.ch>,
-	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-	devicetree@vger.kernel.org
-References: <1382626126-12565-1-git-send-email-sre@debian.org>
- <1382626126-12565-2-git-send-email-sre@debian.org>
- <526A680A.8090308@ti.com>
+	id S1754532Ab3JYOq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:46:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17789 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3JYOq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 10:46:58 -0400
+Date: Fri, 25 Oct 2013 17:45:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dominik Paulus <dominik.paulus@fau.de>
+Cc: Anthony Foiani <anthony.foiani@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@i4.cs.fau.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>, tobias.polzer@fau.de,
+        linux-kernel@vger.kernel.org,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>
+Subject: Re: [PATCHv4 10/16] staging: usbip: TLS for all userspace
+ communication
+Message-ID: <20131025144549.GG5871@mwanda>
+References: <20130930123821.GI6192@mwanda>
+ <1382193559-12549-1-git-send-email-dominik.paulus@fau.de>
+ <1382193559-12549-11-git-send-email-dominik.paulus@fau.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <526A680A.8090308@ti.com>
+In-Reply-To: <1382193559-12549-11-git-send-email-dominik.paulus@fau.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 19, 2013 at 04:39:13PM +0200, Dominik Paulus wrote:
+> @@ -104,8 +105,10 @@ static int import_device(int sockfd, struct usbip_usb_device *udev)
+>  		return -1;
+>  	}
+>  
+> -	rc = usbip_vhci_attach_device(port, sockfd, udev->busnum,
+> +	usbip_net_bye(conn);
+> +	rc = usbip_vhci_attach_device(port, conn->sockfd, udev->busnum,
+>  				      udev->devnum, udev->speed);
+> +
+>  	if (rc < 0) {
 
---UlVJffcvxoiEqYs2
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Don't put a blank line between the function call and the check.  They
+logically are one idea.
 
-Hi P=E9ter,
+>  
+> -	rc = usbip_net_recv(sockfd, (void *) &reply, sizeof(reply));
+> +	rc = usbip_net_recv(conn, (void *) &reply, sizeof(reply));
 
-On Fri, Oct 25, 2013 at 03:46:02PM +0300, Peter Ujfalusi wrote:
-> > [...]
-> > +#if IS_ENABLED(CONFIG_OF)
->=20
-> You don't need to do this.
+There is no need to cast to void here, btw.  That's just noise.
 
-It's done like this in all the other drivers.
+>  	do {
+> -		if (sending)
+> -			nbytes = send(sockfd, buff, bufflen, 0);
+> +		if (!conn->have_crypto && sending)
+> +			nbytes = send(conn->sockfd, buff, bufflen, 0);
+> +		else if (!conn->have_crypto && !sending)
+> +			nbytes = recv(conn->sockfd, buff, bufflen, MSG_WAITALL);
+> +#ifdef HAVE_GNUTLS
+> +		else if (sending)
+> +			nbytes = gnutls_record_send(conn->session, buff, bufflen);
+>  		else
+> -			nbytes = recv(sockfd, buff, bufflen, MSG_WAITALL);
+> +			nbytes = gnutls_record_recv(conn->session, buff, bufflen);
+> +#else
+> +		/*
+> +		 * Assertion to let gcc be able to infer proper initialization
+> +		 * of nbytes.
+> +		 */
+> +		assert(!conn->have_crypto);
+> +#endif
 
-> > +static const struct of_device_id twl4030_pwrbutton_dt_match_table[] =
-=3D {
-> > +       { .compatible =3D "ti,twl4030-pwrbutton" },
-> > +       {},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, twl4030_pwrbutton_dt_match_table);
-> > +#endif
-> > +
-> >  static struct platform_driver twl4030_pwrbutton_driver =3D {
-> > +	.probe		=3D twl4030_pwrbutton_probe,
-> >  	.remove		=3D __exit_p(twl4030_pwrbutton_remove),
-> >  	.driver		=3D {
-> >  		.name	=3D "twl4030_pwrbutton",
-> >  		.owner	=3D THIS_MODULE,
-> > +		.of_match_table =3D of_match_ptr(twl4030_pwrbutton_dt_match_table),
->=20
-> If you try to compile this driver with config !CONFIG_OF it will not work=
- in
-> this way.
+This is messy and I feel like it should be abstracted into a function
+so we can hide the ifdef in a header file.
 
-For !CONFIG_OF of_match_ptr is defined as follows (in "include/linux/of.h"):
+		if (sending)
+			nbytes = usbip_send(conn, buff, bufflen, 0);
+		else
+			nbytes = usbip_recv(...
 
-#define of_match_ptr(_ptr)  NULL
+We'd still have the ifdef but hidden away.
 
-So the preprocessor will remove the undefined symbol.
 
--- Sebastian
+> +int usbip_net_srp_server_handshake(struct usbip_connection *conn)
+> +{
+> +	int ret;
+> +
+> +	if (gnutls_init(&conn->session, GNUTLS_SERVER) != 0)
+> +		return -1;
+> +	gnutls_priority_set_direct(conn->session, "NORMAL:-KX-ALL:+SRP", NULL);
+> +	if (gnutls_credentials_set(conn->session, GNUTLS_CRD_SRP,
+> +		usbip_net_srp_cred) != 0)
+> +		return -1;
+> +
 
---UlVJffcvxoiEqYs2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Kernel style is more beautiful:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+	ret = gnutls_credentials_set(conn->session, GNUTLS_CRD_SRP,
+				     usbip_net_srp_cred);
+	if (ret)
+		return ret;
 
-iQIcBAEBCAAGBQJSaoPLAAoJENju1/PIO/qapscP/1wH218rX6suEps9GQ3nqB/8
-ttufgBcA/qofrMTgTYPSYleEZrGEA1VIW4SGLnQvsHhivnMHlavki2nbw2ib88CA
-99G6tOqaCnKjmy6pJoOyWK4VK2oreI1MGgd55dTxEMApBcyEhNi/Ch1p3xe/gBWw
-3BvlQTg1qo9rc0Bpo4qzHjHUAOOsEbJVqXVwpUHVApZGHo4nwhbiVapkEvA5pTgo
-6617/CZv5Ttoq6uHJeaD9STuQ8c5REzWMSuLtBqaMOQC8CQTcSXjmuNlai/QTFQe
-6dd9q56QDu/Ji93kT03Y3EhXek7L/rOKs4GjatmfQ63nfdCMqz7elUUTC8iuZMfl
-DOpmwhDAXKwlNRwCpMEXDUxrluV7iuavxrGTvb2/61DXtgCrKMMOuAocEscm3vNk
-sv75K8803sb2mZgvkU9jD51VXQBhjcm4oD1yYvpnwSU3/wmxOXxspYfDsas3Ppd/
-LKSZQsEpxEikalnGp5l9dvMgZ7XI00nmaj3h5xhRn/Mv+ArFqUevtF3Yuk6535Zb
-ZGVLnF60ixQEz0s7Q3W9QwCcowVr+tjiohEyUQV3jQLEuqAsJmVmcat34AqF4KIN
-h3P7VS0XAcNtHLE570PcUb4hh7DOSdKcqkMvmnUFUB0ukdtI3uSj8rIENKjJRDNt
-aX9UET3e5q5p73zZSA8F
-=WoCt
------END PGP SIGNATURE-----
+> +void usbip_net_bye(struct usbip_connection *conn)
+> +{
+> +#ifdef HAVE_GNUTLS
+> +	if (conn->have_crypto) {
+> +		gnutls_bye(conn->session, GNUTLS_SHUT_RDWR);
+> +
+> +		gnutls_deinit(conn->session);
+> +		if (!conn->server)
+> +			gnutls_srp_free_client_credentials(conn->srp_client_cred);
+> +
+> +		conn->have_crypto = 0;
+> +	}
+> +#else
+> +	(void)conn;
 
---UlVJffcvxoiEqYs2--
+What is this about?  I assume that GCC warns, but which version of GCC
+are you using because that sounds horrible.
+
+> +#endif
+
+regards,
+dan carpenter
