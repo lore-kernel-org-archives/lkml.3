@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab3JYV21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 17:28:27 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:46589 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3JYV20 (ORCPT
+	id S1752018Ab3JYVai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 17:30:38 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63863 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751749Ab3JYVah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 17:28:26 -0400
-Date: Fri, 25 Oct 2013 17:36:15 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: perf/ftrace lockup on 3.12-rc6 with trigger code
-In-Reply-To: <alpine.DEB.2.10.1310250906110.22710@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1310251726001.31246@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1310241324330.4352@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1310241422460.6573@vincent-weaver-1.um.maine.edu> <1382695687.12254.4.camel@pippen.local.home>
- <alpine.DEB.2.10.1310250906110.22710@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 25 Oct 2013 17:30:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PowerCap: Convert class code to use dev_groups
+Date: Fri, 25 Oct 2013 23:42:37 +0200
+Message-ID: <2163165.eG5ajaNixF@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131023155905.GA6976@kroah.com>
+References: <1382528255-12781-1-git-send-email-treding@nvidia.com> <20131023155905.GA6976@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Oct 2013, Vince Weaver wrote:
-
+On Wednesday, October 23, 2013 04:59:05 PM Greg Kroah-Hartman wrote:
+> On Wed, Oct 23, 2013 at 01:37:35PM +0200, Thierry Reding wrote:
+> > The newly added power capping framework uses the obsolete .dev_attrs
+> > field of struct class. However this field will be removed in 3.13, so
+> > convert the code to use the .dev_groups field instead.
+> > 
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
 > 
-> I'm not sure how tracepoints work exactly, but the problem code is setting
-> 	pe[5].type=PERF_TYPE_TRACEPOINT;
-> 	pe[5].config=0x7fffffff00000001;
-> 
-> The config is being truncated to 32-bits by the perf/ftrace code so I 
-> think this means the tracepoint being enabled is
-> 
-> 	tracing/events/ftrace/function/id:1
-> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I've wasted much of the day playing with this and adding printks, etc.
-
-The key things that cause the problem are:
-
-  tracepoint event
-  config is 1 (tracing/events/ftrace/function)
-  PERF_SAMPLE_PERIOD set in the sample type
-  no user mmap buffer
-  period (not frequency) enabled
-
-What this means is there is pretty high number of kernel calls happening.
-Every kernel function entry ends up calling the
-perf_swevent_overflow() overflow handler, which calls perf_event_output()
-which attempts to dump the buffer, but it can't because no user buffer is 
-mmap'd.
-
-This causes some sort of storm and eventually the system just stops 
-responding and the watchdog kicks in, although the traces it gives back 
-are different each time.  
-
-It's possible the kernel is making forward progress (though very slowly)
-and this is just some sort of throttling issue.
-
-I don't know if there are any better ways to try to debug things than the 
-printk route.  Though that has its own problems as the printk's themselves 
-start showing up in the ftrace traces.
-
-Vince
+Applied, thanks!
 
