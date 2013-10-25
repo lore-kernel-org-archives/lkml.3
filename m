@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3JYNE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:04:29 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:38289 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373Ab3JYNEZ (ORCPT
+	id S1754221Ab3JYND7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:03:59 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:55332 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab3JYNDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:04:25 -0400
-Date: Fri, 25 Oct 2013 10:04:17 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
-Message-ID: <20131025130417.GB20423@ghostprotocols.net>
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
- <1381468543-25334-7-git-send-email-namhyung@kernel.org>
- <CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Oct 2013 09:03:55 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Jonathan Austin <jonathan.austin@arm.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the kvm-arm tree
+Date: Fri, 25 Oct 2013 15:03:43 +0200
+Message-Id: <1382706224-8859-5-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1382706224-8859-1-git-send-email-treding@nvidia.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 25, 2013 at 11:56:31AM +0100, Frederic Weisbecker escreveu:
-> 2013/10/11 Namhyung Kim <namhyung@kernel.org>:
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
+Today's linux-next merge of the kvm-arm tree got a conflict in
 
-> > This new comm infrastructure provides two features:
+	arch/arm/kvm/reset.c
 
-> I was wondering about the fate of these patches. I can resend these or
-> do any rebase if you need to.
+caused by commits e8c2d99 (KVM: ARM: Add support for Cortex-A7) and 7999b4d
+(ARM: KVM: drop limitation to 4 CPU VMs).
 
-So I applied the first few patches, but deferred working on this part,
-the comm one, because Jiri Olsa had some problems with it, IIRC, Jiri?
-Can you refresh my mind and ellaborate on it?
+I fixed it up (see below). Please verify that the resolution looks good.
 
-Thanks!
-
-- Arnaldo
+Thanks,
+Thierry
+---
+diff --cc arch/arm/kvm/reset.c
+index d153e64,2c5add0..f558c07
+--- a/arch/arm/kvm/reset.c
++++ b/arch/arm/kvm/reset.c
+@@@ -64,9 -62,7 +62,7 @@@ int kvm_reset_vcpu(struct kvm_vcpu *vcp
+  	switch (vcpu->arch.target) {
+  	case KVM_ARM_TARGET_CORTEX_A7:
+  	case KVM_ARM_TARGET_CORTEX_A15:
+- 		if (vcpu->vcpu_id > cortexa_max_cpu_idx)
+- 			return -EINVAL;
+ -		cpu_reset = &cortexa_regs_reset;
+ +		reset_regs = &cortexa_regs_reset;
+  		vcpu->arch.midr = read_cpuid_id();
+  		cpu_vtimer_irq = &cortexa_vtimer_irq;
+  		break;
