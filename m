@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3JYPK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:10:57 -0400
-Received: from smtprelay0103.hostedemail.com ([216.40.44.103]:57589 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754628Ab3JYPK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:10:56 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3673:3865:3870:3871:3872:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12050:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pest95_7bc22322e9745
-X-Filterd-Recvd-Size: 1315
-Message-ID: <1382713844.2501.14.camel@joe-AO722>
-Subject: Re: [PATCH -resend 1/1] dumpstack: fix printk_address for direct
- addresses
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: x86@kernel.org, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 25 Oct 2013 08:10:44 -0700
-In-Reply-To: <1382706418-8435-1-git-send-email-jslaby@suse.cz>
-References: <1382706418-8435-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1754854Ab3JYPMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:12:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7037 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753694Ab3JYPMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 11:12:30 -0400
+Message-ID: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
+Subject: Re: [BUG][PATCH] audit: audit_log_start running on auditd should
+ not stop
+From: Eric Paris <eparis@redhat.com>
+To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>
+Date: Fri, 25 Oct 2013 11:12:21 -0400
+In-Reply-To: <5269CB06.5060101@jp.fujitsu.com>
+References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
+	 <5257C5D7.80308@cn.fujitsu.com> <5257EF15.6080209@jp.fujitsu.com>
+	 <20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com>
+	 <525CE10A.90907@cn.fujitsu.com>
+	 <20131023195550.GA9109@madcap2.tricolour.ca>
+	 <5269CB06.5060101@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-25 at 15:06 +0200, Jiri Slaby wrote:
+On Fri, 2013-10-25 at 10:36 +0900, Toshiyuki Okajima wrote:
 
-> I sent this patch 2 weeks ago. Only Joe commented that the prints
-> should be done inline instead. But I don't agree as prining the output
-> from one point is better IMHO.
+> systemd                                    |auditd
+> -------------------------------------------+-----------------------------------
+> ...                                        |
+> -> audit_receive                           |...
+>    -> mutex_lock(&audit_cmd_mutex)         |-> audit_receive
+>       ... -> audit_log_start               |   -> mutex_lock(&audit_cmd_mutex)
+>              -> wait_for_auditd            |      // wait for systemd
+>                 -> schedule_timeout(60*HZ) |
 
-Doing it inline avoids any possible interleaving
-by other thread output in dmesg.
+Ugggh, definitely a problem.  Adding a similar hack to systemd really
+does not seem like an acceptable answer.  It seems to me that in
+audit_receive_msg()
 
+case AUDIT_USER:
+case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
+case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
+
+we do not need to hold the audit_cmd_mutex.  So a quick and dirty patch
+should be to just drop the mutex there (and we need to verify there
+aren't issues running the audit_filter_user() without the lock).  That
+will take care of systemd and anything USING audit.  It still means that
+you could race with something configuring audit and auditd shutting
+down.  Seems like a good quick and dirty 'fix' while we work on a better
+fix...
+
+To take care of that I think maybe we could drop the cmd_mutex every
+time we call audit_log_start.  That's not necessarily going to be
+pretty.  Maybe make a new switch at the top of the function which knows
+which operations we are going to have to allocate an audit_buffer.  Drop
+the lock, allocate the buffer, then retake the lock to finish running
+audit_receive_msg()....
+
+Maybe that second option isn't so hard and we can go directly after that
+instead of just dealing with userspace audit messages?
+
+Thoughts?
 
