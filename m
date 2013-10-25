@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab3JYSJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 14:09:49 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:53488 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab3JYSJs (ORCPT
+	id S1754626Ab3JYSMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 14:12:39 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:58485 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3JYSMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 14:09:48 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] Fix page_group_by_mobility_disabled breakage
-Date: Fri, 25 Oct 2013 14:09:35 -0400
-Message-Id: <1382724575-8450-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 25 Oct 2013 14:12:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <526A8F54.2040601@gmail.com>
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+	<1381468543-25334-7-git-send-email-namhyung@kernel.org>
+	<CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
+	<20131025130417.GB20423@ghostprotocols.net>
+	<526A8F54.2040601@gmail.com>
+Date: Fri, 25 Oct 2013 19:12:36 +0100
+Message-ID: <CAFTL4hzX=0-_gK6E9V7oH3hrrCerVn_s8TVBsDspzLvpQEmtpw@mail.gmail.com>
+Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+2013/10/25 David Ahern <dsahern@gmail.com>:
+> On 10/25/13 7:04 AM, Arnaldo Carvalho de Melo wrote:
+>>
+>> Em Fri, Oct 25, 2013 at 11:56:31AM +0100, Frederic Weisbecker escreveu:
+>>>
+>>> 2013/10/11 Namhyung Kim <namhyung@kernel.org>:
+>>>>
+>>>> From: Frederic Weisbecker <fweisbec@gmail.com>
+>>
+>>
+>>>> This new comm infrastructure provides two features:
+>>
+>>
+>>> I was wondering about the fate of these patches. I can resend these or
+>>> do any rebase if you need to.
+>>
+>>
+>> So I applied the first few patches, but deferred working on this part,
+>> the comm one, because Jiri Olsa had some problems with it, IIRC, Jiri?
+>> Can you refresh my mind and ellaborate on it?
+>
+>
+> I also saw some comm related problems with Namhyung's tree. Not sure if it
+> contained all of Frederic's patches. I have not had time to chase down what
+> is going on -- just that comm's coming out of perf-script were not correct.
 
-Currently, set_pageblock_migratetype screw up MIGRATE_CMA and
-MIGRATE_ISOLATE if page_group_by_mobility_disabled is true. It
-rewrite the argument to MIGRATE_UNMOVABLE and we lost these attribute.
+Oh I see. It's possible that my massive conversion to use the comm
+accessor got blind at some point and left over a few things. I
+remember that I only lightly tested that new comm infrastructure. I
+mean I tested a lot of "perf report -s foo,bar" combinations for
+performance comparisons but I haven't tested the perf script and all
+the other perf tools.
 
-The problem was introduced commit 49255c619f (page allocator: move
-check for disabled anti-fragmentation out of fastpath). So, 4 years
-lived issue may mean that nobody uses page_group_by_mobility_disabled.
+I'll rebase these patches and test that wider before resending.
 
-But anyway, this patch fixes the problem.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index dd886fa..ef44d95 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -234,8 +234,8 @@ int page_group_by_mobility_disabled __read_mostly;
- 
- void set_pageblock_migratetype(struct page *page, int migratetype)
- {
--
--	if (unlikely(page_group_by_mobility_disabled))
-+	if (unlikely(page_group_by_mobility_disabled &&
-+		     migratetype < MIGRATE_PCPTYPES))
- 		migratetype = MIGRATE_UNMOVABLE;
- 
- 	set_pageblock_flags_group(page, (unsigned long)migratetype,
--- 
-1.7.1
-
+Thanks!
