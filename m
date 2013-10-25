@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab3JYIni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 04:43:38 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:55649 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab3JYIng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 04:43:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
-	<CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
-	<1814253454.3449.1382689853825.JavaMail.mail@webmail07>
-Date: Fri, 25 Oct 2013 09:43:36 +0100
-X-Google-Sender-Auth: hf4643Yk54gwMwzkFtnmMGOjVVc
-Message-ID: <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752410Ab3JYIo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 04:44:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61592 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab3JYIo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 04:44:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="398442086"
+Message-ID: <1382690669.4970.4.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH] futex: Remove the owner check when waking task in
+ handle_futex_death
+From: Darren Hart <dvhart@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: zhang.yi20@zte.com.cn, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <alpine.DEB.2.02.1310241231350.4983@ionos.tec.linutronix.de>
+References: <OFCEFEC0A7.CD482CBA-ON48257BF2.000535D1-48257BF2.00066AD1@zte.com.cn>
+	 <alpine.DEB.2.02.1310241231350.4983@ionos.tec.linutronix.de>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Oct 2013 09:44:29 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 9:30 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->
-> My feeling is that vm.dirty_ratio/vm.dirty_background_ratio should _not_ be
-> percentage based, 'cause for PCs/servers with a lot of memory (say 64GB or
-> more) this value becomes unrealistic (13GB) and I've already had some
-> unpleasant effects due to it.
+On Thu, 2013-10-24 at 14:47 +0200, Thomas Gleixner wrote:
+> On Thu, 26 Sep 2013, zhang.yi20@zte.com.cn wrote:
+> > Task processes all its owned robust futex when it is exiting,
+> > to ensure the futexes can be taken by other tasks.
+> > 
+> > Though this can not work good in sometimes.
+> > Think about this scene：
+> > 1. A robust mutex is shared for two processes, each process has
+> >    multi threads to lock the mutex.
+> > 2. One of the threads locks the mutex, and the others are waiting
+> >    and sorted in order of priority.
+> > 3. The process to which the mutex owner thread belongs is dying
+> >    without unlocking the mutex，and handle_futex_death is invoked
+> >    to wake the first waiter.
+> > 4. If the first waiter belongs to the same process，it has no chance
+> >    to return to the userspace to lock the mutex, and it won't wake
+> >    the next waiter because it is not the owner of the mutex.
+> > 5. The rest waiters of the other process may block forever.
+> 
+> Fair enough.
+>  
+> > This patch remove the owner check when waking task in handle_futex_death.
+> > If above occured, The dying task can wake the next waiter by processing its list_op_pending.
+> > The waked task could return to userspace and try to lock the mutex again.
+> > 
+> 
+> The owner check needs to stay. The robust list is a user space managed
+> list on which the kernel operates. We do not trust it at all and we
+> really want as many sanity checks as possible and definitely not
+> removing one.
+> 
+> The simplest solution is just to wake all waiters and let them sort it
+> out. We could do a more complex one by checking whether this is a
+> group exit and not wake any threads belonging to the same process, but
+> that's not really worth the trouble.
+> 
 
-Right. The percentage notion really goes back to the days when we
-typically had 8-64 *megabytes* of memory So if you had a 8MB machine
-you wouldn't want to have more than one megabyte of dirty data, but if
-you were "Mr Moneybags" and could afford 64MB, you might want to have
-up to 8MB dirty!!
+I think given that this is the error path, that waking everything is a
+reasonable approach to addressing the problem. I haven't been able to
+step through the failure case as carefully as I've wanted to, but it
+appears sound just reading through it.
 
-Things have changed.
+--
+Darren
 
-So I would suggest we change the defaults. Or pwehaps make the rule be
-that "the ratio numbers are 'ratio of memory up to 1GB'", to make the
-semantics similar across 32-bit HIGHMEM machines and 64-bit machines.
+> Thanks,
+> 
+>         tglx
 
-The modern way of expressing the dirty limits are to give the actual
-absolute byte amounts, but we default to the legacy ratio mode..
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
-                Linus
+
