@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab3JYLGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:06:17 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:36184 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753684Ab3JYLGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:06:14 -0400
-X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="67327397"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>, Julien Grall <julien.grall@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 14/18] ASoC: Samsung: Rename dma_ops by samsung_dma_ops
-Date: Fri, 25 Oct 2013 11:51:49 +0100
-Message-ID: <1382698313-13161-14-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+	id S1753956Ab3JYLHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:07:40 -0400
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:38129 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3JYLHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:07:38 -0400
+Date: Fri, 25 Oct 2013 13:09:28 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 2/9] backlight: atmel-pwm-bl: fix gpio polarity in remove
+Message-ID: <20131025110928.GR18477@ns203013.ovh.net>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+ <1382522143-32072-3-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382522143-32072-3-git-send-email-jhovold@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 5833005943052086094
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julien Grall <julien.grall@linaro.org>
-
-The commit "arm: introduce a global dma_ops pointer" introduce compilation issue
-when CONFIG_SND_SOC_SAMSUNG is enabled.
-
-sound/soc/samsung/dma.c:345:27: error: conflicting types for 'dma_ops'
-/local/home/julien/works/arndale/linux/arch/arm/include/asm/dma-mapping.h:16:28:
-note: previous declaration of 'dma_ops' was here
-
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- sound/soc/samsung/dma.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-index 9338d11..2c0bed4 100644
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -352,7 +352,7 @@ static int dma_mmap(struct snd_pcm_substream *substream,
- 				     runtime->dma_bytes);
- }
- 
--static struct snd_pcm_ops dma_ops = {
-+static struct snd_pcm_ops samsung_dma_ops = {
- 	.open		= dma_open,
- 	.close		= dma_close,
- 	.ioctl		= snd_pcm_lib_ioctl,
-@@ -439,7 +439,7 @@ out:
- }
- 
- static struct snd_soc_platform_driver samsung_asoc_platform = {
--	.ops		= &dma_ops,
-+	.ops		= &samsung_dma_ops,
- 	.pcm_new	= dma_new,
- 	.pcm_free	= dma_free_dma_buffers,
- };
--- 
-1.7.2.5
-
+On 11:55 Wed 23 Oct     , Johan Hovold wrote:
+> Make sure to honour gpio polarity also at remove so that the backlight
+> is actually disabled on boards with active-low enable pin.
+> 
+> Cc: stable@vger.kernel.org
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
+>  drivers/video/backlight/atmel-pwm-bl.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+> index 8aac273..3cb0094 100644
+> --- a/drivers/video/backlight/atmel-pwm-bl.c
+> +++ b/drivers/video/backlight/atmel-pwm-bl.c
+> @@ -205,8 +205,10 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
+>  {
+>  	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+>  
+> -	if (pwmbl->gpio_on != -1)
+> -		gpio_set_value(pwmbl->gpio_on, 0);
+> +	if (pwmbl->gpio_on != -1) {
+here we need to use gpio_is_valid
+> +		gpio_set_value(pwmbl->gpio_on,
+> +					0 ^ pwmbl->pdata->on_active_low);
+> +	}
+>  	pwm_channel_disable(&pwmbl->pwmc);
+>  	pwm_channel_free(&pwmbl->pwmc);
+>  
+> -- 
+> 1.8.4
+> 
