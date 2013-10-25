@@ -1,143 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3JYLJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:09:34 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:59044 "EHLO SMTP.CITRIX.COM"
+	id S1751604Ab3JYLOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:14:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab3JYLJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:09:33 -0400
-X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="67329763"
-Date: Fri, 25 Oct 2013 12:08:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
-        <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
-In-Reply-To: <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751168Ab3JYLOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 07:14:37 -0400
+Date: Fri, 25 Oct 2013 13:13:39 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, zheng.z.yan@intel.com,
+        bp@alien8.de
+Subject: Re: [PATCH v3 3/4] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131025111339.GA1219@krava.redhat.com>
+References: <1382533085-7166-1-git-send-email-eranian@google.com>
+ <1382533085-7166-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382533085-7166-4-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
-this is the only patch that needs an ack at the moment.
-As you commented on it before and I have already addressed your comments
-few versions ago, unless you have any complaints I am going to add it to
-linux-next and I am thinking of merging it during the next merge window.
+On Wed, Oct 23, 2013 at 02:58:04PM +0200, Stephane Eranian wrote:
 
-On Fri, 25 Oct 2013, Stefano Stabellini wrote:
-> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
-> provided by lib/iommu_helper.c.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> CC: will.deacon@arm.com
-> CC: linux@arm.linux.org.uk
-> 
-> 
-> Changes in v8:
-> - use __phys_to_pfn and __pfn_to_phys.
-> 
-> Changes in v7:
-> - dma_mark_clean: empty implementation;
-> - in dma_capable use coherent_dma_mask if dma_mask hasn't been
->   allocated.
-> 
-> Changes in v6:
-> - check for dev->dma_mask being NULL in dma_capable.
-> 
-> Changes in v5:
-> - implement dma_mark_clean using dmac_flush_range.
-> 
-> Changes in v3:
-> - dma_capable: do not treat dma_mask as a limit;
-> - remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
-> ---
->  arch/arm/Kconfig                   |    6 +++++
->  arch/arm/include/asm/dma-mapping.h |   37 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 1ad6fb6..b08374f 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
->  	  neutralized via a kernel panic.
->  	  This feature requires gcc version 4.2 or above.
->  
-> +config SWIOTLB
-> +	def_bool y
+SNIP
+
 > +
-> +config IOMMU_HELPER
-> +	def_bool SWIOTLB
+> +	perf_cpu_notifier(rapl_cpu_notifier);
 > +
->  config XEN_DOM0
->  	def_bool y
->  	depends on XEN
-> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> index 5b579b9..01b5a3d 100644
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@ -10,6 +10,7 @@
->  
->  #include <asm-generic/dma-coherent.h>
->  #include <asm/memory.h>
-> +#include <asm/cacheflush.h>
->  
->  #define DMA_ERROR_CODE	(~0)
->  extern struct dma_map_ops arm_dma_ops;
-> @@ -86,6 +87,42 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
->  }
->  #endif
->  
-> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> +{
-> +	unsigned int offset = paddr & ~PAGE_MASK;
-> +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-> +}
-> +
-> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-> +{
-> +	unsigned int offset = dev_addr & ~PAGE_MASK;
-> +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-> +}
-> +
-> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-> +{
-> +	u64 limit, mask;
-> +	
-> +	if (dev->dma_mask)
-> +		mask = *dev->dma_mask;
-> +	else 
-> +		mask = dev->coherent_dma_mask;
-> +
-> +	if (mask == 0)
-> +		return 0;
-> +
-> +	limit = (mask + 1) & ~mask;
-> +	if (limit && size > limit)
-> +		return 0;
-> +
-> +	if ((addr | (addr + size - 1)) & ~mask)
-> +		return 0;
-> +
-> +	return 1;
-> +}
-> +
-> +static inline void dma_mark_clean(void *addr, size_t size) { }
-> +
->  /*
->   * DMA errors are defined by all-bits-set in the DMA address.
->   */
-> -- 
-> 1.7.2.5
-> 
+> +	ret = perf_pmu_register(&rapl_pmu_class, "power", -1);
+> +	WARN_ON(ret);
+> +	if (!ret) {
+> +		pr_info("RAPL PMU detected, registration failed, RAPL PMU disabled\n");
+> +		put_online_cpus();
+> +		return -1;
+> +	}
+
+should above rather be:
+
+        if (WARN_ON(ret)) {
+                pr_info("RAPL PMU detected, registration failed, RAPL PMU disabled\n");
+
+jirka
