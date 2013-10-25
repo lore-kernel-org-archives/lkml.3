@@ -1,86 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3JYPpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:45:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54758 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab3JYPpu (ORCPT
+	id S1754486Ab3JYPqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:46:44 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54977 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab3JYPql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:45:50 -0400
-Date: Fri, 25 Oct 2013 16:45:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20131025154546.GE26122@sirena.org.uk>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
- <5269FB5E.6010901@roeck-us.net>
- <20131025083525.GF19622@ulmo.nvidia.com>
- <CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
- <20131025132422.GC12932@sirena.org.uk>
- <CAOesGMjuT0ntb6awo0PVtccqvFfo_Lzj1zyGNX=C4BrVLBow7w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h56sxpGKRmy85csR"
-Content-Disposition: inline
-In-Reply-To: <CAOesGMjuT0ntb6awo0PVtccqvFfo_Lzj1zyGNX=C4BrVLBow7w@mail.gmail.com>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 31.101.168.31
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: Tree for Oct 24
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 25 Oct 2013 11:46:41 -0400
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave@sr71.net>, Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+        Simon Jin <simonjin@linux.vnet.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: [PATCH v2 2/2] vmsplice: Add limited zero copy to vmsplice
+Date: Fri, 25 Oct 2013 10:46:24 -0500
+Message-Id: <1382715984-10558-3-git-send-email-rcj@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
+References: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102515-3864-0000-0000-00000AC0F5E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Robert C Jennings <rcj@linux.vnet.ibm.com>
 
---h56sxpGKRmy85csR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It is sometimes useful to move anonymous pages over a pipe rather than
+save/swap them. Check the SPLICE_F_GIFT and SPLICE_F_MOVE flags to see
+if userspace would like to move such pages. This differs from plain
+SPLICE_F_GIFT in that the memory written to the pipe will no longer
+have the same contents as the original -- it effectively faults in new,
+empty anonymous pages.
 
-On Fri, Oct 25, 2013 at 06:33:43AM -0700, Olof Johansson wrote:
-> On Fri, Oct 25, 2013 at 6:24 AM, Mark Brown <broonie@kernel.org> wrote:
+On the read side the page written to the pipe will be copied unless
+SPLICE_F_MOVE is used. Otherwise page flipping will be performed and the
+page will be reclaimed. Note that so long as there is a mapping to the
+page copies will be performed instead because rmap will have upped the
+map count for each anonymous mapping; this can happen due to fork(),
+for example. This is necessary because moving the page will usually
+change the anonymous page's nonlinear index and that can only be done
+if it's unmapped.
 
-> > The rule I was applying (which I think is the same as Stephen applies)
-> > is that I'd fix anything that was definitely the result of a merge issue
-> > (like the build failure in misc due to a sysfs API change in the sysfs
-> > tree) but not anything that was just plain broken in the tree in
-> > isolation.
+Signed-off-by: Matt Helsley <matt.helsley@gmail.com>
+Signed-off-by: Robert C Jennings <rcj@linux.vnet.ibm.com>
+---
+Changes since v1:
+ - Page flipping in pipe_to_user pulled out into a new function,
+   __pipe_to_user_move
+ - Improved documentation in code and patch description
+ - Fixed locking issue in flipping code found by sparse
+ - Updated vmsplice comments for vmsplice_to_user(), 
+   vmsplice_to_pipe, and vmsplice syscall
+---
+ fs/splice.c | 121 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 112 insertions(+), 9 deletions(-)
 
-> Some of those might still make sense, but as many as possible of them
-> should be pushed down into the trees where they belong, even if
-> they're strictly not needed there (as long as they don't break the
-> standalone tree, of course).
+diff --git a/fs/splice.c b/fs/splice.c
+index c14be6f..955afc0 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -32,6 +32,10 @@
+ #include <linux/gfp.h>
+ #include <linux/socket.h>
+ #include <linux/compat.h>
++#include <linux/page-flags.h>
++#include <linux/hugetlb.h>
++#include <linux/ksm.h>
++#include <linux/swapops.h>
+ #include "internal.h"
+ 
+ /*
+@@ -1545,12 +1549,108 @@ static int get_iovec_page_array(const struct iovec __user *iov,
+ 	return error;
+ }
+ 
++/* __pipe_to_user_move - Attempt to move pages into user vma by flipping
++ *
++ * Description:
++ *	This function will try to flip pages in the pipe to the user rather
++ *	than copying.
++ */
++/* Returns:
++ *  Success, number of bytes flipped
++ *  Failure, negative error value
++ */
++static int __pipe_to_user_move(struct pipe_inode_info *pipe,
++			     struct pipe_buffer *buf, struct splice_desc *sd)
++{
++	int ret = -EFAULT;
++	struct page *page = buf->page;
++	struct mm_struct *mm;
++	struct vm_area_struct *vma;
++	spinlock_t *ptl;
++	pte_t *ptep, pte;
++	unsigned long useraddr;
++
++
++	if (!(buf->flags & PIPE_BUF_FLAG_GIFT) ||
++			!(sd->flags & SPLICE_F_MOVE) ||
++			(buf->offset) || (buf->len != PAGE_SIZE))
++		goto out;
++
++	/* Moving pages is done only for a subset of pages.
++	 * They must be anonymous and unmapped. The anon page's
++	 * nonlinear index will probably change which can only be
++	 * done if it is unmapped.
++	 */
++	if (!PageAnon(page))
++		goto out;
++	if (page_mapped(page))
++		goto out;
++
++	/* Huge pages must be copied as we are not tracking if
++	 * all of the PAGE_SIZE pipe_buffers which compose the
++	 * huge page are in the pipe.
++	 */
++	if (PageCompound(page))
++		goto out;
++	/* TODO: Add support for TransHuge pages */
++	if (PageHuge(page) || PageTransHuge(page))
++		goto out;
++
++	useraddr = (unsigned long)sd->u.userptr;
++	mm = current->mm;
++
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, useraddr);
++	if (IS_ERR_OR_NULL(vma))
++		goto up_copy;
++	if (!vma->anon_vma) {
++		ret = anon_vma_prepare(vma);
++		if (ret)
++			goto up_copy;
++	}
++	zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
++	ret = lock_page_killable(page);
++	if (ret)
++		goto up_copy;
++	ptep = get_locked_pte(mm, useraddr, &ptl);
++	if (!ptep)
++		goto page_unlock_up_copy;
++	pte = *ptep;
++	if (pte_present(pte))
++		goto pte_unlock_up_copy;
++	get_page(page);
++	page_add_anon_rmap(page, vma, useraddr);
++	pte = mk_pte(page, vma->vm_page_prot);
++	set_pte_at(mm, useraddr, ptep, pte);
++	update_mmu_cache(vma, useraddr, ptep);
++	ret = 0;
++pte_unlock_up_copy:
++	pte_unmap_unlock(ptep, ptl);
++page_unlock_up_copy:
++	unlock_page(page);
++up_copy:
++	up_read(&mm->mmap_sem);
++	if (!ret) {
++		ret = sd->len;
++		goto out;
++	}
++	/* else ret < 0 and we should fallback to copying */
++	VM_BUG_ON(ret > 0);
++out:
++	return ret;
++}
++
+ static int pipe_to_user(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 			struct splice_desc *sd)
+ {
+ 	char *src;
+ 	int ret;
+ 
++	/* Attempt to move pages rather than copy */
++	ret = __pipe_to_user_move(pipe, buf, sd);
++	if (ret > 0)
++		goto out;
++
+ 	/*
+ 	 * See if we can use the atomic maps, by prefaulting in the
+ 	 * pages and doing an atomic copy
+@@ -1583,8 +1683,11 @@ out:
+ }
+ 
+ /*
+- * For lack of a better implementation, implement vmsplice() to userspace
+- * as a simple copy of the pipes pages to the user iov.
++ * Implement vmsplice() to userspace as a simple copy of the pipe's pages
++ * to the user iov.
++ *
++ * The SPLICE_F_MOVE flag for vmsplice() will cause pipe_to_user() to attempt
++ * moving pages into the user iov when possible, replacing the current pages.
+  */
+ static long vmsplice_to_user(struct file *file, const struct iovec __user *iov,
+ 			     unsigned long nr_segs, unsigned int flags)
+@@ -1707,16 +1810,16 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
+  * to a pipe, not the other way around. Splicing from user memory is a simple
+  * operation that can be supported without any funky alignment restrictions
+  * or nasty vm tricks. We simply map in the user memory and fill them into
+- * a pipe. The reverse isn't quite as easy, though. There are two possible
+- * solutions for that:
++ * a pipe.  The reverse isn't quite as easy, though. There are two paths
++ * taken:
+  *
+  *	- memcpy() the data internally, at which point we might as well just
+  *	  do a regular read() on the buffer anyway.
+- *	- Lots of nasty vm tricks, that are neither fast nor flexible (it
+- *	  has restriction limitations on both ends of the pipe).
+- *
+- * Currently we punt and implement it as a normal copy, see pipe_to_user().
+- *
++ *	- Move pages from source to destination when the flags
++ *	  (SPLICE_F_GIFT | SPLICE_F_MOVE) are present.  Pages are zapped on
++ *	  the source then moved into the destination process.  This falls
++ *	  back to memcpy() when necessary. See pipe_to_user() for fall-back
++ *	  conditions.
+  */
+ SYSCALL_DEFINE4(vmsplice, int, fd, const struct iovec __user *, iov,
+ 		unsigned long, nr_segs, unsigned int, flags)
+-- 
+1.8.1.2
 
-Right, this is strictly for issues generated as a result of a change in
-one tree that cause an issue when merged with another tree like adding a
-user of an API in one tree that has had an incompatible change in
-another.
-
---h56sxpGKRmy85csR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSapImAAoJELSic+t+oim9iNYP/A/PZkN51WNfyDoaDR6hk846
-cei8Ez3QqxFzL4rja7Pm2WVs6AD2uP0ojJ/K6y9x8s9VV9K3DQuUVdyOxSy8nab2
-d3MyG8h4hFyIvOK/ciLDf63QWnUfCQ3ve2e2Zn5bA+aimQ+Zl1kg3D4mJ/WR411h
-n8+QbAOLUFxDo0OdG1t7JNnRHXb31uRXERscHxqCKFKPNaw02W7UmkgBGogULcjR
-fkPz3dQubXpes1DY0Bg2PeWXexcRtfsRI0qsmV7uEk8pCyK2IrkjlJq+gS50Zlc4
-LYQlYy+h1/awLkTI/FyHvm7Jh7bfq7mntOw+y9ofP+rjIhyNYpiG7wK7DJuKtsKX
-g+EPJjpF7lW48tUnVZ1L5KhpVb56nS69EmdOa8+xMx0zDd2wiVcO42NOdAh01Bew
-U3ZAZEsFu8SAXDkUTrF+nXG1eNcJ1VQ/F8B64HTbucZQ2plesU6mDbtl6P4C1SUa
-BjUc9aclaNFS0ujpP7eZkkybs5znTx1Kz3XIzJ8XNTr6Wa3fTG0xZ7mVOuc9UF1K
-k6iA8s/2h7JKjjk2Px2tRxFxwgR4AN40X21YRWb/Q9ti5tcIf1b//+nrO4M6xIHw
-aJ2/IJyLLR+pF1tlUwn6esruvThHwj+YlsHK5W93Hj0502fjzDMS5mfkTSRGUTxu
-pQEF9tLjlGRMLO6NSZmG
-=+kX7
------END PGP SIGNATURE-----
-
---h56sxpGKRmy85csR--
