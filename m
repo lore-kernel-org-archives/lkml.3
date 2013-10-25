@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3JYNdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:33:09 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34820 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333Ab3JYNdG (ORCPT
+	id S1754822Ab3JYNdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:33:45 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:50364 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab3JYNdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:33:06 -0400
-Date: Fri, 25 Oct 2013 09:33:01 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Matthijs Kooijman <matthijs@stdin.nl>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
-Message-ID: <20131025133301.GC29341@beef>
-References: <20131018141221.GH2721@beef>
- <5264F37E.9060307@ti.com>
- <20131022104829.GF15425@login.drsnuggles.stderr.nl>
- <20131022112520.GE29341@beef>
- <5266F06C.2080701@gmail.com>
- <20131023144242.GI29341@beef>
- <5268AE67.8060902@ti.com>
+	Fri, 25 Oct 2013 09:33:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5268AE67.8060902@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [77.221.165.98]
+In-Reply-To: <20131025132422.GC12932@sirena.org.uk>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+	<5269FB5E.6010901@roeck-us.net>
+	<20131025083525.GF19622@ulmo.nvidia.com>
+	<CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
+	<20131025132422.GC12932@sirena.org.uk>
+Date: Fri, 25 Oct 2013 06:33:43 -0700
+Message-ID: <CAOesGMjuT0ntb6awo0PVtccqvFfo_Lzj1zyGNX=C4BrVLBow7w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 24
+From: Olof Johansson <olof@lixom.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 10:51:43AM +0530, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Wednesday 23 October 2013 08:12 PM, Matt Porter wrote:
-> > On Tue, Oct 22, 2013 at 04:38:52PM -0500, Rob Herring wrote:
-> >> On 10/22/2013 06:25 AM, Matt Porter wrote:
-> >>> On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
-> >>>> Hi Kishon,
-> >>>>
-> >>>> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
-> >>>>> I think it makes sense to keep the data width property in the dwc2 node itself.
-> >>>>> I mean it describes how the dwc2 IP is configured in that particular SoC (given
-> >>>>> that it can be either <8> or <16>).
-> >>>> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
-> >>>> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
-> >>>> and 16 supported" would make sense as a property of dwc2 (though this
-> >>>> value should be autodetectable through GHWCFG4), while the actual 8 or
-> >>>> 16 supported by the PHY would make sense as property of a phy.
-> >>>
-> >>> There would be no value in adding a property for an already detectable
-> >>> value to dwc2's binding. To be honest, it's pretty much useless
-> >>> information due to the existence of the "8 and 16" option.
-> >>>
-> >>>> Note sure if this is really useful in practice as well, or if just
-> >>>> setting the actual width to use on dwc2 makes more sense...
-> >>>
-> >>> The GHWCFG4 information itself is not useful in practice, as described
-> >>> in the original thread: https://lkml.org/lkml/2013/10/10/477
-> >>>
-> >>> It's certainly useful in practice to have this width property in either
-> >>> the dwc2 or the phy binding. One can make a case for either. As I
-> >>> mentioned in the original post, if we put it in the phy binding we'll be
-> >>> updating the generic phy binding. We'll then need an api added into the
-> >>> generic phy framework to fetch the width of a phy.
-> >>>
-> >>> Both cases are doable and trivial, we just need the canonical decision
-> >>> from a DT maintainer as to where the property belongs. Given that they
-> >>> are in ARM ksummit, I'm not expecting to hear anything right this
-> >>> moment. :)
-> >>
-> >> The host can support both, so it is not a property of the host and is a
-> >> property of the phy. It is no different than what mode a SPI slave
-> >> requires or whether an i2c slave supports 8 or 10-bit addressing. Those
-> >> examples are all 1 to many rather than 1 to 1 where it doesn't really
-> >> matter, but the same logic applies.
-> > 
-> > Makes good sense, thanks.
-> > 
-> > In this case, given the PHY ownership of width, we can completely avoid
-> > any DT properties. The generic phy compliant BCM Kona phy driver can
-> > report via the generic phy framework that it is 8-bit wide. There's no
-> > support for this type of thing now but it's pretty trivial to add.
-> > 
-> > I went ahead and did a quick proof-of-concept that adds a free-form
-> > phy attributes struct for the generic phy. Given that generic phys can
-> > be for any transmission technology this could be filled with a jumble
-> > unrelated and often unpopulated attributes over time. In any case, the
-> > below patch allows the phy provider to choose to specify utmi_width and
-> > a controller driver that cares can use phy_get_attrs() to fetch the
-> > optional phy attributes and use the utmi_width field if applicable.
-> > 
-> > Kishon: I'll start a separate thread to discuss what approach you'd like
-> > to see in the generic phy framework to manage this.
-> > 
-> > -Matt
-> > 
-> > diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> > index 6d72269..b763d7b 100644
-> > --- a/include/linux/phy/phy.h
-> > +++ b/include/linux/phy/phy.h
-> > @@ -38,6 +38,14 @@ struct phy_ops {
-> >  };
-> > 
-> >  /**
-> > + * struct phy_attrs - represents phy attributes
-> > + * @utmi_width: Data path width implemented by UTMI PHY
-> > + */
-> > +struct phy_attrs {
-> > +	int			utmi_width;
-> > +};
-> > +
-> > +/**
-> >   * struct phy - represents the phy device
-> >   * @dev: phy device
-> >   * @id: id of the phy device
-> > @@ -51,6 +59,7 @@ struct phy {
-> >  	struct device		dev;
-> >  	int			id;
-> >  	const struct phy_ops	*ops;
-> > +	struct phy_attrs	*attrs;
-> >  	struct phy_init_data	*init_data;
-> >  	struct mutex		mutex;
-> >  	int			init_count;
-> > @@ -127,6 +136,9 @@ int phy_init(struct phy *phy);
-> >  int phy_exit(struct phy *phy);
-> >  int phy_power_on(struct phy *phy);
-> >  int phy_power_off(struct phy *phy);
-> > +static inline struct phy_attrs *phy_get_attrs(struct phy *phy) {
-> > +	return phy->attrs;
-> > +};
-> 
-> I'd prefer to have phy_set_bus_width and phy_get_bus_width instead.
+On Fri, Oct 25, 2013 at 6:24 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Oct 25, 2013 at 06:16:02AM -0700, Olof Johansson wrote:
+>> On Fri, Oct 25, 2013 at 1:35 AM, Thierry Reding
+>
+>> > Yeah, I saw the devm_gpio_request_one() errors too. They happened for 3
+>> > boards on ARM I think. Must have forgotten to update the summary email.
+>> > I'll see if I can come up with a patch to fix the GPIO related build
+>> > failures, or at least report it to LinusW or Alexandre.
+>
+>> Hmm.
+>
+>> Please don't apply fixes like these directly to your tree, keep the
+>> broken parts (or drop the tree that introduced it). It makes the
+>> process of getting the fixes in where they really have to go much more
+>> error prone, since there's no way to track whether they have landed in
+>> the right place yet or not.
+>
+> The rule I was applying (which I think is the same as Stephen applies)
+> is that I'd fix anything that was definitely the result of a merge issue
+> (like the build failure in misc due to a sysfs API change in the sysfs
+> tree) but not anything that was just plain broken in the tree in
+> isolation.
 
-Ok, will incorporate this. Thanks.
+Some of those might still make sense, but as many as possible of them
+should be pushed down into the trees where they belong, even if
+they're strictly not needed there (as long as they don't break the
+standalone tree, of course).
 
--Matt
+
+-Olof
