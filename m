@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3JYMy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 08:54:27 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:45316 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3JYMyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 08:54:25 -0400
+	id S1753694Ab3JYM7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 08:59:38 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42735 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222Ab3JYM7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 08:59:37 -0400
+Date: Fri, 25 Oct 2013 18:29:21 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+Message-ID: <20131025125921.GA29424@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+ <20131023050502.1886.15779.stgit@hemant-fedora>
+ <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <526A6898.8030806@zytor.com>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
-	<20131025105352.GA5419@gmail.com>
-	<20131025124402.GA7089@redhat.com>
-	<526A6898.8030806@zytor.com>
-Date: Fri, 25 Oct 2013 13:54:24 +0100
-X-Google-Sender-Auth: 3mMeF9kJRYa2L9Xsfk-MTCXxqgc
-Message-ID: <CA+55aFzAyhdkN4t2YTTQd-_Yf6WA_FYRjP4JnpSCeSvqxzRRCA@mail.gmail.com>
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci" default
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>, Robin Holt <holt@sgi.com>,
-        davej@fedoraproject.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Adam Williamson <awilliam@redhat.com>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102512-5806-0000-0000-00002336F4BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 1:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> The Dell problem I believe is understood... they are invoking the KBC as
-> their ACPI reboot port, and it is believed that that triggers an SMI
-> which invokes the BIOS, and the BIOS is broken if you behave like a
-> non-Windows system.
+Hi Pekka,
 
-Well, that's presumably true of *all* the machines. Because I bet
-windows boots on it. The details may matter.
+> >
+> > You can now use it in all perf tools, such as:
+> >
+> >     perf record -e libc:my_event -aR sleep 1
+> 
+> Is there a technical reason why 'perf list' could not show all the
+> available SDT markers on a system and that the 'market to event'
+> mapping cannot happen automatically?
+> 
 
-The solution is to act more like Windows. There was some talk about
-one likely fundamental difference being in how we enable VT-d. Maybe
-we should just change that?
+Technically feasible. But then we would have to parse each of the
+libraries and executables to list them. Right? I am not sure if such a
+delay is acceptable.
 
-Seriously, if the "fix" is potentially something as simple as
-disabling VT-d before reboots, let's just do it. Not add these quirks.
-We have people to test a patch, but what _is_ that patch?
+Also if a binary exists in a path thats is not covered in the default
+search, an user might believe that his binary may not have markers.
+I know the above reason is more of a user folly than a tooling issue.
 
-               Linus
+> So instead of doing all the command line magic above I'd do:
+> 
+>   perf list
+> 
+>   libc:setjmp [SDT marker]
+> 
+> and I could just do
+> 
+>   perf record -e libc:setjmp -AR sleep 1
+> 
+> ?
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
