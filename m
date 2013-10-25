@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab3JYAhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 20:37:18 -0400
-Received: from peace.netnation.com ([204.174.223.2]:43340 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab3JYAhQ (ORCPT
+	id S1755429Ab3JYAlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 20:41:24 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45145 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab3JYAlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 20:37:16 -0400
-Date: Thu, 24 Oct 2013 17:37:13 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Douglas Gilbert <dgilbert@interlog.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Vaughan Cao <vaughan.cao@oracle.com>, Madper Xie <cxie@redhat.com>
-Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
-Message-ID: <20131025003713.GA5152@hostway.ca>
-References: <20131022205608.GA6616@hostway.ca>
- <52671B3E.6070804@interlog.com>
- <1382514295.2081.32.camel@dabdike.quadriga.com>
- <5267D8E7.9000806@interlog.com>
+	Thu, 24 Oct 2013 20:41:22 -0400
+X-Originating-IP: 77.221.165.98
+Date: Fri, 25 Oct 2013 01:41:18 +0100
+From: Josh Triplett <josh@joshtriplett.org>
+To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
+Message-ID: <20131025004116.GA17670@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5267D8E7.9000806@interlog.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 10:10:47AM -0400, Douglas Gilbert wrote:
+When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
+condition argument; however, WARN_ON_ONCE and family still have
+conditions and a boolean to detect one-time invocation, even though the
+warning they'd emit doesn't exist.  Make the existing definitions
+conditional on CONFIG_BUG, and map them all to the passthrough WARN_ON
+when !CONFIG_BUG.
 
-> On 13-10-23 03:44 AM, James Bottomley wrote:
-> >On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
-> >>On 13-10-22 04:56 PM, Simon Kirby wrote:
-> >>>Hello!
-> >>>
-> >>>While trying to figure out why the request queue to sda (ext4) was
-> >>>clogging up on one of our btrfs backup boxes, I noticed a megarc process
-> >>>in D state, so enabled locking debugging, and got this (on 3.12-rc6):
-> >>>
-> >>>[  205.372823] ================================================
-> >>>[  205.372901] [ BUG: lock held when returning to user space! ]
-> >>>[  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
-> >>>[  205.373055] ------------------------------------------------
-> >>>[  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
-> >>>[  205.373212] 1 lock held by megarc.bin/5283:
-> >>>[  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
-> >>>
-> >>>Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
-> >>>tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
-> >>>though I haven't tried with lockdep.
-> >>>
-> >>>This is caused by some of our internal RAID monitoring scripts that run
-> >>>"megarc.bin -dispCfg -a0" (even though that controller isn't present on
-> >>>this server -- a PowerEdge 2950 w/Perc 5).
-> >>>
-> >>>strace output of the program execution that causes the above message is
-> >>>here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
-> >>
-> >>This has been reported. That patch will be reverted or,
-> >>if there is enough time, a fix will (or at least should)
-> >>go in before the release of lk 3.12 .
-> >
-> >I think you've got about a week to prove you can fix it (before 3.12
-> >goes final).  I'll send my current set of fixes to Linus without doing
-> >anything about sg.
-> 
-> "prove" is a big ask, especially coming from a
-> mathematician. I consider it more hacking (in the
-> golf sense) on my part to tweak well-meaning patches
-> to the sg driver that cause collateral damage. Further,
-> I suspect Vaughan's patch was an attempt to fix
-> damage left be a previous sg_open() hacker.
-> 
-> I have asked Simon Kirby to apply the patch:
->   http://marc.info/?l=linux-scsi&m=138237283432010&w=2
-> and report if it fixes his problems. Further I have
-> written three test programs to test O_EXCL handling on
-> SCSI devices, two of which are in the examples directory
-> of sg3_utils version 1.37 . The latest one (single
-> exclusive writer, multiple readers) can be found in
-> the News section of:
->    http://sg.danny.cz/sg/
-> These tests don't check all possibilities (e.g. random
-> signals, ml error processing and detached devices) but
-> they are better than nothing. And, as a side issue, they
-> break bsg (cause it ignores O_EXCL) and break the block
-> layer (e.g. /dev/sdb) so perhaps it should be reverted :-)
+This saves 4.4k on a minimized configuration (smaller than
+allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
 
-Well, this patch works for me in that I see no more lockdep warnings or
-unintended consequences when running the same "megarc.bin -dispCfg -a0"
-command.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ include/asm-generic/bug.h | 57 +++++++++++++++++++++++++----------------------
+ 1 file changed, 30 insertions(+), 27 deletions(-)
 
-Simon-
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 7d10f96..34223e0 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -106,33 +106,6 @@ extern void warn_slowpath_null(const char *file, const int line);
+ 	unlikely(__ret_warn_on);					\
+ })
+ 
+-#else /* !CONFIG_BUG */
+-#ifndef HAVE_ARCH_BUG
+-#define BUG() do {} while(0)
+-#endif
+-
+-#ifndef HAVE_ARCH_BUG_ON
+-#define BUG_ON(condition) do { if (condition) ; } while(0)
+-#endif
+-
+-#ifndef HAVE_ARCH_WARN_ON
+-#define WARN_ON(condition) ({						\
+-	int __ret_warn_on = !!(condition);				\
+-	unlikely(__ret_warn_on);					\
+-})
+-#endif
+-
+-#ifndef WARN
+-#define WARN(condition, format...) ({					\
+-	int __ret_warn_on = !!(condition);				\
+-	unlikely(__ret_warn_on);					\
+-})
+-#endif
+-
+-#define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
+-
+-#endif
+-
+ #define WARN_ON_ONCE(condition)	({				\
+ 	static bool __section(.data.unlikely) __warned;		\
+ 	int __ret_warn_once = !!(condition);			\
+@@ -163,6 +136,36 @@ extern void warn_slowpath_null(const char *file, const int line);
+ 	unlikely(__ret_warn_once);				\
+ })
+ 
++#else /* !CONFIG_BUG */
++#ifndef HAVE_ARCH_BUG
++#define BUG() do {} while(0)
++#endif
++
++#ifndef HAVE_ARCH_BUG_ON
++#define BUG_ON(condition) do { if (condition) ; } while(0)
++#endif
++
++#ifndef HAVE_ARCH_WARN_ON
++#define WARN_ON(condition) ({						\
++	int __ret_warn_on = !!(condition);				\
++	unlikely(__ret_warn_on);					\
++})
++#endif
++
++#ifndef WARN
++#define WARN(condition, format...) ({					\
++	int __ret_warn_on = !!(condition);				\
++	unlikely(__ret_warn_on);					\
++})
++#endif
++
++#define WARN_ON_ONCE(condition) WARN_ON(condition)
++#define WARN_ONCE(condition, format...) WARN_ON(condition)
++#define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
++#define WARN_TAINT_ONCE(condition, taint, format...) WARN_ON(condition)
++
++#endif
++
+ /*
+  * WARN_ON_SMP() is for cases that the warning is either
+  * meaningless for !SMP or may even cause failures.
+-- 
+1.8.4.rc3
+
