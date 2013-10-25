@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab3JYRKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 13:10:32 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:64615 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab3JYRKb convert rfc822-to-8bit (ORCPT
+	id S1754316Ab3JYRNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 13:13:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57097 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab3JYRNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 13:10:31 -0400
+	Fri, 25 Oct 2013 13:13:16 -0400
+Date: Fri, 25 Oct 2013 12:12:07 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCHv6 2/4] ARM: msm: Add support for APQ8074 Dragonboard
+Message-ID: <20131025171207.GD20207@joshc.qualcomm.com>
+References: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <201310251838.32001@pali>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
- <CAK5ve-KzJa9QXDXWehUsqrs5E_NeSkHsbktfzPrOtfHducyMQw@mail.gmail.com> <201310251838.32001@pali>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 25 Oct 2013 10:10:07 -0700
-Message-ID: <CAK5ve-JrQhpwx9ZG1Kyhuxdc=dqfAaA6YBOMkDWYWrefeoeUxw@mail.gmail.com>
-Subject: Re: [PATCH 00/10] leds: lp5521,5523: restore device attributes for
- running LED patterns
-To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Milo Kim <woogyom.kim@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382034310-31147-1-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 9:38 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Tuesday 13 August 2013 23:04:14 Bryan Wu wrote:
->> On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
->> > This patch-set resolves the application conflict by
->> > restoring sysfs files.
->> >
->> > For LP5521
->> >
->> >   engine1/2/3_mode
->> >   engine1/2/3_load
->> >
->> > For LP5523
->> >
->> >   engine1/2/3_mode
->> >   engine1/2/3_load
->> >   engine1/2/3_leds
->> >
->> > Those attributes are accessed when LED pattern is run by
->> > custom application. Those were removed when LED pattern
->> > interface was changed to generic firmware interface. Please
->> > refer to commits below.
->> >
->> >   git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
->> >   (leds-lp5521: use generic firmware interface)
->> >
->> >   git commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0
->> >   (leds-lp5523: use generic firmware interface)
->> >
->> > Necessary attributes are restored in this patch-set.
->> >
->> > (Other changes)
->> > New data structure is added for handling values from/to an
->> > application. Few code fixes for reducing writing I2C
->> > commands.
->> > Add LP55xx common macros for code refactoring.
->> > Documentation updates.
->> >
->> > You can also pull from the location below
->> > This branch is based on 'for-next' of linux-leds.
->> >
->> >   https://github.com/milokim/lp55xx.git
->> >   resolve-missing-sysfs
->>
->> Thanks, I've already merged the whole patchset in my -devel
->> branch [1].
->>
->> Pali, could you please help to test it on your hardware? Just
->> grab my -devel branch and build then run.
->>
->> Thanks,
->> -Bryan
->>
->
-> Hi, I see that all your patches are part of 3.12-rc5 kernel.
->
-> Now I tested this example led program:
->
->     # Clearing LED-state to be sure
->     echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
->     echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
->     echo 0 > /sys/class/leds/lp5523:r/brightness
->     echo 0 > /sys/class/leds/lp5523:g/brightness
->     echo 0 > /sys/class/leds/lp5523:b/brightness
->
->     # Setting yellow light pattern and running it
->     echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
->     echo "000001100" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds
->     echo "9d804000427f0d7f7f007f0042000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_load
->     echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
->     echo "000000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_leds
->     echo "9d800000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_load
->     echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
->     echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
->     echo 20 > /sys/class/leds/lp5523:r/led_current
->     echo 2 > /sys/class/leds/lp5523:g/led_current
->     echo 0 > /sys/class/leds/lp5523:b/led_current
->
-> All sysfs entries exists and every echo returned 0.
->
-> But led does not start blinking that yellow ligh pattern.
-> So it not working on 3.12-rc5 kernel :-(
->
+Hey Rohit-
 
+On Thu, Oct 17, 2013 at 11:25:10AM -0700, Rohit Vaswani wrote:
+> This patch adds basic board support for APQ8074 Dragonboard
+> which belongs to the Snapdragon 800 family.
+> For now, just support a basic machine with device tree.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  arch/arm/boot/dts/Makefile                     |  3 ++-
+>  arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
+>  arch/arm/boot/dts/qcom-msm8974.dtsi            | 33 ++++++++++++++++++++++++++
+>  arch/arm/mach-msm/Kconfig                      | 11 ++++++++-
+>  arch/arm/mach-msm/board-dt.c                   |  9 +++++++
+>  5 files changed, 60 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+>  create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 000cf76..e71a3ec 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -102,7 +102,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+>  	kirkwood-openblocks_a6.dtb
+>  dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+>  dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+> -	msm8960-cdp.dtb
+> +	msm8960-cdp.dtb \
+> +	qcom-apq8074-dragonboard.dtb
 
-OK, great! Do you still remember which kernel version works on you system?
-Milo, do you have time to take a look? I bet it's a regression somewhere.
+For what it's worth, this hunk conflicts with Kumar's qcom- prefix stuff
+that's already been sent up.  Perhaps it's time to refresh ontop?
 
-Thanks,
--Bryan
+   Josh
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
