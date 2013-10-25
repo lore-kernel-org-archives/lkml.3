@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3JYLzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:55:38 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:55256 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3JYLzg (ORCPT
+	id S1752995Ab3JYMJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 08:09:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54738 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751542Ab3JYMJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:55:36 -0400
-From: Denis Efremov <yefremov.denis@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Denis Efremov <yefremov.denis@gmail.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH v2] xfs:xfs_dir2_node.c: pointer use before check for null
-Date: Fri, 25 Oct 2013 15:53:25 +0400
-Message-Id: <1382702005-32245-1-git-send-email-yefremov.denis@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <20131022203322.GA2797@dastard>
+	Fri, 25 Oct 2013 08:09:07 -0400
+Date: Fri, 25 Oct 2013 09:09:01 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Caizhiyong <caizhiyong@hisilicon.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Quyaxin <quyaxin@hisilicon.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: cmdlinepart: use cmdline partition parser lib
+Message-ID: <20131025120900.GF2489@localhost>
+References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
+ <20131020120603.GA18678@localhost>
+ <C3050A4DBA34F345975765E43127F10F1C084F26@szxeml512-mbs.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C084F26@szxeml512-mbs.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ASSERT on args takes place after args dereference.
-This assertion is redundant since we are going to panic anyway.
+Hi,
 
-Found by Linux Driver Verification project (linuxtesting.org) -
-PVS-Studio analyzer.
+On Fri, Oct 25, 2013 at 11:52:14AM +0000, Caizhiyong wrote:
+> > 
+> > I'd like to review the patch in detail and test it, but being a bit old,
+> > the patch doesn't apply as it is on v3.12-rc5. Care to resend an update?
+> >
+>   I have sent you a 2 patch base on v3.12-rc6. Are there any problems? I tested it for a long time and found no problems.
+> 
 
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
----
- fs/xfs/xfs_dir2_node.c | 1 -
- 1 file changed, 1 deletion(-)
+I haven't had time to look at that yet, thanks for re-sending them!
 
-diff --git a/fs/xfs/xfs_dir2_node.c b/fs/xfs/xfs_dir2_node.c
-index 4c3dba7..dc814df 100644
---- a/fs/xfs/xfs_dir2_node.c
-+++ b/fs/xfs/xfs_dir2_node.c
-@@ -1366,7 +1366,6 @@ xfs_dir2_leafn_split(
- 	 */
- 	args = state->args;
- 	mp = args->dp->i_mount;
--	ASSERT(args != NULL);
- 	ASSERT(oldblk->magic == XFS_DIR2_LEAFN_MAGIC);
- 	error = xfs_da_grow_inode(args, &blkno);
- 	if (error) {
+If you already did testing using those, then I think we would all appreciate
+that you post the results.
+
+In particular, we're interested in **seeing** this change parses correctly
+all possible combinations of partitions configured by the 'mtdparts' parameter.
+
+This is a big change you're proposing and we need to be sure there won't
+be any users experiencing any unexpected result while using 'mtdparts'.
 -- 
-1.8.3.1
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
