@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3JYXJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:09:41 -0400
-Received: from ring0.de ([91.143.88.219]:53382 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751918Ab3JYXJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:09:39 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sat, 26 Oct 2013 01:09:07 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-iio@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio:light:tsl2563: Add DT support
-Message-ID: <20131025230906.GB8657@earth.universe>
-Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
-	linux-iio@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-	Peter Meerwald <pmeerw@pmeerw.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Bill Pemberton <wfp5p@virginia.edu>,
-	Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1382565063-17083-1-git-send-email-sre@debian.org>
- <20131025191028.8C140C40422@trevor.secretlab.ca>
+	id S1753501Ab3JYXKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:10:14 -0400
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:34665 "EHLO
+	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab3JYXKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:10:12 -0400
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 19:10:12 EDT
+Message-ID: <526AF842.4070006@jolla.com>
+Date: Sat, 26 Oct 2013 02:01:22 +0300
+From: Philippe De Swert <philippe.deswert@jolla.com>
+Reply-To: philippe.deswert@jolla.com
+Organization: Jolla Oy
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
-Content-Disposition: inline
-In-Reply-To: <20131025191028.8C140C40422@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anton Vorontsov <anton@enomsg.org>,
+        Philippe De Swert <philippe.deswert@jollamobile.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power:power_supply_syfs : Treat PROP_TYPE as a regular
+ attribute first
+References: <1376521798-16985-1-git-send-email-philippe.deswert@jollamobile.com> <20131025221504.GA31842@teo>
+In-Reply-To: <20131025221504.GA31842@teo>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 26/10/13 01:15, Anton Vorontsov wrote:
+> On Thu, Aug 15, 2013 at 02:09:58AM +0300, Philippe De Swert wrote:
+>> These days we often have USB powered devices. This means that often the
+>> type is variable. Common examples are smartphones which can be charged
+>> through a normal USB port on a PC/laptop, a dedicated charger, etc...
+ >
+> I would guess that a lot of userland code assumes that the type is fixed.
+> We can't break this assumption. Plus I don't think we really need the
+> changing types.
 
-Hi Grant,
+That is a fair assumption, but that does not work anymore with 
+smartphones, GPS devices, tablets etc.. Moreover why is it the only 
+property that would be fixed? Also we have the power supply name to 
+identify it, and I expect most userland code uses that.
 
-On Fri, Oct 25, 2013 at 08:10:28PM +0100, Grant Likely wrote:
-> > +  - cover-comp-gain : integer used as multiplier for gain
-> > +                      compensation (default =3D 1)
->=20
-> Should be taos,cover-comp-gain
+>> Userspace sometimes needs to behave differently based on the type of charger
+>> connected to such devices.
+>
+> A system with several charger should either:
+>
+> 1. Register all of them (mains, usb, etc.) as a separate power supply
+> device, and then use PROP_ONLINE to specify whether something is connected
+> to the port or not.
+> 2. Register only the charger type that is currently connected to the
+> system.
 
-Has been updated to "amstaos,cover-comp-gain" in the latest
-patches, see https://lkml.org/lkml/2013/10/25/59
+I think I did not make myself very clear. Well there are actually no 
+different chargers here. It is one USB charger input, however its 
+properties are different depending on the actual connected "charger 
+device/type". It is the same charging controller however when a usb 
+cable is connected and power comes from a PC it is very different
+from when it is a dedicated USB charger.
 
-> Otherwise looks fine to me.
+Constantly register/unregister the current "charger type" makes it very 
+difficult to monitor. Having a separate power_supply device per possible 
+connected charger type is pretty tedious. We are talking USB_DCP, 
+USB_ACA, USB_CDP, USB already, and new ones probably in the future. Not 
+to mention that at some point we would have to deal with OTG also were 
+we might actually supply power. In any case a lot harder than having a 
+changing type property.
 
-Is this an acked-by?
+One of the main reasons to monitor this is to have the device react 
+differently depending on what gets plugged in. Pure charging when 
+charger gets connected or mass-storage gadget mode, mtp, ... when a 
+cable is connected. Or eventually switch to a totally different device 
+mode to support things like terminal mode (in cars).
 
-> > +	else if (np)
-> > +		of_property_read_u32_index(np, "cover-comp-gain", 0,
-> > +							&chip->cover_comp_gain);
->=20
-> of_property_read_u32() should be sufficient. You don't need the _index
-> variant.
+> This is how we've been doing things from the very start.
 
-ah, I missed the function when skipping over linux/of.h.
-I will sent another update.
+Well a number of upstream charging drivers and non-upstreamed android 
+drivers already change the charger type  like for example the isp1704. 
+The patch I proposed just changes the inconsistency with the charger 
+type property as it is the only one that gets treated differently, to
+avoid confusion with it.
 
--- Sebastian
+But I am sure open to better ideas for handling this.
 
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Philippe
 
-iQIcBAEBCAAGBQJSavoSAAoJENju1/PIO/qaPngP/iTc636yeeTXa3PxCxazE3Xm
-qTdwUYjgbQlgbNZ0zebN2WZCE+zu95Txeb6Wd6tTS7Nc7FXu3RNFNyazxPxcqjmo
-LAtXIRpD9OcDp2HWzxxIzAirRHejkj7KCS16GNlI/TZIbwlU+CPMz8FWFWF4jrJf
-5ud0X32XuUFhNI5C9OQ6a9Y/H9e3jny/q6jaIrb0JDo6sVnY8ggfvTXpg212OXPS
-a/EbcNw6grtwWFdJZBXDohDlzsBPMKhJVe1Ic1pNp4L1jrHTg1o5NqTf2QEIx61w
-TF4u/a0TNSONVi6oOJys5g//u+ETpfvbY70BYc812J4CCcAdUyWivzjc7UWXptpQ
-lc+LjI2wglcGr3vulbhxpP2+AbN0Tgmytj1le63SEhG54Nb3gjvBUCFB7ju7j56k
-MCmVCZyiLDrFb8lzXr/Sqx/IO3lVBdNTBI/Zu/wLJ7AT0fZXYafuDAkpkHBcFbXs
-IoHNi8wY9HDLblltxLbkUuJrPXygmFQBVGvuSRPl87ubK4Ct6Z88YLf6BJqby+kX
-b//QprsTk+G3TSjnMLT3Z46cHPGjmO59n5nmVWC38OllugqrGTnZf57rHiBQhdZY
-QDUsj7TyW4FpEjfhAl9cdM8pNCQdSdpzWeI72ErBRPgc87IUX34ZaW+LrFwwypro
-2jXDswbaTkBOHO+oWrP0
-=joN1
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
