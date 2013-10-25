@@ -1,134 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3JYQih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 12:38:37 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57606 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab3JYQig (ORCPT
+	id S1753658Ab3JYQis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 12:38:48 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43987 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab3JYQir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 12:38:36 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Subject: Re: [PATCH 00/10] leds: lp5521,5523: restore device attributes for running LED patterns
-Date: Fri, 25 Oct 2013 18:38:31 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: Milo Kim <woogyom.kim@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <CAK5ve-KzJa9QXDXWehUsqrs5E_NeSkHsbktfzPrOtfHducyMQw@mail.gmail.com>
-In-Reply-To: <CAK5ve-KzJa9QXDXWehUsqrs5E_NeSkHsbktfzPrOtfHducyMQw@mail.gmail.com>
+	Fri, 25 Oct 2013 12:38:47 -0400
+Date: Fri, 25 Oct 2013 12:38:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Santosh.Jodh@citrix.com, JBeulich@suse.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, mukesh.rathor@oracle.com,
+        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
+Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs beyound E820
+ and PCI BARs
+Message-ID: <20131025163826.GA5320@phenom.dumpdata.com>
+References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
+ <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1894515.mCph1CZbfe";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310251838.32001@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1894515.mCph1CZbfe
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 25, 2013 at 11:03:20AM -0400, Konrad Rzeszutek Wilk wrote:
+> On bootup the E820 "gaps" or E820_RESV regions are marked as
+> identity regions. Meaning that any lookup done in the P2M
+> will return the same value: pfn_to_mfn(pfn) == pfn.
+> 
+> This is needed for PCI devices so that drivers can reference
+> the correct bus address. Unfortunatly there are also PCIe
+> devices which setup their MMIO region above the E820. By default
+> we assume in the P2M that any region above the last E820 entry
+> is to be used for ballooning. That is not true - and we don't
+> mark such regions as IDENTIY_FRAME but INVALID_P2M_ENTRY.
+> The result is that any lookup in the P2M (pfn_to_mfn(pfn) == 0)
+> gets us the 0 bus address which is hardly correct.
+> 
+> A solution that this patch implements is to walk the PCI device
+> BAR regions and mark them as IDENTITY_FRAMEs in the P2M.
+> Naturally some checks are needed such as making sure that the
+> BAR regions are not part of the balloon pages, nor regular RAM.
+> 
+> We only set them to IDENTITY if the:
+>  pfn_to_mfn(pfn) == INVALID_P2M_ENTRY.
+> 
+> Another solution would be to mark all P2M entries beyond the
+> last E820 entry _and_ not in the balloon regions as IDENTITY.
+> 
+> If done, that means in worst case we have to reserve MAX_DOMAIN_PAGES
+> pages (so 2MB) of virtual space in case we have to create
+> new P2M leafs. We could be fancy and make the P2M code understand
+> p2m_mid_missing and p2_mid_identity and do the right things.
+> But that is quite complex while this particular patch only
+> gets invoked if there are PCI devices. Another solution (David
+> Vrabel ideas) was to consider INVALID_P2M_ENTRY as 1-1 regions.
+> The author of this patch is not sure of the ramifications
+> as it would require surgery in various P2M codebits.
+> 
+> Reported-by: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+> Reported-by: Lance Larsh <lance.larsh@oracle.com>
+> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> CC: David Vrabel <david.vrabel@citrix.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/balloon.c | 19 +++++++++++++
+>  drivers/xen/pci.c     | 79 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>  include/xen/balloon.h |  1 +
+>  3 files changed, 96 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index b232908..258e3f9 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -133,6 +133,25 @@ static void balloon_append(struct page *page)
+>  	adjust_managed_page_count(page, -1);
+>  }
+>  
+> +/*
+> + * Check if any the balloon pages overlap with the supplied
+> + * pfn and its range.
+> + */
+> +bool balloon_pfn(unsigned long pfn, unsigned long nr)
+> +{
+> +	struct page *page;
+> +
+> +	if (list_empty(&ballooned_pages))
+> +		return false;
+> +
+> +	list_for_each_entry(page, &ballooned_pages, lru) {
+> +		unsigned long b_pfn = page_to_pfn(page);
+> +
+> +		if (b_pfn >= pfn && b_pfn < pfn + nr)
+> +			return true;
+> +	}
+> +	return false;
+> +}
+>  /* balloon_retrieve: rescue a page from the balloon, if it is not empty. */
+>  static struct page *balloon_retrieve(bool prefer_highmem)
+>  {
+> diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
+> index 18fff88..6b86eda 100644
+> --- a/drivers/xen/pci.c
+> +++ b/drivers/xen/pci.c
+> @@ -22,6 +22,9 @@
+>  #include <xen/xen.h>
+>  #include <xen/interface/physdev.h>
+>  #include <xen/interface/xen.h>
+> +#include <xen/interface/memory.h>
+> +#include <xen/page.h>
+> +#include <xen/balloon.h>
+>  
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+> @@ -127,6 +130,72 @@ static int xen_add_device(struct device *dev)
+>  	return r;
+>  }
+>  
+> +static void xen_p2m_add_device(struct device *dev)
+> +{
+> +	int i;
+> +	struct pci_dev *pci_dev = to_pci_dev(dev);
+> +
+> +	/* Verify whether the MMIO BARs are 1-1 in the P2M. */
+> +	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> +		unsigned long pfn, start, end, ok_pfns;
+> +		char bus_addr[64];
+> +		char *fmt;
+> +
+> +		if (!pci_resource_len(pci_dev, i))
+> +			continue;
+> +
+> +		if (pci_resource_flags(pci_dev, i) == IORESOURCE_IO)
+> +			fmt = " (bus address [%#06llx-%#06llx])";
+> +		else
+> +			fmt = " (bus address [%#010llx-%#010llx])";
+> +
+> +		snprintf(bus_addr, sizeof(bus_addr), fmt,
+> +			 (unsigned long long) (pci_resource_start(pci_dev, i)),
+> +			 (unsigned long long) (pci_resource_end(pci_dev, i)));
+> +
+> +		start = pci_resource_start(pci_dev, i) >> PAGE_SHIFT;
+> +		end = pci_resource_end(pci_dev, i) >> PAGE_SHIFT;
+> +
+> +		/*
+> +		 * We don't worry about the balloon scratch page as it has a
+> +		 * valid PFN - which means we will catch in the loop below.
+> +		 */
+> +		if (balloon_pfn(start, end - start)) {
+> +			dev_warn(dev, "%s is within balloon pages!\n", bus_addr);
+> +			continue;
+> +		}
+> +
+> +		for (ok_pfns = 0, pfn = start; pfn < end; pfn++) {
+> +			unsigned long mfn = pfn_to_mfn(pfn);
+> +
+> +			if (mfn == pfn) {
+> +				ok_pfns++;
+> +				continue;
+> +			}
+> +			if (mfn != INVALID_P2M_ENTRY) { /* RAM */
+> +				dev_warn(dev, "%s is within RAM [%lx] region!\n", bus_addr, pfn);
+> +				break;
+> +			}
+> +		}
+> +		if (ok_pfns == end - start) /* All good. */
+> +			continue;
+> +
+> +		if (pfn != end - 1) /* We broke out of the loop above. */
+> +			continue;
 
-On Tuesday 13 August 2013 23:04:14 Bryan Wu wrote:
-> On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
-> > This patch-set resolves the application conflict by
-> > restoring sysfs files.
-> >=20
-> > For LP5521
-> >=20
-> >   engine1/2/3_mode
-> >   engine1/2/3_load
-> >=20
-> > For LP5523
-> >=20
-> >   engine1/2/3_mode
-> >   engine1/2/3_load
-> >   engine1/2/3_leds
-> >=20
-> > Those attributes are accessed when LED pattern is run by
-> > custom application. Those were removed when LED pattern
-> > interface was changed to generic firmware interface. Please
-> > refer to commits below.
-> >=20
-> >   git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
-> >   (leds-lp5521: use generic firmware interface)
-> >  =20
-> >   git commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0
-> >   (leds-lp5523: use generic firmware interface)
-> >=20
-> > Necessary attributes are restored in this patch-set.
-> >=20
-> > (Other changes)
-> > New data structure is added for handling values from/to an
-> > application. Few code fixes for reducing writing I2C
-> > commands.
-> > Add LP55xx common macros for code refactoring.
-> > Documentation updates.
-> >=20
-> > You can also pull from the location below
-> > This branch is based on 'for-next' of linux-leds.
-> >=20
-> >   https://github.com/milokim/lp55xx.git
-> >   resolve-missing-sysfs
->=20
-> Thanks, I've already merged the whole patchset in my -devel
-> branch [1].
->=20
-> Pali, could you please help to test it on your hardware? Just
-> grab my -devel branch and build then run.
->=20
-> Thanks,
-> -Bryan
->=20
-
-Hi, I see that all your patches are part of 3.12-rc5 kernel.
-
-Now I tested this example led program:
-
-    # Clearing LED-state to be sure
-    echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo 0 > /sys/class/leds/lp5523:r/brightness
-    echo 0 > /sys/class/leds/lp5523:g/brightness
-    echo 0 > /sys/class/leds/lp5523:b/brightness
-
-    # Setting yellow light pattern and running it
-    echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo "000001100" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds
-    echo "9d804000427f0d7f7f007f0042000000" > /sys/class/i2c-adapter/i2c-2/=
-2-0032/engine1_load
-    echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo "000000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_leds
-    echo "9d800000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_load
-    echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo 20 > /sys/class/leds/lp5523:r/led_current
-    echo 2 > /sys/class/leds/lp5523:g/led_current
-    echo 0 > /sys/class/leds/lp5523:b/led_current
-
-All sysfs entries exists and every echo returned 0.
-
-But led does not start blinking that yellow ligh pattern.
-So it not working on 3.12-rc5 kernel :-(
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1894515.mCph1CZbfe
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlJqnocACgkQi/DJPQPkQ1K77gCgjSTF1MJSuGP23Jcn0R8I/Shq
-yJwAoMeUv2BvTdLjAs9hG7YqGC+B+YQ/
-=oOEy
------END PGP SIGNATURE-----
-
---nextPart1894515.mCph1CZbfe--
+There are some bugs in this code so please wait until the next posting
+which hopefully will also include me testing it on affected hardware.
