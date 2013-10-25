@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3JYJLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:11:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48962 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab3JYJLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:11:35 -0400
-Message-ID: <526A359E.1000605@ti.com>
-Date: Fri, 25 Oct 2013 04:10:54 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752752Ab3JYJMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:12:12 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:43545 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751586Ab3JYJML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 05:12:11 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-CC: Koen Kooi <koen@dominion.thruhere.net>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 0/2] ARM: dts: Beaglebone MMC fixes
-References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net> <5238596F.9080806@baylibre.com> <20131025090443.GB5474@netboy>
-In-Reply-To: <20131025090443.GB5474@netboy>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*() family helpers
+Date: Fri, 25 Oct 2013 10:10:02 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B73B0@saturn3.aculab.com>
+In-Reply-To: <5269D5D1.60103@start.ca>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*() family helpers
+Thread-Index: Ac7RKNtOk6v5A3pDTFiVQ12x1oawfgAOCgjg
+References: <cover.1382103786.git.agordeev@redhat.com> <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com> <20131024105158.GB13159@mtj.dyndns.org> <AE90C24D6B3A694183C094C60CF0A2F6026B73AA@saturn3.aculab.com> <20131024114133.GA26610@dhcp-26-207.brq.redhat.com> <5269D5D1.60103@start.ca>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Mark Lord" <kernel@start.ca>, "Alexander Gordeev" <agordeev@redhat.com>
+Cc: "Tejun Heo" <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        "Michael Ellerman" <michael@ellerman.id.au>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Ben Hutchings" <bhutchings@solarflare.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <linux-pci@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9P9CFMV023704
 
-On 10/25/2013 04:04 AM, Richard Cochran wrote:
-> On Tue, Sep 17, 2013 at 03:30:23PM +0200, Benoit Cousson wrote:
->>
->> I've just applied it on top of Joel's one.
+> > pcim_enable_msix_min_max(struct pci_dev *dev, struct msix_entry *entries,
+> > 			 unsigned int minvec, unsigned int maxvec);
 > 
-> Benoit,
+> The hardware I have in mind here works only for powers of two.
+> Eg. 16, 8, 4, 2, or 1 MSI-X vector.  Not the odd values in between.
 > 
-> Can you tell me where to find your git tree so that I can follow these
-> patches' progress?
-> 
+> But it appears I can still just use a loop for that case,
+> calling the new function above instead of the old functions.
 
-https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.13/dts
+You'd either have to loop with min and max the same (starting at 16),
+or do a single call with min=1 and max=16 and the release the
+unwanted ones.
 
+The latter might be preferred because it might stop an annoying
+trace about the system not having enough MSI interrupts.
 
--- 
-Regards,
-Nishanth Menon
+What this doesn't resolve is a driver requesting a lot of interrupts
+early on and leaving none for later drivers.
+
+Really the system needs to allocate the minimum number to all
+drivers before giving out any extra ones - I've NFI how this
+would be arranged!
+
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
