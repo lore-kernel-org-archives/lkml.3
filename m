@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3JYKdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:33:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52486 "EHLO
+	id S1753599Ab3JYKd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:33:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52490 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab3JYKds (ORCPT
+	with ESMTP id S1753549Ab3JYKdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:33:48 -0400
-Date: Fri, 25 Oct 2013 03:33:29 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-c1fb5651bb40f9efaf32d280f39e06df7e352673@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de
-In-Reply-To: <1381468543-25334-4-git-send-email-namhyung@kernel.org>
-References: <1381468543-25334-4-git-send-email-namhyung@kernel.org>
+	Fri, 25 Oct 2013 06:33:53 -0400
+Date: Fri, 25 Oct 2013 03:33:10 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-zjqbfp9gx3yo45s0rp9uv42n@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Show progress on histogram collapsing
-Git-Commit-ID: c1fb5651bb40f9efaf32d280f39e06df7e352673
+Subject: [tip:perf/core] perf ui: Rename ui_progress to ui_progress_ops
+Git-Commit-ID: 4779a2e99af80e133ee1c70c7093dc6cc13429a1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,192 +29,243 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 25 Oct 2013 03:33:36 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 25 Oct 2013 03:33:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1fb5651bb40f9efaf32d280f39e06df7e352673
-Gitweb:     http://git.kernel.org/tip/c1fb5651bb40f9efaf32d280f39e06df7e352673
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 11 Oct 2013 14:15:38 +0900
+Commit-ID:  4779a2e99af80e133ee1c70c7093dc6cc13429a1
+Gitweb:     http://git.kernel.org/tip/4779a2e99af80e133ee1c70c7093dc6cc13429a1
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 23 Oct 2013 14:08:48 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Oct 2013 15:48:24 -0300
+CommitDate: Wed, 23 Oct 2013 14:41:23 -0300
 
-perf tools: Show progress on histogram collapsing
+perf ui: Rename ui_progress to ui_progress_ops
 
-It can take quite amount of time so add progress bar UI to inform user.
+Reserving 'struct ui_progress' to the per progress instances, not to the
+particular set of operations used to implmenet a progress bar in the
+current UI (GTK, TUI, etc).
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1381468543-25334-4-git-send-email-namhyung@kernel.org
-[ perf_progress -> ui_progress ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-zjqbfp9gx3yo45s0rp9uv42n@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |  2 +-
- tools/perf/builtin-diff.c     |  2 +-
- tools/perf/builtin-report.c   | 10 +++++++++-
- tools/perf/builtin-top.c      |  4 ++--
- tools/perf/tests/hists_link.c |  2 +-
- tools/perf/util/hist.c        |  5 ++++-
- tools/perf/util/hist.h        |  3 ++-
- 7 files changed, 20 insertions(+), 8 deletions(-)
+ tools/perf/Makefile.perf     |  1 +
+ tools/perf/ui/gtk/gtk.h      |  2 +-
+ tools/perf/ui/gtk/progress.c | 14 +++++++-------
+ tools/perf/ui/gtk/setup.c    |  2 +-
+ tools/perf/ui/progress.c     | 18 +++++++++---------
+ tools/perf/ui/progress.h     |  6 ++----
+ tools/perf/ui/tui/progress.c |  7 ++++---
+ tools/perf/ui/tui/setup.c    |  3 ++-
+ tools/perf/ui/tui/tui.h      |  6 ++++++
+ 9 files changed, 33 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 17c6b49..6c5ae57 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -247,7 +247,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 326a26e..8a9ca38 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -487,6 +487,7 @@ ifndef NO_SLANG
+   LIB_OBJS += $(OUTPUT)ui/tui/util.o
+   LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+   LIB_OBJS += $(OUTPUT)ui/tui/progress.o
++  LIB_H += ui/tui/tui.h
+   LIB_H += ui/browser.h
+   LIB_H += ui/browsers/map.h
+   LIB_H += ui/keysyms.h
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 8576cf1..0a9173f 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -34,7 +34,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
+ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
  
- 		if (nr_samples > 0) {
- 			total_nr_samples += nr_samples;
--			hists__collapse_resort(hists);
-+			hists__collapse_resort(hists, NULL);
- 			hists__output_resort(hists);
+ void perf_gtk__init_helpline(void);
+-void perf_gtk__init_progress(void);
++void gtk_ui_progress__init(void);
+ void perf_gtk__init_hpp(void);
  
- 			if (symbol_conf.event_group &&
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 9c82888..b605009 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -369,7 +369,7 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		struct hists *hists = &evsel->hists;
+ void perf_gtk__signal(int sig);
+diff --git a/tools/perf/ui/gtk/progress.c b/tools/perf/ui/gtk/progress.c
+index 482bcf3..195c7f9 100644
+--- a/tools/perf/ui/gtk/progress.c
++++ b/tools/perf/ui/gtk/progress.c
+@@ -7,7 +7,7 @@
+ static GtkWidget *dialog;
+ static GtkWidget *progress;
  
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, NULL);
- 	}
- }
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index e3598a4..98d3891 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -496,6 +496,7 @@ static int __cmd_report(struct perf_report *rep)
- 	struct map *kernel_map;
- 	struct kmap *kernel_kmap;
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
-+	struct ui_progress prog;
- 	struct perf_data_file *file = session->file;
- 
- 	signal(SIGINT, sig_handler);
-@@ -558,13 +559,19 @@ static int __cmd_report(struct perf_report *rep)
- 	}
- 
- 	nr_samples = 0;
-+	list_for_each_entry(pos, &session->evlist->entries, node)
-+		nr_samples += pos->hists.nr_entries;
-+
-+	ui_progress__init(&prog, nr_samples, "Merging related events...");
-+
-+	nr_samples = 0;
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
- 		struct hists *hists = &pos->hists;
- 
- 		if (pos->idx == 0)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
--		hists__collapse_resort(hists);
-+		hists__collapse_resort(hists, &prog);
- 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
-@@ -576,6 +583,7 @@ static int __cmd_report(struct perf_report *rep)
- 			hists__link(leader_hists, hists);
- 		}
- 	}
-+	ui_progress__finish();
- 
- 	if (session_done())
- 		return 0;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 386d833..76c9264 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -286,7 +286,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 		return;
- 	}
- 
--	hists__collapse_resort(&top->sym_evsel->hists);
-+	hists__collapse_resort(&top->sym_evsel->hists, NULL);
- 	hists__output_resort(&top->sym_evsel->hists);
- 	hists__decay_entries(&top->sym_evsel->hists,
- 			     top->hide_user_symbols,
-@@ -552,7 +552,7 @@ static void perf_top__sort_new_samples(void *arg)
- 	if (t->evlist->selected != NULL)
- 		t->sym_evsel = t->evlist->selected;
- 
--	hists__collapse_resort(&t->sym_evsel->hists);
-+	hists__collapse_resort(&t->sym_evsel->hists, NULL);
- 	hists__output_resort(&t->sym_evsel->hists);
- 	hists__decay_entries(&t->sym_evsel->hists,
- 			     t->hide_user_symbols,
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 025503a..b51abcb 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -467,7 +467,7 @@ int test__hists_link(void)
- 		goto out;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		hists__collapse_resort(&evsel->hists);
-+		hists__collapse_resort(&evsel->hists, NULL);
- 
- 		if (verbose > 2)
- 			print_hists(&evsel->hists);
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f0b863e..7e80253 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -399,6 +399,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	if (!he)
- 		return NULL;
- 
-+	hists->nr_entries++;
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
-@@ -604,7 +605,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
- 	hists__filter_entry_by_symbol(hists, he);
- }
- 
--void hists__collapse_resort(struct hists *hists)
-+void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
+-static void gtk_progress_update(u64 curr, u64 total, const char *title)
++static void gtk_ui_progress__update(u64 curr, u64 total, const char *title)
  {
- 	struct rb_root *root;
- 	struct rb_node *next;
-@@ -631,6 +632,8 @@ void hists__collapse_resort(struct hists *hists)
- 			 */
- 			hists__apply_filters(hists, n);
- 		}
-+		if (prog)
-+			ui_progress__update(prog, 1);
- 	}
+ 	double fraction = total ? 1.0 * curr / total : 0.0;
+ 	char buf[1024];
+@@ -40,7 +40,7 @@ static void gtk_progress_update(u64 curr, u64 total, const char *title)
+ 		gtk_main_iteration();
  }
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 20b1758..0c7ce8b 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -5,6 +5,7 @@
- #include <pthread.h>
- #include "callchain.h"
- #include "header.h"
-+#include "ui/progress.h"
+-static void gtk_progress_finish(void)
++static void gtk_ui_progress__finish(void)
+ {
+ 	/* this will also destroy all of its children */
+ 	gtk_widget_destroy(dialog);
+@@ -48,12 +48,12 @@ static void gtk_progress_finish(void)
+ 	dialog = NULL;
+ }
  
- extern struct callchain_param callchain_param;
+-static struct ui_progress gtk_progress_fns = {
+-	.update		= gtk_progress_update,
+-	.finish		= gtk_progress_finish,
++static struct ui_progress_ops gtk_ui_progress__ops = {
++	.update		= gtk_ui_progress__update,
++	.finish		= gtk_ui_progress__finish,
+ };
  
-@@ -108,7 +109,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
- 					  u64 weight);
+-void perf_gtk__init_progress(void)
++void gtk_ui_progress__init(void)
+ {
+-	progress_fns = &gtk_progress_fns;
++	ui_progress__ops = &gtk_ui_progress__ops;
+ }
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index 6c2dd2e..1d57676 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -8,7 +8,7 @@ int perf_gtk__init(void)
+ {
+ 	perf_error__register(&perf_gtk_eops);
+ 	perf_gtk__init_helpline();
+-	perf_gtk__init_progress();
++	gtk_ui_progress__init();
+ 	perf_gtk__init_hpp();
  
- void hists__output_resort(struct hists *self);
--void hists__collapse_resort(struct hists *self);
-+void hists__collapse_resort(struct hists *self, struct ui_progress *prog);
+ 	return gtk_init_check(NULL, NULL) ? 0 : -1;
+diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
+index 3ec69560..d753821 100644
+--- a/tools/perf/ui/progress.c
++++ b/tools/perf/ui/progress.c
+@@ -1,26 +1,26 @@
+ #include "../cache.h"
+ #include "progress.h"
  
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
- void hists__output_recalc_col_len(struct hists *hists, int max_rows);
+-static void nop_progress_update(u64 curr __maybe_unused,
+-				u64 total __maybe_unused,
+-				const char *title __maybe_unused)
++static void null_progress__update(u64 curr __maybe_unused,
++				  u64 total __maybe_unused,
++				  const char *title __maybe_unused)
+ {
+ }
+ 
+-static struct ui_progress default_progress_fns =
++static struct ui_progress_ops null_progress__ops =
+ {
+-	.update		= nop_progress_update,
++	.update = null_progress__update,
+ };
+ 
+-struct ui_progress *progress_fns = &default_progress_fns;
++struct ui_progress_ops *ui_progress__ops = &null_progress__ops;
+ 
+ void ui_progress__update(u64 curr, u64 total, const char *title)
+ {
+-	return progress_fns->update(curr, total, title);
++	return ui_progress__ops->update(curr, total, title);
+ }
+ 
+ void ui_progress__finish(void)
+ {
+-	if (progress_fns->finish)
+-		progress_fns->finish();
++	if (ui_progress__ops->finish)
++		ui_progress__ops->finish();
+ }
+diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
+index 257cc22..d41bde5 100644
+--- a/tools/perf/ui/progress.h
++++ b/tools/perf/ui/progress.h
+@@ -3,14 +3,12 @@
+ 
+ #include <../types.h>
+ 
+-struct ui_progress {
++struct ui_progress_ops {
+ 	void (*update)(u64, u64, const char *);
+ 	void (*finish)(void);
+ };
+ 
+-extern struct ui_progress *progress_fns;
+-
+-void ui_progress__init(void);
++extern struct ui_progress_ops *ui_progress__ops;
+ 
+ void ui_progress__update(u64 curr, u64 total, const char *title);
+ void ui_progress__finish(void);
+diff --git a/tools/perf/ui/tui/progress.c b/tools/perf/ui/tui/progress.c
+index 6c2184d..0fcc5a1 100644
+--- a/tools/perf/ui/tui/progress.c
++++ b/tools/perf/ui/tui/progress.c
+@@ -2,6 +2,7 @@
+ #include "../progress.h"
+ #include "../libslang.h"
+ #include "../ui.h"
++#include "tui.h"
+ #include "../browser.h"
+ 
+ static void tui_progress__update(u64 curr, u64 total, const char *title)
+@@ -31,12 +32,12 @@ static void tui_progress__update(u64 curr, u64 total, const char *title)
+ 	pthread_mutex_unlock(&ui__lock);
+ }
+ 
+-static struct ui_progress tui_progress_fns =
++static struct ui_progress_ops tui_progress__ops =
+ {
+ 	.update		= tui_progress__update,
+ };
+ 
+-void ui_progress__init(void)
++void tui_progress__init(void)
+ {
+-	progress_fns = &tui_progress_fns;
++	ui_progress__ops = &tui_progress__ops;
+ }
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index b940148..2f61256 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -9,6 +9,7 @@
+ #include "../util.h"
+ #include "../libslang.h"
+ #include "../keysyms.h"
++#include "tui.h"
+ 
+ static volatile int ui__need_resize;
+ 
+@@ -119,7 +120,7 @@ int ui__init(void)
+ 
+ 	ui_helpline__init();
+ 	ui_browser__init();
+-	ui_progress__init();
++	tui_progress__init();
+ 
+ 	signal(SIGSEGV, ui__signal);
+ 	signal(SIGFPE, ui__signal);
+diff --git a/tools/perf/ui/tui/tui.h b/tools/perf/ui/tui/tui.h
+new file mode 100644
+index 0000000..18961c7
+--- /dev/null
++++ b/tools/perf/ui/tui/tui.h
+@@ -0,0 +1,6 @@
++#ifndef _PERF_TUI_H_
++#define _PERF_TUI_H_ 1
++
++void tui_progress__init(void);
++
++#endif /* _PERF_TUI_H_ */
