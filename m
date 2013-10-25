@@ -1,77 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3JYQPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 12:15:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2334 "EHLO mx1.redhat.com"
+	id S1753083Ab3JYQdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 12:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11544 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab3JYQPV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 12:15:21 -0400
-Date: Fri, 25 Oct 2013 14:15:55 -0200
-From: Flavio Leitner <fbl@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: RIP: mem_cgroup_move_account+0xf4/0x290
-Message-ID: <20131025161555.GA4398@plex.lan>
+	id S1751568Ab3JYQdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 12:33:49 -0400
+Date: Fri, 25 Oct 2013 12:33:03 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
+        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131025163303.GD108330@redhat.com>
+References: <20131017160034.GO227855@redhat.com>
+ <20131017160439.GP227855@redhat.com>
+ <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+ <20131023204838.GB19466@laptop.lan>
+ <20131024105206.GM2490@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131024105206.GM2490@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 24, 2013 at 12:52:06PM +0200, Peter Zijlstra wrote:
+> On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
+> > I'll also make sure to test we actually hit the fault path
+> > by concurrently running something like:
+> > 
+> >  while :; echo 1 > /proc/sys/vm/drop_caches ; done
+> > 
+> > while doing perf top or so.. 
+> 
+> So the below appears to work; I've ran:
+> 
+>   while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
+>   while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
+> 
+> And verified that the if (in_nmi()) trace_printk() was visible in the
+> trace output verifying we indeed took the fault from the NMI code.
+> 
+> I've had this running for ~ 30 minutes or so and the machine is still
+> healthy.
+> 
+> Don, can you give this stuff a spin on your system?
 
-While playing with guests and net-next kernel, I've triggered
-this with some frequency.  Even Fedora 19 kernel reproduces.
+Hi Peter,
 
-It it a known issue?
+I finally had a chance to run this on my machine.  From my testing, it
+looks good.  Better performance numbers.  I think my longest latency went
+from 300K cycles down to 150K cycles and very few of those (most are under
+100K cycles).
 
-Thanks,
-fbl
+I also don't see perf throttling me down to 1500 samples, it stops around
+7000.  So I see progress with this patch. :-)
 
-[ 6790.349763] kvm: zapping shadow pages for mmio generation wraparound
-[ 6792.283879] kvm: zapping shadow pages for mmio generation wraparound
-[ 7535.654438] perf samples too long (2719 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-[ 7535.665948] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 11.560 msecs
-[ 7691.048392] virbr0: port 1(vnet0) entered disabled state
-[ 7691.056281] device vnet0 left promiscuous mode
-[ 7691.061674] virbr0: port 1(vnet0) entered disabled state
-[ 7691.163363] BUG: unable to handle kernel paging request at 000060fbc0002a20
-[ 7691.171145] IP: [<ffffffff8119dcb4>] mem_cgroup_move_account+0xf4/0x290
-[ 7691.178574] PGD 0 
-[ 7691.181042] Oops: 0000 [#1] SMP 
-[ 7691.184761] Modules linked in: vhost_net vhost macvtap macvlan tun veth openvswitch xt_CHECKSUM nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 vxlan ip_tunnel gre libcrc32c ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw coretemp kvm_intel snd_hda_codec_realtek snd_hda_intel nfsd snd_hda_codec kvm auth_rpcgss nfs_acl snd_hwdep lockd snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc sunrpc snd_timer crc32c_intel i7core_edac bnx2 shpchp ptp snd iTCO_wdt joydev pps_core iTCO_vendor_support pcspkr soundcore microcode serio_raw lpc_ich edac_core mfd_core i2c_i801 acpi_cpufreq hid_logitech_dj nouveau ata_generic pata_acpi video i2c_algo_bit drm_kms_helper ttm drm mxm_wmi i2c_core pata_marvell wmi [last unloaded: openvswitch]
-[ 7691.285989] CPU: 1 PID: 14 Comm: kworker/1:0 Tainted: G          I  3.12.0-rc6-01188-gb45bd46 #1
-[ 7691.295779] Hardware name:                  /DX58SO, BIOS SOX5810J.86A.5599.2012.0529.2218 05/29/2012
-[ 7691.306066] Workqueue: events css_killed_work_fn
-[ 7691.311303] task: ffff880429555dc0 ti: ffff88042957a000 task.ti: ffff88042957a000
-[ 7691.319673] RIP: 0010:[<ffffffff8119dcb4>]  [<ffffffff8119dcb4>] mem_cgroup_move_account+0xf4/0x290
-[ 7691.329728] RSP: 0018:ffff88042957bcc8  EFLAGS: 00010002
-[ 7691.335747] RAX: 0000000000000246 RBX: ffff88042b17bc30 RCX: 0000000000000004
-[ 7691.343720] RDX: ffff880424cd6000 RSI: 000060fbc0002a08 RDI: ffff880424cd622c
-[ 7691.351735] RBP: ffff88042957bd20 R08: ffff880424cd4000 R09: 0000000000000001
-[ 7691.359751] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea00103ef0c0
-[ 7691.367745] R13: ffff880424cd6000 R14: 0000000000000000 R15: ffff880424cd622c
-[ 7691.375738] FS:  0000000000000000(0000) GS:ffff88043fc20000(0000) knlGS:0000000000000000
-[ 7691.384755] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 7691.391238] CR2: 000060fbc0002a20 CR3: 0000000001c0c000 CR4: 00000000000027e0
-[ 7691.399235] Stack:
-[ 7691.401672]  ffff88042957bce8 ffff88042957bce8 ffffffff81312b6d ffff880424cd4000
-[ 7691.409968]  ffff880400000001 ffff880424cd6000 ffffea00103ef0c0 ffff880424cd0430
-[ 7691.418264]  ffff88042b17bc30 ffffea00103ef0e0 ffff880424cd6000 ffff88042957bda8
-[ 7691.426578] Call Trace:
-[ 7691.429513]  [<ffffffff81312b6d>] ? list_del+0xd/0x30
-[ 7691.435250]  [<ffffffff8119f5e7>] mem_cgroup_reparent_charges+0x247/0x460
-[ 7691.442874]  [<ffffffff8119f9af>] mem_cgroup_css_offline+0xaf/0x1b0
-[ 7691.449942]  [<ffffffff810da877>] offline_css+0x27/0x50
-[ 7691.455874]  [<ffffffff810dcf8d>] css_killed_work_fn+0x2d/0xa0
-[ 7691.462466]  [<ffffffff810821f5>] process_one_work+0x175/0x430
-[ 7691.469041]  [<ffffffff81082e1b>] worker_thread+0x11b/0x3a0
-[ 7691.475345]  [<ffffffff81082d00>] ? rescuer_thread+0x340/0x340
-[ 7691.481919]  [<ffffffff81089860>] kthread+0xc0/0xd0
-[ 7691.487478]  [<ffffffff810897a0>] ? insert_kthread_work+0x40/0x40
-[ 7691.494352]  [<ffffffff8166ea3c>] ret_from_fork+0x7c/0xb0
-[ 7691.500464]  [<ffffffff810897a0>] ? insert_kthread_work+0x40/0x40
-[ 7691.507335] Code: 85 f6 48 8b 55 d0 44 8b 4d c8 4c 8b 45 c0 0f 85 b3 00 00 00 41 8b 4c 24 18 85 c9 0f 88 a6 00 00 00 48 8b b2 30 02 00 00 45 89 ca <4c> 39 56 18 0f 8c 36 01 00 00 44 89 c9 f7 d9 89 cf 65 48 01 7e 
-[ 7691.528638] RIP  [<ffffffff8119dcb4>] mem_cgroup_move_account+0xf4/0x290
+Thanks!
+
+Cheers,
+Don
+
+> 
+> ---
+>  arch/x86/lib/usercopy.c | 43 +++++++++++++++----------------------------
+>  arch/x86/mm/fault.c     | 43 +++++++++++++++++++++++--------------------
+>  2 files changed, 38 insertions(+), 48 deletions(-)
+> 
+> diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+> index 4f74d94c8d97..5465b8613944 100644
+> --- a/arch/x86/lib/usercopy.c
+> +++ b/arch/x86/lib/usercopy.c
+> @@ -11,39 +11,26 @@
+>  #include <linux/sched.h>
+>  
+>  /*
+> - * best effort, GUP based copy_from_user() that is NMI-safe
+> + * We rely on the nested NMI work to allow atomic faults from the NMI path; the
+> + * nested NMI paths are careful to preserve CR2.
+>   */
+>  unsigned long
+>  copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+>  {
+> -	unsigned long offset, addr = (unsigned long)from;
+> -	unsigned long size, len = 0;
+> -	struct page *page;
+> -	void *map;
+> -	int ret;
+> +	unsigned long ret;
+>  
+>  	if (__range_not_ok(from, n, TASK_SIZE))
+> -		return len;
+> -
+> -	do {
+> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
+> -		if (!ret)
+> -			break;
+> -
+> -		offset = addr & (PAGE_SIZE - 1);
+> -		size = min(PAGE_SIZE - offset, n - len);
+> -
+> -		map = kmap_atomic(page);
+> -		memcpy(to, map+offset, size);
+> -		kunmap_atomic(map);
+> -		put_page(page);
+> -
+> -		len  += size;
+> -		to   += size;
+> -		addr += size;
+> -
+> -	} while (len < n);
+> -
+> -	return len;
+> +		return 0;
+> +
+> +	/*
+> +	 * Even though this function is typically called from NMI/IRQ context
+> +	 * disable pagefaults so that its behaviour is consistent even when
+> +	 * called form other contexts.
+> +	 */
+> +	pagefault_disable();
+> +	ret = __copy_from_user_inatomic(to, from, n);
+> +	pagefault_enable();
+> +
+> +	return n - ret;
+>  }
+>  EXPORT_SYMBOL_GPL(copy_from_user_nmi);
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 3aaeffcfd67a..506564b13ba7 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -51,7 +51,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
+>  	return 0;
+>  }
+>  
+> -static inline int __kprobes notify_page_fault(struct pt_regs *regs)
+> +static inline int __kprobes kprobes_fault(struct pt_regs *regs)
+>  {
+>  	int ret = 0;
+>  
+> @@ -1048,7 +1048,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  			return;
+>  
+>  		/* kprobes don't want to hook the spurious faults: */
+> -		if (notify_page_fault(regs))
+> +		if (kprobes_fault(regs))
+>  			return;
+>  		/*
+>  		 * Don't take the mm semaphore here. If we fixup a prefetch
+> @@ -1060,23 +1060,8 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  	}
+>  
+>  	/* kprobes don't want to hook the spurious faults: */
+> -	if (unlikely(notify_page_fault(regs)))
+> +	if (unlikely(kprobes_fault(regs)))
+>  		return;
+> -	/*
+> -	 * It's safe to allow irq's after cr2 has been saved and the
+> -	 * vmalloc fault has been handled.
+> -	 *
+> -	 * User-mode registers count as a user access even for any
+> -	 * potential system fault or CPU buglet:
+> -	 */
+> -	if (user_mode_vm(regs)) {
+> -		local_irq_enable();
+> -		error_code |= PF_USER;
+> -		flags |= FAULT_FLAG_USER;
+> -	} else {
+> -		if (regs->flags & X86_EFLAGS_IF)
+> -			local_irq_enable();
+> -	}
+>  
+>  	if (unlikely(error_code & PF_RSVD))
+>  		pgtable_bad(regs, error_code, address);
+> @@ -1088,17 +1073,35 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		}
+>  	}
+>  
+> -	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+> -
+>  	/*
+>  	 * If we're in an interrupt, have no user context or are running
+>  	 * in an atomic region then we must not take the fault:
+>  	 */
+>  	if (unlikely(in_atomic() || !mm)) {
+> +		if (in_nmi())
+> +			trace_printk("YIPEE!!!\n");
+>  		bad_area_nosemaphore(regs, error_code, address);
+>  		return;
+>  	}
+>  
+> +	/*
+> +	 * It's safe to allow irq's after cr2 has been saved and the
+> +	 * vmalloc fault has been handled.
+> +	 *
+> +	 * User-mode registers count as a user access even for any
+> +	 * potential system fault or CPU buglet:
+> +	 */
+> +	if (user_mode_vm(regs)) {
+> +		local_irq_enable();
+> +		error_code |= PF_USER;
+> +		flags |= FAULT_FLAG_USER;
+> +	} else {
+> +		if (regs->flags & X86_EFLAGS_IF)
+> +			local_irq_enable();
+> +	}
+> +
+> +	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+> +
+>  	if (error_code & PF_WRITE)
+>  		flags |= FAULT_FLAG_WRITE;
+>  
