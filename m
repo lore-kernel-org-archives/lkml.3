@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3JYO4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:56:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58204 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab3JYO42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:56:28 -0400
-Date: Fri, 25 Oct 2013 15:56:25 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] a couple of fixes for rc7
-Message-ID: <20131025145625.GF13318@ZenIV.linux.org.uk>
-References: <20131025142547.GE13318@ZenIV.linux.org.uk>
- <CA+55aFx2XQvf1pbhoRP7EJL=We04d3E0i0-DY3gCfcqv7T76Hg@mail.gmail.com>
+	id S1754385Ab3JYO5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:57:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754067Ab3JYO5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 10:57:11 -0400
+Date: Fri, 25 Oct 2013 16:56:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, zheng.z.yan@intel.com,
+        bp@alien8.de
+Subject: Re: [PATCH v3 1/4] perf: add active_entry list head to struct
+ perf_event
+Message-ID: <20131025145625.GB1196@krava.brq.redhat.com>
+References: <1382533085-7166-1-git-send-email-eranian@google.com>
+ <1382533085-7166-2-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx2XQvf1pbhoRP7EJL=We04d3E0i0-DY3gCfcqv7T76Hg@mail.gmail.com>
+In-Reply-To: <1382533085-7166-2-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 03:33:46PM +0100, Linus Torvalds wrote:
-> On Fri, Oct 25, 2013 at 3:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > nfsd performance regression fix + seq_file lseek(2) fix.
-> > Please, pull from the usual place -
-> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+On Wed, Oct 23, 2013 at 02:58:02PM +0200, Stephane Eranian wrote:
+> This patch adds a new fields to the struct perf_event.
+> It is intended to be used to chain events which are
+> active (enabled). It helps in the hardware layer
+> for PMU which do not have actual counter restrictions, i.e.,
+> free running read-only counters. Active events are chained
+> as opposed to being tracked via the counter they use.
 > 
-> Not acceptable.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  include/linux/perf_event.h |    1 +
+>  kernel/events/core.c       |    1 +
+>  2 files changed, 2 insertions(+)
 > 
-> fs/file_table.c: In function ???fput???:
-> fs/file_table.c:320:4: warning: passing argument 1 of
-> ???schedule_delayed_work??? from incompatible pointer type [enabled by
-> default]
->     schedule_delayed_work(&delayed_fput_work, 1);
->     ^
-> In file included from include/linux/srcu.h:34:0,
->                  from include/linux/notifier.h:15,
->                  from include/linux/memory_hotplug.h:6,
->                  from include/linux/mmzone.h:797,
->                  from include/linux/gfp.h:4,
->                  from include/linux/slab.h:14,
->                  from fs/file_table.c:9:
-> include/linux/workqueue.h:594:60: note: expected ???struct delayed_work
-> *??? but argument is of type ???struct work_struct *???
->  static inline bool schedule_delayed_work(struct delayed_work *dwork,
-> 
-> Plase stop sending me untested crap that doesn't even compile cleanly!
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 2e069d1..a376384 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -435,6 +435,7 @@ struct perf_event {
+>  	struct perf_cgroup		*cgrp; /* cgroup event is attach to */
+>  	int				cgrp_defer_enabled;
+>  #endif
+> +	struct list_head		active_entry;
 
-Oh, hell...  git cherry-pick (for the wrong place, at that) instead of just
-pushing the bugger as it was - it sat on top of previous vfs.git#for-linus.
-Mea culpa ;-/
+Could this be in union with 'hlist_entry' ? It looks
+as 'same purpose' and 'mutualy exclusive stuff.
 
-I've pushed the right branch now; should propagate in a few minutes.
-Head should be at 05e16745c.
+jirka
