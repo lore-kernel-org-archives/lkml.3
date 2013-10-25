@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab3JYFKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:10:51 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51570 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3JYFKu (ORCPT
+	id S1752025Ab3JYFNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:13:22 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35236 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab3JYFNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:10:50 -0400
-Message-ID: <5269FD53.6040903@synopsys.com>
-Date: Fri, 25 Oct 2013 10:40:43 +0530
-From: Vineet Gupta <vineetg76@gmail.com>
-Organization: Synopsys
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 25 Oct 2013 01:13:20 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+In-Reply-To: <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com>
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+	<CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+	<20131015024452.GA31951@srcf.ucam.org>
+	<20131016202123.GA17866@google.com>
+	<CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
+	<CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com>
+	<CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com>
+	<CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com>
+Date: Thu, 24 Oct 2013 22:13:18 -0700
+X-Google-Sender-Auth: xd0kflVOzJjJkl3kZbPjBQBx73Q
+Message-ID: <CAE9FiQUPgHtQ-p6R3MR+j=gKiQPcW5F2nqB=FwJdEovFLsuXjA@mail.gmail.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Joe Perches <joe@perches.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: Portable assmbler code - newline (was Re: [PATCH] kernel/modsign_certificate.S:
- use real contents instead of macro GLOBAL())
-References: <523FD9E7.3050303@asianux.com>	<523FDBD7.4040602@asianux.com>	<C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>	<523FE578.5060801@asianux.com>	<52672DAC.1030307@asianux.com>	<CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com>	<52673E41.6040606@asianux.com>	<5267AF98.1010800@asianux.com>	<5268B0B1.9050009@asianux.com>	<CAFLxGvzERDqwZhb_5d=bXKmqz6-Yrema_TLMTM7rjyeFeDJG_w@mail.gmail.com>	<526958D8.6030102@synopsys.com> <CAMuHMdURxpuWPYYDTU2Sa4eF8WZTb=0ALQ+irtGk9ERtSKz09Q@mail.gmail.com>
-In-Reply-To: <CAMuHMdURxpuWPYYDTU2Sa4eF8WZTb=0ALQ+irtGk9ERtSKz09Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2013 01:11 AM, Geert Uytterhoeven wrote:
-> On Thu, Oct 24, 2013 at 7:28 PM, Vineet Gupta <vineetg76@gmail.com> wrote:
->> > +CC linux-arch
->> >
->> > On 10/24/2013 11:33 AM, Richard Weinberger wrote:
->>> >> On Thu, Oct 24, 2013 at 7:31 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>> >>> > For some architectures, tool chain is not smart enough to recognize the
->>>>> >>> > macro with multiple lines (e.g. arc tool chain), and for common ".S"
->>>>> >>> > file, this kind of macro is also rarely used.
->>> >> Does not "not smart enough" mean than the said toolchain is broken/buggy
->>> >> or is the kernel using an unsupported notation?
->>> >>
->> >
->> > IMHO this is not broken - rather the code is not fully portable - given that gas
->> > ports of arches have differnet notions of what to treat as comment and what newline.
->> >
->> > Looking as binutils/gas/config, I can see that avr, cris,...are likely broken in
->> > the same way as ARC is.
->> >
->> > Historically ARC has had ';' as comment char, which Joern relatively recently
->> > augmented to have '#' as well. However there's legacy codebase which relies on ';'
->> > being a comment and we can't change that fact.
->> >
->> > So can we introduce an ARCH over-ridable newline annotation in linkage.h and other
->> > places after auditing. Since asm/linkage.h preempts linux/linkage.h by way of
->> > #include it shd be pretty strightforward.
->> >
->> > Something like below. I can send the formal patch if people think the approach is OK.
-> By what are you gonna override __ARCH_NL on ARC?
-> I'm afraid cpp will still turn it into a single line.
-> 
+On Thu, Oct 24, 2013 at 8:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+>>>> Bisection points to 928bea964827d7824b548c1f8e06eccbbc4d0d7d .
+>>>
+>>> This is "PCI: Delay enabling bridges until they're needed" by Yinghai.
+>>
+>> that double disabling should be addressed by:
+>>
+>> https://lkml.org/lkml/2013/4/25/608
+>>
+>> [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
+>
+> I'll look at that patch again.  I had some questions about it the
+> first time, but perhaps it makes more sense after 928bea9648 has been
+> applied.
+>
+> Andreas originally reported a GPF oops in pci_pme_list_scan().  I
+> posted a refcounting patch, which made the problem go away, but I
+> can't explain why, and I don't want to apply it without understanding
+> that.  Decoding his oops shows this:
+>
+>   24: 0f 1f 00             nopl   (%rax)
+>   27: 48 8b 50 10           mov    0x10(%rax),%rdx
+>   2b:* 48 8b 52 38           mov    0x38(%rdx),%rdx <-- trapping instruction
+>   2f: 48 85 d2             test   %rdx,%rdx
+>
+> %rax is the pci_dev pointer, so 0x10(%rax) is the dev->bus pointer,
+> which we put in %rdx.  The oops says %rdx = 6b6b6b6b6b6b6b6b, which is
+> POISON_FREE, so I think we loaded dev->bus out of a struct pci_dev
+> that has already been freed.
+>
+> pci_pme_list_scan() holds pci_pme_list_mutex while it traverses
+> pci_pme_list, and the pci_stop_and_remove_bus_device() path removes
+> the pci_dev by calling pci_pme_active(), which also holds
+> pci_pme_list_mutex, so I don't understand how pci_pme_list_scan() can
+> see a pci_dev that has already been freed.
+>
+> If I understand Andreas correctly, 928bea9648 also fixes the crash,
+> even without my refcounting change.  Can you explain why?
 
-Eh ! My untested patch was broken but not because of what you mentioned.
+928bea will make the dev->enable_cnt increase wrongly, as we have
+pci_enable_device for child
+   pci_enable_bridge for parent
+     pci_enable_bridge for grandparent
+       pci_enable_device for grandparent
+   pci_enable_device for parent
+       pci_enable_brdige for grandparent
+         pci_enable_device for grandparent.
+...
 
-For ARC, the ; negating the newline annotation. So the following works (backquote
-is new line for ARC)
+in that case grandprent will be enabled two times, and will enable_cnt will have
+extra increase.
 
-diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
-index 0283e9e44e0d..b3eea2999322 100644
---- a/arch/arc/include/asm/linkage.h
-+++ b/arch/arc/include/asm/linkage.h
-@@ -9,6 +9,8 @@
- #ifndef __ASM_LINKAGE_H
- #define __ASM_LINKAGE_H
+so later pci_disable_device will not really call do_pci_disable_device
+do the really work, as enable_cnt still big.
 
-+#define __ARCH_NL      `
-+
- #ifdef __ASSEMBLY__
+solution could be:
+let pci_enable_bridge call __pci_enable_device.
+and __pci_enable_device will not call pci_enable_bridge.
 
+Thanks
 
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index d3e8ad23a8e0..969e70ad231a 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -6,6 +6,10 @@
- #include <linux/export.h>
- #include <asm/linkage.h>
-
-+#ifndef __ARCH_NL
-+#define __ARCH_NL      ;
-+#endif
-+
- #ifdef __cplusplus
- #define CPP_ASMLINKAGE extern "C"
- #else
-@@ -75,7 +79,7 @@
-
- #ifndef ENTRY
- #define ENTRY(name) \
--  .globl name; \
-+  .globl name __ARCH_NL \
-   ALIGN; \
-   name:
- #endif
-
-
+Yinghai
