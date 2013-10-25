@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3JYNoR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:44:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36141 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab3JYNoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:44:15 -0400
-Date: Fri, 25 Oct 2013 14:44:10 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] blk-mq: add blk_mq_stop_hw_queues
-Message-ID: <20131025134410.GB2815@kernel.dk>
-References: <20131025130459.730903511@bombadil.infradead.org>
- <20131025130735.440114225@bombadil.infradead.org>
+	id S1754158Ab3JYNpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:45:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51013 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753212Ab3JYNpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 09:45:16 -0400
+Message-ID: <526A75E7.30109@suse.cz>
+Date: Fri, 25 Oct 2013 15:45:11 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131025130735.440114225@bombadil.infradead.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Joe Perches <joe@perches.com>, yann.morin.1998@free.fr,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
+References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com> <1382599849.22433.51.camel@joe-AO722> <526A746C.3060806@free-electrons.com>
+In-Reply-To: <526A746C.3060806@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25 2013, Christoph Hellwig wrote:
-> Add a helper to iterate over all hw queues and stop them.  This is useful
-> for driver that implement PM suspend functionality.
+On 25.10.2013 15:38, Michael Opdenacker wrote:
+> Hi Joe,
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  block/blk-mq.c         |   12 ++++++++++++
->  include/linux/blk-mq.h |    1 +
->  2 files changed, 13 insertions(+)
+> Thank you very much for your review!
 > 
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index f21ec96..04050a3 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -679,6 +679,18 @@ void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx)
->  }
->  EXPORT_SYMBOL(blk_mq_start_hw_queue);
->  
-> +void blk_mq_stop_hw_queues(struct request_queue *q)
-> +{
-> +	struct blk_mq_hw_ctx *hctx;
-> +	int i;
-> +
-> +	queue_for_each_hw_ctx(q, hctx, i) {
-> +		cancel_delayed_work(&hctx->delayed_work);
-> +		set_bit(BLK_MQ_S_STOPPED, &hctx->state);
-> +	}
+> On 10/24/2013 09:30 AM, Joe Perches wrote:
+>> On Thu, 2013-10-24 at 07:23 +0200, Michael Opdenacker wrote:
+>>
+>>> +def count_param(param):
+>>> +
+>>> +    global source_file, bad_params_in_file
+>>> +
+>>> +    if os.path.isdir('.git'):
+>>> +       # Use git grep when available
+>>> +       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
+>>> +    else:
+>>> +       # Fallback to regular grep
+>>> +       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
+>> Doesn't the grep need -w?
+> Using "-w" is a good idea, and this way I can eliminate false negatives
+> (for example finding matches for "PRINTK_TIME" when I'm looking for
+> plain "PRINTK"). The only this is that I then need to look for both
+> "PARAM" (in Kconfig files, in case the parameter is just used for
+> dependency management), and for "CONFIG_PARAM" (in source files).
 
-I changed this to call blk_mq_stop_hw_queue() instead.
+You can process Kconfig files and source files separately. And you can
+speed up the script a lot, if you simply record all CONFIG_* strings
+found in the sources, and then compare this to the set of config options
+defined in Kconfig. Then you can also easily implement the opposite
+check, which is currently done by scripts/checkkconfigsymbols.sh.
 
--- 
-Jens Axboe
-
+Michal
