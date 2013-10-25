@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3JYKxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:53:11 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:28424 "EHLO
+	id S1753520Ab3JYKxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:53:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:26713 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3JYKxH (ORCPT
+	with ESMTP id S1752767Ab3JYKxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Oct 2013 06:53:07 -0400
 X-IronPort-AV: E=Sophos;i="4.93,569,1378857600"; 
-   d="scan'208";a="64684012"
+   d="scan'208";a="64684011"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v9 04/18] xen/x86: allow __set_phys_to_machine for autotranslate guests
-Date: Fri, 25 Oct 2013 11:51:39 +0100
-Message-ID: <1382698313-13161-4-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>
+Subject: [PATCH v9 02/18] arm64: define DMA_ERROR_CODE
+Date: Fri, 25 Oct 2013 11:51:37 +0100
+Message-ID: <1382698313-13161-2-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
@@ -28,33 +29,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow __set_phys_to_machine to be called for autotranslate guests.
-It can be used to keep track of phys_to_machine changes, however we
-don't do anything with the information at the moment.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/xen/p2m.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: will.deacon@arm.com
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index a61c7d5..2ae8699 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -799,10 +799,10 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- {
- 	unsigned topidx, mididx, idx;
+Changes in v8:
+- cast to dma_addr_t before returning.
+---
+ arch/arm64/include/asm/dma-mapping.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+index 8d18100..59206b1 100644
+--- a/arch/arm64/include/asm/dma-mapping.h
++++ b/arch/arm64/include/asm/dma-mapping.h
+@@ -25,6 +25,7 @@
  
--	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
--		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
-+	/* don't track P2M changes in autotranslate guests */
-+	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
- 		return true;
--	}
-+
- 	if (unlikely(pfn >= MAX_P2M_PFN)) {
- 		BUG_ON(mfn != INVALID_P2M_ENTRY);
- 		return true;
+ #define ARCH_HAS_DMA_GET_REQUIRED_MASK
+ 
++#define DMA_ERROR_CODE	(~(dma_addr_t)0)
+ extern struct dma_map_ops *dma_ops;
+ 
+ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
 -- 
 1.7.2.5
 
