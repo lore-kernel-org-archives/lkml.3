@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3JYAIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 20:08:36 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:60044 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab3JYAIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 20:08:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <14578957.OSuohDRLT9@cmlinux10.ih.lucent.com>
-References: <14578957.OSuohDRLT9@cmlinux10.ih.lucent.com>
-Date: Thu, 24 Oct 2013 20:08:33 -0400
-X-Google-Sender-Auth: HGwDgOQ5j8P6F6xpr7rviqpUrFQ
-Message-ID: <CA+5PVA4C_KN=aUPewU+xHa4PSogskYMPugi-wBAZ=Ft446vDbg@mail.gmail.com>
-Subject: Re: [PATCH] Adding Documentation/module-signing.txt file
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: James Solner <solner@alcatel-lucent.com>
-Cc: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755028Ab3JYAWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 20:22:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54032 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753391Ab3JYAWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Oct 2013 20:22:38 -0400
+Date: Fri, 25 Oct 2013 11:22:24 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Any news on Runtime Interpreted Power Sequences
+Message-ID: <20131025112224.6e5265e6@notabene.brown>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/sESixgftmgqmHVgHcfQPbSD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 6:35 PM, James Solner <solner@alcatel-lucent.com> wrote:
-> This patch adds the Documentation/module-signing.txt file that is
-> missing. There is a link to Documentation/module-signing.txt file
-> in init/Kconfig that references this file.
->
-> Signed-off-by: James Solner <solner@alcatel-lucent.com>
+--Sig_/sESixgftmgqmHVgHcfQPbSD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Nak.  Please see below.
 
-> ---
->  Documentation/module-signing.txt | 182 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 182 insertions(+)
->  create mode 100644 Documentation/module-signing.txt
->
-> diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
-> new file mode 100644
-> index 0000000..b21e1f1
-> --- /dev/null
-> +++ b/Documentation/module-signing.txt
-> @@ -0,0 +1,182 @@
-> +                       ==============================
-> +                       KERNEL MODULE SIGNING FACILITY
-> +                       ==============================
-> +
-> +The module signing facility applies cryptographic signature checking to modules
-> +on module load, checking the signature against a ring of public keys compiled
-> +into the kernel.  GPG is used to do the cryptographic work and determines the
-> +format of the signature and key data.  The facility uses GPG&#39;s MPI library to
-> +handle the huge numbers involved.
-> +
-> +The signature checker in the kernel is capable of handling multiple keys of
-> +either DSA or RSA type, and can support any of MD5, RIPE-MD-160, SHA-1,
-> +SHA-224, SHA-256, SHA-384 and SHA-512 hashes - PROVIDED(!) the requisite
-> +algorithms are compiled into the kernel.
-> +
-> +(!) NOTE: Modules may only be verified initially with algorithms compiled into
-> +the kernel.  Further algorithm modules may be loaded and used - but these must
-> +first pass a verification step using already loaded/compiled-in algorithms.
-> +
-> +
-> +=====================
-> +SUPPLYING PUBLIC KEYS
-> +=====================
-> +
-> +A set of public keys must be supplied at kernel image build time.  This is done
-> +by taking a GPG public key file and placing it in the base of the kernel
-> +directory in a file called modsign.pub.
-> +
-> +For example, a throwaway key could be generated automatically by something like
-> +the following:
-> +
-> +       cat &gt;genkey &lt;&lt;EOF
-> +       %pubring modsign.pub
-> +       %secring modsign.sec
-> +       Key-Type: RSA
-> +       Key-Length: 4096
-> +       Name-Real: A. N. Other
-> +       Name-Comment: Kernel Module GPG key
-> +       %commit
-> +       EOF
-> +       gpg --homedir . --batch --gen-key genkey
-> +
-> +The above generates fresh keys using /dev/random.  If there&#39;s insufficient data
-> +in /dev/random, more can be provided using the rngd program if there&#39;s a
-> +hardware random number generator available.
-> +
-> +Note that no GPG password is used in the above scriptlet.
+Hi Alex,
+ I'm wondering if there was any news on the Runtime Interpreted Power
+Sequences?
+The most recent news I can find is
+  https://lkml.org/lkml/2013/4/27/73
+where you say they might be ready for 3.11.  Clearly that didn't work
+(predictions being hard, especially about the future).
 
-This is inaccurate and doesn't match how module signing is done today.
- The document you have here is a weird mix of the old RHEL style GPG
-signing and the current appended-signature x509 certificate signing.
+I'm really keen to see them turning into a reality and I gather others are
+too. So ... can we hope?
 
-It needs to be updated to match the fact that x509 keys and signatures
-are used now.
+Thanks,
+NeilBrown
 
-josh
+--Sig_/sESixgftmgqmHVgHcfQPbSD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUmm5wDnsnt1WYoG5AQK1wg/8C2OIZawmvxKpeuk7zhO8CRqNyE44PoV7
+NXylh6eR312WnI9oRA7lLGrTMwiqAtE2Q7/4+ny6/8+9KO6Jccj0lSnKnC0Lg4LH
+QEyozfqjkfYKxTcr4DsF/2lEwW+0P2jG3e+4HsufBK6adSBSsDa6WXwyB1io2Rsf
+fmhTEp9avIALLq3BUT2f/Ztkvjk0BPdKaz8JslpxEwpWKwq5HQUHxtN9ov/exSQh
+cMJJVVOxZDisTWyBUyXkp8aq/zy0xe1XE+lWXY6A1Yb+fCkbtXO/cgMjb6ACNAsP
+DueRbfIT6bqAYUGVuNQSyV5QLugBo6hx8zT/BBaSqbCxZlro9NbYlZPfcQUrMFrI
+DUBky9EXLoEm/k+4v3g6oQgguXSZ5pp8Qg8+ZCJhvJJfth1d+pK5j9chuAyaOWyx
+Q+xOGXu32Hb+EoKyupXvmjg4AsKHo8zbDw5GJp2QBrv1dH3juKWkdSBqaQr43Jzm
+AM1pChpDQdjldFuwHfzG1phahDiIJ+f/td4u8VLIqE3fev8zp510vag3d0ia+WVT
+5oVRlYXulUKEnMgnAc50actWEniI+/uYqis7vkifwSJtzJInt+UqIbCOXNWZ48Lk
+FJky6LMiei+kYTtUxBSfb+avE8keL/CVGAPqBl4MyV2zzNw8D6WI6jhrJ4o1avh2
+69JQ0smlRmk=
+=C9fv
+-----END PGP SIGNATURE-----
+
+--Sig_/sESixgftmgqmHVgHcfQPbSD--
