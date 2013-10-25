@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab3JYWiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:38:03 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:52686 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab3JYWht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:37:49 -0400
-Date: Fri, 25 Oct 2013 15:37:45 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org
-Subject: Re: [PATCH v3 1/4] ab8500-charger: Check return value of
- regulator_enable
-Message-ID: <20131025223745.GA1157@teo>
-References: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
- <20130906093800.GF32654@lee--X1>
+	id S1752968Ab3JYWlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:41:14 -0400
+Received: from [216.32.180.14] ([216.32.180.14]:37779 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751895Ab3JYWlN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:41:13 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Fri, 25 Oct 2013 15:39:18 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Aldo Iljazi <me@aldo.io>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal for menuconfig removal
+References: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130906093800.GF32654@lee--X1>
+In-Reply-To: <688fb505375d3c5fa1f8d00c81a9dab2@aldo.io>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <f8db164d-0937-4f90-90ce-4543d6a8549d@VA3EHSMHS031.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 10:38:00AM +0100, Lee Jones wrote:
-> On Fri, 06 Sep 2013, Sachin Kamat wrote:
+On Thu, Oct 24, 2013 at 02:56:33PM +0300, Aldo Iljazi wrote:
+> Since nconfig is there, menuconfig is redundant.
 > 
-> > Check the return value of regulator_enable to silence the following
-> > type of warnings:
-> > drivers/power/ab8500_charger.c:1390:20: warning: ignoring return value
-> > of ‘regulator_enable’, declared with attribute warn_unused_result
-> > [-Wunused-result]
-> > 
-> > Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > ---
-> > Compile tested.
-> > 
-> > Changes since v2:
-> > * removed redundant assignment to false.
-> > Changes since v1:
-> > * converted dev_err and return to dev_warn as suggested by Lee Jones.
-> > ---
-> > 
-> >  drivers/power/ab8500_charger.c |   16 ++++++++++++----
-> >  1 file changed, 12 insertions(+), 4 deletions(-)
-> 
-> Looks good now.
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+> I am proposing to remove it from the kernel.
 
-Applied, thanks a lot for the patches and reviews!
+Pleas don't. I never use nconfig (the color scheme always scared me
+away) and only use menuconfig.
+Also, this would break a lot of documentation out there in wikis and
+a hell lot of other places that tell people to configure a kernel using
+'make menuconfig'.
 
-Anton
+	Sören
+
+
