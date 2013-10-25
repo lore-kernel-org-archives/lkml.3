@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3JYTcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 15:32:20 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55667 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752727Ab3JYTcS (ORCPT
+	id S1754626Ab3JYTiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 15:38:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23197 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab3JYTiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 15:32:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Adam Williamson <awilliam@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Lan Tianyu <tianyu.lan@intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Peter Anvin <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Robin Holt <holt@sgi.com>,
-        davej@fedoraproject.org, Len Brown <lenb@kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci" default
-Date: Fri, 25 Oct 2013 21:44:20 +0200
-Message-ID: <1537228.BaoD3UqLPA@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1382722980.2445.13.camel@adam.happyassassin.net>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com> <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com> <1382722980.2445.13.camel@adam.happyassassin.net>
+	Fri, 25 Oct 2013 15:38:22 -0400
+Date: Fri, 25 Oct 2013 15:38:12 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Julien Grall <julien.grall@linaro.org>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
+ guests.
+Message-ID: <20131025193812.GA6256@phenom.dumpdata.com>
+References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com>
+ <5245FD71.3080408@linaro.org>
+ <20130930144513.GM3106@phenom.dumpdata.com>
+ <5251CD98.70807@linaro.org>
+ <20131023161518.GA28413@phenom.dumpdata.com>
+ <526848C1.5030705@linaro.org>
+ <20131024144921.GB29944@phenom.dumpdata.com>
+ <52694B3F.5090008@linaro.org>
+ <1382633034.22417.121.camel@hastur.hellion.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382633034.22417.121.camel@hastur.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 25, 2013 10:43:00 AM Adam Williamson wrote:
-> On Fri, 2013-10-25 at 18:16 +0100, Linus Torvalds wrote:
-> > On Fri, Oct 25, 2013 at 5:47 PM, Adam Williamson <awilliam@redhat.com> wrote:
-> > >
-> > > I don't, but one comment I could add is that reboot _used_ to work okay
-> > > on the Z1. And I _think_ it's worked OK since the April 2011 commit you
-> > > mention (so the introduction of that didn't break it), but I can't
-> > > absolutely swear to it.
-> > 
-> > It might be interesting to try, and if it used to work with the acpi
-> > method, use bisection to see when it stopped working..
+On Thu, Oct 24, 2013 at 05:43:54PM +0100, Ian Campbell wrote:
+> On Thu, 2013-10-24 at 17:30 +0100, Julien Grall wrote:
 > 
-> Yeah, I knew that'd be the reply :) I'll try and dig out some old kernel
-> builds from Koji and see if I can at least pinpoint when it last worked,
-> and if it really _was_ after the ACPI method landed.
+> > I'm sure the solution "move xen call earlier" will come up in few mails, 
+> > so there was a discussion for swiotlb few weeks ago 
+> > (https://lkml.org/lkml/2013/8/29/609). And the final decision was to 
+> > avoid specific Xen call in arch_setup.
+> 
+> It wasn't so much a hard reject as a preference based on the need
+> presented at the time.
+> 
+> Perhaps a generic DT driven mechanism to detect hypervisors, called
+> early, would be more acceptable?
+> 
+> > Stefano, Ian, any opinion?
+> 
+> The ifdef approach is a bit ugly, but if the other option doesn't work
+> out I suppose we can live with it.
+> 
+> But stepping back how/why is this function called on x86 when not
+> running under Xen? Wouldn't the use have to be using console=hvc or
+> earlyprintk=xen or something -- which strikes me as user error... IOW
+> can we not just nuke the check
 
-This is a shot in the dark, but can you also please check if booting 3.12-rc6
-with acpi_osi="!Windows 2012" on the affected machine makes any difference?
+It shouldn't - ever. On x86 it is called from the early PV bootup code.
 
-Rafael
+I occasionaly use it when developing/debugging and as such want it working
+in HVM even during early bootup.
 
+> 
+> Ian.
+> 
