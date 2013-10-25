@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab3JYJEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:04:52 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:62073 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab3JYJEu (ORCPT
+	id S1752086Ab3JYJHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:07:22 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:50811 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3JYJHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:04:50 -0400
-Date: Fri, 25 Oct 2013 11:04:44 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Benoit Cousson <bcousson@baylibre.com>
-Cc: Koen Kooi <koen@dominion.thruhere.net>, linux-kernel@vger.kernel.org,
-        tony@atomide.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 0/2] ARM: dts: Beaglebone MMC fixes
-Message-ID: <20131025090443.GB5474@netboy>
-References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
- <5238596F.9080806@baylibre.com>
+	Fri, 25 Oct 2013 05:07:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5238596F.9080806@baylibre.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 25 Oct 2013 17:07:18 +0800
+Message-ID: <CAPgLHd8m+fq1WDdxkoVPRRDGBDD8ExVz8Nj9Z6W+DjQehp1YZA@mail.gmail.com>
+Subject: [PATCH] staging: drm/imx: fix return value check in imx_drm_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, s.hauer@pengutronix.de, airlied@redhat.com,
+        daniel.vetter@ffwll.ch, p.zabel@pengutronix.de
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 03:30:23PM +0200, Benoit Cousson wrote:
-> 
-> I've just applied it on top of Joel's one.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Benoit,
+In case of error, the function platform_device_register_simple() returns
+ERR_PTR() and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-Can you tell me where to find your git tree so that I can follow these
-patches' progress?
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/imx-drm/imx-drm-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Richard
+diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+index a2e52a0..835a1b1 100644
+--- a/drivers/staging/imx-drm/imx-drm-core.c
++++ b/drivers/staging/imx-drm/imx-drm-core.c
+@@ -837,8 +837,8 @@ static int __init imx_drm_init(void)
+ 	INIT_LIST_HEAD(&imx_drm_device->encoder_list);
+ 
+ 	imx_drm_pdev = platform_device_register_simple("imx-drm", -1, NULL, 0);
+-	if (!imx_drm_pdev) {
+-		ret = -EINVAL;
++	if (IS_ERR(imx_drm_pdev)) {
++		ret = PTR_ERR(imx_drm_pdev);
+ 		goto err_pdev;
+ 	}
+ 
+
