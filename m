@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab3JYTiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 15:38:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23197 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3JYTiW (ORCPT
+	id S1754831Ab3JYTnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 15:43:12 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:35134 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3JYTnK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 15:38:22 -0400
-Date: Fri, 25 Oct 2013 15:38:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Julien Grall <julien.grall@linaro.org>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
- guests.
-Message-ID: <20131025193812.GA6256@phenom.dumpdata.com>
-References: <1380317117-21719-1-git-send-email-konrad.wilk@oracle.com>
- <5245FD71.3080408@linaro.org>
- <20130930144513.GM3106@phenom.dumpdata.com>
- <5251CD98.70807@linaro.org>
- <20131023161518.GA28413@phenom.dumpdata.com>
- <526848C1.5030705@linaro.org>
- <20131024144921.GB29944@phenom.dumpdata.com>
- <52694B3F.5090008@linaro.org>
- <1382633034.22417.121.camel@hastur.hellion.org.uk>
+	Fri, 25 Oct 2013 15:43:10 -0400
+From: Diego Calleja <diegocg@gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: david@lang.hm, neilb@suse.de, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        axboe@kernel.dk, linux-mm@kvack.org
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Date: Fri, 25 Oct 2013 21:40:13 +0200
+Message-ID: <1999200.Zdacx0scmY@diego-arch>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-rc5; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <154617470.12445.1382725583671.JavaMail.mail@webmail11>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07> <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz> <154617470.12445.1382725583671.JavaMail.mail@webmail11>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382633034.22417.121.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 05:43:54PM +0100, Ian Campbell wrote:
-> On Thu, 2013-10-24 at 17:30 +0100, Julien Grall wrote:
-> 
-> > I'm sure the solution "move xen call earlier" will come up in few mails, 
-> > so there was a discussion for swiotlb few weeks ago 
-> > (https://lkml.org/lkml/2013/8/29/609). And the final decision was to 
-> > avoid specific Xen call in arch_setup.
-> 
-> It wasn't so much a hard reject as a preference based on the need
-> presented at the time.
-> 
-> Perhaps a generic DT driven mechanism to detect hypervisors, called
-> early, would be more acceptable?
-> 
-> > Stefano, Ian, any opinion?
-> 
-> The ifdef approach is a bit ugly, but if the other option doesn't work
-> out I suppose we can live with it.
-> 
-> But stepping back how/why is this function called on x86 when not
-> running under Xen? Wouldn't the use have to be using console=hvc or
-> earlyprintk=xen or something -- which strikes me as user error... IOW
-> can we not just nuke the check
+El Viernes, 25 de octubre de 2013 18:26:23 Artem S. Tashkinov escribió:
+> Oct 25, 2013 05:26:45 PM, david wrote:
+> >actually, I think the problem is more the impact of the huge write later
+> >on.
+> Exactly. And not being able to use applications which show you IO
+> performance like Midnight Commander. You might prefer to use "cp -a" but I
+> cannot imagine my life without being able to see the progress of a copying
+> operation. With the current dirty cache there's no way to understand how
+> you storage media actually behaves.
 
-It shouldn't - ever. On x86 it is called from the early PV bootup code.
 
-I occasionaly use it when developing/debugging and as such want it working
-in HVM even during early bootup.
+This is a problem I also have been suffering for a long time. It's not so much 
+how much and when the systems syncs dirty data, but how unreponsive the 
+desktop becomes when it happens (usually, with rsync + large files). Most 
+programs become completely unreponsive, specially if they have a large memory 
+consumption (ie. the browser). I need to pause rsync and wait until the 
+systems writes out all dirty data if I want to do simple things like scrolling 
+or do any action that uses I/O, otherwise I need to wait minutes.
 
-> 
-> Ian.
-> 
+I have 16 GB of RAM and excluding the browser (which usually uses about half 
+of a GB) and KDE itself, there are no memory hogs, so it seem like it's 
+something that shouldn't happen. I can understand that I/O operations are 
+laggy when there is some other intensive I/O ongoing, but right now the system 
+becomes completely unreponsive. If I am unlucky and Konsole also becomes 
+unreponsive, I need to switch to a VT (which also takes time).
+
+I haven't reported it before in part because I didn't know how to do it, "my 
+browser stalls" is not a very useful description and I didn't know what kind 
+of data I'm supposed to report.
