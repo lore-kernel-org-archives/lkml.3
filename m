@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab3JYFvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:51:33 -0400
-Received: from ozlabs.org ([203.10.76.45]:50122 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab3JYFvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:51:32 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chen Gang <gang.chen@asianux.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-In-Reply-To: <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com> <87eh7bfoq9.fsf@rustcorp.com.au> <20131024084559.GD16735@n2100.arm.linux.org.uk> <87mwlyclng.fsf@rustcorp.com.au> <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 25 Oct 2013 16:20:10 +1030
-Message-ID: <87y55h7vcd.fsf@rustcorp.com.au>
+	id S1751492Ab3JYGXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 02:23:50 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15831 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3JYGXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 02:23:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 24 Oct 2013 23:23:35 -0700
+Message-ID: <526A0E71.100@nvidia.com>
+Date: Fri, 25 Oct 2013 15:23:45 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: NeilBrown <neilb@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: Any news on Runtime Interpreted Power Sequences
+References: <20131025112224.6e5265e6@notabene.brown>
+In-Reply-To: <20131025112224.6e5265e6@notabene.brown>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> On Fri, Oct 25, 2013 at 7:08 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>
->> Sorry, I was imprecise.  I was referring to the kernel's kallsyms
->> tables produced by scripts/kallsyms.c.  This patch left them in the
->> the kallsyms tables and filtered them out from /proc/kallsyms.
+Hi Neil,
+
+On 10/25/2013 09:22 AM, NeilBrown wrote:
+>   I'm wondering if there was any news on the Runtime Interpreted Power
+> Sequences?
+> The most recent news I can find is
+>    https://lkml.org/lkml/2013/4/27/73
+> where you say they might be ready for 3.11.  Clearly that didn't work
+> (predictions being hard, especially about the future).
 >
-> Yes, but it isn't easy to do it by script/kallsyms.c , and IMO, it should
-> be correct to hide them for user space but keep them in kallsyms table.
+> I'm really keen to see them turning into a reality and I gather others are
+> too. So ... can we hope?
 
-So they'll appear in backtraces?  And turn up randomly for other symbol
-dereferences?
+A prerequisite of power sequences was to merge the gpiod interface, and 
+this is finally happening. It took much longer than I wanted, sorry 
+about that.
 
-I don't think you really want this!
+Logically speaking nothing should now stand in the way of a new version 
+of the power sequences. Expected maybe my own skepticism about them.
 
->> It's weird that cpu_v7_suspend_size appeared above, since kallsyms
->> should filter out 'A' symbols already.
->
-> Sorry, the 'A' symbol is a mistake, but the others do exist in /proc/kallsyms.
+The first version of the power seqs is mainly the result of my 
+misunderstanding of the device tree. Reconsidering it now, if we strip 
+the DT support away power seqs would just become a simplified way to 
+describe how to power a device up and down. In other words, it would be 
+another way to express what can be expressed with C code and would not 
+bring any additional flexibility that DT-described power seqs would have 
+(and I say this totally convinced now that power sequences in the device 
+tree were a bad idea).
 
-Ah, OK.
+The advantage I could see is that using power sequences we could get rid 
+of the cumbersome and mistake-prone error checking code which is 
+basically the same for most devices. You would just need to describe 
+what you want to activate, and in which order, and the power seqs 
+framework would catch and report any error.
 
-Cheers,
-Rusty.
+I'm not sure if this is a sufficient reason to introduce another 
+framework into the kernel, but if this is deemed a good reason by more 
+experienced people then I'm ok to give it a shot. If you have other 
+motivations for this, please also state them so I can get the whole 
+picture. Maybe I just need to be a little bit more motivated about this 
+idea myself. :)
+
+Thanks,
+Alex.
+
