@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab3JYFA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 01:00:29 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:64027 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3JYFA2 convert rfc822-to-8bit (ORCPT
+	id S1751642Ab3JYFCb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:02:31 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53886 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3JYFCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 01:00:28 -0400
+	Fri, 25 Oct 2013 01:02:30 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5269FB5E.6010901@roeck-us.net>
+Date: Thu, 24 Oct 2013 22:02:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVPRto2PX6J5CqNDTB42Ef7=+ZmgTdA=7Qdswc6NvN93bQ@mail.gmail.com>
-References: <CAK2Ky6xH9rvmpqQ31bi1QrC=dvt9T_8+ELHUZf_MFZccV6MiAw@mail.gmail.com>
-	<20131023105931.GG1275@quack.suse.cz>
-	<CACVXFVPRto2PX6J5CqNDTB42Ef7=+ZmgTdA=7Qdswc6NvN93bQ@mail.gmail.com>
-Date: Fri, 25 Oct 2013 13:00:27 +0800
-Message-ID: <CAK2Ky6xRDcePGWB3Je7_5U5B+qq2Hx4Nv61VOcX3isL8hy7ynw@mail.gmail.com>
-Subject: Re: A thought about IO scheduler in linux kernel for SSD
-From: =?GB2312?B?uqvA2g==?= <bonben1989@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Mark Brown <broonie@kernel.org>
+Subject: Re: linux-next: Tree for Oct 24
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your thought!  It may not make much sense. Because I think
-the probability of two bios have the same start sector and the
-situation mentioned by Ming Lei is too low.
-Thanks ,
-Bonben
+On 10/24/2013 09:31 AM, Thierry Reding wrote:
+> Hi all,
+>
+> I've uploaded today's linux-next tree to the master branch of the
+> repository below:
+>
+>          git://gitorious.org/thierryreding/linux-next.git
+>
+> A next-20131024 tag is also provided for convenience.
+>
+> Quite a few new conflicts. Some of them non-trivial. I've fixed another
+> set of build failures, so 32-bit and 64-bit allmodconfigs build fine on
+> x86. ARM and x86 default configurations also build fine. PowerPC is in
+> pretty bad shape, mostly due to some OF header rework going on.
+>
 
-2013/10/25 Ming Lei <tom.leiming@gmail.com>:
-> On Wed, Oct 23, 2013 at 6:59 PM, Jan Kara <jack@suse.cz> wrote:
->> On Wed 23-10-13 08:47:44, º«ÀÚ wrote:
->>> Nowadays,the IO schedulers in linux kernel have four types:
->>>
->>> deadline,noop,Anticiptory and CFQ.CFQ is the default scheduler.But CFQ is
->>> not a good scheduler for SSD,dealine may be a good choice.
->>
->>> When deadline runs,it has a mount of computation about merging and
->>> sorting.Merge has three types: front_merge,no_merge and back_merge.
->>> Why don't have  another type: merge based same sector.For example,it have
->>> two bios in a request list,theyboth have the same bi->sector,the bi->size
->>> maybe not equal. Whether can we put the latter bio replace the former?What
->>> do you find that significant?Or the other levels in OS has finished this
->>> function?
->>   That doesn't make much sense to me. If there are two bios in flight for
->> some sector, results are undefined. Thus we usually avoid such situation
->> (usually we want to have defined contents of the disk :). The exclusion is
->> usually achieved at higher level using page locking etc. So adding code
->> speeding up such requests doesn't seem worth it.
->
-> The situation might be triggered when same file is read from two tasks,
-> one is read via page cache, and another one is read by O_DIRECT.
->
-> But still not sure if that makes sense.
->
-> Thanks,
-> --
-> Ming Lei
+Hmm ... I see
+
+Building arm:defconfig ... failed
+--------------
+Error log:
+drivers/built-in.o: In function `mmc_gpio_request_cd':
+clkdev.c:(.text+0x74cf8): undefined reference to `devm_gpio_request_one'
+make: *** [vmlinux] Error 1
+
+Otherwise pretty much the same as yesterday, with a build log of
+	total: 110 pass: 88 skipped: 4 fail: 18
+
+This is with "v3.12-rc5-7941-g765f88c".
+
+Guenter
+
