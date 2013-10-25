@@ -1,117 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3JYAlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 20:41:24 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45145 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3JYAlW (ORCPT
+	id S1755133Ab3JYAz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 20:55:56 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:35016 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab3JYAzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 20:41:22 -0400
-X-Originating-IP: 77.221.165.98
-Date: Fri, 25 Oct 2013 01:41:18 +0100
-From: Josh Triplett <josh@joshtriplett.org>
-To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
-Message-ID: <20131025004116.GA17670@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Oct 2013 20:55:55 -0400
+Message-ID: <1382662541.2373.20.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 3/3] vdso: preallocate new vmas
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: walken@google.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Richard Kuo <rkuo@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 24 Oct 2013 17:55:41 -0700
+In-Reply-To: <20131023095337.GC2862@localhost>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+	 <1382057438-3306-4-git-send-email-davidlohr@hp.com>
+	 <1382325975.2402.3.camel@buesod1.americas.hpqcorp.net>
+	 <20131023095337.GC2862@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
-condition argument; however, WARN_ON_ONCE and family still have
-conditions and a boolean to detect one-time invocation, even though the
-warning they'd emit doesn't exist.  Make the existing definitions
-conditional on CONFIG_BUG, and map them all to the passthrough WARN_ON
-when !CONFIG_BUG.
+On Wed, 2013-10-23 at 02:53 -0700, walken@google.com wrote:
+> On Sun, Oct 20, 2013 at 08:26:15PM -0700, Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso <davidlohr@hp.com>
+> > Subject: [PATCH v2 3/3] vdso: preallocate new vmas
+> > 
+> > With the exception of um and tile, architectures that use
+> > the install_special_mapping() function, when setting up a
+> > new vma at program startup, do so with the mmap_sem lock
+> > held for writing. Unless there's an error, this process
+> > ends up allocating a new vma through kmem_cache_zalloc,
+> > and inserting it in the task's address space.
+> > 
+> > This patch moves the vma's space allocation outside of
+> > install_special_mapping(), and leaves the callers to do so
+> > explicitly, without depending on mmap_sem. The same goes for
+> > freeing: if the new vma isn't used (and thus the process fails
+> > at some point), it's caller's responsibility to free it -
+> > currently this is done inside install_special_mapping.
+> > 
+> > Furthermore, uprobes behaves exactly the same and thus now the
+> > xol_add_vma() function also preallocates the new vma.
+> > 
+> > While the changes to x86 vdso handling have been tested on both
+> > large and small 64-bit systems, the rest of the architectures
+> > are totally *untested*. Note that all changes are quite similar
+> > from architecture to architecture.
+> > 
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > Cc: Will Deacon <will.deacon@arm.com>
+> > Cc: Richard Kuo <rkuo@codeaurora.org>
+> > Cc: Ralf Baechle <ralf@linux-mips.org>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Cc: Paul Mundt <lethal@linux-sh.org>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: Jeff Dike <jdike@addtoit.com>
+> > Cc: Richard Weinberger <richard@nod.at>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > ---
+> > v2:
+> > - Simplify install_special_mapping interface (Linus Torvalds)
+> > - Fix return for uml_setup_stubs when mem allocation fails (Richard Weinberger)
+> 
+> I'm still confused as to why you're seeing any gains with this
+> one. This code runs during exec when mm isn't shared with any other
+> threads yet, so why does it matter how long the mmap_sem is held since
+> nobody else can contend on it ? (well, except for accesses from
+> /fs/proc/base.c, but I don't see why these would matter in your
+> benchmarks either).
 
-This saves 4.4k on a minimized configuration (smaller than
-allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
+Yeah, that's why I dropped the performance numbers from the changelog in
+v2, of course any differences are within the noise range. When I did the
+initial runs I was scratching my head as to why I was seeing benefits,
+but it was most likely a matter of clock frequency differences, and I no
+longer see such boosts.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- include/asm-generic/bug.h | 57 +++++++++++++++++++++++++----------------------
- 1 file changed, 30 insertions(+), 27 deletions(-)
+Thanks,
+Davidlohr
 
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 7d10f96..34223e0 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -106,33 +106,6 @@ extern void warn_slowpath_null(const char *file, const int line);
- 	unlikely(__ret_warn_on);					\
- })
- 
--#else /* !CONFIG_BUG */
--#ifndef HAVE_ARCH_BUG
--#define BUG() do {} while(0)
--#endif
--
--#ifndef HAVE_ARCH_BUG_ON
--#define BUG_ON(condition) do { if (condition) ; } while(0)
--#endif
--
--#ifndef HAVE_ARCH_WARN_ON
--#define WARN_ON(condition) ({						\
--	int __ret_warn_on = !!(condition);				\
--	unlikely(__ret_warn_on);					\
--})
--#endif
--
--#ifndef WARN
--#define WARN(condition, format...) ({					\
--	int __ret_warn_on = !!(condition);				\
--	unlikely(__ret_warn_on);					\
--})
--#endif
--
--#define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
--
--#endif
--
- #define WARN_ON_ONCE(condition)	({				\
- 	static bool __section(.data.unlikely) __warned;		\
- 	int __ret_warn_once = !!(condition);			\
-@@ -163,6 +136,36 @@ extern void warn_slowpath_null(const char *file, const int line);
- 	unlikely(__ret_warn_once);				\
- })
- 
-+#else /* !CONFIG_BUG */
-+#ifndef HAVE_ARCH_BUG
-+#define BUG() do {} while(0)
-+#endif
-+
-+#ifndef HAVE_ARCH_BUG_ON
-+#define BUG_ON(condition) do { if (condition) ; } while(0)
-+#endif
-+
-+#ifndef HAVE_ARCH_WARN_ON
-+#define WARN_ON(condition) ({						\
-+	int __ret_warn_on = !!(condition);				\
-+	unlikely(__ret_warn_on);					\
-+})
-+#endif
-+
-+#ifndef WARN
-+#define WARN(condition, format...) ({					\
-+	int __ret_warn_on = !!(condition);				\
-+	unlikely(__ret_warn_on);					\
-+})
-+#endif
-+
-+#define WARN_ON_ONCE(condition) WARN_ON(condition)
-+#define WARN_ONCE(condition, format...) WARN_ON(condition)
-+#define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
-+#define WARN_TAINT_ONCE(condition, taint, format...) WARN_ON(condition)
-+
-+#endif
-+
- /*
-  * WARN_ON_SMP() is for cases that the warning is either
-  * meaningless for !SMP or may even cause failures.
--- 
-1.8.4.rc3
 
