@@ -1,237 +1,459 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3JYBgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Oct 2013 21:36:23 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55213 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3JYBgU (ORCPT
+	id S1755292Ab3JYBqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Oct 2013 21:46:36 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:54225 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab3JYBqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 21:36:20 -0400
-Message-ID: <5269CB06.5060101@jp.fujitsu.com>
-Date: Fri, 25 Oct 2013 10:36:06 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 24 Oct 2013 21:46:35 -0400
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: toshi.okajima@jp.fujitsu.com, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>,
-        eparis@redhat.com
-Subject: Re: [BUG][PATCH] audit: audit_log_start running on auditd should
- not stop
-References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com> <5257C5D7.80308@cn.fujitsu.com> <5257EF15.6080209@jp.fujitsu.com> <20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com> <525CE10A.90907@cn.fujitsu.com> <20131023195550.GA9109@madcap2.tricolour.ca>
-In-Reply-To: <20131023195550.GA9109@madcap2.tricolour.ca>
+In-Reply-To: <20131024182333.GD4998@ghostprotocols.net>
+References: <1382600613-32177-1-git-send-email-zhouzhouyi@gmail.com>
+	<20131024182333.GD4998@ghostprotocols.net>
+Date: Fri, 25 Oct 2013 09:46:34 +0800
+Message-ID: <CAABZP2z+dPKNBkxnxcoJu68pEgymOkz+Hry0WSYUdPA2yYyRzA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] PERF: The tail position of the event buffer should
+ only be modified after actually use that event.
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Thanks Arnaldo For Reviewing and Nice simplication.
+The next headache should be how to quick copy out the digest
+of event.
+>From my own engineering experience, it is unsafe to keep the pointer
+to shared ring buffer for too long.
 
-Thanks for your interest.
-
-(2013/10/24 4:55), Richard Guy Briggs wrote:
-> On Tue, Oct 15, 2013 at 02:30:34PM +0800, Gao feng wrote:
->> Hi Toshiyuki-san,
-> 
-> Toshiuki and Gao,
-> 
->> On 10/15/2013 12:43 PM, Toshiyuki Okajima wrote:
->>> The backlog cannot be consumed when audit_log_start is running on auditd
->>> even if audit_log_start calls wait_for_auditd to consume it.
->>> The situation is a deadlock because only auditd can consume the backlog.
->>> If the other process needs to send the backlog, it can be also stopped 
->>> by the deadlock.
->>>
->>> So, audit_log_start running on auditd should not stop.
->>>
->>> You can see the deadlock with the following reproducer:
->>>  # auditctl -a exit,always -S all
->>>  # reboot
-> 
->> Hmm, I see, There may be other code paths that auditd can call audit_log_start except
->> audit_log_config_change. so it's better to handle this problem in audit_log_start.
+On Fri, Oct 25, 2013 at 2:23 AM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Thu, Oct 24, 2013 at 03:43:33PM +0800, Zhouyi Zhou escreveu:
 >>
->> but current task is only meaningful when gfp_mask & __GFP_WAIT is true.
->> so maybe the below patch is what you want.
-> 
-> I have been following this thread with interest.  I like the general
-> evolution of this patch.  The first patch was a bit too abrupt, dropping
-> too much, but this one makes much more sense.  I would be tempted to
-> make the reserve even bigger.
-> 
-> I see that you should be using a kernel that has included commit
-> 8ac1c8d5 (which made it into v3.12-rc3)
-> 	audit: fix endless wait in audit_log_start()
-> That was an obvious bug, but I was still concerned about the cause of
-> the initial wait.  There are other fixes and ideas in the works that
-> should alleviate some of the pressure to make the service more usable.
-> 	https://lkml.org/lkml/2013/9/18/453
-> 
-
-> I have tested with and without this v3 patch and I don't see any
-> significant difference with the reproducer provided above.  I'm also
-> testing with a reproducer of the endless wait bug (readahead-collector).
-> 
-> What are your expected results?  What are your actual results in each
-> case?  How are they different?
-OK. I try to describe.
-
-1) I found that the system cannot reboot smoothly because auditd daemon can stop for 60 seconds. 
-
-2) As the result of my investigation of this problem, I found that audit_log_start executed
-on auditd called wait_for_auditd and stopped for "audit_backlog_wait_time". 
-Calling wait_for_auditd is to let auditd consume the backlog during this sleep.
-However, when wait_for_auditd is called on auditd, the backlog cannot be consumed during this time.
-In addition, audit_log_start called by other processes can also stop while auditd is stopping.
-So, wait_for_auditd called on auditd is meaningless.
-
-3) Therefore, I made the v3 patch that audit_log_start executed on auditd doesn't call wait_for_auditd. 
-
-4) On my environment, I couldn't see the situation that auditd stopped for 60 seconds by using
-this patch. 
-
-5) So, I thought this problem could be fixed.
-
-
-But after I received your comment, I encountered the other problem that auditd can stop for 
-60 seconds when I tried this patch on the other environment installed "systemd".
-So, I think you encountered the other problem that was the same as mine.
-
-The following situation was occurred:
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-PID: 1      TASK: ffff88007c7d8000  CPU: 0   COMMAND: "systemd"
- #0 [ffff88007c7758d8] __schedule at ffffffff815f231a
- #1 [ffff88007c775950] schedule at ffffffff815f2a79
- #2 [ffff88007c775960] schedule_timeout at ffffffff815f0f93
- #3 [ffff88007c775a10] audit_log_start at ffffffff810d7d09
- #4 [ffff88007c775ab0] audit_log_common_recv_msg at ffffffff810d8068
- #5 [ffff88007c775b00] audit_receive_msg at ffffffff810d8ca0
- #6 [ffff88007c775bb0] audit_receive at ffffffff810d8f98
- #7 [ffff88007c775be0] netlink_unicast at ffffffff8150bf31
- #8 [ffff88007c775c30] netlink_sendmsg at ffffffff8150c2b1
- #9 [ffff88007c775cc0] sock_sendmsg at ffffffff814ca3fc
-#10 [ffff88007c775e50] sys_sendto at ffffffff814ccd6d
-#11 [ffff88007c775f80] system_call_fastpath at ffffffff815fc259
-    RIP: 00007fbee5653543  RSP: 00007fff23d684b8  RFLAGS: 00000246
-    RAX: 000000000000002c  RBX: ffffffff815fc259  RCX: ffffffffffffffff
-    RDX: 0000000000000078  RSI: 00007fff23d5d8c0  RDI: 0000000000000003
-    RBP: 0000000000000003   R8: 00007fff23d5d8b0   R9: 000000000000000c
-    R10: 0000000000000000  R11: 0000000000000246  R12: 0000000000000050
-    R13: 00007fff23d66380  R14: 000000000000046b  R15: 0000000000000067
-    ORIG_RAX: 000000000000002c  CS: 0033  SS: 002b
-
-PID: 488    TASK: ffff880036edcbf0  CPU: 1   COMMAND: "auditd"
- #0 [ffff88007ba93a98] __schedule at ffffffff815f231a
- #1 [ffff88007ba93b10] schedule at ffffffff815f2a79
- #2 [ffff88007ba93b20] schedule_preempt_disabled at ffffffff815f2d0e
- #3 [ffff88007ba93b30] __mutex_lock_slowpath at ffffffff815f1903
- #4 [ffff88007ba93b90] mutex_lock at ffffffff815f143a
- #5 [ffff88007ba93bb0] audit_receive at ffffffff810d8f71
- #6 [ffff88007ba93be0] netlink_unicast at ffffffff8150bf31
- #7 [ffff88007ba93c30] netlink_sendmsg at ffffffff8150c2b1
- #8 [ffff88007ba93cc0] sock_sendmsg at ffffffff814ca3fc
- #9 [ffff88007ba93e50] sys_sendto at ffffffff814ccd6d
-#10 [ffff88007ba93f80] system_call_fastpath at ffffffff815fc259
-    RIP: 00007fc256ff16f3  RSP: 00007fffff6b39d8  RFLAGS: 00010202
-    RAX: 000000000000002c  RBX: ffffffff815fc259  RCX: 0000000000000000
-    RDX: 0000000000000030  RSI: 00007fffff6b3a00  RDI: 0000000000000003
-    RBP: 0000000000000003   R8: 00007fffff6b39f0   R9: 000000000000000c
-    R10: 0000000000000000  R11: 0000000000000293  R12: 0000000000000005
-    R13: 00007fffff6ba3f0  R14: 00000000000003e9  R15: 0000000000000020
-    ORIG_RAX: 000000000000002c  CS: 0033  SS: 002b
-
-systemd                                    |auditd
--------------------------------------------+-----------------------------------
-...                                        |
--> audit_receive                           |...
-   -> mutex_lock(&audit_cmd_mutex)         |-> audit_receive
-      ... -> audit_log_start               |   -> mutex_lock(&audit_cmd_mutex)
-             -> wait_for_auditd            |      // wait for systemd
-                -> schedule_timeout(60*HZ) |
-
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-
-V3 patch cannot fix the above problem. V3 patch only fixes the problem that audit_log_start
-on auditd stops for 60 seconds in vain. The other problem is that auditd stops for 
-about 60 seconds by the mutex lock which the other process gets.
-
-If the other process is "systemd", changing V3 patch like the following fixes the other problem.
-(I confirm that the new v3 patch can fix the other problem which I encountered on installed 
-"systemd" environment.)
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-@@ -1104,11 +1105,12 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 	if (unlikely(audit_filter_type(type)))
- 		return NULL;
- 
--	if (gfp_mask & __GFP_WAIT)
--		reserve = 0;
--	else
--		reserve = 5; /* Allow atomic callers to go up to five
--				entries over the normal backlog limit */
-+	if (gfp_mask & __GFP_WAIT) {
-+		if (audit_pid && (current->pid == 1 || audit_pid == current->pid))
-                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-+			gfp_mask &= ~__GFP_WAIT;
-+		else
-+			reserve = 0;
-+	}
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-
-However, if the other process is not "systemd", another problem cannot be corrected by a 
-simple correction. 
-At present, a drastic method to fix the other problem doesn't occur to me. 
-
-Regards,
-Toshiyuki Okajima
-
-> 
->> diff --git a/kernel/audit.c b/kernel/audit.c
->> index 7b0e23a..10b4545 100644
->> --- a/kernel/audit.c
->> +++ b/kernel/audit.c
->> @@ -1095,7 +1095,9 @@ struct audit_buffer *audit_log_start(struct audit_context
->>         struct audit_buffer     *ab     = NULL;
->>         struct timespec         t;
->>         unsigned int            uninitialized_var(serial);
->> -       int reserve;
->> +       int reserve = 5; /* Allow atomic callers to go up to five
->> +                           entries over the normal backlog limit */
+>> The tail position of the event buffer should only be
+>> modified after actually use that event. If not the event
+>> buffer could be invalid before use, and segment fault occurs when invoking
+>> perf top -G.
+>
+> Good catch!
+>
+> Long standing problem, but please take a look at the patch below, which
+> should be a simpler version of your fix, main points:
+>
+> . Rename perf_evlist__write_tail to perf_evlist__mmap_consume:
+>
+>      So it should be a transaction end counterpart to
+>      perf_evlist__mmap_read, the "writing the tail" detail gets nicely
+>      abstracted away.
+>
+> . The error exit path for 'perf test' entries don't need to consume the
+>   event, since it will be all shutdown anyway
+>
+> . In other cases avoid multiple calls to the consume method by just
+>   goto'ing to the end of the loop, where we would consume the event
+>   anyway when everything is all right.
+>
+> Please take a look, if you're ok with it, I'll keep your patch
+> authorship and just add a quick note about the simplifications I made.
+>
+> After that I think we should, a-la skb_free/skb_consume have a another
+> method, namely perf_evlist__mmap_discard, so that we can keep a tab on
+> how many events were successfully consumed and how many were not
+> processed due to some problem.
+>
+> WRT the simplifications:
+>
+> Your patch:
+>
+>  14 files changed, 65 insertions(+), 9 deletions(-)
+>
+> Your patch + my changes:
+>
+>  14 files changed, 49 insertions(+), 16 deletions(-)
+>
+> :-)
+>
+> - Arnaldo
+>
+>> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+>> ---
+>>  tools/perf/builtin-kvm.c                  |    4 ++++
+>>  tools/perf/builtin-top.c                  |   11 +++++++++--
+>>  tools/perf/builtin-trace.c                |    4 ++++
+>>  tools/perf/tests/code-reading.c           |    1 +
+>>  tools/perf/tests/keep-tracking.c          |    1 +
+>>  tools/perf/tests/mmap-basic.c             |    4 ++++
+>>  tools/perf/tests/open-syscall-tp-fields.c |    7 ++++++-
+>>  tools/perf/tests/perf-record.c            |    3 +++
+>>  tools/perf/tests/perf-time-to-tsc.c       |    5 ++++-
+>>  tools/perf/tests/sw-clock.c               |    7 ++++++-
+>>  tools/perf/tests/task-exit.c              |    5 ++++-
+>>  tools/perf/util/evlist.c                |   13 +++++++++++--
+>>  tools/perf/util/evlist.h                |    2 ++
+>>  tools/perf/util/python.c                  |    7 ++++++-
+>>  14 files changed, 64 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+>> index 935d522..e240846 100644
+>> --- a/tools/perf/builtin-kvm.c
+>> +++ b/tools/perf/builtin-kvm.c
+>> @@ -888,16 +888,20 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
+>>       while ((event = perf_evlist__mmap_read(kvm->evlist, idx)) != NULL) {
+>>               err = perf_evlist__parse_sample(kvm->evlist, event, &sample);
+>>               if (err) {
+>> +                     perf_evlist__mmap_write_tail(kvm->evlist, idx);
+>>                       pr_err("Failed to parse sample\n");
+>>                       return -1;
+>>               }
+>>
+>>               err = perf_session_queue_event(kvm->session, event, &sample, 0);
+>>               if (err) {
+>> +                     perf_evlist__mmap_write_tail(kvm->evlist, idx);
+>>                       pr_err("Failed to enqueue sample: %d\n", err);
+>>                       return -1;
+>>               }
+>>
+>> +             perf_evlist__mmap_write_tail(kvm->evlist, idx);
 >> +
->>         unsigned long timeout_start = jiffies;
+>>               /* save time stamp of our first sample for this mmap */
+>>               if (n == 0)
+>>                       *mmap_time = sample.time;
+>> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+>> index 2122141..5e03cf5 100644
+>> --- a/tools/perf/builtin-top.c
+>> +++ b/tools/perf/builtin-top.c
+>> @@ -809,6 +809,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+>>       while ((event = perf_evlist__mmap_read(top->evlist, idx)) != NULL) {
+>>               ret = perf_evlist__parse_sample(top->evlist, event, &sample);
+>>               if (ret) {
+>> +                     perf_evlist__mmap_write_tail(top->evlist, idx);
+>>                       pr_err("Can't parse sample, err = %d\n", ret);
+>>                       continue;
+>>               }
+>> @@ -824,14 +825,18 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+>>               switch (origin) {
+>>               case PERF_RECORD_MISC_USER:
+>>                       ++top->us_samples;
+>> -                     if (top->hide_user_symbols)
+>> +                     if (top->hide_user_symbols) {
+>> +                             perf_evlist__mmap_write_tail(top->evlist, idx);
+>>                               continue;
+>> +                     }
+>>                       machine = &session->machines.host;
+>>                       break;
+>>               case PERF_RECORD_MISC_KERNEL:
+>>                       ++top->kernel_samples;
+>> -                     if (top->hide_kernel_symbols)
+>> +                     if (top->hide_kernel_symbols) {
+>> +                             perf_evlist__mmap_write_tail(top->evlist, idx);
+>>                               continue;
+>> +                     }
+>>                       machine = &session->machines.host;
+>>                       break;
+>>               case PERF_RECORD_MISC_GUEST_KERNEL:
+>> @@ -847,6 +852,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+>>                        */
+>>                       /* Fall thru */
+>>               default:
+>> +                     perf_evlist__mmap_write_tail(top->evlist, idx);
+>>                       continue;
+>>               }
 >>
->>         if (audit_initialized != AUDIT_INITIALIZED)
->> @@ -1104,11 +1106,12 @@ struct audit_buffer *audit_log_start(struct audit_contex
->>         if (unlikely(audit_filter_type(type)))
->>                 return NULL;
+>> @@ -859,6 +865,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+>>                       machine__process_event(machine, event);
+>>               } else
+>>                       ++session->stats.nr_unknown_events;
+>> +             perf_evlist__mmap_write_tail(top->evlist, idx);
+>>       }
+>>  }
 >>
->> -       if (gfp_mask & __GFP_WAIT)
->> -               reserve = 0;
->> -       else
->> -               reserve = 5; /* Allow atomic callers to go up to five
->> -                               entries over the normal backlog limit */
->> +       if (gfp_mask & __GFP_WAIT) {
->> +               if (audit_pid && audit_pid == current->pid)
->> +                       gfp_mask &= ~__GFP_WAIT;
->> +               else
->> +                       reserve = 0;
->> +       }
+>> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+>> index 71aa3e3..7afb6cd 100644
+>> --- a/tools/perf/builtin-trace.c
+>> +++ b/tools/perf/builtin-trace.c
+>> @@ -986,6 +986,7 @@ again:
 >>
->>         while (audit_backlog_limit
->>                && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserv
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer
-> Kernel Security
-> AMER ENG Base Operating Systems
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635
-> Internal: (81) 32635
-> Alt: +1.613.693.0684x3545
-> 
-> 
-
-
+>>                       err = perf_evlist__parse_sample(evlist, event, &sample);
+>>                       if (err) {
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                               fprintf(trace->output, "Can't parse sample, err = %d, skipping...\n", err);
+>>                               continue;
+>>                       }
+>> @@ -1000,11 +1001,13 @@ again:
+>>
+>>                       evsel = perf_evlist__id2evsel(evlist, sample.id);
+>>                       if (evsel == NULL) {
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                               fprintf(trace->output, "Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
+>>                               continue;
+>>                       }
+>>
+>>                       if (sample.raw_data == NULL) {
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                               fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
+>>                                      perf_evsel__name(evsel), sample.tid,
+>>                                      sample.cpu, sample.raw_size);
+>> @@ -1014,6 +1017,7 @@ again:
+>>                       handler = evsel->handler.func;
+>>                       handler(trace, evsel, &sample);
+>>
+>> +                     perf_evlist__mmap_write_tail(evlist, i);
+>>                       if (done)
+>>                               goto out_unmap_evlist;
+>>               }
+>> diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+>> index 6fb781d..2e5c20d 100644
+>> --- a/tools/perf/tests/code-reading.c
+>> +++ b/tools/perf/tests/code-reading.c
+>> @@ -290,6 +290,7 @@ static int process_events(struct machine *machine, struct perf_evlist *evlist,
+>>       for (i = 0; i < evlist->nr_mmaps; i++) {
+>>               while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+>>                       ret = process_event(machine, evlist, event, state);
+>> +                     perf_evlist__mmap_write_tail(evlist, i);
+>>                       if (ret < 0)
+>>                               return ret;
+>>               }
+>> diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
+>> index d444ea2..ffa5836 100644
+>> --- a/tools/perf/tests/keep-tracking.c
+>> +++ b/tools/perf/tests/keep-tracking.c
+>> @@ -36,6 +36,7 @@ static int find_comm(struct perf_evlist *evlist, const char *comm)
+>>                           (pid_t)event->comm.tid == getpid() &&
+>>                           strcmp(event->comm.comm, comm) == 0)
+>>                               found += 1;
+>> +                     perf_evlist__mmap_write_tail(evlist, i);
+>>               }
+>>       }
+>>       return found;
+>> diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+>> index c4185b9..bbca5f4 100644
+>> --- a/tools/perf/tests/mmap-basic.c
+>> +++ b/tools/perf/tests/mmap-basic.c
+>> @@ -103,6 +103,7 @@ int test__basic_mmap(void)
+>>               struct perf_sample sample;
+>>
+>>               if (event->header.type != PERF_RECORD_SAMPLE) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       pr_debug("unexpected %s event\n",
+>>                                perf_event__name(event->header.type));
+>>                       goto out_munmap;
+>> @@ -110,6 +111,7 @@ int test__basic_mmap(void)
+>>
+>>               err = perf_evlist__parse_sample(evlist, event, &sample);
+>>               if (err) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       pr_err("Can't parse sample, err = %d\n", err);
+>>                       goto out_munmap;
+>>               }
+>> @@ -117,11 +119,13 @@ int test__basic_mmap(void)
+>>               err = -1;
+>>               evsel = perf_evlist__id2evsel(evlist, sample.id);
+>>               if (evsel == NULL) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       pr_debug("event with id %" PRIu64
+>>                                " doesn't map to an evsel\n", sample.id);
+>>                       goto out_munmap;
+>>               }
+>>               nr_events[evsel->idx]++;
+>> +             perf_evlist__mmap_write_tail(evlist, 0);
+>>       }
+>>
+>>       err = 0;
+>> diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+>> index fc5b9fc..38e180c 100644
+>> --- a/tools/perf/tests/open-syscall-tp-fields.c
+>> +++ b/tools/perf/tests/open-syscall-tp-fields.c
+>> @@ -77,11 +77,14 @@ int test__syscall_open_tp_fields(void)
+>>
+>>                               ++nr_events;
+>>
+>> -                             if (type != PERF_RECORD_SAMPLE)
+>> +                             if (type != PERF_RECORD_SAMPLE) {
+>> +                                     perf_evlist__mmap_write_tail(evlist, i);
+>>                                       continue;
+>> +                             }
+>>
+>>                               err = perf_evsel__parse_sample(evsel, event, &sample);
+>>                               if (err) {
+>> +                                     perf_evlist__mmap_write_tail(evlist, i);
+>>                                       pr_err("Can't parse sample, err = %d\n", err);
+>>                                       goto out_munmap;
+>>                               }
+>> @@ -89,11 +92,13 @@ int test__syscall_open_tp_fields(void)
+>>                               tp_flags = perf_evsel__intval(evsel, &sample, "flags");
+>>
+>>                               if (flags != tp_flags) {
+>> +                                     perf_evlist__mmap_write_tail(evlist, i);
+>>                                       pr_debug("%s: Expected flags=%#x, got %#x\n",
+>>                                                __func__, flags, tp_flags);
+>>                                       goto out_munmap;
+>>                               }
+>>
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                               goto out_ok;
+>>                       }
+>>               }
+>> diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+>> index b8a7056..87a2b0c 100644
+>> --- a/tools/perf/tests/perf-record.c
+>> +++ b/tools/perf/tests/perf-record.c
+>> @@ -173,6 +173,7 @@ int test__PERF_RECORD(void)
+>>
+>>                               err = perf_evlist__parse_sample(evlist, event, &sample);
+>>                               if (err < 0) {
+>> +                                     perf_evlist__mmap_write_tail(evlist, i);
+>>                                       if (verbose)
+>>                                               perf_event__fprintf(event, stderr);
+>>                                       pr_debug("Couldn't parse sample\n");
+>> @@ -236,6 +237,7 @@ int test__PERF_RECORD(void)
+>>                                       }
+>>                                       break;
+>>                               case PERF_RECORD_EXIT:
+>> +                                     perf_evlist__mmap_write_tail(evlist, i);
+>>                                       goto found_exit;
+>>                               case PERF_RECORD_MMAP:
+>>                                       mmap_filename = event->mmap.filename;
+>> @@ -263,6 +265,7 @@ int test__PERF_RECORD(void)
+>>                                                type);
+>>                                       ++errs;
+>>                               }
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                       }
+>>               }
+>>
+>> diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
+>> index 0ab61b1..d911316 100644
+>> --- a/tools/perf/tests/perf-time-to-tsc.c
+>> +++ b/tools/perf/tests/perf-time-to-tsc.c
+>> @@ -121,8 +121,10 @@ int test__perf_time_to_tsc(void)
+>>
+>>                       if (event->header.type != PERF_RECORD_COMM ||
+>>                           (pid_t)event->comm.pid != getpid() ||
+>> -                         (pid_t)event->comm.tid != getpid())
+>> +                         (pid_t)event->comm.tid != getpid()) {
+>> +                             perf_evlist__mmap_write_tail(evlist, i);
+>>                               continue;
+>> +                     }
+>>
+>>                       if (strcmp(event->comm.comm, comm1) == 0) {
+>>                               CHECK__(perf_evsel__parse_sample(evsel, event,
+>> @@ -134,6 +136,7 @@ int test__perf_time_to_tsc(void)
+>>                                                                &sample));
+>>                               comm2_time = sample.time;
+>>                       }
+>> +                     perf_evlist__mmap_write_tail(evlist, i);
+>>               }
+>>       }
+>>
+>> diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
+>> index 2e41e2d..af7f2626 100644
+>> --- a/tools/perf/tests/sw-clock.c
+>> +++ b/tools/perf/tests/sw-clock.c
+>> @@ -77,15 +77,20 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+>>       while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
+>>               struct perf_sample sample;
+>>
+>> -             if (event->header.type != PERF_RECORD_SAMPLE)
+>> +             if (event->header.type != PERF_RECORD_SAMPLE) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       continue;
+>> +             }
+>>
+>>               err = perf_evlist__parse_sample(evlist, event, &sample);
+>>               if (err < 0) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       pr_debug("Error during parse sample\n");
+>>                       goto out_unmap_evlist;
+>>               }
+>>
+>> +             perf_evlist__mmap_write_tail(evlist, 0);
+>> +
+>>               total_periods += sample.period;
+>>               nr_samples++;
+>>       }
+>> diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
+>> index 28fe589..3ef1dbd 100644
+>> --- a/tools/perf/tests/task-exit.c
+>> +++ b/tools/perf/tests/task-exit.c
+>> @@ -96,9 +96,12 @@ int test__task_exit(void)
+>>
+>>  retry:
+>>       while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
+>> -             if (event->header.type != PERF_RECORD_EXIT)
+>> +             if (event->header.type != PERF_RECORD_EXIT) {
+>> +                     perf_evlist__mmap_write_tail(evlist, 0);
+>>                       continue;
+>> +             }
+>>
+>> +             perf_evlist__mmap_write_tail(evlist, 0);
+>>               nr_exit++;
+>>       }
+>>
+>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+>> index f9f77be..accb9b7 100644
+>> --- a/tools/perf/util/evlist.c
+>> +++ b/tools/perf/util/evlist.c
+>> @@ -545,12 +545,21 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+>>
+>>       md->prev = old;
+>>
+>> -     if (!evlist->overwrite)
+>> -             perf_mmap__write_tail(md, old);
+>>
+>>       return event;
+>>  }
+>>
+>> +void perf_evlist__mmap_write_tail(struct perf_evlist *evlist, int idx)
+>> +{
+>> +     struct perf_mmap *md = &evlist->mmap[idx];
+>> +     unsigned int old = md->prev;
+>> +
+>> +     if (!evlist->overwrite)
+>> +             perf_mmap__write_tail(md, old);
+>> +
+>> +     return;
+>> +}
+>> +
+>>  static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
+>>  {
+>>       if (evlist->mmap[idx].base != NULL) {
+>> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+>> index 880d713..a973e36 100644
+>> --- a/tools/perf/util/evlist.h
+>> +++ b/tools/perf/util/evlist.h
+>> @@ -89,6 +89,8 @@ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
+>>
+>>  union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
+>>
+>> +void perf_evlist__mmap_write_tail(struct perf_evlist *evlist, int idx);
+>> +
+>>  int perf_evlist__open(struct perf_evlist *evlist);
+>>  void perf_evlist__close(struct perf_evlist *evlist);
+>>
+>> diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+>> index 71b5412..5ed90d0 100644
+>> --- a/tools/perf/util/python.c
+>> +++ b/tools/perf/util/python.c
+>> @@ -822,10 +822,15 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+>>               PyObject *pyevent = pyrf_event__new(event);
+>>               struct pyrf_event *pevent = (struct pyrf_event *)pyevent;
+>>
+>> -             if (pyevent == NULL)
+>> +             if (pyevent == NULL) {
+>> +                     perf_evlist__mmap_write_tail(evlist, cpu);
+>>                       return PyErr_NoMemory();
+>> +             }
+>>
+>>               err = perf_evlist__parse_sample(evlist, event, &pevent->sample);
+>> +
+>> +             perf_evlist__mmap_write_tail(evlist, cpu);
+>> +
+>>               if (err)
+>>                       return PyErr_Format(PyExc_OSError,
+>>                                           "perf: can't parse sample, err=%d", err);
+>> --
+>> 1.7.10.4
