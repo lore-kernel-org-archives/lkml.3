@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab3JYXje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:39:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20556 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab3JYXjd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:39:33 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <526AF79A.3050002@cantab.net>
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com> <526AF79A.3050002@cantab.net>
+	id S1753571Ab3JYXkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:40:43 -0400
+Received: from ring0.de ([91.143.88.219]:53492 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab3JYXkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:40:41 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Sat, 26 Oct 2013 01:40:31 +0200
+From: Sebastian Reichel <sre@debian.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
+Message-ID: <20131025234031.GC8657@earth.universe>
+Mail-Followup-To: Grant Likely <grant.likely@linaro.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Peter Ujfalusi <peter.ujfalusi@ti.com>,
+	Sachin Kamat <sachin.kamat@linaro.org>,
+	Florian Vaussard <florian.vaussard@epfl.ch>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+	devicetree@vger.kernel.org
+References: <1382626126-12565-1-git-send-email-sre@debian.org>
+ <1382626126-12565-2-git-send-email-sre@debian.org>
+ <20131025190904.3EE93C403B8@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [Xen-devel] [PATCH v1] Set 1-1 P2M for PCI BARs and MCFG regions - if needed.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 25 Oct 2013 19:39:05 -0400
-To: David Vrabel <dvrabel@cantab.net>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Santosh.Jodh@citrix.com, JBeulich@suse.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, mukesh.rathor@oracle.com,
-        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
-Message-ID: <f7db4ef1-fb0e-4811-bd4b-fce2a13ea3f4@email.android.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
+Content-Disposition: inline
+In-Reply-To: <20131025190904.3EE93C403B8@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <dvrabel@cantab.net> wrote:
->On 25/10/13 16:03, Konrad Rzeszutek Wilk wrote:
->>
->>   2). Assume that INVALID_P2M_ENTRY is considered 1-1. That would
->require
->>      auditing of the code and also making sure that any
->xen_privcmd_mmap
->>      calls use the m2p_add_override.
->
->I'm not sure I understand the concern about the privcmd driver's
->foreign 
->mapping ioctls (MMAPBATCH_V2 and friends) as these all deal with MFNs 
->directly and don't use the p2m.
->
->>      However there are some
->>      valid cases in which we need to check for INVALID_P2M_ENTRY -
->>      balloon driver - that might be relaxed.
->
->Yes.  And this behaviour will be retained.   I think we only need to do
->
->the INVALID_P2M_ENTRY => 1:1 when constructing PTEs so all other
->callers 
->will see INVALID_P2M_ENTRY as before.
 
-You are suggesting not touching the p2m code and instead change the the xen-make-pte to assume that INVALID and IDENTITY should have the same behaviour. Interesting.
->
->
->>      However again the P2M code
->>      and the ABI it places are not for the faint of the heart.
->
->I have no fear.
+--bKyqfOwhbdpXa4YI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-:-)
->
->If the above suggestion does work out it will reduce the amount of p2m 
->code /and/ remove a Xen-specific PTE bit.  So I think it is worth
->pursuing.
->
->In the meantime, the following minimal patch is a likely workaround.
->
->David
->
->8<-------------------------------
->x86/mm: set _PAGE_IOMAP in io_remap_pfn_range().
->
->Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->---
->  arch/x86/include/asm/pgtable.h |    3 +++
->  1 file changed, 3 insertions(+)
->
->diff --git a/arch/x86/include/asm/pgtable.h
->b/arch/x86/include/asm/pgtable.h
->index 3d19994..d59b22a 100644
->--- a/arch/x86/include/asm/pgtable.h
->+++ b/arch/x86/include/asm/pgtable.h
->@@ -868,6 +868,9 @@ static inline pte_t pte_swp_clear_soft_dirty(pte_t
->pte)
->  	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
->  }
->
->+#define io_remap_pfn_range(vma, addr, pfn, size, prot) \
->+  remap_pfn_range(vma, addr, pfn, size, (prot) | _PAGE_IOMAP)
->+
->  #include <asm-generic/pgtable.h>
->  #endif	/* __ASSEMBLY__ */
+On Fri, Oct 25, 2013 at 08:09:04PM +0100, Grant Likely wrote:
+> On Thu, 24 Oct 2013 16:48:44 +0200, Sebastian Reichel <sre@debian.org> wr=
+ote:
+> > Add device tree support for twl4030 power button driver.
+>=20
+> The above commit text is insufficient. There are changes in the patch
+> that aren't described here and have nothing to do with device tree
+> bindings.
 
-You are welcome to suggest it to hpa. Last time a  similar patch was proposed he was not too thrilled about it.
+I will update the description in PATCHv7.
 
-Looking forward to your p2m code surgery!
+> [...]
+> > +++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+>=20
+> Can all of the TWL or TWL4030 funciton bindings be collected into a
+> single file please? It is a single device after all. All of it should be
+> in bindings/mfd/twl-family.txt
+
+I guess this should be done in another patch? There's also a typo in
+twl-family.txt's filename. My suggestion is to leave the patchset in
+its current state. I will create another patch, which combines all
+the twl4030 bindings descriptions into one file.
+
+> [...]
+> > +- interrupt: should be one of the following
+>=20
+> Spelling: s/interrupt/interrupts/
+
+fixed.
+
+> [...]
+> >  static struct platform_driver twl4030_pwrbutton_driver =3D {
+> > +	.probe		=3D twl4030_pwrbutton_probe,
+> >  	.remove		=3D __exit_p(twl4030_pwrbutton_remove),
+>=20
+> Remove the __exit_p() wrapper. __exit is for module exit functions, not
+> remove hooks (I know, that's not actually this patch, but the code is
+> definitely wrong here).
+
+On of the following patches converts the driver to devm, which
+results in complete removal of the twl4030_pwrbutton_remove
+function.
+
+-- Sebastian
+
+--bKyqfOwhbdpXa4YI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSawFuAAoJENju1/PIO/qalKIQAJqIpjQwKt63Wy+xHOLtYPxq
+VM7gRkOb6DYUaF8vLQDYh9PU15Ggqtyf5mcmk0DthtlTWCkkPSfkylz52wadbc3M
+hpfD3KiNx777IkMnXR0dMt61cWg0mprO4MzR8K2CHasPGKUrK1dED0G+ndLSocsP
+RCVLn60JmF/ig0WU2oPBKfUKi6TyIQkkvq+PX6OQHYLvuGLoyYhW7V9UVGbFQTJR
+MNHsxLVhbMznJ8elYUFtWerU3Dp5iqwWXkXpCSAwrsUPa8UBghqJ33wA2baxzR/2
+lvQM+PZNEkVZcHjRO503zAJL6MonywZT/3GJFOmgkZa1kgvI7exUaa0TWW5f3WeM
+uQlWHWNcS+wZbNLqv0EkAz9pcrOeq7BDpqNU0q7DOpr//EMJdxWgID+bnLpKv1mq
+8KFKpqV4MID2iab3F4kUedns5lhuUhmF8OPPIyfz+VLLfw9xLEUIhczgrT+7Xz/K
+zzlvclqlm2WI4F96UUSPihl2PVjZEuc93Tc6fLq9T5Ii8iGsvwA3PVvBU/6js3nh
+DOtd87YZJQfoBnegqXKZHFQK9PlRtnLiE4cumj66Yg9O74/+uSlZVXe8eOvtT/lC
+mLc1AZRlwhquw33Y2dO9t1a4QAlt6Cw+AXIgrhYid56MglgzaNn+YyRBDoPBRZLv
+kt5fRUFQLiVDRr/IUixY
+=96+a
+-----END PGP SIGNATURE-----
+
+--bKyqfOwhbdpXa4YI--
