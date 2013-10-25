@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3JYRnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 13:43:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56381 "EHLO mx1.redhat.com"
+	id S1754558Ab3JYRpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 13:45:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727Ab3JYRnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 13:43:14 -0400
-Message-ID: <1382722980.2445.13.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
- default
-From: Adam Williamson <awilliam@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Lan Tianyu <tianyu.lan@intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Peter Anvin <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Robin Holt <holt@sgi.com>,
-        davej@fedoraproject.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 25 Oct 2013 10:43:00 -0700
-In-Reply-To: <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
-	 <20131025105352.GA5419@gmail.com>
-	 <1382719652.2445.1.camel@adam.happyassassin.net>
-	 <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752718Ab3JYRpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 13:45:49 -0400
+Date: Fri, 25 Oct 2013 19:44:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, zheng.z.yan@intel.com,
+        bp@alien8.de
+Subject: Re: [PATCH v3 4/4] perf,x86: add RAPL hrtimer support
+Message-ID: <20131025174448.GD7024@krava.brq.redhat.com>
+References: <1382533085-7166-1-git-send-email-eranian@google.com>
+ <1382533085-7166-5-git-send-email-eranian@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382533085-7166-5-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-25 at 18:16 +0100, Linus Torvalds wrote:
-> On Fri, Oct 25, 2013 at 5:47 PM, Adam Williamson <awilliam@redhat.com> wrote:
-> >
-> > I don't, but one comment I could add is that reboot _used_ to work okay
-> > on the Z1. And I _think_ it's worked OK since the April 2011 commit you
-> > mention (so the introduction of that didn't break it), but I can't
-> > absolutely swear to it.
+On Wed, Oct 23, 2013 at 02:58:05PM +0200, Stephane Eranian wrote:
+> The RAPL PMU counters do not interrupt on overflow.
+> Therefore, the kernel needs to poll the counters
+> to avoid missing an overflow. This patch adds
+> the hrtimer code to do this.
 > 
-> It might be interesting to try, and if it used to work with the acpi
-> method, use bisection to see when it stopped working..
+> The timer internval is calculated at boot time
+> based on the power unit used by the HW.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_rapl.c |   75 +++++++++++++++++++++++++--
+>  1 file changed, 70 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+> index 3d71d39..ed0566a 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+> @@ -92,11 +92,13 @@ static struct kobj_attribute format_attr_##_var =		\
+>  
+>  struct rapl_pmu {
+>  	spinlock_t	lock;
+> -	atomic_t	refcnt;
+>  	int		hw_unit;  /* 1/2^hw_unit Joule */
+> -	int		phys_id;
+> -	int		n_active; /* number of active events */
+> +	struct hrtimer	hrtimer;
+>  	struct list_head active_list;
+> +	ktime_t		timer_interval; /* in ktime_t unit */
+> +	int		n_active; /* number of active events */
+> +	int		phys_id;
+> +	atomic_t	refcnt;
+>  };
+>  
+>  static struct pmu rapl_pmu_class;
+> @@ -161,6 +163,47 @@ static u64 rapl_event_update(struct perf_event *event)
+>  	return new_raw_count;
+>  }
+>  
+> +static void rapl_start_hrtimer(struct rapl_pmu *pmu)
+> +{
+> +	__hrtimer_start_range_ns(&pmu->hrtimer,
+> +			pmu->timer_interval, 0,
+> +			HRTIMER_MODE_REL_PINNED, 0);
+> +}
+> +
+> +static void rapl_stop_hrtimer(struct rapl_pmu *pmu)
+> +{
+> +	hrtimer_cancel(&pmu->hrtimer);
+> +}
+> +
+> +static enum hrtimer_restart rapl_hrtimer_handle(struct hrtimer *hrtimer)
+> +{
+> +	struct rapl_pmu *pmu = container_of(hrtimer, struct rapl_pmu, hrtimer);
+> +	struct perf_event *event;
+> +	unsigned long flags;
+> +
+> +	if (!pmu->n_active)
+> +		return HRTIMER_NORESTART;
+> +
+> +	spin_lock_irqsave(&pmu->lock, flags);
+> +
+> +	list_for_each_entry(event, &pmu->active_list, active_entry) {
+> +		rapl_event_update(event);
+> +	}
 
-Yeah, I knew that'd be the reply :) I'll try and dig out some old kernel
-builds from Koji and see if I can at least pinpoint when it last worked,
-and if it really _was_ after the ACPI method landed.
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
+hi,
+I dont fully understand the reason for the timer,
+I'm probably missing something..
 
+- the timer calls rapl_event_update for all defined events
+- but rapl_pmu_event_read calls rapl_event_update any time the
+  event is read (sys_read)
+
+The rapl_event_update only read msr and updates
+event->count|hw,prev_count.
+
+What's the timer purpose then?
+
+thanks for info,
+jirka
