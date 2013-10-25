@@ -1,55 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab3JYOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:00:25 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54144 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261Ab3JYOAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:00:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 Resend 00/34] CPUFreq Cleanup Part III
-Date: Fri, 25 Oct 2013 16:12:25 +0200
-Message-ID: <6700479.xPkgXUV5KL@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpokJrj_ZbCPUw4ZpfOWgsDvqxLH9j41eQVC7V7Ny4xE8mA@mail.gmail.com>
-References: <cover.1382104514.git.viresh.kumar@linaro.org> <14730355.7hm7UiW5IU@vostro.rjw.lan> <CAKohpokJrj_ZbCPUw4ZpfOWgsDvqxLH9j41eQVC7V7Ny4xE8mA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754485Ab3JYOAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:00:55 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:40704 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429Ab3JYOAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 10:00:53 -0400
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v3)
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        jsvogt@de.ibm.com, MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com,
+        michael@ibmra.de, Frank Haverkamp <haver@vnet.ibm.com>
+In-Reply-To: <20131025104212.GA22369@kroah.com>
+References: <20131024100942.GA13614@kroah.com>
+	 <1382695784-10127-2-git-send-email-haver@linux.vnet.ibm.com>
+	 <20131025104212.GA22369@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Fri, 25 Oct 2013 16:00:44 +0200
+Message-ID: <1382709644.8698.31.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102514-4966-0000-0000-0000074AF56E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 25, 2013 07:25:45 PM Viresh Kumar wrote:
-> On 25 October 2013 18:26, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Having considered that a bit I think that I'd prefer one patch doing all of
-> > these changes in one go (and with all applicable ACKs collected), one of the
-> > reasons being that if it is necessary to revert that stuff, whatever the
-> > reason, it will be much easier to do that with just one commit than with
-> > 34 of them.
-> 
-> With a similar reason I think the probability is more that a revert might
-> be required for individual drivers as they may need to switch back to
-> ->target() instead of ->target_index() and so keeping them separate
-> might be better.
-> 
-> In case we need to revert all patches due to some breakage, we can
-> always do that in a single commit if required.
-> 
-> What do you say?
+Hi Greg,
 
-If I need to revert the first patch, then I'll need to revert all of them.
+thanks for having a first look at the code.
 
-Also, if you do the same change in multiple places it actually is easier
-to handle it pretty much regardless of the angle you look at that from
-if that's done in one patch.  Please do that.
+Am Freitag, den 25.10.2013, 11:42 +0100 schrieb Greg KH:
+> On Fri, Oct 25, 2013 at 12:09:44PM +0200, Frank Haverkamp wrote:
+> > From: Frank Haverkamp <haver@vnet.ibm.com>
+> > 
+> > The GenWQE card itself provides access to a generic work queue into
+> > which the work can be put, which should be executed, e.g. compression
+> > or decompression request, or whatever the card was configured to do.
+> > 
+...
+> > 
+> > Signed-off-by: Frank Haverkamp <haver@vnet.ibm.com>
+> > Co-authors: Joerg-Stephan Vogt <jsvogt@de.ibm.com>,
+> >             Michael Jung <MIJUNG@de.ibm.com>,
+> >             Michael Ruettger <michael@ibmra.de>
+> 
+> Please run sparse on the code and fix up the issues that it finds (a
+> short glance seems that there will be some issues, I didn't run it
+> myself.)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yes, sparse was complaining. Fortunately it was mostly about me not
+putting __user at the right spots as far as I could see. I tried to fix
+that in my local copy.
+
+> And why are you doing debug stuff through the ioctl interface?  Please
+> move that to debugfs if you really want/need that information, it does
+> not belong in an ioctl.
+
+I will look into that. We need that information per card when it fails.
+
+> Your huge numbers of module parameters are also worrying.  I think
+> almost all of them should be sysfs files on a per device/card as you can
+> not handle different options for different cards with module parameters.
+
+You are right. Some of them were useful for debugging, but do not really
+make sense for regular users e.g. distros. I removed some already, but
+for some others I am not yet sure yet if I want them to go away.
+
+> Please remove all of them, as no distro/user will _ever_ know what to do
+> with a module option, it's not fair to push those types of decisions to
+> users where you can't make up your mind as a kernel developer.
+
+True. Normally we did not change those. But we sometimes used them when
+trying out the card in different environments e.g. different processor
+architecture or special test-cases which required higher timeout values.
+
+> One final legal question:
+> 
+> > --- /dev/null
+> > +++ b/drivers/misc/genwqe/card_base.c
+> > @@ -0,0 +1,1305 @@
+> > +/**
+> > + * IBM Accelerator Family 'GenWQE'
+> > + *
+> > + * (C) Copyright IBM Corp. 2013
+> > + *
+> > + * Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+> > + * Author: Joerg-Stephan Vogt <jsvogt@de.ibm.com>
+> > + * Author: Michael Jung <mijung@de.ibm.com>
+> > + * Author: Michael Ruettger <michael@ibmra.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2, or (at your option)
+> > + * any later version.
+> 
+> Do you _really_ mean "any later version"?  I have to ask, sorry.
+
+I think we can change that to something like:
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (version 2 only)
+ * as published by the Free Software Foundation.
+
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+> > + * GNU General Public License for more details.
+> 
+> What's with the odd spacing of that last sentence?
+
+Tab/space issue. I fixed that.
+
+> Thanks for not putting the FSF's office address in this part of the
+> files, that's much appreciated.
+
+I think Martin recommended that to me.
+
+> thanks,
+> 
+> greg k-h
+> 
+
+Have a nice weekend.
+
+Frank
+
