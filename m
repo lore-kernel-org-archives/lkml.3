@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3JYNiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:38:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55186 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753127Ab3JYNix (ORCPT
+	id S1753556Ab3JYNma (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:42:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44232 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753416Ab3JYNm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:38:53 -0400
-Message-ID: <526A746C.3060806@free-electrons.com>
-Date: Fri, 25 Oct 2013 15:38:52 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: mmarek@suse.cz, yann.morin.1998@free.fr, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
-References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com> <1382599849.22433.51.camel@joe-AO722>
-In-Reply-To: <1382599849.22433.51.camel@joe-AO722>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Oct 2013 09:42:29 -0400
+Message-ID: <1382708539.18659.5.camel@pippen.local.home>
+Subject: Re: [PATCH trace-cmd 2/5] build: Install data files without execute
+ permissions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 25 Oct 2013 09:42:19 -0400
+In-Reply-To: <20131025130534.GA24608@thinkpad-t410>
+References: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
+	 <1382642074-15567-3-git-send-email-seth.forshee@canonical.com>
+	 <1382689893.8356.2.camel@pippen.local.home>
+	 <20131025130534.GA24608@thinkpad-t410>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Fri, 2013-10-25 at 08:05 -0500, Seth Forshee wrote:
 
-Thank you very much for your review!
+> 
+> If you disagree, it won't hurt my feelings if you drop those changes, so
+> long as you keep the ones which makes sure things like .png files aren't
+> executable ;-)
 
-On 10/24/2013 09:30 AM, Joe Perches wrote:
-> On Thu, 2013-10-24 at 07:23 +0200, Michael Opdenacker wrote:
->
->> +def count_param(param):
->> +
->> +    global source_file, bad_params_in_file
->> +
->> +    if os.path.isdir('.git'):
->> +       # Use git grep when available
->> +       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
->> +    else:
->> +       # Fallback to regular grep
->> +       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
-> Doesn't the grep need -w?
-Using "-w" is a good idea, and this way I can eliminate false negatives
-(for example finding matches for "PRINTK_TIME" when I'm looking for
-plain "PRINTK"). The only this is that I then need to look for both
-"PARAM" (in Kconfig files, in case the parameter is just used for
-dependency management), and for "CONFIG_PARAM" (in source files).
->
-> Also, the regular grep could probably use something like
-> 'grep -R -w --max-count=2 --include="*.[chS]"'
-I can definitely use "--max-count=2".
+I pretty much don't care. I'll pull in the patches as is. I also had
+Johannes Berg sitting next to me when I was reading your patch that
+touched the python part of the build, and since him and Darren Hart were
+the ones to add that, I had him give me a verbal "Reviewed-by".
 
- '--include="*.[chS]"' is more problematic because it excludes Kconfig
-files. I'll use "-I" instead to just ignore binary files.
+-- Steve
 
-I'll soon send an update taking this into account.
-
-Don't hesitate to send more comments.
-
-Thanks again,
-
-Michael.
-
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
 
