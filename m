@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab3JYKTs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:19:48 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:54076 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab3JYKTq (ORCPT
+	id S1753086Ab3JYKUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:20:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33349 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3JYKUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:19:46 -0400
-Date: Fri, 25 Oct 2013 12:19:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: perf/ftrace lockup on 3.12-rc6 with trigger code
-Message-ID: <20131025101943.GA3481@gmail.com>
-References: <alpine.DEB.2.10.1310241324330.4352@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1310241422460.6573@vincent-weaver-1.um.maine.edu>
- <1382695687.12254.4.camel@pippen.local.home>
+	Fri, 25 Oct 2013 06:20:40 -0400
+Date: Fri, 25 Oct 2013 19:20:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: akpm@linux-foundation.org, sjennings@variantweb.net, bob.liu@oracle.com,
+        weijie.yang.kh@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/2] mm/zswap: refoctor the get/put routines
+Message-ID: <20131025102032.GE6612@gmail.com>
+References: <000101ced09e$fed90a10$fc8b1e30$%yang@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382695687.12254.4.camel@pippen.local.home>
+In-Reply-To: <000101ced09e$fed90a10$fc8b1e30$%yang@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> > Urgh, I had turned those on to try to debug something and forgot 
-> > to disable.  I feel like I saw this problem before I had those 
-> > enabled so I guess I have to start from scratch fuzzing to see 
-> > if I can get a more generally reproducible trace.
-
-Btw., even if various config options are enabled, we don't want the 
-kernel to lock up. So it might not be _the_ bug you are looking, but 
-it certainly looks like _a_ bug.
-
-> Looks like something is incorrectly enabling function tracer 
-> within perf. Peter told me that there's some ref count bug that 
-> may use data after being freed on exit.
+On Thu, Oct 24, 2013 at 05:53:32PM +0800, Weijie Yang wrote:
+> The refcount routine was not fit the kernel get/put semantic exactly,
+> There were too many judgement statements on refcount and it could be minus.
 > 
-> I tried the program that you attached in you previous email, and 
-> was not able to hit the bug. Are you able to hit the bug with that 
-> code each time?
+> This patch does the following:
+> 
+> - move refcount judgement to zswap_entry_put() to hide resource free function.
+> 
+> - add a new function zswap_entry_find_get(), so that callers can use easily
+> in the following pattern:
+> 
+>    zswap_entry_find_get
+>    .../* do something */
+>    zswap_entry_put
+> 
+> - to eliminate compile error, move some functions declaration
+> 
+> This patch is based on Minchan Kim <minchan@kernel.org> 's idea and suggestion.
+> 
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> Cc: Seth Jennings <sjennings@variantweb.net>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Bob Liu <bob.liu@oracle.com>
 
-A full .config and a SHA1 of the tested tree would definitely be 
-nice!
 
-Thanks,
+I remember Bob had a idea to remove a look up and I think it's doable.
+Anyway, I don't mind you send it with fix or not.
 
-	Ingo
+Thanks for handling this, Weijie!
+
+Acked-by: Minchan Kim <minchan@kernel.org>
+
+-- 
+Kind regards,
+Minchan Kim
