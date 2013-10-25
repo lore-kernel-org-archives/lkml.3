@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3JYPdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:33:45 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43779 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab3JYPdo (ORCPT
+	id S1753395Ab3JYPgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:36:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34098 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab3JYPgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:33:44 -0400
-Message-ID: <526A8F54.2040601@gmail.com>
-Date: Fri, 25 Oct 2013 09:33:40 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 25 Oct 2013 11:36:14 -0400
+Message-ID: <526A8FE3.8040801@canonical.com>
+Date: Fri, 25 Oct 2013 11:36:03 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org> <1381468543-25334-7-git-send-email-namhyung@kernel.org> <CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com> <20131025130417.GB20423@ghostprotocols.net>
-In-Reply-To: <20131025130417.GB20423@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, przanoni@gmail.com,
+        airlied@linux.ie, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert "Revert "drm/i915:
+ revert eDP bpp clamping code changes""
+References: <cover.1381939165.git.joseph.salisbury@canonical.com> <397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com> <20131016210213.GR4830@phenom.ffwll.local>
+In-Reply-To: <20131016210213.GR4830@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/13 7:04 AM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Oct 25, 2013 at 11:56:31AM +0100, Frederic Weisbecker escreveu:
->> 2013/10/11 Namhyung Kim <namhyung@kernel.org>:
->>> From: Frederic Weisbecker <fweisbec@gmail.com>
+On 10/16/2013 05:02 PM, Daniel Vetter wrote:
+> On Wed, Oct 16, 2013 at 04:34:57PM -0400, Joseph Salisbury wrote:
+>> BugLink: http://bugs.launchpad.net/bugs/1195483
+>>
+>> This reverts commit 657445fe8660100ad174600ebfa61536392b7624.
+>>
+>> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+>> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> Cc: Paulo Zanoni <przanoni@gmail.com>
+>> Cc: David Airlie <airlied@linux.ie>
+>> Cc: stable@vger.kernel.org
+> It's by far not that simple. Jani is working on both the underlying bug
+> and a better w/a. See
 >
->>> This new comm infrastructure provides two features:
+> https://bugzilla.kernel.org/show_bug.cgi?id=59841
 >
->> I was wondering about the fate of these patches. I can resend these or
->> do any rebase if you need to.
+> for the full story in its entire glory.
 >
-> So I applied the first few patches, but deferred working on this part,
-> the comm one, because Jiri Olsa had some problems with it, IIRC, Jiri?
-> Can you refresh my mind and ellaborate on it?
+> Cheers, Daniel
 
-I also saw some comm related problems with Namhyung's tree. Not sure if 
-it contained all of Frederic's patches. I have not had time to chase 
-down what is going on -- just that comm's coming out of perf-script were 
-not correct.
+Thanks for the feedback, Daniel.  Is there an estimate on what mainline
+release might contain Jani's work?
 
-David
+Thanks again,
 
+Joe
