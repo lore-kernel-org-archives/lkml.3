@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab3JYHUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 03:20:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59052 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751728Ab3JYHUL (ORCPT
+	id S1751616Ab3JYHZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 03:25:17 -0400
+Received: from smtprelay0046.b.hostedemail.com ([64.98.42.46]:41950 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751182Ab3JYHZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 03:20:11 -0400
-Message-ID: <1382685605.2559.48.camel@dabdike.quadriga.com>
-Subject: Re: [3.12-rc] sg_open: leaving the kernel with locks still held!
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Douglas Gilbert <dgilbert@interlog.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Vaughan Cao <vaughan.cao@oracle.com>,
-        Madper Xie <cxie@redhat.com>
-Date: Fri, 25 Oct 2013 08:20:05 +0100
-In-Reply-To: <20131025003713.GA5152@hostway.ca>
-References: <20131022205608.GA6616@hostway.ca>
-	 <52671B3E.6070804@interlog.com>
-	 <1382514295.2081.32.camel@dabdike.quadriga.com>
-	 <5267D8E7.9000806@interlog.com> <20131025003713.GA5152@hostway.ca>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Fri, 25 Oct 2013 03:25:16 -0400
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::,RULES_HIT:41:152:355:379:582:966:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2525:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3308:3352:3421:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4361:4385:5007:6119:6261:6630:6691:7875:7903:8603:9025:9040:9108:10004:10400:10450:10455:10848:11658:11914:12043:12517:12519:12555:12663:12698:12737:13069:13071:13160:13161:13166:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: story63_85045af207225
+X-Filterd-Recvd-Size: 2073
+Date: Fri, 25 Oct 2013 07:25:13 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        axboe@kernel.dk, linux-mm@kvack.org
+Message-ID: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+Subject: Disabling in-memory write cache for x86-64 in Linux II
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.147.29.47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-24 at 17:37 -0700, Simon Kirby wrote:
-> On Wed, Oct 23, 2013 at 10:10:47AM -0400, Douglas Gilbert wrote:
-> 
-> > On 13-10-23 03:44 AM, James Bottomley wrote:
-> > >On Tue, 2013-10-22 at 20:41 -0400, Douglas Gilbert wrote:
-> > >>On 13-10-22 04:56 PM, Simon Kirby wrote:
-> > >>>Hello!
-> > >>>
-> > >>>While trying to figure out why the request queue to sda (ext4) was
-> > >>>clogging up on one of our btrfs backup boxes, I noticed a megarc process
-> > >>>in D state, so enabled locking debugging, and got this (on 3.12-rc6):
-> > >>>
-> > >>>[  205.372823] ================================================
-> > >>>[  205.372901] [ BUG: lock held when returning to user space! ]
-> > >>>[  205.372979] 3.12.0-rc6-hw-debug-pagealloc+ #67 Not tainted
-> > >>>[  205.373055] ------------------------------------------------
-> > >>>[  205.373132] megarc.bin/5283 is leaving the kernel with locks still held!
-> > >>>[  205.373212] 1 lock held by megarc.bin/5283:
-> > >>>[  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>] sg_open+0x3a0/0x4d0
-> > >>>
-> > >>>Vaughan, it seems you touched this area last in 15b06f9a02406e, and git
-> > >>>tag --contains says this went in for 3.12-rc. We didn't see this on 3.11,
-> > >>>though I haven't tried with lockdep.
-> > >>>
-> > >>>This is caused by some of our internal RAID monitoring scripts that run
-> > >>>"megarc.bin -dispCfg -a0" (even though that controller isn't present on
-> > >>>this server -- a PowerEdge 2950 w/Perc 5).
-> > >>>
-> > >>>strace output of the program execution that causes the above message is
-> > >>>here: http://0x.ca/sim/ref/3.12-rc6/megarc_strace.txt
-> > >>
-> > >>This has been reported. That patch will be reverted or,
-> > >>if there is enough time, a fix will (or at least should)
-> > >>go in before the release of lk 3.12 .
-> > >
-> > >I think you've got about a week to prove you can fix it (before 3.12
-> > >goes final).  I'll send my current set of fixes to Linus without doing
-> > >anything about sg.
-> > 
-> > "prove" is a big ask, especially coming from a
-> > mathematician. I consider it more hacking (in the
-> > golf sense) on my part to tweak well-meaning patches
-> > to the sg driver that cause collateral damage. Further,
-> > I suspect Vaughan's patch was an attempt to fix
-> > damage left be a previous sg_open() hacker.
-> > 
-> > I have asked Simon Kirby to apply the patch:
-> >   http://marc.info/?l=linux-scsi&m=138237283432010&w=2
-> > and report if it fixes his problems. Further I have
-> > written three test programs to test O_EXCL handling on
-> > SCSI devices, two of which are in the examples directory
-> > of sg3_utils version 1.37 . The latest one (single
-> > exclusive writer, multiple readers) can be found in
-> > the News section of:
-> >    http://sg.danny.cz/sg/
-> > These tests don't check all possibilities (e.g. random
-> > signals, ml error processing and detached devices) but
-> > they are better than nothing. And, as a side issue, they
-> > break bsg (cause it ignores O_EXCL) and break the block
-> > layer (e.g. /dev/sdb) so perhaps it should be reverted :-)
-> 
-> Well, this patch works for me in that I see no more lockdep warnings or
-> unintended consequences when running the same "megarc.bin -dispCfg -a0"
-> command.
+Hello!
 
-OK, I thought about this some more and I just don't see the problem as
-being so urgent that we do a fixup patch on the eve of the merge window.
-Lets just do the revert and then, Doug, do your patch from the revert
-and I'll put it in in the merge window.
+On my x86-64 PC (Intel Core i5 2500, 16GB RAM), I have the same 3.11 kernel
+built for the i686 (with PAE) and x86-64 architectures. What's really troubling me
+is that the x86-64 kernel has the following problem:
 
-James
+When I copy large files to any storage device, be it my HDD with ext4 partitions
+or flash drive with FAT32 partitions, the kernel first caches them in memory entirely
+then flushes them some time later (quite unpredictably though) or immediately upon
+invoking "sync".
 
+How can I disable this memory cache altogether (or at least minimize caching)? When
+running the i686 kernel with the same configuration I don't observe this effect - files get
+written out almost immediately (for instance "sync" takes less than a second, whereas
+on x86-64 it can take a dozen of _minutes_ depending on a file size and storage
+performance).
 
+I'm _not_ talking about disabling write cache on my storage itself (hdparm -W 0 /dev/XXX)
+- firstly this command is detrimental to the performance of my PC, secondly, it won't help
+in this instance.
+
+Swap is totally disabled, usually my memory is entirely free.
+
+My kernel configuration can be fetched here: https://bugzilla.kernel.org/show_bug.cgi?id=63531
+
+Please, advise.
+
+Best regards,
+
+Artem 
