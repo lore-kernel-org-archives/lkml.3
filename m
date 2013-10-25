@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab3JYNYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:24:00 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58924 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab3JYNX5 (ORCPT
+	id S1754628Ab3JYNY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:24:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48704 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab3JYNY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:23:57 -0400
-Message-ID: <526A70E5.1000909@gmail.com>
-Date: Fri, 25 Oct 2013 21:23:49 +0800
-From: Jiaxing Wang <hello.wjx@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 25 Oct 2013 09:24:28 -0400
+Date: Fri, 25 Oct 2013 14:24:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131025132422.GC12932@sirena.org.uk>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+ <5269FB5E.6010901@roeck-us.net>
+ <20131025083525.GF19622@ulmo.nvidia.com>
+ <CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>, Al Viro <viro@zeniv.linux.org.uk>
-CC: fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: always update file->f_pos in seq_lseek()
-References: <526A44AA.8050804@cn.fujitsu.com>
-In-Reply-To: <526A44AA.8050804@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aT9PWwzfKXlsBJM1"
+Content-Disposition: inline
+In-Reply-To: <CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
+X-Cookie: You too can wear a nose mitten.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 149.254.181.129
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 24
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2013 06:15 PM, Gu Zheng wrote:
-> This issue was first pointed out by Jiaxing Wang several months ago, but no
-> further comments:
-> https://lkml.org/lkml/2013/6/29/41
-> 
-> As we know pread() does not change f_pos, so after pread(), file->f_pos
-> and m->read_pos become different. And seq_lseek() does not update file->f_pos
-> if offset equals to m->read_pos, so after pread() and seq_lseek()(lseek to
-> m->read_pos), then a subsequent read may read from a wrong position, the
-> following program produces the problem:
-> 
->     char str1[32] = { 0 };
->     char str2[32] = { 0 };
->     int poffset = 10;
->     int count = 20;
-> 
->     /*open any seq file*/
->     int fd = open("/proc/modules", O_RDONLY);
-> 
->     pread(fd, str1, count, poffset);
->     printf("pread:%s\n", str1);
-> 
->     /*seek to where m->read_pos is*/
->     lseek(fd, poffset+count, SEEK_SET);
-> 
->     /*supposed to read from poffset+count, but this read from position 0*/
->     read(fd, str2, count);
->     printf("read:%s\n", str2);
-> 
-> out put:
-> pread:
->  ck_netbios_ns 12665
-> read:
->  nf_conntrack_netbios
-> 
-> /proc/modules:
-> nf_conntrack_netbios_ns 12665 0 - Live 0xffffffffa038b000
-> nf_conntrack_broadcast 12589 1 nf_conntrack_netbios_ns, Live 0xffffffffa0386000
-> 
-> So we always update file->f_pos to offset in seq_lseek() to fix this issue.
-> 
-> Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/seq_file.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 3135c25..a290157 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -328,6 +328,8 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
->  				m->read_pos = offset;
->  				retval = file->f_pos = offset;
->  			}
-> +		} else {
-> +			file->f_pos = offset;
->  		}
->  	}
->  	file->f_version = m->version;
-> 
 
-Thanks Gu, I should have post this patch again.
-And Viro, please take a few minutes to review this, thanks.
+--aT9PWwzfKXlsBJM1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Oct 25, 2013 at 06:16:02AM -0700, Olof Johansson wrote:
+> On Fri, Oct 25, 2013 at 1:35 AM, Thierry Reding
+
+> > Yeah, I saw the devm_gpio_request_one() errors too. They happened for 3
+> > boards on ARM I think. Must have forgotten to update the summary email.
+> > I'll see if I can come up with a patch to fix the GPIO related build
+> > failures, or at least report it to LinusW or Alexandre.
+
+> Hmm.
+
+> Please don't apply fixes like these directly to your tree, keep the
+> broken parts (or drop the tree that introduced it). It makes the
+> process of getting the fixes in where they really have to go much more
+> error prone, since there's no way to track whether they have landed in
+> the right place yet or not.
+
+The rule I was applying (which I think is the same as Stephen applies)
+is that I'd fix anything that was definitely the result of a merge issue
+(like the build failure in misc due to a sysfs API change in the sysfs
+tree) but not anything that was just plain broken in the tree in
+isolation.
+
+--aT9PWwzfKXlsBJM1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSanEDAAoJELSic+t+oim95O0P/i8fNoNQ3dN64VER+ZzZB90Y
+SrCy+Q/F2FsQy4MwM+Hw1QIt0d8gFegkyevdxSCH3fvjc3JJ4z+iCfCL08/k0PG1
+eiXuZahQLFmm2cN8vuyRG3k/tyO9FMm8WpN67lNNDVJpQGBDp05hgCiq/b5fOnoR
+NJjjxq58UyCt4tYIJG2bSXMLWp/wVSeLdhWPsP4oUZoiX18mdkqWjytEnibzJVt5
+hubsS0C2DNeh2phJQ18Tyv77DMLtutyULRmT4aIxCSXvjB9Hd2RPh5g4dCQk6D8y
+OIcvzc8r1Mf53Zf/GumdY93bDG4IlYa8hREKD6bwGO8imgJw7rc3S1no/0mZMAZ4
+cdFBzFhm9LxTAI77y9FGKBQ6TnmBDNkZIQzBebzodLaDKUmbwkfsJtiwSKo0iQVQ
+4ZWH8oSWXATcVYAcxgCRdrpabVCMYJOzbM86aTFuWk9SHcZTcsHxqBGccnge81L5
+wvqiyUwUh03hVTACQG+Epv0g46fPRBXkJvZerY+k4fV6lOO7OMEyCwSmCu6anXG6
++IiVPOmBGZydgpJJsDSoCT0d7wwi7BhBn1kTVmmmUqjcVYOrPHENwCu5gmRmCuZo
+9NYpI3u4E6V4PVqSPDURSl/HyjUcfN40f2siija2J8EH6q6/UgVIATlh0+SpHVe+
+loVlS8Mm8URE1aBrIR7h
+=Dxcs
+-----END PGP SIGNATURE-----
+
+--aT9PWwzfKXlsBJM1--
