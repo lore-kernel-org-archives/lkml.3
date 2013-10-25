@@ -1,177 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3JYNbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:31:36 -0400
-Received: from ip-77-221-165-120.dsl.twang.net ([77.221.165.120]:54210 "EHLO
-	hsia.quadriga.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752117Ab3JYNbe (ORCPT
+	id S1754699Ab3JYNb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:31:58 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:40155 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab3JYNb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:31:34 -0400
-X-Greylist: delayed 1472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 09:31:34 EDT
-From: Jiri Slaby <jslaby@suse.cz>
-To: x86@kernel.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        joe@perches.com
-Subject: [PATCH -resend 1/1] dumpstack: fix printk_address for direct addresses
-Date: Fri, 25 Oct 2013 15:06:58 +0200
-Message-Id: <1382706418-8435-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.4
+	Fri, 25 Oct 2013 09:31:56 -0400
+Date: Fri, 25 Oct 2013 09:31:51 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Matthijs Kooijman <matthijs@stdin.nl>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC] Does PHY UTMI data width belong to DWC2 or PHY binding?
+Message-ID: <20131025133151.GB29341@beef>
+References: <20131018141221.GH2721@beef>
+ <5264F37E.9060307@ti.com>
+ <20131022104829.GF15425@login.drsnuggles.stderr.nl>
+ <20131022112520.GE29341@beef>
+ <5266F06C.2080701@gmail.com>
+ <20131023144242.GI29341@beef>
+ <A2CA0424C0A6F04399FB9E1CD98E030458E1DB5B@US01WEMBX2.internal.synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458E1DB5B@US01WEMBX2.internal.synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider modules like this:
-static int my_init(void)
-{
-  char *map = (void *)0x5;
-  *map = 3;
-  return 0;
-}
-module_init(my_init);
+On Wed, Oct 23, 2013 at 09:29:22PM +0000, Paul Zimmerman wrote:
+> > From: Matt Porter [mailto:matt.porter@linaro.org]
+> > Sent: Wednesday, October 23, 2013 7:43 AM
+> > 
+> > On Tue, Oct 22, 2013 at 04:38:52PM -0500, Rob Herring wrote:
+> > > On 10/22/2013 06:25 AM, Matt Porter wrote:
+> > > > On Tue, Oct 22, 2013 at 12:48:29PM +0200, Matthijs Kooijman wrote:
+> > > >> Hi Kishon,
+> > > >>
+> > > >> On Mon, Oct 21, 2013 at 02:57:26PM +0530, Kishon Vijay Abraham I wrote:
+> > > >>> I think it makes sense to keep the data width property in the dwc2 node itself.
+> > > >>> I mean it describes how the dwc2 IP is configured in that particular SoC (given
+> > > >>> that it can be either <8> or <16>).
+> > > >> If I'm reading the RT3052 datasheet correctly (GHWCFG4 register), the IP
+> > > >> can be configured for 8, 16 or 8 _and_ 16. In the latter case, the "8
+> > > >> and 16 supported" would make sense as a property of dwc2 (though this
+> > > >> value should be autodetectable through GHWCFG4), while the actual 8 or
+> > > >> 16 supported by the PHY would make sense as property of a phy.
+> > > >
+> > > > There would be no value in adding a property for an already detectable
+> > > > value to dwc2's binding. To be honest, it's pretty much useless
+> > > > information due to the existence of the "8 and 16" option.
+> > > >
+> > > >> Note sure if this is really useful in practice as well, or if just
+> > > >> setting the actual width to use on dwc2 makes more sense...
+> > > >
+> > > > The GHWCFG4 information itself is not useful in practice, as described
+> > > > in the original thread: https://lkml.org/lkml/2013/10/10/477
+> > > >
+> > > > It's certainly useful in practice to have this width property in either
+> > > > the dwc2 or the phy binding. One can make a case for either. As I
+> > > > mentioned in the original post, if we put it in the phy binding we'll be
+> > > > updating the generic phy binding. We'll then need an api added into the
+> > > > generic phy framework to fetch the width of a phy.
+> > > >
+> > > > Both cases are doable and trivial, we just need the canonical decision
+> > > > from a DT maintainer as to where the property belongs. Given that they
+> > > > are in ARM ksummit, I'm not expecting to hear anything right this
+> > > > moment. :)
+> > >
+> > > The host can support both, so it is not a property of the host and is a
+> > > property of the phy. It is no different than what mode a SPI slave
+> > > requires or whether an i2c slave supports 8 or 10-bit addressing. Those
+> > > examples are all 1 to many rather than 1 to 1 where it doesn't really
+> > > matter, but the same logic applies.
+> > 
+> > Makes good sense, thanks.
+> > 
+> > In this case, given the PHY ownership of width, we can completely avoid
+> > any DT properties. The generic phy compliant BCM Kona phy driver can
+> > report via the generic phy framework that it is 8-bit wide. There's no
+> > support for this type of thing now but it's pretty trivial to add.
+> 
+> > I went ahead and did a quick proof-of-concept that adds a free-form
+> > phy attributes struct for the generic phy. Given that generic phys can
+> > be for any transmission technology this could be filled with a jumble
+> > unrelated and often unpopulated attributes over time. In any case, the
+> > below patch allows the phy provider to choose to specify utmi_width and
+> > a controller driver that cares can use phy_get_attrs() to fetch the
+> > optional phy attributes and use the utmi_width field if applicable.
+> 
+> As an alternate approach, you could add a 'utmi_width' property to the
+> PHY's DT node, and have the dwc2 driver scan the tree until it finds its
+> PHY, and then check it for that property. That would avoid the need to
+> add anything new to the PHY framework. I don't know if that would be
+> considered good practice by the DT guys, though.
 
-When we turn off FRAME_POINTERs, the very first instruction in that
-function causes a BUG. The problem is that we print IP in the BUG
-report using %pB (from printk_address). And %pB decrements the pointer
-by one to fix printing addresses of functions with tail calls. This
-was added in commit 71f9e59800e5ad4e6b683348424c9fe54306cd43 (x86,
-dumpstack: Use %pB format specifier for stack trace) to fix the call
-stack printouts.
+It's a possibility, however that only solves the issues for DT driven
+systems. By addressing this in the generic phy layer itself, we solve
+the problem for another system that doesn't boot using DT. Perhaps a
+DWC2 core in PCI with the same HWCFG4 8/16 setting and the same phy
+situation as I have. It's also one less property to get wrong as we
+attempt to stabilize bindings.
 
-So instead of correct output:
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
-IP: [<ffffffffa01ac000>] my_init+0x0/0x10 [pb173]
-
-We get:
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
-IP: [<ffffffffa0152000>] 0xffffffffa0151fff
-
-To fix that, we use %pS only for stack addresses printouts (via newly
-added printk_stack_address) and %pB for regs->ip (via printk_address).
-I.e. we revert to the old behaviour for all except call stacks. And
-since from all those reliable is 1, we remove that parameter from
-printk_address.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: joe@perches.com
----
-
-I sent this patch 2 weeks ago. Only Joe commented that the prints
-should be done inline instead. But I don't agree as prining the output
-from one point is better IMHO.
-
-So after discussing what to do with this patch with Ingo, I am
-re-sending. 
-
-Opinions?
-
- arch/x86/include/asm/kdebug.h |  2 +-
- arch/x86/kernel/dumpstack.c   | 11 ++++++++---
- arch/x86/kernel/process_64.c  |  2 +-
- arch/x86/mm/fault.c           |  2 +-
- arch/x86/platform/uv/uv_nmi.c |  2 +-
- 5 files changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index 2c37aad..32ce713 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -21,7 +21,7 @@ enum die_val {
- 	DIE_NMIUNKNOWN,
- };
- 
--extern void printk_address(unsigned long address, int reliable);
-+extern void printk_address(unsigned long address);
- extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index deb6421..d9c12d3 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
- int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
- static int die_counter;
- 
--void printk_address(unsigned long address, int reliable)
-+static void printk_stack_address(unsigned long address, int reliable)
- {
- 	pr_cont(" [<%p>] %s%pB\n",
- 		(void *)address, reliable ? "" : "? ", (void *)address);
- }
- 
-+void printk_address(unsigned long address)
-+{
-+	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
-+}
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- static void
- print_ftrace_graph_addr(unsigned long addr, void *data,
-@@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
- {
- 	touch_nmi_watchdog();
- 	printk(data);
--	printk_address(addr, reliable);
-+	printk_stack_address(addr, reliable);
- }
- 
- static const struct stacktrace_ops print_trace_ops = {
-@@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
- #else
- 	/* Executive summary in case the oops scrolled away */
- 	printk(KERN_ALERT "RIP ");
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 	printk(" RSP <%016lx>\n", regs->sp);
- #endif
- 	return 0;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 45ab4d6..176ad94 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
- 	unsigned int ds, cs, es;
- 
- 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
- 			regs->sp, regs->flags);
- 	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 3aaeffc..18feeb3 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
- 
- 	printk(KERN_CONT " at %p\n", (void *) address);
- 	printk(KERN_ALERT "IP:");
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 
- 	dump_pagetable(address);
- }
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index 9126dfb..019b6ec 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -402,7 +402,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
- 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
- 		cpu, current->pid, current->comm);
- 
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- }
- 
- /* Dump this cpu's state */
--- 
-1.8.4
-
+-Matt
