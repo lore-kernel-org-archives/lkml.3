@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab3JYEyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 00:54:45 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:60042 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3JYEyn (ORCPT
+	id S1751551Ab3JYFA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 01:00:29 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:64027 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3JYFA2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 00:54:43 -0400
+	Fri, 25 Oct 2013 01:00:28 -0400
 MIME-Version: 1.0
-Date: Thu, 24 Oct 2013 21:54:42 -0700
-Message-ID: <CANXG-LJ699jUyw19pVnSdAtXdHof4u+YRnvK1A6O9MMrtu+X0Q@mail.gmail.com>
-Subject: [Patch] arm/arm64: Thumb=>ARM signal handling setup skips the a few
- instructions on Snapdragon S4/Krait
-From: "T.J. Purtell" <tj@mobisocial.us>
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, Rodrigo Kumpera <kumpera@xamarin.com>,
-        Mark Probst <mark@xamarin.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CACVXFVPRto2PX6J5CqNDTB42Ef7=+ZmgTdA=7Qdswc6NvN93bQ@mail.gmail.com>
+References: <CAK2Ky6xH9rvmpqQ31bi1QrC=dvt9T_8+ELHUZf_MFZccV6MiAw@mail.gmail.com>
+	<20131023105931.GG1275@quack.suse.cz>
+	<CACVXFVPRto2PX6J5CqNDTB42Ef7=+ZmgTdA=7Qdswc6NvN93bQ@mail.gmail.com>
+Date: Fri, 25 Oct 2013 13:00:27 +0800
+Message-ID: <CAK2Ky6xRDcePGWB3Je7_5U5B+qq2Hx4Nv61VOcX3isL8hy7ynw@mail.gmail.com>
+Subject: Re: A thought about IO scheduler in linux kernel for SSD
+From: =?GB2312?B?uqvA2g==?= <bonben1989@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Thumb instruction set include an If-Then instruction.  If an ARM
-function is registered as a signal handler, and that signal is
-delivered inside the block of instructions follow the IT instruction,
-some of the instructions at the beginning of the signal handler are
-skipped.  This occurs because the IT state bits of the Program Status
-Register are not cleared by the kernel.
+Thanks for your thought!  It may not make much sense. Because I think
+the probability of two bios have the same start sector and the
+situation mentioned by Ming Lei is too low.
+Thanks ,
+Bonben
 
-The ARM architecture reference specifies that the IT state bits in the
-PSR must be all zeros in ARM mode or behavior is unspecified.  On the
-Qualcomm Snapdragon S4/Krait architecture CPUs the processor continues
-to consider the IT state bits while in ARM mode.  This makes it so
-that some instructions are skipped by the CPU.
-
-The relevant clipping of the ARM architecture  document is available
-here: https://www.dropbox.com/s/6hpwey3kklw20c1/ITState-ARM-Architecture.pdf
-
-This manifests itself in code that uses a lot of signal handling
-concurrently with complicated logic code compiled for thumb when the
-signal handler compiled as ARM code.  One example is the mono runtime.
- It uses a signal based mechanism to perform stop the world operation
-needed by its garbage collector.  It is compiled for ARM and generates
-ARM code, however, bionic (libc for android) is compiled for thumb.
-During a test case involving native allocation in parallel with
-garbage collection (signal handling), we found that the test case
-would crash only when running on a Krait architecture CPU.  We found
-the preceding instructions before the signal to always point to
-something inside an IT sequence, in this case the logic in the dlfree
-merging of free heap blocks.  After adding a sequence of NOPs to the
-beginning of the signal handlers, the problem disappeared.  We applied
-the attached patch to the kernel on one of the Krait devices and found
-that it also alleviated the crashes.
-
-
-The patch simply clears the IT State bits regardless of if the signal
-handler is an ARM/Thumb function.  It also includes the same fix
-applied to the arm64 compat handler.
-
--tj
-
-
-
-diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
-index ab33042..782657a 100644
---- a/arch/arm/kernel/signal.c
-+++ b/arch/arm/kernel/signal.c
-@@ -375,12 +375,16 @@ setup_return(struct pt_regs *regs, struct ksignal *ksig,
-  */
-  thumb = handler & 1;
-
-+#if __LINUX_ARM_ARCH__ >= 7
-+ /*
-+  * Clear the If-Then Thumb-2 execution state
-+  * ARM spec requires this to be all 000s in ARM mode
-+ */
-+ cpsr &= ~PSR_IT_MASK;
-+#endif
-+
-  if (thumb) {
-  cpsr |= PSR_T_BIT;
--#if __LINUX_ARM_ARCH__ >= 7
-- /* clear the If-Then Thumb-2 execution state */
-- cpsr &= ~PSR_IT_MASK;
--#endif
-  } else
-  cpsr &= ~PSR_T_BIT;
-  }
-diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
-index e393174..8f6c3be 100644
---- a/arch/arm64/kernel/signal32.c
-+++ b/arch/arm64/kernel/signal32.c
-@@ -474,9 +474,11 @@ static void compat_setup_return(struct pt_regs
-*regs, struct k_sigaction *ka,
-  /* Check if the handler is written for ARM or Thumb */
-  thumb = handler & 1;
-
-+ /* ARM spec requires this to be all 000s in ARM mode */
-+ spsr &= ~COMPAT_PSR_IT_MASK;
-+
-  if (thumb) {
-  spsr |= COMPAT_PSR_T_BIT;
-- spsr &= ~COMPAT_PSR_IT_MASK;
-  } else {
-  spsr &= ~COMPAT_PSR_T_BIT;
-  }
+2013/10/25 Ming Lei <tom.leiming@gmail.com>:
+> On Wed, Oct 23, 2013 at 6:59 PM, Jan Kara <jack@suse.cz> wrote:
+>> On Wed 23-10-13 08:47:44, º«ÀÚ wrote:
+>>> Nowadays,the IO schedulers in linux kernel have four types:
+>>>
+>>> deadline,noop,Anticiptory and CFQ.CFQ is the default scheduler.But CFQ is
+>>> not a good scheduler for SSD,dealine may be a good choice.
+>>
+>>> When deadline runs,it has a mount of computation about merging and
+>>> sorting.Merge has three types: front_merge,no_merge and back_merge.
+>>> Why don't have  another type: merge based same sector.For example,it have
+>>> two bios in a request list,theyboth have the same bi->sector,the bi->size
+>>> maybe not equal. Whether can we put the latter bio replace the former?What
+>>> do you find that significant?Or the other levels in OS has finished this
+>>> function?
+>>   That doesn't make much sense to me. If there are two bios in flight for
+>> some sector, results are undefined. Thus we usually avoid such situation
+>> (usually we want to have defined contents of the disk :). The exclusion is
+>> usually achieved at higher level using page locking etc. So adding code
+>> speeding up such requests doesn't seem worth it.
+>
+> The situation might be triggered when same file is read from two tasks,
+> one is read via page cache, and another one is read by O_DIRECT.
+>
+> But still not sure if that makes sense.
+>
+> Thanks,
+> --
+> Ming Lei
