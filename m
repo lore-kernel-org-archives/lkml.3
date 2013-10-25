@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3JYNOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:14:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41000 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753355Ab3JYNOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:14:50 -0400
-Date: Fri, 25 Oct 2013 06:14:43 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: [PATCH] kbuild: replace unbounded sprintf call in modpost
-Message-ID: <20131025131443.GA7759@www.outflux.net>
+	id S1754240Ab3JYNP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:15:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48877 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751548Ab3JYNPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 09:15:25 -0400
+Date: Fri, 25 Oct 2013 14:14:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH 1/2] ARM64: perf: add support for perf registers API
+Message-ID: <20131025131441.GC9999@mudshark.cambridge.arm.com>
+References: <1382108078-8807-1-git-send-email-jean.pihet@linaro.org>
+ <1382108078-8807-2-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <1382108078-8807-2-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The modpost tool could overflow its stack buffer if someone was running
-with an insane shell environment. Regardless, it's technically a bug,
-so this fixes it to truncate the string instead of seg-faulting.
+On Fri, Oct 18, 2013 at 03:54:37PM +0100, Jean Pihet wrote:
+> From: Jean Pihet <jean.pihet@newoldbits.com>
+> 
+> This patch implements the functions required for the perf registers API,
+> allowing the perf tool to interface kernel register dumps with libunwind
+> in order to provide userspace backtracing.
+> Only the general purpose user space registers are exported, i.e.:
+>  PERF_REG_ARM_X0,
+>  ...
+>  PERF_REG_ARM_X28,
+>  PERF_REG_ARM_FP,
+>  PERF_REG_ARM_LR,
+>  PERF_REG_ARM_SP,
+>  PERF_REG_ARM_PC
+> and not the PERF_REG_ARM_V* registers.
 
-Found by Coverity.
+[...]
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- scripts/mod/sumversion.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> diff --git a/arch/arm64/kernel/perf_regs.c b/arch/arm64/kernel/perf_regs.c
+> new file mode 100644
+> index 0000000..bbcf63c
+> --- /dev/null
+> +++ b/arch/arm64/kernel/perf_regs.c
+> @@ -0,0 +1,29 @@
+> +#include <linux/errno.h>
+> +#include <linux/kernel.h>
+> +#include <linux/perf_event.h>
+> +#include <linux/bug.h>
+> +#include <asm/perf_regs.h>
+> +#include <asm/ptrace.h>
+> +
+> +u64 perf_reg_value(struct pt_regs *regs, int idx)
+> +{
+> +	if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM_MAX))
+> +		return 0;
+> +
+> +	return regs->regs[idx];
+> +}
+> +
+> +#define REG_RESERVED (~((1ULL << PERF_REG_ARM_MAX) - 1))
+> +
+> +int perf_reg_validate(u64 mask)
+> +{
+> +	if (!mask || mask & REG_RESERVED)
+> +		return -EINVAL;
+> +
+> +	return 0;
+> +}
+> +
+> +u64 perf_reg_abi(struct task_struct *task)
+> +{
+> +	return PERF_SAMPLE_REGS_ABI_64;
+> +}
 
-diff --git a/scripts/mod/sumversion.c b/scripts/mod/sumversion.c
-index 9dfcd6d988da..deb2994b04c4 100644
---- a/scripts/mod/sumversion.c
-+++ b/scripts/mod/sumversion.c
-@@ -416,7 +416,7 @@ void get_src_version(const char *modname, char sum[], unsigned sumlen)
- 		basename = strrchr(modname, '/') + 1;
- 	else
- 		basename = modname;
--	sprintf(filelist, "%s/%.*s.mod", modverdir,
-+	snprintf(filelist, sizeof(filelist), "%s/%.*s.mod", modverdir,
- 		(int) strlen(basename) - 2, basename);
- 
- 	file = grab_file(filelist, &len);
--- 
-1.7.9.5
+You need to deal with compat (AArch32) tasks here too, which means providing
+something compatible with what we do on arch/arm/ depending on the thread
+flags.
 
-
--- 
-Kees Cook
-Chrome OS Security
+Will
