@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab3JYWbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:31:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43769 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3JYWbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:31:46 -0400
-Message-ID: <526AF150.1030004@infradead.org>
-Date: Fri, 25 Oct 2013 15:31:44 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752131Ab3JYWfS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:35:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52236 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab3JYWfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:35:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="380176324"
+Date: Sat, 26 Oct 2013 00:35:14 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] mfd: as3722: Don't export the regmap config
+Message-ID: <20131025223514.GB23710@zurbaran>
+References: <1382731800-19663-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Mark Brown <broonie@kernel.org>
-Subject: Re: linux-next: Tree for Oct 25
-References: <1382713426-2680-1-git-send-email-treding@nvidia.com>
-In-Reply-To: <1382713426-2680-1-git-send-email-treding@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382731800-19663-1-git-send-email-broonie@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/13 08:03, Thierry Reding wrote:
-> Hi all,
-> 
-> I've uploaded today's linux-next tree to the master branch of the
-> repository below:
-> 
->         git://gitorious.org/thierryreding/linux-next.git
-> 
-> A next-20131025 tag is also provided for convenience.
-> 
-> One new trivial conflicts and a new build failure caused by an incorrect
-> use of the genpool allocator.
-> 
-> Upon a request from Olof Johansson I've only included fixes for build
-> breakage as a result of interactions between the various trees. But
-> since I've fixed many of the other build failures already, I've pushed
-> those to a separate tag (next-20131025-fixes). That builds fine on x86
-> 32-bit and 64-bit allmodconfigs as well as ARM and x86 default
-> configurations. Most of the PowerPC build errors have also been fixed.
+Hi Mark,
 
-That's unfortunate.  The fixes should be part of the tree IMO.
+On Fri, Oct 25, 2013 at 09:10:00PM +0100, Mark Brown wrote:
+> From: Mark Brown <broonie@linaro.org>
+> 
+> It's not used outside this file so can be static.
+> 
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/mfd/as3722.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+Applied, thanks.
 
+Cheers,
+Samuel.
 
 -- 
-~Randy
+Intel Open Source Technology Centre
+http://oss.intel.com/
