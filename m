@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3JYOds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 10:33:48 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:63153 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab3JYOdr convert rfc822-to-8bit (ORCPT
+	id S1754313Ab3JYOiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:38:16 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:54240 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab3JYOiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 10:33:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131025142547.GE13318@ZenIV.linux.org.uk>
-References: <20131025142547.GE13318@ZenIV.linux.org.uk>
-Date: Fri, 25 Oct 2013 15:33:46 +0100
-X-Google-Sender-Auth: PJmF9J87XIFw5NU_w2acxceiZCk
-Message-ID: <CA+55aFx2XQvf1pbhoRP7EJL=We04d3E0i0-DY3gCfcqv7T76Hg@mail.gmail.com>
-Subject: Re: [git pull] a couple of fixes for rc7
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Oct 2013 10:38:15 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] openrisc: Refactor 16-bit constant relocation
+Date: Fri, 25 Oct 2013 16:37:56 +0200
+Message-Id: <1382711876-21439-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 3:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> nfsd performance regression fix + seq_file lseek(2) fix.
-> Please, pull from the usual place -
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+arch/openrisc/kernel/module.c: In function 'apply_relocate_add':
+arch/openrisc/kernel/module.c:50:13: warning: assignment from incompatible pointer type
+arch/openrisc/kernel/module.c:54:13: warning: assignment from incompatible pointer type
 
-Not acceptable.
+Move the pointer increments to the dereference statements to avoid
+incompatible pointer assignments, and remove superfluous casts.
 
-fs/file_table.c: In function ‘fput’:
-fs/file_table.c:320:4: warning: passing argument 1 of
-‘schedule_delayed_work’ from incompatible pointer type [enabled by
-default]
-    schedule_delayed_work(&delayed_fput_work, 1);
-    ^
-In file included from include/linux/srcu.h:34:0,
-                 from include/linux/notifier.h:15,
-                 from include/linux/memory_hotplug.h:6,
-                 from include/linux/mmzone.h:797,
-                 from include/linux/gfp.h:4,
-                 from include/linux/slab.h:14,
-                 from fs/file_table.c:9:
-include/linux/workqueue.h:594:60: note: expected ‘struct delayed_work
-*’ but argument is of type ‘struct work_struct *’
- static inline bool schedule_delayed_work(struct delayed_work *dwork,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Assembler output is identical before and after patch
 
-Plase stop sending me untested crap that doesn't even compile cleanly!
+ arch/openrisc/kernel/module.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-                Linus
+diff --git a/arch/openrisc/kernel/module.c b/arch/openrisc/kernel/module.c
+index 10ff50f0202a..ef872ae4c878 100644
+--- a/arch/openrisc/kernel/module.c
++++ b/arch/openrisc/kernel/module.c
+@@ -47,12 +47,10 @@ int apply_relocate_add(Elf32_Shdr *sechdrs,
+ 			*location = value;
+ 			break;
+ 		case R_OR32_CONST:
+-			location = (uint16_t *)location + 1;
+-			*((uint16_t *)location) = (uint16_t) (value);
++			*((uint16_t *)location + 1) = value;
+ 			break;
+ 		case R_OR32_CONSTH:
+-			location = (uint16_t *)location + 1;
+-			*((uint16_t *)location) = (uint16_t) (value >> 16);
++			*((uint16_t *)location + 1) = value >> 16;
+ 			break;
+ 		case R_OR32_JUMPTARG:
+ 			value -= (uint32_t)location;
+-- 
+1.7.9.5
+
