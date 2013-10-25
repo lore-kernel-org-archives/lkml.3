@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3JYKIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:08:22 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:53247 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753003Ab3JYKIT (ORCPT
+	id S1753169Ab3JYKKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:10:12 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:41462 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3JYKKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:08:19 -0400
-Message-ID: <1382695687.12254.4.camel@pippen.local.home>
-Subject: Re: perf/ftrace lockup on 3.12-rc6 with trigger code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 25 Oct 2013 06:08:07 -0400
-In-Reply-To: <alpine.DEB.2.10.1310241422460.6573@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1310241324330.4352@vincent-weaver-1.um.maine.edu>
-	 <alpine.DEB.2.10.1310241422460.6573@vincent-weaver-1.um.maine.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 25 Oct 2013 06:10:10 -0400
+Date: Fri, 25 Oct 2013 12:10:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        jovi.zhangwei@huawei.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: ktap inclusion in drivers/staging/?
+Message-ID: <20131025101006.GA3439@gmail.com>
+References: <20131024075813.GA26929@gmail.com>
+ <1382604360.5283.9.camel@pippen.local.home>
+ <CA+55aFxiNnpWSrA7GVHjsDsd6+a3XScDUAhpL7XPQ7F6g1-iJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxiNnpWSrA7GVHjsDsd6+a3XScDUAhpL7XPQ7F6g1-iJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-24 at 14:25 -0400, Vince Weaver wrote:
-> On Thu, 24 Oct 2013, Vince Weaver wrote:
-> > after a month of trying I finally got a small test-case out of my 
-> > perf_fuzzer suite that triggers a system lockup with just one syscall.
-> > 
-> > Attached is the code that triggers it.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Thu, Oct 24, 2013 at 9:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > But I agree, this should not be just dumped into the staging 
+> > tree until the patches themselves have been posted and reviewed.
 > 
-> And it turns out you can only trigger this specific problem if advanced 
-> ftrace options are enabled.
+> Btw, it's not just the commit history. The actual file layout is 
+> terminally horrible too. The actual LWN article made it look like 
+> ktap was just a user-space tool, and I was thinking that it was 
+> like tools/pert/, just in staging.
 > 
-> CONFIG_KPROBES_ON_FTRACE=y
-> CONFIG_FUNCTION_TRACER=y
-> CONFIG_FUNCTION_GRAPH_TRACER=y
-> CONFIG_STACK_TRACER=y
-> CONFIG_DYNAMIC_FTRACE=y
-> CONFIG_DYNAMIC_FTRACE_WITH_REGS=y
-> CONFIG_FUNCTION_PROFILER=y
-> CONFIG_FTRACE_MCOUNT_RECORD=y
-
-The above STACK_TRACER, FTRACE_WITH_REGS and FUNCTION_PROFILER probably
-don't need to be set, as they are pretty much stand alone, and don't
-look to be involved in the stack traces that you (and Dave) posted.
-
+> But looking at the tree, it looks like parts of it is a kernel 
+> module, and parts of it is the user space thing, and it's totally 
+> impossible to see which is which, it's just all mixed up in the 
+> same directory structure.
 > 
-> Urgh, I had turned those on to try to debug something and forgot to 
-> disable.  I feel like I saw this problem before I had those enabled so I 
-> guess I have to start from scratch fuzzing to see if I can get a more
-> generally reproducible trace.
+> Maybe I misunderstood, but that was my reaction from a very quick 
+> look.
 
-Looks like something is incorrectly enabling function tracer within
-perf. Peter told me that there's some ref count bug that may use data
-after being freed on exit.
+Yes, that's what I saw as well. I'd be less worried about it all if 
+it was tooling alone, but this is actually mostly kernel side code, 
+which was not apparent at all to me either, from the structure of 
+it.
 
-I tried the program that you attached in you previous email, and was not
-able to hit the bug. Are you able to hit the bug with that code each
-time?
+Thanks,
 
--- Steve
-
-
+	Ingo
