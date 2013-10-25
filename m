@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3JYVBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 17:01:50 -0400
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:48038 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab3JYVBs (ORCPT
+	id S1755505Ab3JYVDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 17:03:47 -0400
+Received: from smtprelay0170.b.hostedemail.com ([64.98.42.170]:49509 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755364Ab3JYVDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 17:01:48 -0400
-From: Aditya Kali <adityakali@google.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, tj@kernel.org,
-        axboe@kernel.dk
-Cc: Aditya Kali <adityakali@google.com>
-Subject: [PATCH] vfs: avoid sb->s_umount write lock while changing bind-mount flags
-Date: Fri, 25 Oct 2013 14:00:59 -0700
-Message-Id: <1382734859-8115-1-git-send-email-adityakali@google.com>
-X-Mailer: git-send-email 1.8.4.1
+	Fri, 25 Oct 2013 17:03:46 -0400
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::,RULES_HIT:41:152:355:379:582:599:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2692:2693:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4361:5007:6119:6261:6691:7875:7903:8526:8660:10004:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13148:13230:13869,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: star49_3896e2947c58
+X-Filterd-Recvd-Size: 3418
+Date: Fri, 25 Oct 2013 21:03:44 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: neilb@suse.de
+Cc: david@lang.hm, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, linux-mm@kvack.org
+Message-ID: <476525596.14731.1382735024280.JavaMail.mail@webmail11>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <20131025214952.3eb41201@notabene.brown>
+ <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+ <154617470.12445.1382725583671.JavaMail.mail@webmail11><20131026074349.0adc9646@notabene.brown>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.147.29.47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During remount of a bind mount (mount -o remount,bind,ro,... /mnt/mntpt),
-we currently take down_write(&sb->s_umount). This causes the remount
-operation to get blocked behind writes occuring on device (possibly
-mounted somewhere else). We have observed that simply trying to change
-the bind-mount from read-write to read-only can take several seconds
-becuase writeback is in progress (which takes read-lock on sb->s_umount).
-Since we are not modifying the superblock during MS_BIND remount, it
-should be enough to take a read-lock on sb->s_umount instead of the
-write-lock to protect against parallel unmounts and (in conjunction with
-vfsmount_lock) parallel remounts.
-This patch fixes the locking so that the MS_BIND remount changes happen
-only under down_read(&sb->s_umount).
+Oct 26, 2013 02:44:07 AM, neil wrote:
+On Fri, 25 Oct 2013 18:26:23 +0000 (UTC) "Artem S. Tashkinov"
+>> 
+>> Exactly. And not being able to use applications which show you IO performance
+>> like Midnight Commander. You might prefer to use "cp -a" but I cannot imagine
+>> my life without being able to see the progress of a copying operation. With the current
+>> dirty cache there's no way to understand how you storage media actually behaves.
+>
+>So fix Midnight Commander.  If you want the copy to be actually finished when
+>it says  it is finished, then it needs to call 'fsync()' at the end.
 
-Changes from RFC:
-  Instead of completely removing the locking in MS_BIND case, take
-  read-lock on sb->s_umount to protect against parallel unmount.
+This sounds like a very bad joke. How applications are supposed to show and
+calculate an _average_ write speed if there are no kernel calls/ioctls to actually
+make the kernel flush dirty buffers _during_ copying? Actually it's a good way to
+solve this problem in user space - alas, even if such calls are implemented, user
+space will start using them only in 2018 if not further from that.
 
-Signed-off-by: Aditya Kali <adityakali@google.com>
----
- fs/namespace.c | 42 ++++++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 14 deletions(-)
+>> 
+>> Per device dirty cache seems like a nice idea, I, for one, would like to disable it
+>> altogether or make it an absolute minimum for things like USB flash drives - because
+>> I don't care about multithreaded performance or delayed allocation on such devices -
+>> I'm interested in my data reaching my USB stick ASAP - because it's how most people
+>> use them.
+>>
+>
+>As has already been said, you can substantially disable  the cache by tuning
+>down various values in /proc/sys/vm/.
+>Have you tried?
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index da5c494..cf74920 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -454,11 +454,13 @@ void mnt_drop_write_file(struct file *file)
- }
- EXPORT_SYMBOL(mnt_drop_write_file);
- 
-+/*
-+ * Must be called under br_write_lock(&vfsmount_lock).
-+ */
- static int mnt_make_readonly(struct mount *mnt)
- {
- 	int ret = 0;
- 
--	br_write_lock(&vfsmount_lock);
- 	mnt->mnt.mnt_flags |= MNT_WRITE_HOLD;
- 	/*
- 	 * After storing MNT_WRITE_HOLD, we'll read the counters. This store
-@@ -492,15 +494,15 @@ static int mnt_make_readonly(struct mount *mnt)
- 	 */
- 	smp_wmb();
- 	mnt->mnt.mnt_flags &= ~MNT_WRITE_HOLD;
--	br_write_unlock(&vfsmount_lock);
- 	return ret;
- }
- 
-+/*
-+ * Must be called under br_write_lock(&vfsmount_lock).
-+ */
- static void __mnt_unmake_readonly(struct mount *mnt)
- {
--	br_write_lock(&vfsmount_lock);
- 	mnt->mnt.mnt_flags &= ~MNT_READONLY;
--	br_write_unlock(&vfsmount_lock);
- }
- 
- int sb_prepare_remount_readonly(struct super_block *sb)
-@@ -1796,6 +1798,9 @@ out:
- 	return err;
- }
- 
-+/*
-+ * Must be called under br_write_lock(&vfsmount_lock).
-+ */
- static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
- {
- 	int error = 0;
-@@ -1838,20 +1843,29 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	if (err)
- 		return err;
- 
--	down_write(&sb->s_umount);
--	if (flags & MS_BIND)
-+	if (flags & MS_BIND) {
-+		down_read(&sb->s_umount);
-+		br_write_lock(&vfsmount_lock);
- 		err = change_mount_flags(path->mnt, flags);
--	else if (!capable(CAP_SYS_ADMIN))
-+		if (!err) {
-+			mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+			mnt->mnt.mnt_flags = mnt_flags;
-+		}
-+		br_write_unlock(&vfsmount_lock);
-+		up_read(&sb->s_umount);
-+	} else if (!capable(CAP_SYS_ADMIN))
- 		err = -EPERM;
--	else
-+	else {
-+		down_write(&sb->s_umount);
- 		err = do_remount_sb(sb, flags, data, 0);
--	if (!err) {
--		br_write_lock(&vfsmount_lock);
--		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
--		mnt->mnt.mnt_flags = mnt_flags;
--		br_write_unlock(&vfsmount_lock);
-+		if (!err) {
-+			br_write_lock(&vfsmount_lock);
-+			mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+			mnt->mnt.mnt_flags = mnt_flags;
-+			br_write_unlock(&vfsmount_lock);
-+		}
-+		up_write(&sb->s_umount);
- 	}
--	up_write(&sb->s_umount);
- 	if (!err) {
- 		br_write_lock(&vfsmount_lock);
- 		touch_mnt_namespace(mnt->mnt_ns);
--- 
-1.8.4.1
+I don't understand who you are replying to. I asked about per device settings, you are
+again referring me to system wide settings - they don't look that good if we're talking
+about a 3MB/sec flash drive and 500MB/sec SSD drive. Besides it makes no sense
+to allocate 20% of physical RAM for things which don't belong to it in the first place.
 
+I don't know any other OS which has a similar behaviour.
+
+And like people (including me) have already mentioned, such a huge dirty cache can
+stall their PCs/servers for a considerable amount of time.
+
+Of course, if you don't use Linux on the desktop you don't really care - well, I do. Also
+not everyone in this world has an UPS - which means such a huge buffer can lead to a
+serious data loss in case of a power blackout.
+
+Regards,
+
+Artem
