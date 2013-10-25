@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3JYLxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 07:53:33 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64383 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab3JYLxc (ORCPT
+	id S1753358Ab3JYLzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 07:55:38 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:55256 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3JYLzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 07:53:32 -0400
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Quyaxin <quyaxin@hisilicon.com>
-Subject: RE: [PATCH] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Topic: [PATCH] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Index: AQHOzY99LAHuHYI9bEi/n4n0UmETuJoFUGTQ
-Date: Fri, 25 Oct 2013 11:52:14 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C084F26@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
- <20131020120603.GA18678@localhost>
-In-Reply-To: <20131020120603.GA18678@localhost>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.21]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Fri, 25 Oct 2013 07:55:36 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Denis Efremov <yefremov.denis@gmail.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH v2] xfs:xfs_dir2_node.c: pointer use before check for null
+Date: Fri, 25 Oct 2013 15:53:25 +0400
+Message-Id: <1382702005-32245-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <20131022203322.GA2797@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9PBrdYw024689
 
-> 
-> I'd like to review the patch in detail and test it, but being a bit old,
-> the patch doesn't apply as it is on v3.12-rc5. Care to resend an update?
->
-  I have sent you a 2 patch base on v3.12-rc6. Are there any problems? I tested it for a long time and found no problems.
+ASSERT on args takes place after args dereference.
+This assertion is redundant since we are going to panic anyway.
 
-  Are there any plans for supporting synchronous NAND in the future?
+Found by Linux Driver Verification project (linuxtesting.org) -
+PVS-Studio analyzer.
 
- 
-> Brian: I saw you want to move forward with this. I guess we can give
-> it a test, and if all the possible 'mtdparts' use cases work, then
-> we shouldn't object the cleanup, right?
-> --
-> Ezequiel GarcÃ­a, Free Electrons
-> Embedded Linux, Kernel and Android Engineering
-> http://free-electrons.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+---
+ fs/xfs/xfs_dir2_node.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/fs/xfs/xfs_dir2_node.c b/fs/xfs/xfs_dir2_node.c
+index 4c3dba7..dc814df 100644
+--- a/fs/xfs/xfs_dir2_node.c
++++ b/fs/xfs/xfs_dir2_node.c
+@@ -1366,7 +1366,6 @@ xfs_dir2_leafn_split(
+ 	 */
+ 	args = state->args;
+ 	mp = args->dp->i_mount;
+-	ASSERT(args != NULL);
+ 	ASSERT(oldblk->magic == XFS_DIR2_LEAFN_MAGIC);
+ 	error = xfs_da_grow_inode(args, &blkno);
+ 	if (error) {
+-- 
+1.8.3.1
+
