@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3JYPGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 11:06:16 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:45373 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753474Ab3JYPGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 11:06:14 -0400
-Date: Fri, 25 Oct 2013 10:06:09 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, Alex Elder <elder@kernel.org>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH v2] xfs:xfs_dir2_node.c: pointer use before check for
- null
-Message-ID: <20131025150609.GB10553@sgi.com>
-References: <20131022203322.GA2797@dastard>
- <1382702005-32245-1-git-send-email-yefremov.denis@gmail.com>
+	id S1755369Ab3JYPGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 11:06:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54786 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753474Ab3JYPG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 11:06:29 -0400
+Message-ID: <526A88DE.2040502@zytor.com>
+Date: Fri, 25 Oct 2013 16:06:06 +0100
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382702005-32245-1-git-send-email-yefremov.denis@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Richard Weinberger <richard.weinberger@gmail.com>
+CC: Josh Triplett <josh@joshtriplett.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Landley <rob@landley.net>, Tao Ma <boyu.mt@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] Documentation/ABI: Document the non-ABI status of Kconfig
+ and symbols
+References: <20131024084104.GA2861@leaf> <CAFLxGvzqoJFHjXJ=WMR6Dyjg804=x0CkqHV2gXSfKUBgx2ktVA@mail.gmail.com>
+In-Reply-To: <CAFLxGvzqoJFHjXJ=WMR6Dyjg804=x0CkqHV2gXSfKUBgx2ktVA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 03:53:25PM +0400, Denis Efremov wrote:
-> ASSERT on args takes place after args dereference.
-> This assertion is redundant since we are going to panic anyway.
+On 10/24/2013 09:57 AM, Richard Weinberger wrote:
 > 
-> Found by Linux Driver Verification project (linuxtesting.org) -
-> PVS-Studio analyzer.
+> And what about the kernel make "interface", is it considered also as non-ABI?
 > 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+> E.g.
+> Before ffee0de (x86: Default to ARCH=x86 to avoid overriding CONFIG_64BIT)
+> "make defconfig ARCH=x86" produced a i386 defconfig. Now it produces a
+> x86_64 defconfig.
+> I'm sure some build scripted failed badly.
+> 
+> 
 
-Looks good. 
+Definitely not ABI, although obviously not a completely "break blindly"
+either.
 
-Reviewed-by: Ben Myers <bpm@sgi.com>
+	-hpa
+
