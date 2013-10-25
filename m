@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3JYJIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:08:17 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33410 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab3JYJIP (ORCPT
+	id S1752640Ab3JYJIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:08:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:47394 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab3JYJIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:08:15 -0400
-Date: Fri, 25 Oct 2013 02:08:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org, rusty@rustcorp.com.au
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131025090809.GZ4118@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102509-3532-0000-0000-0000027562A1
+	Fri, 25 Oct 2013 05:08:32 -0400
+X-AuditID: cbfee68f-b7f836d000001b39-48-526a350e120f
+Message-id: <526A3510.1020603@samsung.com>
+Date: Fri, 25 Oct 2013 18:08:32 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: lgirdwood@gmail.com, sbkim73@samsung.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to parse
+ data related to ramp
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+ <20131024101501.GA17157@sirena.org.uk>
+In-reply-to: <20131024101501.GA17157@sirena.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsWyRsSkRJfPNCvI4PgVGYupD5+wWcw/co7V
+	4mzTG3aLb1c6mCwu75rDZnFxxRcmBzaPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWp
+	Rfp2CVwZC062sBV8ZKpYNnE6YwPjMqYuRk4OCQETiVsP5rFB2GISF+6tB7K5OIQEljJKTP13
+	hrmLkQOsaPEuRYj4dEaJY8+msEI4rxglPk9bxghSxCugJTFjTQ3IIBYBVYntL/aDLWADCu9/
+	cQNsgahAmMTK6VdYQGxeAUGJH5PvgdkiAsoSV7/vZQGZySwwmVHi0qXpzCAJYYFUiQvHD4MN
+	EhLIk/h1ahs7iM0pYCxxfNdSsGZmAR2J/a3T2CBseYnNa94ygwySEDjFLtG/8jMzxEUCEt8m
+	H2KB+EZWYtMBZoiPJSUOrrjBMoFRbBaSm2YhGTsLydgFjMyrGEVTC5ILipPSi4z1ihNzi0vz
+	0vWS83M3MQJj7PS/Z/07GO8esD7EmAy0ciKzlGhyPjBG80riDY3NjCxMTUyNjcwtzUgTVhLn
+	vf8wKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo1/EnV4bxdLSg7ErvhZovIk33eO65rTp
+	jfPdxa1LGkLlj6mHHTuXKTFx4p0D+n8S2JUD5Xj1yv2dbF+ZBHqwsk/Ur3Z9cujOO+V92VYX
+	mB+c+LwyhOvBJ+sEsxLmzEsutvpVSd953p7wzheUdzYw+t4Z9qD7fem/3T4veJ5M/+j00MhI
+	kW+GEktxRqKhFnNRcSIAL6vZ2McCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQV0+06wggxX3RS2mPnzCZjH/yDlW
+	i7NNb9gtvl3pYLK4vGsOm8XFFV+YHNg8ds66y+6xaVUnm0ffllWMHp83yQWwRDUw2mSkJqak
+	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
+	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZiw42cJW8JGpYtnE6YwNjMuYuhg5OCQETCQW
+	71LsYuQEMsUkLtxbz9bFyMUhJDCdUeLYsymsEM4rRonP05YxgjTwCmhJzFhTA9LAIqAqsf3F
+	fiYQmw0ovP/FDTYQW1QgTGLl9CssIDavgKDEj8n3wGwRAWWJq9/3soDMZBaYzChx6dJ0ZpCE
+	sECqxIXjh8EGCQnkSfw6tY0dxOYUMJY4vmspWDOzgI7E/tZpbBC2vMTmNW+ZJzAKzEKyYxaS
+	sllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7gZ9I7GFc1WBxiFOBgVOLhTZiR
+	GSTEmlhWXJl7iFGCg1lJhFfFKCtIiDclsbIqtSg/vqg0J7X4EGMyMAgmMkuJJucDk0teSbyh
+	sYmZkaWRuaGFkbE5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTCyXOGU3K/0bM/6xKSY
+	l0vOGe1v+W9z6WmA7YEcxzmi2ow/H1puFRKeytJ0eZrlSwHdl7ZXZsruu6Vxd+92rv7F0YUr
+	LZ4w+r78uWJd5tUppUxuOmdv965T4v9+aMfl2/HxGwvjdhpVmd97/Oz+wrYrH3UWr815yuN1
+	wH1G9IoZ067s8/A/3eMeosRSnJFoqMVcVJwIAOJzQcMkAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 10:02:22AM +0100, Linus Torvalds wrote:
-> Adding more people, so quoting the whole email for them.
+On 10/24/2013 07:15 PM, Mark Brown wrote:
+> On Thu, Oct 10, 2013 at 10:41:35AM +0900, Chanwoo Choi wrote:
+>> This patch parse 'buck[2-4]_ramp_enable and buck_ramp_delay' platform data
+>> from dts file.
 > 
-> We definitely have some module unload issues. Guys, try the following
-> a few times to unload modules:
-> 
->     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
-> 
-> (a few times because unloading one module will then potentially make
-> other modules unloadable).
-
-Isn't it still the user's responsibility to ensure that a module will
-no longer being used before rmmod-ing it?  Or were all those race
-conditions fixed?
-
-							Thanx, Paul
-
-> On my machine, I can trigger this, for example:
-> 
->   ------------[ cut here ]------------
->   WARNING: CPU: 0 PID: 3217 at fs/sysfs/file.c:498 sysfs_attr_ns+0x91/0xa0()
->   sysfs: kobject (null) without dirent
->   Modules linked in: fuse nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_$
->   CPU: 0 PID: 3217 Comm: rmmod Not tainted 3.12.0-rc6-00284-ge6036c0b8896 #19
->   Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
->    0000000000000009 ffff8800aca35df8 ffffffff8160aab5 ffff8800aca35e40
->    ffff8800aca35e30 ffffffff810514b8 ffffffffa013f080 ffff8801194a6040
->    0000000000000800 0000000000000000 0000000000c5b3e0 ffff8800aca35e90
->   Call Trace:
->    [<ffffffff8160aab5>] dump_stack+0x45/0x56
->    [<ffffffff810514b8>] warn_slowpath_common+0x78/0xa0
->    [<ffffffff81051527>] warn_slowpath_fmt+0x47/0x50
->    [<ffffffff810b5960>] ? module_refcount+0xb0/0xb0
->    [<ffffffff811e5c61>] sysfs_attr_ns+0x91/0xa0
->    [<ffffffff811e5d2a>] sysfs_remove_file+0x1a/0x50
->    [<ffffffff814c88a3>] cpufreq_sysfs_remove_file+0x13/0x30
->    [<ffffffffa013d350>] acpi_cpufreq_exit+0x2e/0xcde [acpi_cpufreq]
->    [<ffffffff810b7d1d>] SyS_delete_module+0x15d/0x2c0
->    [<ffffffff81002929>] ? do_notify_resume+0x59/0x90
->    [<ffffffff81618f62>] system_call_fastpath+0x16/0x1b
->   ---[ end trace f887112caaa5c4ab ]---
-> 
-> so at least we have a cpufreq/sysfs interaction bug. There may be others.
-> 
-> This particular cpufreq issue may be triggered by the fact that
-> acpi-cpufreq isn't actually in use (pstate is). Or it might be some
-> generic cpufreq/sysfs bug. Rafael, Greg, ideas?
-> 
-> I don't see that this particular one would be the one that causes the
-> timer issues, but it's an example of the fact that module unload tends
-> to be special and not necessarily well tested.
-> 
->                    Linus
-> 
-> On Fri, Oct 25, 2013 at 9:38 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Hmm.. I just got a run_timer_softirq oops on my own laptop, slightly
-> > different. That was not during shutdown, although there was a "yum
-> > upgrade" finishing when that happened, so it's quite likely that there
-> > was a service shutdown (and then restart).
-> >
-> > I think it's related. But my oops has almost no information: the IP
-> > that was jumped to was bogus, and the callchain is just CPU idle
-> > followed by the softirq -> run_timers_softirq handling, so there's no
-> > real way to see *what* triggered it.
-> >
-> > The bad rip was ffffffffa051e250, which is not a valid code address.
-> > It *might* be a module address, though. So this might be triggered by
-> > rmmod on some module that doesn't remove all its timers...
-> >
-> > Ideas?
-> >
-> >                  Linus
+> Applied both, thanks.  Please submit a followup patch to use
+> of_property_read_bool() as noted by Mark.
 > 
 
+OK, Thanks,
+
+Best regards,
+Chanwoo Choi
