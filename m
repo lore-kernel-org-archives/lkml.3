@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab3JYJP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:15:26 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:32824 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab3JYJPZ (ORCPT
+	id S1752795Ab3JYJPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:15:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49586 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab3JYJPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:15:25 -0400
-Date: Fri, 25 Oct 2013 11:15:55 +0200
-From: Karl Kiniger <karl.kiniger@med.ge.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131025091555.GA30895@kipc2.localdomain>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
+	Fri, 25 Oct 2013 05:15:39 -0400
+Date: Fri, 25 Oct 2013 10:17:17 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        rusty@rustcorp.com.au
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+Message-ID: <20131025091717.GA10636@kroah.com>
+References: <525BD08C.2080101@t-online.de>
+ <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+ <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
+ <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
+ <20131025090809.GZ4118@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-GEHealthcare-MailScanner: Found to be clean
-X-GEHealthcare-MailScanner-From: karl.kiniger@med.ge.com
+In-Reply-To: <20131025090809.GZ4118@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 131025, Linus Torvalds wrote:
-> On Fri, Oct 25, 2013 at 9:30 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> >
-> > My feeling is that vm.dirty_ratio/vm.dirty_background_ratio should _not_ be
-> > percentage based, 'cause for PCs/servers with a lot of memory (say 64GB or
-> > more) this value becomes unrealistic (13GB) and I've already had some
-> > unpleasant effects due to it.
+On Fri, Oct 25, 2013 at 02:08:09AM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 25, 2013 at 10:02:22AM +0100, Linus Torvalds wrote:
+> > Adding more people, so quoting the whole email for them.
+> > 
+> > We definitely have some module unload issues. Guys, try the following
+> > a few times to unload modules:
+> > 
+> >     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
+> > 
+> > (a few times because unloading one module will then potentially make
+> > other modules unloadable).
 > 
-> Right. The percentage notion really goes back to the days when we
-> typically had 8-64 *megabytes* of memory So if you had a 8MB machine
-> you wouldn't want to have more than one megabyte of dirty data, but if
-> you were "Mr Moneybags" and could afford 64MB, you might want to have
-> up to 8MB dirty!!
-> 
-> Things have changed.
-> 
-> So I would suggest we change the defaults. Or pwehaps make the rule be
-> that "the ratio numbers are 'ratio of memory up to 1GB'", to make the
-> semantics similar across 32-bit HIGHMEM machines and 64-bit machines.
-> 
-> The modern way of expressing the dirty limits are to give the actual
-> absolute byte amounts, but we default to the legacy ratio mode..
-> 
->                 Linus
+> Isn't it still the user's responsibility to ensure that a module will
+> no longer being used before rmmod-ing it?  Or were all those race
+> conditions fixed?
 
-Is it currently possible to somehow set above values per block device?
+If the module count is allowing the unload to happen, then the driver
+should handle the issues.  Userspace shouldn't have to "know" if it can
+unload it or not.
 
-I want default behaviour for almost everything but  DVD drives in DVD+RW
-packet writing mode may easily take several minutes in case of a sync.
+thanks,
 
-Karl
-
-
+greg k-h
