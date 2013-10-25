@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3JYWzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:55:55 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:38140 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab3JYWzw (ORCPT
+	id S1752718Ab3JYW7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:59:03 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:54156 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab3JYW7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:55:52 -0400
-Date: Fri, 25 Oct 2013 15:55:48 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Rhyland Klein <rklein@nvidia.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Darbha Sriharsha <dsriharsha@nvidia.com>,
-        Manish Badarkha <badarkhe.manish@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [Patch V5] drivers: power: Add support for bq24735 charger
-Message-ID: <20131025225548.GA6095@teo>
-References: <1381526143-20800-1-git-send-email-rklein@nvidia.com>
- <525C361C.1020703@wwwdotorg.org>
- <525C376A.3000009@nvidia.com>
- <525C3A9A.5000207@wwwdotorg.org>
- <20131025224841.GB1157@teo>
+	Fri, 25 Oct 2013 18:59:01 -0400
+Message-ID: <526AF79A.3050002@cantab.net>
+Date: Fri, 25 Oct 2013 23:58:34 +0100
+From: David Vrabel <dvrabel@cantab.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131025224841.GB1157@teo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Santosh.Jodh@citrix.com, JBeulich@suse.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, mukesh.rathor@oracle.com,
+        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
+Subject: Re: [Xen-devel] [PATCH v1] Set 1-1 P2M for PCI BARs and MCFG regions
+ - if needed.
+References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 03:48:41PM -0700, Anton Vorontsov wrote:
-> On Mon, Oct 14, 2013 at 12:40:26PM -0600, Stephen Warren wrote:
-> > >>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
-> > >>
-> > >>> +Optional properties :
-> > >>
-> > >>> + - ti,ac-detect-gpios : This GPIO is optionally used to read the AC adapter
-> > >>> +   presence.
-> > >>
-> > >> Is that actually a property of the BQ24735 chip itself (i.e. is it an
-> > >> output signal from the chip), or part of the board/system?
-> > > 
-> > > The gpio itself is actually what the IRQ line is tied to from the
-> > > bq24735 -> tegra (in this case). In other words this is a Host GPIO that
-> > > is configured as an input and connected to the bq24735.
-> > 
-> > Ok, so this is the ACOK output pin? In that case, it's fine. It might be
-> > worth mentioning that explicitly though.
-> 
-> I added the comment to the documentation and applied the patch with a
-> "Thanks-to: Stephen Warren <swarren@wwwdotorg.org>" tag. :)
+On 25/10/13 16:03, Konrad Rzeszutek Wilk wrote:
+>
+>   2). Assume that INVALID_P2M_ENTRY is considered 1-1. That would require
+>      auditing of the code and also making sure that any xen_privcmd_mmap
+>      calls use the m2p_add_override.
 
-Oh, and as well as
+I'm not sure I understand the concern about the privcmd driver's foreign 
+mapping ioctls (MMAPBATCH_V2 and friends) as these all deal with MFNs 
+directly and don't use the p2m.
 
-Thanks-to: Thierry Reding <thierry.reding@gmail.com>
+>      However there are some
+>      valid cases in which we need to check for INVALID_P2M_ENTRY -
+>      balloon driver - that might be relaxed.
 
-(People seem to review drivers, but do not give their Reviewed-by tags, so
-the thanks tag is the best thing I can legally do in such a case.)
+Yes.  And this behaviour will be retained.   I think we only need to do 
+the INVALID_P2M_ENTRY => 1:1 when constructing PTEs so all other callers 
+will see INVALID_P2M_ENTRY as before.
 
-Thanks,
 
-Anton
+>      However again the P2M code
+>      and the ABI it places are not for the faint of the heart.
+
+I have no fear.
+
+If the above suggestion does work out it will reduce the amount of p2m 
+code /and/ remove a Xen-specific PTE bit.  So I think it is worth pursuing.
+
+In the meantime, the following minimal patch is a likely workaround.
+
+David
+
+8<-------------------------------
+x86/mm: set _PAGE_IOMAP in io_remap_pfn_range().
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+  arch/x86/include/asm/pgtable.h |    3 +++
+  1 file changed, 3 insertions(+)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 3d19994..d59b22a 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -868,6 +868,9 @@ static inline pte_t pte_swp_clear_soft_dirty(pte_t pte)
+  	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
+  }
+
++#define io_remap_pfn_range(vma, addr, pfn, size, prot) \
++  remap_pfn_range(vma, addr, pfn, size, (prot) | _PAGE_IOMAP)
++
+  #include <asm-generic/pgtable.h>
+  #endif	/* __ASSEMBLY__ */
+
+-- 
+1.7.10.4
+
