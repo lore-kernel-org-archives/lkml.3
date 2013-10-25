@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3JYNuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:50:00 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:59693 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3JYNt6 (ORCPT
+	id S1753987Ab3JYNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 09:51:26 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:37461 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab3JYNvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:49:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1529148.xq0P7G6L83@vostro.rjw.lan>
-References: <525BD08C.2080101@t-online.de>
-	<3005031.0yf0g1BPEE@vostro.rjw.lan>
-	<CA+55aFy3dFGsN_Ckaq8egmaEi_JV_qAVOjR6h3gojyBWwA-jpA@mail.gmail.com>
-	<1529148.xq0P7G6L83@vostro.rjw.lan>
-Date: Fri, 25 Oct 2013 19:19:57 +0530
-Message-ID: <CAKohpo=QV831nP1WcdrWRCB7vkAtKPiSvSujbeE3usM+LCZpTg@mail.gmail.com>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Oct 2013 09:51:25 -0400
+From: =?UTF-8?B?ZGJ6?= <divide_by_zero@mail.ru>
+To: linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?ZGRjY29udHJvbCBkb2Vzbid0IHdvcmsgb24gdGhlIG5ldyBrZXJuZWw=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [178.172.185.11]
+Date: Fri, 25 Oct 2013 17:48:50 +0400
+Reply-To: =?UTF-8?B?ZGJ6?= <divide_by_zero@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1382708930.658156307@f345.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9PDpVpX025319
 
-On 25 October 2013 16:40, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> ---
->  drivers/cpufreq/acpi-cpufreq.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> Index: linux-pm/drivers/cpufreq/acpi-cpufreq.c
-> ===================================================================
-> --- linux-pm.orig/drivers/cpufreq/acpi-cpufreq.c
-> +++ linux-pm/drivers/cpufreq/acpi-cpufreq.c
-> @@ -986,12 +986,12 @@ static int __init acpi_cpufreq_init(void
->  {
->         int ret;
->
-> +       if (acpi_disabled)
-> +               return -ENODEV;
-> +
->         /* don't keep reloading if cpufreq_driver exists */
->         if (cpufreq_get_current_driver())
-> -               return 0;
-> -
-> -       if (acpi_disabled)
-> -               return 0;
-> +               return -EEXIST;
->
->         pr_debug("acpi_cpufreq_init\n");
+Hi, guys and girls!
 
-Even better,
+I have a strange trouble with ddccontrol that I cannot identify and solve
+for about a month, so I hope you'll be able to help me.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+So, I'm using LMDE system (http://linuxmint.com/start/debian/). Initially
+the kernel was 3.2.32, and ddccontrol worked perfectly with my Philips
+232E2SB. I was able to change monitor brightness through ddccontrol
+commands and I was really happy :)
+
+Then I upgraded my system to Update Pack 7, and the new kernel became of
+version 3.10.5. On new kernel ddccontrol doesn't work anymore, but it still
+works on the old one (so this isn't software issue).
+
+I have checked kernel configs - for the old kernel and for the new one.
+Both configs are identical at i2c sections. I've tried to use old (3.2.32's
+one) config with the new kernel, but there was no success.
+
+To be absolutely sure that the problem isn't in the this specific kernel
+version (3.10.5), I've downloaded the latest one (3.11.3) from kernel.org and
+tried to use old config on this new kernel, but the issue is still
+reproducing...
+
+It would be great if you can give me right direction on this issue, 'cause
+I don't know what to do now... I really need new kernel and ability to use
+ddccontrol.
+
+P.S. Additional info:
+----------------------------
+The output of 'i2cdetect -l' on the old kernel (3.2.32):
+http://pastebin.com/SqDPcwS9
+The same on the new one (3.10.5): http://pastebin.com/YCTmX90m
+
+The output of 'ddccontrol -p' on the old kernel (3.2.32):
+http://pastebin.com/QL0fAZVC
+The same on the new one (3.10.5): http://pastebin.com/vZ4bALmt
+
+And dmesg outputs for both 3.2.32 and 3.10.5 kernels:
+- 3.2.32: http://pastebin.com/7ijujvkA
+- 3.10.5: http://pastebin.com/t1wdKrAd
+
+I really need someone's help with ddccontrol. It would be great if you or
+someone else who do you know can help me :)
+
+Thank you in advance!ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
