@@ -1,313 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab3JYGaF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 02:30:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45118 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab3JYGaD (ORCPT
+	id S1751616Ab3JYGcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 02:32:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59213 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3JYGcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 02:30:03 -0400
-X-AuditID: cbfee68f-b7f836d000001b39-74-526a0fe08d29
-From: Hyunhee Kim <hyunhee.kim@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>, dmitry.torokhov@gmail.com,
-        peter.ujfalusi@ti.com, wfp5p@virginia.edu, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: "'hyunhee.kim'" <hyunhee.kim@samsung.com>, kyungmin.park@samsung.com
-References: <000101cec628$aaff69a0$00fe3ce0$%kim@samsung.com>
- <20131024133836.GG18506@sirena.org.uk>
-In-reply-to: <20131024133836.GG18506@sirena.org.uk>
-Subject: [PATCH v4] Input: add regulator haptic driver
-Date: Fri, 25 Oct 2013 15:29:51 +0900
-Message-id: <002601ced14b$9c412330$d4c36990$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7Qvlw64/SeWoMjRSaGc8cuAMRLKAAjF/xg
-Content-language: ko
-X-OriginalArrivalTime: 25 Oct 2013 06:29:51.0456 (UTC)
- FILETIME=[9C40AE00:01CED14B]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zPd0H/FlBBreWcFnc/PSN1eLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGW0nPQq2GteMe3sScYGxm16XYycHBICJhLr3t1jhLDF
-	JC7cW8/WxcjFISSwjFHiRcMP9i5GDrCi+ZO4QGqEBKYzSnxapQZRM49Jou/LRiYIZwWjxJJF
-	N9lAqtgEtCVm/HjBCJIQETjKKLFlxRtWkEnMAh4SR+8nQ0xKk2j7ORNsAaeAscSkT5EgYWEB
-	M4lFZ7eyg9gsAqoSnds6wGxeAVuJZ4eWs0DYghI/Jt8Ds5kFtCTW7zzOBGHLS2xe85YZ4mZ1
-	iUd/dUHCIgJGEhseLmeHKBGR2PfiHSPEBWoSH55+ZIH4PVTi76mfLCAXSwicYpc4uWk1C8QN
-	AhLfJh9igZgpK7HpADNEvaTEwRU3WCYwSs9CctEsJBfNQnLRLCSrFzCyrGIUTS1ILihOSi8y
-	1itOzC0uzUvXS87P3cQIidP+HYx3D1gfYkwGWj+RWUo0OR8Y53kl8YbGZkYWpiamxkbmlmak
-	CSuJ895/mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVHGx1syX+aOXp/UloOx0a4P7h/c
-	vvXaC66IcEuFh26npc9lKdxcsiVbzrAvdZ/Oni8sjifOFpW1n8/ax5ggUPh1TexVhp/bLhVy
-	/b+70P6T9kSGfimJdb9WNv59ePHqTctfr/cHzZ6j9vr2tN/23bHTl745rsQmepOj3VGLoT9f
-	9sXSKWGsHBuVWIozEg21mIuKEwEh5RqG6QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd0H/FlBBkd/sVrc/PSN1eLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmtJz0KthrXjHt
-	7EnGBsZtel2MHBwSAiYS8ydxdTFyApliEhfurWcDsYUEpjNKfFql1sXIBWTPY5Lo+7KRCcJZ
-	wSixZNFNsCo2AW2JGT9eMIIkRASOMkpsWfGGFWQqs4CHxNH7yRCT0iTafs5kBwlzChhLTPoU
-	CRIWFjCTWHR2KzuIzSKgKtG5rQPM5hWwlXh2aDkLhC0o8WPyPTCbWUBLYv3O40wQtrzE5jVv
-	mSHuV5d49FcXJCwiYCSx4eFydogSEYl9L94xQlygJvHh6UcWiB9DJf6e+skygVF0FpINs5Bs
-	mIVkwywkoxYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4Cz6R2MK5ssDjEKMDBqMTD
-	mzAjM0iINbGsuDL3EKMEB7OSCG/NaaAQb0piZVVqUX58UWlOavEhxmRgAExklhJNzgcmqLyS
-	eENjEzMjSyMzYxNzY2PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYFw/y3/rqXPz6znT
-	l1qkmykx/PstmnWSeXJ0RU8hl3BSYXvFbpdF3n/XdSuLbrLeFbGkavfN0zkbU4WV/X1vpt36
-	+0fil0D+u45q/wVLxU8qR3ewXMtvXDVJR8t0RmKgclfjoq7ZzHGrO+WuTkgOFAk63DL9irBb
-	s/+Uf9e+cRibrgmdFdzppsRSnJFoqMVcVJwIABtvLvFGAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 25 Oct 2013 02:32:54 -0400
+Date: Fri, 25 Oct 2013 08:32:12 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@intel.com>
+cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
+ status
+In-Reply-To: <20131025042310.GC21230@intel.com>
+Message-ID: <Pine.LNX.4.64.1310250813370.6186@axis700.grange>
+References: <1381940926-25564-1-git-send-email-vinod.koul@intel.com>
+ <1381940926-25564-2-git-send-email-vinod.koul@intel.com>
+ <Pine.LNX.4.64.1310162028340.22648@axis700.grange>
+ <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
+ <20131017020745.GA14013@intel.com> <20131017142755.GA4477@breakpoint.cc>
+ <20131017134846.GG14013@intel.com> <Pine.LNX.4.64.1310242326500.2900@axis700.grange>
+ <20131025042310.GC21230@intel.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:u5RevS61emX0mfsQFOgAhQejLLL1seHw5svnoRU/O8r
+ W5IWA+kezRbuToZkqh884n46Sz3jg4OJyWoZBo6mzDO7GMvoA3
+ +xpmYnDkaOFlCBRcD5Hu2rUrWjzI/UpCTCG2ypWWQcG2BcV0yU
+ VsJsaept7zIdLNz6HYulh48QmREMiwRSE6odGpGgBiYbmEssRp
+ UuZUTgtIP6am12QWO1MLk23vUyi4Fc/IOlIOAacDqve8aGL2ax
+ esJsrxMMDGih20Fos5ClsbPnnV9NwNHb59onSCpA09iGYGRgL2
+ kt1MXpvz7QqP/4YcBQvxAuR9BPsbOOIby7F7n/PJIVOiMtG49l
+ +E9IEpwSmh+WT5iYJYlLU5N6JmzgmVafxoGbB9RHena0j1v6Ru
+ v3wO7e1Z8LuMw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hyunhee Kim <hyunhee.kim@samsung.com>
-Date: Wed, 9 Oct 2013 16:21:36 +0900
-Subject: [PATCH] Input: add regulator haptic driver
+Hi Vinod
 
-Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Aristeu Rozanski <aris@ruivo.org>
+On Fri, 25 Oct 2013, Vinod Koul wrote:
 
----
- drivers/input/misc/Kconfig            |   10 ++
- drivers/input/misc/Makefile           |    1 +
- drivers/input/misc/regulator-haptic.c |  187
-+++++++++++++++++++++++++++++++++
- 3 files changed, 198 insertions(+)
- create mode 100644 drivers/input/misc/regulator-haptic.c
+> On Thu, Oct 24, 2013 at 11:28:29PM +0200, Guennadi Liakhovetski wrote:
+> > Hi Vinod
+> > 
+> > On Thu, 17 Oct 2013, Vinod Koul wrote:
+> > > Yes i missed it in first place update the patch to fix that
+> > 
+> > Are you planning to post a fixed version of this patch or you just fix it 
+> > internally? Would be good to have it posted to be able to ack it and other 
+> > relevant patches.
+> looks like you missed it... I had posted updated patch [1] in this thread here
+> and I posted 29th patch as removal one [2]
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index bb698e1..21b4d5b 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -82,6 +82,16 @@ config INPUT_ARIZONA_HAPTICS
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called arizona-haptics.
+No, I didn't miss those, but as Sebastian pointed out and as I commented 
+too, also that v2 version wasn't correct, so, a fixed v3 was needed. 
+Consider this:
+
+In patch 1 you do:
+
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 0bc7275..683c380 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -45,16 +45,17 @@ static inline int dma_submit_error(dma_cookie_t cookie)
  
-+config INPUT_REGULATOR_HAPTIC
-+	tristate "support haptics on/off using regulator"
-+	select INPUT_FF_MEMLESS
-+	help
-+	  Say Y to enable support for the haptic module. Haptic can be
-+	  enabled/disabled by regulator.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called regulator-haptic.
-+
- config INPUT_BMA150
- 	tristate "BMA150/SMB380 acceleration sensor support"
- 	depends on I2C
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index d7fc17f..106f0bc 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_INPUT_ADXL34X_I2C)		+=
-adxl34x-i2c.o
- obj-$(CONFIG_INPUT_ADXL34X_SPI)		+= adxl34x-spi.o
- obj-$(CONFIG_INPUT_APANEL)		+= apanel.o
- obj-$(CONFIG_INPUT_ARIZONA_HAPTICS)	+= arizona-haptics.o
-+obj-$(CONFIG_INPUT_REGULATOR_HAPTIC)	+= regulator-haptic.o
- obj-$(CONFIG_INPUT_ATI_REMOTE2)		+= ati_remote2.o
- obj-$(CONFIG_INPUT_ATLAS_BTNS)		+= atlas_btns.o
- obj-$(CONFIG_INPUT_BFIN_ROTARY)		+= bfin_rotary.o
-diff --git a/drivers/input/misc/regulator-haptic.c
-b/drivers/input/misc/regulator-haptic.c
-new file mode 100644
-index 0000000..bab2ad9
---- /dev/null
-+++ b/drivers/input/misc/regulator-haptic.c
-@@ -0,0 +1,187 @@
-+/*
-+ * Regulator haptic driver
-+ *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ *
-+ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/input.h>
-+#include <linux/slab.h>
-+#include <linux/regulator/driver.h>
-+
-+struct regulator_haptic {
-+	struct device *dev;
-+	struct input_dev *input_dev;
-+	struct work_struct work;
-+	bool enabled;
-+	struct regulator *regulator;
-+	struct mutex mutex;
-+	int level;
-+};
-+
-+static void regulator_haptic_enable(struct regulator_haptic *haptic)
-+{
-+	int ret;
-+
-+	if (!haptic->enabled) {
-+		ret = regulator_enable(haptic->regulator);
-+		if (ret)
-+			dev_err(haptic->dev, "failed to enable
-regulator\n");
-+		haptic->enabled = true;
-+	}
-+}
-+
-+static void regulator_haptic_disable(struct regulator_haptic *haptic)
-+{
-+	int ret;
-+
-+	if (haptic->enabled) {
-+		ret = regulator_disable(haptic->regulator);
-+		if (ret)
-+			dev_err(haptic->dev, "failed to disable
-regulator\n");
-+		haptic->enabled = false;
-+	}
-+}
-+
-+static void regulator_haptic_work(struct work_struct *work)
-+{
-+	struct regulator_haptic *haptic = container_of(work,
-+						       struct
-regulator_haptic,
-+						       work);
-+	mutex_lock(&haptic->mutex);
-+	if (haptic->level)
-+		regulator_haptic_enable(haptic);
-+	else
-+		regulator_haptic_disable(haptic);
-+	mutex_unlock(&haptic->mutex);
-+}
-+
-+static int regulator_haptic_play(struct input_dev *input, void *data,
-+				struct ff_effect *effect)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+
-+	haptic->level = effect->u.rumble.strong_magnitude;
-+	if (!haptic->level)
-+		haptic->level = effect->u.rumble.weak_magnitude;
-+	schedule_work(&haptic->work);
-+
-+	return 0;
-+}
-+
-+static void regulator_haptic_close(struct input_dev *input)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+
-+	cancel_work_sync(&haptic->work);
-+	regulator_haptic_disable(haptic);
-+}
-+
-+static int regulator_haptic_probe(struct platform_device *pdev)
-+{
-+	struct regulator_haptic *haptic;
-+	struct input_dev *input_dev;
-+	int error;
-+
-+	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
-+	if (!haptic) {
-+		dev_err(&pdev->dev, "unable to allocate memory for
-haptic\n");
-+		return -ENOMEM;
-+	}
-+
-+	input_dev = input_allocate_device();
-+
-+	if (!input_dev) {
-+		dev_err(&pdev->dev, "unable to allocate memory\n");
-+		return  -ENOMEM;
-+	}
-+
-+	INIT_WORK(&haptic->work, regulator_haptic_work);
-+	mutex_init(&haptic->mutex);
-+	haptic->input_dev = input_dev;
-+	haptic->dev = &pdev->dev;
-+	haptic->regulator = regulator_get(&pdev->dev, "haptic");
-+
-+	if (IS_ERR(haptic->regulator)) {
-+		error = PTR_ERR(haptic->regulator);
-+		dev_err(&pdev->dev, "unable to get regulator, err: %d\n",
-+			error);
-+		goto err_ifree_mem;
-+	}
-+
-+	haptic->input_dev->name = "regulator:haptic";
-+	haptic->input_dev->dev.parent = &pdev->dev;
-+	haptic->input_dev->close = regulator_haptic_close;
-+	haptic->enabled = false;
-+	input_set_drvdata(haptic->input_dev, haptic);
-+	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
-+
-+	error = input_ff_create_memless(input_dev, NULL,
-+				      regulator_haptic_play);
-+	if (error) {
-+		dev_err(&pdev->dev,
-+			"input_ff_create_memless() failed: %d\n",
-+			error);
-+		goto err_put_regulator;
-+	}
-+
-+	error = input_register_device(haptic->input_dev);
-+	if (error) {
-+		dev_err(&pdev->dev,
-+			"couldn't register input device: %d\n",
-+			error);
-+		goto err_destroy_ff;
-+	}
-+
-+	platform_set_drvdata(pdev, haptic);
-+
-+	return 0;
-+
-+err_destroy_ff:
-+	input_ff_destroy(haptic->input_dev);
-+err_put_regulator:
-+	regulator_put(haptic->regulator);
-+err_ifree_mem:
-+	input_free_device(haptic->input_dev);
-+
-+	return error;
-+}
-+
-+static int regulator_haptic_remove(struct platform_device *pdev)
-+{
-+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	input_unregister_device(haptic->input_dev);
-+	regulator_put(haptic->regulator);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id regulator_haptic_dt_match[] = {
-+	{ .compatible = "linux,regulator-haptic" },
-+	{},
-+};
-+
-+static struct platform_driver regulator_haptic_driver = {
-+	.driver		= {
-+		.name	= "regulator-haptic",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = regulator_haptic_dt_match,
-+	},
-+
-+	.probe		= regulator_haptic_probe,
-+	.remove		= regulator_haptic_remove,
-+};
-+module_platform_driver(regulator_haptic_driver);
-+
-+MODULE_ALIAS("platform:regulator-haptic");
-+MODULE_DESCRIPTION("Regulator haptic driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Hyunhee Kim <hyunhee.kim@samsung.com>");
--- 
-1.7.9.5
+ /**
+  * enum dma_status - DMA transaction status
+- * @DMA_SUCCESS: transaction completed successfully
++ * @DMA_COMPLETE: transaction completed
+  * @DMA_IN_PROGRESS: transaction not yet processed
+  * @DMA_PAUSED: transaction is paused
+  * @DMA_ERROR: transaction failed
+  */
+ enum dma_status {
+-	DMA_SUCCESS,
++	DMA_COMPLETE,
+ 	DMA_IN_PROGRESS,
+ 	DMA_PAUSED,
+ 	DMA_ERROR,
++	DMA_SUCCESS,
+ };
+ 
+ /**
 
+and then in a couple of places
 
+-			return DMA_SUCCESS;
++			return DMA_COMPLETE;
+
+So, after that your patch dmaengine would be returning DMA_COMPLETE in 
+case of success, i.e. 0. But all the DMAC and user drivers would still be 
+checking for
+
+	if (status != DMA_COMPLETE) {
+
+i.e. comparing status with 4 and thus detecting false errors, until your 
+further 28 patches fix them. That's why, as Sebastian pointed out it was 
+important to define DMA_COMPLETE and DMA_SUCCESS with the _same_ numerical 
+value in your patch 1.
+
+> Both were pushed to -next after few days
+
+That's a pity, but I still don't see them in upstream -next, so, maybe 
+it's still possible to fix?
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
