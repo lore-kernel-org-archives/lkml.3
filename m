@@ -1,193 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab3JYHeA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 03:34:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34033 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab3JYHd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 03:33:59 -0400
-Date: Fri, 25 Oct 2013 18:33:45 +1100
-From: NeilBrown <neilb@suse.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: Any news on Runtime Interpreted Power Sequences
-Message-ID: <20131025183345.2b963e13@notabene.brown>
-In-Reply-To: <526A0E71.100@nvidia.com>
-References: <20131025112224.6e5265e6@notabene.brown>
-	<526A0E71.100@nvidia.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/uqZTWPL9UeMa1zqIdcb1xm3"; protocol="application/pgp-signature"
+	id S1752042Ab3JYHfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 03:35:41 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:54178 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab3JYHfj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 03:35:39 -0400
+Date: Fri, 25 Oct 2013 09:35:35 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/10] of/platform: Resolve interrupt references at
+ probe time
+Message-ID: <20131025073534.GA19622@ulmo.nvidia.com>
+References: <1379510692-32435-1-git-send-email-treding@nvidia.com>
+ <1379510692-32435-9-git-send-email-treding@nvidia.com>
+ <20131015232436.19F61C40099@trevor.secretlab.ca>
+ <20131024163749.68D01C403B6@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
+Content-Disposition: inline
+In-Reply-To: <20131024163749.68D01C403B6@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/uqZTWPL9UeMa1zqIdcb1xm3
-Content-Type: text/plain; charset=US-ASCII
+
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 25 Oct 2013 15:23:45 +0900 Alex Courbot <acourbot@nvidia.com> wrote:
-
-> Hi Neil,
+On Thu, Oct 24, 2013 at 05:37:49PM +0100, Grant Likely wrote:
+> On Wed, 16 Oct 2013 00:24:36 +0100, Grant Likely <grant.likely@linaro.org=
+> wrote:
+> > On Wed, 18 Sep 2013 15:24:50 +0200, Thierry Reding <thierry.reding@gmai=
+l.com> wrote:
+> > > Interrupt references are currently resolved very early (when a device=
+ is
+> > > created). This has the disadvantage that it will fail in cases where =
+the
+> > > interrupt parent hasn't been probed and no IRQ domain for it has been
+> > > registered yet. To work around that various drivers use explicit
+> > > initcall ordering to force interrupt parents to be probed before devi=
+ces
+> > > that need them are created. That's error prone and doesn't always wor=
+k.
+> > > If a platform device uses an interrupt line connected to a different
+> > > platform device (such as a GPIO controller), both will be created in =
+the
+> > > same batch, and the GPIO controller won't have been probed by its dri=
+ver
+> > > when the depending platform device is created. Interrupt resolution w=
+ill
+> > > fail in that case.
+> >=20
+> > What is the reason for all the rework on the irq parsing return values?
+> > A return value of '0' is always an error on irq parsing, regardless of
+> > architecture even if NO_IRQ is defined as -1. I may have missed it, but
+> > I don't see any checking for specific error values in the return paths
+> > of the functions.
+> >=20
+> > If the specific return value isn't required (and I don't think it is),
+> > then you can simplify the whole series by getting rid of the rework
+> > patches.
 >=20
-> On 10/25/2013 09:22 AM, NeilBrown wrote:
-> >   I'm wondering if there was any news on the Runtime Interpreted Power
-> > Sequences?
-> > The most recent news I can find is
-> >    https://lkml.org/lkml/2013/4/27/73
-> > where you say they might be ready for 3.11.  Clearly that didn't work
-> > (predictions being hard, especially about the future).
-> >
-> > I'm really keen to see them turning into a reality and I gather others =
-are
-> > too. So ... can we hope?
->=20
-> A prerequisite of power sequences was to merge the gpiod interface, and=20
-> this is finally happening. It took much longer than I wanted, sorry=20
-> about that.
->=20
-> Logically speaking nothing should now stand in the way of a new version=20
-> of the power sequences. Expected maybe my own skepticism about them.
->=20
-> The first version of the power seqs is mainly the result of my=20
-> misunderstanding of the device tree. Reconsidering it now, if we strip=20
-> the DT support away power seqs would just become a simplified way to=20
-> describe how to power a device up and down. In other words, it would be=20
-> another way to express what can be expressed with C code and would not=20
-> bring any additional flexibility that DT-described power seqs would have=
-=20
-> (and I say this totally convinced now that power sequences in the device=
-=20
-> tree were a bad idea).
->=20
-> The advantage I could see is that using power sequences we could get rid=
-=20
-> of the cumbersome and mistake-prone error checking code which is=20
-> basically the same for most devices. You would just need to describe=20
-> what you want to activate, and in which order, and the power seqs=20
-> framework would catch and report any error.
->=20
-> I'm not sure if this is a sufficient reason to introduce another=20
-> framework into the kernel, but if this is deemed a good reason by more=20
-> experienced people then I'm ok to give it a shot. If you have other=20
-> motivations for this, please also state them so I can get the whole=20
-> picture. Maybe I just need to be a little bit more motivated about this=20
-> idea myself. :)
->=20
-> Thanks,
-> Alex.
+> I've not heard back about the above, but I've just had a conversation
+> with Rob about what to do here.
 
-Hmmm... I'm not encouraged that you don't see them as belonging in
-device-tree, as that is exactly where I want them.
+I thought I had sent a reply regarding this about a week ago. Perhaps it
+got lost. I'll resend.
 
-Let me explain what I'm thinking.
+> The problem that I have is that it makes a specific return code need
+> to traverse several levels of function calls and have a meaning come
+> out the other end. It becomes difficult to figure out where that code
+> actually comes from when reading the code. That's more of a gut-feel
+> reaction rather than pointing out specifics though.
 
-I have two (or three) use-cases on my board ("GTA04" replacement motherboard
-for Openmoko Phone).
+To be honest, I'm not all that happy with that aspect myself, but at the
+same time I didn't feel like duplicating a lot of code to get this done
+more easily. I imagine that would've caused significant pushback as
+well. It's somewhat unfortunate that we have to propagate back through
+several level, but that's just the way the code is currently written and
+I don't think we can really get the information (EPROBE_DEFER) from any
+other place but from the lowest level.
 
-Firstly the wifi chip is very fussy about being reset properly before being
-accessed.  However it shares the same power regulator as the bluetooth chip.
-So if the bluetooth is in use when you "ifconfig down; ifconfig up" the
-wifi, it won't get powered down, so it won't get reset, so it won't work.
+> The other thing that makes me nervous how invasive the series is.
 
-What I need to do is to tell the 'mmc/sdio' driver that when it wants to
-power-on the wifi, it must
-   pull a reset-gpio low
-   turn-on the regulator (which might already be on)
-   pull the reset-gpio high again
+Well, I guess that comes with the territory, doesn't it? Interrupts are
+used in a large number of places and they have been used in a very
+static manner so far. The end result of this patch series is that for
+most devices instantiated from the device tree interrupts end up in the
+same category as any other resources such as GPIOs, regulators or
+clocks. They become mostly dynamic.
 
-I currently have that hacked into the omap-hsmmc driver but I don't think t=
-he
-code really belongs there.
-I would much rather that the omap-hsmmc could be given a 'RIPS' instead
-of (or as well as) the regulator and be told to just turn that RIPS on or o=
-ff.
-The RIPS would do the appropriate timed fiddling with GPIO and Regulator.
-The only place I can think of the describe the RIPS would be in device-tree.
+That in itself is a big change, so I don't think it's all that
+surprising that the required changes are invasive.
 
-Secondly I have two devices that are behind serial ports - a GPS and the
-bluetooth.
-It makes perfect sense to tie the  power-on/off of these to the serial-port
-concept of "DTR".  The omap-serial doesn't have a physical DTR, but is can =
-be
-configured with a GPIO to use as the DTR (it gets asserted on 'open' and
-de-asserted on 'close').
+And I think if we really want to solve it properly we need to make even
+more invasive changes. For example, Grygorii pointed out that we could
+have a setup in the future where the following happens:
 
-I currently have a "gpio-to-regulator" converting driver plugged between the
-serial port and the blue-tooth's regulator.  When I open the serial port for
-bluetooth it asserts the gpio line which is routed through gpiolib to my
-driver which enables the appropriate regulator.  I have something similar f=
-or
-the GPS.
+	1) driver providing interrupts is probed
+	2) driver using interrupts is probed, interrupt references are
+	   resolved at probe time
+	3) both drivers are unloaded
+	4) both drivers are reloaded
 
-I think the gpio-to-regulator driver is a kludge.  I would much rather tell
-the omap-serial to activate/de-activate a RIPS as the DTR action.  That RIPS
-could then control GPIO for a "real" dtr line, or control a regulator to
-support my bluetooth.
+In that case with the current set of patches the added core code assumes
+that the interrupts have already been resolved and are still valid.
 
-For the GPS, power on/off is really messy.  There is a toggle connected to a
-GPIO so you need to know what the current state is before you can know how =
-to
-"turn off".  So you need to either plug into the serial driver and watch for
-input, or use pinctrl to grab the RX pin and treat it like a GPIO.
-This is admittedly quite horrible and it makes sense to have a dedicated
-driver for it, but as the purpose of the driver would be to power
-something up or down it would be nice if the interface it presented was a
-power-up-down interface which is exactly what RIPS promised.
+Possibly the easiest way to fix that would be to just zero out the
+interrupt resources on remove so that they can be re-resolved on next
+probe.
 
+But that's somewhat cumbersome and it seems to me like a better fix
+might be to go and change struct platform_device to not use a single
+array of resources, but rather a list, or perhaps an array per type of
+resource. The current platform_device structure is simple and easy, but
+it doesn't work well with all the new dynamicity that we want/need/have
+today.
 
-I imagine a device-tree interface a bit like GPIO but with more details.
-We would have #defines for=20
-#define RIPS_REG_ON <0>,
-#define RIPS_REG_OFF <1>,
-#define RIPS_GPIO_ASSERT <2>,
-#define RIPS_GPIO_DEASSERT <3>,
-#define RIPS_DELAY <4>,
-#define RIPS_NATIVE_ON <5>,
-#define RIPS_NATIVE_OFF <6>,
+Obviously modifying the innards of struct platform_device will likely
+turn out to be a mammoth task of its own, but if that's what it takes
+I'm prepared to do that as well. Or at least even try.
 
-Then
+> However, even with saying all of the above, I'm not saying outright no.
+> I want to get this feature in.
 
- rips-on =3D RIPS_GPIO_ASSERT  "wifi-reset",
-           RIPS_DELAY         <10>,
-           RIPS_REG_ON       "wifi",
-           RIPS_DELAY         <10>,
-           RIPS_GPIO_DEASSERT "wifi-reset";
- wifi-reset-gpio =3D <&gpio1 0 GPIO_ACTIVE_HIGH>;
- wifi-supply =3D <&vaux4>;
+That's good to hear. Last time we talked about it we seemed to have an
+agreement that this needs to be done, but you not replying had me
+worried that perhaps you had changed your mind. It seems you've been
+busy trying to address other issues that maybe are even more pressing so
+I can hardly complain. =3D)
 
-would would power-on my wifi-chip.  It's probably a bit ugly, but it is
-simple and does follow an established pattern to some extent.
+I'm good as long as we can keep moving in the right direction.
 
-I expect some people will hate it and I won't be able to argue coherently
-with them, so please pay more attention to my proposed use-case than to my
-concrete example.
+> It is obviously needed and I'll even merge the patches piecemeal as the
+> look ready (I've already merged 2). Regardless, the current series needs
+> to be reworked. It conflicts with the other IRQ rework that I've already
+> put into my tree. The best thing to do would probably be respin it
+> against my current tree and repost.
 
-Thanks,
-NeilBrown
+Sure, that won't be a problem. I might not get to it immediately, but
+I'll get back to it.
 
---Sig_/uqZTWPL9UeMa1zqIdcb1xm3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> I'll take a fresh look then.... In the mean time, anything you can do to
+> /sanely/ reduce the impact will probably help.  :-)
+
+I might be able to do that. But I'll mention that in another thread in
+the right context.
+
+Thierry
+
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIVAwUBUmoe2jnsnt1WYoG5AQLA8A/+MII6iC4sVwMzP9W6cP6FYcCeW8W/VZFe
-DASvgkqcvuE2+JSIFG3zVkiqWoWiujRe5Q8qkpzU4EMEstsEgigY0/H/1z8NVX7z
-EfihJyfP541N/oqD7NJlSXQVU/vtXbITEpXE22ULpTCKe9K4NnAij/J/t00OfDul
-CbdR3iJF5hu9IjJp27eFoZpP1RMIprGhWTxJSTdtKGlVwyo52Lrq8nlXOzSrhJzz
-1jUOkvcYc/HjHqVAXQsg0tm+tqAtzypBRI6nQWY46OwBK2ng0197Dl9ddLzABIS+
-g7BqQn9Qlyd6t8jgeD9FsxYma5PEhTxW62XVTIMS2MLF1jQN3jyFcwJv5iJrgzZH
-LNbwe2jkG8P/7doiMmyqAI02wUhsurFOfT1GqHs1QHiCt+M1X5GwLz1LX9Vx4I/L
-8jRnK2t46G6M/lKjxRFsRfridwEpRrBN2YXE9T6aM3qn+ywmOKJEAdKEXlO2Txe5
-G0uwhmakxh7FXYodnUn1P0QVoDKPC80Jas6POqrF0OGZZuDK2xY4TGkjXQIYWyrc
-YSIgcmBd1oCxAdyNeLn2F3ofdSQSRkAxDlaOhrcfzIx2Pinb2cajCa9SegkmYK7y
-xnJ8vfyICDvaf/MTpfivVUCieTzuz6L8rGRtB7JsSrGPvzao+XN67eJlsqbQWqyj
-YW++z2vCmU8=
-=RyAQ
+iQIcBAEBAgAGBQJSah9GAAoJEN0jrNd/PrOhglEQALEA8kYxwwnW0OoScRWWD2Fw
+conQGp/mjJecS8927ypLouy7SX2DNAX/234wnaTPGVrnJ9xwXS1Y4Xd+uEd2DWQO
+9NfWP+9bdWhIbVO7oVpX6uQtUT4OXcelmMOVmvotDIAnBFHA5jLE6RwWpW8Pn3yU
+YSGaDkiOGHU0o2K5kk3+ZxqtZaDpm32MgtzB/ZcJWgJkUmebZ1gof01ARsev3+Vb
+5IC3tuhzT6uNR3fxEhoyPUN71f2+1tUNzzjVhn5A9nuAYnU4pYLkLwN3KXf7q1V2
+FfX6UhHC5mqHXkmdPqiT5Cg8rtS9nulq3zDwDd65HYq/g2Xlp/Qo5798h6xdoqeF
+EjCAOvucO333e7Ce9AiiDZsU6njVriNZU3UemPc2oW6BV1aOsUFaw/htbu1f7jze
+XmOtwGrY7fcQCVwNc7ff8aHsQ2equ6lPieN+HYI9hYQdysOpH8XBVlTP3OfJrhro
+hk2Zhhj4tJxBY80Wtd4g8TNtXa0n7HCzaTXdi7Ia7xpIlZ93XPENznOOTcXlYhhj
+dilfWfJX6ZpaPFd5bNcQr+iKNmIOM4x8DZYG8Ds+olEEgDm1uM4FsfqFZYaDJnPU
+93FDVkj/k7SLWzyk2FUnWMydi2P1A+Qr7il89cVMbazzMxRilwvpRXPGigVN69dV
+4+nSk5B422FhPGAEUZl9
+=WlHh
 -----END PGP SIGNATURE-----
 
---Sig_/uqZTWPL9UeMa1zqIdcb1xm3--
+--fUYQa+Pmc3FrFX/N--
