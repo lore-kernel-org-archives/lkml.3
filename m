@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3JYN6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 09:58:43 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:44386 "EHLO extserv.mm-sol.com"
+	id S1754283Ab3JYOAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 10:00:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54144 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab3JYN6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 09:58:41 -0400
-Message-ID: <526A78C3.9030002@mm-sol.com>
-Date: Fri, 25 Oct 2013 16:57:23 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1753261Ab3JYOAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 10:00:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 Resend 00/34] CPUFreq Cleanup Part III
+Date: Fri, 25 Oct 2013 16:12:25 +0200
+Message-ID: <6700479.xPkgXUV5KL@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpokJrj_ZbCPUw4ZpfOWgsDvqxLH9j41eQVC7V7Ny4xE8mA@mail.gmail.com>
+References: <cover.1382104514.git.viresh.kumar@linaro.org> <14730355.7hm7UiW5IU@vostro.rjw.lan> <CAKohpokJrj_ZbCPUw4ZpfOWgsDvqxLH9j41eQVC7V7Ny4xE8mA@mail.gmail.com>
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Matt Mackall <mpm@selenic.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] hwrng: msm: Add PRNG support for MSM SoC's
-References: <1381846278-9529-1-git-send-email-svarbanov@mm-sol.com> <1381846278-9529-3-git-send-email-svarbanov@mm-sol.com> <526799B6.1090904@mm-sol.com> <20131023094530.GA21796@gondor.apana.org.au>
-In-Reply-To: <20131023094530.GA21796@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
-
-On 10/23/2013 12:45 PM, Herbert Xu wrote:
-> On Wed, Oct 23, 2013 at 12:41:10PM +0300, Stanimir Varbanov wrote:
->> On 10/15/2013 05:11 PM, Stanimir Varbanov wrote:
->>> This adds a driver for hardware random number generator present
->>> on Qualcomm MSM SoC's.
->>>
->>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->>
->> Hi Matt, Herbert,
->>
->> Sorry for the noise but this patch staying for a while in mailing list
->> and I'd like to get some attention to this driver. Do you think it needs
->> another re-spin or it has obvious issues / concerns?
->>
->> Thanks for your time.
+On Friday, October 25, 2013 07:25:45 PM Viresh Kumar wrote:
+> On 25 October 2013 18:26, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Having considered that a bit I think that I'd prefer one patch doing all of
+> > these changes in one go (and with all applicable ACKs collected), one of the
+> > reasons being that if it is necessary to revert that stuff, whatever the
+> > reason, it will be much easier to do that with just one commit than with
+> > 34 of them.
 > 
-> Well if the ARM folks are OK with it I'm happy to take them.
+> With a similar reason I think the probability is more that a revert might
+> be required for individual drivers as they may need to switch back to
+> ->target() instead of ->target_index() and so keeping them separate
+> might be better.
+> 
+> In case we need to revert all patches due to some breakage, we can
+> always do that in a single commit if required.
+> 
+> What do you say?
 
-Thanks!
+If I need to revert the first patch, then I'll need to revert all of them.
 
-Can I add your Acked-by for the driver part patch 2/2?
+Also, if you do the same change in multiple places it actually is easier
+to handle it pretty much regardless of the angle you look at that from
+if that's done in one patch.  Please do that.
 
-regards,
-Stan
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
