@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3JYJQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 05:16:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58790 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752313Ab3JYJQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 05:16:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during shutdown
-Date: Fri, 25 Oct 2013 11:28:02 +0200
-Message-ID: <2582195.phiuskXt0x@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
-References: <525BD08C.2080101@t-online.de> <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com> <CA+55aFyPffR=kt4njmB7oG012kayrKJPsP-u5JR+s7rERjofCg@mail.gmail.com>
+	id S1752878Ab3JYJQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 05:16:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab3JYJQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 05:16:09 -0400
+Date: Fri, 25 Oct 2013 05:15:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Eric Sandeen <sandeen@sandeen.net>,
+        Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+Message-ID: <20131025091552.GB26384@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Eric Sandeen <sandeen@sandeen.net>,
+	Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>,
+	Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+	open list <linux-kernel@vger.kernel.org>,
+	XFS FILESYSTEM <xfs@oss.sgi.com>
+References: <20131021231849.GL10553@sgi.com>
+ <20131021235601.GG4446@dastard>
+ <5265C03B.50701@sandeen.net>
+ <20131022001732.GI4446@dastard>
+ <CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>
+ <20131022203946.GB2797@dastard>
+ <5266E4BD.8030601@sandeen.net>
+ <20131022210300.GC2797@dastard>
+ <5266EBF0.901@sandeen.net>
+ <20131022220254.GD2797@dastard>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022220254.GD2797@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 25, 2013 10:02:22 AM Linus Torvalds wrote:
-> Adding more people, so quoting the whole email for them.
-> 
-> We definitely have some module unload issues. Guys, try the following
-> a few times to unload modules:
-> 
->     lsmod | grep ' 0 '| cut -d' ' -f1 | xargs sudo rmmod
-> 
-> (a few times because unloading one module will then potentially make
-> other modules unloadable).
-> 
-> On my machine, I can trigger this, for example:
-> 
->   ------------[ cut here ]------------
->   WARNING: CPU: 0 PID: 3217 at fs/sysfs/file.c:498 sysfs_attr_ns+0x91/0xa0()
->   sysfs: kobject (null) without dirent
->   Modules linked in: fuse nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_$
->   CPU: 0 PID: 3217 Comm: rmmod Not tainted 3.12.0-rc6-00284-ge6036c0b8896 #19
->   Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
->    0000000000000009 ffff8800aca35df8 ffffffff8160aab5 ffff8800aca35e40
->    ffff8800aca35e30 ffffffff810514b8 ffffffffa013f080 ffff8801194a6040
->    0000000000000800 0000000000000000 0000000000c5b3e0 ffff8800aca35e90
->   Call Trace:
->    [<ffffffff8160aab5>] dump_stack+0x45/0x56
->    [<ffffffff810514b8>] warn_slowpath_common+0x78/0xa0
->    [<ffffffff81051527>] warn_slowpath_fmt+0x47/0x50
->    [<ffffffff810b5960>] ? module_refcount+0xb0/0xb0
->    [<ffffffff811e5c61>] sysfs_attr_ns+0x91/0xa0
->    [<ffffffff811e5d2a>] sysfs_remove_file+0x1a/0x50
->    [<ffffffff814c88a3>] cpufreq_sysfs_remove_file+0x13/0x30
->    [<ffffffffa013d350>] acpi_cpufreq_exit+0x2e/0xcde [acpi_cpufreq]
->    [<ffffffff810b7d1d>] SyS_delete_module+0x15d/0x2c0
->    [<ffffffff81002929>] ? do_notify_resume+0x59/0x90
->    [<ffffffff81618f62>] system_call_fastpath+0x16/0x1b
->   ---[ end trace f887112caaa5c4ab ]---
-> 
-> so at least we have a cpufreq/sysfs interaction bug. There may be others.
-> 
-> This particular cpufreq issue may be triggered by the fact that
-> acpi-cpufreq isn't actually in use (pstate is). Or it might be some
-> generic cpufreq/sysfs bug. Rafael, Greg, ideas?
+On Wed, Oct 23, 2013 at 09:02:54AM +1100, Dave Chinner wrote:
 
-I *think* that this indeed is related to acpi-cpufreq being unused.  That said,
-we've been fixing sysfs-related bugs in cpufreq recently and we may have
-overlooked something.
+ > > it looks suspicious to pretty much anyone.  I don't think Geyslan
+ > > sent it to shut Coverity up, he sent it because it looked like
+ > > a bug worth fixing (after Coverity spotted it).
+ > > 
+ > > Let's not be too hard on him for trying; I appreciate it more
+ > > than spelling fixes and whitespace cleanups.  ;)
+ > 
+ > True, point taken. 
 
-I'll have a deeper look at that.
+So another reason you're seeing an uptick in coverity reports lately
+is that back in June they gave me admin rights for the project at scan.coverity.com
+so I've been doing daily builds since then. (Previously they only did one per point release).
 
-Rafael
+The Coverity guys did a write-up on this thread at http://security.coverity.com/blog/2013/Oct/deliberate-null-pointer-dereferences-in-the-linux-kernel.html 
+The point about modelling is the pertinent part.  I'm still trying to get my
+head around a lot of how that stuff works, but that's the sort of thing
+that I have rights to do on their site too.
+
+If you or anyone else wants access to their bugs, I can approve that
+easily enough.  I've been going through and trying to filter out as many of
+the intentional[*] issues as possible, and do things like sorting into components
+so that you're able to look at just XFS bugs for eg.
+
+I know Eric has been looking at their bugs when he has had time, but if there's
+something I can do to make things easier for you guys, let me know.
+(I could email you new issue reports as they come in for eg)
+
+To end on a high note, XFS is actually one of the better subsystems from the
+POV of number of issues they've found. Only 38 'New' issues right now, which
+given the complexity in XFS, is pretty darn good, and I bet a bunch of those
+are actually non-issues too.  The painful part is going through and sorting
+through the non-issues to get to the real meaty bugs, which is what I've slowly
+been doing over the last couple months. (Down from 5900 or so, to 5305,
+thanks to help from others)
+
+	Dave
+
+[*] From what I've seen so far, a lot of issues it finds are the checker
+getting tricked by idioms we use in the kernel rather than actual "false positives"
+(in terms of "this is a bug in the checker"). As the url above points out,
+sometimes we can help the checker out through modelling, but some of the code
+I've seen it get tripped up is hard enough for a human to parse, so I don't 
+really blame the checker for getting confused ;)
 
