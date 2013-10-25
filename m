@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3JYKdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 06:33:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52440 "EHLO
+	id S1753478Ab3JYKdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 06:33:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52452 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab3JYKdH (ORCPT
+	with ESMTP id S1753431Ab3JYKdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 06:33:07 -0400
-Date: Fri, 25 Oct 2013 03:32:41 -0700
+	Fri, 25 Oct 2013 06:33:15 -0400
+Date: Fri, 25 Oct 2013 03:32:50 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-56921becdd1eb0720603fc2e6e4c7f518196d917@git.kernel.org>
+Message-ID: <tip-2fbe4abe944868aafdde233557ac85379b60ce46@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1382427258-17495-14-git-send-email-adrian.hunter@intel.com>
-References: <1382427258-17495-14-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1382427258-17495-15-git-send-email-adrian.hunter@intel.com>
+References: <1382427258-17495-15-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Do not accept parse_tag_value()
-  overflow
-Git-Commit-ID: 56921becdd1eb0720603fc2e6e4c7f518196d917
+Subject: [tip:perf/core] perf evlist:
+  Validate that mmap_pages is not too big
+Git-Commit-ID: 2fbe4abe944868aafdde233557ac85379b60ce46
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,23 +34,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 25 Oct 2013 03:32:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 25 Oct 2013 03:32:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  56921becdd1eb0720603fc2e6e4c7f518196d917
-Gitweb:     http://git.kernel.org/tip/56921becdd1eb0720603fc2e6e4c7f518196d917
+Commit-ID:  2fbe4abe944868aafdde233557ac85379b60ce46
+Gitweb:     http://git.kernel.org/tip/2fbe4abe944868aafdde233557ac85379b60ce46
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 22 Oct 2013 10:34:17 +0300
+AuthorDate: Tue, 22 Oct 2013 10:34:18 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Oct 2013 10:59:09 -0300
+CommitDate: Wed, 23 Oct 2013 11:06:03 -0300
 
-perf tools: Do not accept parse_tag_value() overflow
+perf evlist: Validate that mmap_pages is not too big
 
-parse_tag_value() accepts an "unsigned long" and multiplies it according
-to a tag character.  Do not accept the value if the multiplication
-overflows.
+Amend perf_evlist__parse_mmap_pages() to check that the mmap_pages
+entered via the --mmap_pages/-m option is not too big.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -62,22 +61,51 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1382427258-17495-14-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1382427258-17495-15-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/util.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/util/evlist.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index c25e57b..28a0a89 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -386,6 +386,8 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
- 			if (s != endptr)
- 				break;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 85c4c80..2ce92ec 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -698,7 +698,8 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
+ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 				  int unset __maybe_unused)
+ {
+-	unsigned int pages, val, *mmap_pages = opt->value;
++	unsigned int *mmap_pages = opt->value;
++	unsigned long pages, val;
+ 	size_t size;
+ 	static struct parse_tag tags[] = {
+ 		{ .tag  = 'B', .mult = 1       },
+@@ -709,12 +710,12 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 	};
  
-+			if (value > ULONG_MAX / i->mult)
-+				break;
- 			value *= i->mult;
- 			return value;
+ 	val = parse_tag_value(str, tags);
+-	if (val != (unsigned int) -1) {
++	if (val != (unsigned long) -1) {
+ 		/* we got file size value */
+ 		pages = PERF_ALIGN(val, page_size) / page_size;
+-		if (!is_power_of_2(pages)) {
++		if (pages < (1UL << 31) && !is_power_of_2(pages)) {
+ 			pages = next_pow2(pages);
+-			pr_info("rounding mmap pages size to %u (%u pages)\n",
++			pr_info("rounding mmap pages size to %lu (%lu pages)\n",
+ 				pages * page_size, pages);
  		}
+ 	} else {
+@@ -727,6 +728,11 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 		}
+ 	}
+ 
++	if (pages > UINT_MAX || pages > SIZE_MAX / page_size) {
++		pr_err("--mmap_pages/-m value too big\n");
++		return -1;
++	}
++
+ 	size = perf_evlist__mmap_size(pages);
+ 	if (!size) {
+ 		pr_err("--mmap_pages/-m value must be a power of two.");
