@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab3JYX1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 19:27:37 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36197 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab3JYX1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 19:27:35 -0400
-Date: Fri, 25 Oct 2013 19:27:34 -0400 (EDT)
-Message-Id: <20131025.192734.1224686649926183282.davem@davemloft.net>
-To: freddy@asix.com.tw
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, allan@asix.com.tw, louis@asix.com.tw
-Subject: Re: [PATCH 1/1] ax88179_178a: Remove AX_MEDIUM_ALWAYS_ONE bit in
- AX_MEDIUM_STATUS_MODE register to avoid TX throttling
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1382597905-2393-1-git-send-email-freddy@asix.com.tw>
-References: <1382597905-2393-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 25 Oct 2013 16:27:35 -0700 (PDT)
+	id S1753549Ab3JYXa2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 19:30:28 -0400
+Received: from ozlabs.org ([203.10.76.45]:50113 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab3JYXa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 19:30:27 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chen Gang <gang.chen@asianux.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
+In-Reply-To: <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
+References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com> <87eh7bfoq9.fsf@rustcorp.com.au> <20131024084559.GD16735@n2100.arm.linux.org.uk> <87mwlyclng.fsf@rustcorp.com.au> <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com> <87y55h7vcd.fsf@rustcorp.com.au> <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 25 Oct 2013 22:28:29 +1030
+Message-ID: <87sivp7eai.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: freddy@asix.com.tw
-Date: Thu, 24 Oct 2013 14:58:25 +0800
+Ming Lei <tom.leiming@gmail.com> writes:
+> On Fri, Oct 25, 2013 at 1:50 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Ming Lei <tom.leiming@gmail.com> writes:
+>>> On Fri, Oct 25, 2013 at 7:08 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>>
+>>>> Sorry, I was imprecise.  I was referring to the kernel's kallsyms
+>>>> tables produced by scripts/kallsyms.c.  This patch left them in the
+>>>> the kallsyms tables and filtered them out from /proc/kallsyms.
+>>>
+>>> Yes, but it isn't easy to do it by script/kallsyms.c , and IMO, it should
+>>> be correct to hide them for user space but keep them in kallsyms table.
+>>
+>> So they'll appear in backtraces?  And turn up randomly for other symbol
+>> dereferences?
+>>
+>> I don't think you really want this!
+>
+> Basically these symbols are only used to generate code, and in
+> kernel mode, CPU won't run into the corresponding addresses
+> because the generate code is copied to other address during booting,
+> so I understand they won't appear in backtraces.
 
-> From: Freddy Xin <freddy@asix.com.tw>
-> 
-> Remove AX_MEDIUM_ALWAYS_ONE in AX_MEDIUM_STATUS_MODE register.
-> Setting this bit may cause TX throttling in Half-Duplex mode.
-> 
-> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+An oops occurs when something went *wrong*.  We look up all kinds of
+stuff.  Are you so sure that *none* of the callers will ever see these
+strange symbols and produce a confusing result?
 
-Applied.
+Cheers,
+Rusty.
+
+
+
