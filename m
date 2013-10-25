@@ -1,135 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3JYWZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 18:25:59 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35791 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab3JYWZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 18:25:58 -0400
-Message-ID: <526AEFF3.3060609@linaro.org>
-Date: Sat, 26 Oct 2013 00:25:55 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752771Ab3JYWaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 18:30:20 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24878 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752292Ab3JYWaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 18:30:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="312857449"
+Message-ID: <526AF0F8.6030100@linux.intel.com>
+Date: Fri, 25 Oct 2013 15:30:16 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, shaojie.sun@linaro.org
-Subject: Re: [PATCH V2] ARM: trace: Add tracepoint for the Inter Processor
- Interrupt
-References: <1381839042-3533-1-git-send-email-daniel.lezcano@linaro.org>	 <526A145E.1010809@linaro.org> <1382688595.6143.5.camel@pippen.local.home>
-In-Reply-To: <1382688595.6143.5.camel@pippen.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Mark Brown <broonie@kernel.org>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: linux-next: Tree for Oct 25 (powercap_sys.c)
+References: <1382713426-2680-1-git-send-email-treding@nvidia.com> <526ACA95.9030904@infradead.org> <526AEE08.5080706@linux.intel.com>
+In-Reply-To: <526AEE08.5080706@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2013 10:09 AM, Steven Rostedt wrote:
-> On Fri, 2013-10-25 at 08:49 +0200, Daniel Lezcano wrote:
->> On 10/15/2013 02:10 PM, Daniel Lezcano wrote:
->>> The Inter Processor Interrupt is used on ARM to tell another processor to do
->>> a specific action. This is mainly used to emulate a timer interrupt on an idle
->>> cpu, force a cpu to reschedule or run a function on another processor context.
+
+Ignore my patch. Already a patch by Thierry Reding is in PM next tree.
+
+Thanks,
+Srinivas
+
+
+On 10/25/2013 03:17 PM, Srinivas Pandruvada wrote:
+>
+> On 10/25/2013 12:46 PM, Randy Dunlap wrote:
+>> On 10/25/13 08:03, Thierry Reding wrote:
+>>> Hi all,
 >>>
->>> Add a tracepoint when raising an IPI and in the entry/exit handler functions.
+>>> I've uploaded today's linux-next tree to the master branch of the
+>>> repository below:
 >>>
->>> When a cpu raises an IPI, the targeted cpus is an interesting information, the
->>> cpumask conversion in hexa is added in the trace using the cpumask_scnprintf
->>> function.
+>>>          git://gitorious.org/thierryreding/linux-next.git
 >>>
->>> Tested-on Vexpress TC2 (5 processors).
+>>> A next-20131025 tag is also provided for convenience.
 >>>
->>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>> One new trivial conflicts and a new build failure caused by an 
+>>> incorrect
+>>> use of the genpool allocator.
+>>>
+>>> Upon a request from Olof Johansson I've only included fixes for build
+>>> breakage as a result of interactions between the various trees. But
+>>> since I've fixed many of the other build failures already, I've pushed
+>>> those to a separate tag (next-20131025-fixes). That builds fine on x86
+>>> 32-bit and 64-bit allmodconfigs as well as ARM and x86 default
+>>> configurations. Most of the PowerPC build errors have also been fixed.
+>> on i386:
 >>
->> Hi All,
->>
->> does this patch sound good for inclusion ?
+>> drivers/powercap/powercap_sys.c:484:2: error: unknown field 
+>> 'dev_attrs' specified in initializer
+>> drivers/powercap/powercap_sys.c:484:2: warning: initialization from 
+>> incompatible pointer type [enabled by default]
+>> drivers/powercap/powercap_sys.c:484:2: warning: (near initialization 
+>> for 'powercap_class.suspend') [enabled by default]
+> Submitted patch and copied to you all.
 >
-> Ug, I never sent my email. It was half written and in my drafts folder.
-
-That's just typical ! I think no one can say it never happened :)
-
-> I'll reply below.
+> Thanks,
+> Srinivas
 >
-
-[ ... ]
-
->>> +/**
->>> + * ipi_raise - called when a smp cross call is made
->>> + * @ipinr: the IPI number
->>> + * @cpumask: the recipients for the IPI
->>> + *
->>> + * The @ipinr value must be valid and the action name associated with
->>> + * the IPI value is given in the trace as well as the cpumask of the
->>> + * targeted cpus.
->>> + */
->>> +TRACE_EVENT_CONDITION(ipi_raise,
->>> +
->>> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
->>> +
->>> +    TP_ARGS(cpumask, ipinr),
->>> +
->>> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
->>> +
->>> +    TP_STRUCT__entry(
->>> +	    __field(int, ipinr)
->>> +	    __array(char, cpumask, NR_CPUS)
->>> +    ),
->>> +
->>> +    TP_fast_assign(
->>> +	    __entry->ipinr = ipinr;
->>> +	    cpumask_scnprintf(__entry->cpumask,
->>> +			      ARRAY_SIZE(__entry->cpumask), cpumask);
->
-> Please do not do the scnprintf() in the TP_fast_assign(). It's heavy
-> weight and this is done in the code path. Just copy the actual cpumask
-> itself.
-
-Ok.
-
-> Now, how to do that exactly is the reason I never sent my original mail,
-> because I never got around to looking how to do it, but it is possible.
-> Unfortunately, I'm at Kernel Summit at the moment, and still don't have
-> time to look at the best way to do it. But you can use dynamic arrays
-> for the cpus_online.
->
->>> +    ),
->>> +
->>> +    TP_printk("ipi=%d, cpumask=0x%s, name=%s", __entry->ipinr, __entry->cpumask,
->>> +	      show_ipi_name(__entry->ipinr))
->
-> Here is where you can convert the cpumask saved in the ring buffer to a
-> snprintf() format. Now this may need some work too, and perhaps even a
-> handler to help. I thought there was already some printk format that
-> does cpumasks.
->
-> If the helpers are not there, then I can work on adding some.
-
-I don't find any helper in the code except cpumask_scnprintf. If you 
-don't have the time, I can do the adequate changes with some advices.
-
-Thanks
-   -- Daniel
-
->>> +);
->>> +
->>> +#endif /* _TRACE_IPI_H */
->>> +
->>> +/* This part must be outside protection */
->>> +#include <trace/define_trace.h>
->>>
->>
->>
->
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
