@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3JYRpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 13:45:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8659 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab3JYRpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 13:45:49 -0400
-Date: Fri, 25 Oct 2013 19:44:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, zheng.z.yan@intel.com,
-        bp@alien8.de
-Subject: Re: [PATCH v3 4/4] perf,x86: add RAPL hrtimer support
-Message-ID: <20131025174448.GD7024@krava.brq.redhat.com>
-References: <1382533085-7166-1-git-send-email-eranian@google.com>
- <1382533085-7166-5-git-send-email-eranian@google.com>
+	id S1754419Ab3JYSEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 14:04:38 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:56774 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab3JYSEg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 14:04:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382533085-7166-5-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131025171721.GB8091@roeck-us.net>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+	<5269FB5E.6010901@roeck-us.net>
+	<20131025083525.GF19622@ulmo.nvidia.com>
+	<CAOesGMg+Xi3+MZrPbRiMGFe2cQFjN9qaif9u5gW_tDzK62EB7w@mail.gmail.com>
+	<20131025133512.GA1551@ulmo.nvidia.com>
+	<CAOesGMh=VLEuFgZuwrJnPsbxnr1Y528CVUdq313Ey5SVUb-jsw@mail.gmail.com>
+	<20131025141707.GA27461@ulmo.nvidia.com>
+	<20131025150228.GA5501@roeck-us.net>
+	<20131025151717.GA3782@ulmo.nvidia.com>
+	<20131025171721.GB8091@roeck-us.net>
+Date: Fri, 25 Oct 2013 20:04:36 +0200
+X-Google-Sender-Auth: DGTpa3NN8YyPHArd_Mmg3zoJ3n4
+Message-ID: <CAMuHMdWMQxpJfRm+wTun0dgiex3WNPwqKOf4EimfqQOnfUrbJQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 24
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 02:58:05PM +0200, Stephane Eranian wrote:
-> The RAPL PMU counters do not interrupt on overflow.
-> Therefore, the kernel needs to poll the counters
-> to avoid missing an overflow. This patch adds
-> the hrtimer code to do this.
-> 
-> The timer internval is calculated at boot time
-> based on the power unit used by the HW.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_rapl.c |   75 +++++++++++++++++++++++++--
->  1 file changed, 70 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> index 3d71d39..ed0566a 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> @@ -92,11 +92,13 @@ static struct kobj_attribute format_attr_##_var =		\
->  
->  struct rapl_pmu {
->  	spinlock_t	lock;
-> -	atomic_t	refcnt;
->  	int		hw_unit;  /* 1/2^hw_unit Joule */
-> -	int		phys_id;
-> -	int		n_active; /* number of active events */
-> +	struct hrtimer	hrtimer;
->  	struct list_head active_list;
-> +	ktime_t		timer_interval; /* in ktime_t unit */
-> +	int		n_active; /* number of active events */
-> +	int		phys_id;
-> +	atomic_t	refcnt;
->  };
->  
->  static struct pmu rapl_pmu_class;
-> @@ -161,6 +163,47 @@ static u64 rapl_event_update(struct perf_event *event)
->  	return new_raw_count;
->  }
->  
-> +static void rapl_start_hrtimer(struct rapl_pmu *pmu)
-> +{
-> +	__hrtimer_start_range_ns(&pmu->hrtimer,
-> +			pmu->timer_interval, 0,
-> +			HRTIMER_MODE_REL_PINNED, 0);
-> +}
-> +
-> +static void rapl_stop_hrtimer(struct rapl_pmu *pmu)
-> +{
-> +	hrtimer_cancel(&pmu->hrtimer);
-> +}
-> +
-> +static enum hrtimer_restart rapl_hrtimer_handle(struct hrtimer *hrtimer)
-> +{
-> +	struct rapl_pmu *pmu = container_of(hrtimer, struct rapl_pmu, hrtimer);
-> +	struct perf_event *event;
-> +	unsigned long flags;
-> +
-> +	if (!pmu->n_active)
-> +		return HRTIMER_NORESTART;
-> +
-> +	spin_lock_irqsave(&pmu->lock, flags);
-> +
-> +	list_for_each_entry(event, &pmu->active_list, active_entry) {
-> +		rapl_event_update(event);
-> +	}
+On Fri, Oct 25, 2013 at 7:17 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> I think one problem we have is how to report breakages. Any summary
+> mail or web page doesn't help if no one looks at it. It does help lot
+> to send specific e-mail along the line of "Commit 'bla' caused build 'x'
+> to fail as follows" to the respective mailing list and patch authors,
+> but that takes a lot of time which at least I don't have. And people
+> might get annoyed by automated e-mails, so that might not be a good
+> idea either.
 
-hi,
-I dont fully understand the reason for the timer,
-I'm probably missing something..
+In theory, these blame emails can be automated using some git bisect
+scripting.
 
-- the timer calls rapl_event_update for all defined events
-- but rapl_pmu_event_read calls rapl_event_update any time the
-  event is read (sys_read)
+Gr{oetje,eeting}s,
 
-The rapl_event_update only read msr and updates
-event->count|hw,prev_count.
+                        Geert
 
-What's the timer purpose then?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-thanks for info,
-jirka
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
