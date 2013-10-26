@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab3JZJqE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 05:46:04 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:50860 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab3JZJqC (ORCPT
+	id S1751615Ab3JZJu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 05:50:28 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45163 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab3JZJu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 05:46:02 -0400
+	Sat, 26 Oct 2013 05:50:27 -0400
+Date: Sat, 26 Oct 2013 11:50:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+Message-ID: <20131026095023.GF14237@gmail.com>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+ <20131023050502.1886.15779.stgit@hemant-fedora>
+ <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+ <20131025125921.GA29424@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20131025102032.GE6612@gmail.com>
-References: <000101ced09e$fed90a10$fc8b1e30$%yang@samsung.com>
-	<20131025102032.GE6612@gmail.com>
-Date: Sat, 26 Oct 2013 17:46:00 +0800
-Message-ID: <CAL1ERfOhhJ12zXwsGJoHWRzkd2destQnJ32nfU25SOACCnzy7Q@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/2] mm/zswap: refoctor the get/put routines
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Weijie Yang <weijie.yang@samsung.com>, akpm@linux-foundation.org,
-        sjennings@variantweb.net, bob.liu@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025125921.GA29424@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 6:20 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Oct 24, 2013 at 05:53:32PM +0800, Weijie Yang wrote:
->> The refcount routine was not fit the kernel get/put semantic exactly,
->> There were too many judgement statements on refcount and it could be minus.
->>
->> This patch does the following:
->>
->> - move refcount judgement to zswap_entry_put() to hide resource free function.
->>
->> - add a new function zswap_entry_find_get(), so that callers can use easily
->> in the following pattern:
->>
->>    zswap_entry_find_get
->>    .../* do something */
->>    zswap_entry_put
->>
->> - to eliminate compile error, move some functions declaration
->>
->> This patch is based on Minchan Kim <minchan@kernel.org> 's idea and suggestion.
->>
->> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
->> Cc: Seth Jennings <sjennings@variantweb.net>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Bob Liu <bob.liu@oracle.com>
->
->
-> I remember Bob had a idea to remove a look up and I think it's doable.
-> Anyway, I don't mind you send it with fix or not.
 
-Thanks for review.
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-Bob's idea is:
-"Then how about  use if (!RB_EMPTY_NODE(&entry->rbnode))  to
- replace rbtree searching?"
+> Hi Pekka,
+> 
+> > >
+> > > You can now use it in all perf tools, such as:
+> > >
+> > >     perf record -e libc:my_event -aR sleep 1
+> > 
+> > Is there a technical reason why 'perf list' could not show all the
+> > available SDT markers on a system and that the 'market to event'
+> > mapping cannot happen automatically?
+> > 
+> 
+> Technically feasible. But then we would have to parse each of the 
+> libraries and executables to list them. Right? I am not sure if 
+> such a delay is acceptable.
 
-I'm afraid not. Because entry could be freed in previous zswap_entry_put,
-we cann't reference entry or we would touch a free-and-use issue.
+I'd say lets try Pekka's suggestion and make it more palatable if 
+there's complaints about the delay. (SSD systems are becoming 
+dominant and there the search should be reasonably fast.)
 
-> Thanks for handling this, Weijie!
->
-> Acked-by: Minchan Kim <minchan@kernel.org>
->
-> --
-> Kind regards,
-> Minchan Kim
+We could also make 'perf list' more sophisticated, if invoked 
+naively as 'perf list' then maybe it should first display the 
+various event categories, with a (rough) count:
+
+$ perf list
+   34 hardware events       # use 'perf list --hw'    to list them
+   40 hw-cache events       # use 'perf list --cache' to list them
+   20 software events       # use 'perf list --sw'    to list them
+    2 raw events            # use 'perf list --raw'   to list them
+  120 tracepoints           # use 'perf list --tp'    to list them
+  >10 SDT tracepoints       # use 'perf list --sdt'   to list them
+
+ # use 'perf list -a' to list all events
+ # use 'perf list ./binary' to list events in a given binary
+
+I.e. bring a bit more structure into it.
+
+> Also if a binary exists in a path thats is not covered in the 
+> default search, an user might believe that his binary may not have 
+> markers. I know the above reason is more of a user folly than a 
+> tooling issue.
+
+I think in 99% of the usecases people will either use pre-built 
+markers that come with their distro, or will be intimately aware of 
+the markers because they are in the very app they are developing.
+
+So I wouldn't worry about 'user has a weird binary' case too much.
+
+I agree with Pekka that making them easily discoverable and visible 
+as a coherent whole is really important.
+
+Thanks,
+
+	Ingo
