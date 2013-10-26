@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab3JZUk0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 16:40:26 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:50165 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab3JZUkY (ORCPT
+	id S1754026Ab3JZUkm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 16:40:42 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:51314 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab3JZUki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 16:40:24 -0400
+	Sat, 26 Oct 2013 16:40:38 -0400
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>,
@@ -15,61 +15,64 @@ To: Luciano Coelho <luca@coelho.fi>,
 Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, freemangordon@abv.bg,
         aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, pali.rohar@gmail.com
-Subject: [PATCH 00/16] wl1251 patches from linux-n900 tree
-Date: Sat, 26 Oct 2013 22:33:59 +0200
-Message-Id: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+        joni.lapilainen@gmail.com, pali.rohar@gmail.com,
+        David Gnedt <david.gnedt@davizone.at>
+Subject: [PATCH 13/16] wl1251: enforce changed hw encryption support on monitor state change
+Date: Sat, 26 Oct 2013 22:34:12 +0200
+Message-Id: <1382819655-30430-14-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, I'm sending wl1251 patches from linux-n900 tree [1] for comments. More
-patches come from David's monitor & packet injection work. Patches are tested
-with 3.12 rc5 kernel on Nokia N900.
+From: David Gnedt <david.gnedt@davizone.at>
 
-[1] - https://gitorious.org/linux-n900/linux-n900
+The firmware doesn't support per packet encryption selection, so disable hw
+encryption support completly while a monitor interface is present to support
+injection of packets (which shouldn't get encrypted by hw).
+To enforce the changed hw encryption support force a disassociation on
+non-monitor interfaces.
+For disassociation a workaround using hw connection monitor is employed,
+which temporary enables hw connection manager flag.
 
-David Gnedt (13):
-  mac80211: fix TX device statistics for monitor interfaces
-  wl1251: fix scan behaviour while not associated
-  wl1251: add sysfs interface for bluetooth coexistence mode
-    configuration
-  wl1251: retry power save entry
-  wl1251: implement hardware ARP filtering
-  wl1251: split RX and TX data path initialisation
-  wl1251: configure hardware en-/decryption for monitor mode
-  wl1251: implement multicast address filtering
-  wl1251: disable power saving in monitor mode
-  wl1251: fix channel switching in monitor mode
-  wl1251: enable tx path in monitor mode if necessary for packet
-    injection
-  wl1251: disable retry and ACK policy for injected packets
-  wl1251: enforce changed hw encryption support on monitor state change
+Signed-off-by: David Gnedt <david.gnedt@davizone.at>
+---
+ drivers/net/wireless/ti/wl1251/main.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Pali Rohár (3):
-  wl1251: add nvs file name to module firmware list
-  wl1251: Add sysfs file tx_mgmt_frm_rate for setting rate
-  wl1251: Add sysfs file address for setting permanent mac address
-
- drivers/net/wireless/ti/wl1251/acx.c    |   97 ++++++-
- drivers/net/wireless/ti/wl1251/acx.h    |   34 ++-
- drivers/net/wireless/ti/wl1251/boot.c   |    3 +-
- drivers/net/wireless/ti/wl1251/cmd.c    |   50 +++-
- drivers/net/wireless/ti/wl1251/cmd.h    |    8 +-
- drivers/net/wireless/ti/wl1251/event.c  |   44 +++
- drivers/net/wireless/ti/wl1251/event.h  |    7 +
- drivers/net/wireless/ti/wl1251/init.c   |   19 +-
- drivers/net/wireless/ti/wl1251/main.c   |  460 ++++++++++++++++++++++++++++++-
- drivers/net/wireless/ti/wl1251/rx.c     |    2 +-
- drivers/net/wireless/ti/wl1251/tx.c     |   27 +-
- drivers/net/wireless/ti/wl1251/wl1251.h |   14 +
- net/mac80211/tx.c                       |    3 +
- 13 files changed, 715 insertions(+), 53 deletions(-)
-
+diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
+index 174f403..f054741 100644
+--- a/drivers/net/wireless/ti/wl1251/main.c
++++ b/drivers/net/wireless/ti/wl1251/main.c
+@@ -685,6 +685,16 @@ static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
+ 		wl->power_level = conf->power_level;
+ 	}
+ 
++	/*
++	 * Tell stack that connection is lost because hw encryption isn't
++	 * supported in monitor mode.
++	 * XXX This requires temporary enabling the hw connection monitor flag
++	 */
++	if ((changed & IEEE80211_CONF_CHANGE_MONITOR) && wl->vif) {
++		wl->hw->flags |= IEEE80211_HW_CONNECTION_MONITOR;
++		ieee80211_connection_loss(wl->vif);
++	}
++
+ out_sleep:
+ 	wl1251_ps_elp_sleep(wl);
+ 
+@@ -1116,6 +1126,9 @@ static void wl1251_op_bss_info_changed(struct ieee80211_hw *hw,
+ 	}
+ 
+ 	if (changed & BSS_CHANGED_ASSOC) {
++		/* XXX Disable temporary enabled hw connection monitor flag */
++		wl->hw->flags &= ~IEEE80211_HW_CONNECTION_MONITOR;
++
+ 		if (bss_conf->assoc) {
+ 			wl->beacon_int = bss_conf->beacon_int;
+ 
 -- 
 1.7.10.4
 
