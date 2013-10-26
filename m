@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3JZVBG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 17:01:06 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:57258 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab3JZVBF (ORCPT
+	id S1753687Ab3JZVMc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 17:12:32 -0400
+Received: from cocytus.austad.us ([176.58.107.48]:50001 "EHLO
+	cocytus.austad.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab3JZVMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 17:01:05 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joni Lapilainen <joni.lapilainen@gmail.com>
-Subject: [PATCH] CRYPTO: omap-sham: Add missing modalias
-Date: Sat, 26 Oct 2013 23:00:41 +0200
-Message-Id: <1382821241-31180-1-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 26 Oct 2013 17:12:30 -0400
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Oct 2013 17:12:30 EDT
+From: Henrik Austad <henrik@austad.us>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Henrik Austad <haustad@cisco.com>,
+        Patrick Pannuto <ppannuto@codeaurora.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH] Documentation: add missing files to timers/00-INDEX
+Date: Sat, 26 Oct 2013 23:04:12 +0200
+Message-Id: <1382821452-24524-1-git-send-email-henrik@austad.us>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joni Lapilainen <joni.lapilainen@gmail.com>
+From: Henrik Austad <haustad@cisco.com>
 
-Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
+- timers-howto was added by commit 0fcb8081 (Documentation: Add
+  timers/timers-howto.txt)
+- NO_HZ was added by commit 0c87f9b5 (nohz_full: Add documentation.)
+
+Cc: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Jiri Kosina <trivial@kernel.org>
+Signed-off-by: Henrik Austad <haustad@cisco.com>
 ---
- drivers/crypto/omap-sham.c |    1 +
- 1 file changed, 1 insertion(+)
+ Documentation/timers/00-INDEX |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
-index 8bdde57..236db0a 100644
---- a/drivers/crypto/omap-sham.c
-+++ b/drivers/crypto/omap-sham.c
-@@ -2033,3 +2033,4 @@ module_platform_driver(omap_sham_driver);
- MODULE_DESCRIPTION("OMAP SHA1/MD5 hw acceleration support.");
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Dmitry Kasatkin");
-+MODULE_ALIAS("platform:omap-sham");
+diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
+index a9248da..ef2ccbf 100644
+--- a/Documentation/timers/00-INDEX
++++ b/Documentation/timers/00-INDEX
+@@ -8,5 +8,9 @@ hpet_example.c
+ 	- sample hpet timer test program
+ hrtimers.txt
+ 	- subsystem for high-resolution kernel timers
++NO_HZ.txt
++	- Summary of the different methods for the scheduler clock-interrupts management.
++timers-howto.txt
++	- how to insert delays in the kernel the right (tm) way.
+ timer_stats.txt
+ 	- timer usage statistics
 -- 
-1.7.10.4
+1.7.2.5
 
