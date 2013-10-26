@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3JZGQB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 02:16:01 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:40515 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab3JZGPf (ORCPT
+	id S1753211Ab3JZGP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 02:15:59 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:65273 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3JZGPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 02:15:35 -0400
+	Sat, 26 Oct 2013 02:15:33 -0400
 From: Kevin McKinney <klmckinney1@gmail.com>
 To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
         linux-kernel@vger.kernel.org
 Cc: dan.carpenter@oracle.com, Kevin McKinney <klmckinney1@gmail.com>
-Subject: [PATCH 09/11] Staging: bcm: Replace UINT with unsigned int in Adapter.h
-Date: Sat, 26 Oct 2013 02:15:18 -0400
-Message-Id: <1382768120-23380-9-git-send-email-klmckinney1@gmail.com>
+Subject: [PATCH 07/11] Staging: bcm: Replace B_UINT8 with u8 in Adapter.h
+Date: Sat, 26 Oct 2013 02:15:16 -0400
+Message-Id: <1382768120-23380-7-git-send-email-klmckinney1@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1382768120-23380-1-git-send-email-klmckinney1@gmail.com>
 References: <1382768120-23380-1-git-send-email-klmckinney1@gmail.com>
@@ -21,208 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces "UINT" with "unsigned
-int" in Adapter.h
+This patch replaces "B_UINT8" with "u8"
+in Adapter.h
 
 Signed-off-by: Kevin McKinney <klmckinney1@gmail.com>
 ---
- drivers/staging/bcm/Adapter.h |   84 ++++++++++++++++++++---------------------
- 1 file changed, 42 insertions(+), 42 deletions(-)
+ drivers/staging/bcm/Adapter.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/staging/bcm/Adapter.h b/drivers/staging/bcm/Adapter.h
-index eeeea34..2074c18 100644
+index fbd06a1..27b5011 100644
 --- a/drivers/staging/bcm/Adapter.h
 +++ b/drivers/staging/bcm/Adapter.h
-@@ -21,7 +21,7 @@ struct bcm_packettosend {
- 
- struct bcm_control_packet {
- 	PVOID	ControlBuff;
--	UINT	ControlBuffLen;
-+	unsigned int ControlBuffLen;
- 	struct bcm_control_packet *next;
- } __packed;
- 
-@@ -124,7 +124,7 @@ struct bcm_packet_info {
- 	/* classification extension Rule */
- 	unsigned long	ulSFID;
+@@ -65,7 +65,7 @@ struct bcm_classifier_rule {
+ 	u16 uiClassifierRuleIndex;
+ 	BOOLEAN		bUsed;
  	unsigned short	usVCID_Value;
--	UINT		uiThreshold;
-+	unsigned int	uiThreshold;
+-	B_UINT8		u8ClassifierRulePriority; /* This field detemines the Classifier Priority */
++	u8		u8ClassifierRulePriority; /* This field detemines the Classifier Priority */
+ 	union bcm_ip_address stSrcIpAddress;
+ 	unsigned char	ucIPSourceAddressLength; /* Ip Source Address Length */
+ 
+@@ -126,13 +126,13 @@ struct bcm_packet_info {
+ 	unsigned short	usVCID_Value;
+ 	UINT		uiThreshold;
  	/* This field determines the priority of the SF Queues */
- 	u8		u8TrafficPriority;
+-	B_UINT8		u8TrafficPriority;
++	u8		u8TrafficPriority;
  
-@@ -134,29 +134,29 @@ struct bcm_packet_info {
+ 	BOOLEAN		bValid;
+ 	BOOLEAN		bActive;
+ 	BOOLEAN		bActivateRequestSent;
  
- 	u8		u8QueueType; /* BE or rtPS */
+-	B_UINT8		u8QueueType; /* BE or rtPS */
++	u8		u8QueueType; /* BE or rtPS */
  
--	UINT		uiMaxBucketSize; /* maximum size of the bucket for the queue */
--	UINT		uiCurrentQueueDepthOnTarget;
--	UINT		uiCurrentBytesOnHost;
--	UINT		uiCurrentPacketsOnHost;
--	UINT		uiDroppedCountBytes;
--	UINT		uiDroppedCountPackets;
--	UINT		uiSentBytes;
--	UINT		uiSentPackets;
--	UINT		uiCurrentDrainRate;
--	UINT		uiThisPeriodSentBytes;
-+	unsigned int	uiMaxBucketSize; /* maximum size of the bucket for the queue */
-+	unsigned int	uiCurrentQueueDepthOnTarget;
-+	unsigned int	uiCurrentBytesOnHost;
-+	unsigned int	uiCurrentPacketsOnHost;
-+	unsigned int	uiDroppedCountBytes;
-+	unsigned int	uiDroppedCountPackets;
-+	unsigned int	uiSentBytes;
-+	unsigned int	uiSentPackets;
-+	unsigned int	uiCurrentDrainRate;
-+	unsigned int	uiThisPeriodSentBytes;
- 	LARGE_INTEGER	liDrainCalculated;
--	UINT		uiCurrentTokenCount;
-+	unsigned int	uiCurrentTokenCount;
- 	LARGE_INTEGER	liLastUpdateTokenAt;
--	UINT		uiMaxAllowedRate;
--	UINT		NumOfPacketsSent;
-+	unsigned int	uiMaxAllowedRate;
-+	unsigned int	NumOfPacketsSent;
- 	unsigned char	ucDirection;
- 	unsigned short	usCID;
- 	struct bcm_mibs_parameters stMibsExtServiceFlowTable;
--	UINT		uiCurrentRxRate;
--	UINT		uiThisPeriodRxBytes;
--	UINT		uiTotalRxBytes;
--	UINT		uiTotalTxBytes;
--	UINT		uiPendedLast;
-+	unsigned int	uiCurrentRxRate;
-+	unsigned int	uiThisPeriodRxBytes;
-+	unsigned int	uiTotalRxBytes;
-+	unsigned int	uiTotalTxBytes;
-+	unsigned int	uiPendedLast;
- 	unsigned char	ucIpVersion;
- 
- 	union {
-@@ -185,7 +185,7 @@ struct bcm_packet_info {
- 	void		*pstSFIndication;
- 	struct timeval	stLastUpdateTokenAt;
- 	atomic_t	uiPerSFTxResourceCount;
--	UINT		uiMaxLatency;
-+	unsigned int	uiMaxLatency;
- 	unsigned char	bIPCSSupport;
- 	unsigned char	bEthCSSupport;
- };
-@@ -208,9 +208,9 @@ struct bcm_targetdsx_buffer {
- 	BOOLEAN		valid;
- };
- 
--typedef int (*FP_FLASH_WRITE)(struct bcm_mini_adapter *, UINT, PVOID);
-+typedef int (*FP_FLASH_WRITE)(struct bcm_mini_adapter *, unsigned int, PVOID);
- 
--typedef int (*FP_FLASH_WRITE_STATUS)(struct bcm_mini_adapter *, UINT, PVOID);
-+typedef int (*FP_FLASH_WRITE_STATUS)(struct bcm_mini_adapter *, unsigned int, PVOID);
- 
- /*
-  * Driver adapter data structure
-@@ -246,7 +246,7 @@ struct bcm_mini_adapter {
- 	/* to keep track the no of byte received */
- 	unsigned short		PrevNumRecvDescs;
- 	unsigned short		CurrNumRecvDescs;
--	UINT			u32TotalDSD;
-+	unsigned int		u32TotalDSD;
- 	struct bcm_packet_info	PackInfo[NO_OF_QUEUES];
- 	struct bcm_classifier_rule astClassifierTable[MAX_CLASSIFIERS];
- 	BOOLEAN			TransferMode;
-@@ -271,7 +271,7 @@ struct bcm_mini_adapter {
- 	atomic_t		index_app_read_cntrlpkt;
- 	atomic_t		index_wr_txcntrlpkt;
- 	atomic_t		index_rd_txcntrlpkt;
--	UINT			index_datpkt;
-+	unsigned int		index_datpkt;
- 	struct semaphore	rdmwrmsync;
- 
- 	struct bcm_targetdsx_buffer	astTargetDsxBuffer[MAX_TARGET_DSX_BUFFERS];
-@@ -316,14 +316,14 @@ struct bcm_mini_adapter {
- 					struct file *,
- 					unsigned int);
- 	int (*interface_rdm)(PVOID,
--			UINT,
-+			unsigned int,
- 			PVOID,
- 			int);
- 	int (*interface_wrm)(PVOID,
--			UINT,
-+			unsigned int,
- 			PVOID,
- 			int);
--	int (*interface_transmit)(PVOID, PVOID , UINT);
-+	int (*interface_transmit)(PVOID, PVOID , unsigned int);
- 	BOOLEAN			IdleMode;
- 	BOOLEAN			bDregRequestSentInIdleMode;
- 	BOOLEAN			bTriedToWakeUpFromlowPowerMode;
-@@ -346,16 +346,16 @@ struct bcm_mini_adapter {
- 	atomic_t		uiMBupdate;
- 	u32			PmuMode;
- 	enum bcm_nvm_type	eNVMType;
--	UINT			uiSectorSize;
--	UINT			uiSectorSizeInCFG;
-+	unsigned int		uiSectorSize;
-+	unsigned int		uiSectorSizeInCFG;
- 	BOOLEAN			bSectorSizeOverride;
- 	BOOLEAN			bStatusWrite;
--	UINT			uiNVMDSDSize;
--	UINT			uiVendorExtnFlag;
-+	unsigned int		uiNVMDSDSize;
-+	unsigned int		uiVendorExtnFlag;
- 	/* it will always represent chosen DSD at any point of time.
- 	 * Generally it is Active DSD but in case of NVM RD/WR it might be different.
- 	 */
--	UINT			ulFlashCalStart;
-+	unsigned int		ulFlashCalStart;
- 	unsigned long		ulFlashControlSectionStart;
- 	unsigned long		ulFlashWriteSize;
- 	unsigned long		ulFlashID;
-@@ -369,13 +369,13 @@ struct bcm_mini_adapter {
- 	struct bcm_flash2x_cs_info *psFlash2xCSInfo;
- 	struct bcm_flash_cs_info *psFlashCSInfo;
- 	struct bcm_flash2x_vendor_info *psFlash2xVendorInfo;
--	UINT			uiFlashBaseAdd; /* Flash start address */
--	UINT			uiActiveISOOffset; /* Active ISO offset chosen before f/w download */
-+	unsigned int		uiFlashBaseAdd; /* Flash start address */
-+	unsigned int		uiActiveISOOffset; /* Active ISO offset chosen before f/w download */
- 	enum bcm_flash2x_section_val eActiveISO; /* Active ISO section val */
- 	enum bcm_flash2x_section_val eActiveDSD; /* Active DSD val chosen before f/w download */
--	UINT			uiActiveDSDOffsetAtFwDld;  /* For accessing Active DSD chosen before f/w download */
--	UINT			uiFlashLayoutMajorVersion;
--	UINT			uiFlashLayoutMinorVersion;
-+	unsigned int		uiActiveDSDOffsetAtFwDld;  /* For accessing Active DSD chosen before f/w download */
-+	unsigned int		uiFlashLayoutMajorVersion;
-+	unsigned int		uiFlashLayoutMinorVersion;
- 	BOOLEAN			bAllDSDWriteAllow;
- 	BOOLEAN			bSigCorrupted;
- 	/* this should be set who so ever want to change the Headers. after Wrtie it should be reset immediately. */
-@@ -386,12 +386,12 @@ struct bcm_mini_adapter {
- 	BOOLEAN			bFlashRawRead;
- 	BOOLEAN			bPreparingForLowPowerMode;
- 	BOOLEAN			bDoSuspend;
--	UINT			syscfgBefFwDld;
-+	unsigned int		syscfgBefFwDld;
- 	BOOLEAN			StopAllXaction;
- 	u32			liTimeSinceLastNetEntry; /* Used to Support extended CAPI requirements from */
- 	struct semaphore	LowPowerModeSync;
- 	unsigned long		liDrainCalculated;
--	UINT			gpioBitMap;
-+	unsigned int		gpioBitMap;
- 	struct bcm_debug_state	stDebugState;
- };
- 
-@@ -413,8 +413,8 @@ struct bcm_firmware_info {
- extern struct net_device *gblpnetdev;
- 
- struct bcm_ddr_setting {
--	UINT ulRegAddress;
--	UINT ulRegValue;
-+	unsigned int ulRegAddress;
-+	unsigned int ulRegValue;
- };
- int InitAdapter(struct bcm_mini_adapter *psAdapter);
- 
+ 	UINT		uiMaxBucketSize; /* maximum size of the bucket for the queue */
+ 	UINT		uiCurrentQueueDepthOnTarget;
+@@ -296,7 +296,7 @@ struct bcm_mini_adapter {
+ 	int			DDRSetting;
+ 	unsigned long		ulPowerSaveMode;
+ 	spinlock_t		txtransmitlock;
+-	B_UINT8			txtransmit_running;
++	u8			txtransmit_running;
+ 	/* Thread for control packet handling */
+ 	struct task_struct	*control_packet_handler;
+ 	/* thread for transmitting packets. */
 -- 
 1.7.9.5
 
