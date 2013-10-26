@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3JZSwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 14:52:09 -0400
-Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:36211 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752018Ab3JZSwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 14:52:07 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3871:3872:3873:3874:4184:4321:4605:5007:7652:7903:8660:10004:10400:10848:11026:11232:11233:11473:11658:11914:12043:12114:12296:12438:12517:12519:12555:12663:12740:13148:13230:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dress54_4c4b1f3b5f658
-X-Filterd-Recvd-Size: 3218
-Message-ID: <1382813522.3238.4.camel@joe-AO722>
-Subject: [PATCH] printk: pr_debug_ratelimited: check state first to reduce
- "callbacks suppressed" messages
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Baron <jbaron@akamai.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Krzysztof Mazur <krzysiek@podlesie.net>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Date: Sat, 26 Oct 2013 11:52:02 -0700
-In-Reply-To: <20131026173730.GA18320@kroah.com>
-References: <20131026132955.GA9251@shrek.podlesie.net>
-	 <20131026173730.GA18320@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753634Ab3JZSxt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 14:53:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752822Ab3JZSxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 14:53:48 -0400
+Date: Sat, 26 Oct 2013 20:53:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH] perf tools: Add missing data.h into LIB_H headers
+Message-ID: <20131026185314.GA14973@krava.brq.redhat.com>
+References: <1381847254-28809-1-git-send-email-jolsa@redhat.com>
+ <1381847254-28809-3-git-send-email-jolsa@redhat.com>
+ <52676DFC.9030402@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52676DFC.9030402@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pr_debug_ratelimited should be coded similar to dev_dbg_ratelimited
-to reduce the "callbacks suppressed" messages.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Sat, 2013-10-26 at 18:37 +0100, Greg Kroah-Hartman wrote:
-> On Sat, Oct 26, 2013 at 03:29:56PM +0200, Krzysztof Mazur wrote:
-> > Hi,
+On Wed, Oct 23, 2013 at 09:34:36AM +0300, Adrian Hunter wrote:
+> On 15/10/13 17:27, Jiri Olsa wrote:
+> > Adding perf_data_file__open interface to data object
+> > to open the perf.data file for both read and write.
 > > 
-> > commit 2d6401cf4ca3861692a4779745e0049cac769d10
-> > ("USB: usbatm: move the atm_dbg() call to use dynamic debug")
-> > changed the atm_rldbg() to:
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > Cc: Adrian Hunter <adrian.hunter@intel.com>
+> > Cc: Andi Kleen <andi@firstfloor.org>
+> > ---
+> >  tools/perf/Makefile.perf    |   1 +
+> >  tools/perf/builtin-record.c |  34 +------------
+> >  tools/perf/builtin-top.c    |   9 +---
+> >  tools/perf/util/data.c      | 120 ++++++++++++++++++++++++++++++++++++++++++++
+> >  tools/perf/util/data.h      |   4 ++
+> >  tools/perf/util/session.c   |  95 +++++++++++------------------------
+> >  tools/perf/util/session.h   |   2 +-
+> >  7 files changed, 158 insertions(+), 107 deletions(-)
+> >  create mode 100644 tools/perf/util/data.c
 > > 
-> > #define atm_rldbg(instance, format, arg...)		\
-> > 	if (printk_ratelimit())				\
-> > 		atm_dbg(instance , format , ## arg)
-> > 
-> > and now printk_ratelimit() is always called even when debugging is
-> > disabled and a lot of "callbacks suppressed" messages are printed
-> > by the printk_ratelimit():
-> > 
-> > [...]
-> > usbatm_rx_process: 4977 callbacks suppressed
-> > usbatm_extract_one_cell: 2920 callbacks suppressed
-> > [...]
-> > 
-> > 
-> > I'm not sure how to fix that, maybe we need dynamic_pr_debug_ratelimit()?
+> > diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> > index c873e03..326a26e 100644
+> > --- a/tools/perf/Makefile.perf
+> > +++ b/tools/perf/Makefile.perf
+> > @@ -365,6 +365,7 @@ LIB_OBJS += $(OUTPUT)util/vdso.o
+> >  LIB_OBJS += $(OUTPUT)util/stat.o
+> >  LIB_OBJS += $(OUTPUT)util/record.o
+> >  LIB_OBJS += $(OUTPUT)util/srcline.o
+> > +LIB_OBJS += $(OUTPUT)util/data.o
 > 
-> How about just deleting the use of that macro entirely?  Odds are it's
-> not really needed anymore, right?
+> Also needs:
+> 
+> 	LIB_H += util/data.h
+> 
 
- include/linux/printk.h | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+oops, I knew I forgot something.. patch is attached
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index e6131a78..449d924 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -343,7 +343,19 @@ extern asmlinkage void dump_stack(void) __cold;
- #endif
+thanks,
+jirka
+
+
+---
+Adding missing data.h into LIB_H headers so the build
+could keep up with its changes.
+
+Reported-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/Makefile.perf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 8a9ca38..bc7cfa1 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -295,6 +295,7 @@ LIB_H += ui/helpline.h
+ LIB_H += ui/progress.h
+ LIB_H += ui/util.h
+ LIB_H += ui/ui.h
++LIB_H += util/data.h
  
- /* If you are writing a driver, please use dev_dbg instead */
--#if defined(DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+/* descriptor check is first to prevent flooding with "callbacks suppressed" */
-+#define pr_debug_ratelimited(dev, fmt, ...)				\
-+do {									\
-+	static DEFINE_RATELIMIT_STATE(_rs,				\
-+				      DEFAULT_RATELIMIT_INTERVAL,	\
-+				      DEFAULT_RATELIMIT_BURST);		\
-+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
-+	    __ratelimit(&_rs))						\
-+		__dynamic_pr_debug(fmt, ##__VA_ARGS__);			\
-+} while (0)
-+#elif defined(DEBUG)
- #define pr_debug_ratelimited(fmt, ...)					\
- 	printk_ratelimited(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
-
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+-- 
+1.7.11.7
 
