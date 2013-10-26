@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3JZTvZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 15:51:25 -0400
-Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:49389 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753120Ab3JZTvY (ORCPT
+	id S1753687Ab3JZUAI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 16:00:08 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:42680 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab3JZUAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 15:51:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:4321:5007:7652:10004:10400:10471:10848:11026:11232:11658:11914:12114:12438:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bone33_bf32e633be03
-X-Filterd-Recvd-Size: 1554
-Message-ID: <1382817080.3238.12.camel@joe-AO722>
-Subject: Re: [PATCH] printk: pr_debug_ratelimited: check state first to
- reduce "callbacks suppressed" messages
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jason Baron <jbaron@akamai.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Krzysztof Mazur <krzysiek@podlesie.net>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Date: Sat, 26 Oct 2013 12:51:20 -0700
-In-Reply-To: <20131026190151.GA26389@kroah.com>
-References: <20131026132955.GA9251@shrek.podlesie.net>
-	 <20131026173730.GA18320@kroah.com> <1382813522.3238.4.camel@joe-AO722>
-	 <20131026190151.GA26389@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Oct 2013 16:00:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1382807301.3604.6.camel@adam.happyassassin.net>
+References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+	<20131025105352.GA5419@gmail.com>
+	<1382719652.2445.1.camel@adam.happyassassin.net>
+	<CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
+	<1382750841.19471.72.camel@adam.happyassassin.net>
+	<1382754015.19471.80.camel@adam.happyassassin.net>
+	<20131026031759.GA8513@redhat.com>
+	<1382772154.3604.1.camel@adam.happyassassin.net>
+	<20131026091501.GE14237@gmail.com>
+	<1382807301.3604.6.camel@adam.happyassassin.net>
+Date: Sat, 26 Oct 2013 13:00:03 -0700
+X-Google-Sender-Auth: gKgBWddX23zPwCrX2bF3MxWB_p8
+Message-ID: <CA+55aFxwLuw=OTtn_u5Tk00xXbuSe6GAiTJ=UiySkr4E2CBAGw@mail.gmail.com>
+Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci" default
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Adam Williamson <awilliam@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Dave Jones <davej@redhat.com>, Lan Tianyu <tianyu.lan@intel.com>,
+        Matthew Garrett <mjg@redhat.com>, Peter Anvin <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>, Robin Holt <holt@sgi.com>,
+        davej@fedoraproject.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-26 at 20:01 +0100, Greg Kroah-Hartman wrote:
-> On Sat, Oct 26, 2013 at 11:52:02AM -0700, Joe Perches wrote:
-> > pr_debug_ratelimited should be coded similar to dev_dbg_ratelimited
-> > to reduce the "callbacks suppressed" messages.
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> Looks good, I'll queue both of these up soon.
+On Sat, Oct 26, 2013 at 10:08 AM, Adam Williamson <awilliam@redhat.com> wrote:
+>
+> Thanks, I'll give it a shot. Note - I suspect some of the other cases
+> may really be delays rather than hangs too. It's very easy to look at
+> the screen sitting there doing absolutely nothing at all for 30-60
+> seconds, lose patience, conclude it's hung, and force a shutdown/reboot.
+> Several of the earlier Z1 reporters on the vaio-z mailing list reported
+> it as a 'hang', but after I pointed out that it wasn't, confirmed the
+> same behaviour on their systems. This could possibly apply to others
+> too.
 
-Sorry Greg, hand out the brown paper bag please.
+I agree that a delay of 60s may well be reported as a hang, but at
+least for the Dell case I can test, the hang is definitely at least
+close to infinite. Definitely longer than a couple of minutes.
 
-Just ignore these both, I'll resubmit properly tested ones.
+So the Sony and Dell issues may be different. That said, vt-d was
+suspected for both, and apparently does match your kernel versions, so
+it's entirely possible that the fundamental cause is the same even if
+the symptoms are slightly different.
 
+                    Linus
