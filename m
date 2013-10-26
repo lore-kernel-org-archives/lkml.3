@@ -1,94 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab3JZO7R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 10:59:17 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:52313 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab3JZO7P (ORCPT
+	id S1752803Ab3JZPSe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 11:18:34 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:38909 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751774Ab3JZPSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 10:59:15 -0400
-From: Michal Nazarewicz <mpn@google.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: video: metronomefb: avoid out-of-bounds array access
-Date: Sat, 26 Oct 2013 15:58:48 +0100
-Message-Id: <3c610da0d5b555453d5295aae720042f1c065cab.1382791126.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.8.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 26 Oct 2013 11:18:33 -0400
+Date: Sat, 26 Oct 2013 17:18:20 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, linux@roeck-us.net,
+        arnd@arndb.de
+Subject: Re: [PATCH v8] watchdog: Add MOXA ART watchdog driver
+Message-ID: <20131026151820.GA17243@spo001.leaseweb.com>
+References: <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com> <1375454445-15589-1-git-send-email-jonas.jensen@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375454445-15589-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+Hi Jonas,
 
-load_waveform function checks whether padding bytes in stuff2a
-and stuff2b are all zero, but does so by treating those arrays
-as a single longer array.  Since the structure is packed, and
-the size sum matches, it all works, but creates some confusion
-in the code.
+> This patch adds a watchdog driver for the main hardware watchdog timer
+> found on MOXA ART SoCs.
+> 
+> The MOXA ART SoC provides one writable timer register, restarting
+> the hardware once it reaches zero. The register is auto decremented
+> every APB clock cycle.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-This commit changes the stuff2a and stuff2b arrays into pad1 and
-pad2 fields such that they cover the same bytes as the arrays
-covered, and changes the check in the load_waveform function so
-that the fields are read instead of iterating over an arary.
+Added to linux-watchdog-next.
 
-It also renames the other “stuff” fields to “ignore*” fields to
-give them more semantic meaning.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/video/metronomefb.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
-index f30150d..44ef8b0 100644
---- a/drivers/video/metronomefb.c
-+++ b/drivers/video/metronomefb.c
-@@ -126,7 +126,7 @@ static struct fb_var_screeninfo metronomefb_var = {
- 
- /* the waveform structure that is coming from userspace firmware */
- struct waveform_hdr {
--	u8 stuff[32];
-+	u8 ignore1[32];
- 
- 	u8 wmta[3];
- 	u8 fvsn;
-@@ -134,13 +134,14 @@ struct waveform_hdr {
- 	u8 luts;
- 	u8 mc;
- 	u8 trc;
--	u8 stuff3;
-+	u8 ignore2;
- 
- 	u8 endb;
- 	u8 swtb;
--	u8 stuff2a[2];
-+	u32 pad1; /* u16 halfof(pad1) */
- 
--	u8 stuff2b[3];
-+	/* u16 halfof(pad1) */
-+	u8 pad2;
- 	u8 wfm_cs;
- } __attribute__ ((packed));
- 
-@@ -210,11 +211,9 @@ static int load_waveform(u8 *mem, size_t size, int m, int t,
- 	}
- 	wfm_hdr->mc += 1;
- 	wfm_hdr->trc += 1;
--	for (i = 0; i < 5; i++) {
--		if (*(wfm_hdr->stuff2a + i) != 0) {
--			dev_err(dev, "Error: unexpected value in padding\n");
--			return -EINVAL;
--		}
-+	if (wfm_hdr->pad1 || wfm_hdr->pad2) {
-+		dev_err(dev, "Error: unexpected value in padding\n");
-+		return -EINVAL;
- 	}
- 
- 	/* calculating trn. trn is something used to index into
--- 
-1.8.4
+Kind regards,
+Wim.
 
