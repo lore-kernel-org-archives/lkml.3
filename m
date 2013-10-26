@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3JZLzK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 07:55:10 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:46744 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3JZLzI (ORCPT
+	id S1752249Ab3JZL43 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 07:56:29 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56091 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3JZL42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 07:55:08 -0400
-Date: Sat, 26 Oct 2013 13:55:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Doug Ledford <dledford@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131026115505.GB24067@gmail.com>
-References: <201310181742.r9IHgO1q021001@ib.usersys.redhat.com>
- <20131019082314.GA7778@gmail.com>
- <52656A5A.4030406@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52656A5A.4030406@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 26 Oct 2013 07:56:28 -0400
+From: Michal Nazarewicz <mpn@google.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH] drivers: w1: make w1_slave::flags long to avoid casts
+Date: Sat, 26 Oct 2013 12:56:11 +0100
+Message-Id: <5083d6c8452b765cb33acdf03fa9b20b1d15c452.1382788496.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Michal Nazarewicz <mina86@mina86.com>
 
-* Doug Ledford <dledford@redhat.com> wrote:
+Changing flags field of the w1_slave to unsigned long may on
+some architectures increase the size of the structure, but
+otherwise makes the code more kosher as casting is avoided
+and *_bit family of calls do not attempt to operate on an
+entity of bigger size than realy is available.
 
-> > What I was objecting to strongly here was to measure the _wrong_ 
-> > thing, i.e. the cache-hot case. The cache-cold case should be 
-> > measured in a low noise fashion, so that results are 
-> > representative. It's closer to the real usecase than any other 
-> > microbenchmark. That will give us a usable speedup figure and 
-> > will tell us which technique helped how much and which parameter 
-> > should be how large.
-> 
-> Cold cache, yes.  Low noise, yes.  But you need DMA traffic at the 
-> same time to be truly representative.
+The current behaviour does not introduce any bugs (since any
+bytes past flags field are preserved) but make the code
+slightly more confusing then it needs to be.
 
-Well, but in most usecases network DMA traffic is an order of 
-magnitude smaller than system bus capacity. 100 gigabit network 
-traffic is possible but not very common.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/w1/w1.c | 10 +++++-----
+ drivers/w1/w1.h |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-So I'd say that _if_ prefetching helps in the typical case we should 
-tune it for that - not for the bus-contended case...
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index fa932c2..66efa96 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -709,7 +709,7 @@ static int w1_attach_slave_device(struct w1_master *dev, struct w1_reg_num *rn)
+ 
+ 	sl->owner = THIS_MODULE;
+ 	sl->master = dev;
+-	set_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
++	set_bit(W1_SLAVE_ACTIVE, &sl->flags);
+ 
+ 	memset(&msg, 0, sizeof(msg));
+ 	memcpy(&sl->reg_num, rn, sizeof(sl->reg_num));
+@@ -866,7 +866,7 @@ void w1_slave_found(struct w1_master *dev, u64 rn)
+ 
+ 	sl = w1_slave_search_device(dev, tmp);
+ 	if (sl) {
+-		set_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
++		set_bit(W1_SLAVE_ACTIVE, &sl->flags);
+ 	} else {
+ 		if (rn && tmp->crc == w1_calc_crc8((u8 *)&rn_le, 7))
+ 			w1_attach_slave_device(dev, tmp);
+@@ -984,14 +984,14 @@ void w1_search_process_cb(struct w1_master *dev, u8 search_type,
+ 	struct w1_slave *sl, *sln;
+ 
+ 	list_for_each_entry(sl, &dev->slist, w1_slave_entry)
+-		clear_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
++		clear_bit(W1_SLAVE_ACTIVE, &sl->flags);
+ 
+ 	w1_search_devices(dev, search_type, cb);
+ 
+ 	list_for_each_entry_safe(sl, sln, &dev->slist, w1_slave_entry) {
+-		if (!test_bit(W1_SLAVE_ACTIVE, (unsigned long *)&sl->flags) && !--sl->ttl)
++		if (!test_bit(W1_SLAVE_ACTIVE, &sl->flags) && !--sl->ttl)
+ 			w1_slave_detach(sl);
+-		else if (test_bit(W1_SLAVE_ACTIVE, (unsigned long *)&sl->flags))
++		else if (test_bit(W1_SLAVE_ACTIVE, &sl->flags))
+ 			sl->ttl = dev->slave_ttl;
+ 	}
+ 
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index 45908e5..ca8081a 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -67,8 +67,8 @@ struct w1_slave
+ 	struct w1_reg_num	reg_num;
+ 	atomic_t		refcnt;
+ 	u8			rom[9];
+-	u32			flags;
+ 	int			ttl;
++	unsigned long		flags;
+ 
+ 	struct w1_master	*master;
+ 	struct w1_family	*family;
+-- 
+1.8.4
 
-> >> [...]  This distance should be far enough out that it can 
-> >> withstand other memory pressure, yet not so far as to 
-> >> constantly be prefetching, tossing the result out of cache due 
-> >> to pressure, then fetching/stalling that same memory on load.  
-> >> And it may not benchmark as well on a quiescent system running 
-> >> only the micro-benchmark, but it should end up performing 
-> >> better in actual real world usage.
-> > 
-> > The 'fully adversarial' case where all resources are maximally 
-> > competed for by all other cores is actually pretty rare in 
-> > practice. I don't say it does not happen or that it does not 
-> > matter, but I do say there are many other important usecases as 
-> > well.
-> > 
-> > More importantly, the 'maximally adversarial' case is very hard 
-> > to generate, validate, and it's highly system dependent!
-> 
-> This I agree with 100%, which is why I tend to think we should 
-> scrap the static prefetch optimizations entirely and have a boot 
-> up test that allows us to find our optimum prefetch distance for 
-> our given hardware.
-
-Would be interesting to see.
-
-I'm a bit sceptical - I think 'looking 1-2 cachelines in advance' is 
-something that might work reasonably well on a wide range of 
-systems, while trying to find a bus capacity/latency dependent sweet 
-spot would be difficult.
-
-We had pretty bad experience from boot-time measurements, and it's 
-not for lack of trying: I implemented the raid algorithm 
-benchmarking thing and also the scheduler's boot time cache-size 
-probing, both were problematic and have hurt reproducability and 
-debuggability.
-
-Thanks,
-
-	Ingo
