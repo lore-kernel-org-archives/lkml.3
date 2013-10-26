@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3JZQ5j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 12:57:39 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:39829 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab3JZQ5i (ORCPT
+	id S1753309Ab3JZRAC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 13:00:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56066 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3JZRAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 12:57:38 -0400
+	Sat, 26 Oct 2013 13:00:00 -0400
+Date: Sat, 26 Oct 2013 17:59:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131026165937.GA6362@sirena.org.uk>
+References: <1382713426-2680-1-git-send-email-treding@nvidia.com>
+ <526AF150.1030004@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20131025145625.GB1196@krava.brq.redhat.com>
-References: <1382533085-7166-1-git-send-email-eranian@google.com>
-	<1382533085-7166-2-git-send-email-eranian@google.com>
-	<20131025145625.GB1196@krava.brq.redhat.com>
-Date: Sat, 26 Oct 2013 18:57:37 +0200
-Message-ID: <CABPqkBTHnRXwKVJucKRuPA1cLzKur2dbkKu_PS5sQKK2XjovnQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] perf: add active_entry list head to struct perf_event
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <526AF150.1030004@infradead.org>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 25
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 4:56 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->
-> On Wed, Oct 23, 2013 at 02:58:02PM +0200, Stephane Eranian wrote:
-> > This patch adds a new fields to the struct perf_event.
-> > It is intended to be used to chain events which are
-> > active (enabled). It helps in the hardware layer
-> > for PMU which do not have actual counter restrictions, i.e.,
-> > free running read-only counters. Active events are chained
-> > as opposed to being tracked via the counter they use.
-> >
-> > Signed-off-by: Stephane Eranian <eranian@google.com>
-> > ---
-> >  include/linux/perf_event.h |    1 +
-> >  kernel/events/core.c       |    1 +
-> >  2 files changed, 2 insertions(+)
-> >
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index 2e069d1..a376384 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -435,6 +435,7 @@ struct perf_event {
-> >       struct perf_cgroup              *cgrp; /* cgroup event is attach to */
-> >       int                             cgrp_defer_enabled;
-> >  #endif
-> > +     struct list_head                active_entry;
->
-> Could this be in union with 'hlist_entry' ? It looks
-> as 'same purpose' and 'mutualy exclusive stuff.
->
-You're saying that I could use the hlist_entry field because
-it is currently only used by the sw events in the generic layer.
-But it seems to be a complicated rcu list for the purpose here.
+
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Oct 25, 2013 at 03:31:44PM -0700, Randy Dunlap wrote:
+
+> That's unfortunate.  The fixes should be part of the tree IMO.
+
+What Stephen does (which does seem like a good policy) is to keep the
+tree at the previous day's version instead of taking a new version if it
+introduces breakages on the architectures he tests.  That seems to
+strike a good balance between keeping things working for users and
+providing pushback to get things fixed before they go to Linus.
+
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSa/TtAAoJELSic+t+oim9mtsQAJZILsl/D4UhysaTk7/YkqEq
+svjvbsfauhxMSymWSoAs1uT7zEpYyBK9iZ6LO4ncGY9+p7nr0GjBrGK4ma9blGO7
+xRKLuiGPMuy1FzqKshFajEAvtNYP2OSEZIf7cZXniZfOuJtfQe9i+XsByBEkDnip
+UcY6ugQQWpvjNy0oH0m/zmYz99T2YkrW35IeL40ADA3zpRvELECd30iFveqUjRb8
+MuYbjv7tP01V+3MP33ssjjLh8ITO88VUI5ga+eos+bXG0qvskWVa+MNB/I2+4i76
+4MJ02H5HOZlo/INAubuXIPQWLj2iW/aY05ZieEacr4VXCu9GUnkrmblSkdd1MuVH
+e05Ufhz+p+d94Q0AelQE/yB3eKSbdZAqqBmU/b/3iZnrl6NAH5NgC3aWY4ELkVb3
+lgKUf2ygRmvjyUbLAcNGk4VNHgcYwm0sMQyE68r8TTk997mcZqCO8knBs2sGpNF+
+SiOIkPkVaEPiHmGpqu91tk+/nd9i5ZCwrrpFU20JbJQMl/luiuX7WY8EQ2fvYYII
+R+LRZ9IRLrLFFX7K6i3sGp7lBVMf+/S85GvZhfExvqHDubjuDyyPqs4uE+iLb7BQ
+vzcaaIoATJBkOYSPTT6j4K3gUagAcxlF22Q5b6ohS/6x2WZ2oBqWklH+1sgulFVC
+TMQ1LCRmBHcwaXhR84iD
+=dSmN
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
