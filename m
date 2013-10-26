@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3JZOCc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 10:02:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40764 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751849Ab3JZOCa (ORCPT
+	id S1752564Ab3JZOV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 10:21:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59968 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751183Ab3JZOV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 10:02:30 -0400
-Date: Sat, 26 Oct 2013 15:01:25 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux@arm.linux.org.uk
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131026140125.GA13424@mudshark.cambridge.arm.com>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
- <1382706224-8859-1-git-send-email-treding@nvidia.com>
- <1382706224-8859-4-git-send-email-treding@nvidia.com>
- <20131025132553.GE9999@mudshark.cambridge.arm.com>
- <20131026084033.GA14237@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131026084033.GA14237@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 26 Oct 2013 10:21:58 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: cw00.choi@samsung.com
+Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] extcon: arizona: Add defines for microphone detection levels
+Date: Sat, 26 Oct 2013 15:10:17 +0100
+Message-Id: <1382796618-19921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Improve readability by creating a define for each microphone detection
+level.
 
-[adding rmk]
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+ include/linux/mfd/arizona/registers.h |    9 +++++++++
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
-On Sat, Oct 26, 2013 at 09:40:33AM +0100, Ingo Molnar wrote:
-> * Will Deacon <will.deacon@arm.com> wrote:
-> > On Fri, Oct 25, 2013 at 02:03:42PM +0100, Thierry Reding wrote:
-> > > I fixed it up (see below). Please verify that the resolution looks good.
-> > > Also note that this isn't really a trivial resolution of a conflict, but
-> > > required modifying various other files. That causes rerere magic not to
-> > > work and needs part of conflict to be resolved manually. Perhaps a good
-> > > idea would be to rebase Jean's patch on top of the cleanups going on in
-> > > the tip tree? Perhaps even carry the patch in the tip tree?
-> > 
-> > These came via my tree (arm perf) after discussion here:
-> > 
-> >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/203077.html
-> > 
-> > Now that they've been pulled by rmk, we can't back them out with 
-> > ugly reverts, so I'm not sure what we can do to resolve in the ARM 
-> > tree; it looks like the perf Makefile has changed significantly in 
-> > -tip.
-> 
-> I realize that it was acked by Arnaldo, but for workflow reasons I'd 
-> really prefer it if non-trivial perf tooling patches went to Arnaldo 
-> as a pull request so that he can resolve any such conflicts. perf is 
-> in constant development so it's less work for you that way.
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index ec9a14e..92eb486 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -44,6 +44,17 @@
+ #define HPDET_DEBOUNCE 500
+ #define DEFAULT_MICD_TIMEOUT 2000
+ 
++enum {
++	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
++			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
++			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
++			  ARIZONA_MICD_LVL_7,
++
++	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
++
++	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
++};
++
+ struct arizona_extcon_info {
+ 	struct device *dev;
+ 	struct arizona *arizona;
+@@ -767,7 +778,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 
+ 	mutex_lock(&info->lock);
+ 
+-	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
++	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
+ 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
+@@ -784,7 +795,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 		}
+ 	}
+ 
+-	if (i == 10 && !(val & 0x7fc)) {
++	if (i == 10 && !(val & MICD_LVL_0_TO_8)) {
+ 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
+ 		mutex_unlock(&info->lock);
+ 		return;
+@@ -798,7 +809,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	}
+ 
+ 	/* If we got a high impedence we should have a headset, report it. */
+-	if (info->detecting && (val & 0x400)) {
++	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
+ 		arizona_identify_headphone(info);
+ 
+ 		ret = extcon_update_state(&info->edev,
+@@ -827,7 +838,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * plain headphones.  If both polarities report a low
+ 	 * impedence then give up and report headphones.
+ 	 */
+-	if (info->detecting && (val & 0x3f8)) {
++	if (info->detecting && (val & MICD_LVL_1_TO_7)) {
+ 		if (info->jack_flips >= info->micd_num_modes * 10) {
+ 			dev_dbg(arizona->dev, "Detected HP/line\n");
+ 			arizona_identify_headphone(info);
+@@ -851,7 +862,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * If we're still detecting and we detect a short then we've
+ 	 * got a headphone.  Otherwise it's a button press.
+ 	 */
+-	if (val & 0x3fc) {
++	if (val & MICD_LVL_0_TO_7) {
+ 		if (info->mic) {
+ 			dev_dbg(arizona->dev, "Mic button detected\n");
+ 
+diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+index 4706d3d..10d9e70 100644
+--- a/include/linux/mfd/arizona/registers.h
++++ b/include/linux/mfd/arizona/registers.h
+@@ -2196,6 +2196,15 @@
+ /*
+  * R677 (0x2A5) - Mic Detect 3
+  */
++#define ARIZONA_MICD_LVL_0                       0x0004  /* MICD_LVL - [2] */
++#define ARIZONA_MICD_LVL_1                       0x0008  /* MICD_LVL - [3] */
++#define ARIZONA_MICD_LVL_2                       0x0010  /* MICD_LVL - [4] */
++#define ARIZONA_MICD_LVL_3                       0x0020  /* MICD_LVL - [5] */
++#define ARIZONA_MICD_LVL_4                       0x0040  /* MICD_LVL - [6] */
++#define ARIZONA_MICD_LVL_5                       0x0080  /* MICD_LVL - [7] */
++#define ARIZONA_MICD_LVL_6                       0x0100  /* MICD_LVL - [8] */
++#define ARIZONA_MICD_LVL_7                       0x0200  /* MICD_LVL - [9] */
++#define ARIZONA_MICD_LVL_8                       0x0400  /* MICD_LVL - [10] */
+ #define ARIZONA_MICD_LVL_MASK                    0x07FC  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_SHIFT                        2  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_WIDTH                        9  /* MICD_LVL - [10:2] */
+-- 
+1.7.2.5
 
-Sure. I wasn't aware quite how much you guys had planned for the perf
-Makefile and I (wrongly) assumed that Arnaldo's ack was enough of an
-indication that conflicts would be unlikely and/or trivial.
-
-In future, I'll push back on any perf changes outside of arch/ in my tree,
-but that doesn't help us get out of the current situation: the patches are
-currently sitting in rmk's tree for 3.13, so that won't meet with -tip
-(outside of next) until Linus pulls them both. What can we do about that?
-
-Will
