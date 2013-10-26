@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab3JZAkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 20:40:45 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4243 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658Ab3JZAko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 20:40:44 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <526B0F80.602@broadcom.com>
-Date: Fri, 25 Oct 2013 17:40:32 -0700
-From: "Ray Jui" <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101
- Thunderbird/24.0.1
-MIME-Version: 1.0
-To: "Seungwon Jeon" <tgih.jun@samsung.com>, "'Chris Ball'" <cjb@laptop.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: fix host release issue after discard operation
-References: <1C995FCD38EDD646A035D3E5892E8C7C04C189A8@SJEXCHMB13.corp.ad.broadcom.com>
- <001301ced16e$f2695480$d73bfd80$%jun@samsung.com>
-In-Reply-To: <001301ced16e$f2695480$d73bfd80$%jun@samsung.com>
-X-WSS-ID: 7E75D0F41501656988-01-01
-Content-Type: text/plain;
- charset=windows-1252;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753623Ab3JZB13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 21:27:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:48901 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab3JZB1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 21:27:25 -0400
+Date: Sat, 26 Oct 2013 10:27:23 +0900
+From: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 4/5] usb: ehci-s5p: Change to use phy provided by the
+ generic phy framework
+In-reply-to: <1382710529-12082-5-git-send-email-k.debski@samsung.com>
+To: "'Kamil Debski'" <k.debski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Mateusz Krawczuk'" <mat.krawczuk@gmail.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Message-id: <003101ced1ea$85f7e010$91e7a030$%han@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7bit
+Thread-index: Ac7RjQQeA+F8IuX1Sui/BMlCS4ypRQAXGYMw
+DLP-Filter: Pass
+X-AuditID: cbfee68f-b7f836d000001b39-da-526b1a7cb08a
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+ZkW6NVHaQwZs/ghbzj5xjtWi7cpDd
+	4vLCS6wWP15fYLO48LSHzeJs0xt2i2k7/7NaXN41h81ixvl9TBaLlrUyW6w9cpfd4mz/bTaL
+	w2/aWS3Wz3jN4sDnsXPWXXaPvi2rGD2O39jO5PF5k1wASxSXTUpqTmZZapG+XQJXxt1je9kL
+	TrBWvNqyja2B8QBLFyMnh4SAicSBxulsELaYxIV764FsLg4hgWWMEmffTmCFKfq+6BsrRGIR
+	o8TfCe1QVb8YJVom97GDVLEJqEl8+XIYzBYR0JT42XCIBaSIWeAHs8SnG6vAdggJ1Ess3P0X
+	zOYUcJWY/ewi2AphgUSJIw8/gd3EIqAq8W7PB0YQm1fAVuLq3KOsELagxI/J98BqmAW0JNbv
+	PM4EYctLbF7zlrmLkQPoVHWJR391IW4wkni5ewYzRImIxL4X7xhB7pEQmMkhsfR/PzPELgGJ
+	b5NBDgXplZXYdIAZ4mNJiYMrbrBMYJSYhWTzLCSbZyHZPAvJigWMLKsYRVMLkguKk9KLjPWK
+	E3OLS/PS9ZLzczcxQqK/fwfj3QPWhxiTgdZPZJYSTc4HJo+8knhDYzMjC1MTU2Mjc0sz0oSV
+	xHnvP0wKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAYs7N3h1qKymT2YzvtLeTE3m17U6DR
+	wHHxZcIRN+NcG1vRmDd7futmMxSLBf8XfLflySKFHQwv7pkzqyn9PDW32cSf+cT9thVHQm+H
+	NxxsVRdKEP2y5cwD7v6520NPmvgpbn57L0PWied+hLFaiz03l8jrCiv3DJUUfcEbcocbp1kG
+	lsik+yuxFGckGmoxFxUnAgDc2Z7/FAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsVy+t9jAd0aqewggwn3eSzmHznHatF25SC7
+	xeWFl1gtfry+wGZx4WkPm8XZpjfsFtN2/me1uLxrDpvFjPP7mCwWLWtltlh75C67xdn+22wW
+	h9+0s1qsn/GaxYHPY+esu+wefVtWMXocv7GdyePzJrkAlqgGRpuM1MSU1CKF1Lzk/JTMvHRb
+	Je/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoCuVFMoSc0qBQgGJxcVK+naYJoSGuOla
+	wDRG6PqGBMH1GBmggYR1jBl3j+1lLzjBWvFqyza2BsYDLF2MnBwSAiYS3xd9Y4WwxSQu3FvP
+	1sXIxSEksIhR4u+EdijnF6NEy+Q+dpAqNgE1iS9fDoPZIgKaEj8bDrGAFDEL/GCW+HRjFRtI
+	QkigXmLh7r9gNqeAq8TsZxfBVggLJEocefgJbDWLgKrEuz0fGEFsXgFbiatzj7JC2IISPybf
+	A6thFtCSWL/zOBOELS+xec1b5i5GDqBT1SUe/dWFuMFI4uXuGcwQJSIS+168Y5zAKDQLyaRZ
+	SCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCU8sz6R2MqxosDjEKcDAq
+	8fAWtGcFCbEmlhVX5h5ilOBgVhLhXf0DKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wLSX
+	VxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2Mzr1KkQ+nvHVk
+	6G3IvdE3MXm9AGf7yS+qqw2ezHu72MzXxTLcUP2vSVhtg93nH+YcnOcCHVcuVwh1jOUt/hk4
+	7VKcclS49fzFc0/2RWR28bRUNF1s+BLhN3N9kXxcbuaa1mvxa6OkTu9c7+KX7rxk71rt2fr3
+	vi9wWv3ZJq+kayH/2rOc9n+UWIozEg21mIuKEwGmpFQdcQMAAA==
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+References: <1382710529-12082-1-git-send-email-k.debski@samsung.com>
+ <1382710529-12082-5-git-send-email-k.debski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2013 3:42 AM, Seungwon Jeon wrote:
-> Hi Ray,
->
-> On Fri, October 25, 2013, Ray Jui wrote:
->> Under function mmc_blk_issue_rq, after an MMC discard operation,
->> the MMC request data structure may be freed in memory. Later in
->> the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
->> is dangerous and invalid. It causes the MMC host not being released
->> when it should
->>
->> This patch fixes the issue by marking the special request down before
->> the discard/flush operation
->>
->> Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
->> Signed-off-by: Ray Jui <rjui@broadcom.com>
->> ---
->>   drivers/mmc/card/block.c |    8 ++++++--
->>   1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->> index 1a3163f..9e8e970 100644
->> --- a/drivers/mmc/card/block.c
->> +++ b/drivers/mmc/card/block.c
->> @@ -1954,7 +1954,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->>
->>   static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->>   {
->> -	int ret;
->> +	int ret, req_is_special = 0;
-> It would be better to use boolean?
->
-> Either, in a different way, I considered to save the cmd_flags like below.
-> unsigned int cmd_flags = req ? req->cmd_flags : 0;
->
-> Then, we could replace several 'if statement' without dereference.
-> if (req && req->cmd_flags & REQ_DISCARD) -> if (cmd_flags & REQ_DISCARD)
->
-> Just my suggestion.
->
-> Thanks,
-> Seungwon Jeon
->>   	struct mmc_blk_data *md = mq->data;
->>   	struct mmc_card *card = md->queue.card;
->>   	struct mmc_host *host = card->host;
->> @@ -1973,6 +1973,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->>   		goto out;
->>   	}
->>
->> +	/* mark special request here since req may be freed later */
->> +	if (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK))
->> +		req_is_special = 1;
->> +
->>   	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
->>   	if (req && req->cmd_flags & REQ_DISCARD) {
->>   		/* complete ongoing async transfer before issuing discard */
->> @@ -1999,7 +2003,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->>
->>   out:
->>   	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
->> -	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
->> +	     req_is_special)
->>   		/*
->>   		 * Release host when there are no more requests
->>   		 * and after special request(discard, flush) is done.
->> --
->> 1.7.9.5
->
->
-Hi Seungwon,
+On Friday, October 25, 2013 11:15 PM, Kamil Debski wrote:
+> 
+> Change the phy provider used from the old usb phy specific to a new one
+> using the generic phy framework.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/usb/host/ehci-s5p.c |   21 +++++++++++----------
+>  1 file changed, 11 insertions(+), 10 deletions(-)
 
-I like your suggestion. It makes the code simpler. I'll make the change 
-and submit patch v2.
+Hi Kamil Debski,
+It looks good. :-)
 
-Thanks,
+However, could you re-basing against Greg's 'usb-next' branch?
+Now, the file name of 'ehci-s5p.c' is renamed to 'ehci-exynos.c'.
+Also, 'Generic PHY Framework' was already merged to Greg's
+'usb-next' branch.
 
-Ray Jui
+Thank you.
+
+Best regards,
+Jingoo Han
 
