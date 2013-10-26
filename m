@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3JZOV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 10:21:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59968 "EHLO
+	id S1752771Ab3JZOWA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 10:22:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59975 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751183Ab3JZOV6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752292Ab3JZOV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 10:21:58 -0400
+	Sat, 26 Oct 2013 10:21:59 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: cw00.choi@samsung.com
 Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] extcon: arizona: Add defines for microphone detection levels
-Date: Sat, 26 Oct 2013 15:10:17 +0100
-Message-Id: <1382796618-19921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] extcon: arizona: Fix reset of HPDET after race with removal
+Date: Sat, 26 Oct 2013 15:10:18 +0100
+Message-Id: <1382796618-19921-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1382796618-19921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1382796618-19921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve readability by creating a define for each microphone detection
-level.
+We need to make sure we reset back to our starting state, especially
+making sure that we have disabled poll in the register cache.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
- include/linux/mfd/arizona/registers.h |    9 +++++++++
- 2 files changed, 25 insertions(+), 5 deletions(-)
+ drivers/extcon/extcon-arizona.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index ec9a14e..92eb486 100644
+index 92eb486..3ce7b49 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -44,6 +44,17 @@
- #define HPDET_DEBOUNCE 500
- #define DEFAULT_MICD_TIMEOUT 2000
- 
-+enum {
-+	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
-+			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
-+			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
-+			  ARIZONA_MICD_LVL_7,
+@@ -572,6 +572,14 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+ 		goto out;
+ 	} else if (!ret) {
+ 		dev_dbg(arizona->dev, "Ignoring HPDET for removed cable\n");
 +
-+	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
++		/* Reset back to starting range */
++		regmap_update_bits(arizona->regmap,
++				   ARIZONA_HEADPHONE_DETECT_1,
++				   ARIZONA_HP_IMPEDANCE_RANGE_MASK |
++				   ARIZONA_HP_POLL,
++				   0);
 +
-+	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
-+};
-+
- struct arizona_extcon_info {
- 	struct device *dev;
- 	struct arizona *arizona;
-@@ -767,7 +778,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 
- 	mutex_lock(&info->lock);
- 
--	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
-+	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
- 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
-@@ -784,7 +795,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 		}
+ 		goto done;
  	}
  
--	if (i == 10 && !(val & 0x7fc)) {
-+	if (i == 10 && !(val & MICD_LVL_0_TO_8)) {
- 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
- 		mutex_unlock(&info->lock);
- 		return;
-@@ -798,7 +809,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	}
+@@ -607,9 +615,9 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+ 		dev_err(arizona->dev, "Failed to report HP/line: %d\n",
+ 			ret);
  
- 	/* If we got a high impedence we should have a headset, report it. */
--	if (info->detecting && (val & 0x400)) {
-+	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
- 		arizona_identify_headphone(info);
++done:
+ 	arizona_extcon_do_magic(info, 0);
  
- 		ret = extcon_update_state(&info->edev,
-@@ -827,7 +838,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	 * plain headphones.  If both polarities report a low
- 	 * impedence then give up and report headphones.
- 	 */
--	if (info->detecting && (val & 0x3f8)) {
-+	if (info->detecting && (val & MICD_LVL_1_TO_7)) {
- 		if (info->jack_flips >= info->micd_num_modes * 10) {
- 			dev_dbg(arizona->dev, "Detected HP/line\n");
- 			arizona_identify_headphone(info);
-@@ -851,7 +862,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	 * If we're still detecting and we detect a short then we've
- 	 * got a headphone.  Otherwise it's a button press.
- 	 */
--	if (val & 0x3fc) {
-+	if (val & MICD_LVL_0_TO_7) {
- 		if (info->mic) {
- 			dev_dbg(arizona->dev, "Mic button detected\n");
+-done:
+ 	if (id_gpio)
+ 		gpio_set_value_cansleep(id_gpio, 0);
  
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 4706d3d..10d9e70 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -2196,6 +2196,15 @@
- /*
-  * R677 (0x2A5) - Mic Detect 3
-  */
-+#define ARIZONA_MICD_LVL_0                       0x0004  /* MICD_LVL - [2] */
-+#define ARIZONA_MICD_LVL_1                       0x0008  /* MICD_LVL - [3] */
-+#define ARIZONA_MICD_LVL_2                       0x0010  /* MICD_LVL - [4] */
-+#define ARIZONA_MICD_LVL_3                       0x0020  /* MICD_LVL - [5] */
-+#define ARIZONA_MICD_LVL_4                       0x0040  /* MICD_LVL - [6] */
-+#define ARIZONA_MICD_LVL_5                       0x0080  /* MICD_LVL - [7] */
-+#define ARIZONA_MICD_LVL_6                       0x0100  /* MICD_LVL - [8] */
-+#define ARIZONA_MICD_LVL_7                       0x0200  /* MICD_LVL - [9] */
-+#define ARIZONA_MICD_LVL_8                       0x0400  /* MICD_LVL - [10] */
- #define ARIZONA_MICD_LVL_MASK                    0x07FC  /* MICD_LVL - [10:2] */
- #define ARIZONA_MICD_LVL_SHIFT                        2  /* MICD_LVL - [10:2] */
- #define ARIZONA_MICD_LVL_WIDTH                        9  /* MICD_LVL - [10:2] */
 -- 
 1.7.2.5
 
