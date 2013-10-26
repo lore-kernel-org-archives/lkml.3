@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3JZEqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 00:46:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54126 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab3JZEqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 00:46:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="asc'?scan'208";a="380266906"
-Date: Sat, 26 Oct 2013 09:22:25 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        dma <dmaengine@vger.kernel.org>
-Subject: [GIT PULL] slave-dmaengine fixes
-Message-ID: <20131026035225.GE21230@intel.com>
+	id S1751775Ab3JZFCv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 01:02:51 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:37630 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab3JZFCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 01:02:50 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131025101511.GB3439@gmail.com>
+References: <20131024075813.GA26929@gmail.com>
+	<CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com>
+	<20131025101511.GB3439@gmail.com>
+Date: Sat, 26 Oct 2013 13:02:49 +0800
+Message-ID: <CAGdX0WGrGbb-eJvS4HHg9umk7X3-vrzyrJCuhAJrfGvOriKHSQ@mail.gmail.com>
+Subject: Re: ktap inclusion in drivers/staging/?
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 25, 2013 at 6:15 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+>
+>> >  - In a similar fashion, it would be nice to see it integrated with
+>> >    'perf probe' or 'perf ktap', so that users can create probes from
+>> >    a single place, with coherent syntax and integrated analysis
+>> >    capabilities. I.e. there's no reason to not make this a
+>> >    relatively pain-less yet very useful transition.
+>>
+>> Yes, I also mentioned this in my RFC email post before, that's the
+>> reason why I use perf-like interface in ktap as much as I can,
+>> like perf-tracepoints and perf-probe, also ktap can reuse perf
+>> debuginfo handling code in future, we are on the same page at this
+>> technical point.
+>
+> Okay, cool! I've also Cc:-ed Masami, who was also very receptive in
+> person of the idea to merge this kind of scripting into perf probe.
+>
+> (or perf ktap, whichever structure makes most sense from the end
+> user POV.)
+>
+Thanks. An addition question I want to discuss in here is the ktap code
+structure layout in first patch series, this don't need to dig out any ktap
+design detail, so we can make agreement on this point, and ease for me
+to prepare patch series.
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Do I need to prepare patchset target on staging tree or "real" part of kernel?
+If target on driver/staging/ktap, then kernel code and userspace code still
+need to locate at same directory, that many people may don't like it.
 
-Hey Linus
+Target on "real" part kernel?
+- include/trace/ktap (header file common used by interpreter and
+userspace compiler)
+- kernel/trace/ktap (interpreter code, ktapvm, pure kernel module)
+- tools/perf/ktap?(userspace compiler code)
+  As I also agree integrating ktap and perf together, two subsystem can share
+  many codes, so it's better putting ktap userspace into perf directory.
 
-Here is the late fixes pull request for dmaengine while you fly back from KS. We
-have a new dmaengine ML hosted by vger so a patch for that along with addition
-of Dave as driver mainatainer for ioat.  Other fixes are memeory leak fixes on
-edma driver, small fixes on rcar-hpbdma driver by Sergei.
+Whatever the name calling of perf and ktap integrating, ktap still would be
+a single directory, and could be compile into a standalone binary ktap.
 
+How about this sounds?
 
-The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
-  Linus Torvalds (1):
-        Linux 3.12-rc4
+Thanks.
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Dave Jiang (1):
-      MAINTAINERS: add to ioatdma maintainer list
-
-Geyslan G. Bem (1):
-      dma: edma.c: remove edma_desc leakage
-
-Sergei Shtylyov (2):
-      rcar-hpbdma: remove shdma_free_irq() calls
-      rcar-hpbdma: add parameter to set_slave() method
-
-Valentin Ilie (1):
-      dma: edma: Fix memory leak
-
-Vinod Koul (2):
-      MAINTAINERS: add the new dmaengine mailing list
-      dmaengine: edma: fix another memory leak
-
- MAINTAINERS                  |    7 ++++++-
- drivers/dma/edma.c           |    3 +++
- drivers/dma/sh/rcar-hpbdma.c |    9 +++++----
- 3 files changed, 14 insertions(+), 5 deletions(-)
-
---
-Thanks
-~Vinod
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSazx5AAoJEHwUBw8lI4NH6S8P/jzXo5bvzG9wOB/dvpgaTUTN
-/v6oXY+yiANKDrQtZv0VWhDzO16zZe+eMYcAr9NlKfCg/3+L3yl7xkXO45ShuXxf
-/Yl3+dIxjHl4cXdkPPANSOvXyeIX/wwfK8ez+OenK6rQJX9LyMHvLdwpB6tbVzUg
-n34ecb6LMfsXncjGzYFSrNagC5HZWJTWQw1Hy3kF5LpXyPsHAJTFJ4bUEs2bY4d8
-vENBcKHwxrNWSDnel4dL+jnXBT5v9RYM4SWyxx3Sn6tgQEUX+Gk1/gwumkibLO/Y
-Y4WZ5O3cguFcA1sKyAPrT4qurWrkBKJTMP9mtxGiG1TBPsJ3BcG9WFnz6Nc7nWzQ
-IprEUL/KMDURZLTqXAtMEL3jJWsI2u9O3Nfldo0GpWH5fdCGW75lZFvKdNnza/43
-+VIsLE2hHHpnPXZt5cIvh5HlFrBWvyiVPYbOmAAN/5pz2QSHUPZTpq6xA30jfNUR
-jluITi40Pqu8fuiv2vwbc9TdKcyrfAbue8yVyPpohV9+ioi94zgsDIxfupUQ1mVS
-QVWH2xBfp5QP1Bhg2a3yaEGkQV/o5o7n8Ts9bXIfCnL7mL4Va6kns/iD+ZIkjtV9
-ML65wFCwHLsNF0dvO/kuieLD4L6o7bqQy+Kju3SnA/xVa7K2wHdBPPxfjgNlSiOF
-0oo7An8+yaqYxiwNZd1E
-=zuW0
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
+Jovi
