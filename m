@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab3JZKMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 06:12:13 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:43442 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3JZKML (ORCPT
+	id S1751963Ab3JZKOv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 06:14:51 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:34613 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab3JZKOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 06:12:11 -0400
-X-Greylist: delayed 625 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Oct 2013 06:12:11 EDT
-Date: Sat, 26 Oct 2013 12:01:38 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: dbz <divide_by_zero@mail.ru>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: ddccontrol doesn't work on the new kernel
-Message-ID: <20131026120138.150e70da@neptune.home>
-In-Reply-To: <1382708930.658156307@f345.i.mail.ru>
-References: <1382708930.658156307@f345.i.mail.ru>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
+	Sat, 26 Oct 2013 06:14:49 -0400
+Message-ID: <1382782485.5901.22.camel@karhu.quadriga.com>
+Subject: Re: [PATCH] UBIFS: fix error return code in ubifs_remount_rw() and
+ ubifs_fill_super()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, yongjun_wei@trendmicro.com.cn,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Wei Yongjun <weiyj.lk@gmail.com>
+Date: Sat, 26 Oct 2013 11:14:45 +0100
+In-Reply-To: <CAN8TOE96Ax_gyeG5fXHejHE6gCmxNchioy1BrE8a6B83kK7A8g@mail.gmail.com>
+References: <CAPgLHd_=Y=YwCWSFjcacJ14yKUidmmJTHnKKibU6haoBUeNacA@mail.gmail.com>
+	 <CAN8TOE96Ax_gyeG5fXHejHE6gCmxNchioy1BrE8a6B83kK7A8g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing intel-gfx as it is related to intel GPU driver and might get missed
-by intel developers on LKML.
 
-Looking at the linked pastebins ddcontrol seems to make use of the same
-i2c/DDC line but getting different results.
+On Wed, 2013-10-02 at 12:59 -0700, Brian Norris wrote:
+> Bump, Artem? I'm cleaning out my old email, and this patch looks
+> obviously correct.
 
-Surprising info I see in dmesg, that does apply to both kernels, is
-that uvesafb attaches intel GPU *after* i915/KMS has done so.
-Both i915 and uvesafb seem to be modular.
+Picked to linux-ubifs.git, thanks!
 
-Bruno
+-- 
+Best Regards,
+Artem Bityutskiy
 
-
-On Fri, 25 October 2013 dbz <divide_by_zero@mail.ru> wrote:
-> Hi, guys and girls!
-> 
-> I have a strange trouble with ddccontrol that I cannot identify and solve
-> for about a month, so I hope you'll be able to help me.
-> 
-> So, I'm using LMDE system (http://linuxmint.com/start/debian/). Initially
-> the kernel was 3.2.32, and ddccontrol worked perfectly with my Philips
-> 232E2SB. I was able to change monitor brightness through ddccontrol
-> commands and I was really happy :)
-> 
-> Then I upgraded my system to Update Pack 7, and the new kernel became of
-> version 3.10.5. On new kernel ddccontrol doesn't work anymore, but it still
-> works on the old one (so this isn't software issue).
-> 
-> I have checked kernel configs - for the old kernel and for the new one.
-> Both configs are identical at i2c sections. I've tried to use old (3.2.32's
-> one) config with the new kernel, but there was no success.
-> 
-> To be absolutely sure that the problem isn't in the this specific kernel
-> version (3.10.5), I've downloaded the latest one (3.11.3) from kernel.org and
-> tried to use old config on this new kernel, but the issue is still
-> reproducing...
-> 
-> It would be great if you can give me right direction on this issue, 'cause
-> I don't know what to do now... I really need new kernel and ability to use
-> ddccontrol.
-> 
-> P.S. Additional info:
-> ----------------------------
-> The output of 'i2cdetect -l' on the old kernel (3.2.32):
-> http://pastebin.com/SqDPcwS9
-> The same on the new one (3.10.5): http://pastebin.com/YCTmX90m
-> 
-> The output of 'ddccontrol -p' on the old kernel (3.2.32):
-> http://pastebin.com/QL0fAZVC
-> The same on the new one (3.10.5): http://pastebin.com/vZ4bALmt
-> 
-> And dmesg outputs for both 3.2.32 and 3.10.5 kernels:
-> - 3.2.32: http://pastebin.com/7ijujvkA
-> - 3.10.5: http://pastebin.com/t1wdKrAd
-> 
-> I really need someone's help with ddccontrol. It would be great if you or
-> someone else who do you know can help me :)
-> 
-> Thank you in advance!
