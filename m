@@ -1,109 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3JZNCc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 09:02:32 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:50718 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3JZNCa (ORCPT
+	id S1752354Ab3JZNT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 09:19:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41666 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3JZNT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 09:02:30 -0400
-Date: Sat, 26 Oct 2013 09:02:25 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
-        thierry.reding@gmail.com, mark.rutland@arm.com,
-        linux-pwm@vger.kernel.org, linux@arm.linux.org.uk,
-        ian.campbell@citrix.com, pawel.moll@arm.com, swarren@wwwdotorg.org,
-        s.hauer@pengutronix.de, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        devicetree@vger.kernel.org, rob@landley.net, t.figa@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv5 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM.
-Message-ID: <20131026130225.GJ29341@beef>
-References: <1380521611-2764-1-git-send-email-Li.Xiubo@freescale.com>
- <1380521611-2764-5-git-send-email-Li.Xiubo@freescale.com>
- <20131025201211.7936EC405D3@trevor.secretlab.ca>
+	Sat, 26 Oct 2013 09:19:58 -0400
+Date: Sat, 26 Oct 2013 14:19:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the c6x tree
+Message-ID: <20131026131938.GT16735@n2100.arm.linux.org.uk>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com> <1382706224-8859-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131025201211.7936EC405D3@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382706224-8859-1-git-send-email-treding@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 09:12:11PM +0100, Grant Likely wrote:
-> On Mon, 30 Sep 2013 14:13:31 +0800, Xiubo Li <Li.Xiubo@freescale.com> wrote:
-> > This adds the Document for Freescale FTM PWM driver under
-> > Documentation/devicetree/bindings/pwm/.
-> > 
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
-> >  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 33 ++++++++++++++++++++++
-> >  1 file changed, 33 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-> > new file mode 100644
-> > index 0000000..2c6969a
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-> > @@ -0,0 +1,33 @@
-> > +Freescale FTM PWM controller
-> > +
-> > +Required properties:
-> > +- compatible: Should be "fsl,vf610-ftm-pwm"
-> > +- reg: Physical base address and length of the controller's registers
-> > +- #pwm-cells: Should be 3. See pwm.txt in this directory for a description of
-> > +  the cells format.
-> > +- clock-names : Includes the following module clock source entries:
-> > +    "ftm0" (system clock),
-> > +    "ftm0_fix_sel" (fixed frequency clock),
-> > +    "ftm0_ext_sel" (external clock)
-> > +- clocks : Must contain a clock specifier for each entry in clock-names.
-> > +- fsl,pwm-counter-clk: The FTM PWM counter clock source, should be one of the
-> > +  entries in clock-names.
-> > +- pinctrl-names: must contain a "default" entry.
-> > +- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
-> > +  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
-> 
-> Looks okay to me.
+On Fri, Oct 25, 2013 at 03:03:39PM +0200, Thierry Reding wrote:
+> diff --cc arch/arm/Kconfig
+> index c06647d,7db8abe0..b6a708e
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@@ -5,7 -5,7 +5,8 @@@ config AR
+>   	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+>   	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+>   	select ARCH_HAVE_CUSTOM_GPIO_H
+>  +	select ARCH_USE_CMPXCHG_LOCKREF
+> + 	select ARCH_MIGHT_HAVE_PC_PARPORT
+>   	select ARCH_WANT_IPC_PARSE_VERSION
 
-For consistency, shouldn't it also have:
-
-"See ../clock/clock-bindings.txt for details of the property values"
-
-where appropriate like is done under the pwm/pinctrl uses?
-
-IMHO, referencing parent bindings all of the time should be a documented
-best practice / requirement.
-
--Matt
-
-> > +
-> > +
-> > +Example:
-> > +
-> > +pwm0: pwm@40038000 {
-> > +		compatible = "fsl,vf610-ftm-pwm";
-> > +		reg = <0x40038000 0x1000>;
-> > +		#pwm-cells = <3>;
-> > +		clock-names = "ftm0", "ftm0_fix_sel", "ftm0_ext_sel";
-> > +		clocks = <&clks VF610_CLK_FTM0>,
-> > +			<&clks VF610_CLK_FTM0_FIX_SEL>,
-> > +			<&clks VF610_CLK_FTM0_EXT_SEL>;
-> > +		pinctrl-names = "default";
-> > +		pinctrl-0 = <&pinctrl_pwm0_1>;
-> > +		fsl,pwm-counter-clk = "ftm0_ext_sel";
-> > +};
-> > -- 
-> > 1.8.0
-> > 
-> > 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Thanks.  Generally we want these things to be arranged alphabetically to
+reduce the longer term chances of hitting merge conflicts, but in this
+case it wouldn't make any difference.
