@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3JZLc0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 07:32:26 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59662 "EHLO
+	id S1752317Ab3JZLco (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 07:32:44 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59674 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3JZLcZ (ORCPT
+	with ESMTP id S1751558Ab3JZLcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 07:32:25 -0400
-Date: Sat, 26 Oct 2013 13:32:21 +0200
+	Sat, 26 Oct 2013 07:32:43 -0400
+Date: Sat, 26 Oct 2013 13:32:38 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: gregkh@linuxfoundation.org, kay@vrfy.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, bhelgaas@google.com
-Subject: Re: [PATCH 14/34] sysfs, kernfs: prepare read path for kernfs
-Message-ID: <20131026113221.GB1792@Nokia-N900>
-References: <1382629780-10006-1-git-send-email-tj@kernel.org>
- <1382629780-10006-15-git-send-email-tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131026113238.GC1792@Nokia-N900>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+ <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+ <20131025091842.GA28681@thunk.org>
+ <20131025022937.12623dcd.akpm@linux-foundation.org>
+ <CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382629780-10006-15-git-send-email-tj@kernel.org>
+In-Reply-To: <CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri 2013-10-25 10:32:16, Linus Torvalds wrote:
+> On Fri, Oct 25, 2013 at 10:29 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >
+> > Apparently all this stuff isn't working as desired (and perhaps as designed)
+> > in this case.  Will take a look after a return to normalcy ;)
+> 
+> It definitely doesn't work. I can trivially reproduce problems by just
+> having a cheap (==slow) USB key with an ext3 filesystem, and going a
+> git clone to it. The end result is not pretty, and that's actually not
+> even a huge amount of data.
 
-> We're in the process of separating out core sysfs functionality into
-> kernfs which will deal with sysfs_dirents directly.  This patch
-> rearranges read path so that the kernfs and sysfs parts are separate.
+Hmm, I'd expect the result to be "dead USB key". Putting
+ext3 on cheap flash device normally just kills the devic :-(.
 
-> +static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
->  {
->  	struct sysfs_open_file *of = sf->private;
->  	struct kobject *kobj = of->sd->s_parent->priv;
-> -	const struct sysfs_ops *ops;
-> +	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
-> +	ssize_t count = 0;
->  	char *buf;
-> -	ssize_t count;
->  
->  	/* acquire buffer and ensure that it's >= PAGE_SIZE */
->  	count = seq_get_buf(sf, &buf);
 
-Initing count to zero is superfluous here.
-
-> +	/* the same behavior as single_open() */
-> +	return NULL + !*ppos;
-> +}
-
-That's certainly interesting code.
-
-						Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
