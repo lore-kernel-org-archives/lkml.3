@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab3JZSHv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 14:07:51 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40694 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab3JZSHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 14:07:49 -0400
-Message-ID: <1382811414.19256.744.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target fixes for v3.12-rc7
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Glanzmann <thomas@glanzmann.de>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Date: Sat, 26 Oct 2013 11:16:54 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753445Ab3JZSl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 14:41:26 -0400
+Received: from fieldses.org ([174.143.236.118]:54616 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab3JZSlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 14:41:25 -0400
+Date: Sat, 26 Oct 2013 14:41:24 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] fs: nfsd: remove calls to simple_strtoll
+Message-ID: <20131026184124.GA17487@fieldses.org>
+References: <1382754793-8827-2-git-send-email-dwalker@fifo99.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382754793-8827-2-git-send-email-dwalker@fifo99.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
+On Fri, Oct 25, 2013 at 07:33:12PM -0700, Daniel Walker wrote:
+> Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+> ---
+>  fs/nfsd/fault_inject.c | 12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/nfsd/fault_inject.c b/fs/nfsd/fault_inject.c
+> index d620e7f..41165f0 100644
+> --- a/fs/nfsd/fault_inject.c
+> +++ b/fs/nfsd/fault_inject.c
+> @@ -125,20 +125,24 @@ static ssize_t fault_inject_write(struct file *file, const char __user *buf,
+>  	size_t size = min(sizeof(write_buf) - 1, len);
+>  	struct net *net = current->nsproxy->net_ns;
+>  	struct sockaddr_storage sa;
+> +	int ret = -EFAULT;
+>  	u64 val;
+>  
+>  	if (copy_from_user(write_buf, buf, size))
+> -		return -EFAULT;
+> +		return ret;
+>  	write_buf[size] = '\0';
+>  
+>  	size = rpc_pton(net, write_buf, size, (struct sockaddr *)&sa, sizeof(sa));
+>  	if (size > 0)
+>  		nfsd_inject_set_client(file_inode(file)->i_private, &sa, size);
 
-Here are the outstanding target pending fixes for v3.12-rc7.
+If we take this branch, don't we end up returning -EFAULT below?
 
-Please go ahead and pull from:
+--b.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
-
-It includes a number of EXTENDED_COPY related fixes as a result of
-Thomas and Doug's continuing testing and feedback.
-
-Also included is an important vhost/scsi fix that addresses a long
-standing issue where the 'write' parameter for get_user_pages_fast() was
-incorrectly set for virtio-scsi WRITEs -> DMA_TO_DEVICE, and not for
-virtio-scsi READs -> DMA_FROM_DEVICE.
-
-This resulted in random userspace segfaults and other unpleasantness on
-KVM host, and unfortunately has been an issue since the initial merge of
-vhost/scsi in v3.6.  This patch is CC'ed to stable, along with two other
-less critical items.
-
-Thank you,
-
---nab
-
-Nicholas Bellinger (7):
-  target: Make target_do_xcopy failures return INVALID_PARAMETER_LIST
-  target: Allow non zero ListID in EXTENDED_COPY parameter list
-  target: Reject EXTENDED_COPY when emulate_3pc is disabled
-  target: Add missing XCOPY I/O operation sense_buffer
-  target: Generate failure for XCOPY I/O with non-zero scsi_status
-  target: Fail XCOPY for non matching source + destination block_size
-  vhost/scsi: Fix incorrect usage of get_user_pages_fast write
-    parameter
-
-Roland Dreier (2):
-  target: Fix assignment of LUN in tracepoints
-  target: Return an error for WRITE SAME with ANCHOR==1
-
-Vu Pham (1):
-  iser-target: check device before dereferencing its variable
-
-Wei Yongjun (1):
-  target/pscsi: fix return value check
-
- drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
- drivers/target/target_core_pscsi.c      |    8 ++--
- drivers/target/target_core_sbc.c        |    5 +++
- drivers/target/target_core_xcopy.c      |   53 +++++++++++++++++++++---------
- drivers/vhost/scsi.c                    |    2 +-
- include/trace/events/target.h           |    4 +-
- 6 files changed, 50 insertions(+), 24 deletions(-)
-
+>  	else {
+> -		val = simple_strtoll(write_buf, NULL, 0);
+> -		nfsd_inject_set(file_inode(file)->i_private, val);
+> +		ret = kstrtoll(write_buf, 0, &val);
+> +		if (ret == 0) {
+> +			nfsd_inject_set(file_inode(file)->i_private, val);
+> +			ret = len;
+> +		}
+>  	}
+> -	return len; /* on success, claim we got the whole input */
+> +	return ret; /* on success, claim we got the whole input */
+>  }
+>  
+>  static const struct file_operations fops_nfsd = {
+> -- 
+> 1.8.3.2
+> 
