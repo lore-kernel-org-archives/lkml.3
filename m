@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab3JZAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 20:25:59 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:50917 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab3JZAZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 20:25:57 -0400
-From: Patrick Palka <patrick@parcs.ath.cx>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH rebase] perf/ui/tui: don't force a refresh during progress update
-Date: Fri, 25 Oct 2013 20:25:49 -0400
-Message-Id: <1382747149-9716-1-git-send-email-patrick@parcs.ath.cx>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382565562-15108-1-git-send-email-patrick@parcs.ath.cx>
-References: <1382565562-15108-1-git-send-email-patrick@parcs.ath.cx>
+	id S1752877Ab3JZAkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 20:40:45 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4243 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658Ab3JZAko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 20:40:44 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <526B0F80.602@broadcom.com>
+Date: Fri, 25 Oct 2013 17:40:32 -0700
+From: "Ray Jui" <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.0.1
+MIME-Version: 1.0
+To: "Seungwon Jeon" <tgih.jun@samsung.com>, "'Chris Ball'" <cjb@laptop.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: fix host release issue after discard operation
+References: <1C995FCD38EDD646A035D3E5892E8C7C04C189A8@SJEXCHMB13.corp.ad.broadcom.com>
+ <001301ced16e$f2695480$d73bfd80$%jun@samsung.com>
+In-Reply-To: <001301ced16e$f2695480$d73bfd80$%jun@samsung.com>
+X-WSS-ID: 7E75D0F41501656988-01-01
+Content-Type: text/plain;
+ charset=windows-1252;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each call to tui_progress__update() would forcibly refresh the entire
-screen.  This is somewhat inefficient and causes noticable flickering
-during the startup of perf-report, especially on large/slow terminals.
+On 10/25/2013 3:42 AM, Seungwon Jeon wrote:
+> Hi Ray,
+>
+> On Fri, October 25, 2013, Ray Jui wrote:
+>> Under function mmc_blk_issue_rq, after an MMC discard operation,
+>> the MMC request data structure may be freed in memory. Later in
+>> the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
+>> is dangerous and invalid. It causes the MMC host not being released
+>> when it should
+>>
+>> This patch fixes the issue by marking the special request down before
+>> the discard/flush operation
+>>
+>> Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
+>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>> ---
+>>   drivers/mmc/card/block.c |    8 ++++++--
+>>   1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> index 1a3163f..9e8e970 100644
+>> --- a/drivers/mmc/card/block.c
+>> +++ b/drivers/mmc/card/block.c
+>> @@ -1954,7 +1954,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
+>>
+>>   static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>>   {
+>> -	int ret;
+>> +	int ret, req_is_special = 0;
+> It would be better to use boolean?
+>
+> Either, in a different way, I considered to save the cmd_flags like below.
+> unsigned int cmd_flags = req ? req->cmd_flags : 0;
+>
+> Then, we could replace several 'if statement' without dereference.
+> if (req && req->cmd_flags & REQ_DISCARD) -> if (cmd_flags & REQ_DISCARD)
+>
+> Just my suggestion.
+>
+> Thanks,
+> Seungwon Jeon
+>>   	struct mmc_blk_data *md = mq->data;
+>>   	struct mmc_card *card = md->queue.card;
+>>   	struct mmc_host *host = card->host;
+>> @@ -1973,6 +1973,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>>   		goto out;
+>>   	}
+>>
+>> +	/* mark special request here since req may be freed later */
+>> +	if (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK))
+>> +		req_is_special = 1;
+>> +
+>>   	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
+>>   	if (req && req->cmd_flags & REQ_DISCARD) {
+>>   		/* complete ongoing async transfer before issuing discard */
+>> @@ -1999,7 +2003,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>>
+>>   out:
+>>   	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
+>> -	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
+>> +	     req_is_special)
+>>   		/*
+>>   		 * Release host when there are no more requests
+>>   		 * and after special request(discard, flush) is done.
+>> --
+>> 1.7.9.5
+>
+>
+Hi Seungwon,
 
-It looks like the force-refresh in tui_progress__update() serves no
-purpose other than to clear the screen so that the progress bar of a
-previous operation does not subsume that of a subsequent operation.
-But we can do just that in a much more efficient manner by clearing only
-the region that a previous progress bar may have occupied before
-repainting the new progress bar.  Then the force-refresh could be
-removed with no change in visuals.
+I like your suggestion. It makes the code simpler. I'll make the change 
+and submit patch v2.
 
-This patch disables the slow force-refresh in tui_progress__update() and
-instead calls SLsmg_fill_region() on the entire area that the progress
-bar may occupy before repainting it.  This change makes the startup of
-perf-report much faster and appear much "smoother".
+Thanks,
 
-It turns out that this was a big bottleneck in the startup speed of
-perf-report -- with this patch, perf-report starts up ~2x faster (1.1s
-vs 0.55s) on my machines.  (These numbers were measured by running
-"time perf report" on an 8MB perf.data and pressing 'q' immediately.)
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
----
-Rebased against
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
-
-And also CC'd two more relevant persons.
-
- tools/perf/ui/tui/progress.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/ui/tui/progress.c b/tools/perf/ui/tui/progress.c
-index 3e2d936..c61d14b 100644
---- a/tools/perf/ui/tui/progress.c
-+++ b/tools/perf/ui/tui/progress.c
-@@ -18,13 +18,14 @@ static void tui_progress__update(struct ui_progress *p)
- 	if (p->total == 0)
- 		return;
- 
--	ui__refresh_dimensions(true);
-+	ui__refresh_dimensions(false);
- 	pthread_mutex_lock(&ui__lock);
- 	y = SLtt_Screen_Rows / 2 - 2;
- 	SLsmg_set_color(0);
- 	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
- 	SLsmg_gotorc(y++, 1);
- 	SLsmg_write_string((char *)p->title);
-+	SLsmg_fill_region(y, 1, 1, SLtt_Screen_Cols - 2, ' ');
- 	SLsmg_set_color(HE_COLORSET_SELECTED);
- 	bar = ((SLtt_Screen_Cols - 2) * p->curr) / p->total;
- 	SLsmg_fill_region(y, 1, 1, bar, ' ');
--- 
-1.8.4.rc3
+Ray Jui
 
