@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3JZCij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 22:38:39 -0400
-Received: from nm25-vm7.bullet.mail.ird.yahoo.com ([212.82.109.208]:32444 "EHLO
-	nm25-vm7.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753244Ab3JZCii convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 22:38:38 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Oct 2013 22:38:38 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 936218.31497.bm@omp1006.mail.ir2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=DUN35cpMHENKULBMqYh3175DKGe2igJM8Y2DJDA/ZEAZhSplI2Xvi4VfVbZI4g8R8jTtiq7YUaaib6lazYa4sSI7WREjtY9ebYhhffuJyOH/L3ypeCbKTELoiZPaUO8PdzFbBUGtEil6vsmcZBpRiHCcn2ZbHu1rWkH6yRYjOYQ=;
-X-YMail-OSG: OJYVOTwVM1ng6JRKjbkEdhnXWE8NkmWwr9ql.gXyBM_iCVF
- cCljya8QCU_Bq.Dy356NirnZdW5UOyUPetDDErMxBK6oD5GbiN2yZacvCLxf
- To6u7mshrgjNfg0PZShgi5d3MtKNWFcF9IiQ3rn9DBjgEmIa8M1MZ8h5IKE2
- 7lZOqdg0ewQGu5Ljw2vfugzO0IIhfglpayBkFIbtzbsDk_VoR23dTLTGw_4K
- xEgMim3qJm_cDrzWpwTXk2nWSUgdaeqgxZJfQvEI_sii7m5JV_N6EiirTH3G
- AIgzbm5re0wRQOkBekRTqNAoN_rEY4CWRcyAG8i703eejz3IXY37CLxlumjH
- FKXy6dO7CYgYDhaL7JRykn3rpVnvUxrCnumqp6rQNPjHWG4UbENRzAcL8VGD
- nWQRWh4oEsCLPK_mjRsUVIri.Ez.AK6r0Auid16B2xl4xsaTiGkbXCuER3rw
- xYhIVjCk5lU9Q5au2W4VED9yR_zUUgZaZR4Dja6s93hykF3IZSOcF9mz3oF2
- U3W5zsM.xD.DRCdU0Ow5lW7yMvZtbQkH6yrCzSzGhc1xVnXZ6f5DLa4IKEtl
- sQn9AIvsq6UwhW4nEmbE3g._HYM2EAiQwPJ1JOvm3ydLGV2iaOukWwyBc5ox
- 9QGcT2ZAkiZLYHx25DI3PedGj6WvwHEkd82o2vhcqxfgR90V.M1vg7PpLgwv
- q_te.KlBT61kSU7CI8EPCTR2VxSxaFPM5VoNomXsFXpzyQV1V6FBUu1ykLIK
- 7zNiqC0ZSThw_NwMQ
-X-Rocket-MIMEInfo: 002.001,R29vZCBEYXkNCg0KSSBhbSBNci5IYXNoaW0gS2Fib3JlLCBhIHJlZ2lvbmFsIG1hbmFnaW5nIGRpcmVjdG9yIChjb3JpcyBiYW5rIGludCdsKSBPdWFnYWRvdWdvdSBCdXJraW5hIEZhc28sIGluIG15IGRlcGFydG1lbnQgd2UgaGF2ZSBVUyQ5LDUwMC4wMDAwIFVuaXRlZCBzdGF0ZSBEb2xsYXJzLCB0byB0cmFuc2ZlciBpbnRvIHlvdXIgYWNjb3VudCBhcyBhIGRvcm1hbnQgZnVuZC5JZiB5b3UgYXJlIGludGVyZXN0ZWQgdG8gdXNlIHRoaXMgZnVuZCB0byBoZWxwIHRoZSBvcnBoYW5zIGFyb3VuZCB0aGUgd28BMAEBAQE-
-X-RocketYMMF: ucheboy2006
-X-Mailer: YahooMailClassic/357 YahooMailWebService/0.8.160.587
-Message-ID: <1382754703.6371.YahooMailBasic@web172405.mail.ir2.yahoo.com>
-Date: Sat, 26 Oct 2013 03:31:43 +0100 (BST)
-From: hashim kabore <hashim.kabore@laposte.net>
-Reply-To: hashim.kabore@laposte.net
-Subject: Best Regards Mr.Hashim Kabore
-To: undisclosed recipients:;
+	id S1754293Ab3JZCnL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 22:43:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:64595 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab3JZCnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 22:43:09 -0400
+X-Spam-Score: -100.9
+Message-ID: <526B2BFE.4090107@asianux.com>
+Date: Sat, 26 Oct 2013 10:42:06 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: Joern Rennecke <joern.rennecke@embecosm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: Re: [PATCH] kernel/modsign_certificate.S: use real contents instead
+ of macro GLOBAL()
+References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <CA+5PVA6N0c_ych96bC0nPw=hSqFtO-zhFFHzPW96yK8k=Z3fPg@mail.gmail.com>
+In-Reply-To: <CA+5PVA6N0c_ych96bC0nPw=hSqFtO-zhFFHzPW96yK8k=Z3fPg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day
+On 10/24/2013 11:29 PM, Josh Boyer wrote:
+> On Wed, Oct 23, 2013 at 10:31 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>> For some architectures, tool chain is not smart enough to recognize the
+>> macro with multiple lines (e.g. arc tool chain), and for common ".S"
+>> file, this kind of macro is also rarely used.
+>>
+>> So expand the related contents of macro to let it pass compiling (can
+>> use "arc-elf32-objdump -x" to know about it).
+>>
+>> The related error (allmodconfig for arc):
+>>
+>>     LD      init/built-in.o
+>>   kernel/built-in.o: In function `load_module_signing_keys':
+>>   kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
+>>   kernel/modsign_pubkey.c:71: undefined reference to `modsign_certificate_list_end'
+>>   kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
+>>
+>> The related tool chain information:
+>>
+>>   [root@gchenlinux linux-next]# arc-elf32-as -v
+>>   GNU assembler version 2.23.2 (arc-elf32) using BFD version (GNU Binutils) 2.23.2
+>>   [root@gchenlinux linux-next]# arc-elf32-ld -v
+>>   GNU ld (GNU Binutils) 2.23.2
+>>   [root@gchenlinux linux-next]# arc-elf32-gcc -v
+>>   Using built-in specs.
+>>   COLLECT_GCC=arc-elf32-gcc
+>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/arc-elf32/4.8.0/lto-wrapper
+>>   Target: arc-elf32
+>>   Configured with: ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 --disable-multilib --with-headers=../newlib/newlib/libc/include
+>>   Thread model: single
+>>   gcc version 4.8.0 (GCC)
+> 
+> Is this only an issue with using multi-line macro definitions in .S
+> files?  The practice of using multi-line macro definitions isn't rare.
+>  Look at e.g. include/linux/module.h, and a number of other header
+> files.
+> 
 
-I am Mr.Hashim Kabore, a regional managing director (coris bank int'l) Ouagadougou Burkina Faso, in my department we have US$9,500.0000 United state Dollars, to transfer into your account as a dormant fund.If you are interested to use this fund to help the orphans around the world Contact me and send your Personal information for more details:
+Yes, excluding "arch/*", for all ".S" files, except x86 driver and this
+file, no others use multi-line macro definition, and "arch/arc" don't
+use mulit-line macro definitions, either.
 
-Your full names................
-Your country of origin................
-Your occupation..............
-Your Age.......................
-Your Mobile N°......................
-Best Regards
-Mr.Hashim Kabore
-My number is +226 64 31 02 02
+The related search command is:
+
+  "find | grep -i "\.S$" | grep -v "/arch/"  | grep -v "Documentation" | xargs grep define".
+
+Hmm... at least, in our case, we need not use the multi-line macro
+definition, if expand it, the total lines will be shrunk, that will
+be more clearer and simpler to source code readers and writers.
+
+
+> This seems like a toolchain bug that should be fixable if it works for
+> other architectures.
+> 
+
+Hmm... at least, we are sure the toolchain is not quite smart enough
+(but we can not say it must be a bug).
+
+
+So for me, I recommend to apply this patch (maybe the patch comment
+need improvement). It is quite valuable to continue discussing about
+it, but it is not related with whether applying this patch or not.
+
+> josh
+> 
+> 
+
+Thanks.
+-- 
+Chen Gang
