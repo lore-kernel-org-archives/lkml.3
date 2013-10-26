@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab3JZSxt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 14:53:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752822Ab3JZSxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 14:53:48 -0400
-Date: Sat, 26 Oct 2013 20:53:14 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH] perf tools: Add missing data.h into LIB_H headers
-Message-ID: <20131026185314.GA14973@krava.brq.redhat.com>
-References: <1381847254-28809-1-git-send-email-jolsa@redhat.com>
- <1381847254-28809-3-git-send-email-jolsa@redhat.com>
- <52676DFC.9030402@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52676DFC.9030402@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753709Ab3JZSze (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 14:55:34 -0400
+Received: from smtprelay0122.hostedemail.com ([216.40.44.122]:58923 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751442Ab3JZSzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 14:55:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3866:3867:3870:4321:5007:7652:7903:9592:10004:10400:10848:11026:11658:11914:12296:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coil65_6a5ba5bf6dc05
+X-Filterd-Recvd-Size: 2085
+Message-ID: <1382813729.3238.8.camel@joe-AO722>
+Subject: [PATCH] atmusb: Fix dynamic_debug macros
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Krzysztof Mazur <krzysiek@podlesie.net>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Date: Sat, 26 Oct 2013 11:55:29 -0700
+In-Reply-To: <20131026173730.GA18320@kroah.com>
+References: <20131026132955.GA9251@shrek.podlesie.net>
+	 <20131026173730.GA18320@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 09:34:36AM +0300, Adrian Hunter wrote:
-> On 15/10/13 17:27, Jiri Olsa wrote:
-> > Adding perf_data_file__open interface to data object
-> > to open the perf.data file for both read and write.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Adrian Hunter <adrian.hunter@intel.com>
-> > Cc: Andi Kleen <andi@firstfloor.org>
-> > ---
-> >  tools/perf/Makefile.perf    |   1 +
-> >  tools/perf/builtin-record.c |  34 +------------
-> >  tools/perf/builtin-top.c    |   9 +---
-> >  tools/perf/util/data.c      | 120 ++++++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/data.h      |   4 ++
-> >  tools/perf/util/session.c   |  95 +++++++++++------------------------
-> >  tools/perf/util/session.h   |   2 +-
-> >  7 files changed, 158 insertions(+), 107 deletions(-)
-> >  create mode 100644 tools/perf/util/data.c
-> > 
-> > diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> > index c873e03..326a26e 100644
-> > --- a/tools/perf/Makefile.perf
-> > +++ b/tools/perf/Makefile.perf
-> > @@ -365,6 +365,7 @@ LIB_OBJS += $(OUTPUT)util/vdso.o
-> >  LIB_OBJS += $(OUTPUT)util/stat.o
-> >  LIB_OBJS += $(OUTPUT)util/record.o
-> >  LIB_OBJS += $(OUTPUT)util/srcline.o
-> > +LIB_OBJS += $(OUTPUT)util/data.o
-> 
-> Also needs:
-> 
-> 	LIB_H += util/data.h
-> 
+Fix use of atm_dbg to all normal pr_debug not dynamic_pr_debug
+because dynamic_pr_debug may not be compiled in at all.
 
-oops, I knew I forgot something.. patch is attached
-
-thanks,
-jirka
-
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-Adding missing data.h into LIB_H headers so the build
-could keep up with its changes.
+ drivers/usb/atm/usbatm.h | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-Reported-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/Makefile.perf | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 8a9ca38..bc7cfa1 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -295,6 +295,7 @@ LIB_H += ui/helpline.h
- LIB_H += ui/progress.h
- LIB_H += ui/util.h
- LIB_H += ui/ui.h
-+LIB_H += util/data.h
+diff --git a/drivers/usb/atm/usbatm.h b/drivers/usb/atm/usbatm.h
+index 5651231..2104b4b 100644
+--- a/drivers/usb/atm/usbatm.h
++++ b/drivers/usb/atm/usbatm.h
+@@ -59,13 +59,12 @@
+ 	atm_printk(KERN_INFO, instance , format , ## arg)
+ #define atm_warn(instance, format, arg...)	\
+ 	atm_printk(KERN_WARNING, instance , format , ## arg)
+-#define atm_dbg(instance, format, arg...)		\
+-	dynamic_pr_debug("ATM dev %d: " format ,	\
+-	(instance)->atm_dev->number , ## arg)
+-#define atm_rldbg(instance, format, arg...)		\
+-	if (printk_ratelimit())				\
+-		atm_dbg(instance , format , ## arg)
+-
++#define atm_dbg(instance, format, arg...)				\
++	pr_debug("ATM dev %d: " format,					\
++		 (instance)->atm_dev->number, ##__VA_ARGS__)
++#define atm_rldbg(instance, format, arg...)				\
++	pr_debug_ratelimited("ATM dev %d: " format,			\
++			     (instance)->atm_dev->number, ##__VA_ARGS__)
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
--- 
-1.7.11.7
+ /* flags, set by mini-driver in bind() */
+ 
+
 
