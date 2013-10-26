@@ -1,204 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab3JZMBN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 08:01:13 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:48447 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab3JZMBL (ORCPT
+	id S1751849Ab3JZMDl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 08:03:41 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:64393 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3JZMDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 08:01:11 -0400
-Date: Sat, 26 Oct 2013 14:01:08 +0200
+	Sat, 26 Oct 2013 08:03:39 -0400
+Date: Sat, 26 Oct 2013 14:03:36 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131026120108.GC24067@gmail.com>
-References: <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
- <20131017003421.GA31470@hmsreliant.think-freely.org>
- <1381974128.2045.144.camel@edumazet-glaptop.roam.corp.google.com>
- <20131018165034.GC4019@hmsreliant.think-freely.org>
- <1382116835.3284.23.camel@edumazet-glaptop.roam.corp.google.com>
- <20131018201133.GD4019@hmsreliant.think-freely.org>
- <1382130952.3284.43.camel@edumazet-glaptop.roam.corp.google.com>
- <20131021192116.GB4154@hmsreliant.think-freely.org>
- <1382384645.3284.86.camel@edumazet-glaptop.roam.corp.google.com>
- <20131021201958.GC4154@hmsreliant.think-freely.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFP: Fixing "-ga -ag -g fp -g dwarf" was Re: [PATCHSET 0/8] perf
+ tools: Fix scalability problem on callchain merging (v5)
+Message-ID: <20131026120336.GA24439@gmail.com>
+References: <20131011055829.GA4975@gmail.com>
+ <20131011073448.GA11064@krava.redhat.com>
+ <52581511.2010909@gmail.com>
+ <52581737.8090309@gmail.com>
+ <20131012165319.GB15116@gmail.com>
+ <5259A63B.5050406@gmail.com>
+ <20131013052328.GA22563@gmail.com>
+ <20131025190951.GC1853@ghostprotocols.net>
+ <526AC4F3.1020404@gmail.com>
+ <20131025194643.GE1853@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131021201958.GC4154@hmsreliant.think-freely.org>
+In-Reply-To: <20131025194643.GE1853@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Neil Horman <nhorman@tuxdriver.com> wrote:
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-> On Mon, Oct 21, 2013 at 12:44:05PM -0700, Eric Dumazet wrote:
-> > On Mon, 2013-10-21 at 15:21 -0400, Neil Horman wrote:
-> > 
-> > > 
-> > > Ok, so I ran the above code on a single cpu using taskset, and set irq affinity
-> > > such that no interrupts (save for local ones), would occur on that cpu.  Note
-> > > that I had to convert csum_partial_opt to csum_partial, as the _opt variant
-> > > doesn't exist in my tree, nor do I see it in any upstream tree or in the history
-> > > anywhere.
-> > 
-> > This csum_partial_opt() was a private implementation of csum_partial()
-> > so that I could load the module without rebooting the kernel ;)
-> > 
-> > > 
-> > > base results:
-> > > 53569916
-> > > 43506025
-> > > 43476542
-> > > 44048436
-> > > 45048042
-> > > 48550429
-> > > 53925556
-> > > 53927374
-> > > 53489708
-> > > 53003915
-> > > 
-> > > AVG = 492 ns
-> > > 
-> > > prefetching only:
-> > > 53279213
-> > > 45518140
-> > > 49585388
-> > > 53176179
-> > > 44071822
-> > > 43588822
-> > > 44086546
-> > > 47507065
-> > > 53646812
-> > > 54469118
-> > > 
-> > > AVG = 488 ns
-> > > 
-> > > 
-> > > parallel alu's only:
-> > > 46226844
-> > > 44458101
-> > > 46803498
-> > > 45060002
-> > > 46187624
-> > > 37542946
-> > > 45632866
-> > > 46275249
-> > > 45031141
-> > > 46281204
-> > > 
-> > > AVG = 449 ns
-> > > 
-> > > 
-> > > both optimizations:
-> > > 45708837
-> > > 45631124
-> > > 45697135
-> > > 45647011
-> > > 45036679
-> > > 39418544
-> > > 44481577
-> > > 46820868
-> > > 44496471
-> > > 35523928
-> > > 
-> > > AVG = 438 ns
-> > > 
-> > > 
-> > > We continue to see a small savings in execution time with prefetching (4 ns, or
-> > > about 0.8%), a better savings with parallel alu execution (43 ns, or 8.7%), and
-> > > the best savings with both optimizations (54 ns, or 10.9%).  
-> > > 
-> > > These results, while they've changed as we've modified the test case slightly
-> > > have remained consistent in their sppedup ordinality.  Prefetching helps, but
-> > > not as much as using multiple alu's, and neither is as good as doing both
-> > > together.
-> > > 
-> > > Unless you see something else that I'm doing wrong here.  It seems like a win to
-> > > do both.
-> > > 
-> > 
-> > Well, I only said (or maybe I forgot), that on my machines, I got no
-> > improvements at all with the multiple alu or the prefetch. (I tried
-> > different strides)
-> > 
-> > Only noises in the results.
-> > 
-> I thought you previously said that running netperf gave you a stastically
-> significant performance boost when you added prefetching:
-> http://marc.info/?l=linux-kernel&m=138178914124863&w=2
+> Em Fri, Oct 25, 2013 at 01:22:27PM -0600, David Ahern escreveu:
+> > On 10/25/13 1:09 PM, Arnaldo Carvalho de Melo wrote:
+> > >>>I think I did with the second follow up patch: -ga -ag -g fp -g
+> > >>>dwarf should all work properly with fp the default for -g.
 > 
-> But perhaps I missed a note somewhere.
+> > >>Acked-by: Ingo Molnar <mingo@kernel.org>
 > 
-> > It seems it depends on cpus and/or multiple factors.
-> > 
-> > Last machine I used for the tests had :
-> > 
-> > processor	: 23
-> > vendor_id	: GenuineIntel
-> > cpu family	: 6
-> > model		: 44
-> > model name	: Intel(R) Xeon(R) CPU           X5660  @ 2.80GHz
-> > stepping	: 2
-> > microcode	: 0x13
-> > cpu MHz		: 2800.256
-> > cache size	: 12288 KB
-> > physical id	: 1
-> > siblings	: 12
-> > core id		: 10
-> > cpu cores	: 6
-> > 
-> > 
-> > 
-> > 
+> > >Can I have this one submitted?
+>  
+> > Upon further review, Jiri was correct: that patch handles some of
+> > the old cases fine, but did not handle others. ie., it just moved
+> > the bad syntax problem around.
 > 
-> Thats about what I'm running with:
-> processor       : 0
-> vendor_id       : GenuineIntel
-> cpu family      : 6
-> model           : 44
-> model name      : Intel(R) Xeon(R) CPU           E5620  @ 2.40GHz
-> stepping        : 2
-> microcode       : 0x13
-> cpu MHz         : 1600.000
-> cache size      : 12288 KB
-> physical id     : 0
-> siblings        : 8
-> core id         : 0
-> cpu cores       : 4
+> perhaps we can do, at least for now, with what Ingo suggested?
 > 
+> Namely, having:
 > 
-> I can't imagine what would cause the discrepancy in our results (a 
-> 10% savings in execution time seems significant to me). My only 
-> thought would be that possibly the alu's on your cpu are faster 
-> than mine, and reduce the speedup obtained by preforming operation 
-> in parallel, though I can't imagine thats the case with these 
-> processors being so closely matched.
+> --call-graph   Require an argument, either "dwarf" or "fp"
+> -g             Doesn't require anything, uses whatever is configured,
+>                fp if no explicit config is done in places like
+>                ~/.perfconfig
+> 
+> Fits with what most people do usually, no?
 
-You keep ignoring my request to calculate and account for noise of 
-the measurement.
-
-For example you are talking about a 0.8% prefetch effect while the 
-noise in the results is obviously much larger than that, with a 
-min/max distance of around 5%:
-
-> > > 43476542
-> > > 53927374
-
-so the noise of 10 measurements would be around 5-10%. (back of the 
-envelope calculation)
-
-So you might be right in the end, but the posted data does not 
-support your claims, statistically.
-
-It's your responsibility to come up with convincing measurements and 
-results, not of those who review your work.
+Please do this! Usability sucks right now, going from '-g' to
+'-g <foo>' was an incompatible change, a regression I argue,
+which should be fixed in an urgent branch ASAP.
 
 Thanks,
 
