@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3JZLnK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 07:43:10 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:33783 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3JZLnI (ORCPT
+	id S1752120Ab3JZLqW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 07:46:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59785 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3JZLqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 07:43:08 -0400
-Date: Sat, 26 Oct 2013 13:43:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131026114303.GA24067@gmail.com>
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
- <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
+	Sat, 26 Oct 2013 07:46:21 -0400
+Date: Sat, 26 Oct 2013 04:46:12 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: blk-mq flush fix
+Message-ID: <20131026114612.GA8576@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've just ran into an issue where I ran out of blk-mq tags on my virtio
+setup on what appears a heavy fsync workload.  When drilling it down it
+seemed to be a tag leak.  This reminded me of a commit I had seen in
+the scsi-mq tree but never on any mailinglist (and neither in my Inbox
+despite the Cc tag) which turned out to be in Jens' blk-mq tree either.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+https://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?h=scsi-mq&id=620fe5a562440a823e7a25ae99dc19a6fbd53949
 
-> On Fri, Oct 25, 2013 at 11:23 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > Enable DEBUG_OBJECTS, DEBUG_OBJECTS_FREE, DEBUG_OBJECTS_TIMERS
-> 
-> Yes, but nobody has actually been able to trigger it with those. 
-> It's pretty rare, and the debug options are so expensive that they 
-> aren't reasonable to enable generally...
-> 
-> So we need to try to figure out how to trigger it, or narrow 
-> things down some way..
+>From a quick look over the patch I'm not entirely sure it's correct, but
+it's at least going in the right direction.  The reason for the issue
+that Alexander and I saw is the following:
 
-If it's timing then maybe the 1 seconds delay isn't enough 
-(especially if it's boot related, where we have a couple of delays 
-already) - the patch below triples it.
+The flush state machine takes in a struct request, which then is
+submitted multiple times to the underling driver.  The old block code
+requeses the same request for each of those, so it does not have an
+issue with tapping into the request pool.  The new one on the other hand
+allocates a new request for each of the actualy steps of the flush
+sequence.
 
-(If the bug goes away due to some other side effect then this patch 
-won't make a difference to reproducability.)
+In theory this should make the patch from Alexander the right fix,
+except that we do have a corner case where we do not do the above steps:
+In case the state machine doesn't need to be run we issue the request
+directly.  This either happens if the driver doesn't need any cache
+flushes, or we only requested force unit access and the driver supports
+that natively.
 
-Thanks,
+It seems like we should set simply not require a tag at all for those
+sub requests and solve the issue that way.
 
-	Ingo
-
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 084f7b1..124188f 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -595,7 +595,7 @@ static void kobject_release(struct kref *kref)
- 	pr_info("kobject: '%s' (%p): %s, parent %p (delayed)\n",
- 		 kobject_name(kobj), kobj, __func__, kobj->parent);
- 	INIT_DELAYED_WORK(&kobj->release, kobject_delayed_cleanup);
--	schedule_delayed_work(&kobj->release, HZ);
-+	schedule_delayed_work(&kobj->release, 3*HZ);
- #else
- 	kobject_cleanup(kobj);
- #endif
+And Alexander and Nick: how did this patch end up in Nick's tree?  I'm a
+bit curious at all as there's been no visibility at all, despite Cc tags
+to Jens and me.
