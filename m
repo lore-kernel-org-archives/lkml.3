@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3JZHGI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 03:06:08 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:56875 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab3JZHGG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 03:06:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131025084134.6cfa153a@samsung-9>
-References: <1382687360-27794-1-git-send-email-zwu.kernel@gmail.com>
-	<20131025084134.6cfa153a@samsung-9>
-Date: Sat, 26 Oct 2013 15:06:04 +0800
-Message-ID: <CAEH94Lia4VVU6Vnn_7DhOHo4yhR-tsMPu7biMCeSMgQPvkQrug@mail.gmail.com>
-Subject: Re: [PATCH 1/3] vxlan: silence one build warning
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1752536Ab3JZHWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 03:22:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20466 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab3JZHWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 03:22:49 -0400
+Message-ID: <1382772154.3604.1.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
+ default
+From: Adam Williamson <awilliam@redhat.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Lan Tianyu <tianyu.lan@intel.com>,
+        Matthew Garrett <mjg@redhat.com>, Peter Anvin <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Robin Holt <holt@sgi.com>,
+        davej@fedoraproject.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 26 Oct 2013 00:22:34 -0700
+In-Reply-To: <20131026031759.GA8513@redhat.com>
+References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
+	 <20131025105352.GA5419@gmail.com>
+	 <1382719652.2445.1.camel@adam.happyassassin.net>
+	 <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
+	 <1382750841.19471.72.camel@adam.happyassassin.net>
+	 <1382754015.19471.80.camel@adam.happyassassin.net>
+	 <20131026031759.GA8513@redhat.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 11:41 PM, Stephen Hemminger
-<stephen@networkplumber.org> wrote:
-> On Fri, 25 Oct 2013 15:49:18 +0800
-> Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
->
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> drivers/net/vxlan.c: In function ‘vxlan_sock_add’:
->> drivers/net/vxlan.c:2298:11: warning: ‘sock’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->> drivers/net/vxlan.c:2275:17: note: ‘sock’ was declared here
->>   LD      drivers/net/built-in.o
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  drivers/net/vxlan.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
->> index 2ef5b62..e15f1af 100644
->> --- a/drivers/net/vxlan.c
->> +++ b/drivers/net/vxlan.c
->> @@ -2272,7 +2272,7 @@ static struct vxlan_sock *vxlan_socket_create(struct net *net, __be16 port,
->>  {
->>       struct vxlan_net *vn = net_generic(net, vxlan_net_id);
->>       struct vxlan_sock *vs;
->> -     struct socket *sock;
->> +     struct socket *sock = NULL;
->>       struct sock *sk;
->>       int rc = 0;
->>       unsigned int h;
->
-> This only happens with certain versions of Gcc which have buggy dependency
-> analysis. It doesn't happen with Gcc 4.7, think it only shows up in 4.4.
-> I would rather not fix the warning this way since it risks masking later bugs if this code ever changes.
-Gcc version is 4.7.2 on my box, this warning took palce.
-# gcc -v
-Using built-in specs.
-COLLECT_GCC=gcc
-...
-gcc version 4.7.2 20120921 (Red Hat 4.7.2-2) (GCC)
+On Fri, 2013-10-25 at 23:17 -0400, Dave Jones wrote:
+> On Fri, Oct 25, 2013 at 07:20:15PM -0700, Adam Williamson wrote:
+>  > OK, so, findings: F16 and F17 live images reboot quickly. F18 is the
+>  > first that reboots slowly.
+> 
+> wait, stop. what does "reboots slowly" mean ? 
+> In every one of the failure I've seen, without a quirk it means reboot
+> doesn't happen at all.
 
+If you read the original report - on Z1s, if you leave the system alone,
+it sits at the 'Restarting system.' message for about two minutes, then
+finally reboots. If you pass 'reboot=pci', reboot is as fast as you'd
+expect.
 
+https://bugzilla.kernel.org/show_bug.cgi?id=61721
 -- 
-Regards,
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-Zhi Yong Wu
