@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3JZO0y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 10:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab3JZO0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752740Ab3JZO0R (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 26 Oct 2013 10:26:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab3JZO0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 10:26:16 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <andi@firstfloor.org>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 4/4] perf tools: Add readable output for callchain debug
-Date: Sat, 26 Oct 2013 16:25:36 +0200
-Message-Id: <1382797536-32303-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1382797536-32303-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 0/4] perf tools: Fix -g option handling
+Date: Sat, 26 Oct 2013 16:25:32 +0200
+Message-Id: <1382797536-32303-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <20131026120336.GA24439@gmail.com>
 References: <20131026120336.GA24439@gmail.com>
- <1382797536-32303-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding people readable output for callchain debug,
-to get following '-v' output:
+hi,
+changing the '-g/-G' options for record/top commands
+to take NO argument and enable unwind method based
+on .perfconfig setup (using FP by default).
 
-  $ perf record -v -g ls
-  callchain: type DWARF
-  callchain: stack dump size 4096
-  ...
+The current -g option parsing moves into the
+'--call-graph' option.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Examples:
+  $ cat ~/.perfconfig:
+    [top]
+          call-graph = fp
+
+    [record]
+          call-graph = dwarf,8192
+
+  $ perf record -g ls
+  - enables dwarf unwind with user stack size dump 8192 bytes
+
+  $ perf top -G
+  - enables frame pointer unwind
+
+  $ perf record --call-graph=fp ls
+  - enables frame pointer unwind
+
+  $ perf top --call-graph=dwarf,4096 ls
+  - enables dwarf unwind with user stack size dump 4096 bytes
+
+thanks,
+jirka
+
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -44,39 +65,17 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-record.c | 4 +++-
- tools/perf/perf.h           | 3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+Jiri Olsa (4):
+      perf tools: Split -g and --call-graph for record command
+      perf tools: Split -G and --call-graph for top command
+      perf tools: Add call-graph option support into .perfconfig
+      perf tools: Add readable output for callchain debug
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f597b9b..8bdd608 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -736,7 +736,9 @@ int record_parse_callchain(const char *arg, struct perf_record_opts *opts)
- 
- static void callchain_debug(struct perf_record_opts *opts)
- {
--	pr_debug("callchain: type %d\n", opts->call_graph);
-+	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-+
-+	pr_debug("callchain: type %s\n", str[opts->call_graph]);
- 
- 	if (opts->call_graph == CALLCHAIN_DWARF)
- 		pr_debug("callchain: stack dump size %d\n",
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index c4ed633..e84aeeb 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -209,7 +209,8 @@ void pthread__unblock_sigwinch(void);
- enum perf_call_graph_mode {
- 	CALLCHAIN_NONE,
- 	CALLCHAIN_FP,
--	CALLCHAIN_DWARF
-+	CALLCHAIN_DWARF,
-+	CALLCHAIN_MAX
- };
- 
- struct perf_record_opts {
--- 
-1.7.11.7
-
+ tools/perf/Documentation/perf-record.txt |  6 +++++-
+ tools/perf/Documentation/perf-top.txt    | 18 +++++-------------
+ tools/perf/builtin-record.c              | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------------
+ tools/perf/builtin-top.c                 | 35 +++++++++++++++++++++++++----------
+ tools/perf/perf.h                        |  4 +++-
+ tools/perf/util/callchain.h              |  3 +++
+ tools/perf/util/evsel.c                  |  2 +-
+ 7 files changed, 110 insertions(+), 47 deletions(-)
