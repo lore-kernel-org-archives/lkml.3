@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab3JZOl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 10:41:58 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36439 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3JZOl5 (ORCPT
+	id S1752829Ab3JZOsd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 10:48:33 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:65291 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3JZOsb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 10:41:57 -0400
-Message-ID: <526BD473.9040703@gmail.com>
-Date: Sat, 26 Oct 2013 22:40:51 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Josh Boyer <jwboyer@fedoraproject.org>,
-        Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: Re: [PATCH] kernel/modsign_certificate.S: use real contents instead
- of macro GLOBAL()
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <CA+5PVA6N0c_ych96bC0nPw=hSqFtO-zhFFHzPW96yK8k=Z3fPg@mail.gmail.com> <526B2BFE.4090107@asianux.com>
-In-Reply-To: <526B2BFE.4090107@asianux.com>
+	Sat, 26 Oct 2013 10:48:31 -0400
+Date: Sat, 26 Oct 2013 07:48:19 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/3] vxlan: silence one build warning
+Message-ID: <20131026074819.6a5f4e24@samsung-9>
+In-Reply-To: <CAEH94Lia4VVU6Vnn_7DhOHo4yhR-tsMPu7biMCeSMgQPvkQrug@mail.gmail.com>
+References: <1382687360-27794-1-git-send-email-zwu.kernel@gmail.com>
+	<20131025084134.6cfa153a@samsung-9>
+	<CAEH94Lia4VVU6Vnn_7DhOHo4yhR-tsMPu7biMCeSMgQPvkQrug@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2013 10:42 AM, Chen Gang wrote:
-> On 10/24/2013 11:29 PM, Josh Boyer wrote:
->> On Wed, Oct 23, 2013 at 10:31 PM, Chen Gang <gang.chen@asianux.com> wrote:
->>> For some architectures, tool chain is not smart enough to recognize the
->>> macro with multiple lines (e.g. arc tool chain), and for common ".S"
->>> file, this kind of macro is also rarely used.
->>>
->>> So expand the related contents of macro to let it pass compiling (can
->>> use "arc-elf32-objdump -x" to know about it).
->>>
->>> The related error (allmodconfig for arc):
->>>
->>>     LD      init/built-in.o
->>>   kernel/built-in.o: In function `load_module_signing_keys':
->>>   kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
->>>   kernel/modsign_pubkey.c:71: undefined reference to `modsign_certificate_list_end'
->>>   kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
->>>
->>> The related tool chain information:
->>>
->>>   [root@gchenlinux linux-next]# arc-elf32-as -v
->>>   GNU assembler version 2.23.2 (arc-elf32) using BFD version (GNU Binutils) 2.23.2
->>>   [root@gchenlinux linux-next]# arc-elf32-ld -v
->>>   GNU ld (GNU Binutils) 2.23.2
->>>   [root@gchenlinux linux-next]# arc-elf32-gcc -v
->>>   Using built-in specs.
->>>   COLLECT_GCC=arc-elf32-gcc
->>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/arc-elf32/4.8.0/lto-wrapper
->>>   Target: arc-elf32
->>>   Configured with: ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 : (reconfigured) ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=arc-elf32 --with-cpu=arc700 --disable-multilib --with-headers=../newlib/newlib/libc/include
->>>   Thread model: single
->>>   gcc version 4.8.0 (GCC)
->>
->> Is this only an issue with using multi-line macro definitions in .S
->> files?  The practice of using multi-line macro definitions isn't rare.
->>  Look at e.g. include/linux/module.h, and a number of other header
->> files.
->>
+On Sat, 26 Oct 2013 15:06:04 +0800
+Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
 
+> On Fri, Oct 25, 2013 at 11:41 PM, Stephen Hemminger
+> <stephen@networkplumber.org> wrote:
+> > On Fri, 25 Oct 2013 15:49:18 +0800
+> > Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> >
+> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>
+> >> drivers/net/vxlan.c: In function ‘vxlan_sock_add’:
+> >> drivers/net/vxlan.c:2298:11: warning: ‘sock’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> drivers/net/vxlan.c:2275:17: note: ‘sock’ was declared here
+> >>   LD      drivers/net/built-in.o
+> >>
+> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >> ---
+> >>  drivers/net/vxlan.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+> >> index 2ef5b62..e15f1af 100644
+> >> --- a/drivers/net/vxlan.c
+> >> +++ b/drivers/net/vxlan.c
+> >> @@ -2272,7 +2272,7 @@ static struct vxlan_sock *vxlan_socket_create(struct net *net, __be16 port,
+> >>  {
+> >>       struct vxlan_net *vn = net_generic(net, vxlan_net_id);
+> >>       struct vxlan_sock *vs;
+> >> -     struct socket *sock;
+> >> +     struct socket *sock = NULL;
+> >>       struct sock *sk;
+> >>       int rc = 0;
+> >>       unsigned int h;
+> >
+> > This only happens with certain versions of Gcc which have buggy dependency
+> > analysis. It doesn't happen with Gcc 4.7, think it only shows up in 4.4.
+> > I would rather not fix the warning this way since it risks masking later bugs if this code ever changes.
+> Gcc version is 4.7.2 on my box, this warning took palce.
+> # gcc -v
+> Using built-in specs.
+> COLLECT_GCC=gcc
+> ...
+> gcc version 4.7.2 20120921 (Red Hat 4.7.2-2) (GCC)
 > 
-> Yes, excluding "arch/*", for all ".S" files, except x86 driver and this
-> file, no others use multi-line macro definition, and "arch/arc" don't
-> use mulit-line macro definitions, either.
-> 
-
-Oh, sorry, what my written is not quite precise, and my real meaning is:
-"no others *intend* to use multi-line macro definition in *.S".
-
-> The related search command is:
-> 
->   "find | grep -i "\.S$" | grep -v "/arch/"  | grep -v "Documentation" | xargs grep define".
-> 
-> Hmm... at least, in our case, we need not use the multi-line macro
-> definition, if expand it, the total lines will be shrunk, that will
-> be more clearer and simpler to source code readers and writers.
-> 
-> 
->> This seems like a toolchain bug that should be fixable if it works for
->> other architectures.
->>
-> 
-> Hmm... at least, we are sure the toolchain is not quite smart enough
-> (but we can not say it must be a bug).
-> 
-> 
-> So for me, I recommend to apply this patch (maybe the patch comment
-> need improvement). It is quite valuable to continue discussing about
-> it, but it is not related with whether applying this patch or not.
-> 
->> josh
->>
->>
-> 
-> Thanks.
 > 
 
-
--- 
-Chen Gang
+I dont see it on Debian 7.
+$ gcc -v
+Using built-in specs.
+COLLECT_GCC=/usr/bin/gcc-4.7.real
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.7/lto-wrapper
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 4.7.2-5' --with-bugurl=file:///usr/share/doc/gcc-4.7/README.Bugs --enable-languages=c,c++,go,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-4.7 --enable-shared --enable-linker-build-id --with-system-zlib --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.7 --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --enable-gnu-unique-object --enable-plugin --enable-objc-gc --with-arch-32=i586 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 4.7.2 (Debian 4.7.2-5)
