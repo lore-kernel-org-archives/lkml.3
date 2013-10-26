@@ -1,34 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3JZIio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 04:38:44 -0400
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.98]:24771
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752968Ab3JZIim convert rfc822-to-8bit (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 04:38:42 -0400
-Content-Type: text/plain; charset=US-ASCII
+	id S1753473Ab3JZIkl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 04:40:41 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:36957 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab3JZIki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 04:40:38 -0400
+Date: Sat, 26 Oct 2013 10:40:33 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131026084033.GA14237@gmail.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-4-git-send-email-treding@nvidia.com>
+ <20131025132553.GE9999@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: my subject
-To: Recipients <jul217@juy793.onmicrosoft.com>
-From: "Mr. X" <jul217@juy793.onmicrosoft.com>
-Date: Sat, 26 Oct 2013 14:08:06 +0530
-Reply-To: <guaranteeloancompany1@gmail.com>
-Message-ID: <6c8fcc36-8c18-4cda-8105-8bab62eb49f6@HKNPR06MB067.apcprd06.prod.outlook.com>
-X-Originating-IP: [180.215.137.5]
-X-ClientProxiedBy: CO1PR01CA005.prod.exchangelabs.com (10.242.160.35) To
- HKNPR06MB067.apcprd06.prod.outlook.com (10.242.102.22)
-X-Forefront-PRVS: 0011612A55
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(46102001)(31686002)(63696002)(81686001)(47776003)(558084003)(81816001)(74662001)(561924002)(81542001)(81342001)(54316002)(43066001)(4396001)(56776001)(77982001)(66066001)(59766001)(80022001)(85306002)(47446002)(65816001)(49866001)(50986001)(47736001)(69226001)(33646001)(77096001)(76786001)(76482001)(74316001)(80976001)(51856001)(76576001)(53256004)(42186004)(54356001)(76176001)(76796001)(19580395003)(74366001)(56816003)(74502001)(221733001)(19580405001)(47976001)(74876001)(79102001)(83072001)(50466002)(23756003)(74706001)(83322001)(62346009)(84732001);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR06MB067;H:[180.215.137.5];CLIP:180.215.137.5;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: juy793.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025132553.GE9999@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Need a Loan, Loans from $5000 - $10,000,000 00. Get your no obligation FREE quote now! Repayments up to 54 Months. No Collateral, Money paid into your account within 24 hours after approval. For more Info contact us today  guaranteeloancompany1@gmail.com
+* Will Deacon <will.deacon@arm.com> wrote:
 
+> On Fri, Oct 25, 2013 at 02:03:42PM +0100, Thierry Reding wrote:
+> > Today's linux-next merge of the tip tree got conflicts in
+> > 
+> >         tools/perf/config/Makefile
+> >         tools/perf/config/feature-tests.mak
+> > 
+> > caused by commits 405ffbd (perf tools: Check libunwind for availability of
+> > dwarf parsing feature) and mostly 308e1e7 (tools/perf/build: Clean up the
+> > libunwind logic in config/Makefile) as well as various follow-up patches.
+> > 
+> > I fixed it up (see below). Please verify that the resolution looks good.
+> > Also note that this isn't really a trivial resolution of a conflict, but
+> > required modifying various other files. That causes rerere magic not to
+> > work and needs part of conflict to be resolved manually. Perhaps a good
+> > idea would be to rebase Jean's patch on top of the cleanups going on in
+> > the tip tree? Perhaps even carry the patch in the tip tree?
+> 
+> These came via my tree (arm perf) after discussion here:
+> 
+>   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/203077.html
+> 
+> Now that they've been pulled by rmk, we can't back them out with 
+> ugly reverts, so I'm not sure what we can do to resolve in the ARM 
+> tree; it looks like the perf Makefile has changed significantly in 
+> -tip.
 
+I realize that it was acked by Arnaldo, but for workflow reasons I'd 
+really prefer it if non-trivial perf tooling patches went to Arnaldo 
+as a pull request so that he can resolve any such conflicts. perf is 
+in constant development so it's less work for you that way.
+
+(Kernel side changes can go that route as well, as long as they are 
+perf related.)
+
+Thanks,
+
+	Ingo
