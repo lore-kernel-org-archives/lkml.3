@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3JZRIp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 13:08:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752417Ab3JZRIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 13:08:43 -0400
-Message-ID: <1382807301.3604.6.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
- default
-From: Adam Williamson <awilliam@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, the arch/x86 maintainers <x86@kernel.org>,
-        Robin Holt <holt@sgi.com>, davej@fedoraproject.org,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 26 Oct 2013 10:08:21 -0700
-In-Reply-To: <20131026091501.GE14237@gmail.com>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
-	 <20131025105352.GA5419@gmail.com>
-	 <1382719652.2445.1.camel@adam.happyassassin.net>
-	 <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
-	 <1382750841.19471.72.camel@adam.happyassassin.net>
-	 <1382754015.19471.80.camel@adam.happyassassin.net>
-	 <20131026031759.GA8513@redhat.com>
-	 <1382772154.3604.1.camel@adam.happyassassin.net>
-	 <20131026091501.GE14237@gmail.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753175Ab3JZRXX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 13:23:23 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:35701 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3JZRXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 13:23:22 -0400
+Date: Sat, 26 Oct 2013 20:23:12 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, gmbnomis@gmail.com,
+        catalin.marinas@arm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
+Message-ID: <20131026172312.GG17447@blackmetal.musicnaut.iki.fi>
+References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
+ <20131026143617.GA14034@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131026143617.GA14034@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-26 at 11:15 +0200, Ingo Molnar wrote:
+Hi,
 
-> So, the best range for the breakage we have is v3.3..v3.5.
+On Sat, Oct 26, 2013 at 03:36:17PM +0100, Will Deacon wrote:
+> On Thu, Oct 24, 2013 at 09:07:30PM +0100, Aaro Koskinen wrote:
+> > [   26.694345] ata2: link is slow to respond, please be patient (ready=0)
+> > [   31.194346] ata2: SRST failed (errno=-16)
+> > [   31.754426] ata2: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
+> > [   31.834619] ata2.00: ATA-6: eSATA-2 WD5000AAKX-00ERMA0, 15.01H15, max UDMA/133
+> > [   31.899627] ata2.00: 976773168 sectors, multi 0: LBA48
+> > [   31.994458] ata2.00: configured for UDMA/133
+> > [   32.075306] ------------[ cut here ]------------
+> > [   32.136256] kernel BUG at mm/util.c:390!
+> > [   32.195446] Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+> > [   32.255893] Modules linked in:
+> > [   32.313109] CPU: 0 PID: 12 Comm: kworker/u2:1 Not tainted 3.12.0-rc6-openrd-los.git-1836ad9-dirty #3
+> > [   32.435821] Workqueue: events_unbound async_run_entry_fn
+> > [   32.498701] task: df854700 ti: df8a8000 task.ti: df8a8000
+> > [   32.561662] PC is at page_mapping+0x48/0x50
+> > [   32.622764] LR is at flush_kernel_dcache_page+0x14/0x98
+> > [   32.685421] pc : [<c00923c4>]    lr : [<c0010dd8>]    psr: 20000093
+> > [   32.685421] sp : df8a99f8  ip : df8a9a08  fp : df8a9a04
+> > [   32.812754] r10: 60000093  r9 : df8a9c24  r8 : 00000024
+> > [   32.874269] r7 : 00000000  r6 : c0a3cd0c  r5 : 00001000  r4 : c0e2732c
+> > [   32.936395] r3 : 00000000  r2 : 00000080  r1 : 00000564  r0 : c0e2732c
+> > [   32.996978] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> > [   33.059012] Control: 0005317f  Table: 1a8dc000  DAC: 00000017
+> > [   33.119473] Process kworker/u2:1 (pid: 12, stack limit = 0xdf8a81c0)
+> 
+> The BUG is because page_mapping is being given a slab page...
+> 
+> > [   36.477203] Backtrace:
+> > [   36.535603] [<c009237c>] (page_mapping+0x0/0x50) from [<c0010dd8>] (flush_kernel_dcache_page+0x14/0x98)
+> > [   36.661070] [<c0010dc4>] (flush_kernel_dcache_page+0x0/0x98) from [<c0172b60>] (sg_miter_stop+0xc8/0x10c)
+> > [   36.792813]  r4:df8a9a64 r3:00000003
+> > [   36.857524] [<c0172a98>] (sg_miter_stop+0x0/0x10c) from [<c0172f20>] (sg_miter_next+0x14/0x13c)
+> 
+> ... assumedly for scatter/gather DMA. How is your block driver allocating
+> its buffers? If you're using the DMA API, I can't see how this would happen.
 
-So far, yeah. I will try and narrow it down.
+This is sata_mv driver. As far as I understand, it's using DMA API
+(dma_pool_alloc() etc.).
 
-> As a blind shot into the dark, that turns out to be a range when a 
-> number of irq-remapping, vt-d changes went upstream:
-> 
-> comet:~/tip> gll v3.3..v3.6 arch/x86 | grep -i remap
-> 399988eea194 irq_remap: Fix compiler warning with CONFIG_IRQ_REMAP=y
-> 79fec2c557cf Merge tag 'intr-remapping-ops-for-ingo' of git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu into core/iommu
-> 8a8f422d3b4f iommu: rename intr_remapping.[ch] to irq_remapping.[ch]
-> 95a02e976c39 iommu: rename intr_remapping references to irq_remapping
-> 263b5e8629c9 x86, iommu/vt-d: Clean up interfaces for interrupt remapping
-> 5e2b930b0784 iommu/vt-d: Convert MSI remapping setup to remap_ops
-> 9d619f657222 iommu/vt-d: Convert free_irte into a remap_ops callback
-> 4c1bad6a0af1 iommu/vt-d: Convert IR set_affinity function to remap_ops
-> 0c3f173a88c4 iommu/vt-d: Convert IR ioapic-setup to use remap_ops
-> 4f3d8b67ad30 iommu/vt-d: Convert missing apic.c intr-remapping call to remap_ops
-> 736baef4472d iommu/vt-d: Make intr-remapping initialization generic
-> f7219a5300ba x86: Introduce CONFIG_X86_DMA_REMAP
-> 
-> So if you are able to test current kernels, it might be an 
-> additional data point to see whether the reboot delay (which appears 
-> to be a reboot hang on other systems) is related to the following 
-> kernel option:
+I noticed that for some reason CMA has gotten disabled on my
+.config. However, enabling both CMA and DMA_CMA will still trigger
+this BUG...
 
-Thanks, I'll give it a shot. Note - I suspect some of the other cases
-may really be delays rather than hangs too. It's very easy to look at
-the screen sitting there doing absolutely nothing at all for 30-60
-seconds, lose patience, conclude it's hung, and force a shutdown/reboot.
-Several of the earlier Z1 reporters on the vaio-z mailing list reported
-it as a 'hang', but after I pointed out that it wasn't, confirmed the
-same behaviour on their systems. This could possibly apply to others
-too.
-
->   CONFIG_IRQ_REMAP=y
-> 
-> (CONFIG_X86_DMA_REMAP is off on Fedora.)
-> 
-> IRQ_REMAP is somewhat of a dual personality feature, living half in 
-> arch/x86/, half in drivers/iommu/. It should normally matter for 
-> servers more than for laptops.
-> 
-> Btw., regarding your encrypted partitions boot problem, do you have 
-> any non-encrypted filesystem? If yes then you could copy /[s]bin and 
-> /lib to it and boot via init=/bin/bash, you ought to get a minimal 
-> shell and be able to run /sbin/reboot.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
-
+A.
