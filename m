@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab3JZCdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Oct 2013 22:33:50 -0400
-Received: from fifo99.com ([67.223.236.141]:60983 "EHLO fifo99.com"
+	id S1754332Ab3JZCeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Oct 2013 22:34:31 -0400
+Received: from fifo99.com ([67.223.236.141]:32846 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab3JZCds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Oct 2013 22:33:48 -0400
+	id S1753913Ab3JZCea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Oct 2013 22:34:30 -0400
 From: Daniel Walker <dwalker@fifo99.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] fs: nfsd: remove calls to simple_strtoll
-Date: Fri, 25 Oct 2013 19:33:12 -0700
-Message-Id: <1382754793-8827-2-git-send-email-dwalker@fifo99.com>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] cgroups: remove calls to simple_kstrtoll
+Date: Fri, 25 Oct 2013 19:33:13 -0700
+Message-Id: <1382754793-8827-3-git-send-email-dwalker@fifo99.com>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -19,42 +20,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Daniel Walker <dwalker@fifo99.com>
 ---
- fs/nfsd/fault_inject.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ kernel/cgroup.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/fs/nfsd/fault_inject.c b/fs/nfsd/fault_inject.c
-index d620e7f..41165f0 100644
---- a/fs/nfsd/fault_inject.c
-+++ b/fs/nfsd/fault_inject.c
-@@ -125,20 +125,24 @@ static ssize_t fault_inject_write(struct file *file, const char __user *buf,
- 	size_t size = min(sizeof(write_buf) - 1, len);
- 	struct net *net = current->nsproxy->net_ns;
- 	struct sockaddr_storage sa;
-+	int ret = -EFAULT;
- 	u64 val;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 41f71c3..bf8b891 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2276,7 +2276,7 @@ static ssize_t cgroup_write_X64(struct cgroup_subsys_state *css,
+ {
+ 	char buffer[CGROUP_LOCAL_BUFFER_SIZE];
+ 	int retval = 0;
+-	char *end;
++	int ret;
  
- 	if (copy_from_user(write_buf, buf, size))
--		return -EFAULT;
-+		return ret;
- 	write_buf[size] = '\0';
+ 	if (!nbytes)
+ 		return -EINVAL;
+@@ -2287,13 +2287,15 @@ static ssize_t cgroup_write_X64(struct cgroup_subsys_state *css,
  
- 	size = rpc_pton(net, write_buf, size, (struct sockaddr *)&sa, sizeof(sa));
- 	if (size > 0)
- 		nfsd_inject_set_client(file_inode(file)->i_private, &sa, size);
- 	else {
--		val = simple_strtoll(write_buf, NULL, 0);
--		nfsd_inject_set(file_inode(file)->i_private, val);
-+		ret = kstrtoll(write_buf, 0, &val);
-+		if (ret == 0) {
-+			nfsd_inject_set(file_inode(file)->i_private, val);
-+			ret = len;
-+		}
+ 	buffer[nbytes] = 0;     /* nul-terminate */
+ 	if (cft->write_u64) {
+-		u64 val = simple_strtoull(strstrip(buffer), &end, 0);
+-		if (*end)
++		u64 val;
++		ret = kstrtoull(strstrip(buffer), 0, &val);
++		if (ret != 0)
+ 			return -EINVAL;
+ 		retval = cft->write_u64(css, cft, val);
+ 	} else {
+-		s64 val = simple_strtoll(strstrip(buffer), &end, 0);
+-		if (*end)
++		s64 val;
++		ret = kstrtoll(strstrip(buffer), 0, &val);
++		if (ret != 0)
+ 			return -EINVAL;
+ 		retval = cft->write_s64(css, cft, val);
  	}
--	return len; /* on success, claim we got the whole input */
-+	return ret; /* on success, claim we got the whole input */
- }
- 
- static const struct file_operations fops_nfsd = {
 -- 
 1.8.3.2
 
