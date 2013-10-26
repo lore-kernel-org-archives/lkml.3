@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab3JZMbO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 08:31:14 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:56155 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab3JZMbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 08:31:13 -0400
+	id S1752525Ab3JZMfz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 08:35:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751475Ab3JZMfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Oct 2013 08:35:54 -0400
+Date: Sat, 26 Oct 2013 14:35:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: RFP: Fixing "-ga -ag -g fp -g dwarf" was Re: [PATCHSET 0/8] perf
+ tools: Fix scalability problem on callchain merging (v5)
+Message-ID: <20131026123536.GA1069@krava.brq.redhat.com>
+References: <20131011073448.GA11064@krava.redhat.com>
+ <52581511.2010909@gmail.com>
+ <52581737.8090309@gmail.com>
+ <20131012165319.GB15116@gmail.com>
+ <5259A63B.5050406@gmail.com>
+ <20131013052328.GA22563@gmail.com>
+ <20131025190951.GC1853@ghostprotocols.net>
+ <526AC4F3.1020404@gmail.com>
+ <20131025194643.GE1853@ghostprotocols.net>
+ <20131026120336.GA24439@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87sivp7eai.fsf@rustcorp.com.au>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-	<87eh7bfoq9.fsf@rustcorp.com.au>
-	<20131024084559.GD16735@n2100.arm.linux.org.uk>
-	<87mwlyclng.fsf@rustcorp.com.au>
-	<CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com>
-	<87y55h7vcd.fsf@rustcorp.com.au>
-	<CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
-	<87sivp7eai.fsf@rustcorp.com.au>
-Date: Sat, 26 Oct 2013 20:31:12 +0800
-Message-ID: <CACVXFVN7PiU1dorkeamtC9-Wg_TVQE8xFiJtad-C8q4_=Rc1Ow@mail.gmail.com>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-From: Ming Lei <tom.leiming@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chen Gang <gang.chen@asianux.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131026120336.GA24439@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 7:58 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>
->> Basically these symbols are only used to generate code, and in
->> kernel mode, CPU won't run into the corresponding addresses
->> because the generate code is copied to other address during booting,
->> so I understand they won't appear in backtraces.
->
-> An oops occurs when something went *wrong*.  We look up all kinds of
-> stuff.  Are you so sure that *none* of the callers will ever see these
-> strange symbols and produce a confusing result?
+On Sat, Oct 26, 2013 at 02:03:36PM +0200, Ingo Molnar wrote:
+> 
+> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> 
+> > Em Fri, Oct 25, 2013 at 01:22:27PM -0600, David Ahern escreveu:
+> > > On 10/25/13 1:09 PM, Arnaldo Carvalho de Melo wrote:
+> > > >>>I think I did with the second follow up patch: -ga -ag -g fp -g
+> > > >>>dwarf should all work properly with fp the default for -g.
+> > 
+> > > >>Acked-by: Ingo Molnar <mingo@kernel.org>
+> > 
+> > > >Can I have this one submitted?
+> >  
+> > > Upon further review, Jiri was correct: that patch handles some of
+> > > the old cases fine, but did not handle others. ie., it just moved
+> > > the bad syntax problem around.
+> > 
+> > perhaps we can do, at least for now, with what Ingo suggested?
+> > 
+> > Namely, having:
+> > 
+> > --call-graph   Require an argument, either "dwarf" or "fp"
+> > -g             Doesn't require anything, uses whatever is configured,
+> >                fp if no explicit config is done in places like
+> >                ~/.perfconfig
+> > 
+> > Fits with what most people do usually, no?
+> 
+> Please do this! Usability sucks right now, going from '-g' to
+> '-g <foo>' was an incompatible change, a regression I argue,
+> which should be fixed in an urgent branch ASAP.
 
-Suppose that might happen, kernel should be smart enough to know
-that the address is not inside kernel address space and won't produce
-confusing result, right?
+about to finish patches with that, will send it soon
 
-
-Thanks,
--- 
-Ming Lei
+jirka
