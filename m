@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3J0QMk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 12:12:40 -0400
-Received: from know-smtprelay-omc-11.server.virginmedia.net ([80.0.253.75]:49649
-	"EHLO know-smtprelay-omc-11.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab3J0QMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 12:12:39 -0400
-X-Originating-IP: [81.99.114.138]
-X-Spam: 0
-X-Authority: v=2.0 cv=D70fsYtj c=1 sm=1 a=rTb9Q+mClrhkGV9Ah9iRIA==:17
- a=jlPsK6Yxj2MA:10 a=IkcTkHD0fZMA:10 a=xqWC_Br6kY4A:10 a=xq3W2uTSAAAA:8
- a=N1CowNylAAAA:8 a=7NqCWP14w4AA:10 a=GW-m_OFFJhGzqacPKksA:9 a=QEXdDO2ut3YA:10
- a=wTsYZljDQnEA:10 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
-Message-ID: <1382893938.2598.24.camel@artifact>
-Subject: Re: [PATCH] staging: Merge Crystal HD driver with linuxtv.org
-From: Steven Newbury <steve@snewbury.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
-        Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
-        Manu Abraham <abraham.manu@gmail.com>
-Date: Sun, 27 Oct 2013 17:12:18 +0000
-In-Reply-To: <20131027155408.GA22705@kroah.com>
-References: <1382891243.2598.10.camel@artifact>
-	 <20131027155408.GA22705@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754649Ab3J0QN3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 12:13:29 -0400
+Received: from mail-pb0-f73.google.com ([209.85.160.73]:42714 "EHLO
+	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3J0QN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 12:13:27 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] percpu counter: cast this_cpu_sub() adjustment
+References: <1382859876-28196-1-git-send-email-gthelen@google.com>
+	<1382859876-28196-3-git-send-email-gthelen@google.com>
+	<20131027112255.GB14934@mtj.dyndns.org>
+	<20131027050429.7fcc2ed5.akpm@linux-foundation.org>
+	<20131027130036.GN14934@mtj.dyndns.org>
+Date: Sun, 27 Oct 2013 09:13:25 -0700
+In-Reply-To: <20131027130036.GN14934@mtj.dyndns.org> (Tejun Heo's message of
+	"Sun, 27 Oct 2013 09:00:36 -0400")
+Message-ID: <xr93ob6a1yl6.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-10-27 at 08:54 -0700, Greg KH wrote:
-> On Sun, Oct 27, 2013 at 04:27:23PM +0000, Steven Newbury wrote:
-> > The in-kernel staging version and upstream diverged in Jan 2010,
-> > whilst the in-kernel version has been kept up to date with kernel
-> > changes, both have recieved some clean ups and bug fixes, upstream
-> > has also added support for new cards, particularly BCM70015 which
-> > is now a much more common device than the original BCM70012 and
-> > is currently available for purchase.
-> > 
-> > In addition to the changes below, I've applied all the relevant
-> > modifications applied to the in-kernel version to the new code
-> > introduced from upstream, in particular the removal of typedefs and
-> > unified header handling.
-> > 
-> > Quite a lot of the code churn relates to upstream commit
-> > 317dbd6dda65b4177627d6417b762c287cefa0e7 (crystalhd: nuke BCMLOG
-> > macros, use std dev_foo ones), I considered stripping these changes
-> > out and making them a separate patch but decided to stay as close as
-> > possible to the state of the current linuxtv.org codebase.
-> > 
-> > Unfortunately, AFAIK, it's not possible to simply merge the upstream
-> > git history since the upstream code isn't in a kernel tree structure,
-> > and isn't even in a simple directory, but includes a script to
-> > convert the external module into a staging tree driver which I used
-> > to create a reference tree.  I had to then manually merge both
-> > versions and fix code conflicts.
-> > 
-> > It does now successfully detect and initialise a BCM70015 bought
-> > last week from Amazon.  It is currently untested on the original
-> > BCM70012.
-> > 
-> > Signed-off-by: Steven Newbury <steve@snewbury.org.uk>
-> 
-> Any reason why you didn't send this to me, the staging tree maintainer?
-> 
-My apologies, that was remiss of me.
-> And I can't take a giant patch like this, it's a mess.  Why not send me
-> a series of patches that sync things up, like you detail in the odd
-> changelog entries you show below?
-TBH, I just hoped I'd get away with fixing the thing up and posting it.
-I bought the hardware last week assuming it would work since the driver
-has been hanging around in the kernel for years, only to realise that
-there is *no* working driver for the current cards on the market, at
-least with recent kernel releases.  (The linuxtv.org driver seems to
-have stopped being updated.) 
+On Sun, Oct 27 2013, Tejun Heo wrote:
 
-So I spent the weekend getting it working for me, and rather than leave
-it sitting in my local machine with far too many other patches for way
-too many projects, I sent it here. :-)  
+> On Sun, Oct 27, 2013 at 05:04:29AM -0700, Andrew Morton wrote:
+>> On Sun, 27 Oct 2013 07:22:55 -0400 Tejun Heo <tj@kernel.org> wrote:
+>> 
+>> > We probably want to cc stable for this and the next one.  How should
+>> > these be routed?  I can take these through percpu tree or mm works
+>> > too.  Either way, it'd be best to route them together.
+>> 
+>> Yes, all three look like -stable material to me.  I'll grab them later
+>> in the week if you haven't ;)
+>
+> Tried to apply to percpu but the third one is a fix for a patch which
+> was added to -mm during v3.12-rc1, so these are yours. :)
 
-But, you're right, I've only done half the job, and I knew it as I wrote
-the email. :-/  I'll start breaking it up into separate patches.
+I don't object to stable for the first two non-memcg patches, but it's
+probably unnecessary.  I should have made it more clear, but an audit of
+v3.12-rc6 shows that only new memcg code is affected - the new
+mem_cgroup_move_account_page_stat() is the only place where an unsigned
+adjustment is used.  All other callers (e.g. shrink_dcache_sb) already
+use a signed adjustment, so no problems before v3.12.  Though I did not
+audit the stable kernel trees, so there could be something hiding in
+there.
 
-> 
-> And these patches do a lot of new work to the driver, I'd rather see it
-> get fixed up properly and moved out of staging first, before adding new
-> support to it, otherwise why is it in staging at all?
+>> The names of the first two patches distress me.  They rather clearly
+>> assert that the code affects percpu_counter.[ch], but that is not the case. 
+>> Massaging is needed to fix that up.
+>
+> Yeah, something like the following would be better
+>
+>  percpu: add test module for various percpu operations
+>  percpu: fix this_cpu_sub() subtrahend casting for unsigneds
+>  memcg: use __this_cpu_sub() to dec stats to avoid incorrect subtrahend casting
 
-That last part it a good question, it's been sitting there for 3 years,
-I assume there are specific things that need improving to get it out of
-staging?  Would the changes in this patch, without the support for new
-hw support be sufficient to get that to happen?  I can't test it without
-that support though...
-
-
-
-
+No objection to renaming.  Let me know if you want these reposed with
+updated titles.
