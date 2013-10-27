@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab3J0QO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 12:14:57 -0400
-Received: from ring0.de ([91.143.88.219]:59034 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab3J0QOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 12:14:53 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 4/4] wl1251: spi: add device tree support
-Date: Sun, 27 Oct 2013 17:14:29 +0100
-Message-Id: <1382890469-25286-5-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1382890469-25286-1-git-send-email-sre@debian.org>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
+	id S1754494Ab3J0QY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 12:24:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41172 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab3J0QY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 12:24:26 -0400
+Date: Sun, 27 Oct 2013 09:26:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Steven Newbury <steve@snewbury.org.uk>
+Cc: linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
+        Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
+        Manu Abraham <abraham.manu@gmail.com>
+Subject: Re: [PATCH] staging: Merge Crystal HD driver with linuxtv.org
+Message-ID: <20131027162613.GA23822@kroah.com>
+References: <1382891243.2598.10.camel@artifact>
+ <20131027155408.GA22705@kroah.com>
+ <1382893938.2598.24.camel@artifact>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382893938.2598.24.camel@artifact>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for the spi variant of wl1251
-and document the binding.
+On Sun, Oct 27, 2013 at 05:12:18PM +0000, Steven Newbury wrote:
+> > And these patches do a lot of new work to the driver, I'd rather see it
+> > get fixed up properly and moved out of staging first, before adding new
+> > support to it, otherwise why is it in staging at all?
+> 
+> That last part it a good question, it's been sitting there for 3 years,
+> I assume there are specific things that need improving to get it out of
+> staging?  Would the changes in this patch, without the support for new
+> hw support be sufficient to get that to happen?  I can't test it without
+> that support though...
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- .../devicetree/bindings/net/wireless/ti,wl1251.txt | 36 ++++++++++++++++++++++
- drivers/net/wireless/ti/wl1251/spi.c               | 23 ++++++++++----
- 2 files changed, 53 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+See the TODO file for a list of things that need to be resolved.
 
-diff --git a/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
-new file mode 100644
-index 0000000..5f8a154
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
-@@ -0,0 +1,36 @@
-+* Texas Instruments wl1251 controller
-+
-+The wl1251 chip can be connected via SPI or via SDIO. The linux
-+kernel currently only supports device tree for the SPI variant.
-+
-+Required properties:
-+- compatible : Should be "ti,wl1251"
-+- interrupts : Should contain interrupt line
-+- interrupt-parent : Should be the phandle for the interrupt
-+  controller that services interrupts for this device
-+- vio-supply : phandle to regulator providing VIO
-+- power-gpio : GPIO connected to chip's PMEN pin
-+- For additional required properties on SPI, please consult
-+  Documentation/devicetree/bindings/spi/spi-bus.txt
-+
-+Optional properties:
-+- ti,use-eeprom : If found, configuration will be loaded from eeprom.
-+
-+Examples:
-+
-+&spi1 {
-+	wl1251_spi@0 {
-+		compatible = "ti,wl1251";
-+
-+		reg = <0>;
-+		spi-max-frequency = <48000000>;
-+		spi-cpol;
-+		spi-cpha;
-+
-+		interrupt-parent = <&gpio2>;
-+		interrupts = <10 IRQ_TYPE_NONE>; /* gpio line 42 */
-+
-+		vio-supply = <&vio>;
-+		power-gpio = <&gpio3 23 GPIO_ACTIVE_HIGH>; /* 87 */
-+	};
-+};
-diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
-index efea57a..ee6ce4c 100644
---- a/drivers/net/wireless/ti/wl1251/spi.c
-+++ b/drivers/net/wireless/ti/wl1251/spi.c
-@@ -27,6 +27,8 @@
- #include <linux/spi/spi.h>
- #include <linux/wl12xx.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/regulator/consumer.h>
- 
- #include "wl1251.h"
-@@ -240,13 +242,13 @@ static const struct wl1251_if_operations wl1251_spi_ops = {
- 
- static int wl1251_spi_probe(struct spi_device *spi)
- {
--	struct wl1251_platform_data *pdata;
-+	struct wl1251_platform_data *pdata = spi->dev.platform_data;
-+	struct device_node *np = spi->dev.of_node;
- 	struct ieee80211_hw *hw;
- 	struct wl1251 *wl;
- 	int ret;
- 
--	pdata = spi->dev.platform_data;
--	if (!pdata) {
-+	if (!np && !pdata) {
- 		wl1251_error("no platform data");
- 		return -ENODEV;
- 	}
-@@ -273,7 +275,18 @@ static int wl1251_spi_probe(struct spi_device *spi)
- 		goto out_free;
- 	}
- 
--	wl->power_gpio = pdata->power_gpio;
-+	if (np) {
-+		wl->use_eeprom = of_property_read_bool(np, "ti,use-eeprom");
-+		wl->power_gpio = of_get_named_gpio(np, "power-gpio", 0);
-+	} else if (pdata) {
-+		wl->power_gpio = pdata->power_gpio;
-+		wl->use_eeprom = pdata->use_eeprom;
-+	}
-+
-+	if (wl->power_gpio == -EPROBE_DEFER) {
-+		ret = -EPROBE_DEFER;
-+		goto out_free;
-+	}
- 
- 	if (gpio_is_valid(wl->power_gpio)) {
- 		ret = devm_gpio_request_one(&spi->dev, wl->power_gpio,
-@@ -295,8 +308,6 @@ static int wl1251_spi_probe(struct spi_device *spi)
- 		goto out_free;
- 	}
- 
--	wl->use_eeprom = pdata->use_eeprom;
--
- 	irq_set_status_flags(wl->irq, IRQ_NOAUTOEN);
- 	ret = devm_request_irq(&spi->dev, wl->irq, wl1251_irq, 0,
- 							DRIVER_NAME, wl);
--- 
-1.8.4.rc3
+I've been remiss in deleting some of the staging drivers lately, and
+this one was on my shortlist for removal, but if you have hardware for
+it, and want to adopt it, I'll gladly take the patches for getting your
+stuff to work if you are going to work toward getting it out of staging.
 
+thanks,
+
+greg k-h
