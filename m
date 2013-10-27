@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3J0LRy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 07:17:54 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47703 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab3J0LRg (ORCPT
+	id S1753963Ab3J0LSv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 07:18:51 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:41125 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3J0LSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 07:17:36 -0400
-Date: Sun, 27 Oct 2013 12:17:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Beno?t Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: N900: GPIO key definitions
-Message-ID: <20131027111728.GB2437@xo-6d-61-c0.localdomain>
-References: <1382446178-27638-1-git-send-email-sre@debian.org>
+	Sun, 27 Oct 2013 07:18:49 -0400
+Date: Sun, 27 Oct 2013 07:18:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] percpu counter: test module
+Message-ID: <20131027111844.GA14934@mtj.dyndns.org>
+References: <1382859876-28196-1-git-send-email-gthelen@google.com>
+ <1382859876-28196-2-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382446178-27638-1-git-send-email-sre@debian.org>
+In-Reply-To: <1382859876-28196-2-git-send-email-gthelen@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-10-22 14:49:38, Sebastian Reichel wrote:
-> Add device tree node for the GPIO keys provided by the
-> N900 board. This is a simple conversion of the existing
-> board code.
+On Sun, Oct 27, 2013 at 12:44:34AM -0700, Greg Thelen wrote:
+> Tests various percpu operations.
 > 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> Enable with CONFIG_PERCPU_TEST=m.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+tejun
