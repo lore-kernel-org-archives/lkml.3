@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab3J0NnF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 09:43:05 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:65337 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3J0NnC (ORCPT
+	id S1754507Ab3J0Npl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:45:41 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:35319 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3J0Npk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 09:43:02 -0400
-Date: Sun, 27 Oct 2013 09:42:57 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-Message-ID: <20131027134257.GB30783@mtj.dyndns.org>
-References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
- <20131026143617.GA14034@mudshark.cambridge.arm.com>
- <20131027195115.208f40f3@tom-ThinkPad-T410>
- <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi>
- <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
+	Sun, 27 Oct 2013 09:45:40 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 3/5] fat: zero out seek range on _fat_get_block
+References: <1381329653-11905-1-git-send-email-linkinjeon@gmail.com>
+	<87sivmygnq.fsf@devron.myhome.or.jp>
+Date: Sun, 27 Oct 2013 22:45:37 +0900
+In-Reply-To: <87sivmygnq.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Sun, 27 Oct 2013 22:42:01 +0900")
+Message-ID: <87ob6ayghq.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 09:16:53PM +0800, Ming Lei wrote:
-> On Sun, Oct 27, 2013 at 8:50 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> >
-> > On ARM v3.9 or older kernels do not trigger this BUG, at seems it only
-> > started to appear with the following commit (bisected):
-> >
-> > commit 1bc39742aab09248169ef9d3727c9def3528b3f3
-> > Author: Simon Baatz <gmbnomis@gmail.com>
-> > Date:   Mon Jun 10 21:10:12 2013 +0100
-> >
-> >     ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
-> 
-> The above commit only starts to implement the helper on ARM,
-> but according to Documentation/cachetlb.txt, looks caller of
-> flush_kernel_dcache_page() should make sure the passed
-> 'page' is a user space page.
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
-I don't think PageSlab() is the right test tho.  Wouldn't testing
-against user_addr_max() make more sense?
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> +		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
+>> +			>> blocksize_bits;
+>> +		disk_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+>> +			>> blocksize_bits;
+>> +		if (iblock >= last_block && iblock <= disk_block) {
+>> +			MSDOS_I(inode)->mmu_private +=
+>> +				*max_blocks << blocksize_bits;
+>
+> Hm, mmu_private is not increased by write_begin()?
 
-Thanks.
-
+Ah, ok. I understood what this is doing. Please ignore this comment.
 -- 
-tejun
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
