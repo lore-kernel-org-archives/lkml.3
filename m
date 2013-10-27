@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3J0SH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 14:07:56 -0400
-Received: from smtp0.kfki.hu ([148.6.0.25]:36315 "EHLO smtp0.kfki.hu"
+	id S1752982Ab3J0S3j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 14:29:39 -0400
+Received: from mail.ukfsn.org ([5.9.116.23]:57838 "EHLO mail.ukfsn.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab3J0SHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 14:07:54 -0400
-Date: Sun, 27 Oct 2013 19:07:52 +0100 (CET)
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        David Miller <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: ipset: remove duplicate define
-In-Reply-To: <1382524574-3214-1-git-send-email-michael.opdenacker@free-electrons.com>
-Message-ID: <alpine.DEB.2.10.1310271907130.6494@blackhole.kfki.hu>
-References: <1382524574-3214-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751936Ab3J0S3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 14:29:38 -0400
+Message-ID: <526D5B8C.7090904@flitspace.org.uk>
+Date: Sun, 27 Oct 2013 18:29:32 +0000
+From: Rob Pearce <rob@flitspace.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131014 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] INTEL DRM DRIVERS : No LVDS hardware on Intel D410PT
+ and D425KT
+References: <526D3BB6.6020902@flitspace.org.uk> <20131027173302.GA25812@kroah.com>
+In-Reply-To: <20131027173302.GA25812@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Oct 27 18:29:35 2013
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 526d5b8f46965071019599
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Oct 2013, Michael Opdenacker wrote:
-
-> This patch removes a duplicate define from
-> net/netfilter/ipset/ip_set_hash_gen.h
+On 27/10/13 17:33, Greg KH wrote:
+> On Sun, Oct 27, 2013 at 04:13:42PM +0000, Rob Pearce wrote:
+>> From: Rob Pearce <rob@flitspace.org.uk>
+>>
+>> The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
+>> having LVDS but the hardware is not populated. This patch adds them to
+>> the list of such systems. Patch is against 3.11.4
+>>
+>> Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+>> ---
+>> Patch revised to match the D425KT exactly as the D425KTW does have LVDS. 
+>> According to Intel's documentation, the D410PTL and D410PLTW don't.
 > 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> Any reason you don't want this in the stable tree as well?
+> 
 
-Patch is applied to the ipset git tree, thanks.
+No, should be in stable. Sorry, I'm obviously getting some etiquette
+wrong (this is the first patch I've submitted).
 
-Best regards,
-Jozsef
--
-E-mail  : kadlec@blackhole.kfki.hu, kadlecsik.jozsef@wigner.mta.hu
-PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
-Address : Wigner Research Centre for Physics, Hungarian Academy of Sciences
-          H-1525 Budapest 114, POB. 49, Hungary
+Cheers,
+Rob
+
