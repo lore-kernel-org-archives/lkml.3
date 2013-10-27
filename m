@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3J0Nv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 09:51:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40402 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3J0Nvz (ORCPT
+	id S1754445Ab3J0NyE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:54:04 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41741 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3J0NyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 09:51:55 -0400
-Date: Sun, 27 Oct 2013 06:53:42 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johannes =?iso-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        Andres More <more.andres@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: vt6656: fix code indenting error in power.c
-Message-ID: <20131027135342.GA17564@kroah.com>
-References: <1382592407-26728-1-git-send-email-johannes@kyriasis.com>
- <1382592407-26728-3-git-send-email-johannes@kyriasis.com>
+	Sun, 27 Oct 2013 09:54:01 -0400
+Date: Sun, 27 Oct 2013 13:53:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Will Deacon <will.deacon@arm.com>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
+Message-ID: <20131027135344.GD16735@n2100.arm.linux.org.uk>
+References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi> <20131026143617.GA14034@mudshark.cambridge.arm.com> <20131027195115.208f40f3@tom-ThinkPad-T410> <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi> <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1382592407-26728-3-git-send-email-johannes@kyriasis.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 07:26:47AM +0200, Johannes Löthberg wrote:
-> This patch fixes a code indentation error found by checkpatch.pl
-> where a line was indented with spaces instead of tabs
+On Sun, Oct 27, 2013 at 09:16:53PM +0800, Ming Lei wrote:
+> On Sun, Oct 27, 2013 at 8:50 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> >
+> > On ARM v3.9 or older kernels do not trigger this BUG, at seems it only
+> > started to appear with the following commit (bisected):
+> >
+> > commit 1bc39742aab09248169ef9d3727c9def3528b3f3
+> > Author: Simon Baatz <gmbnomis@gmail.com>
+> > Date:   Mon Jun 10 21:10:12 2013 +0100
+> >
+> >     ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
 > 
-> Signed-off-by: Johannes Löthberg <johannes@kyriasis.com>
-> ---
->  drivers/staging/vt6656/power.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6656/power.c b/drivers/staging/vt6656/power.c
-> index 3002061..a14a2bf 100644
-> --- a/drivers/staging/vt6656/power.c
-> +++ b/drivers/staging/vt6656/power.c
-> @@ -268,7 +268,7 @@ int PSbSendNullPacket(struct vnt_private *pDevice)
->  		+ sizeof(struct vnt_tx_mgmt));
->  
->  	flags = WLAN_SET_FC_FTYPE(WLAN_TYPE_DATA) |
-> -                        WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_NULL);
-> +		WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_NULL);
+> The above commit only starts to implement the helper on ARM,
+> but according to Documentation/cachetlb.txt, looks caller of
+> flush_kernel_dcache_page() should make sure the passed
+> 'page' is a user space page.
 
-No, indent this line properly using tabs to where the spaces were,
-that's the correct location.
+I think your terminology is off.  flush_kernel_dcache_page() is passed a
+struct page.  These exist for every physical RAM page in the system which
+is under the control of the kernel.  There's no such thing as a "user
+space page" - pages are shared from kernel space into userspace.
 
-greg k-h
+Secondly, flush_kernel_dcache_page() gets used on such pages whether or
+not they're already mapped into userspace (normally they won't be if this
+is the first read of the page.)  This function is only expected to deal
+with kernel-side addresses of the page, ensuring that data in the page
+is visible to the underlying memory.
+
+The last thing to realise is that we already have a function which deals
+with the presence of userspace mappings.  It's called flush_dcache_page().
+If flush_kernel_dcache_page() had to make that decision, then there's no
+point in flush_kernel_dcache_page() existing - we might as well just call
+flush_dcache_page() directly.
+
+So...
+
+flush_kernel_dcache_page() is expected to take a struct page pointer.
+This struct page pointer is part of the kernel's array of struct pages
+which identifies every single physical page under the control of the
+kernel.
+
+Arguably, it should not crash if passed a page which has been allocated
+to the slab cache; as this is not a page cache page,
+flush_kernel_dcache_page() should merely ignore the call to it and
+simply return on these.  So this makes total sense:
+
+ arch/arm/mm/flush.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 6d5ba9afb16a..eebb275a67fb 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -316,6 +316,10 @@ EXPORT_SYMBOL(flush_dcache_page);
+  */
+ void flush_kernel_dcache_page(struct page *page)
+ {
++	/* Ignore slab pages */
++	if (PageSlab(page))
++		return;
++
+ 	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
+ 		struct address_space *mapping;
+ 
