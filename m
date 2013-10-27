@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3J0Nv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 09:51:27 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:49353 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab3J0Nv0 (ORCPT
+	id S1754767Ab3J0Nv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40402 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab3J0Nvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 09:51:26 -0400
-Date: Sun, 27 Oct 2013 14:51:52 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rob Pearce <rob@flitspace.org.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	Sun, 27 Oct 2013 09:51:55 -0400
+Date: Sun, 27 Oct 2013 06:53:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes =?iso-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>
+Cc: Forest Bond <forest@alittletooquiet.net>,
+        Andres More <more.andres@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] INTEL DRM DRIVERS : No LVDS hardware on Intel D410PT and
- D425KT
-Message-ID: <20131027135152.GG18189@phenom.ffwll.local>
-Mail-Followup-To: Rob Pearce <rob@flitspace.org.uk>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <526D16A2.60804@flitspace.org.uk>
+Subject: Re: [PATCH 2/2] Staging: vt6656: fix code indenting error in power.c
+Message-ID: <20131027135342.GA17564@kroah.com>
+References: <1382592407-26728-1-git-send-email-johannes@kyriasis.com>
+ <1382592407-26728-3-git-send-email-johannes@kyriasis.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <526D16A2.60804@flitspace.org.uk>
-X-Operating-System: Linux phenom 3.10-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382592407-26728-3-git-send-email-johannes@kyriasis.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 01:35:30PM +0000, Rob Pearce wrote:
-> From: Rob Pearce <rob@flitspace.org.uk> 
+On Thu, Oct 24, 2013 at 07:26:47AM +0200, Johannes Löthberg wrote:
+> This patch fixes a code indentation error found by checkpatch.pl
+> where a line was indented with spaces instead of tabs
 > 
-> These Intel D410PT and D425KT Mini-ITX desktop boards both show up as
-> having LVDS but the hardware is not populated. This patch adds them to
-> the list of such systems. Tested against 3.9.10 and 3.11.4
-> 
-> Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+> Signed-off-by: Johannes Löthberg <johannes@kyriasis.com>
 > ---
-> diff -uprN -X linux-3.9.10/Documentation/dontdiff linux-3.9.10/drivers/gpu/drm/i915/intel_lvds.c linux-3.9.10-ovs/drivers/gpu/drm/i915/intel_lvds.c
-> --- linux-3.9.10/drivers/gpu/drm/i915/intel_lvds.c       2013-10-22 19:00:30.000000000 +0100
-> +++ linux-3.9.10-ovs/drivers/gpu/drm/i915/intel_lvds.c   2013-10-22 18:58:56.000000000 +0100
-> @@ -843,6 +843,22 @@
->  	},
->  	{
->  		.callback = intel_no_lvds_dmi_callback,
-> +		.ident = "Intel D410PT",
-> +		.matches = {
-> +			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-> +			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
-> +		},
-> +	},
-> +	{
-> +		.callback = intel_no_lvds_dmi_callback,
-> +		.ident = "Intel D425KT",
-> +		.matches = {
-> +			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-> +			DMI_MATCH(DMI_BOARD_NAME, "D425KT"),
-
-At least this one here has a KTW variant with lvds connector. I think we
-need a DMI_EXACT_MATCH. I haven't found out whether the D410PT board also
-has such a cousin, so please digg in a bit for me.
-
-Thanks, Daniel
-
-> +		},
-> +	},
-> +	{
-> +		.callback = intel_no_lvds_dmi_callback,
->  		.ident = "Supermicro X7SPA-H",
->  		.matches = {
->  			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
+>  drivers/staging/vt6656/power.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
+> diff --git a/drivers/staging/vt6656/power.c b/drivers/staging/vt6656/power.c
+> index 3002061..a14a2bf 100644
+> --- a/drivers/staging/vt6656/power.c
+> +++ b/drivers/staging/vt6656/power.c
+> @@ -268,7 +268,7 @@ int PSbSendNullPacket(struct vnt_private *pDevice)
+>  		+ sizeof(struct vnt_tx_mgmt));
+>  
+>  	flags = WLAN_SET_FC_FTYPE(WLAN_TYPE_DATA) |
+> -                        WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_NULL);
+> +		WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_NULL);
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+No, indent this line properly using tabs to where the spaces were,
+that's the correct location.
+
+greg k-h
