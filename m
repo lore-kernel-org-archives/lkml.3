@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3J0HGt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 03:06:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab3J0HGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 03:06:47 -0400
-Message-ID: <1382857589.2447.0.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [PATCH] x86/ACPI: Make Sony Vaio Z1 series to use "reboot=pci"
- default
-From: Adam Williamson <awilliam@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, the arch/x86 maintainers <x86@kernel.org>,
-        Robin Holt <holt@sgi.com>, davej@fedoraproject.org,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 27 Oct 2013 00:06:29 -0700
-In-Reply-To: <20131026091501.GE14237@gmail.com>
-References: <1382597377-26797-1-git-send-email-tianyu.lan@intel.com>
-	 <20131025105352.GA5419@gmail.com>
-	 <1382719652.2445.1.camel@adam.happyassassin.net>
-	 <CA+55aFyZEZp3CSFEcxzKt0c_7Q9_juGWiqb7VH214Fjcs3wUkQ@mail.gmail.com>
-	 <1382750841.19471.72.camel@adam.happyassassin.net>
-	 <1382754015.19471.80.camel@adam.happyassassin.net>
-	 <20131026031759.GA8513@redhat.com>
-	 <1382772154.3604.1.camel@adam.happyassassin.net>
-	 <20131026091501.GE14237@gmail.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752982Ab3J0HMo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 03:12:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33309 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3J0HMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 03:12:43 -0400
+Date: Sun, 27 Oct 2013 08:12:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux@arm.linux.org.uk
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131027071237.GA448@gmail.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-4-git-send-email-treding@nvidia.com>
+ <20131025132553.GE9999@mudshark.cambridge.arm.com>
+ <20131026084033.GA14237@gmail.com>
+ <20131026140125.GA13424@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131026140125.GA13424@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-26 at 11:15 +0200, Ingo Molnar wrote:
 
-> So if you are able to test current kernels, it might be an 
-> additional data point to see whether the reboot delay (which appears 
-> to be a reboot hang on other systems) is related to the following 
-> kernel option:
+* Will Deacon <will.deacon@arm.com> wrote:
+
+> Hi Ingo,
 > 
->   CONFIG_IRQ_REMAP=y
+> [adding rmk]
+> 
+> On Sat, Oct 26, 2013 at 09:40:33AM +0100, Ingo Molnar wrote:
+> > * Will Deacon <will.deacon@arm.com> wrote:
+> > > On Fri, Oct 25, 2013 at 02:03:42PM +0100, Thierry Reding wrote:
+> > > > I fixed it up (see below). Please verify that the resolution looks good.
+> > > > Also note that this isn't really a trivial resolution of a conflict, but
+> > > > required modifying various other files. That causes rerere magic not to
+> > > > work and needs part of conflict to be resolved manually. Perhaps a good
+> > > > idea would be to rebase Jean's patch on top of the cleanups going on in
+> > > > the tip tree? Perhaps even carry the patch in the tip tree?
+> > > 
+> > > These came via my tree (arm perf) after discussion here:
+> > > 
+> > >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/203077.html
+> > > 
+> > > Now that they've been pulled by rmk, we can't back them out with 
+> > > ugly reverts, so I'm not sure what we can do to resolve in the ARM 
+> > > tree; it looks like the perf Makefile has changed significantly in 
+> > > -tip.
+> > 
+> > I realize that it was acked by Arnaldo, but for workflow reasons I'd 
+> > really prefer it if non-trivial perf tooling patches went to Arnaldo 
+> > as a pull request so that he can resolve any such conflicts. perf is 
+> > in constant development so it's less work for you that way.
+> 
+> Sure. I wasn't aware quite how much you guys had planned for the perf 
+> Makefile and I (wrongly) assumed that Arnaldo's ack was enough of an 
+> indication that conflicts would be unlikely and/or trivial.
 
-Agh, sorry - I had this down in my mind as a boot time parameter, not a
-compile time option. I'm off on vacation for a week in the morning, and
-it's too late to wait around for a kernel compile tonight :/ So I'll
-have to check this one when I get back. Sorry again.
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
+That was a bit of unlucky timing.
 
+> In future, I'll push back on any perf changes outside of arch/ in my 
+> tree, but that doesn't help us get out of the current situation: the 
+> patches are currently sitting in rmk's tree for 3.13, so that won't meet 
+> with -tip (outside of next) until Linus pulls them both. What can we do 
+> about that?
+
+Unless you guys want to do a revert I guess there's not much to do but to 
+warn Linus in the ARM pull request that a conflict is coming up.
+
+Thanks,
+
+	Ingo
