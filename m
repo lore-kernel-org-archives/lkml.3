@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3J0Rbh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 13:31:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41400 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab3J0Rbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 13:31:34 -0400
-Date: Sun, 27 Oct 2013 18:31:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andreas Werner <wernerandy@gmx.de>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        dave@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] X86: MM: Add PAT Type write-through in combination with
- mtrr
-Message-ID: <20131027173131.GC21868@pd.tnic>
-References: <1382878525-3410-1-git-send-email-wernerandy@gmx.de>
- <20131027133401.GB24817@pd.tnic>
- <20131027165159.GD1617@thinkpad.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131027165159.GD1617@thinkpad.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755209Ab3J0Rbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 13:31:35 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:44651 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab3J0RbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 13:31:15 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v2 3/3] memcg: use __this_cpu_sub() to dec stats to avoid incorrect subtrahend casting
+Date: Sun, 27 Oct 2013 10:30:17 -0700
+Message-Id: <1382895017-19067-4-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1382895017-19067-1-git-send-email-gthelen@google.com>
+References: <1382895017-19067-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 05:51:59PM +0100, Andreas Werner wrote:
-> Im currently working on an ethernet driver for our own ETH core. The
-> problem is that one requirement is to not use DMA to transmit or
-> receive the data. This means the that the ethernet buffers are not
-> located in the main memory. They are located in the FPGA internal RAM.
->
-> To transmit or receive a frame, i have to read or write to mmio to get
-> the data.
->
-> Intel has introduced the instruction "clflush" which can flush a cache
-> line. I want to use the caches for those mmio (eth buffer) to speed
-> up the transmit/receive and to transmit/receive using PCIe bursts
-> (read/write).
->
-> The problem was if i set the buffer to Write-Back and call clflush on
-> those mmio-addresses, the system crashed without any output.
+As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages
+accounting" memcg counter errors are possible when moving charged
+memory to a different memcg.  Charge movement occurs when processing
+writes to memory.force_empty, moving tasks to a memcg with
+memcg.move_charge_at_immigrate=1, or memcg deletion.  An example
+showing error after memory.force_empty:
+  $ cd /sys/fs/cgroup/memory
+  $ mkdir x
+  $ rm /data/tmp/file
+  $ (echo $BASHPID >> x/tasks && exec mmap_writer /data/tmp/file 1M) &
+  [1] 13600
+  $ grep ^mapped x/memory.stat
+  mapped_file 1048576
+  $ echo 13600 > tasks
+  $ echo 1 > x/memory.force_empty
+  $ grep ^mapped x/memory.stat
+  mapped_file 4503599627370496
 
-But allocating a WB region and calling CLFLUSH right after writing
-into it sounds like you want to allocate an UC region, no? Writing
-into it will make sure the data has reached memory and is not in the
-cache, basically what CLFLUSH does but by having it UC, this happens
-automatically.
+mapped_file should end with 0.
+  4503599627370496 == 0x10,0000,0000,0000 == 0x100,0000,0000 pages
+  1048576          == 0x10,0000           == 0x100 pages
 
-So basically what ioremap_nocache does.
+This issue only affects the source memcg on 64 bit machines; the
+destination memcg counters are correct.  So the rmdir case is not too
+important because such counters are soon disappearing with the entire
+memcg.  But the memcg.force_empty and
+memory.move_charge_at_immigrate=1 cases are larger problems as the
+bogus counters are visible for the (possibly long) remaining life of
+the source memcg.
 
-> I found this articel 
-> http://software.intel.com/en-us/forums/topic/393070
->
-> After that i configured the transmit buffers to be Write-Combining
-> (only write to that adresses) using ioremap_wc, and the receive
-> buffers to be Write-Through (ioremap_cache + mtrr Write-Through + this
-> kernel patch) everything worked as expected.
+The problem is due to memcg use of __this_cpu_from(.., -nr_pages),
+which is subtly wrong because it subtracts the unsigned int nr_pages
+(either -1 or -512 for THP) from a signed long percpu counter.  When
+nr_pages=-1, -nr_pages=0xffffffff.  On 64 bit machines
+stat->count[idx] is signed 64 bit.  So memcg's attempt to simply
+decrement a count (e.g. from 1 to 0) boils down to:
+  long count = 1
+  unsigned int nr_pages = 1
+  count += -nr_pages  /* -nr_pages == 0xffff,ffff */
+  count is now 0x1,0000,0000 instead of 0
 
-Right, but this all sounds like you want to use ioremap_nocache which
-makes your buffers UC.
+The fix is to subtract the unsigned page count rather than adding its
+negation.  This only works once "percpu: fix this_cpu_sub() subtrahend
+casting for unsigneds" is applied to fix this_cpu_sub().
 
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ mm/memcontrol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aa8185c..b7ace0f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3773,7 +3773,7 @@ void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
+ {
+ 	/* Update stat data for mem_cgroup */
+ 	preempt_disable();
+-	__this_cpu_add(from->stat->count[idx], -nr_pages);
++	__this_cpu_sub(from->stat->count[idx], nr_pages);
+ 	__this_cpu_add(to->stat->count[idx], nr_pages);
+ 	preempt_enable();
+ }
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
