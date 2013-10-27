@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3J0Qbo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 12:31:44 -0400
-Received: from ring0.de ([91.143.88.219]:59151 "EHLO smtp.ring0.de"
+	id S1754554Ab3J0QwI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 12:52:08 -0400
+Received: from mout.gmx.net ([212.227.17.22]:56077 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab3J0Qbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 12:31:39 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: ucw.cz]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 27 Oct 2013 17:31:27 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
-        "'Beno?t Cousson'" <bcousson@baylibre.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCHv2 1/3] Input: twl4030-keypad - add device tree support
-Message-ID: <20131027163126.GA25517@earth.universe>
-Mail-Followup-To: Tony Lindgren <tony@atomide.com>,
-	Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
-	'Beno?t Cousson' <bcousson@baylibre.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>,
-	Russell King <linux@arm.linux.org.uk>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <1382446042-27099-1-git-send-email-sre@debian.org>
- <1382446042-27099-2-git-send-email-sre@debian.org>
- <20131027111715.GA2437@xo-6d-61-c0.localdomain>
- <20131027114026.GB14091@earth.universe>
- <20131027114753.GB14901@amd.pavel.ucw.cz>
- <20131027122347.GE15154@atomide.com>
+	id S1753482Ab3J0QwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 12:52:06 -0400
+Date: Sun, 27 Oct 2013 17:51:59 +0100
+From: Andreas Werner <wernerandy@gmx.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dave@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] X86: MM: Add PAT Type write-through in combination with
+ mtrr
+Message-ID: <20131027165159.GD1617@thinkpad.fritz.box>
+References: <1382878525-3410-1-git-send-email-wernerandy@gmx.de>
+ <20131027133401.GB24817@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131027122347.GE15154@atomide.com>
+In-Reply-To: <20131027133401.GB24817@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:XR5sVHvoG/ZIktvcYyh+8g8y16ie+p0YF8WahZcZHW72qtwAcvW
+ WQyclra0DEZHlJibwPk85swy0GnPerXxjUs+K3bacPutodCw1YiOwTFaT2JTIMj+HOqakQ+
+ kD2g3yK8kJqhmCZ9OEiQFVVqnR3jkHcvs2LM7oRn6zzvDf5avdexXeIKZT2uhTPfioCIuAJ
+ cCGvHL3YWDNI2swbM19Yg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 27, 2013 at 02:34:01PM +0100, Borislav Petkov wrote:
+> On Sun, Oct 27, 2013 at 01:55:25PM +0100, Andreas Werner wrote:
+> > This patch adds the Write-through memory type in combination with mtrr.
+> > If you call ioremap_cache to request cachable memory (write-back) the
+> > function tries to set the PAT to write-back only if the mtrr setting of
+> > the requested region is also marked as Write-Back.
+> > If the mttr regions are marked e.g. as Write-through or with other
+> > types, the function will always return UC- memory.
+> > 
+> > If you check the Intel document " IA-32 SDM vol 3a table Effective
+> > Memory Type", there
+> > are many other combinations possible.
+> > 
+> > This patch will only add the following combination:
+> >   PAT=Write-Back + MTRR=Write-Through = Effective Memory of
+> > Write-Through
+> 
+> And yet the code below returns WB for WT MTRR type which can't be
+> right since having a write-through mapping cannot be compatible with
+> write-back as the last caches writes into the cache instead of writing
+> them through to memory.
+> 
+> Why do you even care about WT? Are you trying to fix a bug or what?
+>
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Im currently working on an ethernet driver for our own ETH core.
+The problem is that one requirement is to not use DMA to transmit 
+or receive the data. This means the that the ethernet buffers are not 
+located in the main memory. They are located in the FPGA internal RAM.
+ 
+To transmit or receive a frame, i have to read or write to mmio to get the data.
+ 
+Intel has introduced the instruction "clflush" which can flush a cache line.
+I want to use the caches for those mmio (eth buffer) to speed up the transmit/receive
+and to transmit/receive using PCIe bursts (read/write).
+ 
+The problem was if i set the buffer to Write-Back and call clflush on 
+those mmio-addresses, the system crashed without any output.
+I found this articel 
+http://software.intel.com/en-us/forums/topic/393070
+ 
+After that i configured the transmit buffers to be Write-Combining (only write to that adresses) 
+using ioremap_wc, and the receive buffers to be Write-Through (ioremap_cache + mtrr Write-Through + this kernel patch) 
+everything worked as expected.
+ 
+On PCIe Tracer i can see the bursts on read/write on my device with this configuration.
 
-On Sun, Oct 27, 2013 at 05:23:48AM -0700, Tony Lindgren wrote:
-> * Pavel Machek <pavel@ucw.cz> [131027 04:48]:
-> > > > > +#if IS_ENABLED(CONFIG_OF)
-> > > > I'm probably missing something here, but why not #ifdef CONFIG_OF?
-> > >=20
-> > > I have been told for other drivers, that IS_ENABLED() is
-> > > the prefered way to check for configuration these days.
-> >=20
-> > CONFIG_OF can not be module, using IS_ENABLED() on it is just wrong.
->=20
-> Good point. Looks like there's IS_BUILTIN that's for boolean options.
+I know that this is a special use case but there is also one person more out there,
+who use that configuration. But why not allow this setting in the kernel? It is
+also mentioned in the Intel IA32 document.
 
-Using IS_ENABLED for boolean options is supposed to be supported
-according to the comment above IS_BUILTIN:
+I know that there is also an instruction called "movntdqa" but this is not support on my platform
+(Intel E680) this instruction was introduced in SSE3. So i can not use it.
 
-/*
- * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
- * otherwise. For boolean options, this is equivalent to
- * IS_ENABLED(CONFIG_FOO).
- */
-#define IS_BUILTIN(option) config_enabled(option)
+If you need more detailed informations please ask me.
 
--- Sebastian
+Best Regards
+Andy
 
---dDRMvlgZJXvWKvBx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSbT/eAAoJENju1/PIO/qakkwP/A16K3L2a3ZV6ytDoFG1lMG9
-xfKPgI6Y6GZRjU9a4EUPE/qV/NS7BEQl0VUyxVgEYJ4NOCxnSIM/RibTxGlmV5mj
-TJz8116axWAsS5mKgQx+zxw/r+dXh2RuZe0ClE2kh2k+ba50iDc7QMRtJlbTumaW
-TPcUsGY+2lHVVSQjlTdRpq6v4IcsrOTVYrYTUfPdk6ichUJiqtheCni39zBLvCZ/
-Eat//nBa5UW3iajcn3uX2xkwVBiTZNNjFGPQJqmjqGDF4EltkTm5db+EdmdFtrma
-I8a8M7lOrhpIva9uEMwz/NC1FPho5l35Vp0emUFWIHqmIDjD8i3dk6s2gnOrFKZ/
-n+8k15Ed22nhw5JWoCwdh9bIu2u9drr/6m2JI0YSWagw99+oCtqScNG5KjQmSMgn
-YdiAbrOvAFpbj4scu8ntmpj6baUs8FMXFEf+zbclJwgSh+T6AYf6er1hziHUKqrt
-WIXR6+AoDYoiX0z8zFoaecx2TDT1B4mjbCUSyenFvwO8mlpyVDigFaBcCgy/Jjfk
-+1aYeXqqa4RjeD7a5VWTJf4cMnxe41W8PW3OJxDnXhFMSbhKLYhMTmorkvLS4qsd
-uSysrO7i/YGn7TDypBWIimjRIl/nwisHdleRipSvKXloPn3vMxVGCYqM4CE/LpSW
-Vjoarfs0iyeDNS6KVpGm
-=iXiI
------END PGP SIGNATURE-----
-
---dDRMvlgZJXvWKvBx--
+> > Tested on - Intel (R) Atom E680 (Tunnel Creek)
+> >           - Intel (R) Core(TM)2 Duo
+> > 
+> > Signed-off-by: Andreas Werner <wernerandy@gmx.de>
+> > ---
+> >  arch/x86/mm/pat.c | 11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+> > index 6574388..9cfe107 100644
+> > --- a/arch/x86/mm/pat.c
+> > +++ b/arch/x86/mm/pat.c
+> > @@ -149,10 +149,15 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
+> >  		u8 mtrr_type;
+> >  
+> >  		mtrr_type = mtrr_type_lookup(start, end);
+> > -		if (mtrr_type != MTRR_TYPE_WRBACK)
+> > -			return _PAGE_CACHE_UC_MINUS;
+> >  
+> > -		return _PAGE_CACHE_WB;
+> > +		switch (mtrr_type) {
+> > +		case MTRR_TYPE_WRBACK:
+> > +		case MTRR_TYPE_WRTHROUGH:
+> > +		  return _PAGE_CACHE_WB;
+> > +
+> > +		default:
+> > +		  return _PAGE_CACHE_UC_MINUS;
+> > +		}
+> >  	}
+> >  
+> >  	return req_type;
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
