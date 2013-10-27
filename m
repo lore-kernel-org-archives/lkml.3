@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3J0Kdr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 06:33:47 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:49777 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab3J0Kdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 06:33:45 -0400
-Date: Sun, 27 Oct 2013 11:33:41 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Baron <jbaron@akamai.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH V2] printk: pr_debug_ratelimited: check state first to
- reduce "callbacks suppressed" messages
-Message-ID: <20131027103341.GA16146@shrek.podlesie.net>
-References: <20131026132955.GA9251@shrek.podlesie.net>
- <20131026173730.GA18320@kroah.com>
- <1382813522.3238.4.camel@joe-AO722>
- <20131026190151.GA26389@kroah.com>
- <1382845313.3238.28.camel@joe-AO722>
+	id S1753350Ab3J0KuR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 06:50:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45904 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab3J0KuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 06:50:15 -0400
+Date: Sun, 27 Oct 2013 11:50:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: dyoung@redhat.com, Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 2/6] x86 efi: reserve boot service fix
+Message-ID: <20131027105009.GA21868@pd.tnic>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1382845313.3238.28.camel@joe-AO722>
+In-Reply-To: <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 08:41:53PM -0700, Joe Perches wrote:
-> pr_debug_ratelimited should be coded similarly to dev_dbg_ratelimited
-> to reduce the "callbacks suppressed" messages.
+On Sun, Oct 27, 2013 at 11:47:15AM +0800, dyoung@redhat.com wrote:
+> Current code check boot service region with kernel text region by: 
+> start+size >= __pa_symbol(_text)
+> The end of the above region should be start + size - 1 instead.
 > 
-> Add #include <linux/dynamic_debug.h> to printk.h. Unfortunately, this
-> new #include must be after the prototype/declaration of function printk.
+> I see this problem in ovmf + Fedora 19 grub boot:
+> text start: 1000000 md start: 800000 md size: 800000
 > 
-> It may be better to split out these _ratelimited declarations into
-> a separate file one day.
-> 
-> Any use of these pr_<foo>_ratelimited functions must also have another
-> specific #include <ratelimited.h>.  Most users have this done indirectly
-> via #include <linux/kernel.h>
-> 
-> printk.h may not #include <linux/ratelimit.h> as it causes circular
-> dependencies and compilation failures.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> V2: Fix #include dependencies and typos.
-> 
-> Compile tested with and without CONFIG_DYNAMIC_DEBUG
+> Signed-off-by: Dave Young <dyoung@redhat.com>
 
-I've tested both patches without CONFIG_DYNAMIC_DEBUG and
-with enabled and disabled debugging with CONFIG_DYNAMIC_DEBUG
-and everything seems work correctly.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-Thanks,
-Krzysiek
+Btw, Matt, this being a bugfix and all, shouldn't it be tagged for
+stable?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
