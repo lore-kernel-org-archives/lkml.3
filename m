@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3J0QN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 12:13:29 -0400
-Received: from mail-pb0-f73.google.com ([209.85.160.73]:42714 "EHLO
-	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3J0QN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 12:13:27 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        handai.szj@taobao.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] percpu counter: cast this_cpu_sub() adjustment
-References: <1382859876-28196-1-git-send-email-gthelen@google.com>
-	<1382859876-28196-3-git-send-email-gthelen@google.com>
-	<20131027112255.GB14934@mtj.dyndns.org>
-	<20131027050429.7fcc2ed5.akpm@linux-foundation.org>
-	<20131027130036.GN14934@mtj.dyndns.org>
-Date: Sun, 27 Oct 2013 09:13:25 -0700
-In-Reply-To: <20131027130036.GN14934@mtj.dyndns.org> (Tejun Heo's message of
-	"Sun, 27 Oct 2013 09:00:36 -0400")
-Message-ID: <xr93ob6a1yl6.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
+	id S1754724Ab3J0QNs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 12:13:48 -0400
+Received: from mail.ukfsn.org ([5.9.116.23]:55256 "EHLO mail.ukfsn.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754657Ab3J0QNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 12:13:47 -0400
+Message-ID: <526D3BB6.6020902@flitspace.org.uk>
+Date: Sun, 27 Oct 2013 16:13:42 +0000
+From: Rob Pearce <rob@flitspace.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131014 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] INTEL DRM DRIVERS : No LVDS hardware on Intel D410PT and
+ D425KT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Oct 27 16:13:44 2013
+X-DSPAM-Confidence: 1.0000
+X-DSPAM-Probability: 0.0023
+X-DSPAM-Signature: 526d3bb846961641145564
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27 2013, Tejun Heo wrote:
+From: Rob Pearce <rob@flitspace.org.uk>
 
-> On Sun, Oct 27, 2013 at 05:04:29AM -0700, Andrew Morton wrote:
->> On Sun, 27 Oct 2013 07:22:55 -0400 Tejun Heo <tj@kernel.org> wrote:
->> 
->> > We probably want to cc stable for this and the next one.  How should
->> > these be routed?  I can take these through percpu tree or mm works
->> > too.  Either way, it'd be best to route them together.
->> 
->> Yes, all three look like -stable material to me.  I'll grab them later
->> in the week if you haven't ;)
->
-> Tried to apply to percpu but the third one is a fix for a patch which
-> was added to -mm during v3.12-rc1, so these are yours. :)
+The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
+having LVDS but the hardware is not populated. This patch adds them to
+the list of such systems. Patch is against 3.11.4
 
-I don't object to stable for the first two non-memcg patches, but it's
-probably unnecessary.  I should have made it more clear, but an audit of
-v3.12-rc6 shows that only new memcg code is affected - the new
-mem_cgroup_move_account_page_stat() is the only place where an unsigned
-adjustment is used.  All other callers (e.g. shrink_dcache_sb) already
-use a signed adjustment, so no problems before v3.12.  Though I did not
-audit the stable kernel trees, so there could be something hiding in
-there.
+Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+---
+Patch revised to match the D425KT exactly as the D425KTW does have LVDS. 
+According to Intel's documentation, the D410PTL and D410PLTW don't.
 
->> The names of the first two patches distress me.  They rather clearly
->> assert that the code affects percpu_counter.[ch], but that is not the case. 
->> Massaging is needed to fix that up.
->
-> Yeah, something like the following would be better
->
->  percpu: add test module for various percpu operations
->  percpu: fix this_cpu_sub() subtrahend casting for unsigneds
->  memcg: use __this_cpu_sub() to dec stats to avoid incorrect subtrahend casting
 
-No objection to renaming.  Let me know if you want these reposed with
-updated titles.
+diff -uprN -X linux-3.11.4/Documentation/dontdiff linux-3.11.4/drivers/gpu/drm/i915/intel_lvds.c linux-3.11.4-ovs/drivers/gpu/drm/i915/intel_lvds.c
+--- linux-3.11.4/drivers/gpu/drm/i915/intel_lvds.c       2013-10-22 19:00:30.000000000 +0100
++++ linux-3.11.4-ovs/drivers/gpu/drm/i915/intel_lvds.c   2013-10-27 15:51:25.000000000 +0000
+@@ -696,6 +696,22 @@
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D410PT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D425KT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D425KT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Intel D510MO",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
+
