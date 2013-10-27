@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab3J0HFR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 03:05:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40815 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3J0HFO convert rfc822-to-8bit (ORCPT
+	id S1752535Ab3J0HGP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 03:06:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58510 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751897Ab3J0HGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 03:05:14 -0400
-Subject: Re: [PATCH 1/3] thermal: bcm281xx: Add Temperature Monitor driver
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20131026124546.GH29341@beef>
-Date: Sun, 27 Oct 2013 02:05:10 -0500
-Cc: Wendy Ng <wendy.ng@broadcom.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Christian Daudt <bcm@fixthebug.org>,
-        Markus Mayer <mmayer@broadcom.com>, Tim Kryger <tim.kryger@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E1F46C45-5C77-4101-9359-1C92D6508E8B@codeaurora.org>
-References: <1382745629-1123-1-git-send-email-wendy.ng@broadcom.com> <1382745629-1123-2-git-send-email-wendy.ng@broadcom.com> <382461FD-5CB7-461C-A9A7-76D2EF99C769@codeaurora.org> <46DC9641-6D01-4D2F-B5C3-0942B480D6E0@codeaurora.org> <20131026124546.GH29341@beef>
-To: Matt Porter <matt.porter@linaro.org>
-X-Mailer: Apple Mail (2.1283)
+	Sun, 27 Oct 2013 03:06:14 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: jdike@addtoit.com, richard@nod.at
+Cc: user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] um: remove used STDIO_CONSOLE Kconfig param
+Date: Sun, 27 Oct 2013 08:06:10 +0100
+Message-Id: <1382857570-3412-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This removes the STDIO_CONSOLE Kconfig parameter which
+is defined but no longer used anywhere in the makefiles and source code.
 
-On Oct 26, 2013, at 7:45 AM, Matt Porter wrote:
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/um/Kconfig.char | 4 ----
+ 1 file changed, 4 deletions(-)
 
-> On Sat, Oct 26, 2013 at 01:47:40AM -0500, Kumar Gala wrote:
->> 
->> On Oct 26, 2013, at 1:46 AM, Kumar Gala wrote:
->> 
->>> 
->>> On Oct 25, 2013, at 7:00 PM, Wendy Ng wrote:
->>> 
->>>> This adds the support for Temperature Monitor (TMON) driver for
->>>> Broadcom bcm281xx SoCs. This driver plugs into the Thermal Framework.
->>>> 
->>>> Note that this version of the TMON driver does support interrupt-driven
->>>> mode -- only polling-mode of the thermal framework can be used.
->>>> 
->>>> Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
->>>> Reviewed-by: Markus Mayer <mmayer@broadcom.com>
->>>> Reviewed-by: Christian Daudt <csd@broadcom.com>
->>>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->>>> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
->>>> ---
->>>> .../bindings/thermal/bcm-kona-thermal.txt          |   24 +++
->>>> drivers/thermal/Kconfig                            |   11 ++
->>>> drivers/thermal/Makefile                           |    1 +
->>>> drivers/thermal/bcm_kona_tmon.c                    |  173 ++++++++++++++++++++
->>>> 4 files changed, 209 insertions(+)
->>>> create mode 100644 Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
->>>> create mode 100644 drivers/thermal/bcm_kona_tmon.c
->>>> 
->>>> diff --git a/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
->>>> new file mode 100644
->>>> index 0000000..225b898
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/thermal/bcm-kona-thermal.txt
->>>> @@ -0,0 +1,24 @@
->>>> +* Broadcom Kona TMON bindings
->>>> +
->>>> +This version is for the Kona family of SoCs.  The TMON (Temperature Monitor)
->>>> +block in a Kona SoC device is used to measure the chip temperature at constant
->>>> +intervals.
->>>> +The TMON block asserts an interrupt if temperature exceeds a user programmed
->>>> +threshold value.  The TMON block would reset the entire device once it
->>>> +reaches a critical temperature which is also a programmable setting.
->>>> +
->>>> +Required properties:
->>>> +- compatible : "brcm,bcm11351-tmon", "brcm,kona-tmon"
->>>> +- reg : Address range of the thermal register
->>>> +- clocks : the clock signal that drives the TMON block
->>>> +- interrupts: the interrupt signal associated with the TMON block
->>>> +
->>>> +
->>>> +Example:
->>>> +	tmon@34008000 {
->>>> +		compatible = "brcm,bcm11351-tmon", "brcm,kona-tmon";
->>>> +		reg = <0x34008000 0x0024>;
->>>> +		clocks = <&tmon_1m_clk>;
->>>> +		interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
->>>> +		status = "disabled";
->>> 
->>> I'd remove the 'status' line from an example.
->>> 
->>>> +	};
->>> 
->>> Ack on the binding (beyond my minor nit pick on the status prop).
->>> 
->>> Acked-by: Kumar Gala <galak@codeaurora.org>
->>> 
->>> - k
->> 
->> 
->> After looking at your .dts{i} I see you've got a #thermal-sensor-cells prop, where is that documented?
-> 
-> It's in Eduardo's "device thermal limits represented in device tree
-> nodes" series. Here's the direct link to the binding post/discussion
-> https://lkml.org/lkml/2013/9/26/772
-> 
-> -Matt
-
-Than as you mentioned in another thread, we should have a reference to that binding in this one.
-
-- k
-
-
+diff --git a/arch/um/Kconfig.char b/arch/um/Kconfig.char
+index b9d7c42..f10738d 100644
+--- a/arch/um/Kconfig.char
++++ b/arch/um/Kconfig.char
+@@ -6,10 +6,6 @@ config STDERR_CONSOLE
+ 	help
+ 	  console driver which dumps all printk messages to stderr.
+ 
+-config STDIO_CONSOLE
+-	bool
+-	default y
+-
+ config SSL
+ 	bool "Virtual serial line"
+ 	help
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.8.1.2
 
