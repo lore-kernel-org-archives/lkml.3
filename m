@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3J0TXH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 15:23:07 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:47428 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab3J0TXF (ORCPT
+	id S1753963Ab3J0T2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 15:28:47 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:65358 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab3J0T2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 15:23:05 -0400
+	Sun, 27 Oct 2013 15:28:46 -0400
+Date: Sun, 27 Oct 2013 20:29:11 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Rob Pearce <rob@flitspace.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] INTEL DRM DRIVERS : No LVDS hardware on Intel D410PT and
+ D425KT
+Message-ID: <20131027192911.GK18189@phenom.ffwll.local>
+Mail-Followup-To: Guenter Roeck <linux@roeck-us.net>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Rob Pearce <rob@flitspace.org.uk>, David Airlie <airlied@linux.ie>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <526D3BB6.6020902@flitspace.org.uk>
+ <20131027173302.GA25812@kroah.com>
+ <526D5D0E.5090604@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <526D62D8.8050001@canonical.com>
-References: <20131026121902.GA24890@gmail.com>
-	<CA+55aFwLwZ2SoqLdD9itnXrFJyS9szC+g4J01pLxHFgKYCvrog@mail.gmail.com>
-	<526D62D8.8050001@canonical.com>
-Date: Sun, 27 Oct 2013 12:23:03 -0700
-X-Google-Sender-Auth: -Qbzj8f8xtQsEgHlpwgohK71kUA
-Message-ID: <CA+55aFz3MLHcAFqF=WBwmHGQ+8+uU+Hd7avXt=P9L-ohv08bnw@mail.gmail.com>
-Subject: Re: [GIT PULL] locking fix
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526D5D0E.5090604@roeck-us.net>
+X-Operating-System: Linux phenom 3.10-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 12:00 PM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
-> op 27-10-13 18:28, Linus Torvalds schreef:
->>
->> That expression is largely equivalent to
->> "__builtin_constant_p(ww_ctx)" (because iff ww_ctx is constant, then
->> the comparison to NULL is constant), which is actually much easier to
->> read, while carrying a totally different semantic meaning. Making
->> things worse, the comparison to NULL *may* be marked constant under
->> some very random situations (ie the compiler could turn a "taking an
->> address of a variable is never NULL" kind of knowledge and combining
->> it with other knowledge, and turn a complicated "ctx" expression into
->> a "I know this cannot be NULL" thing, and thus the "== NULL" is a
->> constant, even though ctx itself is some dynamic calculation).
->>
->> Whoever wrote the original should be shot. And this commit shouldn't
->> have been marked as being somehow about gcc-version dependence, but
->> about removing completely crap code.
->>
-> Unfortunately gcc disagreed there, which was another compiler bug.
+On Sun, Oct 27, 2013 at 11:35:58AM -0700, Guenter Roeck wrote:
+> On 10/27/2013 10:33 AM, Greg KH wrote:
+> >On Sun, Oct 27, 2013 at 04:13:42PM +0000, Rob Pearce wrote:
+> >>From: Rob Pearce <rob@flitspace.org.uk>
+> >>
+> >>The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
+> >>having LVDS but the hardware is not populated. This patch adds them to
+> >>the list of such systems. Patch is against 3.11.4
+> >>
+> >>Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+> >>---
+> >>Patch revised to match the D425KT exactly as the D425KTW does have LVDS.
+> >>According to Intel's documentation, the D410PTL and D410PLTW don't.
+> >
+> >Any reason you don't want this in the stable tree as well?
+> >
+> 
+> Hi Greg,
+> 
+> pardon my ignorance, but I thought this was supposed to be the maintainer's call to make ?
+> Did I get this wrong ?
 
-Stop this idiotic "blame gcc bug" crap. Which part of my explanation
-for why it was *NOT* a compiler bug did you not understand?
-
-> __builtin_constant_p(ww_ctx) was NOT equal to __builtin_constant_p(ww_ctx == NULL), iirc.
-
-See my "largely equivalent" comment, with the *EXTRA* logic that gcc
-may actually find cases where the comparison is a constant even if the
-ww_ctx thing itself isn't a constant.
-
-> __builtin_constant_p(ww_ctx == NULL) is equal to __builtin_constant_p(ww_ctx != NULL), but
-> the former is more readable, since it shows we expect ww_ctx to be null.
-
-Stop the f*cking around already! The  whole "we expect ww_ctx to be
-null" thing shows that YOU DO NOT SEEM TO UNDERSTAND WHAT THE TEST
-ACTUALLY IS!
-
-The expression
-
-   __builtin_constant_p(ww_ctx == NULL)
-
-has ABSOLUTELY NOTHING to do with whether ww_ctx is NULL or not!
-Christ, can you really not understand that?
-
-For example, ww_ctx could be "&static_variable", and the compiler can
-- and some compiles _will_ - say that ww_ctx clearly cannot be NULL,
-so "ww_ctx == NULL" is 0, which is a constant, so the
-__builtin_constant_p() expression returns true. See? That expression
-has absolutely NOTHING to do with whether you passed in NULL or not.
-NOTHING.
-
-That __builtin_constant_p() tests whether the comparison is
-*CONSTANT*. And "0" is just as much a constant as "1" is. Really. So
-the whole f*cking expression is total and utter crap, because it is
-entirely and utterly senseless. It lacks all meaning. It's not
-actually testing for NULL at all. Never was, never will.
-
-The *ONLY* thing it is testing for is "how much can the compiler
-optimize this", and as such the *ONLY* thing it tests for is compiler
-differences.
-
-Really. Seriously. If you start blaming the compiler for different
-compilers giving different results, the only thing *that* shows is
-that you didn't understand the expression to begin with.
-
-> But yeah I guess it was too broken in gcc after all, so that's why it had to be killed altogether.
-
-NO NO NO NO. No a f*cking thousand times. It's not "too broken in
-gcc". It's too broken in the source code, and the fact that you don't
-even understand that is sad. You wrote the code, and you seem to be
-unable to admit that *your* code was buggy.
-
-It's not a compiler bug. It's your bug. Stand up like a man, instead
-of trying to flail around and blame anything else but yourself.
-
-So guys, get your act together, and stop blaming the compiler already.
-
-               Linus
+Maintainer occasionally fumble it, so it's better when the patch submitter
+also thinks about this. I can always change it when I disagree ;-)
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
