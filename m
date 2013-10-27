@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3J0QbG (ORCPT <rfc822;w@1wt.eu>);
+	id S1754657Ab3J0QbG (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 27 Oct 2013 12:31:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43430 "EHLO
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43427 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754264Ab3J0QbE (ORCPT
+	by vger.kernel.org with ESMTP id S1753482Ab3J0QbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Oct 2013 12:31:04 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
@@ -12,52 +12,43 @@ To: cw00.choi@samsung.com
 Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] extcon: arizona: Fix race with microphone detection and removal
-Date: Sun, 27 Oct 2013 16:19:12 +0000
-Message-Id: <1382890752-30970-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH v2 1/2] extcon: arizona: Fix reset of HPDET after race with removal
+Date: Sun, 27 Oct 2013 16:19:11 +0000
+Message-Id: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The microphone detection code is run as delayed work to provide
-additional debounce, it is possible that the jack could have been
-removed by the time we process the microphone detection. Turn this case
-into a no op.
+We need to make sure we reset back to our starting state, especially
+making sure that we have disabled poll in the register cache.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
-
-As Lee Jones took the first patch (extcon: arizona: Add
-defines for microphone detection levels) of my series
-yesterday through his tree I have based this patch on the
-extcon tree without that change applied.
-
-Thanks,
-Charles
-
- drivers/extcon/extcon-arizona.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/extcon/extcon-arizona.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index dac8ba0..9c20850 100644
+index ec9a14e..dac8ba0 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -773,6 +773,12 @@ static void arizona_micd_detect(struct work_struct *work)
+@@ -596,9 +596,15 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+ 		dev_err(arizona->dev, "Failed to report HP/line: %d\n",
+ 			ret);
  
- 	mutex_lock(&info->lock);
- 
-+	if (!info->cable) {
-+		dev_dbg(arizona->dev, "Ignoring MICDET for removed cable\n");
-+		mutex_unlock(&info->lock);
-+		return;
-+	}
++done:
++	/* Reset back to starting range */
++	regmap_update_bits(arizona->regmap,
++			   ARIZONA_HEADPHONE_DETECT_1,
++			   ARIZONA_HP_IMPEDANCE_RANGE_MASK | ARIZONA_HP_POLL,
++			   0);
 +
- 	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
- 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
- 		if (ret != 0) {
+ 	arizona_extcon_do_magic(info, 0);
+ 
+-done:
+ 	if (id_gpio)
+ 		gpio_set_value_cansleep(id_gpio, 0);
+ 
 -- 
 1.7.2.5
 
