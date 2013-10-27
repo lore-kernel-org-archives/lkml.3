@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab3J0W3d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 18:29:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38468 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3J0W3c (ORCPT
+	id S1754866Ab3J0Wym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 18:54:42 -0400
+Received: from smtprelay0088.hostedemail.com ([216.40.44.88]:42397 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752982Ab3J0Wyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 18:29:32 -0400
-Date: Sun, 27 Oct 2013 22:29:25 +0000
-From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org
-Subject: Re: blk-mq flush fix
-Message-ID: <20131027222914.GG22549@kernel.dk>
-References: <20131026114612.GA8576@infradead.org>
- <20131026153124.GA22227@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131026153124.GA22227@infradead.org>
+	Sun, 27 Oct 2013 18:54:41 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3866:3867:3868:3872:3873:3874:4321:5007:6119:7652:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13071:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: peace31_45b9e060a5104
+X-Filterd-Recvd-Size: 1868
+Message-ID: <1382914478.30941.18.camel@joe-AO722>
+Subject: Re: [PATCH 1/8] IB/cxgb4: Fix formatting of physical address
+From: Joe Perches <joe@perches.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-rdma@vger.kernel.org
+Date: Sun, 27 Oct 2013 15:54:38 -0700
+In-Reply-To: <1382912801.2994.61.camel@deadeye.wl.decadent.org.uk>
+References: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
+	 <1382910645.2994.45.camel@deadeye.wl.decadent.org.uk>
+	 <1382911111.30941.2.camel@joe-AO722>
+	 <1382911333.2994.55.camel@deadeye.wl.decadent.org.uk>
+	 <1382912049.30941.5.camel@joe-AO722>
+	 <1382912801.2994.61.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26 2013, Christoph Hellwig wrote:
-> I think this variant of the patch from Alexander should fix the issue
-> in a minimally invasive way.  Longer term I'd prefer to use q->flush_rq
-> like in the non-mq case by copying over the context and tag information.
+On Sun, 2013-10-27 at 22:26 +0000, Ben Hutchings wrote:
+> I don't think so.  This doesn't find anything:
+>     git grep '&[ (]*pci_resource_start'
+> and I was able to build drivers/{net,pci,scsi}/ successfully with
+> pci_resource_start() changed to an inline function.
 
-This one is pretty simple, we could definitely use it as a band aid. I
-too would greatly prefer using the static ->flush_rq instead. Just have
-it marked to bypass most of the free logic.
+Hi again Ben.  You're right.
 
-I'll add this one.
+It could be nice though to have some mechanism to get from
+a pci_resource_start/end that could be emitted via %pa
+without an intermediate or casting like
+(unsigned long long)pci_resource_<foo>(struct resource *)
 
--- 
-Jens Axboe
+There are at least a few dozen uses of dmesg/seq_printf with
+%llx or %lx and (some_cast)pci_resource_<foo> that could be
+converted.
 
