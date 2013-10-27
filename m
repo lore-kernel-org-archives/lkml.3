@@ -1,95 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3J0LcB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 07:32:01 -0400
-Received: from ring0.de ([91.143.88.219]:58284 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab3J0Lb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 07:31:59 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: ucw.cz]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 27 Oct 2013 12:31:48 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Beno?t Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: N900: GPIO key definitions
-Message-ID: <20131027113147.GA14091@earth.universe>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
-	Beno?t Cousson <bcousson@baylibre.com>,
-	Tony Lindgren <tony@atomide.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-	devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-kernel@vger.kernel.org
-References: <1382446178-27638-1-git-send-email-sre@debian.org>
- <20131027111728.GB2437@xo-6d-61-c0.localdomain>
+	id S1753935Ab3J0LcH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 07:32:07 -0400
+Received: from mail12.copyleft.no ([188.94.218.224]:54543 "EHLO
+	mail12.copyleft.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3J0LcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 07:32:03 -0400
+X-Greylist: delayed 1923 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Oct 2013 07:32:03 EDT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
-Content-Disposition: inline
-In-Reply-To: <20131027111728.GB2437@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131027092019.GB13149@leaf>
+References: <20131024122255.GI9378@mwanda>
+	<20131024122512.GB9534@mwanda>
+	<20131026181709.GB10488@kroah.com>
+	<20131027013402.GA7146@leaf>
+	<526CA7D4.1070904@alum.mit.edu>
+	<20131027071407.GA11683@leaf>
+	<874n83m8xv.fsf@linux-k42r.v.cablecom.net>
+	<20131027092019.GB13149@leaf>
+Date: Sun, 27 Oct 2013 11:59:53 +0100
+Message-ID: <CALKQrgc7a+p5eebJErcGdA3QDyvdHEaef36RhZocQp9LjDUeeg@mail.gmail.com>
+Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
+From: Johan Herland <johan@herland.net>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Thomas Rast <tr@thomasrast.ch>, Michael Haggerty <mhagger@alum.mit.edu>,
+        Git mailing list <git@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        ksummit-attendees@lists.linuxfoundation.org,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 27, 2013 at 10:20 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Sun, Oct 27, 2013 at 09:09:32AM +0100, Thomas Rast wrote:
+>> Josh Triplett <josh@joshtriplett.org> writes:
+>> > On Sun, Oct 27, 2013 at 06:42:44AM +0100, Michael Haggerty wrote:
+>> >> But I don't think that this feature should be given the "-f" short
+>> >> option, as (a) -f often means "force"; (b) it will increase the
+>> >> confusion with --fixup; (c) it just doesn't strike me as being likely to
+>> >> be such a frequently-used option (though if this changes over time the
+>> >> "-f" option could always be granted to it later).
+>> >
+>> > (a) -n often means --dry-run, but for commit it means --no-verify.
+>> > Different commands have different options, and commit doesn't have a
+>> > --force to abbreviate as -f.
+>> >
+>> > (b) If anything, I think the existence of a short option will make the
+>> > distinction more obvious, since -f and --fixup are much less similar
+>> > than --fixes and --fixup.  Most users will never type --fixes, making
+>> > confusion unlikely.
+>> >
+>> > (c) Short option letters tend to be first-come first-serve unless
+>> > there's a strong reason to do otherwise.  Why reserve 'f' for some
+>> > hypothetical future option that doesn't exist yet?
+>>
+>> No, lately the direction in Git has been to avoid giving options a
+>> one-letter shorthand until they have proven so useful that people using
+>> it in the wild start to suggest that it should have one.
+>>
+>> See e.g.
+>>
+>>   http://article.gmane.org/gmane.comp.version-control.git/233998
+>>   http://article.gmane.org/gmane.comp.version-control.git/168748
+>
+> Fair enough; easy enough to drop -f if that's the consensus.  However...
+>
+>> A much better argument would be if it was already clear from the specs
+>> laid out for Fixes that n% of the kernel commits will end up having this
+>> footer, and thus kernel hackers will spend x amount of time spelling out
+>> --fixes and/or confusing it with --fixup to much headache.
+>
+> ...good suggestion:
+>
+> ~/src/linux$ git log --grep='stable@' --oneline --since='1 year ago' | wc -l
+> 2769
+> ~/src/linux$ git log --grep='stable@' --oneline --since='1 year ago' --pretty=format:%an | sort -u | wc -l
+> 839
+>
+> Several thousand commits per year by hundreds of unique people seems
+> like enough to justify a short option.
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think this can be solved just as well (if not better) using a
+combination of a commit message template (or a prepare-commit-msg
+hook) and a commit-msg hook.
 
-On Sun, Oct 27, 2013 at 12:17:28PM +0100, Pavel Machek wrote:
-> On Tue 2013-10-22 14:49:38, Sebastian Reichel wrote:
-> > Add device tree node for the GPIO keys provided by the
-> > N900 board. This is a simple conversion of the existing
-> > board code.
-> >=20
-> > Signed-off-by: Sebastian Reichel <sre@debian.org>
->=20
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+The former appends a section of commonly-used RFC822-style headers
+(with empty values) to the bottom of the commit message, e.g. some
+variation on this:
 
-This patch has already been merged by Benoit.
+  Fixes:
+  Reported-by:
+  Suggested-by:
+  Improved-by:
+  Acked-by:
+  Reviewed-by:
+  Tested-by:
+  Signed-off-by:
 
--- Sebastian
+Then the user (in addition to writing the commit message above this
+block) may choose to fill in one or more values in this "form", e.g.
+like this:
 
---7JfCtLOvnd9MIVvH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  My commit subject
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+  This is the commit message body.
 
-iQIcBAEBCAAGBQJSbPmjAAoJENju1/PIO/qat1cP/0E5InWrRZP9fQM+nDdJGVBY
-I16/CBpGUU3aPozsq+X7yrHX1TsyGmbAiwL1GFV4bbmfn6lclMv9QTUTOUmAV7uZ
-vUJ7LpVfw3VXjVvhq4AY3KivQlDLzHJG4DhwRlzgUqlsijARsn2OUPQ2Hr5HRoZY
-xvo7FdxBNamclb39NA38cB5j6kc9i+fcTIgwFa5UvrvmUAMKdOoh1MvFqr9woVih
-U5iz6JThK1BJ53lHc6bElkXBxtb6R8j5AiEQXm6OvtaclKBrnLqf7uUCkUipqyrF
-MAl03I6HQbRvr66pVq6agifHA9u/cU1aAIsGcbbAazhkcvYBi15+Lc7C+i3DgA26
-wUgAEcWnCbkCsMDy69PoAirwLRztjAeH0Zb6Sz7cwg6WpokRdx0wtc3Zst4ZYYrK
-Rh39Mb6UExo/h1wAD4qmKHAQECyxEHIGDmC+38ypR8P3X1+GQhOFRnCuQTJ5/e1s
-SBEouXVOAvDCqz+N3+o5F2/oS7rDMaghMUpn1LgJjCuTow0HTVNfclk9knrLckkf
-Zm8fgbQM2kOQjqbsquoZgznjNCtn5fPFVhr6a90QGFrmKZihM1Ma/HHIRMdl4gMK
-Iyr5khkNgdMFBCMUovg/QV2n0b15h6L9aT0oaMbnKl6nWvgsrkF8Wxbg4jYVqKg9
-pO8hV0jGWQZrllvLdVmc
-=+grt
------END PGP SIGNATURE-----
+  Fixes: 1234beef
+  Reported-by: Joe User <j.user@example.com>
+  Suggested-by:
+  Improved-by: Joe Hacker <j.hacker@example.com>
+  Acked-by:
+  Reviewed-by:
+  Tested-by: Joe Tester <j.tester@example.com>
+  Signed-off-by: Myself <myself@example.com>
 
---7JfCtLOvnd9MIVvH--
+Then, the commit-msg hook can clean up and transform this into the
+final commit message:
+
+  My commit subject
+
+  This is the commit message body.
+
+  Fixes: 1234beef56 (Commit message summmary)
+  Reported-by: Joe User <j.user@example.com>
+  Improved-by: Joe Hacker <j.hacker@example.com>
+  Tested-by: Joe Tester <j.tester@example.com>
+  Signed-off-by: Myself <myself@example.com>
+
+Here, the commit-msg hook removes the fields that were not filled in,
+and performs additional filtering on the "Fixes" line (Adding commit
+message summary). The filtering could also resolve ref names, so that
+if you had refs/tags/security-bug pointing at the buggy commit, then:
+
+  Fixes: security-bug
+
+would be expanded/DWIMed into:
+
+  Fixes: 1234beef56 (Commit message summmary)
+
+Obviously, any other fancy processing you want to do into in the
+commit-msg hook can be done as well, adding footnotes, checking that
+commits are present in the ancestry, etc, etc.
+
+Three good reasons to go this way:
+
+ 1. If the user forgets to supply command-line options like -s,
+--fixes, etc, there is a nice reminder in the supplied form.
+
+ 2. No need to add any command-line options to Git.
+
+ 3. The whole mechanism is controlled by the project. The kernel folks
+can do whatever they want in their templates/hooks without needing
+changes to the Git project.
+
+
+...Johan
+
+-- 
+Johan Herland, <johan@herland.net>
+www.herland.net
