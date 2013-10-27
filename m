@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab3J0KDs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 06:03:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41699 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab3J0KDq (ORCPT
+	id S1753130Ab3J0Kdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 06:33:47 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:49777 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3J0Kdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 06:03:46 -0400
-Date: Sun, 27 Oct 2013 10:00:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131027100047.GY16735@n2100.arm.linux.org.uk>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com> <1382706224-8859-1-git-send-email-treding@nvidia.com> <1382706224-8859-4-git-send-email-treding@nvidia.com> <20131025132553.GE9999@mudshark.cambridge.arm.com> <20131026084033.GA14237@gmail.com> <20131026140125.GA13424@mudshark.cambridge.arm.com> <20131027071237.GA448@gmail.com>
+	Sun, 27 Oct 2013 06:33:45 -0400
+Date: Sun, 27 Oct 2013 11:33:41 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Baron <jbaron@akamai.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH V2] printk: pr_debug_ratelimited: check state first to
+ reduce "callbacks suppressed" messages
+Message-ID: <20131027103341.GA16146@shrek.podlesie.net>
+References: <20131026132955.GA9251@shrek.podlesie.net>
+ <20131026173730.GA18320@kroah.com>
+ <1382813522.3238.4.camel@joe-AO722>
+ <20131026190151.GA26389@kroah.com>
+ <1382845313.3238.28.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131027071237.GA448@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1382845313.3238.28.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 08:12:37AM +0100, Ingo Molnar wrote:
+On Sat, Oct 26, 2013 at 08:41:53PM -0700, Joe Perches wrote:
+> pr_debug_ratelimited should be coded similarly to dev_dbg_ratelimited
+> to reduce the "callbacks suppressed" messages.
 > 
-> * Will Deacon <will.deacon@arm.com> wrote:
-> > In future, I'll push back on any perf changes outside of arch/ in my 
-> > tree, but that doesn't help us get out of the current situation: the 
-> > patches are currently sitting in rmk's tree for 3.13, so that won't meet 
-> > with -tip (outside of next) until Linus pulls them both. What can we do 
-> > about that?
+> Add #include <linux/dynamic_debug.h> to printk.h. Unfortunately, this
+> new #include must be after the prototype/declaration of function printk.
 > 
-> Unless you guys want to do a revert I guess there's not much to do but to 
-> warn Linus in the ARM pull request that a conflict is coming up.
+> It may be better to split out these _ratelimited declarations into
+> a separate file one day.
+> 
+> Any use of these pr_<foo>_ratelimited functions must also have another
+> specific #include <ratelimited.h>.  Most users have this done indirectly
+> via #include <linux/kernel.h>
+> 
+> printk.h may not #include <linux/ratelimit.h> as it causes circular
+> dependencies and compilation failures.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> V2: Fix #include dependencies and typos.
+> 
+> Compile tested with and without CONFIG_DYNAMIC_DEBUG
 
->From Will's description, it sounded like this could be quite hairy to
-fix up, so I'd like to include the conflict resolution in the pull
-request so Linus has something to refer to if needed.  Could someone
-please forward me that?
+I've tested both patches without CONFIG_DYNAMIC_DEBUG and
+with enabled and disabled debugging with CONFIG_DYNAMIC_DEBUG
+and everything seems work correctly.
 
-Thanks.
+Thanks,
+Krzysiek
