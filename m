@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3J0ThV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 15:37:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46007 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab3J0ThU (ORCPT
+	id S1754212Ab3J0TjZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 15:39:25 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50377 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3J0TjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 15:37:20 -0400
-Message-ID: <526D6B6D.2000605@canonical.com>
-Date: Sun, 27 Oct 2013 20:37:17 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 27 Oct 2013 15:39:24 -0400
+Date: Mon, 28 Oct 2013 01:09:07 +0530
+From: Afzal Mohammed <afzal.mohd.ma@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christophe Leroy <christophe.leroy@c-s.fr>,
+        Christian Kujau <lists@nerdbynature.de>
+Subject: Re: [PATCH RFC] kbuild: prevent git private tag altering
+ kernelrelease
+Message-ID: <20131027193907.GA2710@afzal-ThinkPad-R50e>
+References: <1379109004-2411-1-git-send-email-afzal.mohd.ma@gmail.com>
+ <5267CD3C.2020004@suse.cz>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] locking fix
-References: <20131026121902.GA24890@gmail.com>	<CA+55aFwLwZ2SoqLdD9itnXrFJyS9szC+g4J01pLxHFgKYCvrog@mail.gmail.com>	<526D62D8.8050001@canonical.com> <CA+55aFz3MLHcAFqF=WBwmHGQ+8+uU+Hd7avXt=P9L-ohv08bnw@mail.gmail.com>
-In-Reply-To: <CA+55aFz3MLHcAFqF=WBwmHGQ+8+uU+Hd7avXt=P9L-ohv08bnw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5267CD3C.2020004@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 27-10-13 20:23, Linus Torvalds schreef:
-> On Sun, Oct 27, 2013 at 12:00 PM, Maarten Lankhorst
-> <maarten.lankhorst@canonical.com> wrote:
->> op 27-10-13 18:28, Linus Torvalds schreef:
->>> That expression is largely equivalent to
->>> "__builtin_constant_p(ww_ctx)" (because iff ww_ctx is constant, then
->>> the comparison to NULL is constant), which is actually much easier to
->>> read, while carrying a totally different semantic meaning. Making
->>> things worse, the comparison to NULL *may* be marked constant under
->>> some very random situations (ie the compiler could turn a "taking an
->>> address of a variable is never NULL" kind of knowledge and combining
->>> it with other knowledge, and turn a complicated "ctx" expression into
->>> a "I know this cannot be NULL" thing, and thus the "== NULL" is a
->>> constant, even though ctx itself is some dynamic calculation).
->>>
->>> Whoever wrote the original should be shot. And this commit shouldn't
->>> have been marked as being somehow about gcc-version dependence, but
->>> about removing completely crap code.
->>>
->> Unfortunately gcc disagreed there, which was another compiler bug.
-> Stop this idiotic "blame gcc bug" crap. Which part of my explanation
-> for why it was *NOT* a compiler bug did you not understand?
->
->> __builtin_constant_p(ww_ctx) was NOT equal to __builtin_constant_p(ww_ctx == NULL), iirc.
-> See my "largely equivalent" comment, with the *EXTRA* logic that gcc
-> may actually find cases where the comparison is a constant even if the
-> ww_ctx thing itself isn't a constant.
-Sure in the theoretical case it's possible.
->>  __builtin_constant_p(ww_ctx == NULL) is equal to __builtin_constant_p(ww_ctx != NULL), but
->> the former is more readable, since it shows we expect ww_ctx to be null.
-> Stop the f*cking around already! The  whole "we expect ww_ctx to be
-> null" thing shows that YOU DO NOT SEEM TO UNDERSTAND WHAT THE TEST
-> ACTUALLY IS!
->
-> The expression
->
->    __builtin_constant_p(ww_ctx == NULL)
->
-> has ABSOLUTELY NOTHING to do with whether ww_ctx is NULL or not!
-> Christ, can you really not understand that?
-I'm fully aware, I just think the compiler cannot know that the address is always non-null for a generic function that takes an argument and isn't inlined.
+Hi Michal,
 
-> For example, ww_ctx could be "&static_variable", and the compiler can
-> - and some compiles _will_ - say that ww_ctx clearly cannot be NULL,
-> so "ww_ctx == NULL" is 0, which is a constant, so the
-> __builtin_constant_p() expression returns true. See? That expression
-> has absolutely NOTHING to do with whether you passed in NULL or not.
-> NOTHING.
-but __ww_mutex_lock isn't inlined..
-> That __builtin_constant_p() tests whether the comparison is
-> *CONSTANT*. And "0" is just as much a constant as "1" is. Really. So
-> the whole f*cking expression is total and utter crap, because it is
-> entirely and utterly senseless. It lacks all meaning. It's not
-> actually testing for NULL at all. Never was, never will.
->
-> The *ONLY* thing it is testing for is "how much can the compiler
-> optimize this", and as such the *ONLY* thing it tests for is compiler
-> differences.
->
-> Really. Seriously. If you start blaming the compiler for different
-> compilers giving different results, the only thing *that* shows is
-> that you didn't understand the expression to begin with.
->
->> But yeah I guess it was too broken in gcc after all, so that's why it had to be killed altogether.
-> NO NO NO NO. No a f*cking thousand times. It's not "too broken in
-> gcc". It's too broken in the source code, and the fact that you don't
-> even understand that is sad. You wrote the code, and you seem to be
-> unable to admit that *your* code was buggy.
->
-> It's not a compiler bug. It's your bug. Stand up like a man, instead
-> of trying to flail around and blame anything else but yourself.
->
-> So guys, get your act together, and stop blaming the compiler already.
-I never denied my original code didn't contain bugs, which is why I wrote that fix. I just don't believe gcc
-will ever be smart enough to determine that ww_ctx is a non-null argument in all calls to __ww_mutex_lock,
-and then determine for that reason ww_ctx != NULL would be an invariant.
+On Wed, Oct 23, 2013 at 03:21:00PM +0200, Michal Marek wrote:
+> On 13.9.2013 23:49, Afzal Mohammed wrote:
 
-I would love for a compiler to become that smart though, but I do not think it's likely.
+> > If a private tag is created after the most recent kernelversion tag, a
+> > commit after this private tag would feed kernelrelease with commits
+> > after private tag and kernelversion tag. This may confuse user relying
+> > on kernelrelease (mostly a developer while debugging), mainly if HEAD
+> > has a private tag and otherwise w.r.t git distance from kernelversion
+> > tag.
+> 
+> The solution is simple: Do not use private annotated tags. Or rather, if
+> you are creating an annotated tag, modify EXTRAVERSION accordingly. Any
+> automagic based on the tag name is going to fail in some way.
 
-But hey it was a bug, my code was buggy and I helped by suggesting how to write the correct fix.
+Here private tags, although not a proper term, (my description wasn't
+clear) was referring to any annotated/signed tag that does not match
+kernelversion.
 
-~Maarten
+Reason for this patch was to determine the exact source from kernel
+logs easily while working over subystem maintainer trees (especially
+useful when checking older logs and testing). More than my private tags,
+it is the tags of subystem maintainers which never is a kernelversion
+that made it difficult to determine the source from logs. Presence of
+those tags misleads one about the source.
 
+Modifying EXTRAVERSION would make it dirty, else commiting only for
+the sake of avoiding dirty would be required to track the git source
+and chances are high that git gc may eat those commits.
+
+> With your change, the script considers e.g. the next-YYYYMMDD tags
+> "private."
+
+Although next tags were not causing much problem (due to
+localversion-next file and as no direct development over next),
+maintainer tags like this without localversion-* files were the ones
+that was being mostly targeted by this change.
+
+> >  define filechk_kernel.release
+> > -	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
+> > +	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree) $(KERNELVERSION))" > $@
+> >  endef
+> 
+> The >$@ should not be there.
+
+Yes, crap, happened while rebasing - punishment for coding without
+proper understanding.
+
+Regards
+Afzal
