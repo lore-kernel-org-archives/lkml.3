@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3J0Nir (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 09:38:47 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:35311 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995Ab3J0Niq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 09:38:46 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/5] fat: add i_disksize to represent uninitialized size
-References: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com>
-Date: Sun, 27 Oct 2013 22:38:38 +0900
-In-Reply-To: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Wed, 9 Oct 2013 23:40:27 +0900")
-Message-ID: <87zjpuygtd.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1754297Ab3J0Nlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:41:50 -0400
+Received: from mail.ukfsn.org ([5.9.116.23]:52270 "EHLO mail.ukfsn.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036Ab3J0Nls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 09:41:48 -0400
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Oct 2013 09:41:48 EDT
+Message-ID: <526D16A2.60804@flitspace.org.uk>
+Date: Sun, 27 Oct 2013 13:35:30 +0000
+From: Rob Pearce <rob@flitspace.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131014 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] INTEL DRM DRIVERS : No LVDS hardware on Intel D410PT and
+ D425KT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Oct 27 13:35:33 2013
+X-DSPAM-Confidence: 1.0000
+X-DSPAM-Probability: 0.0023
+X-DSPAM-Signature: 526d16a546961261017813
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+From: Rob Pearce <rob@flitspace.org.uk> 
 
-Code seems to be much became simpler.
+These Intel D410PT and D425KT Mini-ITX desktop boards both show up as
+having LVDS but the hardware is not populated. This patch adds them to
+the list of such systems. Tested against 3.9.10 and 3.11.4
 
-> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
-> index 91ad9e1..37572c2 100644
-> --- a/fs/fat/cache.c
-> +++ b/fs/fat/cache.c
-> @@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
->  			return 0;
->  
->  		/*
-> -		 * ->mmu_private can access on only allocation path.
-> +		 * ->i_disksize can access on only allocation path.
->  		 * (caller must hold ->i_mutex)
->  		 */
-> -		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
-> +		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->  			>> blocksize_bits;
->  		if (sector >= last_block)
->  			return 0;
+Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+---
+diff -uprN -X linux-3.9.10/Documentation/dontdiff linux-3.9.10/drivers/gpu/drm/i915/intel_lvds.c linux-3.9.10-ovs/drivers/gpu/drm/i915/intel_lvds.c
+--- linux-3.9.10/drivers/gpu/drm/i915/intel_lvds.c       2013-10-22 19:00:30.000000000 +0100
++++ linux-3.9.10-ovs/drivers/gpu/drm/i915/intel_lvds.c   2013-10-22 18:58:56.000000000 +0100
+@@ -843,6 +843,22 @@
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D410PT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D425KT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_MATCH(DMI_BOARD_NAME, "D425KT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Supermicro X7SPA-H",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
 
-Hm, bmap() ioctl returns between ->mmu_private and i_disksize? I'm not
-checking other FSes what does...
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
