@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3J0M5D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 08:57:03 -0400
-Received: from void.printf.net ([89.145.121.20]:60984 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab3J0M5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 08:57:00 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Jeremie Samuel <jeremie.samuel.ext@parrot.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: sdhci: dove: Fix build breakage
-References: <1382533832-21085-1-git-send-email-treding@nvidia.com>
-Date: Sun, 27 Oct 2013 08:56:55 -0400
-In-Reply-To: <1382533832-21085-1-git-send-email-treding@nvidia.com> (Thierry
-	Reding's message of "Wed, 23 Oct 2013 15:10:32 +0200")
-Message-ID: <87ppqqkh2g.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1754185Ab3J0NAo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:00:44 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:48472 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3J0NAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 09:00:42 -0400
+Date: Sun, 27 Oct 2013 09:00:36 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] percpu counter: cast this_cpu_sub() adjustment
+Message-ID: <20131027130036.GN14934@mtj.dyndns.org>
+References: <1382859876-28196-1-git-send-email-gthelen@google.com>
+ <1382859876-28196-3-git-send-email-gthelen@google.com>
+ <20131027112255.GB14934@mtj.dyndns.org>
+ <20131027050429.7fcc2ed5.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131027050429.7fcc2ed5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Oct 27, 2013 at 05:04:29AM -0700, Andrew Morton wrote:
+> On Sun, 27 Oct 2013 07:22:55 -0400 Tejun Heo <tj@kernel.org> wrote:
+> 
+> > We probably want to cc stable for this and the next one.  How should
+> > these be routed?  I can take these through percpu tree or mm works
+> > too.  Either way, it'd be best to route them together.
+> 
+> Yes, all three look like -stable material to me.  I'll grab them later
+> in the week if you haven't ;)
 
-On Wed, Oct 23 2013, Thierry Reding wrote:
-> Commit 2d7c51f (mmc: sdhci: Use work structs instead of tasklets)
-> converts tasklets to work structs, but typos the conversion in the Dove
-> driver.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/mmc/host/sdhci-dove.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
-> index 45c7f25..95f1076 100644
-> --- a/drivers/mmc/host/sdhci-dove.c
-> +++ b/drivers/mmc/host/sdhci-dove.c
-> @@ -39,7 +39,7 @@ static irqreturn_t sdhci_dove_carddetect_irq(int irq, void *data)
->  {
->  	struct sdhci_host *host = data;
->  
-> -	schedule_schedule(&host->card_detect_work);
-> +	schedule_work(&host->card_detect_work);
->  	return IRQ_HANDLED;
->  }
+Tried to apply to percpu but the third one is a fix for a patch which
+was added to -mm during v3.12-rc1, so these are yours. :)
 
-Thanks, Thierry -- I hope it's okay with you if I merge your fix into
-the original patch and add your S-o-b to that patch:
+> The names of the first two patches distress me.  They rather clearly
+> assert that the code affects percpu_counter.[ch], but that is not the case. 
+> Massaging is needed to fix that up.
 
-    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-    Signed-off-by: Jeremie Samuel <jeremie.samuel.ext@parrot.com>
-    [treding: Fix typo causing sdhci-dove build breakage]
-    Signed-off-by: Thierry Reding <treding@nvidia.com>
-    Signed-off-by: Chris Ball <cjb@laptop.org>
+Yeah, something like the following would be better
 
-- Chris.
+ percpu: add test module for various percpu operations
+ percpu: fix this_cpu_sub() subtrahend casting for unsigneds
+ memcg: use __this_cpu_sub() to dec stats to avoid incorrect subtrahend casting
+
+Thanks.
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+tejun
