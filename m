@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab3J0Mze (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 08:55:34 -0400
-Received: from mout.gmx.net ([212.227.17.22]:54891 "EHLO mout.gmx.net"
+	id S1754164Ab3J0M5D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 08:57:03 -0400
+Received: from void.printf.net ([89.145.121.20]:60984 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab3J0Mzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 08:55:32 -0400
-From: Andreas Werner <wernerandy@gmx.de>
-To: tglx@linutronix.de
-Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, wernerandy@gmx.de
-Subject: [PATCH] X86: MM: Add PAT Type write-through in combination with mtrr
-Date: Sun, 27 Oct 2013 13:55:25 +0100
-Message-Id: <1382878525-3410-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.4
-X-Provags-ID: V03:K0:UWU8ETfk5NJf6LCIu7TtMKKnZMqmJr7LtJhYcMH+c/dMVqIZ0F3
- iVvfYh6I7RqrXoUT7Rn/GmzaL/kkjSRY+PSeDC/xc5e0Ci9z9QN6YjYNIJyq9/imzlbNJ8o
- WknskP4ReepBzi3wn30b6E+1a02KMGyav/EEYfx35eO2rZAXIidp27RdtjpOW9Y6MHExUoS
- 6FDY9JIa0PColiVXIVtkA==
+	id S1753161Ab3J0M5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 08:57:00 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Jeremie Samuel <jeremie.samuel.ext@parrot.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci: dove: Fix build breakage
+References: <1382533832-21085-1-git-send-email-treding@nvidia.com>
+Date: Sun, 27 Oct 2013 08:56:55 -0400
+In-Reply-To: <1382533832-21085-1-git-send-email-treding@nvidia.com> (Thierry
+	Reding's message of "Wed, 23 Oct 2013 15:10:32 +0200")
+Message-ID: <87ppqqkh2g.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Write-through memory type in combination with mtrr.
-If you call ioremap_cache to request cachable memory (write-back) the
-function tries to set the PAT to write-back only if the mtrr setting of
-the requested region is also marked as Write-Back.
-If the mttr regions are marked e.g. as Write-through or with other
-types, the function will always return UC- memory.
+Hi,
 
-If you check the Intel document " IA-32 SDM vol 3a table Effective
-Memory Type", there
-are many other combinations possible.
+On Wed, Oct 23 2013, Thierry Reding wrote:
+> Commit 2d7c51f (mmc: sdhci: Use work structs instead of tasklets)
+> converts tasklets to work structs, but typos the conversion in the Dove
+> driver.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  drivers/mmc/host/sdhci-dove.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+> index 45c7f25..95f1076 100644
+> --- a/drivers/mmc/host/sdhci-dove.c
+> +++ b/drivers/mmc/host/sdhci-dove.c
+> @@ -39,7 +39,7 @@ static irqreturn_t sdhci_dove_carddetect_irq(int irq, void *data)
+>  {
+>  	struct sdhci_host *host = data;
+>  
+> -	schedule_schedule(&host->card_detect_work);
+> +	schedule_work(&host->card_detect_work);
+>  	return IRQ_HANDLED;
+>  }
 
-This patch will only add the following combination:
-  PAT=Write-Back + MTRR=Write-Through = Effective Memory of
-Write-Through
+Thanks, Thierry -- I hope it's okay with you if I merge your fix into
+the original patch and add your S-o-b to that patch:
 
-Tested on - Intel (R) Atom E680 (Tunnel Creek)
-          - Intel (R) Core(TM)2 Duo
+    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+    Signed-off-by: Jeremie Samuel <jeremie.samuel.ext@parrot.com>
+    [treding: Fix typo causing sdhci-dove build breakage]
+    Signed-off-by: Thierry Reding <treding@nvidia.com>
+    Signed-off-by: Chris Ball <cjb@laptop.org>
 
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
----
- arch/x86/mm/pat.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6574388..9cfe107 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -149,10 +149,15 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
- 		u8 mtrr_type;
- 
- 		mtrr_type = mtrr_type_lookup(start, end);
--		if (mtrr_type != MTRR_TYPE_WRBACK)
--			return _PAGE_CACHE_UC_MINUS;
- 
--		return _PAGE_CACHE_WB;
-+		switch (mtrr_type) {
-+		case MTRR_TYPE_WRBACK:
-+		case MTRR_TYPE_WRTHROUGH:
-+		  return _PAGE_CACHE_WB;
-+
-+		default:
-+		  return _PAGE_CACHE_UC_MINUS;
-+		}
- 	}
- 
- 	return req_type;
+- Chris.
 -- 
-1.8.4
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
