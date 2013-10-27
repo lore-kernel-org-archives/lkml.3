@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3J0R2I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 13:28:08 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:47455 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab3J0R2H (ORCPT
+	id S1754881Ab3J0Raf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 13:30:35 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:44304 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab3J0Rad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 13:28:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131026121902.GA24890@gmail.com>
-References: <20131026121902.GA24890@gmail.com>
-Date: Sun, 27 Oct 2013 10:28:05 -0700
-X-Google-Sender-Auth: FTM_-27muKrylPZSkxxmgekdM6Y
-Message-ID: <CA+55aFwLwZ2SoqLdD9itnXrFJyS9szC+g4J01pLxHFgKYCvrog@mail.gmail.com>
-Subject: Re: [GIT PULL] locking fix
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 27 Oct 2013 13:30:33 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v2 0/3] fix unsigned pcp adjustments
+Date: Sun, 27 Oct 2013 10:30:14 -0700
+Message-Id: <1382895017-19067-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 5:19 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> This tree fixes a boot crash in CONFIG_DEBUG_MUTEXES=y kernels, on
-> kernels built with GCC 3.x. (There are still such distros.)
+As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages accounting"
+memcg use of __this_cpu_add(counter, -nr_pages) leads to incorrect statistic
+values because the negated nr_pages is not sign extended (counter is long,
+nr_pages is unsigned int).  The memcg fix is __this_cpu_sub(counter, nr_pages).
+But that doesn't simply work because __this_cpu_sub(counter, nr_pages) was
+implemented as __this_cpu_add(counter, -nr_pages) which suffers the same
+problem.  Example:
+  unsigned int delta = 1
+  preempt_disable()
+  this_cpu_write(long_counter, 0)
+  this_cpu_sub(long_counter, delta)
+  preempt_enable()
+    
+Before this change long_counter on a 64 bit machine ends with value 0xffffffff,
+rather than 0xffffffffffffffff.  This is because this_cpu_sub(pcp, delta) boils
+down to:
+  long_counter = 0 + 0xffffffff
 
-Btw, it's really not just gcc 3.x. That code was (a) incomprehensible,
-(b) wrong and (c) caused problems for LLVM too.
+v3.12-rc6 shows that only new memcg code is affected by this problem - the new
+mem_cgroup_move_account_page_stat() is the only place where an unsigned
+adjustment is used.  All other callers (e.g. shrink_dcache_sb) already use a
+signed adjustment, so no problems before v3.12.  Though I did not audit the
+stable kernel trees, so there could be something hiding in there.
 
-It was wrong because "__builtin_constant_p(ww_ctx == NULL)" simply
-makes no sense.
+Patch 1 creates a test module for percpu operations which demonstrates the
+__this_cpu_sub() problems.  This patch is independent can be discarded if there
+is no interest.
 
-Why?
+Patch 2 fixes __this_cpu_sub() to work with unsigned adjustments.
 
-That expression is largely equivalent to
-"__builtin_constant_p(ww_ctx)" (because iff ww_ctx is constant, then
-the comparison to NULL is constant), which is actually much easier to
-read, while carrying a totally different semantic meaning. Making
-things worse, the comparison to NULL *may* be marked constant under
-some very random situations (ie the compiler could turn a "taking an
-address of a variable is never NULL" kind of knowledge and combining
-it with other knowledge, and turn a complicated "ctx" expression into
-a "I know this cannot be NULL" thing, and thus the "== NULL" is a
-constant, even though ctx itself is some dynamic calculation).
+Patch 3 uses __this_cpu_sub() in memcg.
 
-Whoever wrote the original should be shot. And this commit shouldn't
-have been marked as being somehow about gcc-version dependence, but
-about removing completely crap code.
+An alternative smaller solution is for memcg to use:
+  __this_cpu_add(counter, -(int)nr_pages)
+admitting that __this_cpu_add/sub() doesn't work with unsigned adjustments.  But
+I felt like fixing the core services to prevent this in the future.
 
-                    Linus
+Changes from V1:
+- more accurate patch titles, patch logs, and test module description now
+  referring to per cpu operations rather than per cpu counters.
+- move small test code update from patch 2 to patch 1 (where the test is
+  introduced).
+
+Greg Thelen (3):
+  percpu: add test module for various percpu operations
+  percpu: fix this_cpu_sub() subtrahend casting for unsigneds
+  memcg: use __this_cpu_sub() to dec stats to avoid incorrect subtrahend
+    casting
+
+ arch/x86/include/asm/percpu.h |   3 +-
+ include/linux/percpu.h        |   8 +--
+ lib/Kconfig.debug             |   9 +++
+ lib/Makefile                  |   2 +
+ lib/percpu_test.c             | 138 ++++++++++++++++++++++++++++++++++++++++++
+ mm/memcontrol.c               |   2 +-
+ 6 files changed, 156 insertions(+), 6 deletions(-)
+ create mode 100644 lib/percpu_test.c
+
+-- 
+1.8.4.1
