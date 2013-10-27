@@ -1,18 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3J0QQY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 12:16:24 -0400
-Received: from ring0.de ([91.143.88.219]:59072 "EHLO smtp.ring0.de"
+	id S1754820Ab3J0QO5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 12:14:57 -0400
+Received: from ring0.de ([91.143.88.219]:59034 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab3J0QO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 12:14:58 -0400
+	id S1754587Ab3J0QOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 12:14:53 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
 	* -0.0 NO_RECEIVED Informational: message has no Received headers
 From: Sebastian Reichel <sre@debian.org>
 To: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>
@@ -30,54 +26,127 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 0/4] wl1251 device tree support
-Date: Sun, 27 Oct 2013 17:14:25 +0100
-Message-Id: <1382890469-25286-1-git-send-email-sre@debian.org>
+Subject: [PATCH 4/4] wl1251: spi: add device tree support
+Date: Sun, 27 Oct 2013 17:14:29 +0100
+Message-Id: <1382890469-25286-5-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382890469-25286-1-git-send-email-sre@debian.org>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add device tree support for the spi variant of wl1251
+and document the binding.
 
-The following patchset adds device tree support to
-the spi variant of the wl1251 driver.
-
-Some notes:
-
-The first patch is from Luciano's wilink DT support
-patchset [0].
-
-The third patch (vio regulator support) is optional. N900's
-wifi also worked without this patch, but its probably cleaner
-to have it.
-
-The patchset has been tested using DT boot with the Nokia N900
-and connecting to my wlan access point.
-
-[0] https://lkml.org/lkml/2013/7/3/333
-
--- Sebastian
-
-Luciano Coelho (1):
-  wl1251: split wl251 platform data to a separate structure
-
-Sebastian Reichel (3):
-  wl1251: move power GPIO handling into the driver
-  wl1251: spi: add vio regulator support
-  wl1251: spi: add device tree support
-
- .../devicetree/bindings/net/wireless/ti,wl1251.txt | 36 +++++++++++
- arch/arm/mach-omap2/board-omap3pandora.c           |  6 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c       | 15 ++---
- drivers/net/wireless/ti/wilink_platform_data.c     | 37 +++++++++--
- drivers/net/wireless/ti/wl1251/sdio.c              | 31 +++++++---
- drivers/net/wireless/ti/wl1251/spi.c               | 71 ++++++++++++++++------
- drivers/net/wireless/ti/wl1251/wl1251.h            |  4 +-
- include/linux/wl12xx.h                             | 24 +++++++-
- 8 files changed, 175 insertions(+), 49 deletions(-)
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ .../devicetree/bindings/net/wireless/ti,wl1251.txt | 36 ++++++++++++++++++++++
+ drivers/net/wireless/ti/wl1251/spi.c               | 23 ++++++++++----
+ 2 files changed, 53 insertions(+), 6 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
 
+diff --git a/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+new file mode 100644
+index 0000000..5f8a154
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+@@ -0,0 +1,36 @@
++* Texas Instruments wl1251 controller
++
++The wl1251 chip can be connected via SPI or via SDIO. The linux
++kernel currently only supports device tree for the SPI variant.
++
++Required properties:
++- compatible : Should be "ti,wl1251"
++- interrupts : Should contain interrupt line
++- interrupt-parent : Should be the phandle for the interrupt
++  controller that services interrupts for this device
++- vio-supply : phandle to regulator providing VIO
++- power-gpio : GPIO connected to chip's PMEN pin
++- For additional required properties on SPI, please consult
++  Documentation/devicetree/bindings/spi/spi-bus.txt
++
++Optional properties:
++- ti,use-eeprom : If found, configuration will be loaded from eeprom.
++
++Examples:
++
++&spi1 {
++	wl1251_spi@0 {
++		compatible = "ti,wl1251";
++
++		reg = <0>;
++		spi-max-frequency = <48000000>;
++		spi-cpol;
++		spi-cpha;
++
++		interrupt-parent = <&gpio2>;
++		interrupts = <10 IRQ_TYPE_NONE>; /* gpio line 42 */
++
++		vio-supply = <&vio>;
++		power-gpio = <&gpio3 23 GPIO_ACTIVE_HIGH>; /* 87 */
++	};
++};
+diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
+index efea57a..ee6ce4c 100644
+--- a/drivers/net/wireless/ti/wl1251/spi.c
++++ b/drivers/net/wireless/ti/wl1251/spi.c
+@@ -27,6 +27,8 @@
+ #include <linux/spi/spi.h>
+ #include <linux/wl12xx.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/regulator/consumer.h>
+ 
+ #include "wl1251.h"
+@@ -240,13 +242,13 @@ static const struct wl1251_if_operations wl1251_spi_ops = {
+ 
+ static int wl1251_spi_probe(struct spi_device *spi)
+ {
+-	struct wl1251_platform_data *pdata;
++	struct wl1251_platform_data *pdata = spi->dev.platform_data;
++	struct device_node *np = spi->dev.of_node;
+ 	struct ieee80211_hw *hw;
+ 	struct wl1251 *wl;
+ 	int ret;
+ 
+-	pdata = spi->dev.platform_data;
+-	if (!pdata) {
++	if (!np && !pdata) {
+ 		wl1251_error("no platform data");
+ 		return -ENODEV;
+ 	}
+@@ -273,7 +275,18 @@ static int wl1251_spi_probe(struct spi_device *spi)
+ 		goto out_free;
+ 	}
+ 
+-	wl->power_gpio = pdata->power_gpio;
++	if (np) {
++		wl->use_eeprom = of_property_read_bool(np, "ti,use-eeprom");
++		wl->power_gpio = of_get_named_gpio(np, "power-gpio", 0);
++	} else if (pdata) {
++		wl->power_gpio = pdata->power_gpio;
++		wl->use_eeprom = pdata->use_eeprom;
++	}
++
++	if (wl->power_gpio == -EPROBE_DEFER) {
++		ret = -EPROBE_DEFER;
++		goto out_free;
++	}
+ 
+ 	if (gpio_is_valid(wl->power_gpio)) {
+ 		ret = devm_gpio_request_one(&spi->dev, wl->power_gpio,
+@@ -295,8 +308,6 @@ static int wl1251_spi_probe(struct spi_device *spi)
+ 		goto out_free;
+ 	}
+ 
+-	wl->use_eeprom = pdata->use_eeprom;
+-
+ 	irq_set_status_flags(wl->irq, IRQ_NOAUTOEN);
+ 	ret = devm_request_irq(&spi->dev, wl->irq, wl1251_irq, 0,
+ 							DRIVER_NAME, wl);
 -- 
 1.8.4.rc3
 
