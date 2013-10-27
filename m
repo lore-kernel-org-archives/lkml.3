@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3J0Mus (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 08:50:48 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:35548 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab3J0Mur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 08:50:47 -0400
-Date: Sun, 27 Oct 2013 14:50:36 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, gmbnomis@gmail.com,
-        catalin.marinas@arm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-Message-ID: <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi>
-References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
- <20131026143617.GA14034@mudshark.cambridge.arm.com>
- <20131027195115.208f40f3@tom-ThinkPad-T410>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131027195115.208f40f3@tom-ThinkPad-T410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754082Ab3J0Mze (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 08:55:34 -0400
+Received: from mout.gmx.net ([212.227.17.22]:54891 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab3J0Mzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 08:55:32 -0400
+From: Andreas Werner <wernerandy@gmx.de>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dave@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, wernerandy@gmx.de
+Subject: [PATCH] X86: MM: Add PAT Type write-through in combination with mtrr
+Date: Sun, 27 Oct 2013 13:55:25 +0100
+Message-Id: <1382878525-3410-1-git-send-email-wernerandy@gmx.de>
+X-Mailer: git-send-email 1.8.4
+X-Provags-ID: V03:K0:UWU8ETfk5NJf6LCIu7TtMKKnZMqmJr7LtJhYcMH+c/dMVqIZ0F3
+ iVvfYh6I7RqrXoUT7Rn/GmzaL/kkjSRY+PSeDC/xc5e0Ci9z9QN6YjYNIJyq9/imzlbNJ8o
+ WknskP4ReepBzi3wn30b6E+1a02KMGyav/EEYfx35eO2rZAXIidp27RdtjpOW9Y6MHExUoS
+ 6FDY9JIa0PColiVXIVtkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds the Write-through memory type in combination with mtrr.
+If you call ioremap_cache to request cachable memory (write-back) the
+function tries to set the PAT to write-back only if the mtrr setting of
+the requested region is also marked as Write-Back.
+If the mttr regions are marked e.g. as Write-through or with other
+types, the function will always return UC- memory.
 
-On Sun, Oct 27, 2013 at 07:51:15PM +0800, Ming Lei wrote:
-> On Sat, 26 Oct 2013 15:36:17 +0100
-> Will Deacon <will.deacon@arm.com> wrote:
-> 
-> > On Thu, Oct 24, 2013 at 09:07:30PM +0100, Aaro Koskinen wrote:
-> > 
-> > > [   36.477203] Backtrace:
-> > > [   36.535603] [<c009237c>] (page_mapping+0x0/0x50) from [<c0010dd8>] (flush_kernel_dcache_page+0x14/0x98)
-> > > [   36.661070] [<c0010dc4>] (flush_kernel_dcache_page+0x0/0x98) from [<c0172b60>] (sg_miter_stop+0xc8/0x10c)
-> > > [   36.792813]  r4:df8a9a64 r3:00000003
-> > > [   36.857524] [<c0172a98>] (sg_miter_stop+0x0/0x10c) from [<c0172f20>] (sg_miter_next+0x14/0x13c)
-> > 
-> > ... assumedly for scatter/gather DMA. How is your block driver allocating
-> > its buffers? If you're using the DMA API, I can't see how this would happen.
-> 
-> Lots of SCSI commands(inquiry, ...) pass kmalloc buffer to block layer,
-> then the sg buffer copy helpers and flush_kernel_dcache_page() may see
-> slab page.
-> 
-> That has been here from commit b1adaf65ba03( [SCSI] block: add sg buffer copy
-> helper functions).
+If you check the Intel document " IA-32 SDM vol 3a table Effective
+Memory Type", there
+are many other combinations possible.
 
-On ARM v3.9 or older kernels do not trigger this BUG, at seems it only
-started to appear with the following commit (bisected):
+This patch will only add the following combination:
+  PAT=Write-Back + MTRR=Write-Through = Effective Memory of
+Write-Through
 
-commit 1bc39742aab09248169ef9d3727c9def3528b3f3
-Author: Simon Baatz <gmbnomis@gmail.com>
-Date:   Mon Jun 10 21:10:12 2013 +0100
+Tested on - Intel (R) Atom E680 (Tunnel Creek)
+          - Intel (R) Core(TM)2 Duo
 
-    ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+Signed-off-by: Andreas Werner <wernerandy@gmx.de>
+---
+ arch/x86/mm/pat.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-A.
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 6574388..9cfe107 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -149,10 +149,15 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
+ 		u8 mtrr_type;
+ 
+ 		mtrr_type = mtrr_type_lookup(start, end);
+-		if (mtrr_type != MTRR_TYPE_WRBACK)
+-			return _PAGE_CACHE_UC_MINUS;
+ 
+-		return _PAGE_CACHE_WB;
++		switch (mtrr_type) {
++		case MTRR_TYPE_WRBACK:
++		case MTRR_TYPE_WRTHROUGH:
++		  return _PAGE_CACHE_WB;
++
++		default:
++		  return _PAGE_CACHE_UC_MINUS;
++		}
+ 	}
+ 
+ 	return req_type;
+-- 
+1.8.4
+
