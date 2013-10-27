@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470Ab3J0IJz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 04:09:55 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:42749 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3J0IJt (ORCPT
+	id S1752813Ab3J0IL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 04:11:29 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:41804 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3J0IL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 04:09:49 -0400
-X-Greylist: delayed 1205 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Oct 2013 04:09:49 EDT
+	Sun, 27 Oct 2013 04:11:26 -0400
+X-Greylist: delayed 1603 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Oct 2013 04:11:26 EDT
 From: Greg Thelen <gthelen@google.com>
 To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -17,59 +17,79 @@ To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
         handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         linux-mm@kvack.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 0/3] fix unsigned pcp adjustments
-Date: Sun, 27 Oct 2013 00:44:33 -0700
-Message-Id: <1382859876-28196-1-git-send-email-gthelen@google.com>
+Subject: [PATCH 3/3] memcg: use __this_cpu_sub to decrement stats
+Date: Sun, 27 Oct 2013 00:44:36 -0700
+Message-Id: <1382859876-28196-4-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1382859876-28196-1-git-send-email-gthelen@google.com>
+References: <1382859876-28196-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages accounting"
-memcg use of __this_cpu_add(counter, -nr_pages) leads to incorrect statistic
-values because the negated nr_pages is not sign extended (counter is long,
-nr_pages is unsigned int).  The memcg fix is __this_cpu_sub(counter, nr_pages).
-But that doesn't simply work because __this_cpu_sub(counter, nr_pages) was
-implemented as __this_cpu_add(counter, -nr_pages) which suffers the same
-problem.  Example:
-  unsigned int delta = 1
-  preempt_disable()
-  this_cpu_write(long_counter, 0)
-  this_cpu_sub(long_counter, delta)
-  preempt_enable()
-    
-Before this change long_counter on a 64 bit machine ends with value 0xffffffff,
-rather than 0xffffffffffffffff.  This is because this_cpu_sub(pcp, delta) boils
-down to:
-  long_counter = 0 + 0xffffffff
+As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages
+accounting" memcg counter errors are possible when moving charged
+memory to a different memcg.  Charge movement occurs when processing
+writes to memory.force_empty, moving tasks to a memcg with
+memcg.move_charge_at_immigrate=1, or memcg deletion.  An example
+showing error after memory.force_empty:
+  $ cd /sys/fs/cgroup/memory
+  $ mkdir x
+  $ rm /data/tmp/file
+  $ (echo $BASHPID >> x/tasks && exec mmap_writer /data/tmp/file 1M) &
+  [1] 13600
+  $ grep ^mapped x/memory.stat
+  mapped_file 1048576
+  $ echo 13600 > tasks
+  $ echo 1 > x/memory.force_empty
+  $ grep ^mapped x/memory.stat
+  mapped_file 4503599627370496
 
-Patch 1 creates a test module for percpu counters operations which demonstrates
-the __this_cpu_sub() problems.  This patch is independent can be discarded if
-there is no interest.
+mapped_file should end with 0.
+  4503599627370496 == 0x10,0000,0000,0000 == 0x100,0000,0000 pages
+  1048576          == 0x10,0000           == 0x100 pages
 
-Patch 2 fixes __this_cpu_sub() to work with unsigned adjustments.
+This issue only affects the source memcg on 64 bit machines; the
+destination memcg counters are correct.  So the rmdir case is not too
+important because such counters are soon disappearing with the entire
+memcg.  But the memcg.force_empty and
+memory.move_charge_at_immigrate=1 cases are larger problems as the
+bogus counters are visible for the (possibly long) remaining life of
+the source memcg.
 
-Patch 3 uses __this_cpu_sub() in memcg.
+The problem is due to memcg use of __this_cpu_from(.., -nr_pages),
+which is subtly wrong because it subtracts the unsigned int nr_pages
+(either -1 or -512 for THP) from a signed long percpu counter.  When
+nr_pages=-1, -nr_pages=0xffffffff.  On 64 bit machines
+stat->count[idx] is signed 64 bit.  So memcg's attempt to simply
+decrement a count (e.g. from 1 to 0) boils down to:
+  long count = 1
+  unsigned int nr_pages = 1
+  count += -nr_pages  /* -nr_pages == 0xffff,ffff */
+  count is now 0x1,0000,0000 instead of 0
 
-An alternative smaller solution is for memcg to use:
-  __this_cpu_add(counter, -(int)nr_pages)
-admitting that __this_cpu_add/sub() doesn't work with unsigned adjustments.  But
-I felt like fixing the core services to prevent this in the future.
+The fix is to subtract the unsigned page count rather than adding its
+negation.  This only works with the "percpu counter: cast
+this_cpu_sub() adjustment" patch which fixes this_cpu_sub().
 
-Greg Thelen (3):
-  percpu counter: test module
-  percpu counter: cast this_cpu_sub() adjustment
-  memcg: use __this_cpu_sub to decrement stats
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ mm/memcontrol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/x86/include/asm/percpu.h |   3 +-
- include/linux/percpu.h        |   8 +--
- lib/Kconfig.debug             |   9 +++
- lib/Makefile                  |   2 +
- lib/percpu_test.c             | 138 ++++++++++++++++++++++++++++++++++++++++++
- mm/memcontrol.c               |   2 +-
- 6 files changed, 156 insertions(+), 6 deletions(-)
- create mode 100644 lib/percpu_test.c
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aa8185c..b7ace0f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3773,7 +3773,7 @@ void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
+ {
+ 	/* Update stat data for mem_cgroup */
+ 	preempt_disable();
+-	__this_cpu_add(from->stat->count[idx], -nr_pages);
++	__this_cpu_sub(from->stat->count[idx], nr_pages);
+ 	__this_cpu_add(to->stat->count[idx], nr_pages);
+ 	preempt_enable();
+ }
 -- 
 1.8.4.1
 
