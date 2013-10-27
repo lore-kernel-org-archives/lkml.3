@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab3J0HMo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 03:12:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33309 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab3J0HMn (ORCPT
+	id S1753229Ab3J0HNa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 03:13:30 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:39273 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3J0HN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 03:12:43 -0400
-Date: Sun, 27 Oct 2013 08:12:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux@arm.linux.org.uk
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131027071237.GA448@gmail.com>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
- <1382706224-8859-1-git-send-email-treding@nvidia.com>
- <1382706224-8859-4-git-send-email-treding@nvidia.com>
- <20131025132553.GE9999@mudshark.cambridge.arm.com>
- <20131026084033.GA14237@gmail.com>
- <20131026140125.GA13424@mudshark.cambridge.arm.com>
+	Sun, 27 Oct 2013 03:13:28 -0400
+Date: Sun, 27 Oct 2013 00:13:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Henrik Austad <henrik@austad.us>
+Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
+        Patrick Pannuto <ppannuto@codeaurora.org>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] Documentation: add missing files to timers/00-INDEX
+Message-ID: <20131027071323.GF4118@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1382821452-24524-1-git-send-email-henrik@austad.us>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131026140125.GA13424@mudshark.cambridge.arm.com>
+In-Reply-To: <1382821452-24524-1-git-send-email-henrik@austad.us>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102707-8236-0000-0000-000003217A71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Will Deacon <will.deacon@arm.com> wrote:
-
-> Hi Ingo,
+On Sat, Oct 26, 2013 at 11:04:12PM +0200, Henrik Austad wrote:
+> From: Henrik Austad <haustad@cisco.com>
 > 
-> [adding rmk]
+> - timers-howto was added by commit 0fcb8081 (Documentation: Add
+>   timers/timers-howto.txt)
+> - NO_HZ was added by commit 0c87f9b5 (nohz_full: Add documentation.)
 > 
-> On Sat, Oct 26, 2013 at 09:40:33AM +0100, Ingo Molnar wrote:
-> > * Will Deacon <will.deacon@arm.com> wrote:
-> > > On Fri, Oct 25, 2013 at 02:03:42PM +0100, Thierry Reding wrote:
-> > > > I fixed it up (see below). Please verify that the resolution looks good.
-> > > > Also note that this isn't really a trivial resolution of a conflict, but
-> > > > required modifying various other files. That causes rerere magic not to
-> > > > work and needs part of conflict to be resolved manually. Perhaps a good
-> > > > idea would be to rebase Jean's patch on top of the cleanups going on in
-> > > > the tip tree? Perhaps even carry the patch in the tip tree?
-> > > 
-> > > These came via my tree (arm perf) after discussion here:
-> > > 
-> > >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/203077.html
-> > > 
-> > > Now that they've been pulled by rmk, we can't back them out with 
-> > > ugly reverts, so I'm not sure what we can do to resolve in the ARM 
-> > > tree; it looks like the perf Makefile has changed significantly in 
-> > > -tip.
-> > 
-> > I realize that it was acked by Arnaldo, but for workflow reasons I'd 
-> > really prefer it if non-trivial perf tooling patches went to Arnaldo 
-> > as a pull request so that he can resolve any such conflicts. perf is 
-> > in constant development so it's less work for you that way.
+> Cc: Patrick Pannuto <ppannuto@codeaurora.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Jiri Kosina <trivial@kernel.org>
+> Signed-off-by: Henrik Austad <haustad@cisco.com>
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> ---
+>  Documentation/timers/00-INDEX |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> Sure. I wasn't aware quite how much you guys had planned for the perf 
-> Makefile and I (wrongly) assumed that Arnaldo's ack was enough of an 
-> indication that conflicts would be unlikely and/or trivial.
+> diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
+> index a9248da..ef2ccbf 100644
+> --- a/Documentation/timers/00-INDEX
+> +++ b/Documentation/timers/00-INDEX
+> @@ -8,5 +8,9 @@ hpet_example.c
+>  	- sample hpet timer test program
+>  hrtimers.txt
+>  	- subsystem for high-resolution kernel timers
+> +NO_HZ.txt
+> +	- Summary of the different methods for the scheduler clock-interrupts management.
+> +timers-howto.txt
+> +	- how to insert delays in the kernel the right (tm) way.
+>  timer_stats.txt
+>  	- timer usage statistics
+> -- 
+> 1.7.2.5
+> 
 
-That was a bit of unlucky timing.
-
-> In future, I'll push back on any perf changes outside of arch/ in my 
-> tree, but that doesn't help us get out of the current situation: the 
-> patches are currently sitting in rmk's tree for 3.13, so that won't meet 
-> with -tip (outside of next) until Linus pulls them both. What can we do 
-> about that?
-
-Unless you guys want to do a revert I guess there's not much to do but to 
-warn Linus in the ARM pull request that a conflict is coming up.
-
-Thanks,
-
-	Ingo
