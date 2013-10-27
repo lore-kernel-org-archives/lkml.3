@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3J0VWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 17:22:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab3J0VWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 17:22:18 -0400
-Date: Sun, 27 Oct 2013 14:24:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131027212407.GA17439@kroah.com>
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
- <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
- <CA+55aFyb72qoZ1Tjpb+=q-6+GmwoOXjfntY_zZnf300gg3d1Hg@mail.gmail.com>
- <CA+55aFxuVpDo3LvmG9j-Hu7sENLTcsB6_CY2TA4mE-k+CuTeGg@mail.gmail.com>
- <CA+55aFz9ewd7VhCKDxJUzY4PGH7E3N-xMr=pDGQxf1PyNd1W1w@mail.gmail.com>
+	id S1754857Ab3J0VZF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 17:25:05 -0400
+Received: from ring0.de ([91.143.88.219]:59998 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753605Ab3J0VZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 17:25:01 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org, Sebastian Reichel <sre@debian.org>
+Subject: [RFC 0/4] DT support for rx51-audio
+Date: Sun, 27 Oct 2013 22:24:42 +0100
+Message-Id: <1382909086-10493-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz9ewd7VhCKDxJUzY4PGH7E3N-xMr=pDGQxf1PyNd1W1w@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 09:13:29PM +0000, Linus Torvalds wrote:
-> .. and one more case of freeing a delayed work object (likely a kobject again):
-> 
-> This time it looks like it's in the PCI layer, freeing the msi irq information.
-> 
-> It looks like that code simply does
-> 
->     kobject_del(&entry->kobj);
->     kobject_put(&entry->kobj);
->     list_del(&entry->list);
->     kfree(entry);
-> 
-> and the problem is that the "entry->kobj" may have *other* references
-> to it, thanks to people accessing it through /sys, so despite doing a
-> kojbect_del/kobject_put(), it's not at all ok to then do a "kfree()"
-> on it. The embedded kobj might still be in use.
-> 
-> Afaik, that code should do the kfree() on the kobject in the _release_
-> method, not synchronously like that.
-> 
-> We already have a msi_kobj_release(), I'm wondering why that doesn't
-> do the kfree().
-> 
-> Bjorn? Yinghai? Greg, comments about that msi kobj usage?
+Hi,
 
-Ick, it really should be doing a kfree() in the release only.  Bjorn has
-had a bunch of changes in this area recently, perhaps they are in
-linux-next waiting for 3.13, and I've talked to him about getting rid of
-all of the kobjects for msi files, as I don't think it's needed at all.
+This patchset adds DT support in rx51-audio. I tested it on the Nokia N900
+and was able to play sound with aplay using earphones and earspeaker. The
+Loudspeakers did not work. I don't know the reason.
 
-Bjorn, don't you have a fix for this problem already done somewhere?
+The patchset consists of 4 patches:
 
-thanks,
+1. convert rx51-audio to snd_soc_register_card()
+2. init audio in rx51 platform file
+3. add some DT helpers to ASoC core
+4. add DT support to rx51-audio
 
-greg k-h
+Please note, that the patch is RFC level for now. For example non DT boot
+does not work, because I did not yet add pdata in boardcode.
+
+Proposed DTS node would look like this:
+
+sound: rx51-audio {
+       compatible = "nokia,rx51-audio";
+
+       ti,mcbsp = <&mcbsp2>;
+       ti,codec = <&tlv320aic3x>;
+       ti,codec_aux = <&tlv320aic3x_aux>;
+       ti,headset_amp = <&tpa6130a2>;
+
+       tvout-selection-gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
+       jack-detection-gpio = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
+       eci-sw-gpio = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
+       speaker-amp-gpio = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+};
+
+-- Sebastian
+
+Pali Rohár (2):
+  ASoC: omap: rx51: Use snd_soc_register_card
+  ARM: OMAP: rx51: Register audio device
+
+Sebastian Reichel (2):
+  ASoC: Allow Aux Codecs to be specified using DT
+  ASoC: RX-51: Add DT support to sound driver
+
+ .../devicetree/bindings/sound/nokia,rx51.txt       |  28 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/mach-omap2/board-rx51-peripherals.c       |  11 ++
+ include/sound/rx51.h                               |  18 ++
+ include/sound/soc.h                                |  13 +-
+ sound/soc/omap/omap-mcbsp.c                        |   5 +-
+ sound/soc/omap/omap-mcbsp.h                        |   2 +-
+ sound/soc/omap/rx51.c                              | 212 +++++++++++++++------
+ sound/soc/soc-core.c                               |  68 +++++--
+ 9 files changed, 277 insertions(+), 81 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/nokia,rx51.txt
+ create mode 100644 include/sound/rx51.h
+
+-- 
+1.8.4.rc3
+
