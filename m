@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3J0DcF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Oct 2013 23:32:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36284 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3J0DcD (ORCPT
+	id S1753946Ab3J0Dgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Oct 2013 23:36:47 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:45003 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3J0Dgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Oct 2013 23:32:03 -0400
-Date: Sat, 26 Oct 2013 20:33:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Vishal Annapurve <vannapurve@nvidia.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb-storage: scsiglue: Changing the command result
-Message-ID: <20131027033348.GA10160@kroah.com>
-References: <113ACA888B71994BB56E5CF3704953486D6612FB5B@BGMAIL02.nvidia.com>
- <Pine.LNX.4.44L0.1310261529050.24397-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1310261529050.24397-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 26 Oct 2013 23:36:46 -0400
+From: Cong Ding <dinggnu@gmail.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] fs/9p: fix flags in the format of printf
+Date: Sat, 26 Oct 2013 20:36:23 -0700
+Message-Id: <1382844984-7550-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Oct 2013, Vishal Annapurve wrote:
-> Hi Alan,
-> 
-> Here is the new patch:
-> 
-> From: Vishal Annapurve <vannapurve@nvidia.com>
-> Date: Sat, 26 Oct 2013 21:10:11 +0530
-> Subject: [PATCH] usb: storage: Proper cmd result assignment
-> 
-> This change replaces DID_ABORT with DID_TIMEOUT as a command result
-> whenever US_FLIDX_TIMED_OUT bit is set.
-> 
-> This change is made to bring USB storage inline with a recent change:
-> 
-> commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
-> 
-> [SCSI] Handle disk devices which can not process medium access commands
-> We have experienced several devices which fail in a fashion we do not
-> currently handle gracefully in SCSI. After a failure these devices will
-> respond to the SCSI primary command set (INQUIRY, TEST UNIT READY, etc.)
-> but any command accessing the storage medium will time out.
-> 
-> As the USB storage was setting command result as aborted rather than
-> timed out, SCSI layer was not recognizing the above mentioned failure
-> pattern.
-> 
-> Change-Id: Ic58e2247fed11649f4dbea56382354ba2fe0be1b
+To print "int" value, we should use %d rather than %u.
 
-What's this line for?  (yeah, I know where it comes from, the point is
-it doesn't belong here...)
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ fs/9p/vfs_inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also, no signed-off-by, so I can't apply it...
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index af7d531..dcc099a 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -147,7 +147,7 @@ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
+ 		int major = -1, minor = -1;
+ 
+ 		strlcpy(ext, stat->extension, sizeof(ext));
+-		sscanf(ext, "%c %u %u", &type, &major, &minor);
++		sscanf(ext, "%c %d %d", &type, &major, &minor);
+ 		switch (type) {
+ 		case 'c':
+ 			res |= S_IFCHR;
+-- 
+1.7.9.5
 
-greg k-h
