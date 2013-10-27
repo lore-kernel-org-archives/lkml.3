@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab3J0IB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 04:01:56 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:45152 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab3J0IBz (ORCPT
+	id S1752586Ab3J0IDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 04:03:52 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:35602 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab3J0IDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 04:01:55 -0400
-Date: Sun, 27 Oct 2013 09:01:51 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH] DYNAMIC_DEBUG: use select DEBUG_FS instead of depends on
-Message-ID: <20131027080151.GA26131@shrek.podlesie.net>
-References: <1382821093-2484-1-git-send-email-krzysiek@podlesie.net>
- <20131027033000.GB32210@kroah.com>
+	Sun, 27 Oct 2013 04:03:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131027033000.GB32210@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131027071407.GA11683@leaf>
+References: <20131024122255.GI9378@mwanda>
+	<20131024122512.GB9534@mwanda>
+	<20131026181709.GB10488@kroah.com>
+	<20131027013402.GA7146@leaf>
+	<526CA7D4.1070904@alum.mit.edu>
+	<20131027071407.GA11683@leaf>
+Date: Sun, 27 Oct 2013 01:03:47 -0700
+Message-ID: <CANN689HctBYZfU+OQ7movFFWNm6rwUdU7G-ExxhPcBPg1KF8Jw@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] commit: Add -f, --fixes <commit>
+ option to add Fixes: line
+From: Michel Lespinasse <walken@google.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Michael Haggerty <mhagger@alum.mit.edu>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        ksummit-attendees@lists.linuxfoundation.org,
+        Git Mailing List <git@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 08:30:00PM -0700, Greg Kroah-Hartman wrote:
-> On Sat, Oct 26, 2013 at 10:58:13PM +0200, Krzysztof Mazur wrote:
-> > Depending on options that are configured later makes them hard
-> > to enable unless the user knows that he must go backwards.
-> 
-> Really?  We've had this for well over 2 years, people are confused about
-> this?
-> 
-> Where?
+On Sun, Oct 27, 2013 at 12:14 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+>> > +-f <commit>::
+>> > +--fixes=<commit>::
+>> > +   Add Fixes line for the specified commit at the end of the commit
+>> > +   log message.  This line includes an abbreviated commit hash for
+>> > +   the specified commit; the `core.abbrev` option determines the
+>> > +   length of the abbreviated commit hash used, with a minimum length
+>> > +   of 12 hex digits.
+>>
+>> You might also mention that the "Fixes:" line includes the old commit's
+>> subject line.
+>
+> I only mentioned the abbreviated commit hash because it was necessary to
+> explain the factors affecting hash length.  -s, above, doesn't mention
+> that the Signed-off-by line includes the name and email address of the
+> committer.
 
-The v3.10 is ok - CONFIG_DYNAMIC_DEBUG is after CONFIG_DEBUG_FS.
+I do wonder, if we're going to bake into git the idea that too-short
+abbreviated sha1s don't make sense, why don't we just change the
+core.abbrev default to 12 everywhere rather than just in this one
+command ?
 
-Maybe it's just me, because on my config I have CONFIG_DEBUG_FS=y,
-and on the system I was testing usbatm I had CONFIG_DEBUG_FS=n.
-
-BTW, on x86_64 to disable CONFIG_DEBUG_FS you need to disable
-CONFIG_AMD_IOMMU_STATS, which is enabled by default in the
-x86_64_defconfig (I think that CONFIG_AMD_IOMMU_STATS=n it's
-a better default). If you enable CONFIG_DEBUG_KERNEL you
-need to disable CONFIG_FTRACE which is enabled by default.
-So a lot of users will have CONFIG_DEBUG_FS already selected.
-
-Thanks,
-Krzysiek
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
