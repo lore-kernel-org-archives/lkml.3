@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab3J0VZF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 17:25:05 -0400
-Received: from ring0.de ([91.143.88.219]:59998 "EHLO smtp.ring0.de"
+	id S1754981Ab3J0VZJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 17:25:09 -0400
+Received: from ring0.de ([91.143.88.219]:60015 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab3J0VZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 17:25:01 -0400
+	id S1753605Ab3J0VZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 17:25:06 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -25,11 +25,15 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org, Sebastian Reichel <sre@debian.org>
-Subject: [RFC 0/4] DT support for rx51-audio
-Date: Sun, 27 Oct 2013 22:24:42 +0100
-Message-Id: <1382909086-10493-1-git-send-email-sre@debian.org>
+        alsa-devel@alsa-project.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>
+Subject: [RFC 1/4] ASoC: omap: rx51: Use snd_soc_register_card
+Date: Sun, 27 Oct 2013 22:24:43 +0100
+Message-Id: <1382909086-10493-2-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1382909086-10493-1-git-send-email-sre@debian.org>
+References: <1382909086-10493-1-git-send-email-sre@debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -37,61 +41,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Pali Rohár <pali.rohar@gmail.com>
 
-This patchset adds DT support in rx51-audio. I tested it on the Nokia N900
-and was able to play sound with aplay using earphones and earspeaker. The
-Loudspeakers did not work. I don't know the reason.
+This patch converts the rx51 ASoC module to use
+snd_soc_register_card. It also adds module alias
+to support driver autoloading.
 
-The patchset consists of 4 patches:
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ sound/soc/omap/rx51.c | 49 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
-1. convert rx51-audio to snd_soc_register_card()
-2. init audio in rx51 platform file
-3. add some DT helpers to ASoC core
-4. add DT support to rx51-audio
-
-Please note, that the patch is RFC level for now. For example non DT boot
-does not work, because I did not yet add pdata in boardcode.
-
-Proposed DTS node would look like this:
-
-sound: rx51-audio {
-       compatible = "nokia,rx51-audio";
-
-       ti,mcbsp = <&mcbsp2>;
-       ti,codec = <&tlv320aic3x>;
-       ti,codec_aux = <&tlv320aic3x_aux>;
-       ti,headset_amp = <&tpa6130a2>;
-
-       tvout-selection-gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
-       jack-detection-gpio = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
-       eci-sw-gpio = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
-       speaker-amp-gpio = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
-};
-
--- Sebastian
-
-Pali Rohár (2):
-  ASoC: omap: rx51: Use snd_soc_register_card
-  ARM: OMAP: rx51: Register audio device
-
-Sebastian Reichel (2):
-  ASoC: Allow Aux Codecs to be specified using DT
-  ASoC: RX-51: Add DT support to sound driver
-
- .../devicetree/bindings/sound/nokia,rx51.txt       |  28 +++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- arch/arm/mach-omap2/board-rx51-peripherals.c       |  11 ++
- include/sound/rx51.h                               |  18 ++
- include/sound/soc.h                                |  13 +-
- sound/soc/omap/omap-mcbsp.c                        |   5 +-
- sound/soc/omap/omap-mcbsp.h                        |   2 +-
- sound/soc/omap/rx51.c                              | 212 +++++++++++++++------
- sound/soc/soc-core.c                               |  68 +++++--
- 9 files changed, 277 insertions(+), 81 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/sound/nokia,rx51.txt
- create mode 100644 include/sound/rx51.h
-
+diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
+index 611179c..41f26ae 100644
+--- a/sound/soc/omap/rx51.c
++++ b/sound/soc/omap/rx51.c
+@@ -390,10 +390,9 @@ static struct snd_soc_card rx51_sound_card = {
+ 	.num_configs = ARRAY_SIZE(rx51_codec_conf),
+ };
+ 
+-static struct platform_device *rx51_snd_device;
+-
+-static int __init rx51_soc_init(void)
++static int rx51_soc_probe(struct platform_device *pdev)
+ {
++	struct snd_soc_card *card = &rx51_sound_card;
+ 	int err;
+ 
+ 	if (!machine_is_nokia_rx51() && !of_machine_is_compatible("nokia,omap3-n900"))
+@@ -408,22 +407,17 @@ static int __init rx51_soc_init(void)
+ 	if (err)
+ 		goto err_gpio_eci_sw;
+ 
+-	rx51_snd_device = platform_device_alloc("soc-audio", -1);
+-	if (!rx51_snd_device) {
+-		err = -ENOMEM;
+-		goto err1;
+-	}
+-
+-	platform_set_drvdata(rx51_snd_device, &rx51_sound_card);
++	card->dev = &pdev->dev;
+ 
+-	err = platform_device_add(rx51_snd_device);
+-	if (err)
+-		goto err2;
++	err = snd_soc_register_card(card);
++	if (err) {
++		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", err);
++		goto err_snd;
++	}
+ 
+ 	return 0;
+-err2:
+-	platform_device_put(rx51_snd_device);
+-err1:
++err_snd:
++	card->dev = NULL;
+ 	gpio_free(RX51_ECI_SW_GPIO);
+ err_gpio_eci_sw:
+ 	gpio_free(RX51_TVOUT_SEL_GPIO);
+@@ -432,19 +426,34 @@ err_gpio_tvout_sel:
+ 	return err;
+ }
+ 
+-static void __exit rx51_soc_exit(void)
++static int rx51_soc_remove(struct platform_device *pdev)
+ {
++	struct snd_soc_card *card = platform_get_drvdata(pdev);
++
+ 	snd_soc_jack_free_gpios(&rx51_av_jack, ARRAY_SIZE(rx51_av_jack_gpios),
+ 				rx51_av_jack_gpios);
+ 
+-	platform_device_unregister(rx51_snd_device);
++	snd_soc_unregister_card(card);
++	card->dev = NULL;
++
+ 	gpio_free(RX51_ECI_SW_GPIO);
+ 	gpio_free(RX51_TVOUT_SEL_GPIO);
++
++	return 0;
+ }
+ 
+-module_init(rx51_soc_init);
+-module_exit(rx51_soc_exit);
++static struct platform_driver rx51_soc_driver = {
++	.driver = {
++		.name = "rx51-audio",
++		.owner = THIS_MODULE,
++	},
++	.probe = rx51_soc_probe,
++	.remove = rx51_soc_remove,
++};
++
++module_platform_driver(rx51_soc_driver);
+ 
+ MODULE_AUTHOR("Nokia Corporation");
+ MODULE_DESCRIPTION("ALSA SoC Nokia RX-51");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:rx51-audio");
 -- 
 1.8.4.rc3
 
