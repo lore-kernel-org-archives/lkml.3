@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3J0LYg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 07:24:36 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:44481 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab3J0LYe (ORCPT
+	id S1753542Ab3J0LaZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 07:30:25 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:58114 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3J0LaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 07:24:34 -0400
-Date: Sun, 27 Oct 2013 07:24:29 -0400
+	Sun, 27 Oct 2013 07:30:24 -0400
+Date: Sun, 27 Oct 2013 07:30:20 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] memcg: use __this_cpu_sub to decrement stats
-Message-ID: <20131027112429.GC14934@mtj.dyndns.org>
-References: <1382859876-28196-1-git-send-email-gthelen@google.com>
- <1382859876-28196-4-git-send-email-gthelen@google.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: gregkh@linuxfoundation.org, kay@vrfy.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, bhelgaas@google.com
+Subject: Re: [PATCH 14/34] sysfs, kernfs: prepare read path for kernfs
+Message-ID: <20131027113020.GD14934@mtj.dyndns.org>
+References: <1382629780-10006-1-git-send-email-tj@kernel.org>
+ <1382629780-10006-15-git-send-email-tj@kernel.org>
+ <20131026113221.GB1792@Nokia-N900>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382859876-28196-4-git-send-email-gthelen@google.com>
+In-Reply-To: <20131026113221.GB1792@Nokia-N900>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 12:44:36AM -0700, Greg Thelen wrote:
-> As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages
-> accounting" memcg counter errors are possible when moving charged
-> memory to a different memcg.  Charge movement occurs when processing
-> writes to memory.force_empty, moving tasks to a memcg with
-> memcg.move_charge_at_immigrate=1, or memcg deletion.  An example
-> showing error after memory.force_empty:
->   $ cd /sys/fs/cgroup/memory
->   $ mkdir x
->   $ rm /data/tmp/file
->   $ (echo $BASHPID >> x/tasks && exec mmap_writer /data/tmp/file 1M) &
->   [1] 13600
->   $ grep ^mapped x/memory.stat
->   mapped_file 1048576
->   $ echo 13600 > tasks
->   $ echo 1 > x/memory.force_empty
->   $ grep ^mapped x/memory.stat
->   mapped_file 4503599627370496
+On Sat, Oct 26, 2013 at 01:32:21PM +0200, Pavel Machek wrote:
+> Hi!
 > 
-> mapped_file should end with 0.
->   4503599627370496 == 0x10,0000,0000,0000 == 0x100,0000,0000 pages
->   1048576          == 0x10,0000           == 0x100 pages
+> > We're in the process of separating out core sysfs functionality into
+> > kernfs which will deal with sysfs_dirents directly.  This patch
+> > rearranges read path so that the kernfs and sysfs parts are separate.
 > 
-> This issue only affects the source memcg on 64 bit machines; the
-> destination memcg counters are correct.  So the rmdir case is not too
-> important because such counters are soon disappearing with the entire
-> memcg.  But the memcg.force_empty and
-> memory.move_charge_at_immigrate=1 cases are larger problems as the
-> bogus counters are visible for the (possibly long) remaining life of
-> the source memcg.
+> > +static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+> >  {
+> >  	struct sysfs_open_file *of = sf->private;
+> >  	struct kobject *kobj = of->sd->s_parent->priv;
+> > -	const struct sysfs_ops *ops;
+> > +	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
+> > +	ssize_t count = 0;
+> >  	char *buf;
+> > -	ssize_t count;
+> >  
+> >  	/* acquire buffer and ensure that it's >= PAGE_SIZE */
+> >  	count = seq_get_buf(sf, &buf);
 > 
-> The problem is due to memcg use of __this_cpu_from(.., -nr_pages),
-> which is subtly wrong because it subtracts the unsigned int nr_pages
-> (either -1 or -512 for THP) from a signed long percpu counter.  When
-> nr_pages=-1, -nr_pages=0xffffffff.  On 64 bit machines
-> stat->count[idx] is signed 64 bit.  So memcg's attempt to simply
-> decrement a count (e.g. from 1 to 0) boils down to:
->   long count = 1
->   unsigned int nr_pages = 1
->   count += -nr_pages  /* -nr_pages == 0xffff,ffff */
->   count is now 0x1,0000,0000 instead of 0
-> 
-> The fix is to subtract the unsigned page count rather than adding its
-> negation.  This only works with the "percpu counter: cast
-> this_cpu_sub() adjustment" patch which fixes this_cpu_sub().
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Initing count to zero is superfluous here.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+Ooh, right.
+
+> > +	/* the same behavior as single_open() */
+> > +	return NULL + !*ppos;
+> > +}
+> 
+> That's certainly interesting code.
+
+Directly copied from single_*() functions.  Will add some comments but
+what it's doing is inherently slightly tricky.
 
 Thanks.
 
