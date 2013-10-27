@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3J0PjV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 11:39:21 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58518 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab3J0PjU (ORCPT
+	id S1754288Ab3J0PwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 11:52:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41031 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab3J0PwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 11:39:20 -0400
-Message-ID: <526D33A5.2030200@gmail.com>
-Date: Sun, 27 Oct 2013 09:39:17 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Sun, 27 Oct 2013 11:52:21 -0400
+Date: Sun, 27 Oct 2013 08:54:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Steven Newbury <steve@snewbury.org.uk>
+Cc: linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
+        Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
+        Manu Abraham <abraham.manu@gmail.com>
+Subject: Re: [PATCH] staging: Merge Crystal HD driver with linuxtv.org
+Message-ID: <20131027155408.GA22705@kroah.com>
+References: <1382891243.2598.10.camel@artifact>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-CC: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 4/4] perf tools: Add readable output for callchain debug
-References: <20131026120336.GA24439@gmail.com> <1382797536-32303-1-git-send-email-jolsa@redhat.com> <1382797536-32303-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1382797536-32303-5-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382891243.2598.10.camel@artifact>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/13 8:25 AM, Jiri Olsa wrote:
-> Adding people readable output for callchain debug,
-> to get following '-v' output:
->
->    $ perf record -v -g ls
->    callchain: type DWARF
->    callchain: stack dump size 4096
->    ...
+On Sun, Oct 27, 2013 at 04:27:23PM +0000, Steven Newbury wrote:
+> The in-kernel staging version and upstream diverged in Jan 2010,
+> whilst the in-kernel version has been kept up to date with kernel
+> changes, both have recieved some clean ups and bug fixes, upstream
+> has also added support for new cards, particularly BCM70015 which
+> is now a much more common device than the original BCM70012 and
+> is currently available for purchase.
+> 
+> In addition to the changes below, I've applied all the relevant
+> modifications applied to the in-kernel version to the new code
+> introduced from upstream, in particular the removal of typedefs and
+> unified header handling.
+> 
+> Quite a lot of the code churn relates to upstream commit
+> 317dbd6dda65b4177627d6417b762c287cefa0e7 (crystalhd: nuke BCMLOG
+> macros, use std dev_foo ones), I considered stripping these changes
+> out and making them a separate patch but decided to stay as close as
+> possible to the state of the current linuxtv.org codebase.
+> 
+> Unfortunately, AFAIK, it's not possible to simply merge the upstream
+> git history since the upstream code isn't in a kernel tree structure,
+> and isn't even in a simple directory, but includes a script to
+> convert the external module into a staging tree driver which I used
+> to create a reference tree.  I had to then manually merge both
+> versions and fix code conflicts.
+> 
+> It does now successfully detect and initialise a BCM70015 bought
+> last week from Amazon.  It is currently untested on the original
+> BCM70012.
+> 
+> Signed-off-by: Steven Newbury <steve@snewbury.org.uk>
 
-Kind of ugly that the -v has to be first to actually get the debug 
-output. Other debug options have the same problem though. So,
+Any reason why you didn't send this to me, the staging tree maintainer?
 
-Tested-Reviewed-by: David Ahern <dsahern@gmail.com>
+And I can't take a giant patch like this, it's a mess.  Why not send me
+a series of patches that sync things up, like you detail in the odd
+changelog entries you show below?
 
+And these patches do a lot of new work to the driver, I'd rather see it
+get fixed up properly and moved out of staging first, before adding new
+support to it, otherwise why is it in staging at all?
+
+thanks,
+
+greg k-h
