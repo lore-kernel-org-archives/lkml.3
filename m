@@ -1,144 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3J0H2y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 03:28:54 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:52621 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3J0H2w (ORCPT
+	id S1751955Ab3J0HpC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 03:45:02 -0400
+Received: from mail-pb0-f73.google.com ([209.85.160.73]:39573 "EHLO
+	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3J0HpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 03:28:52 -0400
-Message-ID: <526CC0AD.8090208@synopsys.com>
-Date: Sun, 27 Oct 2013 12:58:45 +0530
-From: Vineet Gupta <vineetg76@gmail.com>
-Organization: Synopsys
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Joe Perches <joe@perches.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: Portable assmbler code - newline
-References: <523FD9E7.3050303@asianux.com>	<523FDBD7.4040602@asianux.com>	<C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com>	<523FE578.5060801@asianux.com>	<52672DAC.1030307@asianux.com>	<CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com>	<52673E41.6040606@asianux.com>	<5267AF98.1010800@asianux.com>	<5268B0B1.9050009@asianux.com>	<CAFLxGvzERDqwZhb_5d=bXKmqz6-Yrema_TLMTM7rjyeFeDJG_w@mail.gmail.com>	<526958D8.6030102@synopsys.com> <CAMuHMdURxpuWPYYDTU2Sa4eF8WZTb=0ALQ+irtGk9ERtSKz09Q@mail.gmail.com> <5269FD53.6040903@synopsys.com> <526BC5D4.9070809@asianux.com>
-In-Reply-To: <526BC5D4.9070809@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Oct 2013 03:45:00 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH 1/3] percpu counter: test module
+Date: Sun, 27 Oct 2013 00:44:34 -0700
+Message-Id: <1382859876-28196-2-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1382859876-28196-1-git-send-email-gthelen@google.com>
+References: <1382859876-28196-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2013 07:08 PM, Chen Gang wrote:
-> On 10/25/2013 01:10 PM, Vineet Gupta wrote:
->> On 10/25/2013 01:11 AM, Geert Uytterhoeven wrote:
->>> On Thu, Oct 24, 2013 at 7:28 PM, Vineet Gupta <vineetg76@gmail.com> wrote:
->>>>> +CC linux-arch
->>>>>
->>>>> On 10/24/2013 11:33 AM, Richard Weinberger wrote:
->>>>>>> On Thu, Oct 24, 2013 at 7:31 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>>>>>>>> For some architectures, tool chain is not smart enough to recognize the
->>>>>>>>>>> macro with multiple lines (e.g. arc tool chain), and for common ".S"
->>>>>>>>>>> file, this kind of macro is also rarely used.
->>>>>>> Does not "not smart enough" mean than the said toolchain is broken/buggy
->>>>>>> or is the kernel using an unsupported notation?
->>>>>>>
->>>>>
->>>>> IMHO this is not broken - rather the code is not fully portable - given that gas
->>>>> ports of arches have differnet notions of what to treat as comment and what newline.
->>>>>
->>>>> Looking as binutils/gas/config, I can see that avr, cris,...are likely broken in
->>>>> the same way as ARC is.
->>>>>
->>>>> Historically ARC has had ';' as comment char, which Joern relatively recently
->>>>> augmented to have '#' as well. However there's legacy codebase which relies on ';'
->>>>> being a comment and we can't change that fact.
->>>>>
->>>>> So can we introduce an ARCH over-ridable newline annotation in linkage.h and other
->>>>> places after auditing. Since asm/linkage.h preempts linux/linkage.h by way of
->>>>> #include it shd be pretty strightforward.
->>>>>
->>>>> Something like below. I can send the formal patch if people think the approach is OK.
->>> By what are you gonna override __ARCH_NL on ARC?
->>> I'm afraid cpp will still turn it into a single line.
->>>
->>
->> Eh ! My untested patch was broken but not because of what you mentioned.
->>
->> For ARC, the ; negating the newline annotation. So the following works (backquote
->> is new line for ARC)
->>
->> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
->> index 0283e9e44e0d..b3eea2999322 100644
->> --- a/arch/arc/include/asm/linkage.h
->> +++ b/arch/arc/include/asm/linkage.h
->> @@ -9,6 +9,8 @@
->>  #ifndef __ASM_LINKAGE_H
->>  #define __ASM_LINKAGE_H
->>
->> +#define __ARCH_NL      `
->> +
->>  #ifdef __ASSEMBLY__
->>
->>
->> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
->> index d3e8ad23a8e0..969e70ad231a 100644
->> --- a/include/linux/linkage.h
->> +++ b/include/linux/linkage.h
->> @@ -6,6 +6,10 @@
->>  #include <linux/export.h>
->>  #include <asm/linkage.h>
->>
->> +#ifndef __ARCH_NL
->> +#define __ARCH_NL      ;
->> +#endif
->> +
->>  #ifdef __cplusplus
->>  #define CPP_ASMLINKAGE extern "C"
->>  #else
->> @@ -75,7 +79,7 @@
->>
->>  #ifndef ENTRY
->>  #define ENTRY(name) \
->> -  .globl name; \
->> +  .globl name __ARCH_NL \
->>    ALIGN; \
-> 
-> Do we also need consider about "ALIGN;"?
+Tests various percpu operations.
 
-Right - as I said already, above was not a formal patch but a RFC whether we are
-on right track. The proper fix will have to audit all such places.
+Enable with CONFIG_PERCPU_TEST=m.
 
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ lib/Kconfig.debug |   9 ++++
+ lib/Makefile      |   2 +
+ lib/percpu_test.c | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 149 insertions(+)
+ create mode 100644 lib/percpu_test.c
 
->>    name:
->>  #endif
->>
-> 
-> For next-20130927 tree, do we also need consider about WEAK, ENDPROC?
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 06344d9..cee589d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1472,6 +1472,15 @@ config INTERVAL_TREE_TEST
+ 	help
+ 	  A benchmark measuring the performance of the interval tree library
+ 
++config PERCPU_TEST
++	tristate "Per cpu counter test"
++	depends on m && DEBUG_KERNEL
++	help
++	  Enable this option to build test modules with validates per-cpu
++	  counter operations.
++
++	  If unsure, say N.
++
+ config ATOMIC64_SELFTEST
+ 	bool "Perform an atomic64_t self-test at boot"
+ 	help
+diff --git a/lib/Makefile b/lib/Makefile
+index f3bb2cb..bb016e1 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -157,6 +157,8 @@ obj-$(CONFIG_INTERVAL_TREE_TEST) += interval_tree_test.o
+ 
+ interval_tree_test-objs := interval_tree_test_main.o interval_tree.o
+ 
++obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
++
+ obj-$(CONFIG_ASN1) += asn1_decoder.o
+ 
+ obj-$(CONFIG_FONT_SUPPORT) += fonts/
+diff --git a/lib/percpu_test.c b/lib/percpu_test.c
+new file mode 100644
+index 0000000..1ebeb44
+--- /dev/null
++++ b/lib/percpu_test.c
+@@ -0,0 +1,138 @@
++#include <linux/module.h>
++
++/* validate @native and @pcp counter values match @expected */
++#define CHECK(native, pcp, expected)                                    \
++	do {                                                            \
++		WARN((native) != (expected),                            \
++		     "raw %ld (0x%lx) != expected %ld (0x%lx)",         \
++		     (long)(native), (long)(native),                    \
++		     (long)(expected), (long)(expected));               \
++		WARN(__this_cpu_read(pcp) != (expected),                \
++		     "pcp %ld (0x%lx) != expected %ld (0x%lx)",         \
++		     (long)__this_cpu_read(pcp), (long)__this_cpu_read(pcp), \
++		     (long)(expected), (long)(expected));               \
++	} while (0)
++
++static DEFINE_PER_CPU(long, long_counter);
++static DEFINE_PER_CPU(unsigned long, ulong_counter);
++
++static int __init percpu_test_init(void)
++{
++	/*
++	 * volatile prevents compiler from optimizing it uses, otherwise the
++	 * +ul_one and -ul_one below would replace with inc/dec instructions.
++	 */
++	volatile unsigned int ui_one = 1;
++	long l = 0;
++	unsigned long ul = 0;
++
++	pr_info("percpu test start\n");
++
++	preempt_disable();
++
++	l += -1;
++	__this_cpu_add(long_counter, -1);
++	CHECK(l, long_counter, -1);
++
++	l += 1;
++	__this_cpu_add(long_counter, 1);
++	CHECK(l, long_counter, 0);
++
++	ul = 0;
++	__this_cpu_write(ulong_counter, 0);
++
++	ul += 1UL;
++	__this_cpu_add(ulong_counter, 1UL);
++	CHECK(ul, ulong_counter, 1);
++
++	ul += -1UL;
++	__this_cpu_add(ulong_counter, -1UL);
++	CHECK(ul, ulong_counter, 0);
++
++	ul += -(unsigned long)1;
++	__this_cpu_add(ulong_counter, -(unsigned long)1);
++	CHECK(ul, ulong_counter, -1);
++
++	ul = 0;
++	__this_cpu_write(ulong_counter, 0);
++
++	ul -= 1;
++	__this_cpu_dec(ulong_counter);
++	CHECK(ul, ulong_counter, 0xffffffffffffffff);
++	CHECK(ul, ulong_counter, -1);
++
++	l += -ui_one;
++	__this_cpu_add(long_counter, -ui_one);
++	CHECK(l, long_counter, 0xffffffff);
++
++	l += ui_one;
++	__this_cpu_add(long_counter, ui_one);
++	CHECK(l, long_counter, 0x100000000);
++
++
++	l = 0;
++	__this_cpu_write(long_counter, 0);
++
++	l -= ui_one;
++	__this_cpu_sub(long_counter, ui_one);
++	CHECK(l, long_counter, -1);
++
++	l = 0;
++	__this_cpu_write(long_counter, 0);
++
++	l += ui_one;
++	__this_cpu_add(long_counter, ui_one);
++	CHECK(l, long_counter, 1);
++
++	l += -ui_one;
++	__this_cpu_add(long_counter, -ui_one);
++	CHECK(l, long_counter, 0x100000000);
++
++	l = 0;
++	__this_cpu_write(long_counter, 0);
++
++	l -= ui_one;
++	this_cpu_sub(long_counter, ui_one);
++	CHECK(l, long_counter, -1);
++	CHECK(l, long_counter, 0xffffffffffffffff);
++
++	ul = 0;
++	__this_cpu_write(ulong_counter, 0);
++
++	ul += ui_one;
++	__this_cpu_add(ulong_counter, ui_one);
++	CHECK(ul, ulong_counter, 1);
++
++	ul = 0;
++	__this_cpu_write(ulong_counter, 0);
++
++	ul -= ui_one;
++	__this_cpu_sub(ulong_counter, ui_one);
++	CHECK(ul, ulong_counter, -1);
++	CHECK(ul, ulong_counter, 0xffffffffffffffff);
++
++	ul = 3;
++	__this_cpu_write(ulong_counter, 3);
++
++	ul = this_cpu_sub_return(ulong_counter, ui_one);
++	CHECK(ul, ulong_counter, 2);
++
++	ul = __this_cpu_sub_return(ulong_counter, ui_one);
++	CHECK(ul, ulong_counter, 0);
++
++	preempt_enable();
++
++	pr_info("percpu test done\n");
++	return -EAGAIN;  /* Fail will directly unload the module */
++}
++
++static void __exit percpu_test_exit(void)
++{
++}
++
++module_init(percpu_test_init)
++module_exit(percpu_test_exit)
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Greg Thelen");
++MODULE_DESCRIPTION("percpu variables test");
+-- 
+1.8.4.1
 
-Indeed.
-
-
-> I am not quite sure about it, but I will try. 
-
-So you volunteer to send out a patch base don __ARCH_NL I proposed above ?
-
-
-> Now, I am just analyzing
-> another issue -- maybe the last issue for allmodconfig under arc, which
-> may be related with this patch, the errors are:
-> 
->       1   Building modules, stage 2.
->       2   MODPOST 2994 modules
->       3 ERROR: "__st_r13_to_r20" [sound/usb/snd-usbmidi-lib.ko] undefined!
-
-Yes we know about this already. This is to do with libgcc linkage. The fix is non
-trivial - I'll get back to you on this. For now disable CONFIG_CC_OPTIMIZE_FOR_SIZE.
-
--Vineet
