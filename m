@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab3J0Vr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 17:47:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59326 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754236Ab3J0VrZ (ORCPT
+	id S1754989Ab3J0VsW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 17:48:22 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60008 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754807Ab3J0VsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 17:47:25 -0400
-Message-ID: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH 0/8] Fix minor address type errors
-From: Ben Hutchings <ben@decadent.org.uk>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
-        rds-devel@oss.oracle.com
-Date: Sun, 27 Oct 2013 21:47:17 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-aenbMtIN47UiBrAVHmxj"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.2.102
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 27 Oct 2013 17:48:21 -0400
+Date: Sun, 27 Oct 2013 21:48:15 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI changes
+Message-ID: <20131027214815.GH1982@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Guys, do you think we could get the EFI earlyprintk support into the
+'x86/efi' branch for the upcoming merge window? I know it's quite late
+in the game but since it's a new feature it shouldn't introduce any kind
+of regression and is a much needed feature.
 
---=-aenbMtIN47UiBrAVHmxj
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The following changes since commit c158c3bf59951bbb44bd7ccca9e6665dfd1617c5:
 
-Various bits of code are mixing making assumptions about the size of
-dma_addr_t or resource_size_t, or mixing up pointer and integer types.
+  boot, efi: Remove redundant memset() (2013-10-04 20:07:47 +0100)
 
-All these fixes are based on compiler warnings and so far as I can see
-the bugs are practically harmless.
+are available in the git repository at:
 
-Ben.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
 
-Ben Hutchings (8):
-  IB/cxgb4: Fix formatting of physical address
-  farsync: Fix confusion about DMA address and buffer offset types
-  drm: Do not include page offset in argument to virt_to_page()
-  drm: Pass pointers to virt_to_page()
-  [SCSI] tgt: Pass pointers to virt_to_page(), not integers
-  uio: Pass pointers to virt_to_page(), not integers
-  rds: Pass pointers to virt_to_page(), not integers
-  [SCSI] pmcraid: Pass pointers to access_ok(), not integers
+for you to fetch changes up to 32c9e70fc3912c3b9c7d53ce016960ce99ff93d4:
 
- drivers/gpu/drm/drm_pci.c            |  4 ++--
- drivers/gpu/drm/drm_vm.c             |  2 +-
- drivers/infiniband/hw/cxgb4/device.c |  4 ++--
- drivers/net/wan/farsync.c            | 19 +++++++------------
- drivers/scsi/pmcraid.c               |  3 ++-
- drivers/scsi/scsi_tgt_if.c           |  2 +-
- drivers/uio/uio.c                    |  6 ++++--
- net/rds/message.c                    |  2 +-
- 8 files changed, 20 insertions(+), 22 deletions(-)
+  x86/efi: Add EFI framebuffer earlyprintk support (2013-10-27 21:18:48 +0000)
 
+----------------------------------------------------------------
+ * Add support for earlyprintk=efi which uses the EFI framebuffer. Very
+   useful for debugging boot issues.
 
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
+----------------------------------------------------------------
+Matt Fleming (2):
+      efi: Add asm-generic/efi.h for non-x86
+      x86/efi: Add EFI framebuffer earlyprintk support
 
---=-aenbMtIN47UiBrAVHmxj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+ Documentation/kernel-parameters.txt  |   8 +-
+ arch/ia64/include/asm/efi.h          |   6 ++
+ arch/x86/Kconfig.debug               |   9 ++
+ arch/x86/boot/compressed/eboot.c     |   1 -
+ arch/x86/include/asm/efi.h           |  12 +++
+ arch/x86/kernel/early_printk.c       |   6 ++
+ arch/x86/kernel/setup.c              |   1 -
+ arch/x86/platform/efi/Makefile       |   1 +
+ arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c          |   1 -
+ arch/x86/platform/efi/efi_32.c       |   1 -
+ arch/x86/platform/efi/efi_64.c       |   1 -
+ arch/x86/platform/uv/bios_uv.c       |   1 -
+ include/asm-generic/efi.h            |  17 ++++
+ include/linux/efi.h                  |  31 +-----
+ 15 files changed, 249 insertions(+), 38 deletions(-)
+ create mode 100644 arch/ia64/include/asm/efi.h
+ create mode 100644 arch/x86/platform/efi/early_printk.c
+ create mode 100644 include/asm-generic/efi.h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUm2J5ee/yOyVhhEJAQqGvA/9GzMeGBFRDv9lMX/TsSlwFqMeODg9ZXbI
-MMWTYKi+h5aiKrniDjtSKb7ilx0nVNnR8BEFCQcZBr4DOd+97kMEbxrZZTBKE1F6
-Nhy419nEivQcWzmVAw4q6uqQ+ozfVz5XX/bqOUvdYZtSBLkw3py6DyCnWnLHsr8Y
-QQqF9bDaa8cJWeN59moFUduSKDUHSHSgJFMNF6j1oB0n3BdaVzuqVmwNCwLG/AXk
-Zly1V6lvKj1QPzgDO3P3RDEVrOaOx6GKfuoVqj5gbqNAw1nXlnqg5myRYC7FqNnN
-EKta5bUHgkwpS867jaIMalnjVXIDgf0p2TgfgsxCgTdF6F4hirL6DZaLjIHxK7OO
-Hr22hkX64W/CppwP5653sjO2xuPwcqiVlHZdVRhhYckRldRaEaB63mwkIdRsRolW
-i8OrbYGZvUTXJ2gcCgxoYNMXYAO+EFAK4YVEM4vc7CSzi018Zz0TEapi+4abNdWp
-ckUzC8+P5uk1fBTGziOdH+derBwDo6GS9qscdIrXCbkA4zKMn+JaKynTmncFNtGn
-0uKVD/TW3ds2+tUlbuwlikWrLk7rTU+8186+K0q3xcaArPt3uLnlqSsrq6Th1r9D
-zsbWvsZAvs7yWsa+sUOla25T++Z2/o+k6IQYKNmhAWVqWVJuAF0OZ1YK5yu0NWq0
-9/1fnbEoDMw=
-=ZTmh
------END PGP SIGNATURE-----
-
---=-aenbMtIN47UiBrAVHmxj--
+-- 
+Matt Fleming, Intel Open Source Technology Center
