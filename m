@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3J0VyV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 17:54:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59357 "EHLO
+	id S1755451Ab3J0Vyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 17:54:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59363 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755388Ab3J0VyU (ORCPT
+	by vger.kernel.org with ESMTP id S1753521Ab3J0Vyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 17:54:20 -0400
-Message-ID: <1382910856.2994.51.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
+	Sun, 27 Oct 2013 17:54:49 -0400
+Message-ID: <1382910886.2994.52.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH 8/8] [SCSI] pmcraid: Pass pointers to access_ok(), not
+ integers
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, rds-devel@oss.oracle.com,
-        netdev <netdev@vger.kernel.org>
-Date: Sun, 27 Oct 2013 21:54:16 +0000
+To: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Sun, 27 Oct 2013 21:54:46 +0000
 In-Reply-To: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
 References: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-80YuffHdy/BwCL6uL+by"
+	protocol="application/pgp-signature"; boundary="=-9EF/Kz7nWl4ndrKzjFMq"
 X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.2.102
@@ -28,62 +30,61 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-80YuffHdy/BwCL6uL+by
+--=-9EF/Kz7nWl4ndrKzjFMq
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Most architectures define virt_to_page() as a macro that casts its
+Most architectures define access_ok() as a macro that casts its
 argument such that an argument of type unsigned long will be accepted
 without complaint.  However, the proper type is void *, and passing
-unsigned long results in a warning on MIPS.
+unsigned long results in a warning on sparc64.
 
 Compile-tested only.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/message.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/pmcraid.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/rds/message.c b/net/rds/message.c
-index aba232f..1913fc9 100644
---- a/net/rds/message.c
-+++ b/net/rds/message.c
-@@ -257,7 +257,7 @@ struct rds_message *rds_message_map_pages(unsigned long=
- *page_addrs, unsigned in
-=20
- 	for (i =3D 0; i < rm->data.op_nents; ++i) {
- 		sg_set_page(&rm->data.op_sg[i],
--				virt_to_page(page_addrs[i]),
-+				virt_to_page((void *)page_addrs[i]),
- 				PAGE_SIZE, 0);
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 1eb7b028..4e0a2f3 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3794,7 +3794,8 @@ static long pmcraid_ioctl_passthrough(
  	}
 =20
-
+ 	if (request_size > 0) {
+-		rc =3D access_ok(access, arg, request_offset + request_size);
++		rc =3D access_ok(access, (void *)arg,
++			       request_offset + request_size);
+=20
+ 		if (!rc) {
+ 			rc =3D -EFAULT;
 
 --=20
 Ben Hutchings
 If at first you don't succeed, you're doing about average.
 
---=-80YuffHdy/BwCL6uL+by
+--=-9EF/Kz7nWl4ndrKzjFMq
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIVAwUAUm2LiOe/yOyVhhEJAQrn9A/+IrG6+cmRsnwMPVCG/j2GRnJ3fhTYL3Hq
-HZbxTKojCDfzLvlLrOVd+Mggtk8QCZXfZQrrUnz9/wUfysoGQEcQ/0Z1iVR7vEC7
-K7ouGl3FbEJnIdGG376aSZJjN+OZ6hA1o/ue9F5tE09lu0Dw/8Snrs+9gFyIZEf1
-stw6KoVPDQ5eI7HuHdbhiaT6yPLAoelQa3xIe7q+EIuoLOGs7DgXqv3A26VSMAOC
-VdsJdRv+nxPo0fVzJpOHrJQz3Cz8J/+BF+FB6L+3x4lHiUQQlIH51LuPggiLe/fG
-yO0hvP5EDOcWhWHKWu6W1XE1J4O0rZ0DbajNcBzpWjlYIYy4SQ+sLdjvj3V1wf4Q
-K5dqd8xyef1ZTG5VdPCG2lwSMgLDvNWJ1G1IP1JC5IhWoSgqzl90Hrp+P2boMgL+
-1k60Agz3zyDgJENZq8gCvn5FhGElCFiTWvxzduwafGIcaW4PXCj+RXQJEmEC/R92
-L5x/M6Jnd8HeSr9kKjVci6yr/oXpKGu72LTH5xzKR8eif3TF9e4Lxe34KfZNDZaY
-EF78S/9mrBzvLPqb+FGrS3/4mFySx/k0fQAwKPIbznhELr3BgyHezUkHNr3d5ZQl
-j4vf/Na/Q9dWhr7wweKANSs89ttERqEA25vR0y/nk6G+JgokmbSRI3dnpLJd2qe4
-XPhJu9cWh4I=
-=yOzY
+iQIVAwUAUm2Lpue/yOyVhhEJAQogaRAApuI/XAprWm6oVY6AfWjkNkz5GOFzOpTW
+7PMjorw6tklt1T1H/eCJ5CluK6TVS8w79NEItUFpWzafUg3E7kBz9oYnkBzCmhMn
+TZ1WMzgHPhqo9iYYSyKQU2BcTwO71X3fxtjq+TS95VgZuIxHfmvi06/P34JSElkh
+w908L6i8f1Gzc8jb1gCDyCz7BKtdahwpwdo+DsirL+R1fftU+agucjInKhxqDNCQ
+sepyDeinqeoGt+0ESqvg88N25mN/yFtG6ZNcVd40tVoP9+g1GxrspYFWOH+o/36m
+I0clahiJBo8MF2jwsnkPql/yxSpCoMruPvegn7IhLT1KyeVDsBzAAZIwkDvhWowG
+fTBBwKwoDU7qbg9rUuzqUUL2IQ0+RIVVpUYjd4qpU3Hw0V+5pAtlv/CXyLE0egmN
+73pPVOrE1jn8kuPnBX0FPWVB4ViTKc/9XOOr1baqyPvb4gRfu1A+TDOceaiD+egc
+DA94zgxp0WhfvbEowRJDd3Hod6rJkxIELJosQRtPtuYLJatMMKhCBNhUyrF957ZS
+s/axzP6LSk+SGyfFu9nsWGsSqC6Dn/+mFMABANaaM/wKby7s1ZbyKUY4BCLTGpcp
+im0UveK+P9HUKgPvYMwptW1Rdgy53b1juxiB2OsBrqJxl+8V+j+scBNdMky0D44/
+cxDM/Lc2bIM=
+=Usk9
 -----END PGP SIGNATURE-----
 
---=-80YuffHdy/BwCL6uL+by--
+--=-9EF/Kz7nWl4ndrKzjFMq--
