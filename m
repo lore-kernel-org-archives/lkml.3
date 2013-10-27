@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab3J0NyE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 09:54:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41741 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab3J0NyB (ORCPT
+	id S1754412Ab3J0N5a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 09:57:30 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:58874 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab3J0N53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 09:54:01 -0400
-Date: Sun, 27 Oct 2013 13:53:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Will Deacon <will.deacon@arm.com>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-Message-ID: <20131027135344.GD16735@n2100.arm.linux.org.uk>
-References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi> <20131026143617.GA14034@mudshark.cambridge.arm.com> <20131027195115.208f40f3@tom-ThinkPad-T410> <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi> <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 27 Oct 2013 09:57:29 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCHv6 1/3] Input: twl4030-pwrbutton - add device tree support
+To: Sebastian Reichel <sre@debian.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+In-Reply-To: <20131025234031.GC8657@earth.universe>
+References: <1382626126-12565-1-git-send-email-sre@debian.org> <1382626126-12565-2-git-send-email-sre@debian.org> <20131025190904.3EE93C403B8@trevor.secretlab.ca> <20131025234031.GC8657@earth.universe>
+Date: Sun, 27 Oct 2013 13:57:25 +0000
+Message-Id: <20131027135725.BF367C4039D@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 09:16:53PM +0800, Ming Lei wrote:
-> On Sun, Oct 27, 2013 at 8:50 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> >
-> > On ARM v3.9 or older kernels do not trigger this BUG, at seems it only
-> > started to appear with the following commit (bisected):
-> >
-> > commit 1bc39742aab09248169ef9d3727c9def3528b3f3
-> > Author: Simon Baatz <gmbnomis@gmail.com>
-> > Date:   Mon Jun 10 21:10:12 2013 +0100
-> >
-> >     ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+On Sat, 26 Oct 2013 01:40:31 +0200, Sebastian Reichel <sre@debian.org> wrote:
+> On Fri, Oct 25, 2013 at 08:09:04PM +0100, Grant Likely wrote:
+> > On Thu, 24 Oct 2013 16:48:44 +0200, Sebastian Reichel <sre@debian.org> wrote:
+> > > Add device tree support for twl4030 power button driver.
+> > 
+> > The above commit text is insufficient. There are changes in the patch
+> > that aren't described here and have nothing to do with device tree
+> > bindings.
 > 
-> The above commit only starts to implement the helper on ARM,
-> but according to Documentation/cachetlb.txt, looks caller of
-> flush_kernel_dcache_page() should make sure the passed
-> 'page' is a user space page.
+> I will update the description in PATCHv7.
+> 
+> > [...]
+> > > +++ b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+> > 
+> > Can all of the TWL or TWL4030 funciton bindings be collected into a
+> > single file please? It is a single device after all. All of it should be
+> > in bindings/mfd/twl-family.txt
+> 
+> I guess this should be done in another patch? There's also a typo in
+> twl-family.txt's filename. My suggestion is to leave the patchset in
+> its current state. I will create another patch, which combines all
+> the twl4030 bindings descriptions into one file.
 
-I think your terminology is off.  flush_kernel_dcache_page() is passed a
-struct page.  These exist for every physical RAM page in the system which
-is under the control of the kernel.  There's no such thing as a "user
-space page" - pages are shared from kernel space into userspace.
+Yes, that is fine.
 
-Secondly, flush_kernel_dcache_page() gets used on such pages whether or
-not they're already mapped into userspace (normally they won't be if this
-is the first read of the page.)  This function is only expected to deal
-with kernel-side addresses of the page, ensuring that data in the page
-is visible to the underlying memory.
+> 
+> > [...]
+> > > +- interrupt: should be one of the following
+> > 
+> > Spelling: s/interrupt/interrupts/
+> 
+> fixed.
+> 
+> > [...]
+> > >  static struct platform_driver twl4030_pwrbutton_driver = {
+> > > +	.probe		= twl4030_pwrbutton_probe,
+> > >  	.remove		= __exit_p(twl4030_pwrbutton_remove),
+> > 
+> > Remove the __exit_p() wrapper. __exit is for module exit functions, not
+> > remove hooks (I know, that's not actually this patch, but the code is
+> > definitely wrong here).
+> 
+> On of the following patches converts the driver to devm, which
+> results in complete removal of the twl4030_pwrbutton_remove
+> function.
 
-The last thing to realise is that we already have a function which deals
-with the presence of userspace mappings.  It's called flush_dcache_page().
-If flush_kernel_dcache_page() had to make that decision, then there's no
-point in flush_kernel_dcache_page() existing - we might as well just call
-flush_dcache_page() directly.
+Okay.
 
-So...
-
-flush_kernel_dcache_page() is expected to take a struct page pointer.
-This struct page pointer is part of the kernel's array of struct pages
-which identifies every single physical page under the control of the
-kernel.
-
-Arguably, it should not crash if passed a page which has been allocated
-to the slab cache; as this is not a page cache page,
-flush_kernel_dcache_page() should merely ignore the call to it and
-simply return on these.  So this makes total sense:
-
- arch/arm/mm/flush.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
-index 6d5ba9afb16a..eebb275a67fb 100644
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -316,6 +316,10 @@ EXPORT_SYMBOL(flush_dcache_page);
-  */
- void flush_kernel_dcache_page(struct page *page)
- {
-+	/* Ignore slab pages */
-+	if (PageSlab(page))
-+		return;
-+
- 	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
- 		struct address_space *mapping;
- 
+g.
