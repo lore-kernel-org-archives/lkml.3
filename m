@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3J0LXC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 07:23:02 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:43848 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab3J0LW7 (ORCPT
+	id S1753609Ab3J0LYg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 07:24:36 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:44481 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3J0LYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 07:22:59 -0400
-Date: Sun, 27 Oct 2013 07:22:55 -0400
+	Sun, 27 Oct 2013 07:24:34 -0400
+Date: Sun, 27 Oct 2013 07:24:29 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Greg Thelen <gthelen@google.com>
 Cc: Christoph Lameter <cl@linux-foundation.org>,
@@ -18,78 +18,68 @@ Cc: Christoph Lameter <cl@linux-foundation.org>,
         handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>,
         x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] percpu counter: cast this_cpu_sub() adjustment
-Message-ID: <20131027112255.GB14934@mtj.dyndns.org>
+Subject: Re: [PATCH 3/3] memcg: use __this_cpu_sub to decrement stats
+Message-ID: <20131027112429.GC14934@mtj.dyndns.org>
 References: <1382859876-28196-1-git-send-email-gthelen@google.com>
- <1382859876-28196-3-git-send-email-gthelen@google.com>
+ <1382859876-28196-4-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382859876-28196-3-git-send-email-gthelen@google.com>
+In-Reply-To: <1382859876-28196-4-git-send-email-gthelen@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 12:44:35AM -0700, Greg Thelen wrote:
-> this_cpu_sub() is implemented as negation and addition.
+On Sun, Oct 27, 2013 at 12:44:36AM -0700, Greg Thelen wrote:
+> As of v3.11-9444-g3ea67d0 "memcg: add per cgroup writeback pages
+> accounting" memcg counter errors are possible when moving charged
+> memory to a different memcg.  Charge movement occurs when processing
+> writes to memory.force_empty, moving tasks to a memcg with
+> memcg.move_charge_at_immigrate=1, or memcg deletion.  An example
+> showing error after memory.force_empty:
+>   $ cd /sys/fs/cgroup/memory
+>   $ mkdir x
+>   $ rm /data/tmp/file
+>   $ (echo $BASHPID >> x/tasks && exec mmap_writer /data/tmp/file 1M) &
+>   [1] 13600
+>   $ grep ^mapped x/memory.stat
+>   mapped_file 1048576
+>   $ echo 13600 > tasks
+>   $ echo 1 > x/memory.force_empty
+>   $ grep ^mapped x/memory.stat
+>   mapped_file 4503599627370496
 > 
-> This patch casts the adjustment to the counter type before negation to
-> sign extend the adjustment.  This helps in cases where the counter
-> type is wider than an unsigned adjustment.  An alternative to this
-> patch is to declare such operations unsupported, but it seemed useful
-> to avoid surprises.
+> mapped_file should end with 0.
+>   4503599627370496 == 0x10,0000,0000,0000 == 0x100,0000,0000 pages
+>   1048576          == 0x10,0000           == 0x100 pages
 > 
-> This patch specifically helps the following example:
->   unsigned int delta = 1
->   preempt_disable()
->   this_cpu_write(long_counter, 0)
->   this_cpu_sub(long_counter, delta)
->   preempt_enable()
+> This issue only affects the source memcg on 64 bit machines; the
+> destination memcg counters are correct.  So the rmdir case is not too
+> important because such counters are soon disappearing with the entire
+> memcg.  But the memcg.force_empty and
+> memory.move_charge_at_immigrate=1 cases are larger problems as the
+> bogus counters are visible for the (possibly long) remaining life of
+> the source memcg.
 > 
-> Before this change long_counter on a 64 bit machine ends with value
-> 0xffffffff, rather than 0xffffffffffffffff.  This is because
-> this_cpu_sub(pcp, delta) boils down to this_cpu_add(pcp, -delta),
-> which is basically:
->   long_counter = 0 + 0xffffffff
+> The problem is due to memcg use of __this_cpu_from(.., -nr_pages),
+> which is subtly wrong because it subtracts the unsigned int nr_pages
+> (either -1 or -512 for THP) from a signed long percpu counter.  When
+> nr_pages=-1, -nr_pages=0xffffffff.  On 64 bit machines
+> stat->count[idx] is signed 64 bit.  So memcg's attempt to simply
+> decrement a count (e.g. from 1 to 0) boils down to:
+>   long count = 1
+>   unsigned int nr_pages = 1
+>   count += -nr_pages  /* -nr_pages == 0xffff,ffff */
+>   count is now 0x1,0000,0000 instead of 0
 > 
-> Also apply the same cast to:
->   __this_cpu_sub()
->   this_cpu_sub_return()
->   and __this_cpu_sub_return()
-> 
-> All percpu_test.ko passes, especially the following cases which
-> previously failed:
-> 
->   l -= ui_one;
->   __this_cpu_sub(long_counter, ui_one);
->   CHECK(l, long_counter, -1);
-> 
->   l -= ui_one;
->   this_cpu_sub(long_counter, ui_one);
->   CHECK(l, long_counter, -1);
->   CHECK(l, long_counter, 0xffffffffffffffff);
-> 
->   ul -= ui_one;
->   __this_cpu_sub(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, -1);
->   CHECK(ul, ulong_counter, 0xffffffffffffffff);
-> 
->   ul = this_cpu_sub_return(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, 2);
-> 
->   ul = __this_cpu_sub_return(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, 1);
+> The fix is to subtract the unsigned page count rather than adding its
+> negation.  This only works with the "percpu counter: cast
+> this_cpu_sub() adjustment" patch which fixes this_cpu_sub().
 > 
 > Signed-off-by: Greg Thelen <gthelen@google.com>
 
-Ouch, nice catch.
-
  Acked-by: Tejun Heo <tj@kernel.org>
-
-We probably want to cc stable for this and the next one.  How should
-these be routed?  I can take these through percpu tree or mm works
-too.  Either way, it'd be best to route them together.
 
 Thanks.
 
