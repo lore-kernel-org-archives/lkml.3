@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3J0Lur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 07:50:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46836 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab3J0Lup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 07:50:45 -0400
-Date: Sun, 27 Oct 2013 12:50:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: dyoung@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
-Subject: Re: [patch 1/6] Add function efi_remap_region for remapping to saved
- virt address
-Message-ID: <20131027115038.GB21868@pd.tnic>
-References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
- <20131027035922.776610726@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131027035922.776610726@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751906Ab3J0Lvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 07:51:36 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:42232 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab3J0Lve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 07:51:34 -0400
+Date: Sun, 27 Oct 2013 19:51:15 +0800
+From: Ming Lei <tom.leiming@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, gmbnomis@gmail.com,
+        catalin.marinas@arm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
+Message-ID: <20131027195115.208f40f3@tom-ThinkPad-T410>
+In-Reply-To: <20131026143617.GA14034@mudshark.cambridge.arm.com>
+References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
+	<20131026143617.GA14034@mudshark.cambridge.arm.com>
+Organization: Ming
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 11:47:14AM +0800, dyoung@redhat.com wrote:
-> Kexec kernel will use saved runtime virtual mapping, so add a
-> new function efi_remap_region to remapping it directly without
-> calculate the virt addr from efi_va.
+On Sat, 26 Oct 2013 15:36:17 +0100
+Will Deacon <will.deacon@arm.com> wrote:
+
+> On Thu, Oct 24, 2013 at 09:07:30PM +0100, Aaro Koskinen wrote:
 > 
-> The md is passed in from 1st kernel, the virtual addr is
-> saved in md->virt_addr.
+> > [   36.477203] Backtrace:
+> > [   36.535603] [<c009237c>] (page_mapping+0x0/0x50) from [<c0010dd8>] (flush_kernel_dcache_page+0x14/0x98)
+> > [   36.661070] [<c0010dc4>] (flush_kernel_dcache_page+0x0/0x98) from [<c0172b60>] (sg_miter_stop+0xc8/0x10c)
+> > [   36.792813]  r4:df8a9a64 r3:00000003
+> > [   36.857524] [<c0172a98>] (sg_miter_stop+0x0/0x10c) from [<c0172f20>] (sg_miter_next+0x14/0x13c)
 > 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/include/asm/efi.h     |    1 +
->  arch/x86/platform/efi/efi_32.c |    4 ++++
->  arch/x86/platform/efi/efi_64.c |   13 +++++++++++++
->  3 files changed, 18 insertions(+)
-> 
-> --- linux-2.6.orig/arch/x86/include/asm/efi.h
-> +++ linux-2.6/arch/x86/include/asm/efi.h
-> @@ -112,6 +112,7 @@ extern void efi_call_phys_epilog(void);
->  extern void efi_unmap_memmap(void);
->  extern void efi_memory_uc(u64 addr, unsigned long size);
->  extern void __init efi_map_region(efi_memory_desc_t *md);
-> +extern void __init efi_remap_region(efi_memory_desc_t *md);
->  extern void efi_sync_low_kernel_mappings(void);
->  extern void __init old_map_region(efi_memory_desc_t *md);
->  
-> --- linux-2.6.orig/arch/x86/platform/efi/efi_64.c
-> +++ linux-2.6/arch/x86/platform/efi/efi_64.c
-> @@ -177,6 +177,19 @@ void __init efi_map_region(efi_memory_de
->  	md->virt_addr = efi_va;
->  }
->  
-> +void __init efi_remap_region(efi_memory_desc_t *md)
+> ... assumedly for scatter/gather DMA. How is your block driver allocating
+> its buffers? If you're using the DMA API, I can't see how this would happen.
 
-remap? Why?
+Lots of SCSI commands(inquiry, ...) pass kmalloc buffer to block layer,
+then the sg buffer copy helpers and flush_kernel_dcache_page() may see
+slab page.
 
-You did have efi_map_region_fixed() which made more sense.
+That has been here from commit b1adaf65ba03( [SCSI] block: add sg buffer copy
+helper functions).
 
-> +{
-> +	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
-> +	unsigned long pf = 0;
-> +
-> +	if (!(md->attribute & EFI_MEMORY_WB))
-> +		pf |= _PAGE_PCD;
-> +
-> +	if(kernel_map_pages_in_pgd(pgd, md->phys_addr, md->virt_addr, md->num_pages, pf))
+So how about letting below patch to workaround the issue?
 
-ERROR: space required before the open parenthesis '('
-#59: FILE: arch/x86/platform/efi/efi_64.c:188:
-+       if(kernel_map_pages_in_pgd(pgd, md->phys_addr, md->virt_addr, md->num_pages, pf))
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a685c8a..eea8806 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -577,7 +577,7 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
+ 		miter->__offset += miter->consumed;
+ 		miter->__remaining -= miter->consumed;
+ 
+-		if (miter->__flags & SG_MITER_TO_SG)
++		if ((miter->__flags & SG_MITER_TO_SG) && !PageSlab(page))
+ 			flush_kernel_dcache_page(miter->page);
+ 
+ 		if (miter->__flags & SG_MITER_ATOMIC) {
 
 
-Please run them all through checkpatch.pl - better yet, integrate
-checkpatch into your workflow like using git hooks, for example.
 
-> +		pr_warning("Error mapping PA 0x%llx -> VA 0x%llx!\n",
-
-WARNING: Prefer pr_warn(... to pr_warning(...
-#60: FILE: arch/x86/platform/efi/efi_64.c:189:
-+               pr_warning("Error mapping PA 0x%llx -> VA 0x%llx!\n",
-
-> +			   md->phys_addr, md->virt_addr);
-> +}
-> +
->  void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
->  				 u32 type, u64 attribute)
->  {
-> --- linux-2.6.orig/arch/x86/platform/efi/efi_32.c
-> +++ linux-2.6/arch/x86/platform/efi/efi_32.c
-> @@ -46,6 +46,10 @@ void __init efi_map_region(efi_memory_de
->  	old_map_region(md);
->  }
->  
-> +void __init efi_remap_region(efi_memory_desc_t *md)
-> +{
-> +}
-
-Let's keep braces on the same line as the function to save space:
-
-void __init efi_remap_region(efi_memory_desc_t *md) {}
-
+Thanks,
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Ming Lei
