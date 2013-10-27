@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3J0Vxn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 17:53:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59354 "EHLO
+	id S1755444Ab3J0VyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 17:54:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59357 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754807Ab3J0Vxm (ORCPT
+	by vger.kernel.org with ESMTP id S1755388Ab3J0VyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 17:53:42 -0400
-Message-ID: <1382910820.2994.50.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH 6/8] uio: Pass pointers to virt_to_page(), not integers
+	Sun, 27 Oct 2013 17:54:20 -0400
+Message-ID: <1382910856.2994.51.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
 From: Ben Hutchings <ben@decadent.org.uk>
-To: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 27 Oct 2013 21:53:40 +0000
+To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, rds-devel@oss.oracle.com,
+        netdev <netdev@vger.kernel.org>
+Date: Sun, 27 Oct 2013 21:54:16 +0000
 In-Reply-To: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
 References: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-nSzYhhPDl2AsKtk24Q3z"
+	protocol="application/pgp-signature"; boundary="=-80YuffHdy/BwCL6uL+by"
 X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.2.102
@@ -28,7 +28,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-nSzYhhPDl2AsKtk24Q3z
+--=-80YuffHdy/BwCL6uL+by
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -41,64 +41,49 @@ Compile-tested only.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/uio/uio.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/rds/message.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 11d4e0a..ef30ec9 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -601,6 +601,7 @@ static int uio_vma_fault(struct vm_area_struct *vma, st=
-ruct vm_fault *vmf)
- 	struct uio_device *idev =3D vma->vm_private_data;
- 	struct page *page;
- 	unsigned long offset;
-+	void *addr;
+diff --git a/net/rds/message.c b/net/rds/message.c
+index aba232f..1913fc9 100644
+--- a/net/rds/message.c
++++ b/net/rds/message.c
+@@ -257,7 +257,7 @@ struct rds_message *rds_message_map_pages(unsigned long=
+ *page_addrs, unsigned in
 =20
- 	int mi =3D uio_find_mem_index(vma);
- 	if (mi < 0)
-@@ -612,10 +613,11 @@ static int uio_vma_fault(struct vm_area_struct *vma, =
-struct vm_fault *vmf)
- 	 */
- 	offset =3D (vmf->pgoff - mi) << PAGE_SHIFT;
+ 	for (i =3D 0; i < rm->data.op_nents; ++i) {
+ 		sg_set_page(&rm->data.op_sg[i],
+-				virt_to_page(page_addrs[i]),
++				virt_to_page((void *)page_addrs[i]),
+ 				PAGE_SIZE, 0);
+ 	}
 =20
-+	addr =3D (void *)(unsigned long)idev->info->mem[mi].addr + offset;
- 	if (idev->info->mem[mi].memtype =3D=3D UIO_MEM_LOGICAL)
--		page =3D virt_to_page(idev->info->mem[mi].addr + offset);
-+		page =3D virt_to_page(addr);
- 	else
--		page =3D vmalloc_to_page((void *)(unsigned long)idev->info->mem[mi].addr=
- + offset);
-+		page =3D vmalloc_to_page(addr);
- 	get_page(page);
- 	vmf->page =3D page;
- 	return 0;
 
 
 --=20
 Ben Hutchings
 If at first you don't succeed, you're doing about average.
 
---=-nSzYhhPDl2AsKtk24Q3z
+--=-80YuffHdy/BwCL6uL+by
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIVAwUAUm2LZOe/yOyVhhEJAQrkeBAAmHpiYT7oljGqKBjsGuKHkhDjzfaEgkne
-r5EZufy3WkFmH8I5fciqTlMi+GYSGtYxbIj48WvwNtdt24HyliMYVtVK2dXfZxXg
-IOaHTghR5IItK99pzsQNo7PqyeaL2R3u3plbnxIr1QxMOg3Zfpoy+AIkqqTvOdZ+
-AAVTKUSFRja77UQp7TzfHOFbBAaCaroBKtbZw/Rt56YTuUCXPdNHMjQ3qe1kLIoI
-6/n5nTuN8j+xHj3NtEksidV9WCnmGj7AsO2a9zFfi5sT6n+qOw/uM2TSMK4KKP3K
-+OY5oPznN0Z49QV6yg5l5E+pN9lcRFzqMEKM975oBhp3g7mPgdfSIN8W+ym9M69D
-4axs+TXgBqQuAK1CavrAR0DP64i+iLzxzba/rqF3FPF6A+qaZW05x657Ea4PT4uW
-vS8hgqOu2y/WaoMFRPz96oLo2ayDrM31A896BLz3piC63K7dF706B4c7o8x70ILs
-EJNMo/F8LuyfotZrQEtbTsj3qYwKVZa1mRD/XACnWwxUQRoIhqke7/J0x7ki3WyV
-NVxnAv9VhIgPukgCOb2T9WWOVzNo5gkfO64xjCGCVBpFDQkIoaGqka/UvCafQ1zh
-rykXh2ifhjjuZBUGauAZs5BjZMeB+4jmPf1J5Sp+oS36BLOTNONtLkaEO2hOytjc
-G2C0uXVIbjE=
-=IGlL
+iQIVAwUAUm2LiOe/yOyVhhEJAQrn9A/+IrG6+cmRsnwMPVCG/j2GRnJ3fhTYL3Hq
+HZbxTKojCDfzLvlLrOVd+Mggtk8QCZXfZQrrUnz9/wUfysoGQEcQ/0Z1iVR7vEC7
+K7ouGl3FbEJnIdGG376aSZJjN+OZ6hA1o/ue9F5tE09lu0Dw/8Snrs+9gFyIZEf1
+stw6KoVPDQ5eI7HuHdbhiaT6yPLAoelQa3xIe7q+EIuoLOGs7DgXqv3A26VSMAOC
+VdsJdRv+nxPo0fVzJpOHrJQz3Cz8J/+BF+FB6L+3x4lHiUQQlIH51LuPggiLe/fG
+yO0hvP5EDOcWhWHKWu6W1XE1J4O0rZ0DbajNcBzpWjlYIYy4SQ+sLdjvj3V1wf4Q
+K5dqd8xyef1ZTG5VdPCG2lwSMgLDvNWJ1G1IP1JC5IhWoSgqzl90Hrp+P2boMgL+
+1k60Agz3zyDgJENZq8gCvn5FhGElCFiTWvxzduwafGIcaW4PXCj+RXQJEmEC/R92
+L5x/M6Jnd8HeSr9kKjVci6yr/oXpKGu72LTH5xzKR8eif3TF9e4Lxe34KfZNDZaY
+EF78S/9mrBzvLPqb+FGrS3/4mFySx/k0fQAwKPIbznhELr3BgyHezUkHNr3d5ZQl
+j4vf/Na/Q9dWhr7wweKANSs89ttERqEA25vR0y/nk6G+JgokmbSRI3dnpLJd2qe4
+XPhJu9cWh4I=
+=yOzY
 -----END PGP SIGNATURE-----
 
---=-nSzYhhPDl2AsKtk24Q3z--
+--=-80YuffHdy/BwCL6uL+by--
