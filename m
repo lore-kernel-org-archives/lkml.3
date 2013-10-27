@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3J0TdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 15:33:09 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:50249 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab3J0TdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 15:33:06 -0400
-Message-ID: <526D6A5E.5000100@hauke-m.de>
-Date: Sun, 27 Oct 2013 20:32:46 +0100
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [ANN] backports-20131025 released
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754288Ab3J0Td6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 15:33:58 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42106 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab3J0Td4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 15:33:56 -0400
+Date: Sun, 27 Oct 2013 12:33:52 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/3] vxlan: silence one build warning
+Message-ID: <20131027123352.3d49d75b@nehalam.linuxnetplumber.net>
+In-Reply-To: <CAEH94LjOnWgchhV__TLK9se-Cb3WkGnVfNZgNBBLdZL0kNM=-g@mail.gmail.com>
+References: <1382687360-27794-1-git-send-email-zwu.kernel@gmail.com>
+	<20131025084134.6cfa153a@samsung-9>
+	<CAEH94Lia4VVU6Vnn_7DhOHo4yhR-tsMPu7biMCeSMgQPvkQrug@mail.gmail.com>
+	<20131026074819.6a5f4e24@samsung-9>
+	<CAEH94LjOnWgchhV__TLK9se-Cb3WkGnVfNZgNBBLdZL0kNM=-g@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally backports is in sync with linux-next again, we just did the
-backports-20131025 release which is based on linux-next next-20131025.
+On Sun, 27 Oct 2013 10:30:56 +0800
+Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
 
-The release can be found here:
-https://www.kernel.org/pub/linux/kernel/projects/backports/2013/10/25/backports-20131025.tar.bz2
+> HI, Stephen
+> 
+> I saw it on Fedora 17 without latest kernel. Then what do you think
+> that it is appropriate to solve this problem? discard this patch? If
+> yes, i can also agree.
+> 
 
-There are also older releases based on older linux-next releases.
+Either find where the uninitialized use is being caused by finding the code
+path where it happens (manual analysis), or ignore the warning.
 
-The source code can temporary be found here:
-https://github.com/hauke/backports
 
-Currently Stephen Rothwell, the original author of the linux-next tree,
-is on vacation, but Thierry Reding took over [1] and backports is based
-on his releases [2] now.
-
-Now getting new stable releases based on kernel 3.10, 3.11 and 3.12 is
-the next goal.
-
-This release and further releases will not contain any GPU drivers any
-more, it was too much work to backport them to older kernel versions and
-it looked like that code did not had any users.
-
-More information can be found in our wiki:
-https://backports.wiki.kernel.org/index.php/Main_Page
-
-Hauke
-
-[1]: https://lkml.org/lkml/2013/9/30/179
-[2]: git://gitorious.org/thierryreding/linux-next.git
