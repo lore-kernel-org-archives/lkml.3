@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab3J1PEy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:04:54 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:36736 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab3J1PEw (ORCPT
+	id S932835Ab3J1PFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:05:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51084 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab3J1Os5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:04:52 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting permanent mac address
-Date: Mon, 28 Oct 2013 16:04:48 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: Dan Williams <dcbw@redhat.com>, Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1382971562.1542.6.camel@dcbw.foobar.com> <1382972215.17956.30.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1382972215.17956.30.camel@jlt4.sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2778838.sUdns2WpWe";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310281604.48542@pali>
+	Mon, 28 Oct 2013 10:48:57 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/64] xhci: quirk for extra long delay for S4
+Date: Mon, 28 Oct 2013 14:47:37 +0000
+Message-Id: <1382971703-17393-19-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2778838.sUdns2WpWe
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
 
-On Monday 28 October 2013 15:56:55 Johannes Berg wrote:
-> On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
-> > If the device doesn't actually *have* a permanent MAC
-> > address, then it shouldn't be returning one via ethtool,
-> > and should return an error for ETHTOOL_GPERMADDR.
->=20
-> There's currently no provision for that, but I agree it would
-> be better to do so.
->=20
-> johannes
+------------------
 
-So what to do with devices which has MAC address stored in some=20
-obscure place and there is userspace binary which can read it?
+From: Oliver Neukum <oneukum@suse.de>
 
-I think that there should be some way to tell kernel that *this*=20
-is the permanent address and it should use it.
+commit 455f58925247e8a1a1941e159f3636ad6ee4c90b upstream.
 
-This is reason why I proposed patch which adding sysfs entry for=20
-setting permanent address from userspace in wl1251 driver.
+It has been reported that this chipset really cannot
+sleep without this extraordinary delay.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+This patch should be backported, in order to ensure this host functions
+under stable kernels.  The last quirk for Fresco Logic hosts (commit
+bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 "xhci: Extend Fresco Logic MSI
+quirk.") was backported to stable kernels as old as 2.6.36.
 
---nextPart2778838.sUdns2WpWe
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[ luis: backported to 3.5:
+  - adjusted context
+  - replaced usage of xhci_dbg_trace() by xhci_dbg() ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/host/xhci-pci.c | 8 ++++++++
+ drivers/usb/host/xhci.c     | 7 ++++++-
+ drivers/usb/host/xhci.h     | 1 +
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 5e3ef3e..8b218a4 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -67,6 +67,14 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
+ 					" endpoint cmd after reset endpoint\n");
+ 		}
++		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
++				pdev->revision == 0x4) {
++			xhci->quirks |= XHCI_SLOW_SUSPEND;
++			xhci_dbg(xhci,
++				 "QUIRK: Fresco Logic xHC revision %u"
++				 "must be suspended extra slowly",
++				 pdev->revision);
++		}
+ 		/* Fresco Logic confirms: all revisions of this chip do not
+ 		 * support MSI, even though some of them claim to in their PCI
+ 		 * capabilities.
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index eb31daa..10e10a6 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -883,6 +883,7 @@ static void xhci_clear_command_ring(struct xhci_hcd *xhci)
+ int xhci_suspend(struct xhci_hcd *xhci)
+ {
+ 	int			rc = 0;
++	unsigned int		delay = XHCI_MAX_HALT_USEC;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	u32			command;
+ 
+@@ -901,8 +902,12 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	command = xhci_readl(xhci, &xhci->op_regs->command);
+ 	command &= ~CMD_RUN;
+ 	xhci_writel(xhci, command, &xhci->op_regs->command);
++
++	/* Some chips from Fresco Logic need an extraordinary delay */
++	delay *= (xhci->quirks & XHCI_SLOW_SUSPEND) ? 10 : 1;
++
+ 	if (handshake(xhci, &xhci->op_regs->status,
+-		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
++		      STS_HALT, STS_HALT, delay)) {
+ 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
+ 		spin_unlock_irq(&xhci->lock);
+ 		return -ETIMEDOUT;
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 9a97918..b15d034 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1517,6 +1517,7 @@ struct xhci_hcd {
+ #define XHCI_COMP_MODE_QUIRK	(1 << 14)
+ #define XHCI_AVOID_BEI		(1 << 15)
+ #define XHCI_PLAT		(1 << 16)
++#define XHCI_SLOW_SUSPEND	(1 << 17)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
+-- 
+1.8.3.2
 
-iEYEABECAAYFAlJufRAACgkQi/DJPQPkQ1KECACeNMxT+Rq5qW4t1CA69hwHLEkd
-FdMAn0+XsNTX/OUaWrQLU8u6fOgFtY88
-=TAVc
------END PGP SIGNATURE-----
-
---nextPart2778838.sUdns2WpWe--
