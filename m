@@ -1,185 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3J1Uhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 16:37:36 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:50877 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab3J1Uhf (ORCPT
+	id S1754322Ab3J1Une (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 16:43:34 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51827 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab3J1Unc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 16:37:35 -0400
-Date: Tue, 29 Oct 2013 03:47:41 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq flush fix
-Message-ID: <20131028194741.GA24664@kernel.org>
-References: <20131026114612.GA8576@infradead.org>
- <20131026153124.GA22227@infradead.org>
- <20131027222914.GG22549@kernel.dk>
- <20131028084821.GA31270@infradead.org>
- <526E90D7.1070604@kernel.dk>
- <CANejiEWyznEOtRAXrsgEqGoo2EWJDGBt7XH4AZFksWSmR4UY+Q@mail.gmail.com>
- <526EBD51.1010804@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526EBD51.1010804@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Oct 2013 16:43:32 -0400
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/4] Remove older ARM msm SoC support
+Date: Mon, 28 Oct 2013 13:43:22 -0700
+Message-Id: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 01:38:57PM -0600, Jens Axboe wrote:
-> On 10/28/2013 10:57 AM, Shaohua Li wrote:
-> > 
-> > 
-> > 
-> > 2013/10/28 Jens Axboe <axboe@kernel.dk <mailto:axboe@kernel.dk>>
-> > 
-> >     On 10/28/2013 02:48 AM, Christoph Hellwig wrote:
-> >     > On Sun, Oct 27, 2013 at 10:29:25PM +0000, Jens Axboe wrote:
-> >     >> On Sat, Oct 26 2013, Christoph Hellwig wrote:
-> >     >>> I think this variant of the patch from Alexander should fix the
-> >     issue
-> >     >>> in a minimally invasive way.  Longer term I'd prefer to use
-> >     q->flush_rq
-> >     >>> like in the non-mq case by copying over the context and tag
-> >     information.
-> >     >>
-> >     >> This one is pretty simple, we could definitely use it as a band
-> >     aid. I
-> >     >> too would greatly prefer using the static ->flush_rq instead.
-> >     Just have
-> >     >> it marked to bypass most of the free logic.
-> >     >
-> >     > We already bypass the free logical by setting and end_io callback for
-> >     > a while, similar to what the old code does.  Maybe it's not all that
-> >     > hard to prealloc the request, let me give a sping.  Using the static
-> >     > allocated one will be hard due to the driver-specific extra data,
-> >     > though.
-> > 
-> >     It's not that I think the existing patch is THAT bad, it fits in alright
-> >     with the reserved tagging and works regardless of whether a driver uses
-> >     reserved tags or not. And it does have the upside of not requiring
-> >     special checks or logic for this special non-tagged request that using
-> >     the preallocated would might need.
-> > 
-> >     >> I'll add this one.
-> >     >
-> >     > Gimme another day or so to figure this out.
-> > 
-> >     OK, holding off.
-> > 
-> > 
-> > Another option: we could throttle flush-request allocation in
-> > blk_mq_alloc_request(), for example, flush_req_nr >= max_tags - 1, make
-> > the allocation wait.
-> 
-> That could work too. If we back off, then we could restart it once a
-> request completes. That does, however, requiring checking that and
-> potentially kicking all the queues on completion when that happens.
+Over the past few years, the ARM msm SoC tree has picked up support
+for a handfull of SoCs.  Each of these targets had a brief period of
+activity, and has since only received trivial fixes.  Support has only
+been minimal, generally serial console, and possibly storage.  None of
+these saw conversion to device tree, and they contain a lot of headers
+and other aspects that prevent use in the ARM multi-platform kernel.
 
-Sounds not a big problem because the case flush_req uses all tags is very rare.
-The good side is we can avoid reserving a tag, which is precious.
+Current activity on MSM seems to be focused on newer SoCs.  These
+devices have the advantage of having dev-boards available, so
+hopefully there will be more community activity.  There also seems to
+be effort into better DT and multi-platform support on these targets,
+but not the older ones.
 
-I cooked a patch to demonstrate the idea, only compiled yet.
+This patch series removes support for the three older Qualcomm SoC
+families: 7x00, 7x30, and 8x50.
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 3e4cc9c..192c2aa 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -284,7 +284,6 @@ static void mq_flush_work(struct work_struct *work)
- 
- 	q = container_of(work, struct request_queue, mq_flush_work);
- 
--	/* We don't need set REQ_FLUSH_SEQ, it's for consistency */
- 	rq = blk_mq_alloc_request(q, WRITE_FLUSH|REQ_FLUSH_SEQ,
- 		__GFP_WAIT|GFP_ATOMIC);
- 	rq->cmd_type = REQ_TYPE_FS;
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index ac804c6..fbbe0cc 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -180,8 +180,21 @@ static void blk_mq_rq_ctx_init(struct blk_mq_ctx *ctx, struct request *rq,
- }
- 
- static struct request *__blk_mq_alloc_request(struct blk_mq_hw_ctx *hctx,
--					      gfp_t gfp, bool reserved)
-+					      gfp_t gfp, bool reserved,
-+					      int rw)
- {
-+
-+	/*
-+	 * flush need allocate a request, leave at least one request for
-+	 * non-flush IO to avoid deadlock
-+	 */
-+	if ((rw & REQ_FLUSH) && !(rw & REQ_FLUSH_SEQ)) {
-+		atomic_inc(&hctx->pending_flush);
-+		/* fallback to a wait allocation */
-+		if (atomic_read(&hctx->pending_flush) >= hctx->queue_depth -
-+		    hctx->reserved_tags - 1)
-+			return NULL;
-+	}
- 	return blk_mq_alloc_rq(hctx, gfp, reserved);
- }
- 
-@@ -195,7 +208,7 @@ static struct request *blk_mq_alloc_request_pinned(struct request_queue *q,
- 		struct blk_mq_ctx *ctx = blk_mq_get_ctx(q);
- 		struct blk_mq_hw_ctx *hctx = q->mq_ops->map_queue(q, ctx->cpu);
- 
--		rq = __blk_mq_alloc_request(hctx, gfp & ~__GFP_WAIT, reserved);
-+		rq = __blk_mq_alloc_request(hctx, gfp & ~__GFP_WAIT, reserved, rw);
- 		if (rq) {
- 			blk_mq_rq_ctx_init(ctx, rq, rw);
- 			break;
-@@ -253,6 +266,10 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
- 	const int tag = rq->tag;
- 	struct request_queue *q = rq->q;
- 
-+	if ((rq->cmd_flags & REQ_FLUSH) && !(rq->cmd_flags & REQ_FLUSH_SEQ)) {
-+		atomic_dec(&hctx->pending_flush);
-+	}
-+
- 	blk_mq_rq_init(hctx, rq);
- 	blk_mq_put_tag(hctx->tags, tag);
- 
-@@ -918,7 +935,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
- 	hctx = q->mq_ops->map_queue(q, ctx->cpu);
- 
- 	trace_block_getrq(q, bio, rw);
--	rq = __blk_mq_alloc_request(hctx, GFP_ATOMIC, false);
-+	rq = __blk_mq_alloc_request(hctx, GFP_ATOMIC, false, rw);
- 	if (likely(rq))
- 		blk_mq_rq_ctx_init(ctx, rq, rw);
- 	else {
-@@ -1202,6 +1219,7 @@ static int blk_mq_init_hw_queues(struct request_queue *q,
- 		hctx->queue_num = i;
- 		hctx->flags = reg->flags;
- 		hctx->queue_depth = reg->queue_depth;
-+		hctx->reserved_tags = reg->reserved_tags;
- 		hctx->cmd_size = reg->cmd_size;
- 
- 		blk_mq_init_cpu_notifier(&hctx->cpu_notifier,
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 3368b97..0f81528 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -36,12 +36,15 @@ struct blk_mq_hw_ctx {
- 	struct list_head	page_list;
- 	struct blk_mq_tags	*tags;
- 
-+	atomic_t		pending_flush;
-+
- 	unsigned long		queued;
- 	unsigned long		run;
- #define BLK_MQ_MAX_DISPATCH_ORDER	10
- 	unsigned long		dispatched[BLK_MQ_MAX_DISPATCH_ORDER];
- 
- 	unsigned int		queue_depth;
-+	unsigned int		reserved_tags;
- 	unsigned int		numa_node;
- 	unsigned int		cmd_size;	/* per-request extra data */
- 
+If there is a serious desire to support any of these SoCs, patches
+that make them properly support DT, and multi-platform can begin by
+adding the necessary files back.
+
+Note that because these patches remove a lot of lines of code, and the
+lengths exceed the size typically allowed on the mailing lists, I've
+generated the patches with the '-D' option to format-patch.  I can
+send full patches on request, and I've also made the patches available
+at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git for-3.14/big-cleanup
+
+David Brown (4):
+  ARM: msm: Remove unused board files
+  ARM: msm: Remove 7x00 support
+  ARM: msm: Remove 7x30 support
+  ARM: msm: Remove 8x50 support
+
+ arch/arm/mach-msm/Kconfig                       |  104 ---
+ arch/arm/mach-msm/Makefile                      |   20 -
+ arch/arm/mach-msm/board-halibut.c               |  110 ---
+ arch/arm/mach-msm/board-mahimahi.c              |   88 --
+ arch/arm/mach-msm/board-msm7x30.c               |  157 ----
+ arch/arm/mach-msm/board-qsd8x50.c               |  213 -----
+ arch/arm/mach-msm/board-sapphire.c              |  117 ---
+ arch/arm/mach-msm/board-trout-gpio.c            |  233 -----
+ arch/arm/mach-msm/board-trout-mmc.c             |  185 ----
+ arch/arm/mach-msm/board-trout-panel.c           |  292 -------
+ arch/arm/mach-msm/board-trout.c                 |  113 ---
+ arch/arm/mach-msm/board-trout.h                 |  162 ----
+ arch/arm/mach-msm/clock-pcom.c                  |  177 ----
+ arch/arm/mach-msm/clock-pcom.h                  |  145 ----
+ arch/arm/mach-msm/devices-msm7x00.c             |  480 -----------
+ arch/arm/mach-msm/devices-msm7x30.c             |  246 ------
+ arch/arm/mach-msm/devices-qsd8x50.c             |  388 ---------
+ arch/arm/mach-msm/devices.h                     |   53 --
+ arch/arm/mach-msm/dma.c                         |  295 -------
+ arch/arm/mach-msm/gpiomux-8x50.c                |   51 --
+ arch/arm/mach-msm/gpiomux-v1.h                  |   67 --
+ arch/arm/mach-msm/gpiomux.c                     |  111 ---
+ arch/arm/mach-msm/gpiomux.h                     |   84 --
+ arch/arm/mach-msm/include/mach/entry-macro.S    |   36 -
+ arch/arm/mach-msm/include/mach/hardware.h       |   18 -
+ arch/arm/mach-msm/include/mach/irqs-7x00.h      |   75 --
+ arch/arm/mach-msm/include/mach/irqs-7x30.h      |  153 ----
+ arch/arm/mach-msm/include/mach/irqs-8x50.h      |   88 --
+ arch/arm/mach-msm/include/mach/irqs.h           |   37 -
+ arch/arm/mach-msm/include/mach/msm_gpiomux.h    |   38 -
+ arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |  108 ---
+ arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |  103 ---
+ arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |  125 ---
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |   53 --
+ arch/arm/mach-msm/include/mach/msm_smd.h        |  109 ---
+ arch/arm/mach-msm/include/mach/sirc.h           |   98 ---
+ arch/arm/mach-msm/include/mach/vreg.h           |   29 -
+ arch/arm/mach-msm/io.c                          |  161 ----
+ arch/arm/mach-msm/irq-vic.c                     |  363 --------
+ arch/arm/mach-msm/irq.c                         |  151 ----
+ arch/arm/mach-msm/last_radio_log.c              |   71 --
+ arch/arm/mach-msm/proc_comm.c                   |  129 ---
+ arch/arm/mach-msm/proc_comm.h                   |  258 ------
+ arch/arm/mach-msm/sirc.c                        |  172 ----
+ arch/arm/mach-msm/smd.c                         | 1035 -----------------------
+ arch/arm/mach-msm/smd_debug.c                   |  311 -------
+ arch/arm/mach-msm/smd_private.h                 |  403 ---------
+ arch/arm/mach-msm/vreg.c                        |  220 -----
+ 48 files changed, 8235 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/board-halibut.c
+ delete mode 100644 arch/arm/mach-msm/board-mahimahi.c
+ delete mode 100644 arch/arm/mach-msm/board-msm7x30.c
+ delete mode 100644 arch/arm/mach-msm/board-qsd8x50.c
+ delete mode 100644 arch/arm/mach-msm/board-sapphire.c
+ delete mode 100644 arch/arm/mach-msm/board-trout-gpio.c
+ delete mode 100644 arch/arm/mach-msm/board-trout-mmc.c
+ delete mode 100644 arch/arm/mach-msm/board-trout-panel.c
+ delete mode 100644 arch/arm/mach-msm/board-trout.c
+ delete mode 100644 arch/arm/mach-msm/board-trout.h
+ delete mode 100644 arch/arm/mach-msm/clock-pcom.c
+ delete mode 100644 arch/arm/mach-msm/clock-pcom.h
+ delete mode 100644 arch/arm/mach-msm/devices-msm7x00.c
+ delete mode 100644 arch/arm/mach-msm/devices-msm7x30.c
+ delete mode 100644 arch/arm/mach-msm/devices-qsd8x50.c
+ delete mode 100644 arch/arm/mach-msm/devices.h
+ delete mode 100644 arch/arm/mach-msm/dma.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-8x50.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-v1.h
+ delete mode 100644 arch/arm/mach-msm/gpiomux.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/entry-macro.S
+ delete mode 100644 arch/arm/mach-msm/include/mach/hardware.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/irqs-7x00.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/irqs-7x30.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/irqs-8x50.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/irqs.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_gpiomux.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_smd.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/sirc.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/vreg.h
+ delete mode 100644 arch/arm/mach-msm/io.c
+ delete mode 100644 arch/arm/mach-msm/irq-vic.c
+ delete mode 100644 arch/arm/mach-msm/irq.c
+ delete mode 100644 arch/arm/mach-msm/last_radio_log.c
+ delete mode 100644 arch/arm/mach-msm/proc_comm.c
+ delete mode 100644 arch/arm/mach-msm/proc_comm.h
+ delete mode 100644 arch/arm/mach-msm/sirc.c
+ delete mode 100644 arch/arm/mach-msm/smd.c
+ delete mode 100644 arch/arm/mach-msm/smd_debug.c
+ delete mode 100644 arch/arm/mach-msm/smd_private.h
+ delete mode 100644 arch/arm/mach-msm/vreg.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
