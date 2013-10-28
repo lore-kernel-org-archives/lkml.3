@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab3J1Pqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:46:48 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:55002 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab3J1Pqq convert rfc822-to-8bit (ORCPT
+	id S1756904Ab3J1Psp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:48:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37106 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab3J1Pso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:46:46 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Madper Xie <cxie@redhat.com>, Tony Luck <tony.luck@gmail.com>,
-        "Anton Vorontsov" <cbou@mail.ru>, Colin Cross <ccross@google.com>,
-        Kees Cook <kees@outflux.net>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Differentiating names by adding a timestamp.
-Thread-Topic: [PATCH] Differentiating names by adding a timestamp.
-Thread-Index: AQHO0+DIWiwO2ULpUE6Js5xbzLmGmZoKQEmA
-Date: Mon, 28 Oct 2013 15:46:01 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D0EFB@USINDEM103.corp.hds.com>
-References: <87li1dv8by.fsf@redhat.com>
-In-Reply-To: <87li1dv8by.fsf@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Oct 2013 11:48:44 -0400
+Date: Mon, 28 Oct 2013 11:48:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Julien Grall <julien.grall@linaro.org>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
+ guests.
+Message-ID: <20131028154837.GC4353@phenom.dumpdata.com>
+References: <5245FD71.3080408@linaro.org>
+ <20130930144513.GM3106@phenom.dumpdata.com>
+ <5251CD98.70807@linaro.org>
+ <20131023161518.GA28413@phenom.dumpdata.com>
+ <526848C1.5030705@linaro.org>
+ <20131024144921.GB29944@phenom.dumpdata.com>
+ <52694B3F.5090008@linaro.org>
+ <1382633034.22417.121.camel@hastur.hellion.org.uk>
+ <20131025193812.GA6256@phenom.dumpdata.com>
+ <1382776028.22417.174.camel@hastur.hellion.org.uk>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-28_01:2013-10-28,2013-10-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310280112
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382776028.22417.174.camel@hastur.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To distinguish all events more precisely, "count" is needed to add to the name.
-Please see the commit below.
-755d4fe46529018ae45bc7c86df682de45ace764
+On Sat, Oct 26, 2013 at 09:27:08AM +0100, Ian Campbell wrote:
+> On Fri, 2013-10-25 at 15:38 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Oct 24, 2013 at 05:43:54PM +0100, Ian Campbell wrote:
+> > > But stepping back how/why is this function called on x86 when not
+> > > running under Xen? Wouldn't the use have to be using console=hvc or
+> > > earlyprintk=xen or something -- which strikes me as user error... IOW
+> > > can we not just nuke the check
+> > 
+> > It shouldn't - ever. On x86 it is called from the early PV bootup code.
+> > 
+> > I occasionaly use it when developing/debugging and as such want it working
+> > in HVM even during early bootup.
+> 
+> Does earlyprintk=ttyS0,cough not Just Work for HVM guests? That would
+> avoid all of this stuff and assuming it works would be preferable IMHO.
 
-Seiji
+It works OK. But this is an alternative avenue of using 'xen_raw_printk'
+for both PV and HVM.
 
-> -----Original Message-----
-> From: Madper Xie [mailto:cxie@redhat.com]
-> Sent: Monday, October 28, 2013 9:22 AM
-> To: Tony Luck; Seiji Aguchi; Anton Vorontsov; Colin Cross; Kees Cook
-> Cc: linux-efi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] Differentiating names by adding a timestamp.
 > 
+> Anyway, if not, then given that the xen_cpuid_base case is entirely x86
+> specific perhaps we can abstract this as something like:
 > 
-> pstore denominate dumped file as type-psname-id. it makes many file have
-> the same name if there are many entries in backend have the same id.
-> So adding a timestamp to file name.
+> 	if (xen_arch_raw_console(str))
+> 		return
 > 
-> Signed-off-by: Madper Xie <cxie@redhat.com>
-> ---
->  fs/pstore/inode.c | 26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
+> 	dom0_write_console(...)
 > 
-> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-> index 1282384..bf6ed3a 100644
-> --- a/fs/pstore/inode.c
-> +++ b/fs/pstore/inode.c
-> @@ -315,32 +315,38 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+> Then ARM:
+> 	#define xen_arch_raw_console 0
+> and x86
+> 	static inline int xen_arch_raw_console(str)
+> 	{
+> 		if (xen_domain())
+> 			return 0;
 > 
->  	switch (type) {
->  	case PSTORE_TYPE_DMESG:
-> -		sprintf(name, "dmesg-%s-%lld%s", psname, id,
-> -						compressed ? ".enc.z" : "");
-> +		sprintf(name, "dmesg-%s-%lld-%lld%s", psname, id,
-> +			timespec_to_ns(&time), compressed ? ".enc.z" : "");
->  		break;
->  	case PSTORE_TYPE_CONSOLE:
-> -		sprintf(name, "console-%s", psname);
-> +		sprintf(name, "console-%s-%lld", psname, timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_FTRACE:
-> -		sprintf(name, "ftrace-%s", psname);
-> +		sprintf(name, "ftrace-%s-%lld", psname, timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_MCE:
-> -		sprintf(name, "mce-%s-%lld", psname, id);
-> +		sprintf(name, "mce-%s-%lld-%lld", psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_PPC_RTAS:
-> -		sprintf(name, "rtas-%s-%lld", psname, id);
-> +		sprintf(name, "rtas-%s-%lld-%lld", psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_PPC_OF:
-> -		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
-> +		sprintf(name, "powerpc-ofw-%s-%lld-%lld", psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_PPC_COMMON:
-> -		sprintf(name, "powerpc-common-%s-%lld", psname, id);
-> +		sprintf(name, "powerpc-common-%s-%lld-%lld", psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	case PSTORE_TYPE_UNKNOWN:
-> -		sprintf(name, "unknown-%s-%lld", psname, id);
-> +		sprintf(name, "unknown-%s-%lld-%lld", psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	default:
-> -		sprintf(name, "type%d-%s-%lld", type, psname, id);
-> +		sprintf(name, "type%d-%s-%lld-%lld", type, psname, id,
-> +			timespec_to_ns(&time));
->  		break;
->  	}
+> 		/* Do the outb thing */
+> 		return 1;
+> 	}
 > 
-> --
-> 1.8.4.1
+> This would also avoid the need for #ifdef x86 in the main function which
+> Julien pointed out.
+
+OK.
+> 
+> Ian.
+> 
