@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3J1JiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:38:22 -0400
+	id S1755900Ab3J1JiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:38:20 -0400
 Received: from david.siemens.de ([192.35.17.14]:15580 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab3J1JiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:38:18 -0400
+	id S1755846Ab3J1JiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:38:17 -0400
 From: Jan Kiszka <jan.kiszka@Siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
@@ -13,9 +13,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v6 08/21] scripts/gdb: Add internal helper and convenience function to look up a module
-Date: Mon, 28 Oct 2013 09:58:45 +0100
-Message-Id: <ad60f8ac51ddb16f6ec252267b47362f1731ee11.1382950737.git.jan.kiszka@siemens.com>
+Subject: [PATCH v6 12/21] scripts/gdb: Add task iteration class
+Date: Mon, 28 Oct 2013 09:58:49 +0100
+Message-Id: <bcdfb1d53c7dd59727359ba6ccea8c30aae9c344.1382950737.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
 References: <cover.1382950737.git.jan.kiszka@siemens.com>
@@ -25,61 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_module_by_name to obtain the module
-structure corresponding to the given name. Also export this service as a
-convenience function.
+This class allows to iterate over all tasks of the target.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 28 ++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |  1 +
- 2 files changed, 29 insertions(+)
+ scripts/gdb/linux/tasks.py | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 scripts/gdb/linux/tasks.py
 
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index 8a65c3d..531f763 100644
---- a/scripts/gdb/linux/modules.py
-+++ b/scripts/gdb/linux/modules.py
-@@ -37,3 +37,31 @@ class ModuleList:
-             return utils.container_of(entry, self.module_ptr_type, "list")
-         else:
-             raise StopIteration
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+new file mode 100644
+index 0000000..cd25984
+--- /dev/null
++++ b/scripts/gdb/linux/tasks.py
+@@ -0,0 +1,46 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  task & thread tools
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import utils
 +
 +
-+def find_module_by_name(name):
-+    for module in ModuleList():
-+        if module['name'].string() == name:
-+            return module
-+    return None
++task_type = utils.CachedType("struct task_struct")
 +
 +
-+class LxModule(gdb.Function):
-+    """Find module by name and return the module variable.
-+
-+$lx_module("MODULE"): Given the name MODULE, iterate over all loaded modules
-+of the target and return that module variable which MODULE matches."""
-+
++class TaskList:
 +    def __init__(self):
-+        super(LxModule, self).__init__("lx_module")
++        global task_type
++        self.task_ptr_type = task_type.get_type().pointer()
++        self.init_task = gdb.parse_and_eval("init_task")
++        self.curr_group = self.init_task.address
++        self.curr_task = None
 +
-+    def invoke(self, mod_name):
-+        mod_name = mod_name.string()
-+        module = find_module_by_name(mod_name)
-+        if module:
-+            return module.dereference()
++    def __iter__(self):
++        return self
++
++    def next(self):
++        t = self.curr_task
++        if not t or t == self.curr_group:
++            self.curr_group = \
++                utils.container_of(self.curr_group['tasks']['next'],
++                                   self.task_ptr_type, "tasks")
++            if self.curr_group == self.init_task.address:
++                raise StopIteration
++            t = self.curr_task = self.curr_group
 +        else:
-+            raise gdb.GdbError("Unable to find MODULE " + mod_name)
-+
-+
-+LxModule()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 0b0faa4..cf2e716 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -24,3 +24,4 @@ except:
- else:
-     import linux.utils
-     import linux.symbols
-+    import linux.modules
++            self.curr_task = \
++                utils.container_of(t['thread_group']['next'],
++                                   self.task_ptr_type, "thread_group")
++        return t
 -- 
 1.8.1.1.298.ge7eed54
 
